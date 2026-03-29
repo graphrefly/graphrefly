@@ -1,0 +1,15 @@
+{
+	"folders": [
+		{
+			"name": "graphrefly (spec)",
+			"path": "."
+		},
+		{
+			"path": "../graphrefly-ts"
+		},
+		{
+			"path": "../graphrefly-py"
+		}
+	],
+	"settings": {}
+}
