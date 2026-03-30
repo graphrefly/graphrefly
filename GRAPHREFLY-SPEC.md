@@ -69,8 +69,11 @@ message types they don't recognize — this ensures forward compatibility.
 
 6. **Unknown message types forward unchanged.** Forward compatibility.
 
-7. **Batch defers DATA, not DIRTY.** Inside a batch, DIRTY propagates immediately. DATA is
-   deferred until batch exits. Dirty state established across the graph before recomputation.
+7. **Batch defers DATA and RESOLVED, not DIRTY.** Inside a batch, DIRTY propagates
+   immediately. DATA and RESOLVED (phase-2 messages) are deferred until batch exits.
+   During drain, further phase-2 emissions are re-deferred to preserve strict
+   DIRTY-before-DATA ordering across the entire flush. Dirty state established across
+   the graph before recomputation.
 
 ### 1.4 Directions
 
@@ -80,6 +83,12 @@ Messages flow in two directions:
 - **up** — upstream from sink toward source (PAUSE, RESUME, INVALIDATE, TEARDOWN)
 
 Both directions use the same `[[Type, Data?], ...]` format.
+
+These are **conventions**, not enforced constraints. Implementations do not validate
+message types by direction. In particular, lifecycle messages (TEARDOWN, INVALIDATE)
+may propagate downstream for graph-wide lifecycle management (e.g. `graph.destroy()`
+sends TEARDOWN downstream to all nodes). Similarly, a source may forward PAUSE/RESUME
+downstream when pausing consumers.
 
 ---
 
@@ -100,9 +109,9 @@ What a node does depends on what you give it:
 | No deps, no fn | Manual source. User calls `.down()` to emit | `state()` |
 | No deps, with fn | Auto source. fn runs, emits via actions | `producer()` |
 | Deps, fn returns value | Reactive compute. Recomputes on dep change | `derived()` |
-| Deps, fn uses `.down()` | Full protocol access, custom transform | `operator()` |
+| Deps, fn uses `.down()` | Full protocol access, custom transform | `derived()` |
 | Deps, fn returns nothing | Side effect, graph leaf | `effect()` |
-| Deps, no fn | Passthrough wire | `subscribe()` |
+| Deps, no fn | Passthrough wire | — (use `node([dep])`) |
 
 These sugar names are convenience constructors. They all create nodes. Implementations SHOULD
 provide them for ergonomics and readability. They are not separate types.
@@ -121,7 +130,11 @@ node.unsubscribe()      → disconnect from upstream deps
 node.meta               → companion stores (each key is a subscribable node)
 ```
 
-Source nodes (no deps) do not have `.up()` or `.unsubscribe()` — there is nothing upstream.
+Source nodes (no deps) have no upstream, so `.up()` and `.unsubscribe()` are no-ops.
+Implementations expose them on all node instances for uniformity (the `Node` interface
+types them as optional), but calling them on a source node has no effect. When a node
+or graph subscribes to another node, it can use `up()` to send messages upstream
+through that subscription.
 
 #### get()
 
@@ -186,7 +199,7 @@ n.meta.status.get()              // "idle"
 n.meta.error.get()               // null
 
 // Subscribe to a single meta field reactively
-subscribe(n.meta.error, (err) => alert(err))
+n.meta.error.subscribe((msgs) => { /* handle error */ })
 
 // Update meta (from inside fn, or externally)
 n.meta.status.down([[DATA, "loading"]])
@@ -207,6 +220,15 @@ Common meta fields:
 
 Because meta fields are nodes, they appear in `describe()` output and are individually
 observable via `observe()`.
+
+**Companion lifecycle:** Meta nodes are companion stores — they survive graph-wide
+lifecycle signals that would disrupt their cached values:
+
+- **INVALIDATE** via `graph.signal()` — no-op on meta nodes (cached values preserved).
+  To explicitly invalidate a meta node, send `down([[INVALIDATE]])` directly.
+- **COMPLETE/ERROR** — not propagated from parent to meta (meta outlives terminal state
+  for post-mortem writes like setting `meta.error` after ERROR).
+- **TEARDOWN** — propagated from parent on parent's own TEARDOWN, releasing meta resources.
 
 ### 2.4 Node fn Contract
 
@@ -334,14 +356,14 @@ Implementations SHOULD provide these for readability:
 ```
 state(initial, opts?)           = node([], null, { initial, ...opts })
 producer(fn, opts?)             = node([], fn, opts)
-derived(deps, fn, opts?)        = node(deps, fn, opts)         // fn returns value
-operator(deps, fn, opts?)       = node(deps, fn, opts)         // fn uses down()
+derived(deps, fn, opts?)        = node(deps, fn, opts)         // fn returns value or uses down()
 effect(deps, fn)                = node(deps, fn)               // fn returns nothing
-subscribe(dep, callback)        = node([dep], callback)        // single dep shorthand
+pipe(source, ...ops)            = left-to-right fold
 ```
 
-These are not distinct types. `describe()` MAY report them by sugar name for readability
-based on the node's configuration (has deps? fn returns value? etc.).
+These are not distinct types. `describe()` infers a type label (`state`, `producer`,
+`derived`, `operator`, `effect`) from the node's configuration for readability. The
+`operator` label is inferred when fn uses `down()` explicitly — no separate sugar needed.
 
 ---
 
@@ -388,12 +410,13 @@ propagate from parent to mounted children.
 
 ### 3.5 Namespace
 
-Colon-delimited paths. No separate namespace primitive.
+Double-colon (`::`) delimited paths. No separate namespace primitive. Single colons
+are allowed in node and graph names.
 
 ```
 "system"                        — root graph
-"system:payment"                — mounted subgraph
-"system:payment:validate"       — node within subgraph
+"system::payment"               — mounted subgraph
+"system::payment::validate"     — node within subgraph
 ```
 
 Rules:
