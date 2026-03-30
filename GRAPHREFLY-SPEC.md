@@ -427,7 +427,9 @@ Rules:
 
 ### 3.6 Introspection
 
-Two methods replace all introspection needs. No separate Inspector.
+Core introspection uses two methods: `describe()` and `observe()`. Implementations MAY add
+graph-native debugging helpers (for example reasoning traces or diagram export) without
+introducing a separate Inspector object.
 
 #### describe()
 
