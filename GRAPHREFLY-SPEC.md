@@ -523,6 +523,46 @@ object (not an already-stringified JSON string) or the output is double-encoded.
 `toJSONString()` (or `JSON.stringify(graph)` after a sorted `toJSON()` return) for
 deterministic text.
 
+#### Auto-checkpoint
+
+```
+graph.autoCheckpoint(adapter, opts?)    — arm debounced reactive persistence
+```
+
+Wires `observe()` → debounced save. Fires after settlement (DATA/RESOLVED messages only,
+not DIRTY) to avoid snapshotting mid-batch. Returns a disposable node (torn down on
+`graph.destroy()`).
+
+Options: `debounceMs` (default 500), `filter` (name/node predicate for which nodes trigger
+saves), `compactEvery` (full snapshot interval for incremental diff mode), `onError`.
+
+Implementations SHOULD support incremental snapshots via `Graph.diff()` — save only changed
+nodes, with periodic full snapshot compaction.
+
+#### Node factory registry
+
+```
+Graph.registerFactory(pattern, factory)  — register node factory by name glob
+Graph.unregisterFactory(pattern)         — remove registered factory
+```
+
+Factory signature: `(name, { value, meta, deps, type }) → Node`. When `fromSnapshot(data)`
+is called without a `build` callback, the registry matches each snapshot node's name against
+registered patterns to reconstruct nodes with computation functions and guards reattached.
+
+Reconstruction order:
+1. Mount hierarchies (subgraphs)
+2. State/producer nodes (no deps needed)
+3. Derived/operator/effect nodes (deps resolved to step 2 nodes)
+4. Edges
+5. `restore()` to hydrate values
+
+Pattern matching uses glob semantics (`"issue/*"`, `"policy/*"`). Global registry — solves
+the chicken-and-egg problem (graph doesn't exist before `fromSnapshot` creates it).
+
+When a `build` callback is provided, it takes precedence over the registry (existing
+behavior preserved).
+
 ---
 
 ## 4. Utilities
