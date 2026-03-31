@@ -529,9 +529,10 @@ deterministic text.
 graph.autoCheckpoint(adapter, opts?)    — arm debounced reactive persistence
 ```
 
-Wires `observe()` → debounced save. Fires after settlement (DATA/RESOLVED messages only,
-not DIRTY) to avoid snapshotting mid-batch. Returns a disposable node (torn down on
-`graph.destroy()`).
+Wires `observe()` → debounced save. Trigger gate uses **message tier**: batches containing
+tier `>=2` messages (value, terminal, or teardown lifecycle) schedule a save; pure
+tier `0/1` control waves do not. This avoids snapshotting mid-batch. Returns a disposable
+handle (disposed on `graph.destroy()`).
 
 Options: `debounceMs` (default 500), `filter` (name/node predicate for which nodes trigger
 saves), `compactEvery` (full snapshot interval for incremental diff mode), `onError`.
@@ -546,7 +547,7 @@ Graph.registerFactory(pattern, factory)  — register node factory by name glob
 Graph.unregisterFactory(pattern)         — remove registered factory
 ```
 
-Factory signature: `(name, { value, meta, deps, type }) → Node`. When `fromSnapshot(data)`
+Factory signature: `(name, { value, meta, deps, type, ...context }) → Node`. When `fromSnapshot(data)`
 is called without a `build` callback, the registry matches each snapshot node's name against
 registered patterns to reconstruct nodes with computation functions and guards reattached.
 
