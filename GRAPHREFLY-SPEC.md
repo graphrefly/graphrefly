@@ -749,7 +749,32 @@ ERROR         [ERROR, err]            Error termination
             "type": "array",
             "items": { "type": "string" }
           },
-          "meta": { "type": "object" }
+          "meta": { "type": "object" },
+          "v": {
+            "description": "Optional versioning payload when node versioning is enabled (Spec §7).",
+            "oneOf": [
+              {
+                "type": "object",
+                "required": ["id", "version"],
+                "properties": {
+                  "id": { "type": "string" },
+                  "version": { "type": "integer", "minimum": 0 }
+                },
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "required": ["id", "version", "cid", "prev"],
+                "properties": {
+                  "id": { "type": "string" },
+                  "version": { "type": "integer", "minimum": 0 },
+                  "cid": { "type": "string" },
+                  "prev": { "type": ["string", "null"] }
+                },
+                "additionalProperties": false
+              }
+            ]
+          }
         }
       }
     },
