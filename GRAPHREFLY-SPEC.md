@@ -649,6 +649,48 @@ of thing (nodes) connected by one kind of thing (edges).
 A graph can be snapshotted, versioned, restored, shared, and composed. It persists beyond
 the process that created it. It represents a solution.
 
+### 5.8 No polling
+
+State changes propagate reactively via messages. Never poll a node's value on an interval
+or busy-wait for status changes. If you need periodic behavior, use a timer source
+(`fromTimer`, `fromCron`) that emits messages through the graph.
+
+### 5.9 No imperative triggers outside the graph
+
+Never use imperative side-channel calls (event emitters, callbacks, direct function calls)
+to trigger graph behavior. All coordination uses reactive `NodeInput` signals and message
+flow through topology. If you find yourself reaching for `setTimeout` + manual `set()`,
+the design needs a reactive source node instead.
+
+### 5.10 No raw async primitives in the reactive layer
+
+TS: Do not use bare `Promise`, `queueMicrotask`, `setTimeout`, or `process.nextTick` to
+schedule reactive work. Use the central timer in `core/clock.ts` for timestamps and the
+batch system for deferred delivery. Async boundaries belong in sources (`fromPromise`,
+`fromAsyncIter`) and the runner layer, not in node fns or operators.
+
+PY: Do not use bare `asyncio.ensure_future`, `asyncio.create_task`, `threading.Timer`, or
+raw coroutines to schedule reactive work. Use `core/clock.py` for timestamps and the batch
+context manager for deferred delivery. Async boundaries belong in sources and the runner
+layer (`compat/asyncio_runner`, `compat/trio_runner`).
+
+### 5.11 Central timer and messageTier utilities
+
+All time-dependent logic must use the central clock (`monotonicNs()` / `monotonic_ns()` for
+event ordering, `wallClockNs()` / `wall_clock_ns()` for attribution). Never call `Date.now()`,
+`performance.now()`, `time.time_ns()`, or `time.monotonic_ns()` directly outside the clock
+module. Message tier classification (`messageTier`) gates auto-checkpoint behavior and batch
+ordering — always use the provided tier utilities rather than hardcoding type checks.
+
+### 5.12 Phase 4+ APIs speak developer language
+
+Domain-layer APIs (orchestration, messaging, memory, AI, CQRS) and framework integrations
+must be developer-friendly: sensible defaults, minimal boilerplate, clear error messages,
+and discoverable options. Protocol internals (`DIRTY`, `RESOLVED`, bitmask) are accessible
+via `.node()` or `inner` but never surface in the primary API. A developer who has never
+read the spec should be able to use `pipeline()`, `agentMemory()`, or `chatStream()` from
+examples alone.
+
 ---
 
 ## 6. Implementation Guidance

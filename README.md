@@ -11,9 +11,18 @@ This repo is the **canonical home** for the GraphReFly protocol specification. L
 
 ## Specification
 
-- **[`GRAPHREFLY-SPEC.md`](./GRAPHREFLY-SPEC.md)** — Full behavior spec: messages, `node`, `Graph`, invariants.
+- **[`GRAPHREFLY-SPEC.md`](./GRAPHREFLY-SPEC.md)** — Full behavior spec: messages, `node`, `Graph`, invariants, design principles.
 
 The spec defines **behavior** — what implementations must do. Language-specific ergonomics (syntax, concurrency model, type encoding) are implementation choices.
+
+### Key design principles (§5)
+
+- Control flows through the graph, not around it
+- No polling — reactive propagation only
+- No imperative triggers — all coordination via reactive signals
+- No raw async primitives in the reactive layer
+- Central timer and messageTier utilities
+- Phase 4+ APIs speak developer language, not protocol internals
 
 ## For implementers
 
