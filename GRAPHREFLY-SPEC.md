@@ -480,17 +480,26 @@ The `type` field in describe output is inferred from node configuration:
 
 #### observe(name?)
 
-Live message stream. Returns a subscribable source.
+Live message stream. Returns a subscribable source with an optional upstream channel.
 
 ```
 graph.observe("validate")       — messages from one node
 graph.observe()                 — messages from all nodes, prefixed with node name
 ```
 
+The returned handle exposes:
+- `subscribe(sink)` — receive downstream messages from the observed node(s).
+- `up(messages)` (single-node) / `up(path, messages)` (all-nodes) — send messages
+  upstream toward the observed node's sources (e.g. `[[PAUSE, lockId]]`).
+  If a node guard denies the upstream message, it is silently dropped.
+
 For testing:
 ```
 const obs = graph.observe("myNode")
 // Receives: [[DIRTY], [DATA, 42]], [[DIRTY], [RESOLVED]], etc.
+
+// Backpressure: pause the upstream source
+obs.up([[PAUSE, lockId]])
 ```
 
 This replaces Inspector.observe(). The Graph IS the introspection layer.
