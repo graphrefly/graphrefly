@@ -785,13 +785,14 @@ ERROR         [ERROR, err]            Error termination
       "type": "object",
       "additionalProperties": {
         "type": "object",
-        "required": ["type", "status"],
+        "required": ["type"],
         "properties": {
           "type": {
             "type": "string",
             "enum": ["state", "derived", "producer", "operator", "effect"]
           },
           "status": {
+            "description": "Present at detail >= 'standard'. Omitted at 'minimal' detail level.",
             "type": "string",
             "enum": ["disconnected", "dirty", "settled", "resolved", "completed", "errored"]
           },

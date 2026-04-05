@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://graphrefly.dev/evals/task.schema.json",
+  "title": "GraphReFly Eval Task",
+  "type": "object",
+  "required": ["id", "category", "nl_description", "complexity"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+$",
+      "description": "Unique task identifier"
+    },
+    "category": {
+      "enum": [
+        "linear",
+        "fan-out",
+        "fan-in",
+        "diamond",
+        "feedback-loop",
+        "multi-source",
+        "ambiguous",
+        "stateful",
+        "error-handling",
+        "multi-step-effects"
+      ]
+    },
+    "nl_description": {
+      "type": "string",
+      "minLength": 10,
+      "description": "Natural-language task description given to the LLM"
+    },
+    "expected_node_count": {
+      "type": "integer",
+      "minimum": 2,
+      "description": "Approximate expected number of nodes (soft target)"
+    },
+    "expected_node_names": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Optional — soft match for expected node names"
+    },
+    "complexity": {
+      "enum": ["low", "medium", "high"]
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "contrastive": {
+      "type": "object",
+      "description": "Only for L0 tasks — defines plain-function treatment metadata",
+      "properties": {
+        "expected_function_count": { "type": "integer" },
+        "key_behaviors": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Behaviors both treatments must exhibit to be considered correct"
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}

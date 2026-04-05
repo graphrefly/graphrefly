@@ -1,0 +1,51 @@
+[
+  {
+    "id": "l0-valid-output",
+    "claim": "The generated output is syntactically valid (valid JSON for graphspec, valid TypeScript for functions)",
+    "weight": 1,
+    "layer": "L0",
+    "metric": "L0-M1"
+  },
+  {
+    "id": "l0-correct-behavior",
+    "claim": "The output correctly implements all key behaviors specified in the task",
+    "weight": 3,
+    "layer": "L0",
+    "metric": "L0-M1"
+  },
+  {
+    "id": "l0-no-hallucinated-refs",
+    "claim": "All references (fn names, source names, imports) exist in the provided catalog/utilities",
+    "weight": 2,
+    "layer": "L0",
+    "metric": "L0-M1"
+  },
+  {
+    "id": "l0-deps-correct",
+    "claim": "All dependencies/data flows are correctly declared (no missing deps, no unused inputs)",
+    "weight": 2,
+    "layer": "L0",
+    "metric": "L0-M1"
+  },
+  {
+    "id": "l0-bug-identified",
+    "claim": "The LLM correctly identified that a bug exists in the provided code/spec",
+    "weight": 1,
+    "layer": "L0",
+    "metric": "L0-M2"
+  },
+  {
+    "id": "l0-bug-located",
+    "claim": "The LLM pointed to the correct component/node/function where the bug resides",
+    "weight": 2,
+    "layer": "L0",
+    "metric": "L0-M2"
+  },
+  {
+    "id": "l0-fix-correct",
+    "claim": "The LLM's suggested fix would actually resolve the identified bug",
+    "weight": 2,
+    "layer": "L0",
+    "metric": "L0-M4"
+  }
+]

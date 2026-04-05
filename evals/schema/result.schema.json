@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://graphrefly.dev/evals/result.schema.json",
+  "title": "GraphReFly Eval Result",
+  "type": "object",
+  "required": ["run_id", "timestamp", "layer", "model", "scores", "tasks"],
+  "properties": {
+    "run_id": { "type": "string" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "layer": { "enum": ["L0", "L1", "L2", "L3"] },
+    "model": {
+      "type": "string",
+      "description": "Model identifier, e.g. claude-sonnet-4-6"
+    },
+    "schema_version": {
+      "type": "string",
+      "description": "GraphSpec schema version or git SHA"
+    },
+    "scores": {
+      "type": "object",
+      "description": "Aggregate metric scores, e.g. { \"L0-M1\": 0.73 }",
+      "additionalProperties": { "type": "number" }
+    },
+    "tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["task_id", "treatment"],
+        "properties": {
+          "task_id": { "type": "string" },
+          "treatment": { "enum": ["graphspec", "functions", "single"] },
+          "raw_output": { "type": "string" },
+          "valid": { "type": "boolean" },
+          "runnable": { "type": "boolean" },
+          "judge_scores": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["claim", "pass"],
+              "properties": {
+                "claim": { "type": "string" },
+                "pass": { "type": "boolean" },
+                "reasoning": { "type": "string" }
+              }
+            }
+          },
+          "latency_ms": { "type": "number" },
+          "token_count": {
+            "type": "object",
+            "properties": {
+              "input": { "type": "integer" },
+              "output": { "type": "integer" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}

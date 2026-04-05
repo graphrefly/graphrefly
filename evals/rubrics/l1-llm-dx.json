@@ -1,0 +1,65 @@
+[
+  {
+    "id": "l1-valid-json",
+    "claim": "The output is valid JSON",
+    "weight": 1,
+    "layer": "L1",
+    "metric": "L1-M1"
+  },
+  {
+    "id": "l1-schema-conformant",
+    "claim": "The output conforms to the GraphSpec JSON Schema (correct top-level structure, valid node types)",
+    "weight": 2,
+    "layer": "L1",
+    "metric": "L1-M1"
+  },
+  {
+    "id": "l1-runnable",
+    "claim": "graphFromSpec(output) executes without throwing an error",
+    "weight": 3,
+    "layer": "L1",
+    "metric": "L1-M1"
+  },
+  {
+    "id": "l1-node-count",
+    "claim": "The number of nodes is within +/-1 of the expected count for the task",
+    "weight": 1,
+    "layer": "L1",
+    "metric": "L1-M1"
+  },
+  {
+    "id": "l1-deps-exist",
+    "claim": "All node deps reference other nodes that exist in the spec",
+    "weight": 2,
+    "layer": "L1",
+    "metric": "L1-M1"
+  },
+  {
+    "id": "l1-catalog-refs",
+    "claim": "All fn and source references exist in the provided catalogs",
+    "weight": 2,
+    "layer": "L1",
+    "metric": "L1-M4"
+  },
+  {
+    "id": "l1-self-correct",
+    "claim": "After receiving a validation error message, the LLM produces a corrected spec that passes validation",
+    "weight": 3,
+    "layer": "L1",
+    "metric": "L1-M2"
+  },
+  {
+    "id": "l1-diff-requested-present",
+    "claim": "The requested modification is present in the new spec",
+    "weight": 3,
+    "layer": "L1",
+    "metric": "L1-M3"
+  },
+  {
+    "id": "l1-diff-no-unrelated",
+    "claim": "No nodes were changed that should not have been changed by the modification request",
+    "weight": 2,
+    "layer": "L1",
+    "metric": "L1-M3"
+  }
+]

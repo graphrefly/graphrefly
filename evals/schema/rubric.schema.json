@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://graphrefly.dev/evals/rubric.schema.json",
+  "title": "GraphReFly Eval Rubric",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["id", "claim", "weight"],
+    "properties": {
+      "id": {
+        "type": "string",
+        "pattern": "^[a-z0-9-]+$"
+      },
+      "claim": {
+        "type": "string",
+        "description": "Natural-language assertion for LLM judge to evaluate"
+      },
+      "weight": {
+        "type": "number",
+        "minimum": 0,
+        "description": "Relative weight when computing aggregate score"
+      },
+      "layer": {
+        "enum": ["L0", "L1", "L2", "L3"],
+        "description": "Which eval layer this assertion belongs to"
+      },
+      "metric": {
+        "type": "string",
+        "description": "Which metric this assertion feeds, e.g. L0-M1"
+      }
+    },
+    "additionalProperties": false
+  }
+}

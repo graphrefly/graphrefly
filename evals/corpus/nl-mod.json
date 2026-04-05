@@ -1,0 +1,528 @@
+[
+  {
+    "id": "mod-add-deadline-filter",
+    "base_spec": {
+      "nodes": {
+        "inbox": { "type": "producer", "source": "email" },
+        "classify": { "type": "derived", "deps": ["inbox"], "fn": "classifyUrgency" },
+        "urgent": { "type": "effect", "deps": ["classify"], "fn": "notifyPush" }
+      }
+    },
+    "nl_modification": "Also flag any email that mentions the word 'deadline' as urgent, regardless of sender.",
+    "expected_changes": {
+      "nodes_added": [],
+      "nodes_removed": [],
+      "nodes_modified": ["classify"],
+      "description": "classify node's fn or config should incorporate 'deadline' keyword matching"
+    }
+  },
+  {
+    "id": "mod-add-weekly-digest",
+    "base_spec": {
+      "nodes": {
+        "inbox": { "type": "producer", "source": "email" },
+        "classify": { "type": "derived", "deps": ["inbox"], "fn": "classifyType" },
+        "urgent": { "type": "effect", "deps": ["classify"], "fn": "notifyPush" }
+      }
+    },
+    "nl_modification": "Add a weekly digest that summarizes all newsletter-type emails.",
+    "expected_changes": {
+      "nodes_added": ["digest"],
+      "nodes_removed": [],
+      "nodes_modified": [],
+      "description": "New digest node (effect or derived) that depends on classify and aggregates newsletters weekly"
+    }
+  },
+  {
+    "id": "mod-remove-node",
+    "base_spec": {
+      "nodes": {
+        "sensor": { "type": "producer", "source": "temperature" },
+        "average": { "type": "derived", "deps": ["sensor"], "fn": "rollingAvg" },
+        "alert": { "type": "effect", "deps": ["average"], "fn": "sendAlert" },
+        "log": { "type": "effect", "deps": ["average"], "fn": "writeLog" }
+      }
+    },
+    "nl_modification": "Remove the logging, I don't need it anymore.",
+    "expected_changes": {
+      "nodes_added": [],
+      "nodes_removed": ["log"],
+      "nodes_modified": [],
+      "description": "Only the log node should be removed; sensor, average, and alert unchanged"
+    }
+  },
+  {
+    "id": "mod-change-source",
+    "base_spec": {
+      "nodes": {
+        "data": { "type": "producer", "source": "rest-api", "config": { "url": "https://api.example.com/prices" } },
+        "transform": { "type": "derived", "deps": ["data"], "fn": "normalize" },
+        "store": { "type": "effect", "deps": ["transform"], "fn": "writeToDB" }
+      }
+    },
+    "nl_modification": "Switch the data source from REST API to a WebSocket stream at wss://stream.example.com/prices.",
+    "expected_changes": {
+      "nodes_added": [],
+      "nodes_removed": [],
+      "nodes_modified": ["data"],
+      "description": "data node source changes from rest-api to websocket; config URL updates"
+    }
+  },
+  {
+    "id": "mod-add-sentiment-node",
+    "base_spec": {
+      "nodes": {
+        "tweets": { "type": "producer", "source": "twitter-stream", "config": { "hashtag": "#product" } },
+        "filter": { "type": "derived", "deps": ["tweets"], "fn": "filterSpam" },
+        "store": { "type": "effect", "deps": ["filter"], "fn": "writeToDB" }
+      }
+    },
+    "nl_modification": "Also run sentiment analysis on each tweet before storing it.",
+    "expected_changes": {
+      "nodes_added": ["sentiment"],
+      "nodes_removed": [],
+      "nodes_modified": ["store"],
+      "description": "New sentiment derived node between filter and store; store now depends on sentiment instead of filter"
+    }
+  },
+  {
+    "id": "mod-add-cache-and-dedup",
+    "base_spec": {
+      "nodes": {
+        "feed": { "type": "producer", "source": "rss", "config": { "url": "https://news.example.com/feed.xml" } },
+        "summarize": { "type": "derived", "deps": ["feed"], "fn": "summarizeArticle" },
+        "publish": { "type": "effect", "deps": ["summarize"], "fn": "postToChannel" }
+      }
+    },
+    "nl_modification": "Add deduplication so we don't process the same article twice, and cache summaries.",
+    "expected_changes": {
+      "nodes_added": ["dedup", "cache"],
+      "nodes_removed": [],
+      "nodes_modified": [],
+      "description": "dedup derived node after feed filters duplicates; cache derived node after summarize caches results; pipeline becomes feed->dedup->summarize->cache->publish"
+    }
+  },
+  {
+    "id": "mod-remove-enrichment",
+    "base_spec": {
+      "nodes": {
+        "orders": { "type": "producer", "source": "webhook", "config": { "path": "/orders" } },
+        "enrich": { "type": "derived", "deps": ["orders"], "fn": "lookupCustomer" },
+        "validate": { "type": "derived", "deps": ["enrich"], "fn": "validateOrder" },
+        "fulfill": { "type": "effect", "deps": ["validate"], "fn": "sendToWarehouse" }
+      }
+    },
+    "nl_modification": "Remove the customer enrichment step, orders already include customer data.",
+    "expected_changes": {
+      "nodes_added": [],
+      "nodes_removed": ["enrich"],
+      "nodes_modified": ["validate"],
+      "description": "enrich node removed; validate now depends directly on orders"
+    }
+  },
+  {
+    "id": "mod-remove-slack-notification",
+    "base_spec": {
+      "nodes": {
+        "ci": { "type": "producer", "source": "webhook", "config": { "path": "/ci-results" } },
+        "parse": { "type": "derived", "deps": ["ci"], "fn": "parseBuildResult" },
+        "slack": { "type": "effect", "deps": ["parse"], "fn": "sendSlack" },
+        "dashboard": { "type": "effect", "deps": ["parse"], "fn": "updateDashboard" }
+      }
+    },
+    "nl_modification": "Stop sending Slack notifications for CI results.",
+    "expected_changes": {
+      "nodes_added": [],
+      "nodes_removed": ["slack"],
+      "nodes_modified": [],
+      "description": "slack effect node removed; parse and dashboard remain unchanged"
+    }
+  },
+  {
+    "id": "mod-change-threshold",
+    "base_spec": {
+      "nodes": {
+        "metrics": { "type": "producer", "source": "prometheus", "config": { "query": "http_request_duration_seconds" } },
+        "threshold": { "type": "derived", "deps": ["metrics"], "fn": "checkThreshold", "config": { "maxMs": 500 } },
+        "alert": { "type": "effect", "deps": ["threshold"], "fn": "sendPagerDuty" }
+      }
+    },
+    "nl_modification": "Change the latency threshold from 500ms to 200ms.",
+    "expected_changes": {
+      "nodes_added": [],
+      "nodes_removed": [],
+      "nodes_modified": ["threshold"],
+      "description": "threshold node config.maxMs changes from 500 to 200"
+    }
+  },
+  {
+    "id": "mod-change-filter-criteria",
+    "base_spec": {
+      "nodes": {
+        "logs": { "type": "producer", "source": "cloudwatch", "config": { "logGroup": "/app/prod" } },
+        "filter": { "type": "derived", "deps": ["logs"], "fn": "filterBySeverity", "config": { "minLevel": "error" } },
+        "ticket": { "type": "effect", "deps": ["filter"], "fn": "createJiraTicket" }
+      }
+    },
+    "nl_modification": "Also include warning-level logs, not just errors.",
+    "expected_changes": {
+      "nodes_added": [],
+      "nodes_removed": [],
+      "nodes_modified": ["filter"],
+      "description": "filter node config.minLevel changes from 'error' to 'warn'"
+    }
+  },
+  {
+    "id": "mod-change-batch-size",
+    "base_spec": {
+      "nodes": {
+        "events": { "type": "producer", "source": "kafka", "config": { "topic": "user-events" } },
+        "batch": { "type": "derived", "deps": ["events"], "fn": "batchEvents", "config": { "size": 100, "intervalMs": 5000 } },
+        "analytics": { "type": "effect", "deps": ["batch"], "fn": "sendToAnalytics" }
+      }
+    },
+    "nl_modification": "Change the batch size to 50 and reduce the interval to 2 seconds.",
+    "expected_changes": {
+      "nodes_added": [],
+      "nodes_removed": [],
+      "nodes_modified": ["batch"],
+      "description": "batch node config changes: size from 100 to 50, intervalMs from 5000 to 2000"
+    }
+  },
+  {
+    "id": "mod-switch-source-rss-to-api",
+    "base_spec": {
+      "nodes": {
+        "news": { "type": "producer", "source": "rss", "config": { "url": "https://blog.example.com/rss" } },
+        "extract": { "type": "derived", "deps": ["news"], "fn": "extractHeadlines" },
+        "display": { "type": "effect", "deps": ["extract"], "fn": "renderWidget" }
+      }
+    },
+    "nl_modification": "Switch from the RSS feed to the JSON API at https://blog.example.com/api/posts.",
+    "expected_changes": {
+      "nodes_added": [],
+      "nodes_removed": [],
+      "nodes_modified": ["news"],
+      "description": "news node source changes from rss to rest-api; config.url updates to the API endpoint"
+    }
+  },
+  {
+    "id": "mod-switch-source-polling-to-webhook",
+    "base_spec": {
+      "nodes": {
+        "inventory": { "type": "producer", "source": "rest-api", "config": { "url": "https://erp.example.com/stock", "pollIntervalMs": 60000 } },
+        "lowStock": { "type": "derived", "deps": ["inventory"], "fn": "detectLowStock", "config": { "minQty": 10 } },
+        "reorder": { "type": "effect", "deps": ["lowStock"], "fn": "createPurchaseOrder" }
+      }
+    },
+    "nl_modification": "Switch inventory from polling the REST API to receiving webhook pushes from the ERP system.",
+    "expected_changes": {
+      "nodes_added": [],
+      "nodes_removed": [],
+      "nodes_modified": ["inventory"],
+      "description": "inventory node source changes from rest-api to webhook; polling config removed, webhook path added"
+    }
+  },
+  {
+    "id": "mod-add-branch-high-value",
+    "base_spec": {
+      "nodes": {
+        "orders": { "type": "producer", "source": "webhook", "config": { "path": "/orders" } },
+        "validate": { "type": "derived", "deps": ["orders"], "fn": "validateOrder" },
+        "process": { "type": "effect", "deps": ["validate"], "fn": "processOrder" }
+      }
+    },
+    "nl_modification": "When an order is over $1000, also send an alert to the finance team.",
+    "expected_changes": {
+      "nodes_added": ["highValueCheck", "financeAlert"],
+      "nodes_removed": [],
+      "nodes_modified": [],
+      "description": "highValueCheck derived node filters orders over $1000 from validate; financeAlert effect sends notification to finance team"
+    }
+  },
+  {
+    "id": "mod-add-branch-error-path",
+    "base_spec": {
+      "nodes": {
+        "requests": { "type": "producer", "source": "http-server", "config": { "port": 8080 } },
+        "process": { "type": "derived", "deps": ["requests"], "fn": "handleRequest" },
+        "respond": { "type": "effect", "deps": ["process"], "fn": "sendResponse" }
+      }
+    },
+    "nl_modification": "When a request takes more than 5 seconds to process, also log it to a slow-query tracker.",
+    "expected_changes": {
+      "nodes_added": ["slowDetect", "slowLog"],
+      "nodes_removed": [],
+      "nodes_modified": [],
+      "description": "slowDetect derived node checks processing duration from process; slowLog effect writes to slow-query tracker"
+    }
+  },
+  {
+    "id": "mod-add-branch-fanout-notifications",
+    "base_spec": {
+      "nodes": {
+        "deployHook": { "type": "producer", "source": "webhook", "config": { "path": "/deploy" } },
+        "parse": { "type": "derived", "deps": ["deployHook"], "fn": "parseDeployPayload" },
+        "slack": { "type": "effect", "deps": ["parse"], "fn": "sendSlack" }
+      }
+    },
+    "nl_modification": "When a deploy happens, also update the status page and notify the on-call engineer via PagerDuty.",
+    "expected_changes": {
+      "nodes_added": ["statusPage", "pagerDuty"],
+      "nodes_removed": [],
+      "nodes_modified": [],
+      "description": "statusPage effect updates status page from parse; pagerDuty effect notifies on-call from parse; fan-out from parse to three effects"
+    }
+  },
+  {
+    "id": "mod-merge-two-sensors",
+    "base_spec": {
+      "nodes": {
+        "tempSensor": { "type": "producer", "source": "temperature" },
+        "tempAlert": { "type": "derived", "deps": ["tempSensor"], "fn": "checkTempRange" },
+        "tempNotify": { "type": "effect", "deps": ["tempAlert"], "fn": "sendAlert" },
+        "humiditySensor": { "type": "producer", "source": "humidity" },
+        "humidityAlert": { "type": "derived", "deps": ["humiditySensor"], "fn": "checkHumidityRange" },
+        "humidityNotify": { "type": "effect", "deps": ["humidityAlert"], "fn": "sendAlert" }
+      }
+    },
+    "nl_modification": "Combine the temperature and humidity alerts into a single environment report.",
+    "expected_changes": {
+      "nodes_added": ["envReport"],
+      "nodes_removed": ["tempNotify", "humidityNotify"],
+      "nodes_modified": [],
+      "description": "envReport effect node depends on both tempAlert and humidityAlert; separate notify effects removed"
+    }
+  },
+  {
+    "id": "mod-merge-search-results",
+    "base_spec": {
+      "nodes": {
+        "dbSearch": { "type": "producer", "source": "database-query", "config": { "query": "SELECT * FROM products WHERE name LIKE :q" } },
+        "dbResults": { "type": "derived", "deps": ["dbSearch"], "fn": "formatResults" },
+        "apiSearch": { "type": "producer", "source": "rest-api", "config": { "url": "https://catalog.example.com/search" } },
+        "apiResults": { "type": "derived", "deps": ["apiSearch"], "fn": "formatResults" },
+        "displayDb": { "type": "effect", "deps": ["dbResults"], "fn": "renderList" },
+        "displayApi": { "type": "effect", "deps": ["apiResults"], "fn": "renderList" }
+      }
+    },
+    "nl_modification": "Merge the database and API search results into one combined, deduplicated list.",
+    "expected_changes": {
+      "nodes_added": ["mergedResults"],
+      "nodes_removed": ["displayDb", "displayApi"],
+      "nodes_modified": [],
+      "description": "mergedResults derived node depends on dbResults and apiResults, deduplicates; single display effect replaces two separate ones"
+    }
+  },
+  {
+    "id": "mod-merge-approval-chains",
+    "base_spec": {
+      "nodes": {
+        "request": { "type": "producer", "source": "webhook", "config": { "path": "/expense" } },
+        "managerApproval": { "type": "derived", "deps": ["request"], "fn": "routeToManager" },
+        "managerNotify": { "type": "effect", "deps": ["managerApproval"], "fn": "sendEmail" },
+        "financeApproval": { "type": "derived", "deps": ["request"], "fn": "routeToFinance" },
+        "financeNotify": { "type": "effect", "deps": ["financeApproval"], "fn": "sendEmail" }
+      }
+    },
+    "nl_modification": "Combine manager and finance approvals into one unified approval step.",
+    "expected_changes": {
+      "nodes_added": ["unifiedApproval", "approvalNotify"],
+      "nodes_removed": ["managerApproval", "managerNotify", "financeApproval", "financeNotify"],
+      "nodes_modified": [],
+      "description": "Single unifiedApproval derived node replaces both approval branches; one approvalNotify effect"
+    }
+  },
+  {
+    "id": "mod-reorder-validate-before-enrich",
+    "base_spec": {
+      "nodes": {
+        "input": { "type": "producer", "source": "webhook", "config": { "path": "/leads" } },
+        "enrich": { "type": "derived", "deps": ["input"], "fn": "enrichWithCRM" },
+        "validate": { "type": "derived", "deps": ["enrich"], "fn": "validateLead" },
+        "store": { "type": "effect", "deps": ["validate"], "fn": "writeToDB" }
+      }
+    },
+    "nl_modification": "Validate the lead data before enriching it so we don't waste API calls on bad data.",
+    "expected_changes": {
+      "nodes_added": [],
+      "nodes_removed": [],
+      "nodes_modified": ["enrich", "validate"],
+      "description": "validate now depends on input; enrich now depends on validate; pipeline becomes input->validate->enrich->store"
+    }
+  },
+  {
+    "id": "mod-reorder-compress-before-encrypt",
+    "base_spec": {
+      "nodes": {
+        "files": { "type": "producer", "source": "filesystem-watch", "config": { "path": "/data/exports" } },
+        "encrypt": { "type": "derived", "deps": ["files"], "fn": "encryptPayload" },
+        "compress": { "type": "derived", "deps": ["encrypt"], "fn": "gzipCompress" },
+        "upload": { "type": "effect", "deps": ["compress"], "fn": "uploadToS3" }
+      }
+    },
+    "nl_modification": "Compress the files before encrypting them, not after.",
+    "expected_changes": {
+      "nodes_added": [],
+      "nodes_removed": [],
+      "nodes_modified": ["encrypt", "compress"],
+      "description": "compress now depends on files; encrypt now depends on compress; pipeline becomes files->compress->encrypt->upload"
+    }
+  },
+  {
+    "id": "mod-reorder-sanitize-first",
+    "base_spec": {
+      "nodes": {
+        "form": { "type": "producer", "source": "http-server", "config": { "path": "/submit" } },
+        "transform": { "type": "derived", "deps": ["form"], "fn": "transformPayload" },
+        "sanitize": { "type": "derived", "deps": ["transform"], "fn": "sanitizeHTML" },
+        "save": { "type": "effect", "deps": ["sanitize"], "fn": "writeToDB" }
+      }
+    },
+    "nl_modification": "Sanitize input before transforming it so transforms operate on clean data.",
+    "expected_changes": {
+      "nodes_added": [],
+      "nodes_removed": [],
+      "nodes_modified": ["transform", "sanitize"],
+      "description": "sanitize now depends on form; transform now depends on sanitize; pipeline becomes form->sanitize->transform->save"
+    }
+  },
+  {
+    "id": "mod-replace-classify-with-summarize",
+    "base_spec": {
+      "nodes": {
+        "articles": { "type": "producer", "source": "rss", "config": { "url": "https://techcrunch.com/feed" } },
+        "classify": { "type": "derived", "deps": ["articles"], "fn": "classifyTopic" },
+        "display": { "type": "effect", "deps": ["classify"], "fn": "renderFeed" }
+      }
+    },
+    "nl_modification": "Instead of classifying articles by topic, summarize each article in 2-3 sentences.",
+    "expected_changes": {
+      "nodes_added": [],
+      "nodes_removed": [],
+      "nodes_modified": ["classify"],
+      "description": "classify node fn changes from classifyTopic to summarizeArticle; node effectively becomes a summarizer"
+    }
+  },
+  {
+    "id": "mod-replace-avg-with-percentile",
+    "base_spec": {
+      "nodes": {
+        "latency": { "type": "producer", "source": "prometheus", "config": { "query": "http_request_duration_seconds" } },
+        "aggregate": { "type": "derived", "deps": ["latency"], "fn": "computeAverage" },
+        "dashboard": { "type": "effect", "deps": ["aggregate"], "fn": "updateGrafana" }
+      }
+    },
+    "nl_modification": "Use p99 percentile instead of average for the latency metric.",
+    "expected_changes": {
+      "nodes_added": [],
+      "nodes_removed": [],
+      "nodes_modified": ["aggregate"],
+      "description": "aggregate node fn changes from computeAverage to computeP99"
+    }
+  },
+  {
+    "id": "mod-replace-regex-with-llm",
+    "base_spec": {
+      "nodes": {
+        "tickets": { "type": "producer", "source": "webhook", "config": { "path": "/support" } },
+        "extract": { "type": "derived", "deps": ["tickets"], "fn": "regexExtractFields" },
+        "route": { "type": "derived", "deps": ["extract"], "fn": "routeToTeam" },
+        "assign": { "type": "effect", "deps": ["route"], "fn": "assignTicket" }
+      }
+    },
+    "nl_modification": "Use an LLM to extract fields from support tickets instead of the regex parser.",
+    "expected_changes": {
+      "nodes_added": [],
+      "nodes_removed": [],
+      "nodes_modified": ["extract"],
+      "description": "extract node fn changes from regexExtractFields to llmExtractFields; may add config for model/prompt"
+    }
+  },
+  {
+    "id": "mod-add-fallback-api",
+    "base_spec": {
+      "nodes": {
+        "geocode": { "type": "producer", "source": "rest-api", "config": { "url": "https://maps.googleapis.com/geocode" } },
+        "enrich": { "type": "derived", "deps": ["geocode"], "fn": "enrichAddress" },
+        "store": { "type": "effect", "deps": ["enrich"], "fn": "writeToDB" }
+      }
+    },
+    "nl_modification": "Add a fallback to the OpenStreetMap API if Google geocoding fails.",
+    "expected_changes": {
+      "nodes_added": ["geocodeFallback", "geocodeSwitch"],
+      "nodes_removed": [],
+      "nodes_modified": ["enrich"],
+      "description": "geocodeFallback producer uses OSM API; geocodeSwitch derived node selects between geocode and geocodeFallback based on failure; enrich depends on geocodeSwitch"
+    }
+  },
+  {
+    "id": "mod-add-retry-on-failure",
+    "base_spec": {
+      "nodes": {
+        "events": { "type": "producer", "source": "kafka", "config": { "topic": "payments" } },
+        "process": { "type": "derived", "deps": ["events"], "fn": "processPayment" },
+        "confirm": { "type": "effect", "deps": ["process"], "fn": "sendConfirmation" }
+      }
+    },
+    "nl_modification": "Add retry logic with exponential backoff if payment processing fails, and a dead-letter queue after 3 retries.",
+    "expected_changes": {
+      "nodes_added": ["retry", "deadLetter"],
+      "nodes_removed": [],
+      "nodes_modified": ["process"],
+      "description": "retry derived node wraps process with exponential backoff (max 3 attempts); deadLetter effect captures permanently failed payments"
+    }
+  },
+  {
+    "id": "mod-add-circuit-breaker",
+    "base_spec": {
+      "nodes": {
+        "requests": { "type": "producer", "source": "http-server", "config": { "port": 3000 } },
+        "callExternal": { "type": "derived", "deps": ["requests"], "fn": "callPaymentGateway" },
+        "respond": { "type": "effect", "deps": ["callExternal"], "fn": "sendResponse" }
+      }
+    },
+    "nl_modification": "Add a circuit breaker around the payment gateway call so we stop calling it if it fails 5 times in a row.",
+    "expected_changes": {
+      "nodes_added": ["circuitBreaker"],
+      "nodes_removed": [],
+      "nodes_modified": ["callExternal"],
+      "description": "circuitBreaker derived node wraps callExternal with circuit-breaker pattern (threshold: 5 failures); returns fallback response when open"
+    }
+  },
+  {
+    "id": "mod-change-effect-email-to-slack",
+    "base_spec": {
+      "nodes": {
+        "monitor": { "type": "producer", "source": "cron", "config": { "schedule": "*/5 * * * *" } },
+        "healthCheck": { "type": "derived", "deps": ["monitor"], "fn": "checkServiceHealth" },
+        "notify": { "type": "effect", "deps": ["healthCheck"], "fn": "sendEmail", "config": { "to": "ops@example.com" } }
+      }
+    },
+    "nl_modification": "Send health check alerts to the #ops-alerts Slack channel instead of email.",
+    "expected_changes": {
+      "nodes_added": [],
+      "nodes_removed": [],
+      "nodes_modified": ["notify"],
+      "description": "notify node fn changes from sendEmail to sendSlack; config changes to Slack channel #ops-alerts"
+    }
+  },
+  {
+    "id": "mod-change-effect-db-to-s3",
+    "base_spec": {
+      "nodes": {
+        "ingest": { "type": "producer", "source": "kafka", "config": { "topic": "raw-logs" } },
+        "parse": { "type": "derived", "deps": ["ingest"], "fn": "parseLogLine" },
+        "enrich": { "type": "derived", "deps": ["parse"], "fn": "geoipLookup" },
+        "store": { "type": "effect", "deps": ["enrich"], "fn": "writeToDB", "config": { "table": "enriched_logs" } }
+      }
+    },
+    "nl_modification": "Write the enriched logs to S3 as Parquet files instead of the database.",
+    "expected_changes": {
+      "nodes_added": [],
+      "nodes_removed": [],
+      "nodes_modified": ["store"],
+      "description": "store node fn changes from writeToDB to writeToS3; config changes to S3 bucket and Parquet format"
+    }
+  }
+]

@@ -1,0 +1,335 @@
+[
+  {
+    "id": "bug-missing-dep",
+    "category": "missing-dependency",
+    "description": "A derived node references data from another node but doesn't list it in deps",
+    "graphspec_bug": {
+      "spec": {
+        "nodes": {
+          "sensor": { "type": "producer", "source": "temperature" },
+          "threshold": { "type": "state", "initial": 80 },
+          "alert": { "type": "derived", "deps": ["sensor"], "fn": "checkThreshold" }
+        }
+      },
+      "bug_location": "alert node — missing 'threshold' in deps",
+      "fix": "Add 'threshold' to alert.deps"
+    },
+    "functions_bug": {
+      "code": "const sensor = await readSensor();\nconst threshold = 80;\nfunction checkThreshold(reading) {\n  // Bug: uses global `threshold` instead of parameter\n  return reading > threshold ? 'ALERT' : 'OK';\n}\nconst result = checkThreshold(sensor);",
+      "bug_location": "checkThreshold uses closure over global threshold — implicit dependency",
+      "fix": "Pass threshold as parameter to checkThreshold"
+    },
+    "complexity": "low"
+  },
+  {
+    "id": "bug-circular-dep",
+    "category": "circular-dependency",
+    "description": "Two derived nodes depend on each other, creating an infinite loop",
+    "graphspec_bug": {
+      "spec": {
+        "nodes": {
+          "input": { "type": "producer", "source": "api" },
+          "validate": { "type": "derived", "deps": ["input", "format"], "fn": "validate" },
+          "format": { "type": "derived", "deps": ["validate"], "fn": "formatOutput" }
+        }
+      },
+      "bug_location": "validate depends on format, format depends on validate — cycle",
+      "fix": "Remove format from validate.deps; validate should only depend on input"
+    },
+    "functions_bug": {
+      "code": "function validate(data) {\n  const formatted = formatOutput(data);\n  return checkRules(formatted);\n}\nfunction formatOutput(data) {\n  const validated = validate(data);\n  return transform(validated);\n}\nconst result = validate(apiData);",
+      "bug_location": "validate calls formatOutput which calls validate — mutual recursion",
+      "fix": "Break the cycle: validate should not call formatOutput"
+    },
+    "complexity": "medium"
+  },
+  {
+    "id": "bug-stale-diamond",
+    "category": "diamond-glitch",
+    "description": "Diamond dependency where one path is faster, causing the merge node to see stale data from the slow path",
+    "graphspec_bug": {
+      "spec": {
+        "nodes": {
+          "source": { "type": "producer", "source": "events" },
+          "fast": { "type": "derived", "deps": ["source"], "fn": "quickCheck" },
+          "slow": { "type": "derived", "deps": ["source"], "fn": "deepAnalysis" },
+          "merge": { "type": "derived", "deps": ["fast"], "fn": "combine" }
+        }
+      },
+      "bug_location": "merge node only depends on fast — missing slow in deps",
+      "fix": "Add 'slow' to merge.deps"
+    },
+    "functions_bug": {
+      "code": "const source = await getEvents();\nconst fast = quickCheck(source);\nconst slow = await deepAnalysis(source);\n// Bug: combine only uses fast, ignoring slow\nconst result = combine(fast);",
+      "bug_location": "combine() call ignores slow result — unused variable",
+      "fix": "Pass both: combine(fast, slow)"
+    },
+    "complexity": "medium"
+  },
+  {
+    "id": "bug-effect-no-deps",
+    "category": "orphan-effect",
+    "description": "An effect node has no dependencies, so it never triggers",
+    "graphspec_bug": {
+      "spec": {
+        "nodes": {
+          "data": { "type": "producer", "source": "api" },
+          "transform": { "type": "derived", "deps": ["data"], "fn": "process" },
+          "log": { "type": "effect", "deps": [], "fn": "writeLog" }
+        }
+      },
+      "bug_location": "log effect has empty deps — will never fire",
+      "fix": "Set log.deps to ['transform'] or ['data']"
+    },
+    "functions_bug": {
+      "code": "const data = await fetchApi();\nconst transformed = process(data);\n// Bug: writeLog is defined but never called\nfunction writeLog(result) { console.log(result); }",
+      "bug_location": "writeLog defined but never invoked",
+      "fix": "Add writeLog(transformed) call"
+    },
+    "complexity": "low"
+  },
+  {
+    "id": "bug-wrong-fn-reference",
+    "category": "wrong-reference",
+    "description": "A node references a function that doesn't exist in the catalog",
+    "graphspec_bug": {
+      "spec": {
+        "nodes": {
+          "inbox": { "type": "producer", "source": "email" },
+          "classify": { "type": "derived", "deps": ["inbox"], "fn": "classifyEmail" },
+          "notify": { "type": "effect", "deps": ["classify"], "fn": "sendSlackMsg" }
+        }
+      },
+      "bug_location": "notify references 'sendSlackMsg' but catalog has 'sendSlackMessage'",
+      "fix": "Change fn to 'sendSlackMessage'"
+    },
+    "functions_bug": {
+      "code": "import { classifyEmail, sendSlackMessage } from './utils';\nconst classified = classifyEmail(email);\n// Bug: typo in function name\nsendSlackMsg(classified);",
+      "bug_location": "sendSlackMsg is not imported — typo for sendSlackMessage",
+      "fix": "Change to sendSlackMessage(classified)"
+    },
+    "complexity": "low"
+  },
+  {
+    "id": "bug-type-mismatch",
+    "category": "type-mismatch",
+    "description": "A derived node expects a numeric array but its dependency produces an object with a nested array",
+    "graphspec_bug": {
+      "spec": {
+        "nodes": {
+          "api": { "type": "producer", "source": "metricsEndpoint" },
+          "parse": { "type": "derived", "deps": ["api"], "fn": "parseResponse" },
+          "average": { "type": "derived", "deps": ["parse"], "fn": "computeAverage" }
+        }
+      },
+      "bug_location": "computeAverage expects number[] but parseResponse returns { values: number[], meta: object } — average node receives the wrapper object, not the inner array",
+      "fix": "Add an extraction node between parse and average, or change computeAverage to unwrap .values"
+    },
+    "functions_bug": {
+      "code": "const response = await fetch('/api/metrics');\nconst parsed = await response.json();\n// parsed = { values: [10, 20, 30], meta: { unit: 'ms' } }\n// Bug: reduce called on the object, not the array inside it\nconst avg = parsed.reduce((sum, v) => sum + v, 0) / parsed.length;",
+      "bug_location": "parsed is an object with .values, not an array — .reduce() will throw TypeError",
+      "fix": "Use parsed.values.reduce(...) / parsed.values.length"
+    },
+    "complexity": "low"
+  },
+  {
+    "id": "bug-race-condition",
+    "category": "race-condition",
+    "description": "Two async producer nodes feed a merge node, but one is not awaited, so the merge fires before both paths complete",
+    "graphspec_bug": {
+      "spec": {
+        "nodes": {
+          "userReq": { "type": "producer", "source": "httpRequest" },
+          "fetchProfile": { "type": "derived", "deps": ["userReq"], "fn": "getProfile", "async": true },
+          "fetchOrders": { "type": "derived", "deps": ["userReq"], "fn": "getOrders", "async": true },
+          "render": { "type": "derived", "deps": ["fetchProfile"], "fn": "buildPage" }
+        }
+      },
+      "bug_location": "render depends only on fetchProfile — it fires before fetchOrders resolves, so order data is missing from the page",
+      "fix": "Add 'fetchOrders' to render.deps so the graph waits for both"
+    },
+    "functions_bug": {
+      "code": "async function handleRequest(req) {\n  const profilePromise = getProfile(req.userId);\n  const ordersPromise = getOrders(req.userId);\n  // Bug: only awaits profile, not orders\n  const profile = await profilePromise;\n  return buildPage(profile, undefined);\n}",
+      "bug_location": "ordersPromise is created but never awaited — buildPage receives undefined for orders",
+      "fix": "const [profile, orders] = await Promise.all([profilePromise, ordersPromise]); return buildPage(profile, orders);"
+    },
+    "complexity": "medium"
+  },
+  {
+    "id": "bug-duplicate-processing",
+    "category": "duplicate-processing",
+    "description": "A fan-out/fan-in topology causes the same event to be processed twice when both branches merge",
+    "graphspec_bug": {
+      "spec": {
+        "nodes": {
+          "orders": { "type": "producer", "source": "orderStream" },
+          "tax": { "type": "derived", "deps": ["orders"], "fn": "calcTax" },
+          "shipping": { "type": "derived", "deps": ["orders"], "fn": "calcShipping" },
+          "total": { "type": "derived", "deps": ["tax", "shipping", "orders"], "fn": "sumTotal" }
+        }
+      },
+      "bug_location": "total depends on orders directly AND through tax/shipping — the order amount gets added once from the raw order and again via tax/shipping, doubling the base price",
+      "fix": "Remove 'orders' from total.deps; total should only combine tax and shipping (which already include the base amount)"
+    },
+    "functions_bug": {
+      "code": "function processOrder(order) {\n  const tax = calcTax(order);\n  const shipping = calcShipping(order);\n  // Bug: adds order.amount again on top of tax and shipping\n  // (tax and shipping already include order.amount as their base)\n  const total = order.amount + tax + shipping;\n  return total;\n}",
+      "bug_location": "order.amount is counted twice — once in the raw addition and once inside calcTax/calcShipping which return amount+tax and amount+shipping respectively",
+      "fix": "const total = tax + shipping - order.amount; or restructure so tax/shipping return only the delta"
+    },
+    "complexity": "medium"
+  },
+  {
+    "id": "bug-missing-error-handler",
+    "category": "missing-error-handler",
+    "description": "An async producer can reject, but no error-handling node catches it, causing the entire pipeline to silently stall",
+    "graphspec_bug": {
+      "spec": {
+        "nodes": {
+          "feed": { "type": "producer", "source": "rssFeed", "async": true },
+          "parse": { "type": "derived", "deps": ["feed"], "fn": "parseArticles" },
+          "display": { "type": "effect", "deps": ["parse"], "fn": "renderFeed" }
+        }
+      },
+      "bug_location": "No error handler on feed — if rssFeed returns a network error, parse and display never fire and no fallback is shown",
+      "fix": "Add an error-handler node: { type: 'derived', deps: ['feed'], fn: 'handleFeedError', onError: true } that provides a fallback value, and make parse depend on the error-handler output"
+    },
+    "functions_bug": {
+      "code": "async function loadFeed() {\n  const response = await fetch('https://blog.example.com/rss');\n  const articles = parseArticles(await response.text());\n  renderFeed(articles);\n}\n// Bug: no try/catch — fetch failure crashes silently\nloadFeed();",
+      "bug_location": "No error handling around fetch or parseArticles — a network error or malformed XML causes an unhandled rejection",
+      "fix": "Wrap in try/catch, render an error state on failure: try { ... } catch (e) { renderFeed([]); logError(e); }"
+    },
+    "complexity": "low"
+  },
+  {
+    "id": "bug-wrong-merge-order",
+    "category": "wrong-merge-order",
+    "description": "A pipeline merges header and body in the wrong order, producing malformed output",
+    "graphspec_bug": {
+      "spec": {
+        "nodes": {
+          "request": { "type": "producer", "source": "httpRequest" },
+          "buildHeader": { "type": "derived", "deps": ["request"], "fn": "createHeader" },
+          "buildBody": { "type": "derived", "deps": ["request"], "fn": "createBody" },
+          "assemble": { "type": "derived", "deps": ["buildBody", "buildHeader"], "fn": "concatParts" }
+        }
+      },
+      "bug_location": "assemble lists deps as [buildBody, buildHeader] — concatParts receives body first, header second, producing body-then-header output",
+      "fix": "Change assemble.deps to ['buildHeader', 'buildBody'] so concatParts receives header first"
+    },
+    "functions_bug": {
+      "code": "function assembleResponse(req) {\n  const header = createHeader(req);\n  const body = createBody(req);\n  // Bug: arguments are swapped — concatParts expects (header, body)\n  return concatParts(body, header);\n}",
+      "bug_location": "concatParts called with (body, header) instead of (header, body) — response starts with body content",
+      "fix": "Swap arguments: concatParts(header, body)"
+    },
+    "complexity": "low"
+  },
+  {
+    "id": "bug-stale-state",
+    "category": "stale-state",
+    "description": "A caching node returns an expired value because it doesn't check the timestamp of the cached entry",
+    "graphspec_bug": {
+      "spec": {
+        "nodes": {
+          "userQuery": { "type": "producer", "source": "searchInput" },
+          "cache": { "type": "state", "initial": {} },
+          "lookup": { "type": "derived", "deps": ["userQuery", "cache"], "fn": "cacheOrFetch" },
+          "display": { "type": "effect", "deps": ["lookup"], "fn": "showResults" }
+        }
+      },
+      "bug_location": "cacheOrFetch checks if the key exists in cache but never checks the entry's age — returns results cached hours ago when the underlying data has changed",
+      "fix": "Add TTL check in cacheOrFetch: if (cache[key] && (now - cache[key].ts) < TTL) return cache[key].value; else fetch fresh"
+    },
+    "functions_bug": {
+      "code": "const cache = new Map();\nasync function search(query) {\n  // Bug: never checks if cached result is stale\n  if (cache.has(query)) {\n    return cache.get(query);\n  }\n  const results = await fetchSearchResults(query);\n  cache.set(query, results);\n  return results;\n}",
+      "bug_location": "cache.has(query) returns true for entries cached arbitrarily long ago — no TTL or invalidation",
+      "fix": "Store { value, timestamp } and check if Date.now() - entry.timestamp < MAX_AGE before returning cached result"
+    },
+    "complexity": "medium"
+  },
+  {
+    "id": "bug-infinite-emit",
+    "category": "infinite-emit",
+    "description": "A derived node writes back to its own dependency, creating an infinite re-evaluation loop",
+    "graphspec_bug": {
+      "spec": {
+        "nodes": {
+          "counter": { "type": "state", "initial": 0 },
+          "increment": { "type": "derived", "deps": ["counter"], "fn": "addOne", "writesTo": "counter" }
+        }
+      },
+      "bug_location": "increment reads counter, adds 1, and writes back to counter — counter changes, re-triggering increment, looping forever",
+      "fix": "Use a separate trigger node (e.g. a button or timer producer) to control when increment fires, rather than letting it self-trigger through counter"
+    },
+    "functions_bug": {
+      "code": "let counter = 0;\nconst listeners = [];\nfunction onCounterChange(fn) { listeners.push(fn); }\nfunction setCounter(v) { counter = v; listeners.forEach(fn => fn(counter)); }\n// Bug: listener sets counter, which fires listeners again\nonCounterChange((val) => {\n  setCounter(val + 1);\n});",
+      "bug_location": "The change listener calls setCounter which fires all listeners including itself — infinite recursion",
+      "fix": "Guard the listener: only increment when triggered by an external event, not by its own previous write"
+    },
+    "complexity": "high"
+  },
+  {
+    "id": "bug-swapped-deps",
+    "category": "swapped-deps",
+    "description": "A billing node receives customer and product data in the wrong parameter positions because deps are listed in the wrong order",
+    "graphspec_bug": {
+      "spec": {
+        "nodes": {
+          "customer": { "type": "producer", "source": "customerDB" },
+          "product": { "type": "producer", "source": "productCatalog" },
+          "invoice": { "type": "derived", "deps": ["product", "customer"], "fn": "createInvoice" }
+        }
+      },
+      "bug_location": "invoice.deps lists [product, customer] but createInvoice(customer, product) expects customer first — customer gets the product object and vice versa",
+      "fix": "Change invoice.deps to ['customer', 'product'] to match createInvoice's parameter order"
+    },
+    "functions_bug": {
+      "code": "function createInvoice(customer, product) {\n  return {\n    billTo: customer.name,\n    item: product.title,\n    price: product.price,\n    address: customer.address\n  };\n}\n// Bug: arguments are swapped\nconst invoice = createInvoice(productData, customerData);",
+      "bug_location": "createInvoice receives productData as customer and customerData as product — billTo will be the product title, item will be undefined",
+      "fix": "Swap arguments: createInvoice(customerData, productData)"
+    },
+    "complexity": "medium"
+  },
+  {
+    "id": "bug-missing-producer",
+    "category": "missing-producer",
+    "description": "A pipeline starts from a derived node that has no upstream producer, so it never receives initial data",
+    "graphspec_bug": {
+      "spec": {
+        "nodes": {
+          "normalize": { "type": "derived", "deps": ["rawData"], "fn": "normalizeInput" },
+          "enrich": { "type": "derived", "deps": ["normalize"], "fn": "addMetadata" },
+          "store": { "type": "effect", "deps": ["enrich"], "fn": "saveToDB" }
+        }
+      },
+      "bug_location": "normalize depends on 'rawData' but no node named rawData exists — the entire pipeline is inert because the source is never defined",
+      "fix": "Add a producer node: rawData: { type: 'producer', source: 'inputStream' }"
+    },
+    "functions_bug": {
+      "code": "// Bug: rawData is referenced but never defined or imported\nconst normalized = normalizeInput(rawData);\nconst enriched = addMetadata(normalized);\nawait saveToDB(enriched);",
+      "bug_location": "rawData is used but never declared — throws ReferenceError at runtime",
+      "fix": "Add data source: const rawData = await readInputStream(); before the pipeline"
+    },
+    "complexity": "low"
+  },
+  {
+    "id": "bug-config-typo",
+    "category": "config-typo",
+    "description": "A producer node references a misspelled configuration field, causing it to connect to the wrong endpoint",
+    "graphspec_bug": {
+      "spec": {
+        "nodes": {
+          "config": { "type": "state", "initial": { "apiUrl": "https://api.example.com/v2", "apiKey": "sk-abc123" } },
+          "fetcher": { "type": "derived", "deps": ["config"], "fn": "fetchData", "params": { "urlField": "apiURL" } }
+        }
+      },
+      "bug_location": "params.urlField is 'apiURL' (capital RL) but config.initial has 'apiUrl' (lowercase rl) — fetchData reads config['apiURL'] which is undefined, falling back to a default/wrong URL",
+      "fix": "Change params.urlField to 'apiUrl' to match the config key"
+    },
+    "functions_bug": {
+      "code": "const config = {\n  apiUrl: 'https://api.example.com/v2',\n  apiKey: 'sk-abc123',\n  timeout: 5000\n};\n// Bug: 'apiURL' !== 'apiUrl'\nconst response = await fetch(config.apiURL, {\n  headers: { Authorization: `Bearer ${config.apiKey}` }\n});",
+      "bug_location": "config.apiURL is undefined (should be config.apiUrl) — fetch receives undefined as URL, throws TypeError or hits wrong endpoint",
+      "fix": "Change config.apiURL to config.apiUrl"
+    },
+    "complexity": "low"
+  }
+]

@@ -1,0 +1,525 @@
+[
+  {
+    "id": "linear-rss-filter-notify",
+    "category": "linear",
+    "nl_description": "Fetch an RSS feed, filter articles that mention 'AI', and send matching titles to a Slack channel.",
+    "expected_node_count": 3,
+    "expected_node_names": ["rss", "filter", "notify"],
+    "complexity": "low",
+    "tags": ["source", "filter", "effect"],
+    "contrastive": {
+      "expected_function_count": 3,
+      "key_behaviors": [
+        "Fetches RSS feed from a URL",
+        "Filters articles by keyword 'AI'",
+        "Sends matching titles to Slack"
+      ]
+    }
+  },
+  {
+    "id": "linear-csv-transform-store",
+    "category": "linear",
+    "nl_description": "Read a CSV file of transactions, convert amounts from USD to EUR using a fixed rate, and write the result to a new CSV.",
+    "expected_node_count": 3,
+    "complexity": "low",
+    "tags": ["source", "transform", "effect"],
+    "contrastive": {
+      "expected_function_count": 3,
+      "key_behaviors": [
+        "Reads CSV input",
+        "Converts USD amounts to EUR",
+        "Writes output CSV"
+      ]
+    }
+  },
+  {
+    "id": "linear-log-parse-report",
+    "category": "linear",
+    "nl_description": "Tail a web server access log, parse each line into structured request objects with method/path/status, and append a summary row to a daily report spreadsheet.",
+    "expected_node_count": 3,
+    "complexity": "low",
+    "tags": ["source", "transform", "effect"],
+    "contrastive": {
+      "expected_function_count": 3,
+      "key_behaviors": [
+        "Tails access log file",
+        "Parses log lines into structured request objects",
+        "Appends summary to daily report"
+      ]
+    }
+  },
+  {
+    "id": "linear-image-resize-upload",
+    "category": "linear",
+    "nl_description": "Watch a folder for new image uploads, resize each image to a 256x256 thumbnail, and upload the thumbnail to an S3 bucket.",
+    "expected_node_count": 3,
+    "complexity": "low",
+    "tags": ["source", "transform", "effect"],
+    "contrastive": {
+      "expected_function_count": 3,
+      "key_behaviors": [
+        "Watches folder for new images",
+        "Resizes images to 256x256 thumbnails",
+        "Uploads thumbnails to S3"
+      ]
+    }
+  },
+  {
+    "id": "linear-dns-lookup-cache-respond",
+    "category": "linear",
+    "nl_description": "Receive a DNS query, look up the domain in an authoritative nameserver, cache the result with TTL, and return the resolved IP to the client.",
+    "expected_node_count": 4,
+    "complexity": "medium",
+    "tags": ["source", "lookup", "cache", "effect"],
+    "contrastive": {
+      "expected_function_count": 4,
+      "key_behaviors": [
+        "Receives incoming DNS query",
+        "Looks up domain against authoritative nameserver",
+        "Caches result with appropriate TTL",
+        "Returns resolved IP to client"
+      ]
+    }
+  },
+  {
+    "id": "linear-markdown-render-deploy",
+    "category": "linear",
+    "nl_description": "Watch a directory of Markdown files for changes, render each changed file to HTML with syntax highlighting, and deploy the updated pages to a static hosting bucket.",
+    "expected_node_count": 3,
+    "complexity": "low",
+    "tags": ["source", "transform", "effect"],
+    "contrastive": {
+      "expected_function_count": 3,
+      "key_behaviors": [
+        "Watches Markdown files for changes",
+        "Renders Markdown to HTML with syntax highlighting",
+        "Deploys HTML to static hosting"
+      ]
+    }
+  },
+  {
+    "id": "fanout-email-classify",
+    "category": "fan-out",
+    "nl_description": "Watch an email inbox. Classify each email as urgent, newsletter, or other. Route urgent emails to a priority list, newsletters to a weekly digest, and count the rest by sender.",
+    "expected_node_count": 5,
+    "expected_node_names": ["inbox", "classify", "urgent", "digest", "count"],
+    "complexity": "medium",
+    "tags": ["source", "classify", "fan-out", "effect"],
+    "contrastive": {
+      "expected_function_count": 5,
+      "key_behaviors": [
+        "Classifies emails into 3 categories",
+        "Routes urgent to priority list",
+        "Aggregates newsletters for weekly digest",
+        "Counts remaining by sender"
+      ]
+    }
+  },
+  {
+    "id": "fanout-iot-sensor-broadcast",
+    "category": "fan-out",
+    "nl_description": "Read a temperature sensor value from an IoT gateway. Simultaneously push the reading to a time-series database, update a real-time dashboard widget, and check if it exceeds a threshold to trigger an HVAC adjustment.",
+    "expected_node_count": 5,
+    "complexity": "medium",
+    "tags": ["source", "fan-out", "effect", "threshold"],
+    "contrastive": {
+      "expected_function_count": 5,
+      "key_behaviors": [
+        "Reads temperature from IoT gateway",
+        "Stores reading in time-series database",
+        "Updates real-time dashboard widget",
+        "Checks threshold and triggers HVAC adjustment"
+      ]
+    }
+  },
+  {
+    "id": "fanout-order-fulfillment",
+    "category": "fan-out",
+    "nl_description": "When a new e-commerce order arrives, simultaneously reserve inventory in the warehouse system, charge the customer's payment method, and send an order confirmation email.",
+    "expected_node_count": 4,
+    "complexity": "medium",
+    "tags": ["source", "fan-out", "effect"],
+    "contrastive": {
+      "expected_function_count": 4,
+      "key_behaviors": [
+        "Receives new order event",
+        "Reserves inventory in warehouse",
+        "Charges customer payment method",
+        "Sends order confirmation email"
+      ]
+    }
+  },
+  {
+    "id": "fanout-video-process",
+    "category": "fan-out",
+    "nl_description": "When a video is uploaded, simultaneously extract a thumbnail at the 5-second mark, generate a text transcript via speech-to-text, and create a low-resolution preview for mobile clients.",
+    "expected_node_count": 4,
+    "complexity": "medium",
+    "tags": ["source", "fan-out", "transform"],
+    "contrastive": {
+      "expected_function_count": 4,
+      "key_behaviors": [
+        "Receives uploaded video",
+        "Extracts thumbnail at 5-second mark",
+        "Generates transcript via speech-to-text",
+        "Creates low-resolution mobile preview"
+      ]
+    }
+  },
+  {
+    "id": "fanout-deploy-notify",
+    "category": "fan-out",
+    "nl_description": "When a CI/CD pipeline completes a build, simultaneously push the Docker image to a container registry, update the deployment manifest in the GitOps repo, send a Slack notification to the team, and tag the Git commit with the release version.",
+    "expected_node_count": 5,
+    "complexity": "medium",
+    "tags": ["source", "fan-out", "effect", "devops"],
+    "contrastive": {
+      "expected_function_count": 5,
+      "key_behaviors": [
+        "Receives build completion event",
+        "Pushes Docker image to registry",
+        "Updates GitOps deployment manifest",
+        "Sends Slack notification",
+        "Tags Git commit with release version"
+      ]
+    }
+  },
+  {
+    "id": "fanin-morning-brief",
+    "category": "fan-in",
+    "nl_description": "Fetch today's weather forecast, my calendar events, and current traffic conditions. Combine them into a single morning briefing message.",
+    "expected_node_count": 4,
+    "expected_node_names": ["weather", "calendar", "traffic", "brief"],
+    "complexity": "medium",
+    "tags": ["multi-source", "aggregate", "effect"],
+    "contrastive": {
+      "expected_function_count": 4,
+      "key_behaviors": [
+        "Fetches weather data",
+        "Fetches calendar events",
+        "Fetches traffic conditions",
+        "Combines all three into one briefing"
+      ]
+    }
+  },
+  {
+    "id": "fanin-patient-summary",
+    "category": "fan-in",
+    "nl_description": "Pull a patient's lab results from the LIMS, current medications from the pharmacy system, and recent vitals from the nursing station. Merge them into a single pre-visit summary for the physician.",
+    "expected_node_count": 4,
+    "complexity": "medium",
+    "tags": ["multi-source", "aggregate", "healthcare"],
+    "contrastive": {
+      "expected_function_count": 4,
+      "key_behaviors": [
+        "Fetches lab results from LIMS",
+        "Fetches current medications from pharmacy system",
+        "Fetches recent vitals from nursing station",
+        "Merges into pre-visit physician summary"
+      ]
+    }
+  },
+  {
+    "id": "fanin-social-sentiment",
+    "category": "fan-in",
+    "nl_description": "Collect mentions of a brand from Twitter, Reddit, and Hacker News simultaneously. Aggregate all mentions into a unified sentiment score with source attribution.",
+    "expected_node_count": 4,
+    "complexity": "medium",
+    "tags": ["multi-source", "aggregate", "sentiment"],
+    "contrastive": {
+      "expected_function_count": 4,
+      "key_behaviors": [
+        "Collects brand mentions from Twitter",
+        "Collects brand mentions from Reddit",
+        "Collects brand mentions from Hacker News",
+        "Aggregates into unified sentiment score with attribution"
+      ]
+    }
+  },
+  {
+    "id": "fanin-fraud-scoring",
+    "category": "fan-in",
+    "nl_description": "For each credit card transaction, simultaneously check the IP geolocation, the card's velocity history, and the merchant risk category. Combine these signals into a single fraud risk score.",
+    "expected_node_count": 5,
+    "complexity": "high",
+    "tags": ["multi-source", "aggregate", "finance", "scoring"],
+    "contrastive": {
+      "expected_function_count": 5,
+      "key_behaviors": [
+        "Receives credit card transaction",
+        "Checks IP geolocation",
+        "Checks card velocity history",
+        "Checks merchant risk category",
+        "Combines signals into fraud risk score"
+      ]
+    }
+  },
+  {
+    "id": "fanin-infrastructure-health",
+    "category": "fan-in",
+    "nl_description": "Poll CPU utilization from the compute fleet, memory pressure from the memory monitor, and disk I/O latency from the storage layer. Combine into a single infrastructure health index and publish it to the ops dashboard.",
+    "expected_node_count": 4,
+    "complexity": "medium",
+    "tags": ["multi-source", "aggregate", "devops"],
+    "contrastive": {
+      "expected_function_count": 4,
+      "key_behaviors": [
+        "Fetches CPU utilization from compute fleet",
+        "Fetches memory pressure metrics",
+        "Fetches disk I/O latency metrics",
+        "Combines into health index and publishes to dashboard"
+      ]
+    }
+  },
+  {
+    "id": "diamond-validate-transform-merge",
+    "category": "diamond",
+    "nl_description": "Receive a JSON payload. In parallel: validate the schema and normalize field names. After both complete, merge the validation report with the normalized data and store the result.",
+    "expected_node_count": 5,
+    "expected_node_names": ["input", "validate", "normalize", "merge", "store"],
+    "complexity": "medium",
+    "tags": ["diamond", "parallel", "merge"],
+    "contrastive": {
+      "expected_function_count": 5,
+      "key_behaviors": [
+        "Validates JSON schema",
+        "Normalizes field names",
+        "Runs validation and normalization in parallel",
+        "Merges results after both complete",
+        "Stores merged output"
+      ]
+    }
+  },
+  {
+    "id": "diamond-image-classify-watermark",
+    "category": "diamond",
+    "nl_description": "Receive an uploaded photo. In parallel: run an image classification model to generate tags and apply a watermark overlay. After both complete, combine the tagged metadata with the watermarked image and save to the content library.",
+    "expected_node_count": 5,
+    "complexity": "medium",
+    "tags": ["diamond", "parallel", "merge", "media"],
+    "contrastive": {
+      "expected_function_count": 5,
+      "key_behaviors": [
+        "Receives uploaded photo",
+        "Classifies image and generates tags",
+        "Applies watermark overlay",
+        "Combines tagged metadata with watermarked image",
+        "Saves to content library"
+      ]
+    }
+  },
+  {
+    "id": "diamond-loan-underwrite",
+    "category": "diamond",
+    "nl_description": "Receive a loan application. In parallel: pull the applicant's credit score and verify their employment history. After both complete, merge the results into an underwriting decision and notify the applicant.",
+    "expected_node_count": 5,
+    "complexity": "medium",
+    "tags": ["diamond", "parallel", "merge", "finance"],
+    "contrastive": {
+      "expected_function_count": 5,
+      "key_behaviors": [
+        "Receives loan application",
+        "Pulls credit score",
+        "Verifies employment history",
+        "Merges into underwriting decision",
+        "Notifies applicant of decision"
+      ]
+    }
+  },
+  {
+    "id": "diamond-content-publish",
+    "category": "diamond",
+    "nl_description": "Receive a blog post draft. In parallel: run a spell/grammar check and generate an SEO metadata summary. After both complete, merge the corrected text with the SEO metadata and publish the final post to the CMS.",
+    "expected_node_count": 5,
+    "complexity": "medium",
+    "tags": ["diamond", "parallel", "merge", "cms"],
+    "contrastive": {
+      "expected_function_count": 5,
+      "key_behaviors": [
+        "Receives blog post draft",
+        "Runs spell and grammar check",
+        "Generates SEO metadata summary",
+        "Merges corrected text with SEO metadata",
+        "Publishes final post to CMS"
+      ]
+    }
+  },
+  {
+    "id": "diamond-shipping-label",
+    "category": "diamond",
+    "nl_description": "Receive a shipment request. In parallel: calculate the optimal carrier rate and generate a customs declaration form. After both complete, merge carrier details with customs docs into a final shipping label and queue for dispatch.",
+    "expected_node_count": 5,
+    "complexity": "medium",
+    "tags": ["diamond", "parallel", "merge", "logistics"],
+    "contrastive": {
+      "expected_function_count": 5,
+      "key_behaviors": [
+        "Receives shipment request",
+        "Calculates optimal carrier rate",
+        "Generates customs declaration form",
+        "Merges carrier details with customs docs into shipping label",
+        "Queues label for dispatch"
+      ]
+    }
+  },
+  {
+    "id": "stateful-running-average",
+    "category": "stateful",
+    "nl_description": "Receive a stream of temperature sensor readings. Maintain a running average over the last 10 readings. When the average exceeds 80\u00b0F, emit an alert.",
+    "expected_node_count": 4,
+    "expected_node_names": ["sensor", "window", "average", "alert"],
+    "complexity": "high",
+    "tags": ["stateful", "window", "threshold"],
+    "contrastive": {
+      "expected_function_count": 4,
+      "key_behaviors": [
+        "Receives streaming sensor readings",
+        "Maintains sliding window of last 10",
+        "Computes running average",
+        "Alerts when average > 80\u00b0F"
+      ]
+    }
+  },
+  {
+    "id": "stateful-rate-limiter",
+    "category": "stateful",
+    "nl_description": "Track incoming API requests per client IP. Maintain a count of requests within a 60-second sliding window. If a client exceeds 100 requests in that window, reject subsequent requests with a 429 status until the window resets.",
+    "expected_node_count": 4,
+    "complexity": "high",
+    "tags": ["stateful", "window", "rate-limit"],
+    "contrastive": {
+      "expected_function_count": 4,
+      "key_behaviors": [
+        "Receives incoming API requests",
+        "Tracks per-IP request count in sliding window",
+        "Enforces 100 requests per 60-second limit",
+        "Rejects excess requests with 429 status"
+      ]
+    }
+  },
+  {
+    "id": "stateful-shopping-cart",
+    "category": "stateful",
+    "nl_description": "Maintain a shopping cart that accumulates add/remove item events. After each event, recompute the cart total including tax and shipping estimates, and push the updated cart summary to the frontend.",
+    "expected_node_count": 4,
+    "complexity": "high",
+    "tags": ["stateful", "accumulator", "e-commerce"],
+    "contrastive": {
+      "expected_function_count": 4,
+      "key_behaviors": [
+        "Receives add/remove item events",
+        "Maintains accumulated cart state",
+        "Recomputes total with tax and shipping",
+        "Pushes updated cart summary to frontend"
+      ]
+    }
+  },
+  {
+    "id": "stateful-leaderboard",
+    "category": "stateful",
+    "nl_description": "Receive a stream of game score events from multiple players. Maintain a sorted top-10 leaderboard. When the leaderboard changes, broadcast the updated rankings to all connected clients.",
+    "expected_node_count": 4,
+    "complexity": "high",
+    "tags": ["stateful", "accumulator", "ranking"],
+    "contrastive": {
+      "expected_function_count": 4,
+      "key_behaviors": [
+        "Receives game score events from multiple players",
+        "Maintains sorted top-10 leaderboard state",
+        "Detects leaderboard changes",
+        "Broadcasts updated rankings to connected clients"
+      ]
+    }
+  },
+  {
+    "id": "error-retry-fallback",
+    "category": "error-handling",
+    "nl_description": "Call an external pricing API. If it fails, retry up to 3 times with exponential backoff. If all retries fail, fall back to a cached price. Log all attempts.",
+    "expected_node_count": 4,
+    "complexity": "high",
+    "tags": ["resilience", "retry", "fallback", "effect"],
+    "contrastive": {
+      "expected_function_count": 4,
+      "key_behaviors": [
+        "Calls external API",
+        "Retries up to 3 times with backoff",
+        "Falls back to cache on exhaustion",
+        "Logs every attempt"
+      ]
+    }
+  },
+  {
+    "id": "error-circuit-breaker",
+    "category": "error-handling",
+    "nl_description": "Send requests to a downstream payment gateway. Track failure rate over a 30-second window. When failures exceed 50%, open a circuit breaker that short-circuits to a degraded response. After 10 seconds, allow a single probe request to test recovery.",
+    "expected_node_count": 5,
+    "complexity": "high",
+    "tags": ["resilience", "circuit-breaker", "degraded"],
+    "contrastive": {
+      "expected_function_count": 5,
+      "key_behaviors": [
+        "Sends requests to payment gateway",
+        "Tracks failure rate over 30-second window",
+        "Opens circuit breaker at 50% failure rate",
+        "Returns degraded response when circuit is open",
+        "Probes for recovery after 10-second cooldown"
+      ]
+    }
+  },
+  {
+    "id": "error-dead-letter-queue",
+    "category": "error-handling",
+    "nl_description": "Consume messages from a job queue. Attempt to process each message. If processing fails after 2 retries, move the message to a dead-letter queue and send an alert to the ops channel with the failure reason.",
+    "expected_node_count": 5,
+    "complexity": "high",
+    "tags": ["resilience", "retry", "dead-letter", "effect"],
+    "contrastive": {
+      "expected_function_count": 5,
+      "key_behaviors": [
+        "Consumes messages from job queue",
+        "Attempts to process each message",
+        "Retries failed messages up to 2 times",
+        "Moves exhausted failures to dead-letter queue",
+        "Alerts ops channel with failure reason"
+      ]
+    }
+  },
+  {
+    "id": "multi-step-threshold-alert",
+    "category": "multi-step-effects",
+    "nl_description": "Monitor a metrics stream. When error rate crosses 5%, simultaneously: send a PagerDuty alert, log to audit trail, and update a status dashboard. Each side effect must complete independently.",
+    "expected_node_count": 5,
+    "complexity": "high",
+    "tags": ["threshold", "fan-out", "effect", "independent"],
+    "contrastive": {
+      "expected_function_count": 5,
+      "key_behaviors": [
+        "Monitors error rate from metrics stream",
+        "Detects threshold crossing at 5%",
+        "Sends PagerDuty alert",
+        "Logs to audit trail",
+        "Updates status dashboard",
+        "Side effects are independent (one failing doesn't block others)"
+      ]
+    }
+  },
+  {
+    "id": "multi-step-user-signup",
+    "category": "multi-step-effects",
+    "nl_description": "When a new user signs up, validate their email format, then in sequence: create a database record, send a welcome email with a verification link, enqueue an analytics event, and provision a default workspace. If any step fails, log the failure and continue with remaining steps.",
+    "expected_node_count": 6,
+    "complexity": "high",
+    "tags": ["sequential", "effect", "resilience", "onboarding"],
+    "contrastive": {
+      "expected_function_count": 6,
+      "key_behaviors": [
+        "Validates email format on signup",
+        "Creates database record for new user",
+        "Sends welcome email with verification link",
+        "Enqueues analytics event",
+        "Provisions default workspace",
+        "Logs and continues on individual step failure"
+      ]
+    }
+  }
+]

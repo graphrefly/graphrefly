@@ -1,0 +1,44 @@
+[
+  {
+    "id": "l3-no-jargon",
+    "claim": "The explanation or flow view uses no technical jargon (node, dependency, graph, propagation, topology)",
+    "weight": 2,
+    "layer": "L3",
+    "metric": "L3-M1"
+  },
+  {
+    "id": "l3-cause-effect",
+    "claim": "A non-technical reader can identify the cause-and-effect relationship from the explanation",
+    "weight": 3,
+    "layer": "L3",
+    "metric": "L3-M3"
+  },
+  {
+    "id": "l3-complete-chain",
+    "claim": "The causal explanation covers all relevant causes, not just the immediate trigger",
+    "weight": 2,
+    "layer": "L3",
+    "metric": "L3-M3"
+  },
+  {
+    "id": "l3-concise",
+    "claim": "The explanation can be read and understood in under 10 seconds",
+    "weight": 1,
+    "layer": "L3",
+    "metric": "L3-M3"
+  },
+  {
+    "id": "l3-flow-comprehension",
+    "claim": "A non-technical user viewing the flow for 30 seconds can correctly describe what the system does",
+    "weight": 3,
+    "layer": "L3",
+    "metric": "L3-M1"
+  },
+  {
+    "id": "l3-modification-success",
+    "claim": "The user's natural-language modification request resulted in the expected behavior change",
+    "weight": 3,
+    "layer": "L3",
+    "metric": "L3-M2"
+  }
+]

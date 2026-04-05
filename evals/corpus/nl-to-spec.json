@@ -1,0 +1,402 @@
+[
+  {
+    "id": "linear-rss-slack",
+    "category": "linear",
+    "nl_description": "Watch an RSS feed for new articles. Filter to only those mentioning 'machine learning'. Post each matching article's title and link to a Slack channel.",
+    "expected_node_count": 3,
+    "complexity": "low",
+    "tags": ["source", "filter", "effect"]
+  },
+  {
+    "id": "linear-log-parse-alert",
+    "category": "linear",
+    "nl_description": "Tail a server log file. Parse each line to extract error-level entries. Send error entries to an email address.",
+    "expected_node_count": 3,
+    "complexity": "low",
+    "tags": ["source", "transform", "effect"]
+  },
+  {
+    "id": "linear-invoice-pdf",
+    "category": "linear",
+    "nl_description": "Read incoming invoice data from a message queue. Convert each invoice record to a PDF document. Upload the PDF to a cloud storage bucket.",
+    "expected_node_count": 3,
+    "complexity": "low",
+    "tags": ["source", "transform", "effect"]
+  },
+  {
+    "id": "linear-temp-fahrenheit-log",
+    "category": "linear",
+    "nl_description": "Read temperature sensor values in Celsius from an IoT device. Convert each reading to Fahrenheit. Append the converted value with a timestamp to a log file.",
+    "expected_node_count": 3,
+    "complexity": "low",
+    "tags": ["iot", "transform", "effect"]
+  },
+  {
+    "id": "linear-legal-redact-archive",
+    "category": "linear",
+    "nl_description": "Receive scanned legal documents as images. Run OCR to extract the text. Redact personally identifiable information from the extracted text. Store the redacted document in a compliance archive.",
+    "expected_node_count": 4,
+    "complexity": "medium",
+    "tags": ["legal", "transform", "privacy"]
+  },
+  {
+    "id": "linear-student-grade-notify",
+    "category": "linear",
+    "nl_description": "When a teacher submits a grade for an assignment, look up the student's contact info. Send the student an SMS notification with their grade.",
+    "expected_node_count": 3,
+    "complexity": "low",
+    "tags": ["education", "lookup", "effect"]
+  },
+  {
+    "id": "linear-soil-moisture-irrigate",
+    "category": "linear",
+    "nl_description": "Read soil moisture levels from a field sensor every 15 minutes. If the moisture drops below a threshold, send an activation signal to the irrigation valve controller.",
+    "expected_node_count": 3,
+    "complexity": "low",
+    "tags": ["agriculture", "iot", "threshold"]
+  },
+  {
+    "id": "linear-real-estate-listing-enrich",
+    "category": "linear",
+    "nl_description": "Receive new real estate listings from an MLS feed. Geocode each listing address to latitude and longitude. Enrich the listing with neighborhood walkability and school ratings. Publish the enriched listing to a property search index.",
+    "expected_node_count": 4,
+    "complexity": "medium",
+    "tags": ["real-estate", "enrich", "geocode"]
+  },
+  {
+    "id": "linear-expense-categorize-ledger",
+    "category": "linear",
+    "nl_description": "Import bank transaction records from a CSV export. Categorize each transaction by expense type using keyword matching rules. Append the categorized entries to a personal finance ledger spreadsheet.",
+    "expected_node_count": 3,
+    "complexity": "low",
+    "tags": ["finance", "transform", "productivity"]
+  },
+  {
+    "id": "linear-podcast-transcribe-summary",
+    "category": "linear",
+    "nl_description": "Download a new podcast episode from an RSS feed. Transcribe the audio to text using a speech-to-text service. Generate a bullet-point summary of the transcript. Save the summary to a note-taking app.",
+    "expected_node_count": 4,
+    "complexity": "medium",
+    "tags": ["content-management", "transform", "ai"]
+  },
+  {
+    "id": "fanout-order-processing",
+    "category": "fan-out",
+    "nl_description": "When a new order arrives, simultaneously: check inventory availability, calculate shipping cost, and validate the customer's payment method.",
+    "expected_node_count": 4,
+    "complexity": "medium",
+    "tags": ["fan-out", "parallel"]
+  },
+  {
+    "id": "fanout-social-post-distribute",
+    "category": "fan-out",
+    "nl_description": "When a user publishes a blog post, simultaneously cross-post it to Twitter, LinkedIn, and Facebook with platform-appropriate formatting for each.",
+    "expected_node_count": 4,
+    "complexity": "medium",
+    "tags": ["social-media", "fan-out", "effect"]
+  },
+  {
+    "id": "fanout-patient-admission",
+    "category": "fan-out",
+    "nl_description": "When a patient is admitted to the hospital, simultaneously notify the attending physician, create a bed assignment record, initiate insurance pre-authorization, and send a welcome packet to the patient's registered email.",
+    "expected_node_count": 5,
+    "complexity": "medium",
+    "tags": ["healthcare", "fan-out", "parallel"]
+  },
+  {
+    "id": "fanout-deploy-notification",
+    "category": "fan-out",
+    "nl_description": "When a production deployment starts, simultaneously post to a Slack ops channel, create a PagerDuty incident window, and update the status page to 'maintenance in progress'.",
+    "expected_node_count": 4,
+    "complexity": "medium",
+    "tags": ["devops", "fan-out", "effect"]
+  },
+  {
+    "id": "fanout-game-event-broadcast",
+    "category": "fan-out",
+    "nl_description": "When a player achieves a high score in a multiplayer game, simultaneously update the global leaderboard, grant the player an achievement badge, and broadcast an announcement to all active game sessions.",
+    "expected_node_count": 4,
+    "complexity": "medium",
+    "tags": ["gaming", "fan-out", "broadcast"]
+  },
+  {
+    "id": "fanout-energy-alert-multicast",
+    "category": "fan-out",
+    "nl_description": "When the power grid detects a voltage anomaly, simultaneously alert the control room dashboard, log the event to the SCADA historian, and send an SMS to the on-call engineer.",
+    "expected_node_count": 4,
+    "complexity": "medium",
+    "tags": ["energy", "fan-out", "alert"]
+  },
+  {
+    "id": "fanout-shipment-dispatch",
+    "category": "fan-out",
+    "nl_description": "When a warehouse confirms a shipment is packed, simultaneously generate a shipping label, notify the customer with a tracking number, and update the order management system status to 'shipped'.",
+    "expected_node_count": 4,
+    "complexity": "medium",
+    "tags": ["logistics", "fan-out", "effect"]
+  },
+  {
+    "id": "fanout-cms-publish",
+    "category": "fan-out",
+    "nl_description": "When an editor approves content for publication, simultaneously invalidate the CDN cache for that page, push the content to the search index, and send a newsletter digest email to subscribers.",
+    "expected_node_count": 4,
+    "complexity": "medium",
+    "tags": ["content-management", "fan-out", "effect"]
+  },
+  {
+    "id": "fanin-report-generator",
+    "category": "fan-in",
+    "nl_description": "Collect data from three sources: a database query for sales figures, an API call for market data, and a CSV file for budget projections. Merge all three into a single report.",
+    "expected_node_count": 4,
+    "complexity": "medium",
+    "tags": ["multi-source", "aggregate"]
+  },
+  {
+    "id": "fanin-portfolio-dashboard",
+    "category": "fan-in",
+    "nl_description": "Fetch stock prices from a market data API, cryptocurrency balances from a wallet provider, and real estate valuations from a property API. Combine all asset values into a unified net-worth dashboard.",
+    "expected_node_count": 4,
+    "complexity": "medium",
+    "tags": ["finance", "aggregate", "dashboard"]
+  },
+  {
+    "id": "fanin-candidate-scoring",
+    "category": "fan-in",
+    "nl_description": "For a job application, pull the resume-parsing score from an NLP service, the coding-test result from a testing platform, and the interviewer rating from an HR system. Merge all three into a composite candidate score.",
+    "expected_node_count": 4,
+    "complexity": "medium",
+    "tags": ["hr", "aggregate", "scoring"]
+  },
+  {
+    "id": "fanin-iot-environmental",
+    "category": "fan-in",
+    "nl_description": "Read temperature from sensor A, humidity from sensor B, and air quality index from sensor C. Combine the three readings into a single environmental health score for a greenhouse.",
+    "expected_node_count": 4,
+    "complexity": "medium",
+    "tags": ["iot", "agriculture", "aggregate"]
+  },
+  {
+    "id": "fanin-ecommerce-product-page",
+    "category": "fan-in",
+    "nl_description": "For each product page request, fetch product details from the catalog service, current pricing from the pricing engine, and user reviews from the reviews database. Assemble a complete product page payload from all three.",
+    "expected_node_count": 4,
+    "complexity": "medium",
+    "tags": ["e-commerce", "aggregate", "api"]
+  },
+  {
+    "id": "fanin-devops-health-check",
+    "category": "fan-in",
+    "nl_description": "Query CPU utilization from a metrics API, memory usage from a monitoring agent, and disk I/O stats from the OS. Aggregate all three into a single server health report.",
+    "expected_node_count": 4,
+    "complexity": "medium",
+    "tags": ["devops", "aggregate", "monitoring"]
+  },
+  {
+    "id": "fanin-travel-itinerary",
+    "category": "fan-in",
+    "nl_description": "Look up flight options from an airline API, hotel availability from a booking platform, and local events from a tourism API. Combine the results into a single travel itinerary recommendation.",
+    "expected_node_count": 4,
+    "complexity": "medium",
+    "tags": ["travel", "aggregate", "recommendation"]
+  },
+  {
+    "id": "fanin-legal-case-summary",
+    "category": "fan-in",
+    "nl_description": "Retrieve court filing documents from the court records API, previous case law matches from a legal research database, and client correspondence from the firm's CRM. Merge them into a consolidated case preparation brief.",
+    "expected_node_count": 4,
+    "complexity": "medium",
+    "tags": ["legal", "aggregate", "document"]
+  },
+  {
+    "id": "diamond-etl-pipeline",
+    "category": "diamond",
+    "nl_description": "Ingest raw data from a webhook. In parallel: validate data quality and enrich with metadata from a lookup table. After both complete, write the validated and enriched records to a data warehouse.",
+    "expected_node_count": 5,
+    "complexity": "medium",
+    "tags": ["diamond", "etl"]
+  },
+  {
+    "id": "diamond-image-processing",
+    "category": "diamond",
+    "nl_description": "Upload a product photo. In parallel: generate a thumbnail for the listing grid and run an image classifier to auto-tag the product category. Once both finish, create the product listing entry with the thumbnail and category tags.",
+    "expected_node_count": 4,
+    "complexity": "medium",
+    "tags": ["e-commerce", "diamond", "image"]
+  },
+  {
+    "id": "diamond-loan-approval",
+    "category": "diamond",
+    "nl_description": "Receive a loan application. In parallel: run a credit score check and verify employment history. After both checks complete, render a loan approval or denial decision.",
+    "expected_node_count": 4,
+    "complexity": "medium",
+    "tags": ["finance", "diamond", "decision"]
+  },
+  {
+    "id": "diamond-content-moderation",
+    "category": "diamond",
+    "nl_description": "When a user uploads a video, simultaneously run an AI toxicity scan on the audio transcript and a nudity detection model on the video frames. After both analyses finish, make a publish-or-reject decision.",
+    "expected_node_count": 4,
+    "complexity": "high",
+    "tags": ["content-management", "diamond", "moderation"]
+  },
+  {
+    "id": "diamond-ci-pipeline",
+    "category": "diamond",
+    "nl_description": "When a pull request is opened, simultaneously run the unit test suite and the static analysis linter. After both pass, merge the PR and trigger a staging deployment.",
+    "expected_node_count": 4,
+    "complexity": "medium",
+    "tags": ["devops", "diamond", "ci"]
+  },
+  {
+    "id": "diamond-prescription-fill",
+    "category": "diamond",
+    "nl_description": "Receive a prescription request. In parallel: verify the patient's insurance coverage and check for drug interaction warnings against their medication history. Once both complete, approve or flag the prescription for pharmacist review.",
+    "expected_node_count": 4,
+    "complexity": "high",
+    "tags": ["healthcare", "diamond", "safety"]
+  },
+  {
+    "id": "diamond-shipping-quote",
+    "category": "diamond",
+    "nl_description": "Receive a shipment request with origin, destination, and weight. In parallel: calculate the ground shipping cost and the air freight cost. After both quotes return, select the cheapest option and confirm the shipment.",
+    "expected_node_count": 4,
+    "complexity": "medium",
+    "tags": ["logistics", "diamond", "comparison"]
+  },
+  {
+    "id": "diamond-student-enrollment",
+    "category": "diamond",
+    "nl_description": "When a student submits a course enrollment request, simultaneously verify prerequisite completion and check available seats in the class. After both checks, either confirm enrollment or add the student to the waitlist.",
+    "expected_node_count": 4,
+    "complexity": "medium",
+    "tags": ["education", "diamond", "decision"]
+  },
+  {
+    "id": "feedback-adaptive-rate",
+    "category": "feedback-loop",
+    "nl_description": "Poll an API for new messages. If the API returns many messages, increase polling frequency. If few messages, decrease frequency. Maintain a target of processing roughly 100 messages per minute.",
+    "expected_node_count": 4,
+    "complexity": "high",
+    "tags": ["feedback", "adaptive"]
+  },
+  {
+    "id": "feedback-thermostat",
+    "category": "feedback-loop",
+    "nl_description": "Read the current room temperature from a sensor. Compare it to the desired setpoint. If below the setpoint, activate the heater; if above, activate the cooler. Feed the resulting temperature change back to re-evaluate continuously.",
+    "expected_node_count": 4,
+    "complexity": "high",
+    "tags": ["iot", "feedback", "control"]
+  },
+  {
+    "id": "feedback-ad-budget-optimizer",
+    "category": "feedback-loop",
+    "nl_description": "Run a social media ad campaign. Measure the click-through rate after each hour. If CTR is above target, reduce the bid price to save budget. If CTR is below target, increase the bid. Feed the updated bid back into the campaign configuration.",
+    "expected_node_count": 5,
+    "complexity": "high",
+    "tags": ["marketing", "feedback", "optimization"]
+  },
+  {
+    "id": "feedback-inventory-reorder",
+    "category": "feedback-loop",
+    "nl_description": "Monitor warehouse inventory levels for a product. When stock drops below a reorder point, place a replenishment order with the supplier. When the shipment arrives, update the inventory count, which feeds back into the monitoring node.",
+    "expected_node_count": 4,
+    "complexity": "high",
+    "tags": ["logistics", "feedback", "inventory"]
+  },
+  {
+    "id": "feedback-autoscaler",
+    "category": "feedback-loop",
+    "nl_description": "Monitor request latency for a web service. If p99 latency exceeds the SLA threshold, spin up additional container instances. If latency drops well below threshold, scale down to reduce cost. Feed the new instance count back into the latency monitor.",
+    "expected_node_count": 5,
+    "complexity": "high",
+    "tags": ["devops", "feedback", "autoscale"]
+  },
+  {
+    "id": "feedback-game-difficulty",
+    "category": "feedback-loop",
+    "nl_description": "Track a player's win/loss ratio over their last 10 matches. If the player wins too often, increase the difficulty of spawned enemies. If they lose too often, decrease difficulty. Feed the adjusted difficulty setting back into the match generator.",
+    "expected_node_count": 4,
+    "complexity": "high",
+    "tags": ["gaming", "feedback", "adaptive"]
+  },
+  {
+    "id": "multisource-smart-home-scene",
+    "category": "multi-source",
+    "nl_description": "When the front door lock sensor reports 'unlocked' and the time-of-day is after 6 PM and the ambient light sensor reads below 200 lux, turn on the living room lights and set the thermostat to 72F.",
+    "expected_node_count": 6,
+    "complexity": "high",
+    "tags": ["iot", "multi-source", "conditional"]
+  },
+  {
+    "id": "multisource-fraud-detection",
+    "category": "multi-source",
+    "nl_description": "Consume a stream of credit card transactions, a geolocation feed from the cardholder's phone, and a list of known compromised merchants updated daily. Flag any transaction where the merchant is compromised or the transaction location diverges significantly from the phone location.",
+    "expected_node_count": 5,
+    "complexity": "high",
+    "tags": ["finance", "multi-source", "detection"]
+  },
+  {
+    "id": "multisource-crop-advisory",
+    "category": "multi-source",
+    "nl_description": "Combine a 5-day weather forecast API, real-time soil moisture sensor data, and the crop growth stage calendar. Generate a daily advisory recommending whether to irrigate, apply fertilizer, or take no action.",
+    "expected_node_count": 5,
+    "complexity": "high",
+    "tags": ["agriculture", "multi-source", "advisory"]
+  },
+  {
+    "id": "multisource-meeting-scheduler",
+    "category": "multi-source",
+    "nl_description": "Read participants' calendar availability from Google Calendar, room booking status from the facilities API, and timezone offsets from a location service. Propose the earliest time slot where all participants are free and a room is available.",
+    "expected_node_count": 5,
+    "complexity": "high",
+    "tags": ["productivity", "multi-source", "scheduling"]
+  },
+  {
+    "id": "multisource-energy-demand-forecast",
+    "category": "multi-source",
+    "nl_description": "Ingest historical electricity consumption data, current weather conditions from a meteorological API, and a calendar of upcoming public holidays. Produce a 24-hour energy demand forecast for the regional grid.",
+    "expected_node_count": 5,
+    "complexity": "high",
+    "tags": ["energy", "multi-source", "forecast"]
+  },
+  {
+    "id": "ambiguous-do-something-emails",
+    "category": "ambiguous",
+    "nl_description": "Do something useful with my emails.",
+    "expected_node_count": 3,
+    "complexity": "low",
+    "tags": ["ambiguous", "graceful-handling"]
+  },
+  {
+    "id": "ambiguous-help-with-data",
+    "category": "ambiguous",
+    "nl_description": "Help me with my data.",
+    "expected_node_count": 2,
+    "complexity": "low",
+    "tags": ["ambiguous", "graceful-handling"]
+  },
+  {
+    "id": "ambiguous-notification-thing",
+    "category": "ambiguous",
+    "nl_description": "Do something with notifications.",
+    "expected_node_count": 2,
+    "complexity": "low",
+    "tags": ["ambiguous", "graceful-handling"]
+  },
+  {
+    "id": "ambiguous-make-it-faster",
+    "category": "ambiguous",
+    "nl_description": "Make my workflow faster.",
+    "expected_node_count": 2,
+    "complexity": "low",
+    "tags": ["ambiguous", "graceful-handling"]
+  },
+  {
+    "id": "ambiguous-automate-stuff",
+    "category": "ambiguous",
+    "nl_description": "I want to automate some stuff for my business.",
+    "expected_node_count": 2,
+    "complexity": "low",
+    "tags": ["ambiguous", "graceful-handling"]
+  }
+]
