@@ -149,12 +149,16 @@ of `get()`:
 
 | Status | Meaning | `get()` returns |
 |--------|---------|-----------------|
-| `disconnected` | Not connected to deps | Last known value or initial (`undefined`/`None`) |
+| `disconnected` | Not connected to deps | `initial` if provided, else `undefined`/`None` |
 | `dirty` | DIRTY received, waiting for DATA | Previous value (stale) |
 | `settled` | DATA received, value current | Current value (fresh) |
 | `resolved` | Was dirty, value confirmed unchanged | Current value (fresh) |
 | `completed` | Terminal: clean completion | Final value |
-| `errored` | Terminal: error occurred | Last good value or initial (`undefined`/`None`) |
+| `errored` | Terminal: error occurred | Last good value or `initial` or `undefined`/`None` |
+
+When no `initial` option was provided and no value has been emitted, `get()` returns
+`undefined` (TS) / `None` (PY). Internally, implementations use a sentinel value to
+distinguish "no value yet" from "emitted `undefined`/`None`".
 
 **Debugging:** When `get()` returns an unexpected value, check `status` (or use
 `describe()` for all nodes at once). The most common cases:
@@ -270,19 +274,28 @@ All nodes accept these options:
 |--------|------|---------|---------|
 | `name` | string | — | Identifier for graph registration |
 | `equals` | (a, b) → bool | `Object.is` / `is` | Custom equality for RESOLVED check (see below) |
-| `initial` | any | undefined | Initial cached value |
+| `initial` | any | *(absent)* | Initial cached value (see below) |
 | `meta` | object | — | Companion store fields |
 | `resubscribable` | bool | false | Allow reconnection after COMPLETE |
 | `resetOnTeardown` | bool | false | Clear cached value on TEARDOWN |
 | `onMessage` | fn | — | Custom message type handler (see §2.6) |
 
-**`equals` contract:** Custom `equals` functions only compare two real values that have
-been delivered via `[[DATA, v]]`. Implementations MUST NOT call `equals` when the cached
-value is still in its initial state (`undefined` in TS, `None` in PY) — the first DATA
-is always treated as changed. This means `equals` never receives `undefined`/`None` as
-either argument (unless the node has explicitly received `[[DATA, undefined]]` /
-`[[DATA, None]]`). The default `Object.is` / `is` handles all cases; custom `equals`
-need only handle the value types the node actually produces.
+**`initial` semantics:** When `initial` is provided (even as `undefined`/`None`), the
+node's cache is pre-populated and `get()` returns that value before any emission. On
+first `_emitAutoValue`, `equals` IS called against the initial value — if the computed
+value matches, the node emits `RESOLVED` instead of `DATA`. When `initial` is **absent**
+(option key not present), the cache is empty (internal sentinel); the first emission
+always produces `DATA` regardless of the value. `INVALIDATE` and `resetOnTeardown`
+return the cache to the empty-sentinel state.
+
+**`equals` contract:** `equals` is called between two consecutively cached values. It
+is never called when the cache is in its empty-sentinel state (no `initial`, or after
+`INVALIDATE` / `resetOnTeardown` / resubscribe reset). When the cache holds a real
+value — whether from `initial` or a prior emission — `equals` compares it against the
+new value. `equals` MAY receive `undefined`/`None` as an argument when the node has
+explicitly received `[[DATA, undefined]]` / `[[DATA, None]]` or was initialized with
+`initial: undefined` / `initial=None`. The default `Object.is` / `is` handles all
+cases; custom `equals` need only handle the value types the node actually produces.
 
 ### 2.6 Custom Message Handling (`onMessage`)
 
@@ -540,8 +553,8 @@ graph.destroy()                 — send [[TEARDOWN]] to all nodes, cleanup
 graph.snapshot()                — serialize: structure + current values → JSON
 graph.restore(data)             — rebuild state from snapshot
 Graph.fromSnapshot(data)        — construct new graph from snapshot
-graph.toJSON()                  — deterministic JSON-serializable snapshot (sorted keys)
-graph.toJSONString()            — optional: UTF-8 text + stable newlines (git-versionable)
+graph.toObject()                — deterministic JSON-serializable snapshot (sorted keys)
+graph.toJSONString()            — UTF-8 text + stable newlines (git-versionable)
 ```
 
 Snapshots capture **wiring and state values**, not computation functions. The fn lives in
@@ -550,10 +563,9 @@ and their meta.
 
 Same state → same JSON bytes → git can diff.
 
-**ECMAScript:** `JSON.stringify(graph)` calls `toJSON()`; that hook **must** return a plain
-object (not an already-stringified JSON string) or the output is double-encoded. Use
-`toJSONString()` (or `JSON.stringify(graph)` after a sorted `toJSON()` return) for
-deterministic text.
+**TS:** `toObject()` returns a plain object; `toJSONString()` returns deterministic text.
+`JSON.stringify(graph)` works via the ECMAScript `toJSON()` hook (delegates to `toObject()`).
+**PY:** `to_dict()` returns a dict; `to_json_string()` returns deterministic text.
 
 #### Auto-checkpoint
 
@@ -882,5 +894,5 @@ ERROR         [ERROR, err]            Error termination
 | Excel calculations | `state` inputs → `derived` formulas → gauges via meta |
 | Multi-agent routing | `Graph.mount` + `connect` across subgraphs |
 | LLM builds graph | `Graph.fromSnapshot` + `describe()` for introspection |
-| Git-versioned graphs | `JSON.stringify(graph)` or `graph.toJSONString()` → deterministic, diffable |
+| Git-versioned graphs | `graph.toJSONString()` / `graph.to_json_string()` → deterministic, diffable |
 | Custom domain signals | User-defined message types + `onMessage` to intercept; unhandled types forward through graph |
