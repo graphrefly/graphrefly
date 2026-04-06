@@ -50,6 +50,11 @@ Examples:
 The message type set is open. Implementations MAY define additional types. Nodes MUST forward
 message types they don't recognize — this ensures forward compatibility.
 
+**DATA requires a payload.** `[DATA, value]` MUST include the second element. The value
+MAY be `undefined` (TS) / `None` (PY) / `null` — these are valid data values. A bare
+`[DATA]` tuple (missing the payload entirely) is a protocol violation. Implementations
+SHOULD reject or ignore it rather than silently coercing to `undefined`/`None`.
+
 ### 1.3 Protocol Invariants
 
 1. **DIRTY precedes DATA or RESOLVED.** Within the same batch, `[DIRTY]` comes before
@@ -138,16 +143,26 @@ through that subscription.
 
 #### get()
 
-Returns the cached value. Does NOT guarantee freshness. Check `status` to determine trust:
+Returns the cached value. Does NOT guarantee freshness and does NOT trigger computation.
+**`status` is the source of truth** — always check it before trusting the return value
+of `get()`:
 
-| Status | Meaning | Trust level |
-|--------|---------|-------------|
-| `disconnected` | Not connected to deps | Stale — last known value |
-| `dirty` | DIRTY received, waiting for DATA | Stale — update incoming |
-| `settled` | DATA received, value current | Fresh |
-| `resolved` | Was dirty, value confirmed unchanged | Fresh |
+| Status | Meaning | `get()` returns |
+|--------|---------|-----------------|
+| `disconnected` | Not connected to deps | Last known value or initial (`undefined`/`None`) |
+| `dirty` | DIRTY received, waiting for DATA | Previous value (stale) |
+| `settled` | DATA received, value current | Current value (fresh) |
+| `resolved` | Was dirty, value confirmed unchanged | Current value (fresh) |
 | `completed` | Terminal: clean completion | Final value |
-| `errored` | Terminal: error occurred | Last good value |
+| `errored` | Terminal: error occurred | Last good value or initial (`undefined`/`None`) |
+
+**Debugging:** When `get()` returns an unexpected value, check `status` (or use
+`describe()` for all nodes at once). The most common cases:
+- `disconnected` + `undefined`/`None` → derived node has no subscribers (lazy activation)
+- `errored` + `undefined`/`None` → `fn` or `equals` threw during computation
+
+Both look identical from `get()` alone. `status` (or `describe()`) distinguishes them
+instantly. Use `observe()` to see the `[[ERROR, err]]` message that was emitted.
 
 Implementations MAY pull-recompute on `get()` when disconnected, but the spec does not
 require it. `get()` never throws.
@@ -254,12 +269,20 @@ All nodes accept these options:
 | Option | Type | Default | Purpose |
 |--------|------|---------|---------|
 | `name` | string | — | Identifier for graph registration |
-| `equals` | (a, b) → bool | `Object.is` / `is` | Custom equality for RESOLVED check |
+| `equals` | (a, b) → bool | `Object.is` / `is` | Custom equality for RESOLVED check (see below) |
 | `initial` | any | undefined | Initial cached value |
 | `meta` | object | — | Companion store fields |
 | `resubscribable` | bool | false | Allow reconnection after COMPLETE |
 | `resetOnTeardown` | bool | false | Clear cached value on TEARDOWN |
 | `onMessage` | fn | — | Custom message type handler (see §2.6) |
+
+**`equals` contract:** Custom `equals` functions only compare two real values that have
+been delivered via `[[DATA, v]]`. Implementations MUST NOT call `equals` when the cached
+value is still in its initial state (`undefined` in TS, `None` in PY) — the first DATA
+is always treated as changed. This means `equals` never receives `undefined`/`None` as
+either argument (unless the node has explicitly received `[[DATA, undefined]]` /
+`[[DATA, None]]`). The default `Object.is` / `is` handles all cases; custom `equals`
+need only handle the value types the node actually produces.
 
 ### 2.6 Custom Message Handling (`onMessage`)
 
