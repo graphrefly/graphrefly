@@ -1,0 +1,157 @@
+# Composition Guide
+
+> **Accumulated patterns for building Phase 4+ factories and domain APIs on top of GraphReFly primitives.**
+>
+> This is NOT the spec. The spec (`GRAPHREFLY-SPEC.md`) defines **protocol behavior** — what MUST happen. This guide captures **"good to know before you fail"** — patterns, insights and recipes that composition authors (human or LLM) encounter when wiring primitives into higher-level APIs.
+>
+> Entries are accumulated in `composition-guide.jsonl` and summarized here. Both `graphrefly-ts` and `graphrefly-py` CLAUDE.md files reference this guide.
+
+---
+
+## How to use this guide
+
+- **Before building a factory** that returns derived nodes, composes TopicGraphs, or wires gates: scan the categories below.
+- **When debugging silent failures** (undefined values, missing messages, empty topics): check "Silent failure modes" first.
+- **When writing tests** for composition code: see "Testing composition" for activation patterns.
+
+---
+
+## Categories
+
+### 1. Lazy activation
+
+Derived nodes are lazy — `get()` returns `undefined`/`None` until a downstream subscriber activates the computation chain. This is correct behavior (spec §2.2) but surfaces as a silent failure in factories.
+
+**Pattern:** When a factory returns a derived node that callers may read via `get()` without subscribing, add a keepalive subscription internally.
+
+```ts
+// TS
+function myFactory(): { node: Node<T> } {
+  const result = derived([dep], fn);
+  const _unsub = result.subscribe(() => {}); // keepalive
+  return { node: result };
+}
+```
+
+```python
+# PY
+def my_factory():
+    result = derived([dep], fn)
+    _unsub = result.subscribe(lambda _: None)  # keepalive
+    return result
+```
+
+**Diagnostic:** If `get()` returns `undefined`/`None`, check `node.status`. If `"disconnected"` → no subscriber, lazy node. If `"errored"` → fn threw. Both look identical from `get()` alone. `status` (or `describe()`) distinguishes them instantly.
+
+### 2. Subscription ordering
+
+In reactive systems, the order you wire things determines whether you receive messages. If you subscribe to a sink *after* a source has already emitted, you miss the emission.
+
+**Pattern:** Wire outputs (sinks, observers) before inputs (sources, emitters). In factories, wire topology in reverse: sinks → operators → sources.
+
+```ts
+// WRONG: subscribe after emit → miss the message
+source.down([[DATA, 42]]);
+sink.subscribe(handler);  // handler never fires for 42
+
+// RIGHT: subscribe before emit
+sink.subscribe(handler);
+source.down([[DATA, 42]]);  // handler fires
+```
+
+**Escape hatch:** `TopicGraph.retained()` returns all buffered entries. If you subscribe late, you can catch up via `retained()`. This is the cursor-reading model — `SubscriptionGraph` does this automatically.
+
+**Does `retained()` violate design invariants?** No. It's a synchronous read of existing graph state (same as `node.get()`), not polling (§5.8) or an imperative trigger (§5.9).
+
+### 3. Null/undefined guards in effects
+
+Effect nodes fire on initial activation when deps already hold values. If the dep's initial value is `null`/`None`/`undefined` (e.g., `state(null)`), the effect fn receives it. Guard against null at the top of every effect fn that processes structured data.
+
+**Pattern:**
+
+```ts
+effect([source], ([val]) => {
+  if (val == null) return;  // guard
+  // safe to process val
+});
+```
+
+### 4. Versioned wrapper navigation
+
+`ReactiveMapBundle.node` (TS) / `.data` (PY) emits `Versioned<{ map: ReadonlyMap<K,V> }>` snapshots. The `Versioned` wrapper exists for efficient RESOLVED deduplication (compare version numbers instead of deep map equality). This is a protocol optimization that leaks into composition code.
+
+**Pattern:** Use `.get(key)` on the bundle directly (synchronous key lookup) instead of navigating the Versioned wrapper. If you need the full map as a derived dep, unwrap it in your derived fn:
+
+```ts
+// TS
+derived([_map.node], ([snap]) => {
+  const map = (snap as ReactiveMapSnapshot<K, V>).value.map;
+  // work with map
+});
+```
+
+```python
+# PY — use .data node, unwrap Versioned
+derived([_map.data], lambda deps, _: deps[0].value if isinstance(deps[0], Versioned) else {})
+```
+
+**Prefer:** `bundle.get(key)` for single-key reads. Only navigate the Versioned wrapper when using the node as a reactive dep.
+
+### 5. Graph factory wiring order
+
+When building a factory that composes multiple stages (e.g., `harnessLoop`, `observabilityGraph`), wire in this order:
+
+1. Create all TopicGraphs / state nodes (sinks)
+2. Create derived/effect nodes that read from them (processors)
+3. Subscribe / keepalive internal nodes
+4. Mount subgraphs into the parent graph
+5. Return the controller
+
+This ensures that when stage N emits, stage N+1 is already wired to receive.
+
+### 6. Cross-language data structure parity
+
+When using `ReactiveMapBundle`, `reactiveLog`, or `reactiveList` across TS and PY:
+
+- TS `ReactiveMapBundle` has `.get(key)`, `.has(key)`, `.size`. PY exposes `.data` (node) with `.set()` / `.delete()` / `.clear()` but no `.get(key)` (parity gap — tracked in `docs/optimizations.md`).
+- Both wrap internal state in `Versioned` snapshots. The snapshot shape differs slightly: TS uses `{ version, value: { map } }`, PY uses `Versioned(version, value)` named tuple where `value` is a `MappingProxyType`.
+- Always check the language-specific API rather than assuming parity.
+
+---
+
+## Testing composition
+
+### Activate before asserting
+
+Derived nodes require a downstream subscriber to compute. In tests, always subscribe before checking `get()`:
+
+```ts
+const d = derived([dep], fn);
+d.subscribe(() => {});  // activate
+expect(d.get()).toBe(expected);
+```
+
+### Wire observers before emitting
+
+```ts
+const topic = new TopicGraph<T>("test");
+const items: T[] = [];
+topic.latest.subscribe(msgs => {
+  for (const msg of msgs) {
+    if (msg[0] === DATA && msg[1] != null) items.push(msg[1] as T);
+  }
+});
+topic.publish(value);  // items now has [value]
+```
+
+### Effect + state(null) pattern
+
+For testing effect-based bridges, use `state(null)` as the source, subscribe to the effect to activate it, subscribe to the output, then emit:
+
+```ts
+const source = state<T | null>(null);
+const bridgeNode = myBridge(source, output);
+bridgeNode.subscribe(() => {});  // activate
+output.latest.subscribe(collector);  // wire observer
+source.down([[DATA, realValue]]);    // emit
+```

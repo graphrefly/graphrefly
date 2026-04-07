@@ -160,16 +160,12 @@ When no `initial` option was provided and no value has been emitted, `get()` ret
 `undefined` (TS) / `None` (PY). Internally, implementations use a sentinel value to
 distinguish "no value yet" from "emitted `undefined`/`None`".
 
-**Debugging:** When `get()` returns an unexpected value, check `status` (or use
-`describe()` for all nodes at once). The most common cases:
-- `disconnected` + `undefined`/`None` → derived node has no subscribers (lazy activation)
-- `errored` + `undefined`/`None` → `fn` or `equals` threw during computation
-
-Both look identical from `get()` alone. `status` (or `describe()`) distinguishes them
-instantly. Use `observe()` to see the `[[ERROR, err]]` message that was emitted.
-
 Implementations MAY pull-recompute on `get()` when disconnected, but the spec does not
 require it. `get()` never throws.
+
+> **Debugging guidance** has been moved to `COMPOSITION-GUIDE.md` §1 "Lazy activation".
+> Key rule: when `get()` returns unexpected values, check `status` first — it distinguishes
+> `disconnected` (lazy, no subscriber) from `errored` (fn threw) instantly.
 
 #### down(messages)
 
@@ -730,6 +726,10 @@ examples alone.
 
 ## 6. Implementation Guidance
 
+> **Detailed implementation guidance** (language-specific adaptations, output slot optimization,
+> single-dep optimization, graph factory patterns) has been moved to `COMPOSITION-GUIDE.md`.
+> The spec defines **behavior**; the guide captures **how-to** patterns.
+
 ### 6.1 Language-Specific Adaptations
 
 | Aspect | Guidance |
@@ -751,21 +751,6 @@ not a spec requirement.
 When a node has exactly one dep in an unbatched path, implementations MAY skip the DIRTY
 message and send DATA directly. The semantic guarantee (DIRTY precedes DATA) is preserved
 within batched contexts. This is a performance optimization — the spec does not require it.
-
-### 6.4 Graph Factory Pattern
-
-Domain builders return Graph objects:
-
-```
-pipeline("payment", { ... })     → Graph   // orchestration
-jobQueue("emails", { ... })      → Graph   // messaging
-agentMemory("ctx", { ... })      → Graph   // AI
-
-// All share: .describe(), .observe(), .signal(), .snapshot()
-```
-
-The builder provides ergonomic construction. The Graph provides uniform introspection,
-lifecycle, persistence, and composition.
 
 ---
 
@@ -886,13 +871,15 @@ ERROR         [ERROR, err]            Error termination
 
 ## Appendix C: Scenario Validation
 
-| Scenario | How it works |
-|----------|-------------|
-| LLM cost control | `state` (knob via meta) → `derived` chain → gauges via meta |
-| Security policy | `state` + `derived` + `effect` with PAUSE propagation |
-| Human-in-the-loop | Two `state` nodes (human + LLM) → `derived` gate → `effect` |
-| Excel calculations | `state` inputs → `derived` formulas → gauges via meta |
-| Multi-agent routing | `Graph.mount` + `connect` across subgraphs |
-| LLM builds graph | `Graph.fromSnapshot` + `describe()` for introspection |
-| Git-versioned graphs | `graph.toJSONString()` / `graph.to_json_string()` → deterministic, diffable |
-| Custom domain signals | User-defined message types + `onMessage` to intercept; unhandled types forward through graph |
+> **Detailed scenario patterns** have been moved to `COMPOSITION-GUIDE.md` and
+> `composition-guide.jsonl`. The table below is a summary index.
+
+| Scenario | Primitives |
+|----------|------------|
+| LLM cost control | `state` (knob) → `derived` → gauges via meta |
+| Security policy | `state` + `derived` + `effect` + PAUSE |
+| Human-in-the-loop | `state` × 2 → `derived` gate → `effect` |
+| Multi-agent routing | `Graph.mount` + `connect` |
+| LLM builds graph | `Graph.fromSnapshot` + `describe()` |
+| Git-versioned graphs | `toJSONString()` / `to_json_string()` |
+| Custom domain signals | `onMessage` + unknown type forwarding |
