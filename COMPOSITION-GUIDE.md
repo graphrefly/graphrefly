@@ -117,6 +117,47 @@ When using `ReactiveMapBundle`, `reactiveLog`, or `reactiveList` across TS and P
 - Both wrap internal state in `Versioned` snapshots. The snapshot shape differs slightly: TS uses `{ version, value: { map } }`, PY uses `Versioned(version, value)` named tuple where `value` is a `MappingProxyType`.
 - Always check the language-specific API rather than assuming parity.
 
+### 7. Feedback cycles in multi-stage factories
+
+When a downstream effect writes back to an upstream node that is a reactive dep of a derived node, the system enters an infinite loop: A → B → C → ... → write(A) → A → B → ...
+
+**Example:** `harnessLoop` — verify stage records to `strategy.record()` → `strategy.node` changes → triage (which depends on strategy.node) re-fires → execute → verify → strategy.record() → loop.
+
+**Pattern:** Use `withLatestFrom(trigger, advisory)` to read advisory context without making it a reactive trigger. Only the `trigger` (primary) causes downstream emission; `advisory` (secondary) is sampled silently.
+
+```ts
+// WRONG: strategy as reactive dep creates feedback cycle
+const triage = promptNode(adapter, [intake.latest, strategy.node], fn);
+
+// RIGHT: withLatestFrom — intake triggers, strategy sampled
+const triageInput = withLatestFrom(intake.latest, strategy.node);
+const triage = promptNode(adapter, [triageInput], fn);
+```
+
+**Why `node.get()` is not the answer:** While synchronous `get()` reads are not spec violations (COMPOSITION-GUIDE §2), `withLatestFrom` is preferable because it keeps the dependency in the reactive graph — visible to `describe()`, auditable, and consistently updated. Sync `get()` hides the relationship.
+
+### 8. promptNode SENTINEL gate
+
+`promptNode` gates on nullish deps and empty prompt text: if any dep value is `null`/`undefined`, or the prompt function returns falsy text, `promptNode` skips the LLM call and emits `null`. This eliminates the need for null guards in every prompt function.
+
+**Pattern:** Return empty string from prompt functions when input is meaningless. `promptNode` handles the rest.
+
+```ts
+// promptNode's internal SENTINEL gate (already built in):
+// if (values.some(v => v == null)) return [];  // dep not ready
+// if (!text) return [];                         // prompt says "nothing to ask"
+
+// For withLatestFrom tuple deps, the tuple itself is non-null.
+// The prompt function must return "" when the inner item is falsy:
+promptNode(adapter, [withLatestFromNode], (pair) => {
+  const [item, context] = pair;
+  if (!item) return "";  // triggers SENTINEL gate
+  return buildPrompt(item, context);
+});
+```
+
+**Relates to:** §3 (null/undefined guards in effects) — effects still need `if (val == null) return;` because they don't have the SENTINEL gate.
+
 ---
 
 ## Testing composition

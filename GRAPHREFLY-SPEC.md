@@ -150,7 +150,7 @@ of `get()`:
 | Status | Meaning | `get()` returns |
 |--------|---------|-----------------|
 | `disconnected` | Not connected to deps | `initial` if provided, else `undefined`/`None` |
-| `dirty` | DIRTY received, waiting for DATA | Previous value (stale) |
+| `dirty` | DIRTY or INVALIDATE received, waiting for DATA | Previous value (stale). INVALIDATE also clears cached state internally. |
 | `settled` | DATA received, value current | Current value (fresh) |
 | `resolved` | Was dirty, value confirmed unchanged | Current value (fresh) |
 | `completed` | Terminal: clean completion | Final value |
