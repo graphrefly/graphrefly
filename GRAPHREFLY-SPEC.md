@@ -282,7 +282,7 @@ All nodes accept these options:
 
 **`initial` semantics:** When `initial` is provided (even as `undefined`/`None`), the
 node's cache is pre-populated and `get()` returns that value before any emission. On
-first `_emitAutoValue`, `equals` IS called against the initial value — if the computed
+first `_downAutoValue`, `equals` IS called against the initial value — if the computed
 value matches, the node emits `RESOLVED` instead of `DATA`. When `initial` is **absent**
 (option key not present), the cache is empty (internal sentinel); the first emission
 always produces `DATA` regardless of the value. `INVALIDATE` and `resetOnTeardown`
