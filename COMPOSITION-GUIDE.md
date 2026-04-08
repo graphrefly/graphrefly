@@ -160,6 +160,43 @@ promptNode(adapter, [withLatestFromNode], (pair) => {
 
 ---
 
+## Debugging composition
+
+When a composed factory produces unexpected behavior (OOM, infinite loops, silent failures, stale values):
+
+### Step 1: Re-read this guide
+
+Most composition bugs are covered by an existing section. Before writing any fix:
+- **OOM / infinite loop?** → Check §7 (feedback cycles) — is a downstream effect writing back to an upstream dep?
+- **Undefined values?** → Check §1 (lazy activation) and §3 (null guards).
+- **Missed messages?** → Check §2 (subscription ordering) and §5 (wiring order).
+- **promptNode not firing?** → Check §8 (SENTINEL gate) — is a dep null or the prompt empty?
+
+### Step 2: Isolate the failing scenario
+
+Run a single test or scenario in isolation. Do not debug against the full suite — concurrent test instances obscure the signal. Narrowing to one case makes the reactive chain traceable.
+
+### Step 3: Inspect node states
+
+Use `describe()`, `node.status`, and profiling tools (TS: `graphProfile`, `harnessProfile`; PY: equivalent) to snapshot the graph before and after the operation.
+
+Key diagnostics:
+- **`node.status`** — `disconnected` (lazy/no subscribers), `errored` (fn threw), `settled` (value is current)
+- **`describe({ detail: "standard" })`** — all nodes, edges, statuses at once
+- **Profiling** — per-node memory (value size), subscriber counts, queue depths, tracker sizes
+
+Write a diagnostic test that instruments the factory rather than adding console.logs and re-running blindly.
+
+### Step 4: Trace the reactive chain
+
+Once you know which node has the wrong state, trace upstream: what is its dep? What did the dep emit? Is the dep settled or still dirty? Follow the chain until you find where the expected value diverges from reality.
+
+### Step 5: Fix the root cause
+
+An OOM is rarely a wiring-pattern problem — it's usually a key-tracking bug, an unbounded counter, or a missing guard. Isolation and inspection (Steps 2–4) reveal which.
+
+---
+
 ## Testing composition
 
 ### Activate before asserting
