@@ -18,37 +18,52 @@
 
 ## Categories
 
-### 1. Push-on-subscribe and activation
+### 1. Push-on-subscribe and activation (START + first-run gate)
 
-Source nodes (state with a value) push `[[DATA, cached]]` to each new subscriber on
-subscribe (spec §2.2). Derived nodes compute reactively from this push — no special
-activation step needed.
+Every subscription starts with a `[[START]]` handshake (spec §2.2). A node with a
+cached value delivers `[[START], [DATA, cached]]` to each new sink; a SENTINEL node
+delivers just `[[START]]`. The START message carries no wave-state implication and
+is not forwarded through intermediate nodes — each node emits its own START to its
+own new sinks.
 
-**What this means for factories:** When you create a derived node depending on state
-nodes that have initial values, the derived computes automatically when it gets its
-first subscriber. The push cascades through the dependency chain.
+**First-run gate.** A compute node (derived/effect) does NOT run fn until every
+declared dep has delivered at least one real value. If any dep is SENTINEL, the
+node stays in `"pending"` status; fn only fires once every dep transitions out of
+SENTINEL via a real DATA. This is the composition-guide rule #1 — "derived nodes
+depending on a SENTINEL dep will not compute until that dep receives a real value."
 
-**SENTINEL nodes:** A node created without `initial` (cache holds SENTINEL) does NOT
-push on subscribe. Derived nodes depending on a SENTINEL dep will not compute until
-that dep receives a real value via `down([[DATA, v]])`. If your factory needs derived
-nodes to compute immediately, ensure all deps have initial values.
+**Status after subscribe.** `node.status` becomes:
+- `"settled"` / `"resolved"` when fn has run and emitted a value
+- `"pending"` when the subscribe flow completes but fn hasn't run (blocked on a
+  SENTINEL dep)
+- `"disconnected"` when no subscribers are present (compute nodes also clear cache)
 
 ```ts
-// Derived computes on subscribe — deps have initial values
+// Derived computes on subscribe — all deps have values
 const count = state(0);
 const doubled = derived([count], ([v]) => v * 2);
-doubled.subscribe(sink);  // sink receives [[DATA, 0]] from doubled
+doubled.subscribe(sink);
+// Sink receives: [[START]], then [[DIRTY],[DATA,0]] from doubled's activation.
 
-// Derived does NOT compute — dep has no initial value
+// Derived does NOT compute — SENTINEL dep blocks the first-run gate
 const pending = node<string>();  // SENTINEL — no initial
 const upper = derived([pending], ([v]) => v.toUpperCase());
-upper.subscribe(sink);  // sink receives nothing — pending has no value
-pending.down([[DATA, "hello"]]);  // NOW upper computes → sink receives result
+upper.subscribe(sink);
+// Sink receives: [[START]] only. upper.status === "pending".
+pending.down([[DATA, "hello"]]);
+// NOW the gate opens, upper computes, sink receives [[DIRTY],[DATA,"HELLO"]].
 ```
 
+**`dynamicNode` is different.** Because deps are discovered at runtime via the
+tracking `get()` proxy, dynamicNode cannot gate on "all deps delivered" upfront.
+It runs fn on first subscribe — possibly seeing `undefined` for lazy/disconnected
+deps — then uses a rewire buffer to detect discrepancies and re-run fn once when
+real values arrive. See §11 (dynamicNode rewire buffer) for the full pattern.
+
 **Diagnostic:** If `get()` returns `undefined`/`None`, check `node.status`:
-- `"disconnected"` → no subscriber (lazy node, needs subscribe)
-- `"settled"` or `"resolved"` → value is current, it really is undefined/None
+- `"disconnected"` → compute node with no subscribers (cache cleared per ROM/RAM)
+- `"pending"` → subscribed but fn hasn't run (SENTINEL dep blocking the first-run gate)
+- `"settled"` or `"resolved"` → value is current, it really is `undefined`/`None`
 - `"errored"` → fn threw
 
 ### 2. Subscription ordering (streaming sources only)
@@ -78,20 +93,30 @@ subscribers. `SubscriptionGraph` provides cursor-based catch-up automatically.
 
 ### 3. Null/undefined guards in effects
 
-Effect nodes fire when deps push values — including the initial push from state nodes
-that hold `null`/`None`. Guard against null at the top of every effect fn that
-processes structured data.
+Under the §2.2 first-run gate, effect and derived nodes no longer see `undefined`
+dep values from SENTINEL deps — fn is gated until every dep has delivered DATA.
+Null guards for `undefined` are only needed when `null` itself is a meaningful
+domain value (e.g. `state(null)`) and you want to skip processing the initial `null`.
 
 ```ts
 // When null IS a valid domain value (e.g. state(null)):
+const source = state<T | null>(null);
 effect([source], ([val]) => {
-  if (val == null) return;  // guard — != catches both null and undefined
+  if (val == null) return;  // guard — only needed because `null` is the initial
   // safe to process val
 });
 
-// When "no value yet" is the intent, prefer SENTINEL instead:
-const source = node<T>();  // no initial → no push → effect waits for real data
+// When "no value yet" is the intent, prefer SENTINEL — the first-run gate takes
+// care of the "wait for real data" behavior automatically:
+const source = node<T>();  // SENTINEL → effect stays `"pending"` until DATA arrives
+effect([source], ([val]) => {
+  // val is always a real value here; no guard needed.
+  process(val);
+}).subscribe(() => {});
 ```
+
+**Rule of thumb:** use `node<T>()` (SENTINEL) for "not ready yet". Only use
+`state(null)` when `null` is a meaningful domain value.
 
 ### 4. Versioned wrapper navigation
 
@@ -156,6 +181,72 @@ prompt function returns falsy text, `promptNode` skips the LLM call and emits `n
 
 **Pattern:** Return empty string from prompt functions when input is meaningless.
 Use `!= null` (not `!== null`) in guards to catch both `null` and `undefined`.
+
+### 9. Diamond resolution and two-phase protocol
+
+Diamond topologies (A→B,C→D) are resolved glitch-free at both connection time
+and during subsequent updates:
+
+**Connection-time:** When D subscribes for the first time, `_connectUpstream`
+subscribes to all deps sequentially. Settlement is deferred until all deps
+are subscribed (structural invariant: `_upstreamUnsubs.length < _deps.length`).
+After all deps are connected, one settlement check fires → fn runs exactly once
+with all deps settled.
+
+**Subsequent updates (two-phase required):** Derived nodes auto-emit
+`[[DIRTY], [DATA, value]]` — the two-phase protocol ensures DIRTY propagates
+through the entire graph before DATA. In diamond topologies, both B and C
+receive DIRTY before either settles with DATA, so D waits for both.
+
+**Source nodes in diamonds:** `state.down([[DATA, v]])` sends bare DATA (no
+DIRTY). For single-path updates this is fine — derived nodes auto-prepend DIRTY.
+But if you need glitch-free propagation from a source node through a diamond,
+use two-phase explicitly:
+
+```ts
+// Single-path: bare DATA is fine (derived auto-prepends DIRTY)
+source.down([[DATA, 42]]);
+
+// Diamond path: use two-phase for glitch-free resolution
+batch(() => {
+  source.down([[DIRTY]]);
+  source.down([[DATA, 42]]);
+});
+// or equivalently:
+source.down([[DIRTY], [DATA, 42]]);
+```
+
+### 10. SENTINEL vs null-guard cascading in pipelines
+
+When composing multi-stage pipelines with `join`, the choice between SENTINEL
+deps and null guards has cascading consequences:
+
+- **SENTINEL** (no `initial`): deps don't push on subscribe. Downstream
+  effects/derived nodes simply wait for the first real value. No intermediate
+  emissions. Preferred when "no value yet" is the intent.
+
+- **Null guard** (`if (val == null) return defaultValue`): converts the null
+  push into a real emission with a default value. This propagates downstream
+  through all derived/join nodes, causing intermediate results where you
+  expected none.
+
+```ts
+// WRONG: null guard creates intermediate emissions through join
+const input = sensor(g, "input");  // SENTINEL
+const classify = task(g, "classify", ([doc]) => {
+  if (doc == null) return "pending";  // ← emits "pending" immediately
+  return doc.type;
+}, { deps: ["input"] });
+
+// RIGHT: SENTINEL deps — pipeline only fires when input arrives
+const input = sensor(g, "input");  // SENTINEL — no push
+const classify = task(g, "classify", ([doc]) => {
+  return doc.type;  // no guard needed — fn only runs when input has value
+}, { deps: ["input"] });
+```
+
+**Rule of thumb:** Use SENTINEL for "not ready yet". Use `state(null)` + guard
+only when `null` is a meaningful domain value.
 
 ---
 
@@ -243,3 +334,124 @@ source.down([[DATA, real]]);    // NOW effect fires with real value
 Use `state(null)` only when `null` is a **meaningful domain value** (e.g., "explicitly
 cleared"). In that case, guard with `if (val == null) return;` since the initial `null`
 push is intentional.
+
+---
+
+## Advanced topics
+
+### 11. dynamicNode rewire buffer (lazy-dep stabilization)
+
+`dynamicNode` discovers deps at runtime via a tracking `get()` proxy. Because deps
+are unknown at subscribe time, it **cannot** use the pre-set dirty mask that static
+nodes use for first-run gating (§9). Instead, it runs fn immediately on first
+subscribe — possibly seeing `undefined` for lazy/disconnected deps — then uses a
+**rewire buffer** to detect and correct discrepancies.
+
+**The problem:** When fn calls `get(lazyDep)`, the dep may be disconnected (no
+subscribers). `get()` returns `undefined` (RAM semantics — compute nodes clear cache
+on disconnect). After fn returns, `_rewire` subscribes to the dep, which triggers the
+dep's activation cascade. By the time the dep pushes its real value, fn has already
+completed with the stale `undefined`.
+
+**The solution — rewire buffer (3 phases after fn):**
+
+1. **Rewire with buffering.** `_rewire` subscribes to new deps with `_rewiring = true`.
+   Messages arriving during rewire go to `_bufferedDepMessages` instead of the normal
+   wave handler.
+2. **Scan for discrepancies.** After rewire, scan the buffer for DATA values that
+   differ (by `equals`) from what fn tracked via `get()`. If any differ, re-run fn
+   with the updated dep values.
+3. **Stabilization cap.** Re-runs are bounded by `MAX_RERUN` (16). If fn doesn't
+   stabilize (e.g., each run discovers new deps that change values), the node emits
+   `ERROR` to prevent infinite loops.
+
+```ts
+// Lazy dep: `expensiveCalc` has no subscribers, so get() returns undefined.
+// After _rewire subscribes to it, its activation push triggers a re-run.
+const d = dynamicNode((get) => {
+  const flag = get(toggle);       // toggle has value → returns it
+  if (flag) {
+    return get(expensiveCalc);    // first run: undefined (disconnected)
+                                  // re-run after rewire: real value
+  }
+  return get(fallback);
+});
+d.subscribe(() => {});
+// fn runs twice: once with undefined, once with real value.
+// Only the second result is emitted downstream.
+```
+
+**Identity check (`_depValuesDifferFromTracked`).** After rewire, if a dep's
+subscribe-time push delivers the same value fn already saw (e.g., dep was already
+cached), the identity check prevents a redundant re-run. This is critical when
+`subscribe()` is called inside `batch()` — the deferred DATA handshake arrives after
+rewire finishes but carries the same value fn read synchronously via `get()`.
+
+**Key differences from static nodes:**
+
+| Aspect | Static (`NodeImpl`) | Dynamic (`DynamicNodeImpl`) |
+|--------|--------------------|-----------------------------|
+| First-run gate | Pre-set dirty mask — fn waits for all deps | None — fn runs immediately |
+| SENTINEL deps | Block fn until real value arrives | fn sees `undefined`, rewire corrects |
+| Wave tracking | `BitSet` masks (`_depDirtyMask`, `_depSettledMask`) | `Set<number>` (`_depDirtyBits`, `_depSettledBits`) |
+| Dep changes | Never (fixed at construction) | Every `_runFn` may rewire |
+
+**When to use `dynamicNode` vs static `derived`:**
+
+- Use `derived([deps], fn)` when deps are known at construction time. Static nodes
+  get the pre-set dirty mask, SENTINEL gating, and simpler wave tracking.
+- Use `dynamicNode(get => ...)` when deps depend on runtime values (conditional
+  branches, data-driven graphs). Accept the rewire overhead and `undefined` first-pass
+  trade-off.
+
+### 12. ROM/RAM cache semantics in composition
+
+State nodes are **ROM** — their cached value survives disconnect. Compute nodes
+(derived, producer, effect, dynamic) are **RAM** — cache clears on disconnect.
+
+**Composition consequences:**
+
+- `state.get()` always returns the last set value, even with zero subscribers.
+  Safe to read from external code at any time.
+- `derived.get()` returns `undefined` when disconnected (no subscribers).
+  Always subscribe before reading a compute node's value.
+- Reconnect always re-runs fn from scratch (`_lastDepValues` cleared on deactivate).
+  Effects with cleanup get a fresh fire/cleanup cycle.
+
+```ts
+const s = state(42);
+const d = derived([s], ([v]) => v * 2);
+
+// No subscribers yet — d is disconnected.
+d.get();  // undefined (RAM — cache cleared)
+s.get();  // 42 (ROM — retained)
+
+const unsub = d.subscribe(() => {});
+d.get();  // 84 (computed, cache live)
+unsub();
+d.get();  // undefined (RAM — cache cleared again)
+s.get();  // 42 (ROM — still retained)
+```
+
+**Test pattern:** Always call `get()` before `unsub()` for compute nodes. After
+unsubscribe, the cache is gone.
+
+### 13. `startWith` removal — use `derived` with `initial`
+
+The `startWith(source, value)` operator has been removed. The first-run gate and
+START handshake make it unnecessary for most cases. Use `derived` with `initial`:
+
+```ts
+// Old: startWith(source, defaultValue)
+// New: derived with initial
+const withDefault = derived([source], ([v]) => v, { initial: defaultValue });
+```
+
+The `initial` option sets the node's cache before any subscriber connects. When a
+sink subscribes, the START handshake pushes `[[START], [DATA, initial]]` immediately.
+When the source dep later pushes a real value, the derived node recomputes and emits
+the updated value.
+
+For SENTINEL sources that may never push, prefer `node<T>()` (SENTINEL) + the
+first-run gate over a default value — the gate automatically holds downstream
+computation until real data arrives.

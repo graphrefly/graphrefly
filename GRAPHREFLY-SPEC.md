@@ -37,6 +37,7 @@ Examples:
 
 | Type | Data | Purpose |
 |------|------|---------|
+| `START` | — | Subscribe handshake: "upstream is connected and ready to flow" |
 | `DATA` | value | Value delivery |
 | `DIRTY` | — | Phase 1: value about to change |
 | `RESOLVED` | — | Phase 2 alt: was dirty, value unchanged |
@@ -50,6 +51,15 @@ Examples:
 
 The message type set is open. Implementations MAY define additional types. Nodes MUST forward
 message types they don't recognize — this ensures forward compatibility.
+
+**`START` handshake (§2.2):** Emitted by a node to each new sink at the top of `subscribe()`,
+before any other downstream delivery for that subscription. Shape: `[[START]]` alone when the
+node's cache is SENTINEL, or `[[START], [DATA, cached]]` when the node has a cached value.
+Receipt of `START` means "the subscription is established and the upstream is ready to flow";
+absence means the node is terminal (COMPLETE/ERROR without `resubscribable`). `START` is
+informational for wave tracking — it does not participate in DIRTY/DATA/RESOLVED wave masks
+and is not forwarded through intermediate nodes (each node emits its own `START` to its own
+new sinks).
 
 **DATA requires a payload.** `[DATA, value]` MUST include the second element. The value
 MAY be `undefined` (TS) / `None` (PY) / `null` — these are valid data values. A bare
@@ -80,6 +90,27 @@ SHOULD reject or ignore it rather than silently coercing to `undefined`/`None`.
    During drain, further phase-2 emissions are re-deferred to preserve strict
    DIRTY-before-DATA ordering across the entire flush. Dirty state established across
    the graph before recomputation.
+
+8. **START precedes any other message on a subscription.** A sink never receives DATA,
+   DIRTY, RESOLVED, COMPLETE, ERROR, or any other message from a node without first
+   receiving `START` from that node on the same subscription. `START` is emitted through
+   the same `downWithBatch` path as other messages, so it respects batch semantics when
+   `subscribe()` is called inside `batch()`.
+
+**Signal tier table** (for `messageTier` / `message_tier` utilities and batch drain
+ordering):
+
+| Tier | Signals | Role | Batch behavior |
+|------|---------|------|----------------|
+| 0 | `START` | Subscribe handshake | Immediate |
+| 1 | `DIRTY`, `INVALIDATE` | Notification | Immediate |
+| 2 | `PAUSE`, `RESUME` | Flow control | Immediate |
+| 3 | `DATA`, `RESOLVED` | Value settlement | Deferred in batch |
+| 4 | `COMPLETE`, `ERROR` | Terminal lifecycle | Deferred (drains after phase-3) |
+| 5 | `TEARDOWN` | Destruction | Immediate |
+
+Auto-checkpoint saves (§3.8) gate on `messageTier >= 3` (DATA / RESOLVED / COMPLETE /
+ERROR / TEARDOWN). Worker-bridge wire filtering (extra layer) uses the same threshold.
 
 ### 1.4 Directions
 
@@ -133,8 +164,8 @@ Every node exposes:
 
 ```
 node.get()              → cached value (never errors, even when disconnected)
-node.status             → "disconnected" | "dirty" | "settled" | "resolved" |
-                          "completed" | "errored"
+node.status             → "disconnected" | "pending" | "dirty" | "settled" |
+                          "resolved" | "completed" | "errored"
 node.down(messages)     → send messages downstream: [[DATA, value]]
 node.up(messages)       → send messages upstream: [[PAUSE, lockId]]
 node.unsubscribe()      → disconnect from upstream deps
@@ -152,38 +183,52 @@ through that subscription.
 Adds a sink callback to receive downstream messages. Returns a function that removes
 the sink. This is the **only** way to connect to a node's output.
 
-**Connection-time behavior — push model:**
+**§2.2 subscribe flow (START handshake + activation):**
 
-| Node type | On `subscribe` |
-|-----------|---------------|
-| Any node (cached value) | Pushes `[[DATA, cached]]` to the **new sink** |
-| Any node (SENTINEL) | Nothing — no value to push |
-| `producer` (1st sub) | Starts the producer fn (emits via actions) |
-| `derived`/`effect` (1st sub) | Subscribes to deps → deps push → fn computes reactively → emits result |
-| `passthrough` (1st sub) | Subscribes to deps, forwards their messages |
+```
+subscribe(sink):
+  1. register sink; increment sinkCount
+  2. if terminal and !resubscribable → return unsub with no emission
+     (late subscribers to a dead node receive nothing)
+  3. emit the START handshake to `sink` via `downWithBatch`:
+        • cache is SENTINEL → [[START]]
+        • cache has value v → [[START], [DATA, v]]
+  4. if sinkCount == 1 → call _onActivate():
+        • state node (no deps, no fn): no-op
+        • producer (no deps, with fn): run fn (may emit via actions)
+        • derived/effect (deps, with fn): _connectUpstream
+  5. if activation did not produce a value and cache is still SENTINEL,
+     transition status to `"pending"`
+  6. return unsubscribe function
+```
 
-**Every node with a cached value** (not SENTINEL) pushes `[[DATA, cached]]` to **every**
-new subscriber — not just the first. This applies uniformly to state, derived, producer,
-effect, and passthrough nodes. The push happens after sink registration, before the
-subscribe call returns.
+The `START` message is the first thing any sink ever receives from a subscription.
+It is emitted through `downWithBatch`, so when `subscribe()` is called inside
+`batch(() => …)` the `[DATA, cached]` portion respects batch deferral (drains in
+phase 3), while `[START]` itself is immediate (phase 0).
 
-**The push model** means all data flows through messages, uniformly. When a derived
-node subscribes to a state dep, the state pushes its current value as `[[DATA, v]]`.
-The derived node's settlement machinery processes this DATA, runs fn, and emits the
-result. No peek via `.get()`, no eager computation, no special connection-time mechanism.
+**ROM/RAM cache semantics (§2.2):** state nodes retain their cached value across
+disconnect — the value is intrinsic and non-volatile (ROM). Compute nodes (producer,
+derived, dynamic, effect) clear their cache on `_onDeactivate` because their value
+is a function of live subscriptions; reconnect re-runs fn from scratch. Consequently:
 
-This gives a single mental model: **subscribe = wire + push**. The initial data flow
-uses the same message path as all subsequent updates.
+- `get()` on a disconnected **state** returns the retained value.
+- `get()` on a disconnected **compute node** returns `undefined`/`None`.
+- Reconnect on a compute node always re-runs fn (C2 — `_lastDepValues` is cleared
+  on deactivate), giving effects with cleanup a fresh fire/cleanup cycle.
+- Runtime writes via `state.down([[DATA, v]])` persist across subscriber churn.
 
-**SENTINEL:** Internally, implementations use a sentinel value to distinguish "no value
-yet" from "value is `undefined`/`None`". A node whose cache holds SENTINEL has never
-received or been initialized with a value. It does NOT push on subscribe. Derived nodes
-depending on a SENTINEL dep will not compute until that dep receives a real value.
+**First-run gate (§2.7):** a compute node does NOT run fn until every declared dep
+has delivered at least one real value. The dep's subscribe-time push delivers its
+cached value as `[[DATA, cached]]` — a dep that pushes only `[[START]]` (SENTINEL) is
+NOT considered settled, and the derived stays in `"pending"` status. This is the
+composition-guide §1 rule: "derived nodes depending on a SENTINEL dep will not
+compute until that dep receives a real value."
 
-**First subscriber triggers activation:** The first subscriber to a compute node
-(derived/effect) triggers upstream subscription. The first subscriber to a producer
-starts the producer fn. Subsequent subscribers do not re-trigger activation, but they
-DO receive the cached value push (if one exists).
+`dynamicNode` has looser semantics: its deps are discovered at runtime via the
+tracking `get()` proxy, so it CAN run fn with `undefined` for SENTINEL deps on the
+first pass. A rewire-buffer mechanism then detects any deps whose real value
+differs from what fn saw, and re-runs fn once (bounded by a stabilization cap).
 
 #### get()
 
@@ -193,12 +238,13 @@ of `get()`:
 
 | Status | Meaning | `get()` returns |
 |--------|---------|-----------------|
-| `disconnected` | Not connected to deps | `initial` if provided, else `undefined`/`None` |
-| `dirty` | DIRTY or INVALIDATE received, waiting for DATA | Previous value (stale). INVALIDATE also clears cached state internally. |
-| `settled` | DATA received, value current | Current value (fresh) |
-| `resolved` | Was dirty, value confirmed unchanged | Current value (fresh) |
-| `completed` | Terminal: clean completion | Final value |
-| `errored` | Terminal: error occurred | Last good value or `initial` or `undefined`/`None` |
+| `disconnected` | No subscribers (state: retained value; compute: cache cleared) | state: retained value / compute: `undefined` |
+| `pending` | Subscribed + upstream connected, waiting for first DATA | `undefined` / `None` |
+| `dirty` | DIRTY or INVALIDATE received, waiting for DATA | previous value (stale). INVALIDATE also clears cached state internally. |
+| `settled` | DATA received, value current | current value (fresh) |
+| `resolved` | Was dirty, value confirmed unchanged | current value (fresh) |
+| `completed` | Terminal: clean completion | final value |
+| `errored` | Terminal: error occurred | last good value or `initial` or `undefined`/`None` |
 
 When no `initial` option was provided and no value has been emitted, `get()` returns
 `undefined` (TS) / `None` (PY). Internally this is the SENTINEL state.
