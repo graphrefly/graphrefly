@@ -343,7 +343,12 @@ node(deps, fn, {
   onMessage(msg, depIndex, actions) {
     // msg:      the message tuple [Type, Data?]
     // depIndex: which dep sent it
-    // actions:  { down(), emit(), up() } — same as fn receives
+    // actions:
+    //   down(messages) — raw protocol: send full message tuples downstream
+    //                     e.g. down([[DATA, 42]]) or down([[DIRTY], [DATA, v]])
+    //   emit(value)    — convenience: send a plain value with auto-framing
+    //                     runs equals(), emits [[DIRTY],[DATA,v]] or [[RESOLVED]]
+    //   up(messages)   — send messages upstream (PAUSE, RESUME, TEARDOWN)
     //
     // Return true  → message consumed, skip default handling
     // Return false → message not handled, proceed with default dispatch
@@ -359,7 +364,8 @@ custom types unless they fully understand the protocol.
 When `onMessage` returns `true`:
 - The message is consumed. It is NOT forwarded downstream.
 - The default dispatch (dirty tracking, settlement, forwarding) is skipped for that message.
-- The handler MAY call `actions.down()` or `actions.emit()` to produce downstream output.
+- The handler MAY call `actions.emit(value)` (auto-framed with equals check) or
+  `actions.down(messages)` (raw protocol tuples) to produce downstream output.
 
 When `onMessage` returns `false` (or is not set):
 - The default dispatch runs: DIRTY/DATA/RESOLVED drive the settlement cycle, unknown
