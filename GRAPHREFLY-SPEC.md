@@ -966,8 +966,8 @@ ERROR         [ERROR, err]            Error termination
 
 ## Appendix C: Scenario Validation
 
-> **Detailed scenario patterns** are in `COMPOSITION-GUIDE.md` and
-> `composition-guide.jsonl`. The table below is a summary index.
+> **Detailed scenario patterns** are in `COMPOSITION-GUIDE.md` (section 15) and
+> summarized below.
 
 | Scenario | Primitives |
 |----------|------------|

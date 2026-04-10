@@ -4,7 +4,7 @@
 >
 > This is NOT the spec. The spec (`GRAPHREFLY-SPEC.md`) defines **protocol behavior** — what MUST happen. This guide captures **"good to know before you fail"** — patterns, insights and recipes that composition authors (human or LLM) encounter when wiring primitives into higher-level APIs.
 >
-> Entries are accumulated in `composition-guide.jsonl` and summarized here. Both `graphrefly-ts` and `graphrefly-py` CLAUDE.md files reference this guide.
+> Both `graphrefly-ts` and `graphrefly-py` CLAUDE.md files reference this guide.
 
 ---
 
@@ -91,23 +91,18 @@ p.subscribe(handler);  // handler receives 42 (subscribed before emit)
 **Escape hatch:** `TopicGraph.retained()` returns all buffered entries for late
 subscribers. `SubscriptionGraph` provides cursor-based catch-up automatically.
 
-### 3. Null/undefined guards in effects
+### 3. Null/undefined guards — two patterns, no third
 
-Under the §2.2 first-run gate, effect and derived nodes no longer see `undefined`
-dep values from SENTINEL deps — fn is gated until every dep has delivered DATA.
-Null guards for `undefined` are only needed when `null` itself is a meaningful
-domain value (e.g. `state(null)`) and you want to skip processing the initial `null`.
+GraphReFly has exactly **two** guard patterns for "no value yet". Do not invent
+a third.
+
+**Pattern 1: SENTINEL (preferred).** Use `node<T>()` with no `initial`. The
+first-run gate blocks computation until every dep has delivered real DATA. No
+guard code needed in the fn body — `undefined` and `null` are both valid DATA
+values, never used as "not ready" sentinels.
 
 ```ts
-// When null IS a valid domain value (e.g. state(null)):
-const source = state<T | null>(null);
-effect([source], ([val]) => {
-  if (val == null) return;  // guard — only needed because `null` is the initial
-  // safe to process val
-});
-
-// When "no value yet" is the intent, prefer SENTINEL — the first-run gate takes
-// care of the "wait for real data" behavior automatically:
+// "Not ready yet" → use SENTINEL. No guard needed.
 const source = node<T>();  // SENTINEL → effect stays `"pending"` until DATA arrives
 effect([source], ([val]) => {
   // val is always a real value here; no guard needed.
@@ -115,8 +110,30 @@ effect([source], ([val]) => {
 }).subscribe(() => {});
 ```
 
+**Pattern 2: `== null` guard (loose equality).** Only needed when `null` is a
+meaningful initial domain value (e.g. `state(null)`) and you want to skip
+processing the initial `null`. Use `== null` (loose) — never `=== undefined` or
+`=== null` (strict). Loose equality catches both `null` and `undefined`, which
+is the correct domain guard since both are valid DATA values that may appear as
+initial state.
+
+```ts
+// null IS a valid domain value (e.g. state(null)):
+const source = state<T | null>(null);
+effect([source], ([val]) => {
+  if (val == null) return;  // guard — only needed because `null` is the initial
+  // safe to process val
+});
+```
+
+**Never use `=== undefined` as a reactive dep guard.** `undefined` is a valid
+DATA value in the protocol. The "no value yet" signal is SENTINEL + START
+handshake, not `undefined`. Using `=== undefined` conflates JavaScript variable
+state with reactive protocol semantics and will silently break when a dep
+legitimately emits `undefined` as DATA.
+
 **Rule of thumb:** use `node<T>()` (SENTINEL) for "not ready yet". Only use
-`state(null)` when `null` is a meaningful domain value.
+`state(null)` + `== null` guard when `null` is a meaningful domain value.
 
 ### 4. Versioned wrapper navigation
 
@@ -455,3 +472,62 @@ the updated value.
 For SENTINEL sources that may never push, prefer `node<T>()` (SENTINEL) + the
 first-run gate over a default value — the gate automatically holds downstream
 computation until real data arrives.
+
+### 14. Blocking async bridge deadlock (PY only)
+
+**Symptom:** PY test or application hangs for 60s, then `TimeoutError` from
+`first_value_from`. Happens when `AsyncioRunner` is the default runner and any
+factory internally calls `first_value_from()` (e.g. `promptNode`, `_resolve_node_input`,
+tool handlers).
+
+**Root cause:** `first_value_from()` blocks the calling thread with
+`threading.Event.wait()`. If the calling thread IS the asyncio event loop thread,
+and the runner is `AsyncioRunner` (which schedules work on that same loop via
+`call_soon_threadsafe`), the scheduled task can never execute — deadlock.
+
+```
+Event loop thread:
+  promptNode fn → _resolve_node_input → first_value_from → Event.wait() ← BLOCKED
+                                                                ↑
+  AsyncioRunner task (needs loop to run) ───────────────────────┘ NEVER RUNS
+```
+
+**TS does not have this problem.** TS `resolveToolHandlerResult` is `async` and
+returns a `Promise`. `firstDataFromNode` returns a `Promise` too — non-blocking.
+The microtask queue stays free. PY has no equivalent — `first_value_from` must
+block because Python node fns are synchronous.
+
+**Workaround:** Use a thread-spawning runner (e.g. `_ThreadRunner` in test
+conftest) instead of `AsyncioRunner` when the pipeline includes blocking bridges.
+The thread-spawning runner runs coroutines in separate threads, so
+`first_value_from` blocks the main thread while the coroutine completes in the
+other thread — no deadlock.
+
+**Long-term fix:** Refactor PY `_resolve_node_input` to return a `NodeInput`
+(Node or plain value) instead of always resolving to a plain value. The calling
+factory (promptNode) would then wire the result reactively via `from_any`, matching
+TS's `switchMap`-based approach. This eliminates blocking entirely and makes
+`AsyncioRunner` safe for the full pipeline.
+
+| Runner | `first_value_from` safe? | Use case |
+|--------|--------------------------|----------|
+| `_ThreadRunner` (test conftest) | Yes — coroutines run in threads | Sync tests, any pipeline with blocking bridges |
+| `AsyncioRunner` | **No** — deadlocks if called from event loop thread | Pure-reactive pipelines without `first_value_from` |
+| `TrioRunner` | Same deadlock risk as AsyncioRunner | — |
+
+### 15. Scenario patterns (spec Appendix C)
+
+The spec’s **Appendix C** scenario validation table is the canonical index. Quick
+composition-oriented patterns (same rows, shorthand):
+
+| Scenario | Pattern |
+|----------|---------|
+| LLM cost control | `state` (knob via meta) → `derived` chain → gauges via meta |
+| Security policy enforcement | `state` + `derived` + `effect` with PAUSE propagation |
+| Human-in-the-loop | Two state nodes (human + LLM) → `derived` gate → `effect` |
+| Multi-agent routing | `Graph.mount` + `connect` across subgraphs |
+| LLM builds graph from snapshot | `Graph.fromSnapshot` + `describe()` for introspection |
+| Git-versioned graphs | `toJSONString()` / `to_json_string()` → deterministic, diffable output |
+| Custom domain signals | User-defined message types + `onMessage` to intercept; unhandled types forward through graph |
+
+See `GRAPHREFLY-SPEC.md` Appendix C for the full summary table and spec context.
