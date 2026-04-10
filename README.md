@@ -1,6 +1,6 @@
 # GraphReFly
 
-> Reactive graph protocol for human + LLM co-operation.
+> The reactive harness layer for agent workflows. Reactive graph protocol for human + LLM co-operation.
 
 This repo is the **canonical home** for the GraphReFly protocol specification. Language-specific implementations live in their own repos:
 
