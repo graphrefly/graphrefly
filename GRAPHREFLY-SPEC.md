@@ -1,4 +1,4 @@
-# GraphReFly Spec v0.1
+# GraphReFly Spec v0.2
 
 > Reactive graph protocol for human + LLM co-operation.
 >
@@ -37,18 +37,29 @@ Examples:
 
 | Type | Data | Purpose |
 |------|------|---------|
+| `START` | — | Subscribe handshake: "upstream is connected and ready to flow" |
 | `DATA` | value | Value delivery |
 | `DIRTY` | — | Phase 1: value about to change |
 | `RESOLVED` | — | Phase 2 alt: was dirty, value unchanged |
 | `INVALIDATE` | — | Clear cached state, don't auto-emit |
-| `PAUSE` | lockId? | Suspend activity |
-| `RESUME` | lockId? | Resume after pause |
+| `RESET` | — | Clear cache + re-push initial (INVALIDATE then push) |
+| `PAUSE` | lockId | Suspend activity (lock identifies the pauser) |
+| `RESUME` | lockId | Resume after pause (must match PAUSE lockId) |
 | `TEARDOWN` | — | Permanent cleanup, release resources |
 | `COMPLETE` | — | Clean termination |
 | `ERROR` | error | Error termination |
 
 The message type set is open. Implementations MAY define additional types. Nodes MUST forward
 message types they don't recognize — this ensures forward compatibility.
+
+**`START` handshake (§2.2):** Emitted by a node to each new sink at the top of `subscribe()`,
+before any other downstream delivery for that subscription. Shape: `[[START]]` alone when the
+node's cache is SENTINEL, or `[[START], [DATA, cached]]` when the node has a cached value.
+Receipt of `START` means "the subscription is established and the upstream is ready to flow";
+absence means the node is terminal (COMPLETE/ERROR without `resubscribable`). `START` is
+informational for wave tracking — it does not participate in DIRTY/DATA/RESOLVED wave masks
+and is not forwarded through intermediate nodes (each node emits its own `START` to its own
+new sinks).
 
 **DATA requires a payload.** `[DATA, value]` MUST include the second element. The value
 MAY be `undefined` (TS) / `None` (PY) / `null` — these are valid data values. A bare
@@ -79,6 +90,27 @@ SHOULD reject or ignore it rather than silently coercing to `undefined`/`None`.
    During drain, further phase-2 emissions are re-deferred to preserve strict
    DIRTY-before-DATA ordering across the entire flush. Dirty state established across
    the graph before recomputation.
+
+8. **START precedes any other message on a subscription.** A sink never receives DATA,
+   DIRTY, RESOLVED, COMPLETE, ERROR, or any other message from a node without first
+   receiving `START` from that node on the same subscription. `START` is emitted through
+   the same `downWithBatch` path as other messages, so it respects batch semantics when
+   `subscribe()` is called inside `batch()`.
+
+**Signal tier table** (for `messageTier` / `message_tier` utilities and batch drain
+ordering):
+
+| Tier | Signals | Role | Batch behavior |
+|------|---------|------|----------------|
+| 0 | `START` | Subscribe handshake | Immediate |
+| 1 | `DIRTY`, `INVALIDATE` | Notification | Immediate |
+| 2 | `PAUSE`, `RESUME` | Flow control | Immediate |
+| 3 | `DATA`, `RESOLVED` | Value settlement | Deferred in batch |
+| 4 | `COMPLETE`, `ERROR` | Terminal lifecycle | Deferred (drains after phase-3) |
+| 5 | `TEARDOWN` | Destruction | Immediate |
+
+Auto-checkpoint saves (§3.8) gate on `messageTier >= 3` (DATA / RESOLVED / COMPLETE /
+ERROR / TEARDOWN). Worker-bridge wire filtering (extra layer) uses the same threshold.
 
 ### 1.4 Directions
 
@@ -121,14 +153,19 @@ What a node does depends on what you give it:
 These sugar names are convenience constructors. They all create nodes. Implementations SHOULD
 provide them for ergonomics and readability. They are not separate types.
 
+**`dynamicNode`** is a construction variant of `node` that tracks dependencies at runtime
+rather than requiring them upfront. Instead of a static deps array, it provides a `get(dep)`
+proxy that registers dependencies on first access during fn execution. This is the same
+`node` primitive — just a different way to declare dependencies.
+
 ### 2.2 Interface
 
 Every node exposes:
 
 ```
 node.get()              → cached value (never errors, even when disconnected)
-node.status             → "disconnected" | "dirty" | "settled" | "resolved" |
-                          "completed" | "errored"
+node.status             → "disconnected" | "pending" | "dirty" | "settled" |
+                          "resolved" | "completed" | "errored"
 node.down(messages)     → send messages downstream: [[DATA, value]]
 node.up(messages)       → send messages upstream: [[PAUSE, lockId]]
 node.unsubscribe()      → disconnect from upstream deps
@@ -141,6 +178,58 @@ types them as optional), but calling them on a source node has no effect. When a
 or graph subscribes to another node, it can use `up()` to send messages upstream
 through that subscription.
 
+#### subscribe(sink) → unsubscribe
+
+Adds a sink callback to receive downstream messages. Returns a function that removes
+the sink. This is the **only** way to connect to a node's output.
+
+**§2.2 subscribe flow (START handshake + activation):**
+
+```
+subscribe(sink):
+  1. register sink; increment sinkCount
+  2. if terminal and !resubscribable → return unsub with no emission
+     (late subscribers to a dead node receive nothing)
+  3. emit the START handshake to `sink` via `downWithBatch`:
+        • cache is SENTINEL → [[START]]
+        • cache has value v → [[START], [DATA, v]]
+  4. if sinkCount == 1 → call _onActivate():
+        • state node (no deps, no fn): no-op
+        • producer (no deps, with fn): run fn (may emit via actions)
+        • derived/effect (deps, with fn): _connectUpstream
+  5. if activation did not produce a value and cache is still SENTINEL,
+     transition status to `"pending"`
+  6. return unsubscribe function
+```
+
+The `START` message is the first thing any sink ever receives from a subscription.
+It is emitted through `downWithBatch`, so when `subscribe()` is called inside
+`batch(() => …)` the `[DATA, cached]` portion respects batch deferral (drains in
+phase 3), while `[START]` itself is immediate (phase 0).
+
+**ROM/RAM cache semantics (§2.2):** state nodes retain their cached value across
+disconnect — the value is intrinsic and non-volatile (ROM). Compute nodes (producer,
+derived, dynamic, effect) clear their cache on `_onDeactivate` because their value
+is a function of live subscriptions; reconnect re-runs fn from scratch. Consequently:
+
+- `get()` on a disconnected **state** returns the retained value.
+- `get()` on a disconnected **compute node** returns `undefined`/`None`.
+- Reconnect on a compute node always re-runs fn (C2 — `_lastDepValues` is cleared
+  on deactivate), giving effects with cleanup a fresh fire/cleanup cycle.
+- Runtime writes via `state.down([[DATA, v]])` persist across subscriber churn.
+
+**First-run gate (§2.7):** a compute node does NOT run fn until every declared dep
+has delivered at least one real value. The dep's subscribe-time push delivers its
+cached value as `[[DATA, cached]]` — a dep that pushes only `[[START]]` (SENTINEL) is
+NOT considered settled, and the derived stays in `"pending"` status. This is the
+composition-guide §1 rule: "derived nodes depending on a SENTINEL dep will not
+compute until that dep receives a real value."
+
+`dynamicNode` has looser semantics: its deps are discovered at runtime via the
+tracking `get()` proxy, so it CAN run fn with `undefined` for SENTINEL deps on the
+first pass. A rewire-buffer mechanism then detects any deps whose real value
+differs from what fn saw, and re-runs fn once (bounded by a stabilization cap).
+
 #### get()
 
 Returns the cached value. Does NOT guarantee freshness and does NOT trigger computation.
@@ -149,23 +238,18 @@ of `get()`:
 
 | Status | Meaning | `get()` returns |
 |--------|---------|-----------------|
-| `disconnected` | Not connected to deps | `initial` if provided, else `undefined`/`None` |
-| `dirty` | DIRTY or INVALIDATE received, waiting for DATA | Previous value (stale). INVALIDATE also clears cached state internally. |
-| `settled` | DATA received, value current | Current value (fresh) |
-| `resolved` | Was dirty, value confirmed unchanged | Current value (fresh) |
-| `completed` | Terminal: clean completion | Final value |
-| `errored` | Terminal: error occurred | Last good value or `initial` or `undefined`/`None` |
+| `disconnected` | No subscribers (state: retained value; compute: cache cleared) | state: retained value / compute: `undefined` |
+| `pending` | Subscribed + upstream connected, waiting for first DATA | `undefined` / `None` |
+| `dirty` | DIRTY or INVALIDATE received, waiting for DATA | previous value (stale). INVALIDATE also clears cached state internally. |
+| `settled` | DATA received, value current | current value (fresh) |
+| `resolved` | Was dirty, value confirmed unchanged | current value (fresh) |
+| `completed` | Terminal: clean completion | final value |
+| `errored` | Terminal: error occurred | last good value or `initial` or `undefined`/`None` |
 
 When no `initial` option was provided and no value has been emitted, `get()` returns
-`undefined` (TS) / `None` (PY). Internally, implementations use a sentinel value to
-distinguish "no value yet" from "emitted `undefined`/`None`".
+`undefined` (TS) / `None` (PY). Internally this is the SENTINEL state.
 
-Implementations MAY pull-recompute on `get()` when disconnected, but the spec does not
-require it. `get()` never throws.
-
-> **Debugging guidance** has been moved to `COMPOSITION-GUIDE.md` §1 "Lazy activation".
-> Key rule: when `get()` returns unexpected values, check `status` first — it distinguishes
-> `disconnected` (lazy, no subscriber) from `errored` (fn threw) instantly.
+`get()` never throws. `get()` never triggers computation.
 
 #### down(messages)
 
@@ -277,15 +361,16 @@ All nodes accept these options:
 | `onMessage` | fn | — | Custom message type handler (see §2.6) |
 
 **`initial` semantics:** When `initial` is provided (even as `undefined`/`None`), the
-node's cache is pre-populated and `get()` returns that value before any emission. On
-first `_downAutoValue`, `equals` IS called against the initial value — if the computed
-value matches, the node emits `RESOLVED` instead of `DATA`. When `initial` is **absent**
-(option key not present), the cache is empty (internal sentinel); the first emission
-always produces `DATA` regardless of the value. `INVALIDATE` and `resetOnTeardown`
-return the cache to the empty-sentinel state.
+node's cache is pre-populated and `get()` returns that value before any emission. Source
+nodes with `initial` push `[[DATA, initial]]` to each new subscriber (§2.2). On first
+`_downAutoValue`, `equals` IS called against the initial value — if the computed value
+matches, the node emits `RESOLVED` instead of `DATA`. When `initial` is **absent**
+(option key not present), the cache holds SENTINEL; the node does not push on subscribe,
+and the first emission always produces `DATA` regardless of the value. `INVALIDATE` and
+`resetOnTeardown` return the cache to the SENTINEL state.
 
 **`equals` contract:** `equals` is called between two consecutively cached values. It
-is never called when the cache is in its empty-sentinel state (no `initial`, or after
+is never called when the cache is in its SENTINEL state (no `initial`, or after
 `INVALIDATE` / `resetOnTeardown` / resubscribe reset). When the cache holds a real
 value — whether from `initial` or a prior emission — `equals` compares it against the
 new value. `equals` MAY receive `undefined`/`None` as an argument when the node has
@@ -304,7 +389,12 @@ node(deps, fn, {
   onMessage(msg, depIndex, actions) {
     // msg:      the message tuple [Type, Data?]
     // depIndex: which dep sent it
-    // actions:  { down(), emit(), up() } — same as fn receives
+    // actions:
+    //   down(messages) — raw protocol: send full message tuples downstream
+    //                     e.g. down([[DATA, 42]]) or down([[DIRTY], [DATA, v]])
+    //   emit(value)    — convenience: send a plain value with auto-framing
+    //                     runs equals(), emits [[DIRTY],[DATA,v]] or [[RESOLVED]]
+    //   up(messages)   — send messages upstream (PAUSE, RESUME, TEARDOWN)
     //
     // Return true  → message consumed, skip default handling
     // Return false → message not handled, proceed with default dispatch
@@ -320,7 +410,8 @@ custom types unless they fully understand the protocol.
 When `onMessage` returns `true`:
 - The message is consumed. It is NOT forwarded downstream.
 - The default dispatch (dirty tracking, settlement, forwarding) is skipped for that message.
-- The handler MAY call `actions.down()` or `actions.emit()` to produce downstream output.
+- The handler MAY call `actions.emit(value)` (auto-framed with equals check) or
+  `actions.down(messages)` (raw protocol tuples) to produce downstream output.
 
 When `onMessage` returns `false` (or is not set):
 - The default dispatch runs: DIRTY/DATA/RESOLVED drive the settlement cycle, unknown
@@ -330,37 +421,6 @@ When `onMessage` throws:
 - The exception is caught by the node. The node emits `[[ERROR, err]]` downstream
   (same behavior as fn throwing — §2.4). No further messages from that dep batch are
   processed.
-
-Example — intercepting a custom `ESCROW_LOCKED` type:
-
-```
-// TS
-const ESCROW_LOCKED = Symbol.for("web3/ESCROW_LOCKED");
-
-const handler = node([escrowSource], computeFn, {
-  onMessage(msg, depIndex, actions) {
-    if (msg[0] === ESCROW_LOCKED) {
-      actions.emit({ status: "locked", tx: msg[1] });
-      return true;
-    }
-    return false;
-  }
-});
-
-// Python
-ESCROW_LOCKED = "ESCROW_LOCKED"
-
-def handle_escrow(msg, dep_index, actions):
-    if msg[0] == ESCROW_LOCKED:
-        actions.emit({"status": "locked", "tx": msg[1]})
-        return True
-    return False
-
-handler = node([escrow_source], compute_fn, on_message=handle_escrow)
-```
-
-Nodes without `onMessage` forward all unrecognized types unchanged — the spec default
-(§1.3.6) is preserved.
 
 ### 2.7 Diamond Resolution
 
@@ -380,6 +440,10 @@ When a node depends on multiple deps that share an upstream ancestor:
 4. C settles (DATA or RESOLVED) → D records dep 1 settled → D now recomputes
 
 D recomputes exactly once, with both deps settled. This is the glitch-free guarantee.
+
+**Connection-time diamond:** When D subscribes for the first time and both B and C
+activate (pushing their initial values), D's settlement machinery ensures fn runs
+exactly once after all deps have settled — not once per dep.
 
 ### 2.8 Sugar Constructors
 
@@ -520,7 +584,9 @@ graph.observe()                 — messages from all nodes, prefixed with node 
 ```
 
 The returned handle exposes:
-- `subscribe(sink)` — receive downstream messages from the observed node(s).
+- `subscribe(sink)` — receive downstream messages from the observed node(s). Because
+  observe uses subscribe internally, the observer receives the initial `[[DATA, cached]]`
+  push if the observed node has a cached value (§2.2).
 - `up(messages)` (single-node) / `up(path, messages)` (all-nodes) — send messages
   upstream toward the observed node's sources (e.g. `[[PAUSE, lockId]]`).
   If a node guard denies the upstream message, it is silently dropped.
@@ -619,7 +685,23 @@ pipe(source, op1, op2, ...)     — returns the final node in the chain
 Pipe creates a chain of nodes. It does not create a Graph — use `graph.add()` to register
 piped chains if you want them named and inspectable.
 
-### 4.2 batch
+### 4.2 Central timer and messageTier utilities
+
+All time-dependent logic must use the central clock:
+
+- **`monotonicNs()` / `monotonic_ns()`** — monotonic nanoseconds for internal event ordering,
+  duration measurement, and debounce intervals. Immune to wall-clock adjustments.
+- **`wallClockNs()` / `wall_clock_ns()`** — wall-clock nanoseconds for external attribution
+  payloads (timestamps visible to users, logs, audit trails).
+
+Never call `Date.now()`, `performance.now()`, `time.time_ns()`, or `time.monotonic_ns()`
+directly outside the clock module.
+
+**`messageTier` / `message_tier`** classifies message types into tiers for batch ordering
+and auto-checkpoint gating. Always use the provided tier utilities rather than hardcoding
+type checks. Tier `>=2` gates auto-checkpoint saves (§3.8).
+
+### 4.3 batch
 
 Defers DATA phase across multiple writes.
 
@@ -705,15 +787,7 @@ raw coroutines to schedule reactive work. Use `core/clock.py` for timestamps and
 context manager for deferred delivery. Async boundaries belong in sources and the runner
 layer (`compat/asyncio_runner`, `compat/trio_runner`).
 
-### 5.11 Central timer and messageTier utilities
-
-All time-dependent logic must use the central clock (`monotonicNs()` / `monotonic_ns()` for
-event ordering, `wallClockNs()` / `wall_clock_ns()` for attribution). Never call `Date.now()`,
-`performance.now()`, `time.time_ns()`, or `time.monotonic_ns()` directly outside the clock
-module. Message tier classification (`messageTier`) gates auto-checkpoint behavior and batch
-ordering — always use the provided tier utilities rather than hardcoding type checks.
-
-### 5.12 Phase 4+ APIs speak developer language
+### 5.11 Domain-layer APIs speak developer language
 
 Domain-layer APIs (orchestration, messaging, memory, AI, CQRS) and framework integrations
 must be developer-friendly: sensible defaults, minimal boilerplate, clear error messages,
@@ -721,6 +795,15 @@ and discoverable options. Protocol internals (`DIRTY`, `RESOLVED`, bitmask) are 
 via `.node()` or `inner` but never surface in the primary API. A developer who has never
 read the spec should be able to use `pipeline()`, `agentMemory()`, or `chatStream()` from
 examples alone.
+
+### 5.12 Data flows through messages, not peeks
+
+All data propagation — including initial values at connection time — flows through the
+message protocol (`[[DATA, v]]`). Nodes do not peek dep values via `.get()` to seed
+computation. `.get()` is a read-only cache accessor for external consumers; the reactive
+graph relies exclusively on messages for state propagation.
+
+This ensures a single mental model: if data moved, a message carried it.
 
 ---
 
@@ -748,9 +831,11 @@ not a spec requirement.
 
 ### 6.3 Single-Dep Optimization
 
-When a node has exactly one dep in an unbatched path, implementations MAY skip the DIRTY
-message and send DATA directly. The semantic guarantee (DIRTY precedes DATA) is preserved
-within batched contexts. This is a performance optimization — the spec does not require it.
+When a node has exactly one downstream subscriber that declared itself as single-dep,
+implementations MAY skip the DIRTY message when the same batch also contains DATA or
+RESOLVED. The semantic guarantee (DIRTY precedes DATA) is preserved within batched
+contexts and for multi-dep nodes. This is a performance optimization — the spec does
+not require it.
 
 ---
 
@@ -770,11 +855,20 @@ V0 is recommended minimum. Higher levels are opt-in.
 ## 8. Spec Versioning
 
 Follows semver:
-- **Patch** (0.1.x): clarifications, examples
+- **Patch** (0.2.x): clarifications, examples
 - **Minor** (0.x.0): new optional features, new message types
 - **Major** (x.0.0): breaking changes to protocol or primitive contracts
 
-Current: **v0.1.0** (draft)
+Current: **v0.2.0** — push-on-subscribe model
+
+**Changelog:**
+- **v0.2.0** — All nodes with cached value push `[[DATA, cached]]` to every new
+  subscriber on subscribe. Derived nodes compute reactively from upstream push instead
+  of eager compute on connection. Removes the peek-via-`.get()` connection path.
+  Adds RESET message type (§1.2). PAUSE/RESUME lockId now required. Adds `dynamicNode`
+  construction variant (§2.1). Adds §4.2 timer/messageTier utilities. Adds §5.13
+  (data flows through messages). Updates §2.2 subscribe behavior table.
+- **v0.1.0** — Initial draft.
 
 ---
 
@@ -785,8 +879,9 @@ DATA          [DATA, value]           Value delivery
 DIRTY         [DIRTY]                 Phase 1: about to change
 RESOLVED      [RESOLVED]              Phase 2: unchanged
 INVALIDATE    [INVALIDATE]            Clear cache
-PAUSE         [PAUSE, lockId?]        Suspend
-RESUME        [RESUME, lockId?]       Resume
+RESET         [RESET]                 Clear cache + re-push initial
+PAUSE         [PAUSE, lockId]         Suspend (lockId required)
+RESUME        [RESUME, lockId]        Resume (must match PAUSE lockId)
 TEARDOWN      [TEARDOWN]              Permanent end
 COMPLETE      [COMPLETE]              Clean termination
 ERROR         [ERROR, err]            Error termination
@@ -871,8 +966,8 @@ ERROR         [ERROR, err]            Error termination
 
 ## Appendix C: Scenario Validation
 
-> **Detailed scenario patterns** have been moved to `COMPOSITION-GUIDE.md` and
-> `composition-guide.jsonl`. The table below is a summary index.
+> **Detailed scenario patterns** are in `COMPOSITION-GUIDE.md` (section 15) and
+> summarized below.
 
 | Scenario | Primitives |
 |----------|------------|
