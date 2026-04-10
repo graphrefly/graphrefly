@@ -531,3 +531,55 @@ composition-oriented patterns (same rows, shorthand):
 | Custom domain signals | User-defined message types + `onMessage` to intercept; unhandled types forward through graph |
 
 See `GRAPHREFLY-SPEC.md` Appendix C for the full summary table and spec context.
+
+### 16. Nested `withLatestFrom` for multi-stage context assembly
+
+In multi-stage pipelines (e.g., EXECUTE → VERIFY → REFLECT), the verify
+effect needs the verify output *as trigger* and the execute output + execute
+input *as context*. A single `withLatestFrom(verify, execute, input)` would
+fire on ANY of the three — incorrect when you want "fire only when verify
+settles."
+
+**Pattern: nested `withLatestFrom`.**
+
+```ts
+// WRONG: fires on execute OR verify changes
+const ctx = withLatestFrom(verifyNode, executeNode, executeInput);
+
+// RIGHT: fire ONLY on verifyNode, sample the rest
+const verifyWithExec = withLatestFrom(verifyNode, executeNode);
+const verifyContext = withLatestFrom(verifyWithExec, executeInput);
+effect([verifyContext], ([[[vo, exec], input]]) => { ... });
+```
+
+The outer `withLatestFrom` triggers on `verifyWithExec` (which triggers on
+`verifyNode`), and samples `executeInput` without making it a reactive
+trigger. This prevents mismatched values when a new item arrives before the
+previous verification finishes.
+
+**When to use:** Any pipeline where stage N's effect needs context from
+stages N-1 and N-2, but should only fire when stage N settles. Common in
+harness loops, multi-step LLM pipelines, and approval workflows.
+
+### 17. Stable identity for retried/reingested items (`trackingKey`)
+
+When items flow through a retry or reingestion loop, their summaries get
+decorated with context (e.g., `[RETRY 1/3] original summary — failure
+details`). Deriving identity keys from mutated summaries is fragile — any
+new decoration pattern generates novel keys that defeat dedup and can cause
+infinite loops.
+
+**Pattern: `relatedTo[0]` as stable key.**
+
+```ts
+// In _internal.ts / _internal.py
+function trackingKey(item: { summary: string; relatedTo?: string[] }): string {
+    return item.relatedTo?.[0] ?? item.summary;
+}
+```
+
+On retry/reingestion, set `relatedTo: [originalKey]` so all retries share
+the same identity. First-time items (no `relatedTo`) use the raw summary.
+
+**Key insight:** the original key is carried forward immutably through the
+`relatedTo` array, not reconstructed from a mutated summary string.
