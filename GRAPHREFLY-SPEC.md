@@ -1123,17 +1123,33 @@ wire nodes after creation.
 ### D.7 `autoTrackNode` — runtime dep discovery
 
 Sugar factory for Jotai/signals-style auto-tracking. Deps are discovered
-at runtime via `track(dep)` calls inside fn. Two-phase discovery:
+at runtime via `track(dep)` calls inside fn. Discovery pattern:
 
 1. Run fn. Each `track(dep)` for an unknown dep: subscribe via `_addDep`,
    return `dep.cache` as stub (P3 boundary exception for discovery).
-2. After fn returns, if all new deps settled synchronously → emit
-   directly (stub values match protocol values). Otherwise wait for wave
-   machinery to re-run with protocol values.
-3. Converges when no new deps found.
+2. If any new dep was discovered, discard the result and return without
+   emitting. The `_addDep` subscribe handshake delivers the dep's cached
+   value synchronously (or deferred, inside a `batch`), which sets
+   `_pendingRerun` on the autoTrackNode via re-entrance. The framework
+   then re-runs fn after the current `_execFn` returns.
+3. The re-run sees the new deps as known via `depIndexMap` and reads
+   them through `data[i]` (protocol-delivered). When no new deps appear,
+   fn calls `actions.emit(result)` — which routes through `_actionEmit`
+   → `bundle()` and emits DATA (if changed) or RESOLVED (if unchanged).
 
 Re-entrance safety: `_execFn` guards against recursive calls triggered
-by `_addDep`'s synchronous subscribe delivery.
+by `_addDep`'s synchronous subscribe delivery via `_isExecutingFn` +
+`_pendingRerun`. The `_execFn` finally block runs any pending rerun
+BEFORE clearing wave flags so the rerun observes the correct
+`_waveHasNewData` state.
+
+**No custom suppression.** `autoTrackNode` does not skip `actions.emit`
+on "no accessed dep changed" waves. The equals check in `_actionEmit`
+already folds same-value results to RESOLVED, which clears downstream
+`dep.dirty` while remaining invisible to DATA-only subscribers (Jotai
+`subscribe`, Signal.sub, nanostores `listen`/`subscribe`). Skipping
+emission entirely would leave downstream stuck and break two-way
+composition (see D.12).
 
 ### D.8 Terminal-emission operators emit nothing during accumulation
 
@@ -1185,3 +1201,75 @@ Two internal methods surfaced for graph/sugar consumers:
 
 Both are `@internal` — not part of the public `Node<T>` interface. Use
 through `Graph` APIs or sugar factories.
+
+### D.12 Compat-layer two-way bridge invariant
+
+Compat layers (Jotai `atom`, TC39 `Signal.*`, Nanostores `atom`/
+`computed`/`map`, Zustand `create`, etc.) are first-class composable
+`Node<T>` producers, not one-way polyfills. Every compat object MUST
+expose its backing node (`._node`, `store.node(name)`) and that node
+MUST behave as any other protocol-compliant Node when observed from
+the native layer. Users are expected to compose compat-backed nodes
+into native graphs:
+
+```ts
+const count = new Signal.State(0);
+const doubled = new Signal.Computed(() => count.get() * 2);
+
+// Native graphrefly composition on top of the compat-backed node.
+const formatted = derived([doubled._node], ([v]) => `v=${v}`);
+formatted.subscribe(sink);
+```
+
+**Invariant I.** Write paths in compat layers MUST route through the
+framed `emit` pipeline. Two legal shapes:
+
+1. `n.emit(value)` — preferred. Runs the node's `equals`, frames
+   through `bundle()` which auto-prefixes `[DIRTY]`, delivers via
+   `_emit`.
+2. `n.down([[DIRTY], [DATA, value]])` — explicit two-phase shape,
+   for write paths that intentionally bypass the equals check (e.g.,
+   debugging or test harnesses that want to force an always-fire).
+
+Raw `n.down([[DATA, value]])` WITHOUT an explicit `[DIRTY]` prefix is
+NOT compliant. It causes diamond glitches in any downstream composition
+(see Appendix A on tier ordering and §2.7 on diamond resolution): each
+leg of a diamond delivers DATA without the coordinating DIRTY that
+would otherwise hold the downstream wave open until all legs settle.
+
+**Invariant II.** Compute paths in compat layers MUST produce exactly
+one framed outcome per wave — either DATA (value changed) or RESOLVED
+(value unchanged). Silently returning without emitting is NOT
+compliant. A missing outcome leaves downstream `dep.dirty` stuck at
+`true` from the earlier DIRTY relay, which freezes any subsequent
+sibling-dep wave at the downstream. `autoTrackNode` (D.7) satisfies
+this by always calling `actions.emit(result)` at the end of its
+wrapped fn; the framework's equals check folds same-value results to
+RESOLVED uniformly.
+
+**Invariant III.** Per-compat equality semantics MUST be encoded as
+the node's `NodeOptions.equals` config, not implemented by omitting
+emissions. Jotai and Nanostores use `Object.is` dedup → default equals.
+Zustand fires on every `setState` regardless → pass
+`equals: () => false` at node construction. In either case, writes go
+through `emit` and the framework handles the DATA/RESOLVED decision
+uniformly.
+
+**Testability.** Compat-layer conformance to invariants I–III is
+testable only via:
+
+1. Live subscribers observing `cb` arguments and fire counts
+   (`.get()`/`.cache` reads are insensitive to mid-wave glitches
+   because `.cache` is updated at end-of-wave).
+2. Two-way bridge tests: subscribe directly to the compat object's
+   backing node and compare the DATA sequence against the compat
+   subscribe path.
+
+Assertions on fn-invocation counts are an implementation detail and
+MUST NOT be used as the primary conformance signal.
+
+**Scope.** D.12 applies to every compat layer in `compat/` and to any
+future compat layer (e.g., Preact Signals, Svelte v5 runes, MobX). A
+compat layer that is only ever used through its compat surface is
+still bound by D.12, because `._node` is public and users are entitled
+to compose on it.

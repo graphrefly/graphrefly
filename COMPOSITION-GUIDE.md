@@ -632,6 +632,20 @@ const counter = derived([src], (data, ctx) => {
 
 **Rule of thumb:** use `emit` for values, `down` for protocol messages.
 
+**Why `emit` is diamond-safe and raw `down([[DATA, v]])` isn't.** The
+`emit` path routes the value through `bundle()`, which auto-prefixes
+`[DIRTY]` when none is present. The `[DIRTY]` prefix is what lets
+downstream nodes enter a "wave pending" state and defer their fn until
+all legs of a diamond have settled. Raw `down([[DATA, v]])` skips
+bundle, so no `[DIRTY]` is sent — downstream dep records never go
+dirty — downstream thinks each DATA is an independent wave and runs
+fn immediately per leg. In a diamond this fires the downstream fn
+twice with glitch values (new left + stale right, then new left + new
+right). The final `.cache` is correct, but any live subscriber sees
+the intermediate glitch. This is a **latent bug** that only surfaces
+under live subscribers or composition into further-downstream nodes —
+`.get()` tests won't catch it.
+
 ### 22. `autoTrackNode` — runtime dep discovery for pull-based compat
 
 Use for Jotai/TC39-Signals-style APIs where deps are discovered by
@@ -703,3 +717,76 @@ transition.
 precedes any DATA/RESOLVED globally" will fail for accumulating operators
 because the initial activation RESOLVED has no preceding DIRTY. Rewrite
 such tests to check "DIRTY precedes the terminal DATA" instead.
+
+### 26. Compat layers are two-way bridges, not one-way surfaces
+
+Compat layers (`Signal.State`/`Signal.Computed`, Jotai `atom`,
+Nanostores `atom`/`computed`/`map`, Zustand `create`, etc.) are not
+one-way polyfills. Every compat object exposes its backing node via
+`._node` (or `store.node(name)`), and users are expected to compose
+those nodes into native graphrefly graphs when they outgrow the
+compat feature set. This is the graduated-adoption path:
+
+1. **Drop-in:** user writes `new Signal.Computed(...)` verbatim from
+   the TC39 proposal. Tests against the spec pass.
+2. **Mixed:** user takes `signal._node` and passes it into
+   `derived([...])`, `stratify()`, `harnessLoop()`, etc. Native
+   graphrefly operators treat it as any other `Node<T>`.
+3. **Native:** hot path migrates to pure graphrefly; the rest stays
+   in compat form.
+
+**Invariant.** Every compat layer must produce wave-correct messages
+when observed at the native protocol level — not just wave-correct
+when observed through its compat subscribe API. Specifically:
+
+- **`set`/write paths must route through the framed `emit` pipeline.**
+  Either call `n.emit(value)` (which runs the equals check and the
+  `bundle()` DIRTY auto-prefix), or manually bundle `[[DIRTY], [DATA,
+  value]]` and pass it through `n.down`. Raw `n.down([[DATA, value]])`
+  is **forbidden** — it drops the `[DIRTY]` prefix and causes diamond
+  glitches for any downstream native composition.
+
+- **`fn`/compute paths must always produce exactly one framed outcome
+  per wave.** Either DATA (value changed) or RESOLVED (value unchanged).
+  Never "silently return without emitting" — that leaves downstream
+  `dep.dirty` stuck and freezes sibling waves. `actions.emit(result)`
+  at the end of the compute body is the simplest way to guarantee this;
+  the framework folds same-value results to RESOLVED via the equals
+  check, which clears `dep.dirty` at every downstream while remaining
+  invisible to leaf `cb`-counting subscribers (Jotai/Signals/Nanostores
+  subscribe wrappers all filter to DATA, so RESOLVED is silent at the
+  compat surface).
+
+- **Per-compat-layer equality must be encoded as the node's `equals`
+  config, not as a side-effect of never emitting.** Jotai and Nanostores
+  use `Object.is` dedup → leave equals at its default. Zustand fires on
+  every setState regardless → pass `equals: () => false` at node
+  construction. In either case, writes go through `emit` — the equals
+  config declares intent.
+
+**Testing rule.** Compat-layer tests must include at least one
+assertion that observes a **live subscriber's cb count and cb
+arguments** (not just `.get()` values and not just fn-call counts).
+`.get()` reads `.cache` and is insensitive to mid-wave glitches —
+a bug can fire 17 intermediate glitch values and still leave `.cache`
+correct. Fn-call counts are an implementation detail (how many times
+did the compute body run) and don't correspond to any user-visible
+contract. Only cb fires with their arguments genuinely prove wave
+correctness.
+
+**Testing rule 2.** Include at least one **two-way bridge test** per
+compat layer: subscribe to the backing node directly (not through
+the compat API) and verify the DATA sequence matches what the compat
+subscribe path produces. For state-only compat layers (Zustand), build
+a small native diamond on top of the state node and verify no glitch
+values.
+
+**Anti-pattern catalog.**
+
+| Anti-pattern | Why it fails |
+|--------------|--------------|
+| `n.down([[DATA, value]])` without DIRTY prefix | Diamond legs don't coordinate → downstream fires on glitch values |
+| Silently `return` without emitting when a wave "shouldn't matter" | Downstream `dep.dirty` stuck → sibling wave hangs |
+| Asserting fn-call counts in compat tests | Couples tests to implementation, masks cb-count bugs |
+| Only asserting `.get()` return values | `.cache` is updated at end-of-wave, glitches are invisible |
+| Per-compat-layer custom equality check inside the compute body | Belongs at `NodeOptions.equals` so the framework's equals-based RESOLVED path can fold it uniformly |
