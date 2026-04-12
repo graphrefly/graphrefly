@@ -1032,3 +1032,156 @@ ERROR         [ERROR, err]            Error termination
 | LLM builds graph | `Graph.fromSnapshot` + `describe()` |
 | Git-versioned graphs | `toJSONString()` / `to_json_string()` |
 | Custom domain signals | Singleton `MessageTypeRegistry` + unknown type forwarding |
+
+---
+
+## Appendix D: v0.4 Foundation Redesign Addendum (2026-04-12)
+
+This addendum captures v5 foundation redesign additions and clarifications
+not yet integrated into the main spec sections above. See
+`graphrefly-ts/archive/docs/SESSION-foundation-redesign.md` §10.6 for the
+full decision log.
+
+### D.1 `Node.emit(value, options?)` — public framed emit
+
+Public sugar on the `Node<T>` interface, parallel to `Node.down(msgs)`:
+
+```ts
+interface Node<T> {
+  down(messages: Messages, options?: NodeTransportOptions): void; // raw
+  emit(value: T, options?: NodeTransportOptions): void;            // framed
+  up?(messages: Messages, options?: NodeTransportOptions): void;   // raw
+}
+```
+
+`emit(v)` runs `equals(cache, v)` to decide DATA vs RESOLVED, frames
+through the singleton `bundle` (tier sort + DIRTY auto-prefix), and
+delivers via the raw `_emit` pipeline. Diamond-safe by construction.
+
+Use `emit` for state-node writes from external code when diamond safety
+matters. Use `down` for raw protocol traffic (forwarding COMPLETE/ERROR/
+TEARDOWN, spec §1.3.1 compat path for no-DIRTY DATA).
+
+### D.2 `FnCtx.store` — persistent scratch pad
+
+```ts
+interface FnCtx {
+  dataFrom: readonly boolean[];
+  terminalDeps: readonly unknown[];
+  store: Record<string, unknown>;  // NEW
+}
+```
+
+`store` is a mutable per-node object that persists across fn invocations
+within one activation cycle. Wiped on deactivation and on resubscribable
+terminal reset. Replaces the factory / `afterResubscribe` patterns for
+operators that need stateful accumulation (`reduce`, `takeWhile`,
+`bufferCount`).
+
+### D.3 Dual cleanup shape
+
+```ts
+type NodeFnCleanup = (() => void) | { deactivation: () => void };
+```
+
+- `() => void` — default. Fires before the next fn re-run AND on
+  deactivation (RxJS/useEffect semantics).
+- `{ deactivation: () => void }` — opt-in. Fires ONLY on deactivation.
+  Used by operators with persistent resources that shouldn't be
+  rebuilt between fn runs.
+
+### D.4 `NodeOptions.errorWhenDepsError`
+
+Separate from `completeWhenDepsComplete`. Default `true`. ERROR auto-
+propagates when any dep errors, independently of COMPLETE auto-propagation.
+Only `rescue` / `catchError` operators set `errorWhenDepsError: false`
+to handle errors explicitly via `ctx.terminalDeps[i]`.
+
+### D.5 `NodeOptions.config`
+
+Pass a custom `GraphReFlyConfig` instance for test isolation or custom
+protocol stacks. Defaults to the module-level `defaultConfig`.
+
+```ts
+const custom = new GraphReFlyConfig({...});
+custom.registerMessageType(MY_TYPE, { tier: 3 });
+const n = state(0, { config: custom });
+```
+
+### D.6 `Graph.connect(from, to)` creates a reactive edge
+
+`connect()` wires a reactive edge post-construction by calling
+`NodeImpl._addDep(sourceNode)` on the target. The target's `_deps` array
+grows, the source is subscribed to, and the new dep participates in
+wave tracking from that point forward.
+
+**Breaking change from prior spec:** `connect()` no longer requires the
+target to include the source in its constructor deps. It auto-adds.
+This enables pattern factories (stratify, feedback, gate, forEach) to
+wire nodes after creation.
+
+### D.7 `autoTrackNode` — runtime dep discovery
+
+Sugar factory for Jotai/signals-style auto-tracking. Deps are discovered
+at runtime via `track(dep)` calls inside fn. Two-phase discovery:
+
+1. Run fn. Each `track(dep)` for an unknown dep: subscribe via `_addDep`,
+   return `dep.cache` as stub (P3 boundary exception for discovery).
+2. After fn returns, if all new deps settled synchronously → emit
+   directly (stub values match protocol values). Otherwise wait for wave
+   machinery to re-run with protocol values.
+3. Converges when no new deps found.
+
+Re-entrance safety: `_execFn` guards against recursive calls triggered
+by `_addDep`'s synchronous subscribe delivery.
+
+### D.8 Terminal-emission operators emit nothing during accumulation
+
+`last`, `reduce`, `toArray` stay silent during accumulation waves. They
+emit `[DIRTY, DATA, COMPLETE]` only at upstream COMPLETE. Downstream's
+pre-set-dirty DepRecord naturally holds the wave open until the terminal
+emission — no intermediate RESOLVED needed.
+
+This clarifies an earlier misuse: RESOLVED was being emitted as an
+"activation ceremony" signal, which conflicted with its semantic meaning
+("my wave settled, value unchanged").
+
+### D.9 Two-phase invariant applies to transitions only
+
+The DIRTY → DATA/RESOLVED two-phase invariant is a **state transition**
+invariant. It does NOT apply to:
+- Subscribe handshake (`[[START]]` + cached DATA) — §2.2 already exempt
+- Activation wave (fn's first run during subscribe ceremony)
+
+An accumulating operator's first RESOLVED emission during activation
+does NOT require a preceding DIRTY. This is ceremony, not transition.
+Two-phase applies to all post-activation waves where deps actually
+transition through DIRTY.
+
+### D.10 ROM rule: state nodes preserve status on disconnect
+
+**Clarification of §2.2:** "Status becomes `sentinel` on disconnect"
+applies only to **compute nodes**. State nodes preserve their status
+across disconnect (ROM rule: their identity is their value, disconnect
+is a subscriber lifecycle event not a value lifecycle event).
+
+- State node after `INVALIDATE` → unsub → status stays `"dirty"`
+- Compute node after first activation → unsub → status → `"sentinel"`
+- Resubscribable terminal compute node → unsub → status → `"sentinel"`
+  (resubscribable means "can re-activate after terminal", so terminal
+  state doesn't persist)
+
+### D.11 `NodeImpl._addDep` and `_setInspectorHook` (internal)
+
+Two internal methods surfaced for graph/sugar consumers:
+
+- **`_addDep(depNode): number`** — post-construction dep addition,
+  subscribes immediately, returns dep index. Used by `Graph.connect()`
+  and `autoTrackNode`.
+- **`_setInspectorHook(hook?): () => void`** — per-node inspection
+  callback. Fires `{ kind: "dep_message", depIndex, message }` in
+  `_onDepMessage` and `{ kind: "run", depValues }` in `_execFn`. Used
+  by `Graph.observe(path, { causal, derived })` for causal tracing.
+
+Both are `@internal` — not part of the public `Node<T>` interface. Use
+through `Graph` APIs or sugar factories.

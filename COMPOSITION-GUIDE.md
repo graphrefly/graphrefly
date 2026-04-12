@@ -564,3 +564,142 @@ the same identity. First-time items (no `relatedTo`) use the raw summary.
 
 **Key insight:** the original key is carried forward immutably through the
 `relatedTo` array, not reconstructed from a mutated summary string.
+
+---
+
+## v0.4 Foundation Redesign Patterns (2026-04-12)
+
+### 19. Terminal-emission operators: stay silent during accumulation
+
+Operators that emit only at upstream COMPLETE (`last`, `reduce`, `toArray`,
+`bufferCount` at terminal) should emit **nothing** during accumulation
+waves. Use `completeWhenDepsComplete: false` to opt out of auto-COMPLETE,
+then explicitly emit `[DIRTY, DATA, COMPLETE]` on terminal via
+`actions.emit(accumulator)` + `actions.down([[COMPLETE]])`.
+
+```ts
+export function reduce<T, R>(src: Node<T>, reducer, seed: R): Node<R> {
+  return node([src], ([v], a, ctx) => {
+    if (!("acc" in ctx.store)) ctx.store.acc = seed;
+    if (ctx.terminalDeps[0] !== undefined && ctx.terminalDeps[0] !== true) {
+      return; // ERROR: let auto-error propagate
+    }
+    if (ctx.terminalDeps[0] === true) {
+      a.emit(ctx.store.acc);
+      a.down([[COMPLETE]]);
+      return;
+    }
+    if (ctx.dataFrom[0]) {
+      ctx.store.acc = reducer(ctx.store.acc, v);
+    }
+    // Silent — downstream's pre-set-dirty DepRecord holds wave open
+  }, { completeWhenDepsComplete: false });
+}
+```
+
+**Anti-pattern:** emitting `RESOLVED` on every accumulation wave. This
+was used in earlier drafts as an "I'm alive" signal, but it pollutes the
+wave ordering and confuses diamond tests. Downstream's wave machinery
+naturally waits for the terminal emission.
+
+### 20. `ctx.store` for persistent fn state
+
+Replaces closure `let` vars that needed `onResubscribe` reset. The store
+is a per-node object that persists across fn runs within one activation
+cycle, and is wiped on deactivation / resubscribable terminal reset.
+
+```ts
+const counter = derived([src], (data, ctx) => {
+  ctx.store.count = ((ctx.store.count as number) ?? 0) + 1;
+  return ctx.store.count;
+});
+```
+
+**Cleanup shapes:**
+- `() => void` — default. Fires before next fn run AND on deactivation.
+- `{ deactivation: () => void }` — opt-in. Fires ONLY on deactivation.
+  Use for persistent resources (sockets, intervals) that survive fn
+  re-runs.
+
+### 21. `actions.emit` vs `actions.down`
+
+| Call | Framing | Use for |
+|------|---------|---------|
+| `actions.emit(v)` | Equals check + bundle (DIRTY auto-prefix) | Value emission — diamond-safe |
+| `actions.down(msgs)` | Raw passthrough through `_emit` pipeline | Forwarding COMPLETE/ERROR/TEARDOWN; advanced framing via manual bundle |
+| `actions.bundle(...).resolve()` | Tier sort + DIRTY auto-prefix | Staged/multi-message emissions |
+| `actions.up(msgs)` | Raw forward to deps | Upstream signals (rare) |
+
+**Rule of thumb:** use `emit` for values, `down` for protocol messages.
+
+### 22. `autoTrackNode` — runtime dep discovery for pull-based compat
+
+Use for Jotai/TC39-Signals-style APIs where deps are discovered by
+running the fn. The P3 "no cross-node `.cache` reads" rule is relaxed
+at the compat boundary during discovery (fn may read `dep.cache` as a
+stub value for a newly discovered dep).
+
+```ts
+import { autoTrackNode } from "@graphrefly/graphrefly-ts";
+
+const doubled = autoTrackNode((track) => {
+  const value = track(someNode);     // auto-discovers someNode
+  return (value as number) * 2;
+});
+```
+
+**When to use:** compat layers (Jotai, TC39 Signals). For graph-native
+code, prefer `dynamicNode(allDeps, fn)` — it requires upfront dep
+declaration but avoids the P3 discovery exception.
+
+### 23. Rescue pattern with `errorWhenDepsError: false`
+
+Most operators should allow ERROR to propagate automatically. The
+exception is rescue-style operators that catch ERROR and emit a fallback
+value. Use `errorWhenDepsError: false` to suppress auto-ERROR, then
+handle it explicitly via `ctx.terminalDeps[i]`:
+
+```ts
+export function rescue<T>(src: Node<T>, fallback: T): Node<T> {
+  return node([src], ([v], a, ctx) => {
+    const terminal = ctx.terminalDeps[0];
+    if (terminal !== undefined && terminal !== true) {
+      // dep errored — emit fallback
+      a.emit(fallback);
+      a.down([[COMPLETE]]);
+      return;
+    }
+    a.emit(v);
+  }, { errorWhenDepsError: false });
+}
+```
+
+### 24. Graph.connect() creates reactive edges
+
+`Graph.connect(fromPath, toPath)` wires a reactive edge post-
+construction. The target's `_deps` array grows via `_addDep`. This is
+used by pattern factories (`stratify`, `feedback`, `gate`, `forEach`,
+`harnessLoop`, `gatedStream`) to wire nodes after they've been
+individually constructed — the full topology doesn't need to be known
+upfront.
+
+**Implication:** `connect()` always creates a live reactive subscription,
+not just a metadata-only edge for describe() output. Pattern factories
+that want metadata-only edges should use a different mechanism (TBD).
+
+### 25. Activation wave is ceremony, not transition
+
+The DIRTY → DATA/RESOLVED two-phase invariant applies to state
+transitions only, not the activation wave (fn's first run during the
+subscribe ceremony). Spec §2.2 exempts START handshake from DIRTY; the
+same exemption extends to the activation wave's first emission.
+
+Operators that fire on activation (`last` accumulating its first value,
+`derived` computing its initial result) emit without a preceding DIRTY.
+Two-phase kicks in starting from the first post-activation state
+transition.
+
+**Test implication:** `globalDirtyBeforePhase2` helpers that check "DIRTY
+precedes any DATA/RESOLVED globally" will fail for accumulating operators
+because the initial activation RESOLVED has no preceding DIRTY. Rewrite
+such tests to check "DIRTY precedes the terminal DATA" instead.
