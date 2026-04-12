@@ -1,4 +1,4 @@
-# GraphReFly Spec v0.2
+# GraphReFly Spec v0.3
 
 > Reactive graph protocol for human + LLM co-operation.
 >
@@ -153,30 +153,35 @@ What a node does depends on what you give it:
 These sugar names are convenience constructors. They all create nodes. Implementations SHOULD
 provide them for ergonomics and readability. They are not separate types.
 
-**`dynamicNode`** is a construction variant of `node` that tracks dependencies at runtime
-rather than requiring them upfront. Instead of a static deps array, it provides a `get(dep)`
-proxy that registers dependencies on first access during fn execution. This is the same
-`node` primitive — just a different way to declare dependencies.
+**`dynamicNode`** is a construction variant of `node` that declares a **superset** of all
+possible dependencies at construction time but selectively reads from them at runtime via a
+`track(dep)` function. Unlike static `derived` where fn always receives all dep values,
+`dynamicNode` fn picks which deps to read on each invocation. All declared deps participate
+in wave tracking; when an unused dep updates, fn fires but equals absorption prevents
+downstream propagation. This is the same `node` primitive with `_isDynamic: true` — not a
+separate class.
 
 ### 2.2 Interface
 
 Every node exposes:
 
 ```
-node.get()              → cached value (never errors, even when disconnected)
-node.status             → "disconnected" | "pending" | "dirty" | "settled" |
+node.cache              → cached value (readonly getter, never errors)
+node.status             → "sentinel" | "pending" | "dirty" | "settled" |
                           "resolved" | "completed" | "errored"
 node.down(messages)     → send messages downstream: [[DATA, value]]
 node.up(messages)       → send messages upstream: [[PAUSE, lockId]]
-node.unsubscribe()      → disconnect from upstream deps
+node.subscribe(sink)    → receive downstream messages, returns unsubscribe fn
 node.meta               → companion stores (each key is a subscribable node)
 ```
 
-Source nodes (no deps) have no upstream, so `.up()` and `.unsubscribe()` are no-ops.
-Implementations expose them on all node instances for uniformity (the `Node` interface
-types them as optional), but calling them on a source node has no effect. When a node
-or graph subscribes to another node, it can use `up()` to send messages upstream
-through that subscription.
+**`.cache` replaces `.get()`.** Renamed to avoid collision with TC39 Signals `.get()`.
+Read-only getter that returns the cached value or `undefined`/`None` when SENTINEL.
+
+Source nodes (no deps) have no upstream, so `.up()` is a no-op. Implementations expose
+it on all node instances for uniformity (the `Node` interface types it as optional).
+When a node or graph subscribes to another node, it can use `up()` to send messages
+upstream through that subscription.
 
 #### subscribe(sink) → unsubscribe
 
@@ -186,20 +191,20 @@ the sink. This is the **only** way to connect to a node's output.
 **§2.2 subscribe flow (START handshake + activation):**
 
 ```
-subscribe(sink):
-  1. register sink; increment sinkCount
-  2. if terminal and !resubscribable → return unsub with no emission
-     (late subscribers to a dead node receive nothing)
-  3. emit the START handshake to `sink` via `downWithBatch`:
+subscribe(sink, actor?):
+  1. if terminal and resubscribable → reset (clear cache, status, DepRecords)
+  2. increment sinkCount; register sink
+  3. if not terminal → emit START handshake to `sink` via `downWithBatch`:
         • cache is SENTINEL → [[START]]
         • cache has value v → [[START], [DATA, v]]
-  4. if sinkCount == 1 → call _onActivate():
+        • if replayBuffer enabled → deliver buffered DATA after START
+  4. if sinkCount == 1 and not terminal → activate:
         • state node (no deps, no fn): no-op
         • producer (no deps, with fn): run fn (may emit via actions)
-        • derived/effect (deps, with fn): _connectUpstream
+        • derived/effect (deps, with fn): subscribe to all deps
   5. if activation did not produce a value and cache is still SENTINEL,
      transition status to `"pending"`
-  6. return unsubscribe function
+  6. return unsubscribe function (last unsub → deactivate)
 ```
 
 The `START` message is the first thing any sink ever receives from a subscription.
@@ -212,10 +217,10 @@ disconnect — the value is intrinsic and non-volatile (ROM). Compute nodes (pro
 derived, dynamic, effect) clear their cache on `_onDeactivate` because their value
 is a function of live subscriptions; reconnect re-runs fn from scratch. Consequently:
 
-- `get()` on a disconnected **state** returns the retained value.
-- `get()` on a disconnected **compute node** returns `undefined`/`None`.
-- Reconnect on a compute node always re-runs fn (C2 — `_lastDepValues` is cleared
-  on deactivate), giving effects with cleanup a fresh fire/cleanup cycle.
+- `.cache` on a disconnected **state** returns the retained value.
+- `.cache` on a disconnected **compute node** returns `undefined`/`None`.
+- Reconnect on a compute node always re-runs fn (DepRecord is cleared on deactivate),
+  giving effects with cleanup a fresh fire/cleanup cycle.
 - Runtime writes via `state.down([[DATA, v]])` persist across subscriber churn.
 
 **First-run gate (§2.7):** a compute node does NOT run fn until every declared dep
@@ -225,31 +230,34 @@ NOT considered settled, and the derived stays in `"pending"` status. This is the
 composition-guide §1 rule: "derived nodes depending on a SENTINEL dep will not
 compute until that dep receives a real value."
 
-`dynamicNode` has looser semantics: its deps are discovered at runtime via the
-tracking `get()` proxy, so it CAN run fn with `undefined` for SENTINEL deps on the
-first pass. A rewire-buffer mechanism then detects any deps whose real value
-differs from what fn saw, and re-runs fn once (bounded by a stabilization cap).
+`dynamicNode` uses the same first-run gate as static nodes: all declared deps must
+deliver at least one value before fn fires. The difference is that fn receives a
+`track(dep)` function instead of a flat array — it picks which deps to read per
+invocation. Unused deps still participate in wave tracking; their updates fire fn but
+equals absorption prevents downstream propagation.
 
-#### get()
+#### cache (readonly getter)
 
 Returns the cached value. Does NOT guarantee freshness and does NOT trigger computation.
-**`status` is the source of truth** — always check it before trusting the return value
-of `get()`:
+**`status` is the source of truth** — always check it before trusting `.cache`:
 
-| Status | Meaning | `get()` returns |
-|--------|---------|-----------------|
-| `disconnected` | No subscribers (state: retained value; compute: cache cleared) | state: retained value / compute: `undefined` |
+| Status | Meaning | `.cache` returns |
+|--------|---------|------------------|
+| `sentinel` | No subscribers, no value ever set (compute: cache cleared) | `undefined` / `None` |
 | `pending` | Subscribed + upstream connected, waiting for first DATA | `undefined` / `None` |
-| `dirty` | DIRTY or INVALIDATE received, waiting for DATA | previous value (stale). INVALIDATE also clears cached state internally. |
+| `dirty` | DIRTY or INVALIDATE received, waiting for DATA | previous value (stale) |
 | `settled` | DATA received, value current | current value (fresh) |
 | `resolved` | Was dirty, value confirmed unchanged | current value (fresh) |
 | `completed` | Terminal: clean completion | final value |
 | `errored` | Terminal: error occurred | last good value or `initial` or `undefined`/`None` |
 
-When no `initial` option was provided and no value has been emitted, `get()` returns
+When no `initial` option was provided and no value has been emitted, `.cache` returns
 `undefined` (TS) / `None` (PY). Internally this is the SENTINEL state.
 
-`get()` never throws. `get()` never triggers computation.
+`.cache` never throws. `.cache` never triggers computation.
+
+**ROM/RAM semantics:** State nodes retain `.cache` across disconnect (ROM). Compute
+nodes clear `.cache` on deactivation (RAM) — status becomes `"sentinel"`.
 
 #### down(messages)
 
@@ -280,9 +288,9 @@ Only available on nodes that have deps.
 
 #### unsubscribe()
 
-Disconnect this node from its upstream dependencies. The node retains its cached value
-(accessible via `get()`) but status becomes `"disconnected"`. May reconnect on next
-downstream subscription (lazy reconnect).
+Disconnect this node from its upstream dependencies. State nodes retain `.cache`;
+compute nodes clear it (ROM/RAM rule). Status becomes `"sentinel"`. May reconnect
+on next downstream subscription (lazy reconnect).
 
 ### 2.3 Meta (Companion Stores)
 
@@ -294,8 +302,8 @@ const n = node(deps, fn, {
   meta: { status: "idle", error: null, latency: 0 }
 })
 
-n.meta.status.get()              // "idle"
-n.meta.error.get()               // null
+n.meta.status.cache              // "idle"
+n.meta.error.cache               // null
 
 // Subscribe to a single meta field reactively
 n.meta.error.subscribe((msgs) => { /* handle error */ })
@@ -337,14 +345,29 @@ When a node has deps and fn:
 node(deps, fn, opts?)
 ```
 
-`fn` receives the current values of deps. Its return value determines behavior:
+`fn` receives `(latestData, actions, ctx)`:
 
-- **Returns a value:** node caches it, emits `[[DIRTY], [DATA, value]]` if changed, or
-  `[[DIRTY], [RESOLVED]]` if unchanged per `equals`.
-- **Returns nothing (undefined/None):** treated as side effect. No auto-emit.
-- **Uses `down()` explicitly:** full protocol control. No auto-emit from return value.
-- **Returns a cleanup function:** called before next invocation or on teardown.
+- **`latestData`** — array of latest DATA values from deps (from DepRecord).
+- **`actions`** — `{ emit(value), down(messages), up(messages) }`.
+  - `emit(v)` — convenience: runs `equals`, emits `[[DIRTY],[DATA,v]]` or `[[RESOLVED]]`.
+  - `down(msgs)` — raw protocol: send full message tuples downstream.
+  - `up(msgs)` — send messages upstream toward deps.
+- **`ctx`** — `{ dataFrom: boolean[], terminalDeps: (true|unknown)[] }`.
+  - `dataFrom[i]` — true if dep `i` sent DATA in this wave (vs RESOLVED).
+  - `terminalDeps[i]` — `true` = COMPLETE, error payload = ERROR, `undefined` = live.
+
+**fn return is cleanup only.** The return value is NEVER auto-framed as DATA or
+RESOLVED. ALL emission is explicit via `actions.emit(v)` or `actions.down(msgs)`.
+
+- **Returns a function:** registered as cleanup, called before next fn invocation or
+  on teardown/deactivation.
+- **Returns anything else (including undefined/void):** ignored.
 - **Throws:** emits `[[ERROR, err]]` to downstream subscribers.
+
+Sugar constructors (`derived`, `map`, `filter`, etc.) wrap user functions internally
+to call `actions.emit()` — the user's function returns a value, but the sugar
+converts it to an explicit emission. This separation keeps the primitive clean while
+providing ergonomic APIs.
 
 ### 2.5 Options
 
@@ -358,12 +381,13 @@ All nodes accept these options:
 | `meta` | object | — | Companion store fields |
 | `resubscribable` | bool | false | Allow reconnection after COMPLETE |
 | `resetOnTeardown` | bool | false | Clear cached value on TEARDOWN |
-| `onMessage` | fn | — | Custom message type handler (see §2.6) |
+| `pausable` | bool \| `"resumeAll"` | `true` | PAUSE/RESUME behavior (see §2.6) |
+| `replayBuffer` | number | — | Buffer last N outgoing DATA for late subscribers |
 
 **`initial` semantics:** When `initial` is provided (even as `undefined`/`None`), the
-node's cache is pre-populated and `get()` returns that value before any emission. Source
+node's cache is pre-populated and `.cache` returns that value before any emission. Source
 nodes with `initial` push `[[DATA, initial]]` to each new subscriber (§2.2). On first
-`_downAutoValue`, `equals` IS called against the initial value — if the computed value
+`actions.emit(v)`, `equals` IS called against the initial value — if the computed value
 matches, the node emits `RESOLVED` instead of `DATA`. When `initial` is **absent**
 (option key not present), the cache holds SENTINEL; the node does not push on subscribe,
 and the first emission always produces `DATA` regardless of the value. `INVALIDATE` and
@@ -378,49 +402,54 @@ explicitly received `[[DATA, undefined]]` / `[[DATA, None]]` or was initialized 
 `initial: undefined` / `initial=None`. The default `Object.is` / `is` handles all
 cases; custom `equals` need only handle the value types the node actually produces.
 
-### 2.6 Custom Message Handling (`onMessage`)
+### 2.6 Singleton Hooks and Per-Node Options
 
-The message type set is open (§1.2). Nodes forward unrecognized types by default. The
-`onMessage` option lets a node **intercept** specific message types before the default
-dispatch:
+The node primitive has two per-node behavior hooks (`fn` and `equals`) and two
+system-level options (`pausable` and `replayBuffer`).
+
+#### PAUSE/RESUME (`pausable` option)
+
+PAUSE/RESUME is default behavior, controlled by the `pausable` node option:
+
+| Value | Behavior |
+|-------|----------|
+| `true` (default) | On PAUSE, suppress fn execution. On RESUME, fire fn with latest dep values (only most recent matters). |
+| `"resumeAll"` | On RESUME, replay all buffered updates since PAUSE (ordered). |
+| `false` | Ignore PAUSE/RESUME — fn fires normally regardless of flow control signals. |
+
+PAUSE/RESUME flows through tier 2 (immediate). The node tracks a `_paused` flag;
+when paused, wave completion skips fn but DepRecord continues updating with latest
+values. On RESUME, if any wave completed while paused, fn fires immediately.
+
+#### `replayBuffer` option
+
+When `replayBuffer: N` is set, the node maintains a circular buffer of the last N
+outgoing DATA values. Late subscribers receive buffered DATA after the START handshake
+but before live updates. This replaces the `replay()` operator and `wrapSubscribeHook`
+monkey-patching.
 
 ```
-node(deps, fn, {
-  onMessage(msg, depIndex, actions) {
-    // msg:      the message tuple [Type, Data?]
-    // depIndex: which dep sent it
-    // actions:
-    //   down(messages) — raw protocol: send full message tuples downstream
-    //                     e.g. down([[DATA, 42]]) or down([[DIRTY], [DATA, v]])
-    //   emit(value)    — convenience: send a plain value with auto-framing
-    //                     runs equals(), emits [[DIRTY],[DATA,v]] or [[RESOLVED]]
-    //   up(messages)   — send messages upstream (PAUSE, RESUME, TEARDOWN)
-    //
-    // Return true  → message consumed, skip default handling
-    // Return false → message not handled, proceed with default dispatch
-  }
-})
+node(deps, fn, { replayBuffer: 5 })  // buffer last 5 DATA values
 ```
 
-`onMessage` is called **for every message** from every dep — including DIRTY, DATA,
-RESOLVED, COMPLETE, etc. This gives full control. However, intercepting protocol messages
-(DIRTY, DATA, RESOLVED) can break two-phase invariants; users SHOULD only intercept
-custom types unless they fully understand the protocol.
+#### Singleton hooks (framework-level)
 
-When `onMessage` returns `true`:
-- The message is consumed. It is NOT forwarded downstream.
-- The default dispatch (dirty tracking, settlement, forwarding) is skipped for that message.
-- The handler MAY call `actions.emit(value)` (auto-framed with equals check) or
-  `actions.down(messages)` (raw protocol tuples) to produce downstream output.
+Message interception and subscribe ceremony customization are **singleton** (global)
+hooks configured once at application startup, not per-node options. This replaces the
+per-node `onMessage` option from v0.2:
 
-When `onMessage` returns `false` (or is not set):
-- The default dispatch runs: DIRTY/DATA/RESOLVED drive the settlement cycle, unknown
-  types forward unchanged (§1.3.6).
+```
+// TS
+configure((cfg) => {
+  cfg.onMessage = (msg, depIndex, node, actions) => { ... };
+  cfg.onSubscribe = (node, sink) => { ... };
+  cfg.registerMessageType(MY_TYPE, { tier: 3 });
+});
+// Config freezes on first node creation.
+```
 
-When `onMessage` throws:
-- The exception is caught by the node. The node emits `[[ERROR, err]]` downstream
-  (same behavior as fn throwing — §2.4). No further messages from that dep batch are
-  processed.
+Custom message types (e.g., store mutation events) are registered via the singleton
+`MessageTypeRegistry`. Unknown message types forward unchanged (§1.3.6).
 
 ### 2.7 Diamond Resolution
 
@@ -435,9 +464,9 @@ When a node depends on multiple deps that share an upstream ancestor:
 ```
 
 1. A changes → `[DIRTY]` propagates to B and C → both propagate `[DIRTY]` to D
-2. D's bitmask records: dep 0 dirty, dep 1 dirty (needs both to settle)
-3. B settles (DATA or RESOLVED) → D records dep 0 settled
-4. C settles (DATA or RESOLVED) → D records dep 1 settled → D now recomputes
+2. D's DepRecord array marks: dep 0 dirty, dep 1 dirty (needs both to settle)
+3. B settles (DATA or RESOLVED) → D marks dep 0 settled
+4. C settles (DATA or RESOLVED) → D marks dep 1 settled → all dirty deps settled → D recomputes
 
 D recomputes exactly once, with both deps settled. This is the glitch-free guarantee.
 
@@ -450,16 +479,21 @@ exactly once after all deps have settled — not once per dep.
 Implementations SHOULD provide these for readability:
 
 ```
-state(initial, opts?)           = node([], null, { initial, ...opts })
-producer(fn, opts?)             = node([], fn, opts)
-derived(deps, fn, opts?)        = node(deps, fn, opts)         // fn returns value or uses down()
-effect(deps, fn)                = node(deps, fn)               // fn returns nothing
+state(initial, opts?)           = node([], { initial, ...opts })
+producer(fn, opts?)             = node(fn, { describeKind: "producer", ...opts })
+derived(deps, userFn, opts?)    = node(deps, wrappedFn, opts)  // wraps: actions.emit(userFn(data))
+effect(deps, fn, opts?)         = node(deps, fn, opts)         // fn for side-effects, no auto-emit
+dynamicNode(allDeps, fn, opts?) = node(allDeps, wrappedFn, { _isDynamic: true, ...opts })
 pipe(source, ...ops)            = left-to-right fold
 ```
 
 These are not distinct types. `describe()` infers a type label (`state`, `producer`,
-`derived`, `operator`, `effect`) from the node's configuration for readability. The
-`operator` label is inferred when fn uses `down()` explicitly — no separate sugar needed.
+`derived`, `operator`, `effect`) from the node's `describeKind` option for readability.
+
+**`derived` wraps the user function** — the user returns a value, the sugar calls
+`actions.emit(value)` internally. This is the "fn return is cleanup only" invariant:
+the raw node primitive never auto-frames return values. Sugar constructors provide the
+ergonomic "return a value" API on top.
 
 ---
 
@@ -480,7 +514,7 @@ A graph is a named collection of nodes with explicit edges.
 ```
 graph.add(name, node)           — register a node with a local name
 graph.remove(name)              — unregister and teardown
-graph.get(name)                 — get a node's current value (shorthand for graph.node(name).get())
+graph.get(name)                 — get a node's current value (shorthand for graph.node(name).cache)
 graph.set(name, value)          — set a writable node's value (shorthand for down([[DATA, v]]))
 graph.node(name)                — get the node object itself
 ```
@@ -567,12 +601,12 @@ Knobs = writable nodes with meta (filter by `type: "state"` or writable nodes wi
 Gauges = readable nodes with meta (filter by nodes that have `meta.description` or `meta.format`).
 No separate knob/gauge API — `describe()` is the single source.
 
-The `type` field in describe output is inferred from node configuration:
+The `type` field in describe output comes from the `describeKind` option set by sugar
+constructors. When not set, it is inferred:
 - No deps, no fn → `"state"`
 - No deps, with fn → `"producer"`
-- Deps, fn returns value → `"derived"`
-- Deps, fn uses down() → `"operator"`
-- Deps, fn returns nothing → `"effect"`
+- Deps, with fn → `"derived"` (default for compute nodes)
+- No fn, with deps → passthrough (labeled `"derived"`)
 
 #### observe(name?)
 
@@ -799,8 +833,8 @@ examples alone.
 ### 5.12 Data flows through messages, not peeks
 
 All data propagation — including initial values at connection time — flows through the
-message protocol (`[[DATA, v]]`). Nodes do not peek dep values via `.get()` to seed
-computation. `.get()` is a read-only cache accessor for external consumers; the reactive
+message protocol (`[[DATA, v]]`). Nodes do not peek dep values via `.cache` to seed
+computation. `.cache` is a read-only accessor for external consumers; the reactive
 graph relies exclusively on messages for state propagation.
 
 This ensures a single mental model: if data moved, a message carried it.
@@ -829,13 +863,24 @@ Recommended subscriber storage: `null → single sink → Set<sink>`. Saves ~90%
 typical graphs where 70-80% of nodes have 0-1 subscribers. Implementation optimization,
 not a spec requirement.
 
-### 6.3 Single-Dep Optimization
+### 6.3 DepRecord (per-dep state)
 
-When a node has exactly one downstream subscriber that declared itself as single-dep,
-implementations MAY skip the DIRTY message when the same batch also contains DATA or
-RESOLVED. The semantic guarantee (DIRTY precedes DATA) is preserved within batched
-contexts and for multi-dep nodes. This is a performance optimization — the spec does
-not require it.
+Each node maintains a `DepRecord` array — one entry per declared dep — consolidating
+all per-dep tracking into a single structure:
+
+```
+DepRecord {
+  node: Node              // the dep itself
+  unsub: fn | null        // subscription cleanup
+  latestData: T | SENTINEL // latest DATA payload
+  dirty: boolean          // received DIRTY, not yet settled
+  settled: boolean        // received DATA/RESOLVED this wave
+  terminal: boolean | err // false=live, true=COMPLETE, other=ERROR payload
+}
+```
+
+This replaces separate BitSet masks, last-dep-values arrays, and upstream-unsub arrays.
+Wave completion check: all deps where `dirty=true` must have `settled=true`.
 
 ---
 
@@ -859,9 +904,18 @@ Follows semver:
 - **Minor** (0.x.0): new optional features, new message types
 - **Major** (x.0.0): breaking changes to protocol or primitive contracts
 
-Current: **v0.2.0** — push-on-subscribe model
+Current: **v0.3.0** — fn-return-cleanup-only, consolidated NodeImpl, DepRecord
 
 **Changelog:**
+- **v0.3.0** — Foundation redesign. fn return is cleanup only — all emission via
+  `actions.emit(v)` or `actions.down(msgs)`. Per-dep state consolidated into DepRecord
+  (replaces BitSet masks). NodeBase + NodeImpl merged into single class. `dynamicNode`
+  uses superset deps model (no rewire buffer). `.get()` renamed to `.cache`. Status
+  enum: `"disconnected"` → `"sentinel"`. Per-node `onMessage` → singleton config.
+  PAUSE/RESUME promoted to default node option (`pausable`). `replayBuffer` node option
+  replaces `replay()` operator. `bridge.ts` deleted. Single-dep DIRTY-skip optimization
+  removed. `CleanupResult` wrapper removed. Sugar constructors (`derived`, `map`, etc.)
+  wrap user functions with `actions.emit()`.
 - **v0.2.0** — All nodes with cached value push `[[DATA, cached]]` to every new
   subscriber on subscribe. Derived nodes compute reactively from upstream push instead
   of eager compute on connection. Removes the peek-via-`.get()` connection path.
@@ -909,7 +963,7 @@ ERROR         [ERROR, err]            Error termination
           "status": {
             "description": "Present at detail >= 'standard'. Omitted at 'minimal' detail level.",
             "type": "string",
-            "enum": ["disconnected", "dirty", "settled", "resolved", "completed", "errored"]
+            "enum": ["sentinel", "pending", "dirty", "settled", "resolved", "completed", "errored"]
           },
           "value": {},
           "deps": {
@@ -977,4 +1031,4 @@ ERROR         [ERROR, err]            Error termination
 | Multi-agent routing | `Graph.mount` + `connect` |
 | LLM builds graph | `Graph.fromSnapshot` + `describe()` |
 | Git-versioned graphs | `toJSONString()` / `to_json_string()` |
-| Custom domain signals | `onMessage` + unknown type forwarding |
+| Custom domain signals | Singleton `MessageTypeRegistry` + unknown type forwarding |

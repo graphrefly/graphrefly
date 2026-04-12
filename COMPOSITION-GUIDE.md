@@ -36,7 +36,7 @@ depending on a SENTINEL dep will not compute until that dep receives a real valu
 - `"settled"` / `"resolved"` when fn has run and emitted a value
 - `"pending"` when the subscribe flow completes but fn hasn't run (blocked on a
   SENTINEL dep)
-- `"disconnected"` when no subscribers are present (compute nodes also clear cache)
+- `"sentinel"` when no subscribers are present (compute nodes also clear cache)
 
 ```ts
 // Derived computes on subscribe — all deps have values
@@ -54,14 +54,14 @@ pending.down([[DATA, "hello"]]);
 // NOW the gate opens, upper computes, sink receives [[DIRTY],[DATA,"HELLO"]].
 ```
 
-**`dynamicNode` is different.** Because deps are discovered at runtime via the
-tracking `get()` proxy, dynamicNode cannot gate on "all deps delivered" upfront.
-It runs fn on first subscribe — possibly seeing `undefined` for lazy/disconnected
-deps — then uses a rewire buffer to detect discrepancies and re-run fn once when
-real values arrive. See §11 (dynamicNode rewire buffer) for the full pattern.
+**`dynamicNode` uses the same first-run gate.** All possible deps are declared at
+construction time (superset). fn receives a `track(dep)` function to selectively read
+dep values. The first-run gate works identically — all declared deps must deliver at
+least one value before fn fires. When an unused dep updates, fn fires but equals
+absorption prevents downstream propagation. No rewire buffer, no `MAX_RERUN` cap.
 
-**Diagnostic:** If `get()` returns `undefined`/`None`, check `node.status`:
-- `"disconnected"` → compute node with no subscribers (cache cleared per ROM/RAM)
+**Diagnostic:** If `.cache` returns `undefined`/`None`, check `node.status`:
+- `"sentinel"` → compute node with no subscribers (cache cleared per ROM/RAM)
 - `"pending"` → subscribed but fn hasn't run (SENTINEL dep blocking the first-run gate)
 - `"settled"` or `"resolved"` → value is current, it really is `undefined`/`None`
 - `"errored"` → fn threw
@@ -158,10 +158,10 @@ This ensures that when stage N emits, stage N+1 is already wired to receive.
 
 **Keepalive vs activation:** In the push model, keepalive subscriptions
 (`node.subscribe(() => {})`) serve to **activate** the computation chain. The first
-subscriber triggers upstream wiring (internal `_connectUpstream`), which causes deps to
-push their cached values, which drives computation. Without any subscriber, derived
-nodes stay disconnected and never compute. The keepalive itself is just an empty sink —
-the activation happens because subscribing triggers upstream connection.
+subscriber triggers activation (subscribing to all deps via DepRecord), which causes
+deps to push their cached values, which drives computation. Without any subscriber,
+derived nodes stay in `"sentinel"` status and never compute. The keepalive itself is
+just an empty sink — the activation happens because subscribing triggers dep connection.
 
 ### 6. Cross-language data structure parity
 
@@ -204,11 +204,10 @@ Use `!= null` (not `!== null`) in guards to catch both `null` and `undefined`.
 Diamond topologies (A→B,C→D) are resolved glitch-free at both connection time
 and during subsequent updates:
 
-**Connection-time:** When D subscribes for the first time, `_connectUpstream`
-subscribes to all deps sequentially. Settlement is deferred until all deps
-are subscribed (structural invariant: `_upstreamUnsubs.length < _deps.length`).
-After all deps are connected, one settlement check fires → fn runs exactly once
-with all deps settled.
+**Connection-time:** When D activates, it subscribes to all deps sequentially.
+All DepRecords start with `dirty=true` (pre-set). Settlement is deferred until
+all deps have pushed at least one DATA/RESOLVED. After all deps settle, fn runs
+exactly once with all deps' latest values from DepRecord.
 
 **Subsequent updates (two-phase required):** Derived nodes auto-emit
 `[[DIRTY], [DATA, value]]` — the two-phase protocol ensures DIRTY propagates
@@ -316,7 +315,7 @@ before asserting:
 ```ts
 const d = derived([dep], fn);
 d.subscribe(() => {});  // activates → dep pushes → d computes
-expect(d.get()).toBe(expected);
+expect(d.cache).toBe(expected);
 ```
 
 ### State subscribers receive current value
@@ -356,101 +355,83 @@ push is intentional.
 
 ## Advanced topics
 
-### 11. dynamicNode rewire buffer (lazy-dep stabilization)
+### 11. dynamicNode superset model
 
-`dynamicNode` discovers deps at runtime via a tracking `get()` proxy. Because deps
-are unknown at subscribe time, it **cannot** use the pre-set dirty mask that static
-nodes use for first-run gating (§9). Instead, it runs fn immediately on first
-subscribe — possibly seeing `undefined` for lazy/disconnected deps — then uses a
-**rewire buffer** to detect and correct discrepancies.
-
-**The problem:** When fn calls `get(lazyDep)`, the dep may be disconnected (no
-subscribers). `get()` returns `undefined` (RAM semantics — compute nodes clear cache
-on disconnect). After fn returns, `_rewire` subscribes to the dep, which triggers the
-dep's activation cascade. By the time the dep pushes its real value, fn has already
-completed with the stale `undefined`.
-
-**The solution — rewire buffer (3 phases after fn):**
-
-1. **Rewire with buffering.** `_rewire` subscribes to new deps with `_rewiring = true`.
-   Messages arriving during rewire go to `_bufferedDepMessages` instead of the normal
-   wave handler.
-2. **Scan for discrepancies.** After rewire, scan the buffer for DATA values that
-   differ (by `equals`) from what fn tracked via `get()`. If any differ, re-run fn
-   with the updated dep values.
-3. **Stabilization cap.** Re-runs are bounded by `MAX_RERUN` (16). If fn doesn't
-   stabilize (e.g., each run discovers new deps that change values), the node emits
-   `ERROR` to prevent infinite loops.
+`dynamicNode` declares a **superset** of all possible dependencies at construction
+time. fn receives a `track(dep)` function that reads values from pre-allocated
+DepRecords. This is the same `NodeImpl` class with `_isDynamic: true` — no separate
+`DynamicNodeImpl`.
 
 ```ts
-// Lazy dep: `expensiveCalc` has no subscribers, so get() returns undefined.
-// After _rewire subscribes to it, its activation push triggers a re-run.
-const d = dynamicNode((get) => {
-  const flag = get(toggle);       // toggle has value → returns it
-  if (flag) {
-    return get(expensiveCalc);    // first run: undefined (disconnected)
-                                  // re-run after rewire: real value
-  }
-  return get(fallback);
+const d = dynamicNode([toggle, expensiveCalc, fallback], (track) => {
+  const flag = track(toggle);
+  if (flag) return track(expensiveCalc);
+  return track(fallback);
 });
-d.subscribe(() => {});
-// fn runs twice: once with undefined, once with real value.
-// Only the second result is emitted downstream.
 ```
 
-**Identity check (`_depValuesDifferFromTracked`).** After rewire, if a dep's
-subscribe-time push delivers the same value fn already saw (e.g., dep was already
-cached), the identity check prevents a redundant re-run. This is critical when
-`subscribe()` is called inside `batch()` — the deferred DATA handshake arrives after
-rewire finishes but carries the same value fn read synchronously via `get()`.
+**Key properties:**
 
-**Key differences from static nodes:**
+- **Same first-run gate as static nodes.** All declared deps must deliver at least one
+  value before fn fires. No `undefined` first-pass, no rewire buffer.
+- **Same wave tracking.** All deps participate in DIRTY/settled tracking via DepRecord.
+  When an unused dep updates, fn fires but computes the same result → equals absorption
+  emits RESOLVED instead of DATA. No wasted downstream propagation.
+- **No rewire, no buffer, no `MAX_RERUN`.** Deps are fixed at construction. `track(dep)`
+  is just a lookup: `depRecords[depIndexMap.get(dep)].latestData`. O(1).
+- **`track` replaces `get`.** The proxy function is named `track` (not `get`) to avoid
+  confusion with `node.cache` and TC39 Signals.
 
-| Aspect | Static (`NodeImpl`) | Dynamic (`DynamicNodeImpl`) |
-|--------|--------------------|-----------------------------|
-| First-run gate | Pre-set dirty mask — fn waits for all deps | None — fn runs immediately |
-| SENTINEL deps | Block fn until real value arrives | fn sees `undefined`, rewire corrects |
-| Wave tracking | `BitSet` masks (`_depDirtyMask`, `_depSettledMask`) | `Set<number>` (`_depDirtyBits`, `_depSettledBits`) |
-| Dep changes | Never (fixed at construction) | Every `_runFn` may rewire |
+**When to use `dynamicNode` vs `derived`:**
 
-**When to use `dynamicNode` vs static `derived`:**
+- Use `derived([deps], fn)` when fn always uses all deps. Simpler — fn receives a flat
+  array.
+- Use `dynamicNode([allDeps], track => ...)` when fn conditionally reads different deps
+  per invocation. All deps must be known at construction; if deps are truly unknown
+  (e.g., Jotai atom discovery), a two-phase approach is needed (deferred, designed
+  separately from core).
 
-- Use `derived([deps], fn)` when deps are known at construction time. Static nodes
-  get the pre-set dirty mask, SENTINEL gating, and simpler wave tracking.
-- Use `dynamicNode(get => ...)` when deps depend on runtime values (conditional
-  branches, data-driven graphs). Accept the rewire overhead and `undefined` first-pass
-  trade-off.
+**Comparison with v0.2 dynamicNode (deleted):**
+
+| Aspect | v0.2 `DynamicNodeImpl` | v0.3 superset model |
+|--------|------------------------|---------------------|
+| Deps | Discovered at runtime via `get()` | Declared at construction (superset) |
+| First-run | Runs immediately, may see `undefined` | Waits for all deps (first-run gate) |
+| Rewire | `_rewire()` + buffer + `MAX_RERUN` | None — deps fixed |
+| Wave tracking | Separate `Set<number>` masks | Same DepRecord array as static |
+| Class | Separate `DynamicNodeImpl` | `NodeImpl` with `_isDynamic` flag |
+| Unused dep updates | Only tracked deps trigger fn | All deps trigger fn, equals absorbs |
 
 ### 12. ROM/RAM cache semantics in composition
 
-State nodes are **ROM** — their cached value survives disconnect. Compute nodes
-(derived, producer, effect, dynamic) are **RAM** — cache clears on disconnect.
+State nodes are **ROM** — their cached value survives deactivation. Compute nodes
+(derived, producer, effect, dynamic) are **RAM** — cache clears on deactivation.
 
 **Composition consequences:**
 
-- `state.get()` always returns the last set value, even with zero subscribers.
+- `state.cache` always returns the last set value, even with zero subscribers.
   Safe to read from external code at any time.
-- `derived.get()` returns `undefined` when disconnected (no subscribers).
+- `derived.cache` returns `undefined` when deactivated (no subscribers).
   Always subscribe before reading a compute node's value.
-- Reconnect always re-runs fn from scratch (`_lastDepValues` cleared on deactivate).
+- Reconnect always re-runs fn from scratch (DepRecord is cleared on deactivate).
   Effects with cleanup get a fresh fire/cleanup cycle.
 
 ```ts
 const s = state(42);
 const d = derived([s], ([v]) => v * 2);
 
-// No subscribers yet — d is disconnected.
-d.get();  // undefined (RAM — cache cleared)
-s.get();  // 42 (ROM — retained)
+// No subscribers yet — d is in sentinel status.
+d.cache;  // undefined (RAM — cache cleared)
+s.cache;  // 42 (ROM — retained)
 
 const unsub = d.subscribe(() => {});
-d.get();  // 84 (computed, cache live)
+d.cache;  // 84 (computed, cache live)
 unsub();
-d.get();  // undefined (RAM — cache cleared again)
-s.get();  // 42 (ROM — still retained)
+d.cache;  // undefined (RAM — cache cleared again)
+s.cache;  // 42 (ROM — still retained)
 ```
 
-**Test pattern:** Always call `get()` before `unsub()` for compute nodes. After
+**Test pattern:** Always read `.cache` before `unsub()` for compute nodes. After
 unsubscribe, the cache is gone.
 
 ### 13. `startWith` removal — use `derived` with `initial`
@@ -528,7 +509,7 @@ composition-oriented patterns (same rows, shorthand):
 | Multi-agent routing | `Graph.mount` + `connect` across subgraphs |
 | LLM builds graph from snapshot | `Graph.fromSnapshot` + `describe()` for introspection |
 | Git-versioned graphs | `toJSONString()` / `to_json_string()` → deterministic, diffable output |
-| Custom domain signals | User-defined message types + `onMessage` to intercept; unhandled types forward through graph |
+| Custom domain signals | User-defined message types via singleton `MessageTypeRegistry`; unhandled types forward through graph |
 
 See `GRAPHREFLY-SPEC.md` Appendix C for the full summary table and spec context.
 
