@@ -69,14 +69,27 @@ SHOULD reject or ignore it rather than silently coercing to `undefined`/`None`.
 ### 1.3 Protocol Invariants
 
 1. **DIRTY precedes DATA or RESOLVED.** Within the same batch, `[DIRTY]` comes before
-   `[DATA, v]` or `[RESOLVED]`. Receiving DATA without prior DIRTY is valid for raw/external
-   sources (compatibility path).
+   `[DATA, v]` or `[RESOLVED]`. This invariant is universal: every outgoing tier-3
+   payload is preceded by DIRTY in the same batch, regardless of which entry point
+   produced the emission. The dispatcher synthesizes a `[DIRTY]` prefix whenever the
+   caller omits it, provided (a) any tier-3 message is present in the batch and (b)
+   the node is not already in `dirty` status from an earlier emission in the same
+   wave. This applies uniformly to every emission path — `node.emit(v)`,
+   `node.down(msgs)`, `actions.emit(v)`, `actions.down(msgs)`, passthrough
+   forwarding, and equals-substituted `[DATA, v]` → `[RESOLVED]` rewrites. There is
+   no "raw down skips framing" compatibility carve-out: raw and framed paths are
+   observationally identical on the wire.
 
 2. **Two-phase push.** Phase 1 (DIRTY) propagates through the entire graph before phase 2
    (DATA/RESOLVED) begins. Guarantees glitch-free diamond resolution.
 
-3. **RESOLVED enables transitive skip.** If a node recomputes and finds its value unchanged,
-   it sends `[RESOLVED]` instead of `[DATA, v]`. Downstream nodes skip recompute entirely.
+3. **RESOLVED enables transitive skip — dispatch-layer equals substitution.** Every outgoing
+   DATA payload is subject to equals-vs-cache substitution: if `equals(cache, newValue)`
+   returns true, the node emits `[RESOLVED]` instead of `[DATA, v]`, and `cache` is not
+   re-advanced. This applies uniformly to every emission path — computed fn results,
+   `actions.emit(v)`, `actions.down(msgs)`, raw `node.down([[DATA, v]])`, and passthrough
+   forwarding — so the node's cache cannot drift from "the last DATA payload actually
+   delivered downstream." Downstream nodes skip recompute on RESOLVED entirely.
 
 4. **COMPLETE and ERROR are terminal.** After either, no further messages from that node.
    A node MAY be resubscribable (opt-in), in which case a new subscription starts fresh.
@@ -169,8 +182,11 @@ Every node exposes:
 node.cache              → cached value (readonly getter, never errors)
 node.status             → "sentinel" | "pending" | "dirty" | "settled" |
                           "resolved" | "completed" | "errored"
-node.down(messages)     → send messages downstream: [[DATA, value]]
-node.up(messages)       → send messages upstream: [[PAUSE, lockId]]
+node.down(msgOrMsgs)    → send one or more messages downstream.
+                          Accepts `Message | Messages` — one call = one wave.
+node.emit(value)        → sugar for down([[DATA, value]]).
+node.up(msgOrMsgs)      → send upstream. Same Message | Messages shape.
+                          Tier 3/4 (DATA/RESOLVED/COMPLETE/ERROR) throw.
 node.subscribe(sink)    → receive downstream messages, returns unsubscribe fn
 node.meta               → companion stores (each key is a subscribable node)
 ```
@@ -259,29 +275,41 @@ When no `initial` option was provided and no value has been emitted, `.cache` re
 **ROM/RAM semantics:** State nodes retain `.cache` across disconnect (ROM). Compute
 nodes clear `.cache` on deactivation (RAM) — status becomes `"sentinel"`.
 
-#### down(messages)
+#### down(msgOrMsgs)
 
-Send messages downstream to all subscribers. For source nodes, this is the primary emit
-mechanism:
+Send one or more messages downstream to all subscribers. Accepts either a
+single `Message` tuple or a `Messages` array of tuples — one call = one wave.
+The dispatch pipeline tier-sorts the input, auto-prefixes `[DIRTY]` when a
+tier-3 payload is present and the node is not already dirty, runs equals
+substitution, and delivers with phase deferral.
 
 ```
-node.down([[DATA, 42]])                         — emit value
-node.down([[DIRTY], [DATA, 42]])                — two-phase emit
+node.down([DATA, 42])                           — single-tuple shape
+node.down([[DATA, 42]])                         — array shape (equivalent)
+node.down([[DIRTY], [DATA, 42]])                — explicit two-phase
 node.down([[COMPLETE]])                         — terminate
 ```
 
-For compute nodes (with deps and fn), `down()` is available for explicit protocol control
-(operator pattern). For pure compute (derived pattern), the node auto-emits based on fn
-return value — `down()` is not typically called directly.
+#### emit(value)
 
-#### up(messages)
-
-Send messages upstream toward dependencies:
+Sugar for `down([[DATA, value]])`. One wave with a single DATA payload;
+identical wire output to the `down` form.
 
 ```
-node.up([[PAUSE, lockId]])                      — pause upstream
-node.up([[RESUME, lockId]])                     — resume upstream
-node.up([[TEARDOWN]])                           — request teardown
+node.emit(42)                                   — equivalent to down([[DATA, 42]])
+```
+
+#### up(msgOrMsgs)
+
+Send one or more messages upstream toward dependencies. Same
+`Message | Messages` shape as `down`. Tier 3 (DATA / RESOLVED) and tier 4
+(COMPLETE / ERROR) are downstream-only — `up` is restricted to DIRTY,
+INVALIDATE, PAUSE, RESUME, and TEARDOWN, and MUST throw on tier-3/4 input.
+
+```
+node.up([PAUSE, lockId])                        — pause upstream (lockId required)
+node.up([RESUME, lockId])                       — resume upstream (must match)
+node.up([TEARDOWN])                             — request teardown
 ```
 
 Only available on nodes that have deps.
@@ -332,10 +360,18 @@ observable via `observe()`.
 lifecycle signals that would disrupt their cached values:
 
 - **INVALIDATE** via `graph.signal()` — no-op on meta nodes (cached values preserved).
-  To explicitly invalidate a meta node, send `down([[INVALIDATE]])` directly.
+  The filtering is a graph-layer responsibility: `graph.signal([[INVALIDATE]])` iterates
+  registered nodes and skips meta children of registered parents before broadcasting.
+  The core `_emit` INVALIDATE path itself does not distinguish meta from non-meta —
+  sending `[[INVALIDATE]]` directly to a meta node's `down()` does wipe its cache.
 - **COMPLETE/ERROR** — not propagated from parent to meta (meta outlives terminal state
   for post-mortem writes like setting `meta.error` after ERROR).
 - **TEARDOWN** — propagated from parent on parent's own TEARDOWN, releasing meta resources.
+  The fan-out happens at the **top of the parent's `_emit` pipeline**, before the parent's
+  own state-transition walk — meta children observe TEARDOWN while the parent's
+  `_cached` / `_status` are still at their pre-teardown values. This ordering keeps the
+  dispatch walk re-entrance-free: a meta child's own `_emit` cannot observe a
+  half-committed parent state.
 
 ### 2.4 Node fn Contract
 
@@ -348,19 +384,36 @@ node(deps, fn, opts?)
 `fn` receives `(latestData, actions, ctx)`:
 
 - **`latestData`** — array of latest DATA values from deps (from DepRecord).
-- **`actions`** — `{ emit(value), down(messages), up(messages) }`.
-  - `emit(v)` — convenience: runs `equals`, emits `[[DIRTY],[DATA,v]]` or `[[RESOLVED]]`.
-  - `down(msgs)` — raw protocol: send full message tuples downstream.
-  - `up(msgs)` — send messages upstream toward deps.
-- **`ctx`** — `{ dataFrom: boolean[], terminalDeps: (true|unknown)[] }`.
+- **`actions`** — `{ emit(value), down(msgOrMsgs), up(msgOrMsgs) }`. Every action call
+  produces one wave. Multiple calls within a single fn invocation produce multiple
+  independent waves. There is no accumulation or flush boundary at fn return.
+  - `emit(v)` — sugar for `down([[DATA, v]])`. One wave with a single DATA payload.
+  - `down(msgOrMsgs)` — send one or more messages downstream. Accepts either a single
+    `Message` tuple (e.g. `down([DATA, 42])`) or a `Messages` array of tuples (e.g.
+    `down([[DIRTY], [DATA, 42]])`). The dispatch pipeline tier-sorts the input,
+    auto-prefixes `[DIRTY]` when tier-3 is present and the node is not already dirty
+    (§1.3.1), runs equals substitution (§1.3.3), and delivers with phase deferral.
+  - `up(msgOrMsgs)` — send messages upstream toward deps. Accepts the same
+    `Message | Messages` shape. Tier-3 (DATA/RESOLVED) and tier-4 (COMPLETE/ERROR)
+    are downstream-only and throw — `up` is for DIRTY, INVALIDATE, PAUSE, RESUME,
+    and TEARDOWN only.
+- **`ctx`** — `{ dataFrom: boolean[], terminalDeps: (true|unknown)[], store: object }`.
   - `dataFrom[i]` — true if dep `i` sent DATA in this wave (vs RESOLVED).
   - `terminalDeps[i]` — `true` = COMPLETE, error payload = ERROR, `undefined` = live.
+  - `store` — mutable bag that persists across fn runs within one activation cycle.
+    Wiped on deactivation and on resubscribable terminal reset.
 
 **fn return is cleanup only.** The return value is NEVER auto-framed as DATA or
 RESOLVED. ALL emission is explicit via `actions.emit(v)` or `actions.down(msgs)`.
 
-- **Returns a function:** registered as cleanup, called before next fn invocation or
-  on teardown/deactivation.
+- **Returns a function:** registered as cleanup, called before the next fn invocation,
+  on deactivation, AND on `[[INVALIDATE]]` (the node treats invalidate as "about to
+  re-run" and flushes the prior cleanup). This INVALIDATE firing point is the
+  reactive hook for flushing external caches tied to dep values — measurement
+  caches, file handles, debouncers — on broadcast `graph.signal([[INVALIDATE]])`.
+- **Returns `{ deactivation: () => void }`:** opt-in alternative. Fires ONLY on
+  deactivation, NOT on fn re-run or INVALIDATE. Used for long-lived resources that
+  should survive across fn invocations within one activation cycle.
 - **Returns anything else (including undefined/void):** ignored.
 - **Throws:** emits `[[ERROR, err]]` to downstream subscribers.
 
@@ -413,13 +466,46 @@ PAUSE/RESUME is default behavior, controlled by the `pausable` node option:
 
 | Value | Behavior |
 |-------|----------|
-| `true` (default) | On PAUSE, suppress fn execution. On RESUME, fire fn with latest dep values (only most recent matters). |
-| `"resumeAll"` | On RESUME, replay all buffered updates since PAUSE (ordered). |
-| `false` | Ignore PAUSE/RESUME — fn fires normally regardless of flow control signals. |
+| `true` (default) | On PAUSE, suppress fn execution. On RESUME, fire fn once with the latest dep values (only the most recent wave matters). |
+| `"resumeAll"` | On RESUME, replay every outgoing tier-3/4 message that was buffered while paused, in order. See "bufferAll mode" below. |
+| `false` | Ignore PAUSE/RESUME — fn fires normally regardless of flow control signals. Appropriate for sources like reactive timers that must keep ticking regardless of downstream backpressure. |
 
-PAUSE/RESUME flows through tier 2 (immediate). The node tracks a `_paused` flag;
-when paused, wave completion skips fn but DepRecord continues updating with latest
-values. On RESUME, if any wave completed while paused, fn fires immediately.
+**Lock-id tracking (mandatory).** Every tier-2 message MUST carry a `lockId`
+payload: `[[PAUSE, lockId]]` / `[[RESUME, lockId]]`. Bare `[[PAUSE]]` /
+`[[RESUME]]` is a protocol violation and implementations MUST reject it. The
+`lockId` is opaque to the protocol — any value unique to the pauser is
+acceptable (symbols, strings, counter-derived objects). Implementations track
+active locks in a per-node set and derive the paused state from
+`lockSet.size > 0`. This gives multi-pauser correctness by construction: if
+controller A and controller B both hold pause locks, releasing A's lock does
+not resume the node while B still holds its lock. Unknown-`lockId` RESUME is
+a no-op, so `dispose()` on a pauser is idempotent.
+
+PAUSE/RESUME flows through tier 2 (immediate). The node tracks a lock set
+keyed by `lockId`; when the set is non-empty, wave completion skips fn but
+DepRecord continues updating with latest values. On final-lock RESUME, if any
+wave completed while paused, fn fires immediately with the latest dep values.
+
+**bufferAll mode (`pausable: "resumeAll"`).** While any lock is held, the
+node captures every outgoing tier-3 / tier-4 message from its own emission
+pipeline into a per-node buffer. Tier 0–2 (START / DIRTY / INVALIDATE /
+PAUSE / RESUME) and tier 5 (TEARDOWN) continue to dispatch synchronously
+while paused — subscribers, downstream pausers, and graph teardown MUST
+observe them regardless of flow control. On final-lock RESUME, the buffered
+messages are replayed through the node's own `_emit` pipeline BEFORE the
+RESUME signal is forwarded downstream. The replay passes through the normal
+tier-3 equals substitution walk (§1.3.3), so a buffered `[DATA, v]` whose
+value matches the pre-pause cache collapses to `[RESOLVED]` on replay —
+producer "pulses" that write the same value while paused are absorbed. This
+matches diamond-safety intent: `.cache` remains coherent with "the last
+DATA actually delivered to sinks." Producers that need pulse semantics
+(every write observable regardless of value) should set `equals: () => false`
+on the node.
+
+**Teardown.** On TEARDOWN or deactivation, the buffer and lock set are
+discarded. Buffered in-flight DATA is NOT drained before teardown — TEARDOWN
+is a hard reset. Resubscribable nodes also clear the lock set on resubscribe
+so a new lifecycle cannot inherit a lock from a prior one.
 
 #### `replayBuffer` option
 
@@ -893,7 +979,65 @@ Wave completion check: all deps where `dirty=true` must have `settled=true`.
 | V2 | + schema | ~40 bytes | Type validation, migration |
 | V3 | + caps, refs | ~80 bytes | Access control, cross-graph references |
 
-V0 is recommended minimum. Higher levels are opt-in.
+Versioning is **opt-in** — the minimum observable level is V0, selectable per
+node or graph-wide. Unversioned nodes (the default) skip the version counter
+entirely. Higher levels extend the state monotonically: a node at V1 carries
+V0's fields plus the V1 additions, and so on.
+
+### 7.1 Attaching versioning
+
+Three entry points, resolved in priority order:
+
+1. **Per-node `opts.versioning`** — set at construction via
+   `node(deps, fn, { versioning: 0 })`. Highest priority; overrides any
+   config- or graph-level default.
+2. **`GraphReFlyConfig.defaultVersioning`** — config-level default. Every
+   node bound to that config inherits the level unless its own options
+   override. Set once at application startup via `configure(cfg => {
+   cfg.defaultVersioning = 0; })` before the first node is created.
+   `GraphReFlyConfig.defaultHashFn` provides the same inheritance story for
+   the content-hash function used to compute V1 `cid` — swap to a faster
+   non-crypto hash for hot-path workloads, or a stronger hash when V1 cids
+   serve as audit anchors.
+3. **`Graph.setVersioning(level)`** — graph-level default. Bulk-applies the
+   level to every node already registered in the graph, AND stores the
+   default so `Graph.add(name, node)` applies it to nodes added later. The
+   retroactive apply path uses `NodeImpl._applyVersioning(level)` under the
+   hood.
+
+### 7.2 Retroactive upgrade (`_applyVersioning`)
+
+A node's versioning level can be bumped **upward only** after construction.
+The internal `NodeImpl._applyVersioning(level, opts?)` method attaches (or
+upgrades) versioning state on a quiescent node. It is intended for
+`Graph.setVersioning` bulk application and for rare cases where a specific
+node needs to be upgraded from V0 to V1 after construction.
+
+- **Monotonic.** Levels only go up. Downgrade (e.g., V1 → V0) is a no-op —
+  once a node carries higher-level metadata, dropping it would tear the
+  linked-history invariant for V1 and above.
+- **Quiescence guard.** `_applyVersioning` is rejected mid-wave. It MUST
+  throw if the node is currently executing its fn. Callers at quiescent
+  points — before the first sink subscribes, after all sinks unsubscribe,
+  or between external `down()` / `emit()` invocations — are safe.
+- **Identity preserved.** The existing `id` and `version` counter are
+  preserved across upgrades so downstream consumers watching `v.id` don't
+  see an identity jump.
+
+### 7.3 Linked-history boundary at V0 → V1 upgrade
+
+V0 → V1 retroactive upgrade produces a **fresh history root**. The new V1
+state has `cid = hash(currentCachedValue)` and `prev = null`, not a
+synthetic `prev` anchored to any prior V0 value. The V0 monotonic `version`
+counter is preserved across the upgrade, but the linked-cid chain starts
+fresh at the upgrade point.
+
+Downstream audit tools that walk `v.cid.prev` backwards through time will
+encounter a `null` boundary at the upgrade. **This is intentional**: V0 has
+no cid to link to, and fabricating one would misrepresent the hash. Callers
+that require an unbroken cid chain from birth MUST attach versioning at
+construction via `opts.versioning` or `GraphReFlyConfig.defaultVersioning`,
+not retroactively.
 
 ---
 
@@ -904,9 +1048,60 @@ Follows semver:
 - **Minor** (0.x.0): new optional features, new message types
 - **Major** (x.0.0): breaking changes to protocol or primitive contracts
 
-Current: **v0.3.0** — fn-return-cleanup-only, consolidated NodeImpl, DepRecord
+Current: **v0.4.0** — unified dispatch waist; `actions.bundle` deleted; mandatory PAUSE/RESUME lockId; versioning §7 expanded
 
 **Changelog:**
+- **v0.4.0** — Unified dispatch waist. The `actions.bundle` / `Bundle` / `BundleFactory`
+  user-facing framing surface is **deleted**: actions are `emit`, `down`, `up` only.
+  Every emission path — `node.emit(v)`, `node.down(msgs)`, `actions.emit(v)`,
+  `actions.down(msgs)`, passthrough forwarding, recursive ERROR after equals-throw —
+  converges at a single internal `_emit` waist that owns terminal filtering,
+  tier sort, synthetic `[DIRTY]` prefix, PAUSE/RESUME lock bookkeeping, meta
+  TEARDOWN fan-out, equals substitution / cache advance, and phase-deferred
+  dispatch. §1.3.1 is tightened: the "raw DATA without prior DIRTY is a compat
+  path" carve-out is **removed** — the dispatcher synthesizes `[DIRTY]`
+  unconditionally when tier-3 is present and the node is not already dirty, so
+  raw and framed paths are observationally identical on the wire. `node.down`,
+  `node.up`, `actions.down`, and `actions.up` now accept either a single `Message`
+  tuple or a `Messages` array. `actions.up` throws on tier-3/4 (DATA/RESOLVED/
+  COMPLETE/ERROR are downstream-only). One action call = one wave; there is no
+  fn-return accumulation boundary. PAUSE/RESUME lockId is now **mandatory** —
+  bare `[[PAUSE]]` / `[[RESUME]]` throws. Per-node lock set provides multi-pauser
+  correctness by construction; unknown-lockId RESUME is a no-op for dispose
+  idempotency. `pausable: "resumeAll"` bufferAll mode is fully specified (§2.6):
+  tier-3/4 outgoing messages are buffered while any lock is held, replayed
+  through `_emit` on final-lock RESUME (equals substitution still applies —
+  duplicate values collapse to RESOLVED), and discarded on teardown/deactivate.
+  Versioning §7 expanded: new §7.1 covers construction-time opt-in via
+  `opts.versioning`, config-level defaults via `GraphReFlyConfig.defaultVersioning`
+  and `defaultHashFn`, and graph-level bulk apply via `Graph.setVersioning`. New
+  §7.2 documents retroactive `_applyVersioning` — monotonic, mid-wave rejected,
+  identity preserved across upgrades. New §7.3 pins the V0 → V1 upgrade semantic:
+  fresh history root with `prev = null`, intentional. Function-form fn cleanup
+  now documented to fire on `[[INVALIDATE]]` as well as deactivation and
+  pre-re-run — the reactive hook for flushing external caches on broadcast
+  `graph.signal([[INVALIDATE]])` (reactive-layout pattern). Meta TEARDOWN fan-out
+  ordering pinned in §2.3: parent notifies meta children at the top of `_emit`
+  before the parent's own state-transition walk. `graph.signal([[INVALIDATE]])`
+  meta filtering is clarified as a graph-layer responsibility, not core. Breaking:
+  `actions.bundle` callers, bare `[[PAUSE]]` / `[[RESUME]]` emitters, and
+  composition-guide table rows referencing `bundle(...).resolve()` must migrate.
+- **v0.3.1** — Equals substitution is a dispatch-layer invariant (§1.3.3, scope
+  broadened). Every outgoing DATA payload — computed fn results, `actions.emit(v)`,
+  bundle-wrapped down, raw `actions.down([[DATA, v]])`, and passthrough forwarding —
+  runs through a single equals-vs-live-cache check; on match the tuple is rewritten
+  to `[RESOLVED]` and cache is not re-advanced. When substitution fires on a
+  raw-path emission without a prior DIRTY, the dispatcher auto-synthesizes
+  `[DIRTY]` to preserve §1.3.1 (DIRTY precedes DATA or RESOLVED). Equals-throw
+  mid-batch delivers the successfully-walked prefix before emitting ERROR so
+  `.cache` stays coherent with what subscribers observe. `.cache` gains a
+  well-defined meaning: "the last DATA payload this node actually emitted
+  downstream." Compat layers: §D.12 Invariant I updated — choosing a particular
+  `actions` API no longer bypasses `equals`; use `equals: () => false` at node
+  construction to force-emit same-valued DATA. No user-facing API change; no new
+  message types; pre-v0.3.1 user code continues to work with the only observable
+  difference being that same-value raw-down writes now produce `[DIRTY, RESOLVED]`
+  on the wire instead of `[DATA, v]` (semantically equivalent). Compatible patch.
 - **v0.3.0** — Foundation redesign. fn return is cleanup only — all emission via
   `actions.emit(v)` or `actions.down(msgs)`. Per-dep state consolidated into DepRecord
   (replaces BitSet masks). NodeBase + NodeImpl merged into single class. `dynamicNode`
@@ -1042,25 +1237,33 @@ not yet integrated into the main spec sections above. See
 `graphrefly-ts/archive/docs/SESSION-foundation-redesign.md` §10.6 for the
 full decision log.
 
-### D.1 `Node.emit(value, options?)` — public framed emit
-
-Public sugar on the `Node<T>` interface, parallel to `Node.down(msgs)`:
+### D.1 `Node.down` / `Node.emit` / `Node.up` — public emission surface
 
 ```ts
 interface Node<T> {
-  down(messages: Messages, options?: NodeTransportOptions): void; // raw
-  emit(value: T, options?: NodeTransportOptions): void;            // framed
-  up?(messages: Messages, options?: NodeTransportOptions): void;   // raw
+  down(msgOrMsgs: Message | Messages, options?: NodeTransportOptions): void;
+  emit(value: T | undefined | null, options?: NodeTransportOptions): void;
+  up?(msgOrMsgs: Message | Messages, options?: NodeTransportOptions): void;
 }
 ```
 
-`emit(v)` runs `equals(cache, v)` to decide DATA vs RESOLVED, frames
-through the singleton `bundle` (tier sort + DIRTY auto-prefix), and
-delivers via the raw `_emit` pipeline. Diamond-safe by construction.
+`down` and `up` accept either a single `Message` tuple (e.g.
+`node.down([DATA, 42])`) or a `Messages` array of tuples (e.g.
+`node.down([[DIRTY], [DATA, 42]])`). The dispatcher normalizes the shape
+at entry.
 
-Use `emit` for state-node writes from external code when diamond safety
-matters. Use `down` for raw protocol traffic (forwarding COMPLETE/ERROR/
-TEARDOWN, spec §1.3.1 compat path for no-DIRTY DATA).
+`emit(v)` is sugar for `down([[DATA, v]])`. One wave with a single DATA
+payload. The dispatch pipeline tier-sorts the input, auto-prefixes
+`[DIRTY]` when any tier-3 message is present and the node is not already
+dirty (§1.3.1), runs equals substitution (§1.3.3), and dispatches with
+phase deferral. All three APIs converge at the same internal `_emit`
+waist and share identical framing — `emit(v)` and `down([[DATA, v]])`
+produce identical wire output.
+
+`up` forwards to every dep. Tier 3 (DATA/RESOLVED) and tier 4
+(COMPLETE/ERROR) are downstream-only and MUST be rejected: the
+upstream direction carries only DIRTY, INVALIDATE, PAUSE, RESUME, and
+TEARDOWN.
 
 ### D.2 `FnCtx.store` — persistent scratch pad
 
@@ -1084,11 +1287,15 @@ operators that need stateful accumulation (`reduce`, `takeWhile`,
 type NodeFnCleanup = (() => void) | { deactivation: () => void };
 ```
 
-- `() => void` — default. Fires before the next fn re-run AND on
-  deactivation (RxJS/useEffect semantics).
+- `() => void` — default. Fires before the next fn re-run, on
+  deactivation (RxJS/useEffect semantics), AND on `[[INVALIDATE]]`.
+  The INVALIDATE firing point is the reactive hook for flushing
+  external caches tied to dep values — measurement caches, file
+  handles, debouncer timers — when broadcast
+  `graph.signal([[INVALIDATE]])` reaches the node.
 - `{ deactivation: () => void }` — opt-in. Fires ONLY on deactivation.
   Used by operators with persistent resources that shouldn't be
-  rebuilt between fn runs.
+  rebuilt between fn runs or on INVALIDATE.
 
 ### D.4 `NodeOptions.errorWhenDepsError`
 
@@ -1097,16 +1304,41 @@ propagates when any dep errors, independently of COMPLETE auto-propagation.
 Only `rescue` / `catchError` operators set `errorWhenDepsError: false`
 to handle errors explicitly via `ctx.terminalDeps[i]`.
 
-### D.5 `NodeOptions.config`
+### D.5 `NodeOptions.config` and `GraphReFlyConfig` surface
 
 Pass a custom `GraphReFlyConfig` instance for test isolation or custom
-protocol stacks. Defaults to the module-level `defaultConfig`.
+protocol stacks. Defaults to the module-level `defaultConfig`. A config
+freezes on first hook read — all mutating calls (registering custom
+message types, setting hooks, setting `defaultVersioning` /
+`defaultHashFn`) MUST happen at application startup, before any node
+is created.
 
 ```ts
-const custom = new GraphReFlyConfig({...});
+const custom = new GraphReFlyConfig({
+  onMessage: (...) => undefined,
+  onSubscribe: (...) => undefined,
+  defaultVersioning: 0,              // every node inherits V0 unless overridden
+  defaultHashFn: customHash,         // swap the V1 cid hash function
+});
 custom.registerMessageType(MY_TYPE, { tier: 3 });
 const n = state(0, { config: custom });
 ```
+
+`GraphReFlyConfig` fields relevant to user code:
+
+- **`onMessage`** — global message interceptor (singleton hook).
+- **`onSubscribe`** — global subscribe ceremony (singleton hook).
+- **`defaultVersioning?: VersioningLevel`** — fallback versioning level
+  for every node bound to this config unless the node's own
+  `opts.versioning` provides an explicit override. Covers the progressive
+  opt-in path described in §7.1 without per-node boilerplate.
+- **`defaultHashFn?: HashFn`** — fallback content-hash function used to
+  compute V1 `cid`, inherited by every versioned node unless
+  `opts.versioningHash` overrides. Swap to a faster non-cryptographic
+  hash for hot-path workloads, or a stronger hash when V1 cids serve
+  as audit anchors.
+- **`tierOf(type)`** — pre-bound tier lookup used by the dispatch
+  pipeline; available as a public field for host-code inspection.
 
 ### D.6 `Graph.connect(from, to)` creates a reactive edge
 
@@ -1134,8 +1366,10 @@ at runtime via `track(dep)` calls inside fn. Discovery pattern:
    then re-runs fn after the current `_execFn` returns.
 3. The re-run sees the new deps as known via `depIndexMap` and reads
    them through `data[i]` (protocol-delivered). When no new deps appear,
-   fn calls `actions.emit(result)` — which routes through `_actionEmit`
-   → `bundle()` and emits DATA (if changed) or RESOLVED (if unchanged).
+   fn calls `actions.emit(result)` — which routes `[DATA, result]`
+   through the unified `_emit` waist (tier sort, synthetic DIRTY prefix,
+   equals substitution per §1.3.3, phase-deferred dispatch). The
+   dispatch-layer equals substitution decides DATA vs RESOLVED.
 
 Re-entrance safety: `_execFn` guards against recursive calls triggered
 by `_addDep`'s synchronous subscribe delivery via `_isExecutingFn` +
@@ -1144,12 +1378,12 @@ BEFORE clearing wave flags so the rerun observes the correct
 `_waveHasNewData` state.
 
 **No custom suppression.** `autoTrackNode` does not skip `actions.emit`
-on "no accessed dep changed" waves. The equals check in `_actionEmit`
-already folds same-value results to RESOLVED, which clears downstream
-`dep.dirty` while remaining invisible to DATA-only subscribers (Jotai
-`subscribe`, Signal.sub, nanostores `listen`/`subscribe`). Skipping
-emission entirely would leave downstream stuck and break two-way
-composition (see D.12).
+on "no accessed dep changed" waves. The dispatch-layer equals
+substitution (§1.3.3) already folds same-value results to RESOLVED,
+which clears downstream `dep.dirty` while remaining invisible to
+DATA-only subscribers (Jotai `subscribe`, Signal.sub, nanostores
+`listen`/`subscribe`). Skipping emission entirely would leave
+downstream stuck and break two-way composition (see D.12).
 
 ### D.8 Terminal-emission operators emit nothing during accumulation
 
@@ -1221,21 +1455,29 @@ const formatted = derived([doubled._node], ([v]) => `v=${v}`);
 formatted.subscribe(sink);
 ```
 
-**Invariant I.** Write paths in compat layers MUST route through the
-framed `emit` pipeline. Two legal shapes:
+**Invariant I.** Write paths in compat layers can use any of the three
+equivalent legal shapes — under v0.4.0 they all converge at the same
+internal `_emit` waist and produce identical wire output:
 
-1. `n.emit(value)` — preferred. Runs the node's `equals`, frames
-   through `bundle()` which auto-prefixes `[DIRTY]`, delivers via
-   `_emit`.
-2. `n.down([[DIRTY], [DATA, value]])` — explicit two-phase shape,
-   for write paths that intentionally bypass the equals check (e.g.,
-   debugging or test harnesses that want to force an always-fire).
+1. `n.emit(value)` — preferred idiom. Sugar for
+   `n.down([[DATA, value]])`.
+2. `n.down([DATA, value])` — single-tuple shape.
+3. `n.down([[DIRTY], [DATA, value]])` — explicit two-phase shape.
 
-Raw `n.down([[DATA, value]])` WITHOUT an explicit `[DIRTY]` prefix is
-NOT compliant. It causes diamond glitches in any downstream composition
-(see Appendix A on tier ordering and §2.7 on diamond resolution): each
-leg of a diamond delivers DATA without the coordinating DIRTY that
-would otherwise hold the downstream wave open until all legs settle.
+All three pass through the unified dispatch waist: the pipeline
+tier-sorts the input, auto-prefixes `[DIRTY]` when any tier-3 payload
+is present and the node is not already dirty (§1.3.1), runs equals
+substitution (§1.3.3), and delivers with phase deferral. **There is
+no "raw down skips framing" carve-out.** Raw and framed paths are
+observationally identical on the wire.
+
+**Equals cannot be bypassed by choice of API.** Per §1.3.3, equals
+substitution is a dispatch-layer invariant applied to every outgoing
+DATA regardless of entry point. Write paths that intentionally want to
+force emission of same-valued DATA MUST configure the node with
+`equals: () => false` at construction; the framework then routes DATA
+through uniformly without substitution. Pre-v0.3.1 "escape via raw
+actions API" is no longer observable behavior.
 
 **Invariant II.** Compute paths in compat layers MUST produce exactly
 one framed outcome per wave — either DATA (value changed) or RESOLVED

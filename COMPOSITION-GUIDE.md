@@ -616,35 +616,72 @@ const counter = derived([src], (data, ctx) => {
 ```
 
 **Cleanup shapes:**
-- `() => void` — default. Fires before next fn run AND on deactivation.
+- `() => void` — default. Fires before next fn run, on deactivation, AND
+  on `[[INVALIDATE]]`. The INVALIDATE firing point is the reactive hook
+  for flushing external caches tied to dep values when broadcast
+  `graph.signal([[INVALIDATE]])` reaches the node. Example:
+  ```ts
+  const measured = node([text, font], ([t, f], actions) => {
+    const result = measureCache.measure(t as string, f as string);
+    actions.emit(result);
+    // Fires on next fn run, deactivation, OR INVALIDATE — flushes the
+    // measurement cache so INVALIDATE actually recomputes from scratch.
+    return () => measureCache.clear();
+  });
+  ```
 - `{ deactivation: () => void }` — opt-in. Fires ONLY on deactivation.
-  Use for persistent resources (sockets, intervals) that survive fn
-  re-runs.
+  NOT on fn re-run, NOT on INVALIDATE. Use for persistent resources
+  (sockets, intervals) that survive fn re-runs and should outlive an
+  in-place invalidation.
 
-### 21. `actions.emit` vs `actions.down`
+### 21. `actions.emit` vs `actions.down` (v0.4.0)
 
-| Call | Framing | Use for |
-|------|---------|---------|
-| `actions.emit(v)` | Equals check + bundle (DIRTY auto-prefix) | Value emission — diamond-safe |
-| `actions.down(msgs)` | Raw passthrough through `_emit` pipeline | Forwarding COMPLETE/ERROR/TEARDOWN; advanced framing via manual bundle |
-| `actions.bundle(...).resolve()` | Tier sort + DIRTY auto-prefix | Staged/multi-message emissions |
-| `actions.up(msgs)` | Raw forward to deps | Upstream signals (rare) |
+Under v0.4.0 the three `actions` APIs all converge at the **single unified
+`_emit` waist**. There is no user-facing bundle builder, no "raw vs framed"
+distinction, and no carve-out. Every call goes through the same stages:
+terminal filter → tier sort → synthetic `[DIRTY]` prefix → PAUSE/RESUME
+lock bookkeeping → meta TEARDOWN fan-out → equals substitution + cache
+advance → phase-deferred dispatch.
 
-**Rule of thumb:** use `emit` for values, `down` for protocol messages.
+| Call | Shape | Use for |
+|------|-------|---------|
+| `actions.emit(v)` | sugar for `down([[DATA, v]])` | Value emission — the common case |
+| `actions.down(msgOrMsgs)` | accepts single `Message` or `Messages` array — one call = one wave | Multi-message or mixed-tier batches, or hand-framed sequences |
+| `actions.up(msgOrMsgs)` | same `Message \| Messages` shape | Upstream control signals only (DIRTY, INVALIDATE, PAUSE, RESUME, TEARDOWN) |
 
-**Why `emit` is diamond-safe and raw `down([[DATA, v]])` isn't.** The
-`emit` path routes the value through `bundle()`, which auto-prefixes
-`[DIRTY]` when none is present. The `[DIRTY]` prefix is what lets
-downstream nodes enter a "wave pending" state and defer their fn until
-all legs of a diamond have settled. Raw `down([[DATA, v]])` skips
-bundle, so no `[DIRTY]` is sent — downstream dep records never go
-dirty — downstream thinks each DATA is an independent wave and runs
-fn immediately per leg. In a diamond this fires the downstream fn
-twice with glitch values (new left + stale right, then new left + new
-right). The final `.cache` is correct, but any live subscriber sees
-the intermediate glitch. This is a **latent bug** that only surfaces
-under live subscribers or composition into further-downstream nodes —
-`.get()` tests won't catch it.
+**Rule of thumb:** use `emit` for value emission. Use `down` when you need
+to send a multi-message batch in a single wave (`down([[DATA, 1], [DATA, 2],
+[COMPLETE]])` — the pipeline sorts, prefixes DIRTY, advances cache through
+each DATA in order, then emits COMPLETE). Multiple separate calls produce
+multiple separate waves, each with their own DIRTY.
+
+**`actions.up` throws on tier-3/4.** DATA, RESOLVED, COMPLETE, and ERROR are
+downstream-only. The upstream direction is reserved for control signals —
+DIRTY, INVALIDATE, PAUSE, RESUME, and TEARDOWN. Attempting to send a tier-3
+or tier-4 message via `up` is a protocol violation and throws immediately.
+
+**Diamond safety.** All entry points are diamond-safe by construction.
+`emit(v)` and `down([[DATA, v]])` produce byte-identical wire output: the
+dispatcher auto-prefixes `[DIRTY]` unconditionally when tier-3 is present
+and the node is not already dirty. There is no "raw down bypasses framing"
+path anymore — the pre-v0.3.1 escape hatch was removed in v0.3.1 (equals
+substitution lifted to dispatch layer) and the bundle API surface was
+removed in v0.4.0 (unified waist). Both changes are observationally
+transparent for any code that was using `emit`.
+
+**Forcing same-value re-emission.** There is no API to "bypass" equals
+substitution. A compute node that wants every same-valued DATA to flow
+through MUST configure `equals: () => false` at node construction — the
+dispatcher's `equals` call will return `false` unconditionally and DATA
+flows uniformly without substitution. This is also the idiom for
+`pausable: "resumeAll"` producers whose buffered DATAs should replay in
+full (without equals collapsing duplicates on resume).
+
+**Migration notes.** Callers of the v0.3-era `actions.bundle(...).resolve()`
+should switch to `actions.down([[msg1], [msg2], ...])` — the dispatch
+pipeline now owns tier sort + synthetic DIRTY prefix. Same for any code
+holding a `Bundle` reference or importing `BundleFactory` from the core
+index — those types are gone.
 
 ### 22. `autoTrackNode` — runtime dep discovery for pull-based compat
 
@@ -739,12 +776,13 @@ compat feature set. This is the graduated-adoption path:
 when observed at the native protocol level — not just wave-correct
 when observed through its compat subscribe API. Specifically:
 
-- **`set`/write paths must route through the framed `emit` pipeline.**
-  Either call `n.emit(value)` (which runs the equals check and the
-  `bundle()` DIRTY auto-prefix), or manually bundle `[[DIRTY], [DATA,
-  value]]` and pass it through `n.down`. Raw `n.down([[DATA, value]])`
-  is **forbidden** — it drops the `[DIRTY]` prefix and causes diamond
-  glitches for any downstream native composition.
+- **`set`/write paths route through the unified dispatch waist.** Any of
+  these are legal and produce byte-identical wire output under v0.4.0:
+  `n.emit(value)`, `n.down([DATA, value])`, `n.down([[DATA, value]])`,
+  or the explicit two-phase `n.down([[DIRTY], [DATA, value]])`. The
+  dispatcher auto-prefixes `[DIRTY]` unconditionally when tier-3 is
+  present and the node is not already dirty, so there is no "same value
+  vs new value" wire-shape split. Prefer `n.emit(value)` for readability.
 
 - **`fn`/compute paths must always produce exactly one framed outcome
   per wave.** Either DATA (value changed) or RESOLVED (value unchanged).
