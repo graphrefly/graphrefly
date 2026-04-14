@@ -1,4 +1,4 @@
-# GraphReFly Spec v0.3
+# GraphReFly Spec v0.4
 
 > Reactive graph protocol for human + LLM co-operation.
 >
@@ -82,6 +82,8 @@ SHOULD reject or ignore it rather than silently coercing to `undefined`/`None`.
 
 2. **Two-phase push.** Phase 1 (DIRTY) propagates through the entire graph before phase 2
    (DATA/RESOLVED) begins. Guarantees glitch-free diamond resolution.
+
+**Activation-wave exemption.** The DIRTY-before-DATA/RESOLVED invariant is a *state-transition* invariant. The subscribe ceremony (fn's first run during `subscribe()`) is exempt: the initial emission during activation does not require a preceding DIRTY. Two-phase applies to all post-activation waves where a dep actually transitions through DIRTY.
 
 3. **RESOLVED enables transitive skip — dispatch-layer equals substitution.** Every outgoing
    DATA payload is subject to equals-vs-cache substitution: if `equals(cache, newValue)`
@@ -316,9 +318,9 @@ Only available on nodes that have deps.
 
 #### unsubscribe()
 
-Disconnect this node from its upstream dependencies. State nodes retain `.cache`;
-compute nodes clear it (ROM/RAM rule). Status becomes `"sentinel"`. May reconnect
-on next downstream subscription (lazy reconnect).
+Disconnect this node from its upstream dependencies. State nodes retain `.cache` and
+their current status (ROM); compute nodes clear `.cache` and transition to `"sentinel"`
+(RAM). May reconnect on next downstream subscription (lazy reconnect).
 
 ### 2.3 Meta (Companion Stores)
 
@@ -442,6 +444,8 @@ All nodes accept these options:
 | `resetOnTeardown` | bool | false | Clear cached value on TEARDOWN |
 | `pausable` | bool \| `"resumeAll"` | `true` | PAUSE/RESUME behavior (see §2.6) |
 | `replayBuffer` | number | — | Buffer last N outgoing DATA for late subscribers |
+| `completeWhenDepsComplete` | bool | `true` | Auto-emit COMPLETE when all deps have completed. Set to `false` for terminal-emission operators (e.g. `last`, `reduce`) that control their own COMPLETE timing. |
+| `errorWhenDepsError` | bool | `true` | Auto-emit ERROR when any dep errors. Set to `false` for rescue/catchError operators that handle errors explicitly via `ctx.terminalDeps[i]`. |
 
 **`initial` semantics:** When `initial` is provided (even as `undefined`/`None`), the
 node's cache is pre-populated and `.cache` returns that value before any emission. Source
@@ -1236,88 +1240,26 @@ ERROR         [ERROR, err]            Error termination
 
 ---
 
-## Appendix D: v0.4 Foundation Redesign Addendum (2026-04-12)
+## Appendix D: v0.4 Foundation Redesign Addendum
 
-This addendum captures v5 foundation redesign additions and clarifications
-not yet integrated into the main spec sections above. See
-`graphrefly-ts/archive/docs/SESSION-foundation-redesign.md` §10.6 for the
-full decision log.
+Behavioral additions and clarifications from the v0.4 foundation redesign that extend
+the main spec sections above. See `graphrefly-ts/archive/docs/SESSION-foundation-redesign.md`
+for the full decision log.
 
-### D.1 `Node.down` / `Node.emit` / `Node.up` — public emission surface
+### D.1 `NodeOptions.errorWhenDepsError`
 
-```ts
-interface Node<T> {
-  down(msgOrMsgs: Message | Messages, options?: NodeTransportOptions): void;
-  emit(value: T | undefined | null, options?: NodeTransportOptions): void;
-  up?(msgOrMsgs: Message | Messages, options?: NodeTransportOptions): void;
-}
-```
+Separate from `completeWhenDepsComplete`. Default `true`. ERROR auto-propagates when
+any dep errors, independently of COMPLETE auto-propagation. Only rescue / catchError
+operators set `errorWhenDepsError: false` to handle errors explicitly via
+`ctx.terminalDeps[i]`.
 
-`down` and `up` accept either a single `Message` tuple (e.g.
-`node.down([DATA, 42])`) or a `Messages` array of tuples (e.g.
-`node.down([[DIRTY], [DATA, 42]])`). The dispatcher normalizes the shape
-at entry.
+### D.2 `NodeOptions.config` and `GraphReFlyConfig` surface
 
-`emit(v)` is sugar for `down([[DATA, v]])`. One wave with a single DATA
-payload. The dispatch pipeline tier-sorts the input, auto-prefixes
-`[DIRTY]` when any tier-3 message is present and the node is not already
-dirty (§1.3.1), runs equals substitution (§1.3.3), and dispatches with
-phase deferral. All three APIs converge at the same internal `_emit`
-waist and share identical framing — `emit(v)` and `down([[DATA, v]])`
-produce identical wire output.
-
-`up` forwards to every dep. Tier 3 (DATA/RESOLVED) and tier 4
-(COMPLETE/ERROR) are downstream-only and MUST be rejected: the
-upstream direction carries only DIRTY, INVALIDATE, PAUSE, RESUME, and
-TEARDOWN.
-
-### D.2 `FnCtx.store` — persistent scratch pad
-
-```ts
-interface FnCtx {
-  latestData: readonly unknown[];
-  terminalDeps: readonly unknown[];
-  store: Record<string, unknown>;
-}
-```
-
-`store` is a mutable per-node object that persists across fn invocations
-within one activation cycle. Wiped on deactivation and on resubscribable
-terminal reset. Replaces the factory / `afterResubscribe` patterns for
-operators that need stateful accumulation (`reduce`, `takeWhile`,
-`bufferCount`).
-
-### D.3 Dual cleanup shape
-
-```ts
-type NodeFnCleanup = (() => void) | { deactivation: () => void };
-```
-
-- `() => void` — default. Fires before the next fn re-run, on
-  deactivation (RxJS/useEffect semantics), AND on `[[INVALIDATE]]`.
-  The INVALIDATE firing point is the reactive hook for flushing
-  external caches tied to dep values — measurement caches, file
-  handles, debouncer timers — when broadcast
-  `graph.signal([[INVALIDATE]])` reaches the node.
-- `{ deactivation: () => void }` — opt-in. Fires ONLY on deactivation.
-  Used by operators with persistent resources that shouldn't be
-  rebuilt between fn runs or on INVALIDATE.
-
-### D.4 `NodeOptions.errorWhenDepsError`
-
-Separate from `completeWhenDepsComplete`. Default `true`. ERROR auto-
-propagates when any dep errors, independently of COMPLETE auto-propagation.
-Only `rescue` / `catchError` operators set `errorWhenDepsError: false`
-to handle errors explicitly via `ctx.terminalDeps[i]`.
-
-### D.5 `NodeOptions.config` and `GraphReFlyConfig` surface
-
-Pass a custom `GraphReFlyConfig` instance for test isolation or custom
-protocol stacks. Defaults to the module-level `defaultConfig`. A config
-freezes on first hook read — all mutating calls (registering custom
-message types, setting hooks, setting `defaultVersioning` /
-`defaultHashFn`) MUST happen at application startup, before any node
-is created.
+Pass a custom `GraphReFlyConfig` instance for test isolation or custom protocol
+stacks. Defaults to the module-level `defaultConfig`. A config freezes on first hook
+read — all mutating calls (registering custom message types, setting hooks, setting
+`defaultVersioning` / `defaultHashFn`) MUST happen at application startup, before any
+node is created.
 
 ```ts
 const custom = new GraphReFlyConfig({
@@ -1334,190 +1276,49 @@ const n = state(0, { config: custom });
 
 - **`onMessage`** — global message interceptor (singleton hook).
 - **`onSubscribe`** — global subscribe ceremony (singleton hook).
-- **`defaultVersioning?: VersioningLevel`** — fallback versioning level
-  for every node bound to this config unless the node's own
-  `opts.versioning` provides an explicit override. Covers the progressive
-  opt-in path described in §7.1 without per-node boilerplate.
-- **`defaultHashFn?: HashFn`** — fallback content-hash function used to
-  compute V1 `cid`, inherited by every versioned node unless
-  `opts.versioningHash` overrides. Swap to a faster non-cryptographic
-  hash for hot-path workloads, or a stronger hash when V1 cids serve
-  as audit anchors.
-- **`tierOf(type)`** — pre-bound tier lookup used by the dispatch
-  pipeline; available as a public field for host-code inspection.
+- **`defaultVersioning?: VersioningLevel`** — fallback versioning level for every node
+  bound to this config unless the node's own `opts.versioning` provides an override.
+- **`defaultHashFn?: HashFn`** — fallback content-hash function for V1 `cid`.
+- **`tierOf(type)`** — pre-bound tier lookup available as a public field for inspection.
 
-### D.6 `Graph.connect(from, to)` creates a reactive edge
+### D.3 `Graph.connect(from, to)` — reactive edge, post-construction
 
-`connect()` wires a reactive edge post-construction by calling
-`NodeImpl._addDep(sourceNode)` on the target. The target's `_deps` array
-grows, the source is subscribed to, and the new dep participates in
-wave tracking from that point forward.
+`connect()` wires a reactive edge after construction by calling `NodeImpl._addDep(sourceNode)`
+on the target. The target's `_deps` array grows, the source is subscribed to, and the new
+dep participates in wave tracking from that point forward.
 
-**Breaking change from prior spec:** `connect()` no longer requires the
-target to include the source in its constructor deps. It auto-adds.
-This enables pattern factories (stratify, feedback, gate, forEach) to
-wire nodes after creation.
+**Breaking change from prior spec:** `connect()` no longer requires the target to include the
+source in its constructor deps — it auto-adds. This enables pattern factories (stratify,
+feedback, gate, forEach) to wire nodes after creation.
 
-### D.7 `autoTrackNode` — runtime dep discovery
+### D.4 Compat-layer two-way bridge invariant
 
-Sugar factory for Jotai/signals-style auto-tracking. Deps are discovered
-at runtime via `track(dep)` calls inside fn. Discovery pattern:
+Compat layers (`Signal.State`/`Signal.Computed`, Jotai `atom`, Nanostores `atom`/`computed`/`map`,
+Zustand `create`, etc.) are first-class composable `Node<T>` producers, not one-way polyfills.
+Every compat object MUST expose its backing node (`._node`, `store.node(name)`) and that node
+MUST behave as any other protocol-compliant node when observed from the native layer.
 
-1. Run fn. Each `track(dep)` for an unknown dep: subscribe via `_addDep`,
-   return `dep.cache` as stub (P3 boundary exception for discovery).
-2. If any new dep was discovered, discard the result and return without
-   emitting. The `_addDep` subscribe handshake delivers the dep's cached
-   value synchronously (or deferred, inside a `batch`), which sets
-   `_pendingRerun` on the autoTrackNode via re-entrance. The framework
-   then re-runs fn after the current `_execFn` returns.
-3. The re-run sees the new deps as known via `depIndexMap` and reads
-   them through `data[i]` (protocol-delivered). When no new deps appear,
-   fn calls `actions.emit(result)` — which routes `[DATA, result]`
-   through the unified `_emit` waist (tier sort, synthetic DIRTY prefix,
-   equals substitution per §1.3.3, phase-deferred dispatch). The
-   dispatch-layer equals substitution decides DATA vs RESOLVED.
-
-Re-entrance safety: `_execFn` guards against recursive calls triggered
-by `_addDep`'s synchronous subscribe delivery via `_isExecutingFn` +
-`_pendingRerun`. The `_execFn` finally block runs any pending rerun
-BEFORE clearing wave flags so the rerun observes the correct
-`_waveHasNewData` state.
-
-**No custom suppression.** `autoTrackNode` does not skip `actions.emit`
-on "no accessed dep changed" waves. The dispatch-layer equals
-substitution (§1.3.3) already folds same-value results to RESOLVED,
-which clears downstream `dep.dirty` while remaining invisible to
-DATA-only subscribers (Jotai `subscribe`, Signal.sub, nanostores
-`listen`/`subscribe`). Skipping emission entirely would leave
-downstream stuck and break two-way composition (see D.12).
-
-### D.8 Terminal-emission operators emit nothing during accumulation
-
-`last`, `reduce`, `toArray` stay silent during accumulation waves. They
-emit `[DIRTY, DATA, COMPLETE]` only at upstream COMPLETE. Downstream's
-pre-set-dirty DepRecord naturally holds the wave open until the terminal
-emission — no intermediate RESOLVED needed.
-
-This clarifies an earlier misuse: RESOLVED was being emitted as an
-"activation ceremony" signal, which conflicted with its semantic meaning
-("my wave settled, value unchanged").
-
-### D.9 Two-phase invariant applies to transitions only
-
-The DIRTY → DATA/RESOLVED two-phase invariant is a **state transition**
-invariant. It does NOT apply to:
-- Subscribe handshake (`[[START]]` + cached DATA) — §2.2 already exempt
-- Activation wave (fn's first run during subscribe ceremony)
-
-An accumulating operator's first RESOLVED emission during activation
-does NOT require a preceding DIRTY. This is ceremony, not transition.
-Two-phase applies to all post-activation waves where deps actually
-transition through DIRTY.
-
-### D.10 ROM rule: state nodes preserve status on disconnect
-
-**Clarification of §2.2:** "Status becomes `sentinel` on disconnect"
-applies only to **compute nodes**. State nodes preserve their status
-across disconnect (ROM rule: their identity is their value, disconnect
-is a subscriber lifecycle event not a value lifecycle event).
-
-- State node after `INVALIDATE` → unsub → status stays `"dirty"`
-- Compute node after first activation → unsub → status → `"sentinel"`
-- Resubscribable terminal compute node → unsub → status → `"sentinel"`
-  (resubscribable means "can re-activate after terminal", so terminal
-  state doesn't persist)
-
-### D.11 `NodeImpl._addDep` and `_setInspectorHook` (internal)
-
-Two internal methods surfaced for graph/sugar consumers:
-
-- **`_addDep(depNode): number`** — post-construction dep addition,
-  subscribes immediately, returns dep index. Used by `Graph.connect()`
-  and `autoTrackNode`.
-- **`_setInspectorHook(hook?): () => void`** — per-node inspection
-  callback. Fires `{ kind: "dep_message", depIndex, message }` in
-  `_onDepMessage` and `{ kind: "run", depValues }` in `_execFn`. Used
-  by `Graph.observe(path, { causal, derived })` for causal tracing.
-
-Both are `@internal` — not part of the public `Node<T>` interface. Use
-through `Graph` APIs or sugar factories.
-
-### D.12 Compat-layer two-way bridge invariant
-
-Compat layers (Jotai `atom`, TC39 `Signal.*`, Nanostores `atom`/
-`computed`/`map`, Zustand `create`, etc.) are first-class composable
-`Node<T>` producers, not one-way polyfills. Every compat object MUST
-expose its backing node (`._node`, `store.node(name)`) and that node
-MUST behave as any other protocol-compliant Node when observed from
-the native layer. Users are expected to compose compat-backed nodes
-into native graphs:
-
-```ts
-const count = new Signal.State(0);
-const doubled = new Signal.Computed(() => count.get() * 2);
-
-// Native graphrefly composition on top of the compat-backed node.
-const formatted = derived([doubled._node], ([v]) => `v=${v}`);
-formatted.subscribe(sink);
-```
-
-**Invariant I.** Write paths in compat layers can use any of the three
-equivalent legal shapes — under v0.4.0 they all converge at the same
-internal `_emit` waist and produce identical wire output:
-
-1. `n.emit(value)` — preferred idiom. Sugar for
-   `n.down([[DATA, value]])`.
+**Invariant I — Write paths.** All three shapes are equivalent and produce identical wire output
+under v0.4.0 (unified dispatch waist):
+1. `n.emit(value)` — preferred idiom.
 2. `n.down([DATA, value])` — single-tuple shape.
 3. `n.down([[DIRTY], [DATA, value]])` — explicit two-phase shape.
 
-All three pass through the unified dispatch waist: the pipeline
-tier-sorts the input, auto-prefixes `[DIRTY]` when any tier-3 payload
-is present and the node is not already dirty (§1.3.1), runs equals
-substitution (§1.3.3), and delivers with phase deferral. **There is
-no "raw down skips framing" carve-out.** Raw and framed paths are
-observationally identical on the wire.
+`equals` cannot be bypassed by choice of write API. To force same-value re-emission, configure
+`equals: () => false` at node construction.
 
-**Equals cannot be bypassed by choice of API.** Per §1.3.3, equals
-substitution is a dispatch-layer invariant applied to every outgoing
-DATA regardless of entry point. Write paths that intentionally want to
-force emission of same-valued DATA MUST configure the node with
-`equals: () => false` at construction; the framework then routes DATA
-through uniformly without substitution. Pre-v0.3.1 "escape via raw
-actions API" is no longer observable behavior.
+**Invariant II — Compute paths.** Compat compute nodes MUST produce exactly one framed outcome
+per wave — either DATA (value changed) or RESOLVED (value unchanged). Silently returning
+without emitting leaves downstream `dep.dirty` stuck and freezes subsequent sibling waves.
 
-**Invariant II.** Compute paths in compat layers MUST produce exactly
-one framed outcome per wave — either DATA (value changed) or RESOLVED
-(value unchanged). Silently returning without emitting is NOT
-compliant. A missing outcome leaves downstream `dep.dirty` stuck at
-`true` from the earlier DIRTY relay, which freezes any subsequent
-sibling-dep wave at the downstream. `autoTrackNode` (D.7) satisfies
-this by always calling `actions.emit(result)` at the end of its
-wrapped fn; the framework's equals check folds same-value results to
-RESOLVED uniformly.
+**Invariant III — Equality semantics** MUST be encoded as `NodeOptions.equals`, not as
+a side-effect of omitting emission. Jotai and Nanostores use `Object.is` → default equals.
+Zustand fires on every `setState` → `equals: () => false` at node construction.
 
-**Invariant III.** Per-compat equality semantics MUST be encoded as
-the node's `NodeOptions.equals` config, not implemented by omitting
-emissions. Jotai and Nanostores use `Object.is` dedup → default equals.
-Zustand fires on every `setState` regardless → pass
-`equals: () => false` at node construction. In either case, writes go
-through `emit` and the framework handles the DATA/RESOLVED decision
-uniformly.
+**Testability.** Compat-layer conformance to invariants I–III is testable only via:
+1. Live subscribers observing `cb` arguments and fire counts (`.cache` reads are insensitive
+   to mid-wave glitches because `.cache` is updated at end-of-wave).
+2. Two-way bridge tests: subscribe directly to the compat object's backing node and compare
+   the DATA sequence against the compat subscribe path.
 
-**Testability.** Compat-layer conformance to invariants I–III is
-testable only via:
-
-1. Live subscribers observing `cb` arguments and fire counts
-   (`.get()`/`.cache` reads are insensitive to mid-wave glitches
-   because `.cache` is updated at end-of-wave).
-2. Two-way bridge tests: subscribe directly to the compat object's
-   backing node and compare the DATA sequence against the compat
-   subscribe path.
-
-Assertions on fn-invocation counts are an implementation detail and
-MUST NOT be used as the primary conformance signal.
-
-**Scope.** D.12 applies to every compat layer in `compat/` and to any
-future compat layer (e.g., Preact Signals, Svelte v5 runes, MobX). A
-compat layer that is only ever used through its compat surface is
-still bound by D.12, because `._node` is public and users are entitled
-to compose on it.
+**Scope.** Applies to every compat layer in `compat/` and any future compat layer.

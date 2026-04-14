@@ -567,7 +567,7 @@ the same identity. First-time items (no `relatedTo`) use the raw summary.
 
 ---
 
-## v0.4 Foundation Redesign Patterns (2026-04-12)
+## Advanced Implementation Patterns
 
 ### 19. Terminal-emission operators: stay silent during accumulation
 
@@ -654,54 +654,21 @@ const counter = derived([src], (data, ctx) => {
   (sockets, intervals) that survive fn re-runs and should outlive an
   in-place invalidation.
 
-### 21. `actions.emit` vs `actions.down` (v0.4.0)
+### 21. `actions.emit` vs `actions.down`
 
-Under v0.4.0 the three `actions` APIs all converge at the **single unified
-`_emit` waist**. There is no user-facing bundle builder, no "raw vs framed"
-distinction, and no carve-out. Every call goes through the same stages:
-terminal filter → tier sort → synthetic `[DIRTY]` prefix → PAUSE/RESUME
-lock bookkeeping → meta TEARDOWN fan-out → equals substitution + cache
-advance → phase-deferred dispatch.
+Under v0.4.0, all three `actions` APIs converge at the same internal `_emit` waist.
 
-| Call | Shape | Use for |
-|------|-------|---------|
-| `actions.emit(v)` | sugar for `down([[DATA, v]])` | Value emission — the common case |
-| `actions.down(msgOrMsgs)` | accepts single `Message` or `Messages` array — one call = one wave | Multi-message or mixed-tier batches, or hand-framed sequences |
-| `actions.up(msgOrMsgs)` | same `Message \| Messages` shape | Upstream control signals only (DIRTY, INVALIDATE, PAUSE, RESUME, TEARDOWN) |
+| Call | Use for |
+|------|---------|
+| `actions.emit(v)` | Value emission — the common case |
+| `actions.down(msgOrMsgs)` | Multi-message or mixed-tier batches |
+| `actions.up(msgOrMsgs)` | Upstream control signals only (throws on tier-3/4) |
 
-**Rule of thumb:** use `emit` for value emission. Use `down` when you need
-to send a multi-message batch in a single wave (`down([[DATA, 1], [DATA, 2],
-[COMPLETE]])` — the pipeline sorts, prefixes DIRTY, advances cache through
-each DATA in order, then emits COMPLETE). Multiple separate calls produce
-multiple separate waves, each with their own DIRTY.
+**Rule of thumb:** use `emit` for value emission. Use `down` only when you need to send
+a multi-message batch in a single wave (e.g., `down([[DATA, 1], [DATA, 2], [COMPLETE]])`).
 
-**`actions.up` throws on tier-3/4.** DATA, RESOLVED, COMPLETE, and ERROR are
-downstream-only. The upstream direction is reserved for control signals —
-DIRTY, INVALIDATE, PAUSE, RESUME, and TEARDOWN. Attempting to send a tier-3
-or tier-4 message via `up` is a protocol violation and throws immediately.
-
-**Diamond safety.** All entry points are diamond-safe by construction.
-`emit(v)` and `down([[DATA, v]])` produce byte-identical wire output: the
-dispatcher auto-prefixes `[DIRTY]` unconditionally when tier-3 is present
-and the node is not already dirty. There is no "raw down bypasses framing"
-path anymore — the pre-v0.3.1 escape hatch was removed in v0.3.1 (equals
-substitution lifted to dispatch layer) and the bundle API surface was
-removed in v0.4.0 (unified waist). Both changes are observationally
-transparent for any code that was using `emit`.
-
-**Forcing same-value re-emission.** There is no API to "bypass" equals
-substitution. A compute node that wants every same-valued DATA to flow
-through MUST configure `equals: () => false` at node construction — the
-dispatcher's `equals` call will return `false` unconditionally and DATA
-flows uniformly without substitution. This is also the idiom for
-`pausable: "resumeAll"` producers whose buffered DATAs should replay in
-full (without equals collapsing duplicates on resume).
-
-**Migration notes.** Callers of the v0.3-era `actions.bundle(...).resolve()`
-should switch to `actions.down([[msg1], [msg2], ...])` — the dispatch
-pipeline now owns tier sort + synthetic DIRTY prefix. Same for any code
-holding a `Bundle` reference or importing `BundleFactory` from the core
-index — those types are gone.
+**Forcing same-value re-emission:** configure `equals: () => false` at node construction —
+there is no way to bypass equals substitution by choice of API.
 
 ### 22. `autoTrackNode` — runtime dep discovery for pull-based compat
 
@@ -722,6 +689,11 @@ const doubled = autoTrackNode((track) => {
 **When to use:** compat layers (Jotai, TC39 Signals). For graph-native
 code, prefer `dynamicNode(allDeps, fn)` — it requires upfront dep
 declaration but avoids the P3 discovery exception.
+
+**Re-run depth limit.** Each discovery re-run increments an internal counter. If the
+counter exceeds 100, the node emits `[[ERROR]]` immediately — this is a safety guard
+against reactive cycles introduced during dep discovery. If you hit it, the fn is
+likely reading a dep that triggers a write that triggers the same fn.
 
 ### 23. Rescue pattern with `errorWhenDepsError: false`
 
@@ -775,76 +747,13 @@ precedes any DATA/RESOLVED globally" will fail for accumulating operators
 because the initial activation RESOLVED has no preceding DIRTY. Rewrite
 such tests to check "DIRTY precedes the terminal DATA" instead.
 
-### 26. Compat layers are two-way bridges, not one-way surfaces
+### 26. Compat layers are two-way bridges
 
-Compat layers (`Signal.State`/`Signal.Computed`, Jotai `atom`,
-Nanostores `atom`/`computed`/`map`, Zustand `create`, etc.) are not
-one-way polyfills. Every compat object exposes its backing node via
-`._node` (or `store.node(name)`), and users are expected to compose
-those nodes into native graphrefly graphs when they outgrow the
-compat feature set. This is the graduated-adoption path:
+Every compat layer (`Signal.State`/`Signal.Computed`, Jotai `atom`, Nanostores, Zustand, etc.)
+MUST expose its backing node (`._node`) and that node MUST be wave-correct when observed
+natively. See **GRAPHREFLY-SPEC.md Appendix D.4** for the full invariant set (write-path
+equivalence, mandatory emit-not-return, `equals`-config encoding, and testability rules).
 
-1. **Drop-in:** user writes `new Signal.Computed(...)` verbatim from
-   the TC39 proposal. Tests against the spec pass.
-2. **Mixed:** user takes `signal._node` and passes it into
-   `derived([...])`, `stratify()`, `harnessLoop()`, etc. Native
-   graphrefly operators treat it as any other `Node<T>`.
-3. **Native:** hot path migrates to pure graphrefly; the rest stays
-   in compat form.
-
-**Invariant.** Every compat layer must produce wave-correct messages
-when observed at the native protocol level — not just wave-correct
-when observed through its compat subscribe API. Specifically:
-
-- **`set`/write paths route through the unified dispatch waist.** Any of
-  these are legal and produce byte-identical wire output under v0.4.0:
-  `n.emit(value)`, `n.down([DATA, value])`, `n.down([[DATA, value]])`,
-  or the explicit two-phase `n.down([[DIRTY], [DATA, value]])`. The
-  dispatcher auto-prefixes `[DIRTY]` unconditionally when tier-3 is
-  present and the node is not already dirty, so there is no "same value
-  vs new value" wire-shape split. Prefer `n.emit(value)` for readability.
-
-- **`fn`/compute paths must always produce exactly one framed outcome
-  per wave.** Either DATA (value changed) or RESOLVED (value unchanged).
-  Never "silently return without emitting" — that leaves downstream
-  `dep.dirty` stuck and freezes sibling waves. `actions.emit(result)`
-  at the end of the compute body is the simplest way to guarantee this;
-  the framework folds same-value results to RESOLVED via the equals
-  check, which clears `dep.dirty` at every downstream while remaining
-  invisible to leaf `cb`-counting subscribers (Jotai/Signals/Nanostores
-  subscribe wrappers all filter to DATA, so RESOLVED is silent at the
-  compat surface).
-
-- **Per-compat-layer equality must be encoded as the node's `equals`
-  config, not as a side-effect of never emitting.** Jotai and Nanostores
-  use `Object.is` dedup → leave equals at its default. Zustand fires on
-  every setState regardless → pass `equals: () => false` at node
-  construction. In either case, writes go through `emit` — the equals
-  config declares intent.
-
-**Testing rule.** Compat-layer tests must include at least one
-assertion that observes a **live subscriber's cb count and cb
-arguments** (not just `.get()` values and not just fn-call counts).
-`.get()` reads `.cache` and is insensitive to mid-wave glitches —
-a bug can fire 17 intermediate glitch values and still leave `.cache`
-correct. Fn-call counts are an implementation detail (how many times
-did the compute body run) and don't correspond to any user-visible
-contract. Only cb fires with their arguments genuinely prove wave
-correctness.
-
-**Testing rule 2.** Include at least one **two-way bridge test** per
-compat layer: subscribe to the backing node directly (not through
-the compat API) and verify the DATA sequence matches what the compat
-subscribe path produces. For state-only compat layers (Zustand), build
-a small native diamond on top of the state node and verify no glitch
-values.
-
-**Anti-pattern catalog.**
-
-| Anti-pattern | Why it fails |
-|--------------|--------------|
-| `n.down([[DATA, value]])` without DIRTY prefix | Diamond legs don't coordinate → downstream fires on glitch values |
-| Silently `return` without emitting when a wave "shouldn't matter" | Downstream `dep.dirty` stuck → sibling wave hangs |
-| Asserting fn-call counts in compat tests | Couples tests to implementation, masks cb-count bugs |
-| Only asserting `.get()` return values | `.cache` is updated at end-of-wave, glitches are invisible |
-| Per-compat-layer custom equality check inside the compute body | Belongs at `NodeOptions.equals` so the framework's equals-based RESOLVED path can fold it uniformly |
+**Testing rule:** Always include a two-way bridge test — subscribe directly to `._node` and
+compare the DATA sequence against the compat subscribe path. `.get()`/`.cache` assertions
+alone miss mid-wave glitch bugs.
