@@ -381,9 +381,12 @@ When a node has deps and fn:
 node(deps, fn, opts?)
 ```
 
-`fn` receives `(latestData, actions, ctx)`:
+`fn` receives `(data, actions, ctx)`:
 
-- **`latestData`** — array of latest DATA values from deps (from DepRecord).
+- **`data`** — batch-per-dep array. `data[i]` is `readonly unknown[] | undefined`:
+  - `undefined` — dep `i` was not involved in this wave.
+  - `[]` — dep `i` settled RESOLVED this wave (no new DATA value).
+  - `[v1, v2, ...]` — dep `i` delivered one or more DATA values this wave, in arrival order. Most waves: `[v]` (single-element array).
 - **`actions`** — `{ emit(value), down(msgOrMsgs), up(msgOrMsgs) }`. Every action call
   produces one wave. Multiple calls within a single fn invocation produce multiple
   independent waves. There is no accumulation or flush boundary at fn return.
@@ -397,8 +400,8 @@ node(deps, fn, opts?)
     `Message | Messages` shape. Tier-3 (DATA/RESOLVED) and tier-4 (COMPLETE/ERROR)
     are downstream-only and throw — `up` is for DIRTY, INVALIDATE, PAUSE, RESUME,
     and TEARDOWN only.
-- **`ctx`** — `{ dataFrom: boolean[], terminalDeps: (true|unknown)[], store: object }`.
-  - `dataFrom[i]` — true if dep `i` sent DATA in this wave (vs RESOLVED).
+- **`ctx`** — `{ latestData: unknown[], terminalDeps: (true|unknown)[], store: object }`.
+  - `latestData[i]` — last-known DATA value from dep `i` (from any prior wave, not just this one). Use as fallback when `data[i]` is `undefined` or `[]`.
   - `terminalDeps[i]` — `true` = COMPLETE, error payload = ERROR, `undefined` = live.
   - `store` — mutable bag that persists across fn runs within one activation cycle.
     Wiped on deactivation and on resubscribable terminal reset.
@@ -417,10 +420,13 @@ RESOLVED. ALL emission is explicit via `actions.emit(v)` or `actions.down(msgs)`
 - **Returns anything else (including undefined/void):** ignored.
 - **Throws:** emits `[[ERROR, err]]` to downstream subscribers.
 
-Sugar constructors (`derived`, `map`, `filter`, etc.) wrap user functions internally
-to call `actions.emit()` — the user's function returns a value, but the sugar
-converts it to an explicit emission. This separation keeps the primitive clean while
-providing ergonomic APIs.
+Sugar constructors (`derived`, `effect`, `task`, and similar) wrap user functions
+internally to call `actions.emit()` — the user's function returns a value, but the
+sugar converts it to an explicit emission. They also automatically unwrap the batch
+format to a scalar per dep using the pattern:
+`batch != null && batch.length > 0 ? batch.at(-1) : ctx.latestData[i]`.
+Direct `node()` callers receive the raw batch arrays and must handle that format
+themselves. This separation keeps the primitive clean while providing ergonomic APIs.
 
 ### 2.5 Options
 
@@ -1269,9 +1275,9 @@ TEARDOWN.
 
 ```ts
 interface FnCtx {
-  dataFrom: readonly boolean[];
+  latestData: readonly unknown[];
   terminalDeps: readonly unknown[];
-  store: Record<string, unknown>;  // NEW
+  store: Record<string, unknown>;
 }
 ```
 

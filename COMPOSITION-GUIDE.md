@@ -579,8 +579,10 @@ then explicitly emit `[DIRTY, DATA, COMPLETE]` on terminal via
 
 ```ts
 export function reduce<T, R>(src: Node<T>, reducer, seed: R): Node<R> {
-  return node([src], ([v], a, ctx) => {
+  return node([src], (data, a, ctx) => {
     if (!("acc" in ctx.store)) ctx.store.acc = seed;
+    const batch0 = data[0];
+    const v = batch0 != null && batch0.length > 0 ? batch0.at(-1) : ctx.latestData[0];
     if (ctx.terminalDeps[0] !== undefined && ctx.terminalDeps[0] !== true) {
       return; // ERROR: let auto-error propagate
     }
@@ -589,7 +591,7 @@ export function reduce<T, R>(src: Node<T>, reducer, seed: R): Node<R> {
       a.down([[COMPLETE]]);
       return;
     }
-    if (ctx.dataFrom[0]) {
+    if (batch0 != null && batch0.length > 0) {
       ctx.store.acc = reducer(ctx.store.acc, v);
     }
     // Silent — downstream's pre-set-dirty DepRecord holds wave open
@@ -601,6 +603,24 @@ export function reduce<T, R>(src: Node<T>, reducer, seed: R): Node<R> {
 was used in earlier drafts as an "I'm alive" signal, but it pollutes the
 wave ordering and confuses diamond tests. Downstream's wave machinery
 naturally waits for the terminal emission.
+
+**Batch input model — raw `node()` vs sugar constructors:**
+
+- **Sugar constructors** (`derived`, `effect`, `task`) receive
+  `data: readonly unknown[]` — the batch is unwrapped automatically
+  using `batch.at(-1) ?? ctx.latestData[i]`. Each element is the
+  latest DATA value for that dep, just as in pre-v0.4 APIs.
+- **Raw `node()` callers** receive
+  `data: readonly (readonly unknown[] | undefined)[]` — each element
+  is the full batch of DATA values emitted by that dep this wave, or
+  `undefined` if the dep sent no DATA. To get the latest value and
+  guard for DATA presence:
+  ```ts
+  const batch = data[i];
+  const v = batch != null && batch.length > 0 ? batch.at(-1) : ctx.latestData[i];
+  // Guard: only act when dep sent new DATA this wave
+  if (batch != null && batch.length > 0) { /* ... */ }
+  ```
 
 ### 20. `ctx.store` for persistent fn state
 
