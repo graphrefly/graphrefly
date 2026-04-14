@@ -98,8 +98,8 @@ a third.
 
 **Pattern 1: SENTINEL (preferred).** Use `node<T>()` with no `initial`. The
 first-run gate blocks computation until every dep has delivered real DATA. No
-guard code needed in the fn body — `undefined` and `null` are both valid DATA
-values, never used as "not ready" sentinels.
+guard code needed in the fn body — `null` is a valid DATA value; `undefined`
+is the protocol-reserved sentinel and is never emitted as DATA.
 
 ```ts
 // "Not ready yet" → use SENTINEL. No guard needed.
@@ -112,10 +112,11 @@ effect([source], ([val]) => {
 
 **Pattern 2: `== null` guard (loose equality).** Only needed when `null` is a
 meaningful initial domain value (e.g. `state(null)`) and you want to skip
-processing the initial `null`. Use `== null` (loose) — never `=== undefined` or
-`=== null` (strict). Loose equality catches both `null` and `undefined`, which
-is the correct domain guard since both are valid DATA values that may appear as
-initial state.
+processing the initial `null`. Use `== null` (loose) — never `=== null` (strict).
+Loose equality catches both `null` and `undefined`; since `undefined` is never a
+valid DATA payload, it won't appear here in practice, but loose equality is still
+the idiomatic guard for "nullish initial value" and matches the `!= null` pattern
+used elsewhere in the codebase.
 
 ```ts
 // null IS a valid domain value (e.g. state(null)):
@@ -126,14 +127,36 @@ effect([source], ([val]) => {
 });
 ```
 
-**Never use `=== undefined` as a reactive dep guard.** `undefined` is a valid
-DATA value in the protocol. The "no value yet" signal is SENTINEL + START
-handshake, not `undefined`. Using `=== undefined` conflates JavaScript variable
-state with reactive protocol semantics and will silently break when a dep
-legitimately emits `undefined` as DATA.
+**Never use `=== undefined` as a reactive dep guard — with one documented exception.**
+`undefined` is the protocol-reserved "never sent DATA" sentinel: it is the value
+`dep.prevData` holds before any DATA has been received and the value `.cache` returns
+when a node is in SENTINEL state. `DATA(undefined)` is not a valid emission;
+implementations do not emit it. Using `=== undefined` as a guard in a normal `derived`
+or `effect` fn will always be dead code — the first-run gate ensures the fn never runs
+with an uninitialized dep.
+
+**Exception: `partial: true`.** `derived`, `effect`, and `autoTrackNode` accept a
+`partial` option that opts out of the sentinel guard:
+
+```ts
+// partial: true — fn runs even if some deps have not yet initialized
+const partial = derived([a, b], ([va, vb]) => {
+  if (va === undefined) return b_only(vb);  // a not yet ready
+  if (vb === undefined) return a_only(va);  // b not yet ready
+  return both(va, vb);
+}, { partial: true });
+```
+
+When `partial: true`, the fn may receive `undefined` for any dep that has not yet
+delivered its first DATA. Guarding with `=== undefined` IS the documented pattern here
+— it detects uninitialized deps. This is the **only** case where `=== undefined` is
+correct. For all other cases, use SENTINEL (no `initial`) so the first-run gate
+handles "not ready yet" automatically.
 
 **Rule of thumb:** use `node<T>()` (SENTINEL) for "not ready yet". Only use
-`state(null)` + `== null` guard when `null` is a meaningful domain value.
+`state(null)` + `== null` guard when `null` is a meaningful domain value. Use
+`partial: true` only when you need the fn to run with a mix of initialized and
+uninitialized deps and guard explicitly with `=== undefined`.
 
 ### 4. Versioned wrapper navigation
 

@@ -447,23 +447,30 @@ All nodes accept these options:
 | `completeWhenDepsComplete` | bool | `true` | Auto-emit COMPLETE when all deps have completed. Set to `false` for terminal-emission operators (e.g. `last`, `reduce`) that control their own COMPLETE timing. |
 | `errorWhenDepsError` | bool | `true` | Auto-emit ERROR when any dep errors. Set to `false` for rescue/catchError operators that handle errors explicitly via `ctx.terminalDeps[i]`. |
 
-**`initial` semantics:** When `initial` is provided (even as `undefined`/`None`), the
-node's cache is pre-populated and `.cache` returns that value before any emission. Source
-nodes with `initial` push `[[DATA, initial]]` to each new subscriber (§2.2). On first
-`actions.emit(v)`, `equals` IS called against the initial value — if the computed value
-matches, the node emits `RESOLVED` instead of `DATA`. When `initial` is **absent**
-(option key not present), the cache holds SENTINEL; the node does not push on subscribe,
-and the first emission always produces `DATA` regardless of the value. `INVALIDATE` and
-`resetOnTeardown` return the cache to the SENTINEL state.
+**`initial` semantics:** When `initial` is provided and is **not** `undefined` (TS) /
+`None` (PY), the node's cache is pre-populated and `.cache` returns that value before
+any emission. Source nodes with `initial` push `[[DATA, initial]]` to each new subscriber
+(§2.2). On first `actions.emit(v)`, `equals` IS called against the initial value — if
+the computed value matches, the node emits `RESOLVED` instead of `DATA`. When `initial`
+is **absent** or explicitly set to `undefined` (TS) / `None` (PY), the cache holds
+SENTINEL; the node does not push on subscribe, and the first emission always produces
+`DATA` regardless of the value. `INVALIDATE` and `resetOnTeardown` return the cache to
+the SENTINEL state.
+
+**`undefined` / `None` as DATA payload.** `undefined` (TS) is reserved as the
+protocol-internal "never sent DATA" sentinel — it is the value `.cache` returns when a
+node has no cached value and the value stored in `dep.prevData` before any DATA has been
+received. `DATA(undefined)` MUST NOT be emitted; implementations MUST reject or ignore
+attempts to send `[[DATA, undefined]]`. `null` (TS/PY) is a valid DATA value and a valid
+`initial` value — use `null` to represent domain-level absence. The type of `initial`
+is therefore `T | null` (never `T | undefined`).
 
 **`equals` contract:** `equals` is called between two consecutively cached values. It
-is never called when the cache is in its SENTINEL state (no `initial`, or after
-`INVALIDATE` / `resetOnTeardown` / resubscribe reset). When the cache holds a real
-value — whether from `initial` or a prior emission — `equals` compares it against the
-new value. `equals` MAY receive `undefined`/`None` as an argument when the node has
-explicitly received `[[DATA, undefined]]` / `[[DATA, None]]` or was initialized with
-`initial: undefined` / `initial=None`. The default `Object.is` / `is` handles all
-cases; custom `equals` need only handle the value types the node actually produces.
+is never called when the cache is in its SENTINEL state (no `initial`, or `initial:
+undefined`/`None`, or after `INVALIDATE` / `resetOnTeardown` / resubscribe reset). When
+the cache holds a real value — whether from `initial` or a prior emission — `equals`
+compares it against the new value. The default `Object.is` / `is` handles all cases;
+custom `equals` need only handle the value types the node actually produces.
 
 ### 2.6 Singleton Hooks and Per-Node Options
 
