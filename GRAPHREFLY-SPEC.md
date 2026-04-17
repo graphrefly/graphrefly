@@ -1,4 +1,4 @@
-# GraphReFly Spec v0.2
+# GraphReFly Spec v0.4
 
 > Reactive graph protocol for human + LLM co-operation.
 >
@@ -69,14 +69,29 @@ SHOULD reject or ignore it rather than silently coercing to `undefined`/`None`.
 ### 1.3 Protocol Invariants
 
 1. **DIRTY precedes DATA or RESOLVED.** Within the same batch, `[DIRTY]` comes before
-   `[DATA, v]` or `[RESOLVED]`. Receiving DATA without prior DIRTY is valid for raw/external
-   sources (compatibility path).
+   `[DATA, v]` or `[RESOLVED]`. This invariant is universal: every outgoing tier-3
+   payload is preceded by DIRTY in the same batch, regardless of which entry point
+   produced the emission. The dispatcher synthesizes a `[DIRTY]` prefix whenever the
+   caller omits it, provided (a) any tier-3 message is present in the batch and (b)
+   the node is not already in `dirty` status from an earlier emission in the same
+   wave. This applies uniformly to every emission path — `node.emit(v)`,
+   `node.down(msgs)`, `actions.emit(v)`, `actions.down(msgs)`, passthrough
+   forwarding, and equals-substituted `[DATA, v]` → `[RESOLVED]` rewrites. There is
+   no "raw down skips framing" compatibility carve-out: raw and framed paths are
+   observationally identical on the wire.
 
 2. **Two-phase push.** Phase 1 (DIRTY) propagates through the entire graph before phase 2
    (DATA/RESOLVED) begins. Guarantees glitch-free diamond resolution.
 
-3. **RESOLVED enables transitive skip.** If a node recomputes and finds its value unchanged,
-   it sends `[RESOLVED]` instead of `[DATA, v]`. Downstream nodes skip recompute entirely.
+**Activation-wave exemption.** The DIRTY-before-DATA/RESOLVED invariant is a *state-transition* invariant. The subscribe ceremony (fn's first run during `subscribe()`) is exempt: the initial emission during activation does not require a preceding DIRTY. Two-phase applies to all post-activation waves where a dep actually transitions through DIRTY.
+
+3. **RESOLVED enables transitive skip — dispatch-layer equals substitution.** Every outgoing
+   DATA payload is subject to equals-vs-cache substitution: if `equals(cache, newValue)`
+   returns true, the node emits `[RESOLVED]` instead of `[DATA, v]`, and `cache` is not
+   re-advanced. This applies uniformly to every emission path — computed fn results,
+   `actions.emit(v)`, `actions.down(msgs)`, raw `node.down([[DATA, v]])`, and passthrough
+   forwarding — so the node's cache cannot drift from "the last DATA payload actually
+   delivered downstream." Downstream nodes skip recompute on RESOLVED entirely.
 
 4. **COMPLETE and ERROR are terminal.** After either, no further messages from that node.
    A node MAY be resubscribable (opt-in), in which case a new subscription starts fresh.
@@ -153,30 +168,38 @@ What a node does depends on what you give it:
 These sugar names are convenience constructors. They all create nodes. Implementations SHOULD
 provide them for ergonomics and readability. They are not separate types.
 
-**`dynamicNode`** is a construction variant of `node` that tracks dependencies at runtime
-rather than requiring them upfront. Instead of a static deps array, it provides a `get(dep)`
-proxy that registers dependencies on first access during fn execution. This is the same
-`node` primitive — just a different way to declare dependencies.
+**`dynamicNode`** is a construction variant of `node` that declares a **superset** of all
+possible dependencies at construction time but selectively reads from them at runtime via a
+`track(dep)` function. Unlike static `derived` where fn always receives all dep values,
+`dynamicNode` fn picks which deps to read on each invocation. All declared deps participate
+in wave tracking; when an unused dep updates, fn fires but equals absorption prevents
+downstream propagation. This is the same `node` primitive with `_isDynamic: true` — not a
+separate class.
 
 ### 2.2 Interface
 
 Every node exposes:
 
 ```
-node.get()              → cached value (never errors, even when disconnected)
-node.status             → "disconnected" | "pending" | "dirty" | "settled" |
+node.cache              → cached value (readonly getter, never errors)
+node.status             → "sentinel" | "pending" | "dirty" | "settled" |
                           "resolved" | "completed" | "errored"
-node.down(messages)     → send messages downstream: [[DATA, value]]
-node.up(messages)       → send messages upstream: [[PAUSE, lockId]]
-node.unsubscribe()      → disconnect from upstream deps
+node.down(msgOrMsgs)    → send one or more messages downstream.
+                          Accepts `Message | Messages` — one call = one wave.
+node.emit(value)        → sugar for down([[DATA, value]]).
+node.up(msgOrMsgs)      → send upstream. Same Message | Messages shape.
+                          Tier 3/4 (DATA/RESOLVED/COMPLETE/ERROR) throw.
+node.subscribe(sink)    → receive downstream messages, returns unsubscribe fn
 node.meta               → companion stores (each key is a subscribable node)
 ```
 
-Source nodes (no deps) have no upstream, so `.up()` and `.unsubscribe()` are no-ops.
-Implementations expose them on all node instances for uniformity (the `Node` interface
-types them as optional), but calling them on a source node has no effect. When a node
-or graph subscribes to another node, it can use `up()` to send messages upstream
-through that subscription.
+**`.cache` replaces `.get()`.** Renamed to avoid collision with TC39 Signals `.get()`.
+Read-only getter that returns the cached value or `undefined`/`None` when SENTINEL.
+
+Source nodes (no deps) have no upstream, so `.up()` is a no-op. Implementations expose
+it on all node instances for uniformity (the `Node` interface types it as optional).
+When a node or graph subscribes to another node, it can use `up()` to send messages
+upstream through that subscription.
 
 #### subscribe(sink) → unsubscribe
 
@@ -186,20 +209,20 @@ the sink. This is the **only** way to connect to a node's output.
 **§2.2 subscribe flow (START handshake + activation):**
 
 ```
-subscribe(sink):
-  1. register sink; increment sinkCount
-  2. if terminal and !resubscribable → return unsub with no emission
-     (late subscribers to a dead node receive nothing)
-  3. emit the START handshake to `sink` via `downWithBatch`:
+subscribe(sink, actor?):
+  1. if terminal and resubscribable → reset (clear cache, status, DepRecords)
+  2. increment sinkCount; register sink
+  3. if not terminal → emit START handshake to `sink` via `downWithBatch`:
         • cache is SENTINEL → [[START]]
         • cache has value v → [[START], [DATA, v]]
-  4. if sinkCount == 1 → call _onActivate():
+        • if replayBuffer enabled → deliver buffered DATA after START
+  4. if sinkCount == 1 and not terminal → activate:
         • state node (no deps, no fn): no-op
         • producer (no deps, with fn): run fn (may emit via actions)
-        • derived/effect (deps, with fn): _connectUpstream
+        • derived/effect (deps, with fn): subscribe to all deps
   5. if activation did not produce a value and cache is still SENTINEL,
      transition status to `"pending"`
-  6. return unsubscribe function
+  6. return unsubscribe function (last unsub → deactivate)
 ```
 
 The `START` message is the first thing any sink ever receives from a subscription.
@@ -212,10 +235,10 @@ disconnect — the value is intrinsic and non-volatile (ROM). Compute nodes (pro
 derived, dynamic, effect) clear their cache on `_onDeactivate` because their value
 is a function of live subscriptions; reconnect re-runs fn from scratch. Consequently:
 
-- `get()` on a disconnected **state** returns the retained value.
-- `get()` on a disconnected **compute node** returns `undefined`/`None`.
-- Reconnect on a compute node always re-runs fn (C2 — `_lastDepValues` is cleared
-  on deactivate), giving effects with cleanup a fresh fire/cleanup cycle.
+- `.cache` on a disconnected **state** returns the retained value.
+- `.cache` on a disconnected **compute node** returns `undefined`/`None`.
+- Reconnect on a compute node always re-runs fn (DepRecord is cleared on deactivate),
+  giving effects with cleanup a fresh fire/cleanup cycle.
 - Runtime writes via `state.down([[DATA, v]])` persist across subscriber churn.
 
 **First-run gate (§2.7):** a compute node does NOT run fn until every declared dep
@@ -225,64 +248,111 @@ NOT considered settled, and the derived stays in `"pending"` status. This is the
 composition-guide §1 rule: "derived nodes depending on a SENTINEL dep will not
 compute until that dep receives a real value."
 
-`dynamicNode` has looser semantics: its deps are discovered at runtime via the
-tracking `get()` proxy, so it CAN run fn with `undefined` for SENTINEL deps on the
-first pass. A rewire-buffer mechanism then detects any deps whose real value
-differs from what fn saw, and re-runs fn once (bounded by a stabilization cap).
+`dynamicNode` uses the same first-run gate as static nodes: all declared deps must
+deliver at least one value before fn fires. The difference is that fn receives a
+`track(dep)` function instead of a flat array — it picks which deps to read per
+invocation. Unused deps still participate in wave tracking; their updates fire fn but
+equals absorption prevents downstream propagation.
 
-#### get()
+**Multi-dep push-on-subscribe serialization (§2.7 corollary):** `_activate` subscribes
+deps sequentially in declaration order; each dep's subscribe synchronously fires its
+own push-on-subscribe as a **separate wave**. When a compute node has N deps and each
+dep's source is already cached (e.g. N `state()` nodes), the activation produces N
+sequential waves — not one combined initial wave. For operators that depend on dep
+coincidence (e.g. pair primary with latest secondary on every primary settle), this
+means:
+
+1. The first dep to fire push-on-subscribe is gated by the first-run gate (later deps
+   still SENTINEL) → fn emits RESOLVED.
+2. Subsequent deps' push-on-subscribe waves find prior deps silent **this wave**
+   (their DATA already landed in earlier waves and advanced `prevData[i]`).
+3. Operators that only consider `batch[i]` this wave (not `prevData[i]`) silently
+   drop the initial paired emission.
+
+This is NOT a protocol invariant violation — push-on-subscribe, the first-run gate, and
+DIRTY/DATA ordering all work correctly per their individual contracts. It IS a semantic
+consequence that operator authors must handle. Two mitigations:
+
+- **Factory-time seed pattern.** Read the dep's `.cache` at wiring time (explicitly
+  sanctioned as an external-observer boundary read), stash it in a closure, update via
+  a subscribe handler. Used by `stratify`, `budgetGate`, `distill`, `verifiable`.
+- **`ctx.prevData[i]` fallback in the fn.** When `batch[i]` is null for a dep that
+  must be paired, read `ctx.prevData[i]` — it holds the last-emitted DATA for that
+  dep regardless of which wave that emission occurred in. Suitable for operators whose
+  first-fire intent is "pair all settled deps."
+
+`withLatestFrom` today uses the second-fire-onwards pattern via `ctx.prevData[1]`, but
+does not fire a paired emission on its very first fn-fire (when primary is the first
+dep to subscribe and fires alone in its wave). Callers who need initial-state pairing
+should use the factory-time seed pattern instead.
+
+#### cache (readonly getter)
 
 Returns the cached value. Does NOT guarantee freshness and does NOT trigger computation.
-**`status` is the source of truth** — always check it before trusting the return value
-of `get()`:
+**`status` is the source of truth** — always check it before trusting `.cache`:
 
-| Status | Meaning | `get()` returns |
-|--------|---------|-----------------|
-| `disconnected` | No subscribers (state: retained value; compute: cache cleared) | state: retained value / compute: `undefined` |
+| Status | Meaning | `.cache` returns |
+|--------|---------|------------------|
+| `sentinel` | No subscribers, no value ever set (compute: cache cleared) | `undefined` / `None` |
 | `pending` | Subscribed + upstream connected, waiting for first DATA | `undefined` / `None` |
-| `dirty` | DIRTY or INVALIDATE received, waiting for DATA | previous value (stale). INVALIDATE also clears cached state internally. |
+| `dirty` | DIRTY or INVALIDATE received, waiting for DATA | previous value (stale) |
 | `settled` | DATA received, value current | current value (fresh) |
 | `resolved` | Was dirty, value confirmed unchanged | current value (fresh) |
 | `completed` | Terminal: clean completion | final value |
 | `errored` | Terminal: error occurred | last good value or `initial` or `undefined`/`None` |
 
-When no `initial` option was provided and no value has been emitted, `get()` returns
+When no `initial` option was provided and no value has been emitted, `.cache` returns
 `undefined` (TS) / `None` (PY). Internally this is the SENTINEL state.
 
-`get()` never throws. `get()` never triggers computation.
+`.cache` never throws. `.cache` never triggers computation.
 
-#### down(messages)
+**ROM/RAM semantics:** State nodes retain `.cache` across disconnect (ROM). Compute
+nodes clear `.cache` on deactivation (RAM) — status becomes `"sentinel"`.
 
-Send messages downstream to all subscribers. For source nodes, this is the primary emit
-mechanism:
+#### down(msgOrMsgs)
+
+Send one or more messages downstream to all subscribers. Accepts either a
+single `Message` tuple or a `Messages` array of tuples — one call = one wave.
+The dispatch pipeline tier-sorts the input, auto-prefixes `[DIRTY]` when a
+tier-3 payload is present and the node is not already dirty, runs equals
+substitution, and delivers with phase deferral.
 
 ```
-node.down([[DATA, 42]])                         — emit value
-node.down([[DIRTY], [DATA, 42]])                — two-phase emit
+node.down([DATA, 42])                           — single-tuple shape
+node.down([[DATA, 42]])                         — array shape (equivalent)
+node.down([[DIRTY], [DATA, 42]])                — explicit two-phase
 node.down([[COMPLETE]])                         — terminate
 ```
 
-For compute nodes (with deps and fn), `down()` is available for explicit protocol control
-(operator pattern). For pure compute (derived pattern), the node auto-emits based on fn
-return value — `down()` is not typically called directly.
+#### emit(value)
 
-#### up(messages)
-
-Send messages upstream toward dependencies:
+Sugar for `down([[DATA, value]])`. One wave with a single DATA payload;
+identical wire output to the `down` form.
 
 ```
-node.up([[PAUSE, lockId]])                      — pause upstream
-node.up([[RESUME, lockId]])                     — resume upstream
-node.up([[TEARDOWN]])                           — request teardown
+node.emit(42)                                   — equivalent to down([[DATA, 42]])
+```
+
+#### up(msgOrMsgs)
+
+Send one or more messages upstream toward dependencies. Same
+`Message | Messages` shape as `down`. Tier 3 (DATA / RESOLVED) and tier 4
+(COMPLETE / ERROR) are downstream-only — `up` is restricted to DIRTY,
+INVALIDATE, PAUSE, RESUME, and TEARDOWN, and MUST throw on tier-3/4 input.
+
+```
+node.up([PAUSE, lockId])                        — pause upstream (lockId required)
+node.up([RESUME, lockId])                       — resume upstream (must match)
+node.up([TEARDOWN])                             — request teardown
 ```
 
 Only available on nodes that have deps.
 
 #### unsubscribe()
 
-Disconnect this node from its upstream dependencies. The node retains its cached value
-(accessible via `get()`) but status becomes `"disconnected"`. May reconnect on next
-downstream subscription (lazy reconnect).
+Disconnect this node from its upstream dependencies. State nodes retain `.cache` and
+their current status (ROM); compute nodes clear `.cache` and transition to `"sentinel"`
+(RAM). May reconnect on next downstream subscription (lazy reconnect).
 
 ### 2.3 Meta (Companion Stores)
 
@@ -294,8 +364,8 @@ const n = node(deps, fn, {
   meta: { status: "idle", error: null, latency: 0 }
 })
 
-n.meta.status.get()              // "idle"
-n.meta.error.get()               // null
+n.meta.status.cache              // "idle"
+n.meta.error.cache               // null
 
 // Subscribe to a single meta field reactively
 n.meta.error.subscribe((msgs) => { /* handle error */ })
@@ -324,10 +394,18 @@ observable via `observe()`.
 lifecycle signals that would disrupt their cached values:
 
 - **INVALIDATE** via `graph.signal()` — no-op on meta nodes (cached values preserved).
-  To explicitly invalidate a meta node, send `down([[INVALIDATE]])` directly.
+  The filtering is a graph-layer responsibility: `graph.signal([[INVALIDATE]])` iterates
+  registered nodes and skips meta children of registered parents before broadcasting.
+  The core `_emit` INVALIDATE path itself does not distinguish meta from non-meta —
+  sending `[[INVALIDATE]]` directly to a meta node's `down()` does wipe its cache.
 - **COMPLETE/ERROR** — not propagated from parent to meta (meta outlives terminal state
   for post-mortem writes like setting `meta.error` after ERROR).
 - **TEARDOWN** — propagated from parent on parent's own TEARDOWN, releasing meta resources.
+  The fan-out happens at the **top of the parent's `_emit` pipeline**, before the parent's
+  own state-transition walk — meta children observe TEARDOWN while the parent's
+  `_cached` / `_status` are still at their pre-teardown values. This ordering keeps the
+  dispatch walk re-entrance-free: a meta child's own `_emit` cannot observe a
+  half-committed parent state.
 
 ### 2.4 Node fn Contract
 
@@ -337,14 +415,52 @@ When a node has deps and fn:
 node(deps, fn, opts?)
 ```
 
-`fn` receives the current values of deps. Its return value determines behavior:
+`fn` receives `(data, actions, ctx)`:
 
-- **Returns a value:** node caches it, emits `[[DIRTY], [DATA, value]]` if changed, or
-  `[[DIRTY], [RESOLVED]]` if unchanged per `equals`.
-- **Returns nothing (undefined/None):** treated as side effect. No auto-emit.
-- **Uses `down()` explicitly:** full protocol control. No auto-emit from return value.
-- **Returns a cleanup function:** called before next invocation or on teardown.
+- **`data`** — batch-per-dep array. `data[i]` is `readonly unknown[] | undefined`:
+  - `undefined` — dep `i` was not involved in this wave.
+  - `[]` — dep `i` settled RESOLVED this wave (no new DATA value).
+  - `[v1, v2, ...]` — dep `i` delivered one or more DATA values this wave, in arrival order. Most waves: `[v]` (single-element array).
+- **`actions`** — `{ emit(value), down(msgOrMsgs), up(msgOrMsgs) }`. Every action call
+  produces one wave. Multiple calls within a single fn invocation produce multiple
+  independent waves. There is no accumulation or flush boundary at fn return.
+  - `emit(v)` — sugar for `down([[DATA, v]])`. One wave with a single DATA payload.
+  - `down(msgOrMsgs)` — send one or more messages downstream. Accepts either a single
+    `Message` tuple (e.g. `down([DATA, 42])`) or a `Messages` array of tuples (e.g.
+    `down([[DIRTY], [DATA, 42]])`). The dispatch pipeline tier-sorts the input,
+    auto-prefixes `[DIRTY]` when tier-3 is present and the node is not already dirty
+    (§1.3.1), runs equals substitution (§1.3.3), and delivers with phase deferral.
+  - `up(msgOrMsgs)` — send messages upstream toward deps. Accepts the same
+    `Message | Messages` shape. Tier-3 (DATA/RESOLVED) and tier-4 (COMPLETE/ERROR)
+    are downstream-only and throw — `up` is for DIRTY, INVALIDATE, PAUSE, RESUME,
+    and TEARDOWN only.
+- **`ctx`** — `{ latestData: unknown[], terminalDeps: (true|unknown)[], store: object }`.
+  - `latestData[i]` — last-known DATA value from dep `i` (from any prior wave, not just this one). Use as fallback when `data[i]` is `undefined` or `[]`.
+  - `terminalDeps[i]` — `true` = COMPLETE, error payload = ERROR, `undefined` = live.
+  - `store` — mutable bag that persists across fn runs within one activation cycle.
+    Wiped on deactivation and on resubscribable terminal reset.
+
+**fn return is cleanup only.** The return value is NEVER auto-framed as DATA or
+RESOLVED. ALL emission is explicit via `actions.emit(v)` or `actions.down(msgs)`.
+
+- **Returns a function:** registered as cleanup, called before the next fn invocation,
+  on deactivation, AND on `[[INVALIDATE]]` (the node treats invalidate as "about to
+  re-run" and flushes the prior cleanup). This INVALIDATE firing point is the
+  reactive hook for flushing external caches tied to dep values — measurement
+  caches, file handles, debouncers — on broadcast `graph.signal([[INVALIDATE]])`.
+- **Returns `{ deactivation: () => void }`:** opt-in alternative. Fires ONLY on
+  deactivation, NOT on fn re-run or INVALIDATE. Used for long-lived resources that
+  should survive across fn invocations within one activation cycle.
+- **Returns anything else (including undefined/void):** ignored.
 - **Throws:** emits `[[ERROR, err]]` to downstream subscribers.
+
+Sugar constructors (`derived`, `effect`, `task`, and similar) wrap user functions
+internally to call `actions.emit()` — the user's function returns a value, but the
+sugar converts it to an explicit emission. They also automatically unwrap the batch
+format to a scalar per dep using the pattern:
+`batch != null && batch.length > 0 ? batch.at(-1) : ctx.latestData[i]`.
+Direct `node()` callers receive the raw batch arrays and must handle that format
+themselves. This separation keeps the primitive clean while providing ergonomic APIs.
 
 ### 2.5 Options
 
@@ -358,69 +474,117 @@ All nodes accept these options:
 | `meta` | object | — | Companion store fields |
 | `resubscribable` | bool | false | Allow reconnection after COMPLETE |
 | `resetOnTeardown` | bool | false | Clear cached value on TEARDOWN |
-| `onMessage` | fn | — | Custom message type handler (see §2.6) |
+| `pausable` | bool \| `"resumeAll"` | `true` | PAUSE/RESUME behavior (see §2.6) |
+| `replayBuffer` | number | — | Buffer last N outgoing DATA for late subscribers |
+| `completeWhenDepsComplete` | bool | `true` | Auto-emit COMPLETE when all deps have completed. Set to `false` for terminal-emission operators (e.g. `last`, `reduce`) that control their own COMPLETE timing. |
+| `errorWhenDepsError` | bool | `true` | Auto-emit ERROR when any dep errors. Set to `false` for rescue/catchError operators that handle errors explicitly via `ctx.terminalDeps[i]`. |
 
-**`initial` semantics:** When `initial` is provided (even as `undefined`/`None`), the
-node's cache is pre-populated and `get()` returns that value before any emission. Source
-nodes with `initial` push `[[DATA, initial]]` to each new subscriber (§2.2). On first
-`_downAutoValue`, `equals` IS called against the initial value — if the computed value
-matches, the node emits `RESOLVED` instead of `DATA`. When `initial` is **absent**
-(option key not present), the cache holds SENTINEL; the node does not push on subscribe,
-and the first emission always produces `DATA` regardless of the value. `INVALIDATE` and
-`resetOnTeardown` return the cache to the SENTINEL state.
+**`initial` semantics:** When `initial` is provided and is **not** `undefined` (TS) /
+`None` (PY), the node's cache is pre-populated and `.cache` returns that value before
+any emission. Source nodes with `initial` push `[[DATA, initial]]` to each new subscriber
+(§2.2). On first `actions.emit(v)`, `equals` IS called against the initial value — if
+the computed value matches, the node emits `RESOLVED` instead of `DATA`. When `initial`
+is **absent** or explicitly set to `undefined` (TS) / `None` (PY), the cache holds
+SENTINEL; the node does not push on subscribe, and the first emission always produces
+`DATA` regardless of the value. `INVALIDATE` and `resetOnTeardown` return the cache to
+the SENTINEL state.
+
+**`undefined` / `None` as DATA payload.** `undefined` (TS) is reserved as the
+protocol-internal "never sent DATA" sentinel — it is the value `.cache` returns when a
+node has no cached value and the value stored in `dep.prevData` before any DATA has been
+received. `DATA(undefined)` MUST NOT be emitted; implementations MUST reject or ignore
+attempts to send `[[DATA, undefined]]`. `null` (TS/PY) is a valid DATA value and a valid
+`initial` value — use `null` to represent domain-level absence. The type of `initial`
+is therefore `T | null` (never `T | undefined`).
 
 **`equals` contract:** `equals` is called between two consecutively cached values. It
-is never called when the cache is in its SENTINEL state (no `initial`, or after
-`INVALIDATE` / `resetOnTeardown` / resubscribe reset). When the cache holds a real
-value — whether from `initial` or a prior emission — `equals` compares it against the
-new value. `equals` MAY receive `undefined`/`None` as an argument when the node has
-explicitly received `[[DATA, undefined]]` / `[[DATA, None]]` or was initialized with
-`initial: undefined` / `initial=None`. The default `Object.is` / `is` handles all
-cases; custom `equals` need only handle the value types the node actually produces.
+is never called when the cache is in its SENTINEL state (no `initial`, or `initial:
+undefined`/`None`, or after `INVALIDATE` / `resetOnTeardown` / resubscribe reset). When
+the cache holds a real value — whether from `initial` or a prior emission — `equals`
+compares it against the new value. The default `Object.is` / `is` handles all cases;
+custom `equals` need only handle the value types the node actually produces.
 
-### 2.6 Custom Message Handling (`onMessage`)
+### 2.6 Singleton Hooks and Per-Node Options
 
-The message type set is open (§1.2). Nodes forward unrecognized types by default. The
-`onMessage` option lets a node **intercept** specific message types before the default
-dispatch:
+The node primitive has two per-node behavior hooks (`fn` and `equals`) and two
+system-level options (`pausable` and `replayBuffer`).
+
+#### PAUSE/RESUME (`pausable` option)
+
+PAUSE/RESUME is default behavior, controlled by the `pausable` node option:
+
+| Value | Behavior |
+|-------|----------|
+| `true` (default) | On PAUSE, suppress fn execution. On RESUME, fire fn once with the latest dep values (only the most recent wave matters). |
+| `"resumeAll"` | On RESUME, replay every outgoing tier-3/4 message that was buffered while paused, in order. See "bufferAll mode" below. |
+| `false` | Ignore PAUSE/RESUME — fn fires normally regardless of flow control signals. Appropriate for sources like reactive timers that must keep ticking regardless of downstream backpressure. |
+
+**Lock-id tracking (mandatory).** Every tier-2 message MUST carry a `lockId`
+payload: `[[PAUSE, lockId]]` / `[[RESUME, lockId]]`. Bare `[[PAUSE]]` /
+`[[RESUME]]` is a protocol violation and implementations MUST reject it. The
+`lockId` is opaque to the protocol — any value unique to the pauser is
+acceptable (symbols, strings, counter-derived objects). Implementations track
+active locks in a per-node set and derive the paused state from
+`lockSet.size > 0`. This gives multi-pauser correctness by construction: if
+controller A and controller B both hold pause locks, releasing A's lock does
+not resume the node while B still holds its lock. Unknown-`lockId` RESUME is
+a no-op, so `dispose()` on a pauser is idempotent.
+
+PAUSE/RESUME flows through tier 2 (immediate). The node tracks a lock set
+keyed by `lockId`; when the set is non-empty, wave completion skips fn but
+DepRecord continues updating with latest values. On final-lock RESUME, if any
+wave completed while paused, fn fires immediately with the latest dep values.
+
+**bufferAll mode (`pausable: "resumeAll"`).** While any lock is held, the
+node captures every outgoing tier-3 / tier-4 message from its own emission
+pipeline into a per-node buffer. Tier 0–2 (START / DIRTY / INVALIDATE /
+PAUSE / RESUME) and tier 5 (TEARDOWN) continue to dispatch synchronously
+while paused — subscribers, downstream pausers, and graph teardown MUST
+observe them regardless of flow control. On final-lock RESUME, the buffered
+messages are replayed through the node's own `_emit` pipeline BEFORE the
+RESUME signal is forwarded downstream. The replay passes through the normal
+tier-3 equals substitution walk (§1.3.3), so a buffered `[DATA, v]` whose
+value matches the pre-pause cache collapses to `[RESOLVED]` on replay —
+producer "pulses" that write the same value while paused are absorbed. This
+matches diamond-safety intent: `.cache` remains coherent with "the last
+DATA actually delivered to sinks." Producers that need pulse semantics
+(every write observable regardless of value) should set `equals: () => false`
+on the node.
+
+**Teardown.** On TEARDOWN or deactivation, the buffer and lock set are
+discarded. Buffered in-flight DATA is NOT drained before teardown — TEARDOWN
+is a hard reset. Resubscribable nodes also clear the lock set on resubscribe
+so a new lifecycle cannot inherit a lock from a prior one.
+
+#### `replayBuffer` option
+
+When `replayBuffer: N` is set, the node maintains a circular buffer of the last N
+outgoing DATA values. Late subscribers receive buffered DATA after the START handshake
+but before live updates. This replaces the `replay()` operator and `wrapSubscribeHook`
+monkey-patching.
 
 ```
-node(deps, fn, {
-  onMessage(msg, depIndex, actions) {
-    // msg:      the message tuple [Type, Data?]
-    // depIndex: which dep sent it
-    // actions:
-    //   down(messages) — raw protocol: send full message tuples downstream
-    //                     e.g. down([[DATA, 42]]) or down([[DIRTY], [DATA, v]])
-    //   emit(value)    — convenience: send a plain value with auto-framing
-    //                     runs equals(), emits [[DIRTY],[DATA,v]] or [[RESOLVED]]
-    //   up(messages)   — send messages upstream (PAUSE, RESUME, TEARDOWN)
-    //
-    // Return true  → message consumed, skip default handling
-    // Return false → message not handled, proceed with default dispatch
-  }
-})
+node(deps, fn, { replayBuffer: 5 })  // buffer last 5 DATA values
 ```
 
-`onMessage` is called **for every message** from every dep — including DIRTY, DATA,
-RESOLVED, COMPLETE, etc. This gives full control. However, intercepting protocol messages
-(DIRTY, DATA, RESOLVED) can break two-phase invariants; users SHOULD only intercept
-custom types unless they fully understand the protocol.
+#### Singleton hooks (framework-level)
 
-When `onMessage` returns `true`:
-- The message is consumed. It is NOT forwarded downstream.
-- The default dispatch (dirty tracking, settlement, forwarding) is skipped for that message.
-- The handler MAY call `actions.emit(value)` (auto-framed with equals check) or
-  `actions.down(messages)` (raw protocol tuples) to produce downstream output.
+Message interception and subscribe ceremony customization are **singleton** (global)
+hooks configured once at application startup, not per-node options. This replaces the
+per-node `onMessage` option from v0.2:
 
-When `onMessage` returns `false` (or is not set):
-- The default dispatch runs: DIRTY/DATA/RESOLVED drive the settlement cycle, unknown
-  types forward unchanged (§1.3.6).
+```
+// TS
+configure((cfg) => {
+  cfg.onMessage = (msg, depIndex, node, actions) => { ... };
+  cfg.onSubscribe = (node, sink) => { ... };
+  cfg.registerMessageType(MY_TYPE, { tier: 3 });
+});
+// Config freezes on first node creation.
+```
 
-When `onMessage` throws:
-- The exception is caught by the node. The node emits `[[ERROR, err]]` downstream
-  (same behavior as fn throwing — §2.4). No further messages from that dep batch are
-  processed.
+Custom message types (e.g., store mutation events) are registered via the singleton
+`MessageTypeRegistry`. Unknown message types forward unchanged (§1.3.6).
 
 ### 2.7 Diamond Resolution
 
@@ -435,9 +599,9 @@ When a node depends on multiple deps that share an upstream ancestor:
 ```
 
 1. A changes → `[DIRTY]` propagates to B and C → both propagate `[DIRTY]` to D
-2. D's bitmask records: dep 0 dirty, dep 1 dirty (needs both to settle)
-3. B settles (DATA or RESOLVED) → D records dep 0 settled
-4. C settles (DATA or RESOLVED) → D records dep 1 settled → D now recomputes
+2. D's DepRecord array marks: dep 0 dirty, dep 1 dirty (needs both to settle)
+3. B settles (DATA or RESOLVED) → D marks dep 0 settled
+4. C settles (DATA or RESOLVED) → D marks dep 1 settled → all dirty deps settled → D recomputes
 
 D recomputes exactly once, with both deps settled. This is the glitch-free guarantee.
 
@@ -450,16 +614,21 @@ exactly once after all deps have settled — not once per dep.
 Implementations SHOULD provide these for readability:
 
 ```
-state(initial, opts?)           = node([], null, { initial, ...opts })
-producer(fn, opts?)             = node([], fn, opts)
-derived(deps, fn, opts?)        = node(deps, fn, opts)         // fn returns value or uses down()
-effect(deps, fn)                = node(deps, fn)               // fn returns nothing
+state(initial, opts?)           = node([], { initial, ...opts })
+producer(fn, opts?)             = node(fn, { describeKind: "producer", ...opts })
+derived(deps, userFn, opts?)    = node(deps, wrappedFn, opts)  // wraps: actions.emit(userFn(data))
+effect(deps, fn, opts?)         = node(deps, fn, opts)         // fn for side-effects, no auto-emit
+dynamicNode(allDeps, fn, opts?) = node(allDeps, wrappedFn, { _isDynamic: true, ...opts })
 pipe(source, ...ops)            = left-to-right fold
 ```
 
 These are not distinct types. `describe()` infers a type label (`state`, `producer`,
-`derived`, `operator`, `effect`) from the node's configuration for readability. The
-`operator` label is inferred when fn uses `down()` explicitly — no separate sugar needed.
+`derived`, `operator`, `effect`) from the node's `describeKind` option for readability.
+
+**`derived` wraps the user function** — the user returns a value, the sugar calls
+`actions.emit(value)` internally. This is the "fn return is cleanup only" invariant:
+the raw node primitive never auto-frames return values. Sugar constructors provide the
+ergonomic "return a value" API on top.
 
 ---
 
@@ -480,7 +649,7 @@ A graph is a named collection of nodes with explicit edges.
 ```
 graph.add(name, node)           — register a node with a local name
 graph.remove(name)              — unregister and teardown
-graph.get(name)                 — get a node's current value (shorthand for graph.node(name).get())
+graph.get(name)                 — get a node's current value (shorthand for graph.node(name).cache)
 graph.set(name, value)          — set a writable node's value (shorthand for down([[DATA, v]]))
 graph.node(name)                — get the node object itself
 ```
@@ -488,12 +657,22 @@ graph.node(name)                — get the node object itself
 ### 3.3 Edges
 
 ```
-graph.connect(fromName, toName) — wire output of one node as input to another
-graph.disconnect(fromName, toName)
+graph.edges(opts?) — derived `[from, to]` pairs from node deps
 ```
 
-Edges are pure wires. No transforms on edges. If you need a transform, add a node in between.
-This keeps edges trivially serializable and the graph topology fully visible.
+Edges are **derived on demand** from each node's construction-time `_deps` array plus the
+mount hierarchy. There is no stored edge registry, no explicit `connect` / `disconnect`.
+Topology is visible through `describe()` and diagram formats (§3.6) purely as a function
+of `(nodes, deps, mounts)`.
+
+`opts.recursive: true` walks mounted subgraphs with qualified `::` paths; default is
+local-only.
+
+**Consequence:** factories that need a reactive wire between two already-constructed
+nodes must use runtime discovery primitives (TS `autoTrackNode`, PY equivalent); post-hoc
+`graph.connect(...)` does not exist. Decorative edges that don't correspond to a dep are
+intentionally not representable — if describe shows an edge, there is a protocol subscription
+behind it.
 
 ### 3.4 Composition
 
@@ -567,12 +746,12 @@ Knobs = writable nodes with meta (filter by `type: "state"` or writable nodes wi
 Gauges = readable nodes with meta (filter by nodes that have `meta.description` or `meta.format`).
 No separate knob/gauge API — `describe()` is the single source.
 
-The `type` field in describe output is inferred from node configuration:
+The `type` field in describe output comes from the `describeKind` option set by sugar
+constructors. When not set, it is inferred:
 - No deps, no fn → `"state"`
 - No deps, with fn → `"producer"`
-- Deps, fn returns value → `"derived"`
-- Deps, fn uses down() → `"operator"`
-- Deps, fn returns nothing → `"effect"`
+- Deps, with fn → `"derived"` (default for compute nodes)
+- No fn, with deps → passthrough (labeled `"derived"`)
 
 #### observe(name?)
 
@@ -612,63 +791,131 @@ graph.destroy()                 — send [[TEARDOWN]] to all nodes, cleanup
 ### 3.8 Persistence
 
 ```
-graph.snapshot()                — serialize: structure + current values → JSON
-graph.restore(data)             — rebuild state from snapshot
-Graph.fromSnapshot(data)        — construct new graph from snapshot
-graph.toObject()                — deterministic JSON-serializable snapshot (sorted keys)
-graph.toJSONString()            — UTF-8 text + stable newlines (git-versionable)
+graph.snapshot()                            — structure + current values → JS object
+graph.snapshot({format: "json-string"})     — deterministic JSON text (sorted keys)
+graph.snapshot({format: "bytes", codec})    — codec-encoded bytes with v1 envelope
+graph.restore(data, opts?)                  — rebuild state from snapshot
+Graph.fromSnapshot(data, opts?)             — construct new graph from snapshot
+Graph.decode(bytes, {config?})              — auto-dispatch bytes → snapshot via envelope
 ```
 
 Snapshots capture **wiring and state values**, not computation functions. The fn lives in
-code. The snapshot captures which nodes exist, how they're connected, their current values,
-and their meta.
+code. The snapshot captures which nodes exist, how they're connected (derived from deps
+per §3.3), their current values, and their meta.
 
 Same state → same JSON bytes → git can diff.
 
-**TS:** `toObject()` returns a plain object; `toJSONString()` returns deterministic text.
-`JSON.stringify(graph)` works via the ECMAScript `toJSON()` hook (delegates to `toObject()`).
-**PY:** `to_dict()` returns a dict; `to_json_string()` returns deterministic text.
+- **Object form** (no arg): `GraphPersistSnapshot` — plain JS object.
+- **Text form** (`"json-string"`): `JSON.stringify` of the sorted object. Stable for hashing
+  and file writes.
+- **Bytes form** (`"bytes"`): codec-encoded payload wrapped in the v1 envelope (below).
+  Requires the codec name to be registered on the graph's `GraphReFlyConfig`.
 
-#### Auto-checkpoint
+`JSON.stringify(graph)` works via the ECMAScript `toJSON()` hook — delegates to `snapshot()`
+and returns the object form.
 
-```
-graph.autoCheckpoint(adapter, opts?)    — arm debounced reactive persistence
-```
+`restore(data, opts?)` accepts an `onError?: (path, err) => void` callback; omitted
+callback preserves historical silent behavior (guard denials and missing paths swallowed).
 
-Wires `observe()` → debounced save. Trigger gate uses **message tier**: batches containing
-tier `>=2` messages (value, terminal, or teardown lifecycle) schedule a save; pure
-tier `0/1` control waves do not. This avoids snapshotting mid-batch. Returns a disposable
-handle (disposed on `graph.destroy()`).
+#### Codec registry and envelope
 
-Options: `debounceMs` (default 500), `filter` (name/node predicate for which nodes trigger
-saves), `compactEvery` (full snapshot interval for incremental diff mode), `onError`.
-
-Implementations SHOULD support incremental snapshots via `Graph.diff()` — save only changed
-nodes, with periodic full snapshot compaction.
-
-#### Node factory registry
+Per-`GraphReFlyConfig` codec registry — parallel to the message-type registry, freeze-on-read:
 
 ```
-Graph.registerFactory(pattern, factory)  — register node factory by name glob
-Graph.unregisterFactory(pattern)         — remove registered factory
+config.registerCodec(codec)    — before first node creation; overwrites prior same-name
+config.lookupCodec(name)       — resolve by name; undefined for unknown
 ```
 
-Factory signature: `(name, { value, meta, deps, type, ...context }) → Node`. When `fromSnapshot(data)`
-is called without a `build` callback, the registry matches each snapshot node's name against
-registered patterns to reconstruct nodes with computation functions and guards reattached.
+Every `GraphCodec` carries `{name, version, contentType, encode, decode(buf, codecVersion?)}`.
+`version` is a `u16`; `decode` receives the envelope's `codec_v` so historical layouts can
+dispatch on it.
+
+**Envelope v1 layout (stable wire format — all implementations must match byte-for-byte):**
+
+```
+[envelope_v = 1 : u8][name_len : u8][name : utf8(1..=255 bytes)][codec_v : u16 BE][payload : rest]
+```
+
+Field rules:
+
+- `envelope_v` — currently `1`. Bumped on breaking layout changes.
+- `name_len` — length of the UTF-8 codec name in bytes. Must be in `[1, 255]`; both
+  encoder and decoder reject `name_len == 0`.
+- `name` — UTF-8 codec identifier matching a key in `config.lookupCodec`.
+- `codec_v` — codec's own version, big-endian `u16` (`0..=65535`). Passed to
+  `codec.decode(buffer, codecVersion)` so codecs can dispatch on historical layouts.
+- `payload` — the codec's output bytes, verbatim.
+
+Self-describing — callers decode without knowing the codec up front. `Graph.decode(bytes)`
+reads the header, looks up the codec via `config.lookupCodec`, and returns the snapshot.
+
+**Scope boundary:** envelopes live at I/O boundaries (storage tiers, wire transports). Internal
+records (`GraphCheckpointRecord`, `WALEntry`, in-memory snapshots) stay JS objects —
+`encode`/`decode` only fires when bytes need to leave the process.
+
+**Cross-language portability:** the envelope format is frozen at v1 for the 1.0 line.
+Every implementation (TypeScript and Python) must produce and consume byte-identical
+envelopes so a snapshot written in one runtime can be restored in the other.
+
+#### Storage tiers and `attachStorage`
+
+Single primitive for all persistence — adapters, caches, and auto-checkpoint share it:
+
+```
+interface StorageTier {
+  load(key): unknown | Promise<unknown>
+  save(key, record): void | Promise<void>
+  clear?(key): void | Promise<void>
+  debounceMs?: number       — per-tier save cadence (default 0 = sync-through)
+  compactEvery?: number     — full snapshot every N records (default 10)
+  filter?(key, record): boolean
+}
+```
+
+The `void | Promise<void>` return lets sync tiers stay zero-microtask while async tiers
+(indexed-db, network, etc.) return Promises. Callers that want uniform handling `await`
+unconditionally (awaiting `undefined` is a no-op).
+
+```
+graph.attachStorage(tiers, opts?)    — reactive observe → per-tier debounced save
+Graph.fromStorage(name, tiers)       — cold boot: construct graph pre-hydrated from first hit
+```
+
+`attachStorage` subscribes to the graph (or a scoped `paths` subset), tier-gates on
+`messageTier >= 3` (value changes only — skips DIRTY/PAUSE/TEARDOWN control traffic),
+and flushes per-tier at each tier's own cadence. Each tier holds its own
+`{lastSnapshot, lastFingerprint}` so cold-tier diff baselines aren't polluted by hot-tier
+flushes. Sync tiers share one snapshot computation per triggering event.
+
+`opts.autoRestore: true` triggers a cold-read cascade before the first save:
+tiers tried in order; first hit wins.
+
+Each write is a `GraphCheckpointRecord`: `{seq, timestamp_ns, format_version}` plus
+mode-specific payload (`full`: snapshot; `diff`: diff against this tier's last baseline).
+Compaction forces a `full` every Nth write so WAL replay has a baseline.
+
+#### Reconstructing topology from a snapshot
+
+```
+Graph.fromSnapshot(data, {build?, factories?})
+```
+
+Snapshots carry names + types + values + meta, not computation bodies. `fromSnapshot` can
+either:
+
+1. **`build` callback** — caller constructs topology, then values hydrate via `restore`.
+2. **`factories` per-call map** — glob pattern → factory fn. Reconstructs non-state nodes.
+   First matching pattern wins. No process-global registry — per-call isolation.
+
+Factory signature: `(name, { path, type, value, meta, deps, resolvedDeps }) → Node`.
 
 Reconstruction order:
 1. Mount hierarchies (subgraphs)
-2. State/producer nodes (no deps needed)
-3. Derived/operator/effect nodes (deps resolved to step 2 nodes)
-4. Edges
-5. `restore()` to hydrate values
+2. State nodes directly; others resolved topologically by dep order
+3. `restore()` to hydrate values
 
-Pattern matching uses glob semantics (`"issue/*"`, `"policy/*"`). Global registry — solves
-the chicken-and-egg problem (graph doesn't exist before `fromSnapshot` creates it).
-
-When a `build` callback is provided, it takes precedence over the registry (existing
-behavior preserved).
+If a snapshot node has no matching factory and isn't `state`, `fromSnapshot` throws with
+the unresolvable path list.
 
 ---
 
@@ -799,8 +1046,8 @@ examples alone.
 ### 5.12 Data flows through messages, not peeks
 
 All data propagation — including initial values at connection time — flows through the
-message protocol (`[[DATA, v]]`). Nodes do not peek dep values via `.get()` to seed
-computation. `.get()` is a read-only cache accessor for external consumers; the reactive
+message protocol (`[[DATA, v]]`). Nodes do not peek dep values via `.cache` to seed
+computation. `.cache` is a read-only accessor for external consumers; the reactive
 graph relies exclusively on messages for state propagation.
 
 This ensures a single mental model: if data moved, a message carried it.
@@ -829,13 +1076,24 @@ Recommended subscriber storage: `null → single sink → Set<sink>`. Saves ~90%
 typical graphs where 70-80% of nodes have 0-1 subscribers. Implementation optimization,
 not a spec requirement.
 
-### 6.3 Single-Dep Optimization
+### 6.3 DepRecord (per-dep state)
 
-When a node has exactly one downstream subscriber that declared itself as single-dep,
-implementations MAY skip the DIRTY message when the same batch also contains DATA or
-RESOLVED. The semantic guarantee (DIRTY precedes DATA) is preserved within batched
-contexts and for multi-dep nodes. This is a performance optimization — the spec does
-not require it.
+Each node maintains a `DepRecord` array — one entry per declared dep — consolidating
+all per-dep tracking into a single structure:
+
+```
+DepRecord {
+  node: Node              // the dep itself
+  unsub: fn | null        // subscription cleanup
+  latestData: T | SENTINEL // latest DATA payload
+  dirty: boolean          // received DIRTY, not yet settled
+  settled: boolean        // received DATA/RESOLVED this wave
+  terminal: boolean | err // false=live, true=COMPLETE, other=ERROR payload
+}
+```
+
+This replaces separate BitSet masks, last-dep-values arrays, and upstream-unsub arrays.
+Wave completion check: all deps where `dirty=true` must have `settled=true`.
 
 ---
 
@@ -848,7 +1106,65 @@ not require it.
 | V2 | + schema | ~40 bytes | Type validation, migration |
 | V3 | + caps, refs | ~80 bytes | Access control, cross-graph references |
 
-V0 is recommended minimum. Higher levels are opt-in.
+Versioning is **opt-in** — the minimum observable level is V0, selectable per
+node or graph-wide. Unversioned nodes (the default) skip the version counter
+entirely. Higher levels extend the state monotonically: a node at V1 carries
+V0's fields plus the V1 additions, and so on.
+
+### 7.1 Attaching versioning
+
+Three entry points, resolved in priority order:
+
+1. **Per-node `opts.versioning`** — set at construction via
+   `node(deps, fn, { versioning: 0 })`. Highest priority; overrides any
+   config- or graph-level default.
+2. **`GraphReFlyConfig.defaultVersioning`** — config-level default. Every
+   node bound to that config inherits the level unless its own options
+   override. Set once at application startup via `configure(cfg => {
+   cfg.defaultVersioning = 0; })` before the first node is created.
+   `GraphReFlyConfig.defaultHashFn` provides the same inheritance story for
+   the content-hash function used to compute V1 `cid` — swap to a faster
+   non-crypto hash for hot-path workloads, or a stronger hash when V1 cids
+   serve as audit anchors.
+3. **`Graph.setVersioning(level)`** — graph-level default. Bulk-applies the
+   level to every node already registered in the graph, AND stores the
+   default so `Graph.add(name, node)` applies it to nodes added later. The
+   retroactive apply path uses `NodeImpl._applyVersioning(level)` under the
+   hood.
+
+### 7.2 Retroactive upgrade (`_applyVersioning`)
+
+A node's versioning level can be bumped **upward only** after construction.
+The internal `NodeImpl._applyVersioning(level, opts?)` method attaches (or
+upgrades) versioning state on a quiescent node. It is intended for
+`Graph.setVersioning` bulk application and for rare cases where a specific
+node needs to be upgraded from V0 to V1 after construction.
+
+- **Monotonic.** Levels only go up. Downgrade (e.g., V1 → V0) is a no-op —
+  once a node carries higher-level metadata, dropping it would tear the
+  linked-history invariant for V1 and above.
+- **Quiescence guard.** `_applyVersioning` is rejected mid-wave. It MUST
+  throw if the node is currently executing its fn. Callers at quiescent
+  points — before the first sink subscribes, after all sinks unsubscribe,
+  or between external `down()` / `emit()` invocations — are safe.
+- **Identity preserved.** The existing `id` and `version` counter are
+  preserved across upgrades so downstream consumers watching `v.id` don't
+  see an identity jump.
+
+### 7.3 Linked-history boundary at V0 → V1 upgrade
+
+V0 → V1 retroactive upgrade produces a **fresh history root**. The new V1
+state has `cid = hash(currentCachedValue)` and `prev = null`, not a
+synthetic `prev` anchored to any prior V0 value. The V0 monotonic `version`
+counter is preserved across the upgrade, but the linked-cid chain starts
+fresh at the upgrade point.
+
+Downstream audit tools that walk `v.cid.prev` backwards through time will
+encounter a `null` boundary at the upgrade. **This is intentional**: V0 has
+no cid to link to, and fabricating one would misrepresent the hash. Callers
+that require an unbroken cid chain from birth MUST attach versioning at
+construction via `opts.versioning` or `GraphReFlyConfig.defaultVersioning`,
+not retroactively.
 
 ---
 
@@ -859,9 +1175,69 @@ Follows semver:
 - **Minor** (0.x.0): new optional features, new message types
 - **Major** (x.0.0): breaking changes to protocol or primitive contracts
 
-Current: **v0.2.0** — push-on-subscribe model
+Current: **v0.4.0** — unified dispatch waist; `actions.bundle` deleted; mandatory PAUSE/RESUME lockId; versioning §7 expanded
 
 **Changelog:**
+- **v0.4.0** — Unified dispatch waist. The `actions.bundle` / `Bundle` / `BundleFactory`
+  user-facing framing surface is **deleted**: actions are `emit`, `down`, `up` only.
+  Every emission path — `node.emit(v)`, `node.down(msgs)`, `actions.emit(v)`,
+  `actions.down(msgs)`, passthrough forwarding, recursive ERROR after equals-throw —
+  converges at a single internal `_emit` waist that owns terminal filtering,
+  tier sort, synthetic `[DIRTY]` prefix, PAUSE/RESUME lock bookkeeping, meta
+  TEARDOWN fan-out, equals substitution / cache advance, and phase-deferred
+  dispatch. §1.3.1 is tightened: the "raw DATA without prior DIRTY is a compat
+  path" carve-out is **removed** — the dispatcher synthesizes `[DIRTY]`
+  unconditionally when tier-3 is present and the node is not already dirty, so
+  raw and framed paths are observationally identical on the wire. `node.down`,
+  `node.up`, `actions.down`, and `actions.up` now accept either a single `Message`
+  tuple or a `Messages` array. `actions.up` throws on tier-3/4 (DATA/RESOLVED/
+  COMPLETE/ERROR are downstream-only). One action call = one wave; there is no
+  fn-return accumulation boundary. PAUSE/RESUME lockId is now **mandatory** —
+  bare `[[PAUSE]]` / `[[RESUME]]` throws. Per-node lock set provides multi-pauser
+  correctness by construction; unknown-lockId RESUME is a no-op for dispose
+  idempotency. `pausable: "resumeAll"` bufferAll mode is fully specified (§2.6):
+  tier-3/4 outgoing messages are buffered while any lock is held, replayed
+  through `_emit` on final-lock RESUME (equals substitution still applies —
+  duplicate values collapse to RESOLVED), and discarded on teardown/deactivate.
+  Versioning §7 expanded: new §7.1 covers construction-time opt-in via
+  `opts.versioning`, config-level defaults via `GraphReFlyConfig.defaultVersioning`
+  and `defaultHashFn`, and graph-level bulk apply via `Graph.setVersioning`. New
+  §7.2 documents retroactive `_applyVersioning` — monotonic, mid-wave rejected,
+  identity preserved across upgrades. New §7.3 pins the V0 → V1 upgrade semantic:
+  fresh history root with `prev = null`, intentional. Function-form fn cleanup
+  now documented to fire on `[[INVALIDATE]]` as well as deactivation and
+  pre-re-run — the reactive hook for flushing external caches on broadcast
+  `graph.signal([[INVALIDATE]])` (reactive-layout pattern). Meta TEARDOWN fan-out
+  ordering pinned in §2.3: parent notifies meta children at the top of `_emit`
+  before the parent's own state-transition walk. `graph.signal([[INVALIDATE]])`
+  meta filtering is clarified as a graph-layer responsibility, not core. Breaking:
+  `actions.bundle` callers, bare `[[PAUSE]]` / `[[RESUME]]` emitters, and
+  composition-guide table rows referencing `bundle(...).resolve()` must migrate.
+- **v0.3.1** — Equals substitution is a dispatch-layer invariant (§1.3.3, scope
+  broadened). Every outgoing DATA payload — computed fn results, `actions.emit(v)`,
+  bundle-wrapped down, raw `actions.down([[DATA, v]])`, and passthrough forwarding —
+  runs through a single equals-vs-live-cache check; on match the tuple is rewritten
+  to `[RESOLVED]` and cache is not re-advanced. When substitution fires on a
+  raw-path emission without a prior DIRTY, the dispatcher auto-synthesizes
+  `[DIRTY]` to preserve §1.3.1 (DIRTY precedes DATA or RESOLVED). Equals-throw
+  mid-batch delivers the successfully-walked prefix before emitting ERROR so
+  `.cache` stays coherent with what subscribers observe. `.cache` gains a
+  well-defined meaning: "the last DATA payload this node actually emitted
+  downstream." Compat layers: §D.12 Invariant I updated — choosing a particular
+  `actions` API no longer bypasses `equals`; use `equals: () => false` at node
+  construction to force-emit same-valued DATA. No user-facing API change; no new
+  message types; pre-v0.3.1 user code continues to work with the only observable
+  difference being that same-value raw-down writes now produce `[DIRTY, RESOLVED]`
+  on the wire instead of `[DATA, v]` (semantically equivalent). Compatible patch.
+- **v0.3.0** — Foundation redesign. fn return is cleanup only — all emission via
+  `actions.emit(v)` or `actions.down(msgs)`. Per-dep state consolidated into DepRecord
+  (replaces BitSet masks). NodeBase + NodeImpl merged into single class. `dynamicNode`
+  uses superset deps model (no rewire buffer). `.get()` renamed to `.cache`. Status
+  enum: `"disconnected"` → `"sentinel"`. Per-node `onMessage` → singleton config.
+  PAUSE/RESUME promoted to default node option (`pausable`). `replayBuffer` node option
+  replaces `replay()` operator. `bridge.ts` deleted. Single-dep DIRTY-skip optimization
+  removed. `CleanupResult` wrapper removed. Sugar constructors (`derived`, `map`, etc.)
+  wrap user functions with `actions.emit()`.
 - **v0.2.0** — All nodes with cached value push `[[DATA, cached]]` to every new
   subscriber on subscribe. Derived nodes compute reactively from upstream push instead
   of eager compute on connection. Removes the peek-via-`.get()` connection path.
@@ -909,7 +1285,7 @@ ERROR         [ERROR, err]            Error termination
           "status": {
             "description": "Present at detail >= 'standard'. Omitted at 'minimal' detail level.",
             "type": "string",
-            "enum": ["disconnected", "dirty", "settled", "resolved", "completed", "errored"]
+            "enum": ["sentinel", "pending", "dirty", "settled", "resolved", "completed", "errored"]
           },
           "value": {},
           "deps": {
@@ -977,4 +1353,89 @@ ERROR         [ERROR, err]            Error termination
 | Multi-agent routing | `Graph.mount` + `connect` |
 | LLM builds graph | `Graph.fromSnapshot` + `describe()` |
 | Git-versioned graphs | `toJSONString()` / `to_json_string()` |
-| Custom domain signals | `onMessage` + unknown type forwarding |
+| Custom domain signals | Singleton `MessageTypeRegistry` + unknown type forwarding |
+
+---
+
+## Appendix D: v0.4 Foundation Redesign Addendum
+
+Behavioral additions and clarifications from the v0.4 foundation redesign that extend
+the main spec sections above. See `graphrefly-ts/archive/docs/SESSION-foundation-redesign.md`
+for the full decision log.
+
+### D.1 `NodeOptions.errorWhenDepsError`
+
+Separate from `completeWhenDepsComplete`. Default `true`. ERROR auto-propagates when
+any dep errors, independently of COMPLETE auto-propagation. Only rescue / catchError
+operators set `errorWhenDepsError: false` to handle errors explicitly via
+`ctx.terminalDeps[i]`.
+
+### D.2 `NodeOptions.config` and `GraphReFlyConfig` surface
+
+Pass a custom `GraphReFlyConfig` instance for test isolation or custom protocol
+stacks. Defaults to the module-level `defaultConfig`. A config freezes on first hook
+read — all mutating calls (registering custom message types, setting hooks, setting
+`defaultVersioning` / `defaultHashFn`) MUST happen at application startup, before any
+node is created.
+
+```ts
+const custom = new GraphReFlyConfig({
+  onMessage: (...) => undefined,
+  onSubscribe: (...) => undefined,
+  defaultVersioning: 0,              // every node inherits V0 unless overridden
+  defaultHashFn: customHash,         // swap the V1 cid hash function
+});
+custom.registerMessageType(MY_TYPE, { tier: 3 });
+const n = state(0, { config: custom });
+```
+
+`GraphReFlyConfig` fields relevant to user code:
+
+- **`onMessage`** — global message interceptor (singleton hook).
+- **`onSubscribe`** — global subscribe ceremony (singleton hook).
+- **`defaultVersioning?: VersioningLevel`** — fallback versioning level for every node
+  bound to this config unless the node's own `opts.versioning` provides an override.
+- **`defaultHashFn?: HashFn`** — fallback content-hash function for V1 `cid`.
+- **`tierOf(type)`** — pre-bound tier lookup available as a public field for inspection.
+
+### D.3 `Graph.connect(from, to)` — reactive edge, post-construction
+
+`connect()` wires a reactive edge after construction by calling `NodeImpl._addDep(sourceNode)`
+on the target. The target's `_deps` array grows, the source is subscribed to, and the new
+dep participates in wave tracking from that point forward.
+
+**Breaking change from prior spec:** `connect()` no longer requires the target to include the
+source in its constructor deps — it auto-adds. This enables pattern factories (stratify,
+feedback, gate, forEach) to wire nodes after creation.
+
+### D.4 Compat-layer two-way bridge invariant
+
+Compat layers (`Signal.State`/`Signal.Computed`, Jotai `atom`, Nanostores `atom`/`computed`/`map`,
+Zustand `create`, etc.) are first-class composable `Node<T>` producers, not one-way polyfills.
+Every compat object MUST expose its backing node (`._node`, `store.node(name)`) and that node
+MUST behave as any other protocol-compliant node when observed from the native layer.
+
+**Invariant I — Write paths.** All three shapes are equivalent and produce identical wire output
+under v0.4.0 (unified dispatch waist):
+1. `n.emit(value)` — preferred idiom.
+2. `n.down([DATA, value])` — single-tuple shape.
+3. `n.down([[DIRTY], [DATA, value]])` — explicit two-phase shape.
+
+`equals` cannot be bypassed by choice of write API. To force same-value re-emission, configure
+`equals: () => false` at node construction.
+
+**Invariant II — Compute paths.** Compat compute nodes MUST produce exactly one framed outcome
+per wave — either DATA (value changed) or RESOLVED (value unchanged). Silently returning
+without emitting leaves downstream `dep.dirty` stuck and freezes subsequent sibling waves.
+
+**Invariant III — Equality semantics** MUST be encoded as `NodeOptions.equals`, not as
+a side-effect of omitting emission. Jotai and Nanostores use `Object.is` → default equals.
+Zustand fires on every `setState` → `equals: () => false` at node construction.
+
+**Testability.** Compat-layer conformance to invariants I–III is testable only via:
+1. Live subscribers observing `cb` arguments and fire counts (`.cache` reads are insensitive
+   to mid-wave glitches because `.cache` is updated at end-of-wave).
+2. Two-way bridge tests: subscribe directly to the compat object's backing node and compare
+   the DATA sequence against the compat subscribe path.
+
+**Scope.** Applies to every compat layer in `compat/` and any future compat layer.
