@@ -254,6 +254,38 @@ deliver at least one value before fn fires. The difference is that fn receives a
 invocation. Unused deps still participate in wave tracking; their updates fire fn but
 equals absorption prevents downstream propagation.
 
+**Multi-dep push-on-subscribe serialization (§2.7 corollary):** `_activate` subscribes
+deps sequentially in declaration order; each dep's subscribe synchronously fires its
+own push-on-subscribe as a **separate wave**. When a compute node has N deps and each
+dep's source is already cached (e.g. N `state()` nodes), the activation produces N
+sequential waves — not one combined initial wave. For operators that depend on dep
+coincidence (e.g. pair primary with latest secondary on every primary settle), this
+means:
+
+1. The first dep to fire push-on-subscribe is gated by the first-run gate (later deps
+   still SENTINEL) → fn emits RESOLVED.
+2. Subsequent deps' push-on-subscribe waves find prior deps silent **this wave**
+   (their DATA already landed in earlier waves and advanced `prevData[i]`).
+3. Operators that only consider `batch[i]` this wave (not `prevData[i]`) silently
+   drop the initial paired emission.
+
+This is NOT a protocol invariant violation — push-on-subscribe, the first-run gate, and
+DIRTY/DATA ordering all work correctly per their individual contracts. It IS a semantic
+consequence that operator authors must handle. Two mitigations:
+
+- **Factory-time seed pattern.** Read the dep's `.cache` at wiring time (explicitly
+  sanctioned as an external-observer boundary read), stash it in a closure, update via
+  a subscribe handler. Used by `stratify`, `budgetGate`, `distill`, `verifiable`.
+- **`ctx.prevData[i]` fallback in the fn.** When `batch[i]` is null for a dep that
+  must be paired, read `ctx.prevData[i]` — it holds the last-emitted DATA for that
+  dep regardless of which wave that emission occurred in. Suitable for operators whose
+  first-fire intent is "pair all settled deps."
+
+`withLatestFrom` today uses the second-fire-onwards pattern via `ctx.prevData[1]`, but
+does not fire a paired emission on its very first fn-fire (when primary is the first
+dep to subscribe and fires alone in its wave). Callers who need initial-state pairing
+should use the factory-time seed pattern instead.
+
 #### cache (readonly getter)
 
 Returns the cached value. Does NOT guarantee freshness and does NOT trigger computation.
@@ -798,11 +830,21 @@ Every `GraphCodec` carries `{name, version, contentType, encode, decode(buf, cod
 `version` is a `u16`; `decode` receives the envelope's `codec_v` so historical layouts can
 dispatch on it.
 
-**Envelope v1 layout:**
+**Envelope v1 layout (stable wire format — all implementations must match byte-for-byte):**
 
 ```
-[envelope_v = 1 : u8][name_len : u8][name : utf8][codec_v : u16 BE][payload : rest]
+[envelope_v = 1 : u8][name_len : u8][name : utf8(1..=255 bytes)][codec_v : u16 BE][payload : rest]
 ```
+
+Field rules:
+
+- `envelope_v` — currently `1`. Bumped on breaking layout changes.
+- `name_len` — length of the UTF-8 codec name in bytes. Must be in `[1, 255]`; both
+  encoder and decoder reject `name_len == 0`.
+- `name` — UTF-8 codec identifier matching a key in `config.lookupCodec`.
+- `codec_v` — codec's own version, big-endian `u16` (`0..=65535`). Passed to
+  `codec.decode(buffer, codecVersion)` so codecs can dispatch on historical layouts.
+- `payload` — the codec's output bytes, verbatim.
 
 Self-describing — callers decode without knowing the codec up front. `Graph.decode(bytes)`
 reads the header, looks up the codec via `config.lookupCodec`, and returns the snapshot.
@@ -810,6 +852,10 @@ reads the header, looks up the codec via `config.lookupCodec`, and returns the s
 **Scope boundary:** envelopes live at I/O boundaries (storage tiers, wire transports). Internal
 records (`GraphCheckpointRecord`, `WALEntry`, in-memory snapshots) stay JS objects —
 `encode`/`decode` only fires when bytes need to leave the process.
+
+**Cross-language portability:** the envelope format is frozen at v1 for the 1.0 line.
+Every implementation (TypeScript and Python) must produce and consume byte-identical
+envelopes so a snapshot written in one runtime can be restored in the other.
 
 #### Storage tiers and `attachStorage`
 

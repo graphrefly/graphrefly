@@ -606,9 +606,8 @@ export function reduce<T, R>(src: Node<T>, reducer, seed: R): Node<R> {
     if (!("acc" in ctx.store)) ctx.store.acc = seed;
     const batch0 = data[0];
     const v = batch0 != null && batch0.length > 0 ? batch0.at(-1) : ctx.latestData[0];
-    if (ctx.terminalDeps[0] !== undefined && ctx.terminalDeps[0] !== true) {
-      return; // ERROR: let auto-error propagate
-    }
+    // ERROR is auto-propagated by the framework before fn runs
+    // (default `errorWhenDepsError: true`) — no guard needed here.
     if (ctx.terminalDeps[0] === true) {
       a.emit(ctx.store.acc);
       a.down([[COMPLETE]]);
@@ -882,3 +881,73 @@ doesn't need prior knowledge of which codec produced the bytes. Built-in
 stays a JS object throughout the attachStorage pipeline. Envelopes appear
 only at the I/O boundary. If a tier keeps its data in-process (memory
 tier, test fixture), no codec is involved — everything is JS objects.
+
+### 28. Multi-dep push-on-subscribe ordering — factory-time seed over `withLatestFrom` for initial-state pairing
+
+**The gap.** When a compute node has multiple deps that are all `state()` nodes
+with cached values at activation time, `_activate` subscribes them sequentially
+in declaration order. Each subscribe synchronously fires that dep's
+push-on-subscribe — **as its own wave**. They don't coalesce into one
+"initial activation wave." Consequences for operators whose semantic depends
+on pair coincidence:
+
+1. Dep[0]'s push-on-subscribe wave arrives while dep[1] is still SENTINEL →
+   first-run gate (spec §2.7) forces RESOLVED.
+2. Dep[1]'s push-on-subscribe wave arrives with dep[0] now silent **this
+   wave** (its DATA landed in a prior wave and advanced `prevData[0]`).
+3. Any operator fn that emits only on "primary fired this wave" silently
+   drops the initial paired emission.
+
+This is NOT a protocol invariant violation (push-on-subscribe, first-run
+gate, DIRTY/DATA ordering all behave correctly per their contracts). It IS a
+semantic gap users hit when composing operators like `withLatestFrom` over
+state-backed deps.
+
+**Symptom.** `verified.cache === null` after `verifiable(state(2), trigger)`
+when you expect an initial verification to have fired. `store.has("seed")`
+returns false after `distill(state("seed"), extractFn, ...)` when the
+initial extraction was supposed to populate. Both silently dropped because
+the underlying `withLatestFrom(source, storeOrTrigger)` composition lost the
+first paired emission.
+
+**Fix: factory-time seed + subscribe-handler update.** Capture the dep's
+`.cache` at wiring time (explicitly sanctioned as an external-observer
+boundary read per foundation-redesign §3.6), stash in a closure, update via
+a subscribe handler, read the closure inside the reactive fn:
+
+```ts
+// WRONG: withLatestFrom drops the initial pair under state+state deps
+const verifyStream = switchMap(
+  withLatestFrom(triggerNode, sourceNode),
+  ([, src]) => verifyFn(src as T),
+);
+
+// RIGHT: factory-time seed pattern
+let latestSource: T | undefined = sourceNode.cache as T | undefined;
+sourceNode.subscribe((msgs) => {
+  for (const m of msgs) {
+    if (m[0] === DATA) latestSource = m[1] as T;
+  }
+});
+const verifyStream = switchMap(triggerNode, () => verifyFn(latestSource as T));
+```
+
+The closure reads inside the reactive fn are NOT P3 violations — they read a
+closure variable, not a `.cache`. The subscribe handler outside the fn
+updates the closure via protocol delivery. This is the pattern used by
+`stratify`'s `latestRules`, `budgetGate`'s `latestValues`, `gate()`'s
+`latestIsOpen`, and `distill`'s `latestStore`.
+
+**When `withLatestFrom` is still fine.** When the primary is a raw `node()`
+without an initial cached value, or when you only care about emissions from
+run-time events (not the push-on-subscribe wave), `withLatestFrom` works as
+documented. The gap only bites for `state()` + `state()` combinations on
+initial activation.
+
+**Why not fix `withLatestFrom` directly?** A naïve `[secondary, primary]`
+flip in the dep declaration produces the correct initial pair but breaks
+topology-sensitive diamond callers (e.g. `harness/loop.ts:executeContextNode`
+depends on the current ordering for same-wave dep settlement through
+`executeInput → executeNode → executeContextNode` plus `executeInput →
+executeContextNode` diamond). A broader fix needs careful audit of all
+in-tree diamond topologies. Tracked in `docs/optimizations.md`.
