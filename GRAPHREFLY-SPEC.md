@@ -625,12 +625,22 @@ graph.node(name)                — get the node object itself
 ### 3.3 Edges
 
 ```
-graph.connect(fromName, toName) — wire output of one node as input to another
-graph.disconnect(fromName, toName)
+graph.edges(opts?) — derived `[from, to]` pairs from node deps
 ```
 
-Edges are pure wires. No transforms on edges. If you need a transform, add a node in between.
-This keeps edges trivially serializable and the graph topology fully visible.
+Edges are **derived on demand** from each node's construction-time `_deps` array plus the
+mount hierarchy. There is no stored edge registry, no explicit `connect` / `disconnect`.
+Topology is visible through `describe()` and diagram formats (§3.6) purely as a function
+of `(nodes, deps, mounts)`.
+
+`opts.recursive: true` walks mounted subgraphs with qualified `::` paths; default is
+local-only.
+
+**Consequence:** factories that need a reactive wire between two already-constructed
+nodes must use runtime discovery primitives (TS `autoTrackNode`, PY equivalent); post-hoc
+`graph.connect(...)` does not exist. Decorative edges that don't correspond to a dep are
+intentionally not representable — if describe shows an edge, there is a protocol subscription
+behind it.
 
 ### 3.4 Composition
 
@@ -749,63 +759,117 @@ graph.destroy()                 — send [[TEARDOWN]] to all nodes, cleanup
 ### 3.8 Persistence
 
 ```
-graph.snapshot()                — serialize: structure + current values → JSON
-graph.restore(data)             — rebuild state from snapshot
-Graph.fromSnapshot(data)        — construct new graph from snapshot
-graph.toObject()                — deterministic JSON-serializable snapshot (sorted keys)
-graph.toJSONString()            — UTF-8 text + stable newlines (git-versionable)
+graph.snapshot()                            — structure + current values → JS object
+graph.snapshot({format: "json-string"})     — deterministic JSON text (sorted keys)
+graph.snapshot({format: "bytes", codec})    — codec-encoded bytes with v1 envelope
+graph.restore(data, opts?)                  — rebuild state from snapshot
+Graph.fromSnapshot(data, opts?)             — construct new graph from snapshot
+Graph.decode(bytes, {config?})              — auto-dispatch bytes → snapshot via envelope
 ```
 
 Snapshots capture **wiring and state values**, not computation functions. The fn lives in
-code. The snapshot captures which nodes exist, how they're connected, their current values,
-and their meta.
+code. The snapshot captures which nodes exist, how they're connected (derived from deps
+per §3.3), their current values, and their meta.
 
 Same state → same JSON bytes → git can diff.
 
-**TS:** `toObject()` returns a plain object; `toJSONString()` returns deterministic text.
-`JSON.stringify(graph)` works via the ECMAScript `toJSON()` hook (delegates to `toObject()`).
-**PY:** `to_dict()` returns a dict; `to_json_string()` returns deterministic text.
+- **Object form** (no arg): `GraphPersistSnapshot` — plain JS object.
+- **Text form** (`"json-string"`): `JSON.stringify` of the sorted object. Stable for hashing
+  and file writes.
+- **Bytes form** (`"bytes"`): codec-encoded payload wrapped in the v1 envelope (below).
+  Requires the codec name to be registered on the graph's `GraphReFlyConfig`.
 
-#### Auto-checkpoint
+`JSON.stringify(graph)` works via the ECMAScript `toJSON()` hook — delegates to `snapshot()`
+and returns the object form.
 
-```
-graph.autoCheckpoint(adapter, opts?)    — arm debounced reactive persistence
-```
+`restore(data, opts?)` accepts an `onError?: (path, err) => void` callback; omitted
+callback preserves historical silent behavior (guard denials and missing paths swallowed).
 
-Wires `observe()` → debounced save. Trigger gate uses **message tier**: batches containing
-tier `>=2` messages (value, terminal, or teardown lifecycle) schedule a save; pure
-tier `0/1` control waves do not. This avoids snapshotting mid-batch. Returns a disposable
-handle (disposed on `graph.destroy()`).
+#### Codec registry and envelope
 
-Options: `debounceMs` (default 500), `filter` (name/node predicate for which nodes trigger
-saves), `compactEvery` (full snapshot interval for incremental diff mode), `onError`.
-
-Implementations SHOULD support incremental snapshots via `Graph.diff()` — save only changed
-nodes, with periodic full snapshot compaction.
-
-#### Node factory registry
+Per-`GraphReFlyConfig` codec registry — parallel to the message-type registry, freeze-on-read:
 
 ```
-Graph.registerFactory(pattern, factory)  — register node factory by name glob
-Graph.unregisterFactory(pattern)         — remove registered factory
+config.registerCodec(codec)    — before first node creation; overwrites prior same-name
+config.lookupCodec(name)       — resolve by name; undefined for unknown
 ```
 
-Factory signature: `(name, { value, meta, deps, type, ...context }) → Node`. When `fromSnapshot(data)`
-is called without a `build` callback, the registry matches each snapshot node's name against
-registered patterns to reconstruct nodes with computation functions and guards reattached.
+Every `GraphCodec` carries `{name, version, contentType, encode, decode(buf, codecVersion?)}`.
+`version` is a `u16`; `decode` receives the envelope's `codec_v` so historical layouts can
+dispatch on it.
+
+**Envelope v1 layout:**
+
+```
+[envelope_v = 1 : u8][name_len : u8][name : utf8][codec_v : u16 BE][payload : rest]
+```
+
+Self-describing — callers decode without knowing the codec up front. `Graph.decode(bytes)`
+reads the header, looks up the codec via `config.lookupCodec`, and returns the snapshot.
+
+**Scope boundary:** envelopes live at I/O boundaries (storage tiers, wire transports). Internal
+records (`GraphCheckpointRecord`, `WALEntry`, in-memory snapshots) stay JS objects —
+`encode`/`decode` only fires when bytes need to leave the process.
+
+#### Storage tiers and `attachStorage`
+
+Single primitive for all persistence — adapters, caches, and auto-checkpoint share it:
+
+```
+interface StorageTier {
+  load(key): unknown | Promise<unknown>
+  save(key, record): void | Promise<void>
+  clear?(key): void | Promise<void>
+  debounceMs?: number       — per-tier save cadence (default 0 = sync-through)
+  compactEvery?: number     — full snapshot every N records (default 10)
+  filter?(key, record): boolean
+}
+```
+
+The `void | Promise<void>` return lets sync tiers stay zero-microtask while async tiers
+(indexed-db, network, etc.) return Promises. Callers that want uniform handling `await`
+unconditionally (awaiting `undefined` is a no-op).
+
+```
+graph.attachStorage(tiers, opts?)    — reactive observe → per-tier debounced save
+Graph.fromStorage(name, tiers)       — cold boot: construct graph pre-hydrated from first hit
+```
+
+`attachStorage` subscribes to the graph (or a scoped `paths` subset), tier-gates on
+`messageTier >= 3` (value changes only — skips DIRTY/PAUSE/TEARDOWN control traffic),
+and flushes per-tier at each tier's own cadence. Each tier holds its own
+`{lastSnapshot, lastFingerprint}` so cold-tier diff baselines aren't polluted by hot-tier
+flushes. Sync tiers share one snapshot computation per triggering event.
+
+`opts.autoRestore: true` triggers a cold-read cascade before the first save:
+tiers tried in order; first hit wins.
+
+Each write is a `GraphCheckpointRecord`: `{seq, timestamp_ns, format_version}` plus
+mode-specific payload (`full`: snapshot; `diff`: diff against this tier's last baseline).
+Compaction forces a `full` every Nth write so WAL replay has a baseline.
+
+#### Reconstructing topology from a snapshot
+
+```
+Graph.fromSnapshot(data, {build?, factories?})
+```
+
+Snapshots carry names + types + values + meta, not computation bodies. `fromSnapshot` can
+either:
+
+1. **`build` callback** — caller constructs topology, then values hydrate via `restore`.
+2. **`factories` per-call map** — glob pattern → factory fn. Reconstructs non-state nodes.
+   First matching pattern wins. No process-global registry — per-call isolation.
+
+Factory signature: `(name, { path, type, value, meta, deps, resolvedDeps }) → Node`.
 
 Reconstruction order:
 1. Mount hierarchies (subgraphs)
-2. State/producer nodes (no deps needed)
-3. Derived/operator/effect nodes (deps resolved to step 2 nodes)
-4. Edges
-5. `restore()` to hydrate values
+2. State nodes directly; others resolved topologically by dep order
+3. `restore()` to hydrate values
 
-Pattern matching uses glob semantics (`"issue/*"`, `"policy/*"`). Global registry — solves
-the chicken-and-egg problem (graph doesn't exist before `fromSnapshot` creates it).
-
-When a `build` callback is provided, it takes precedence over the registry (existing
-behavior preserved).
+If a snapshot node has no matching factory and isn't `state`, `fromSnapshot` throws with
+the unresolvable path list.
 
 ---
 

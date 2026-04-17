@@ -740,18 +740,34 @@ export function rescue<T>(src: Node<T>, fallback: T): Node<T> {
 }
 ```
 
-### 24. Graph.connect() creates reactive edges
+### 24. Edges are derived, not declared
 
-`Graph.connect(fromPath, toPath)` wires a reactive edge post-
-construction. The target's `_deps` array grows via `_addDep`. This is
-used by pattern factories (`stratify`, `feedback`, `gate`, `forEach`,
-`harnessLoop`, `gatedStream`) to wire nodes after they've been
-individually constructed — the full topology doesn't need to be known
-upfront.
+`Graph.connect` / `Graph.disconnect` do not exist. Edges are a **pure
+function** of `(nodes, each node's _deps, mounts)` and are derived on
+demand by `graph.edges(opts?)` and every `describe()` call.
 
-**Implication:** `connect()` always creates a live reactive subscription,
-not just a metadata-only edge for describe() output. Pattern factories
-that want metadata-only edges should use a different mechanism (TBD).
+**What this means for composition:**
+
+- No post-hoc "wire A to B" step. If you need B to react to A, B's
+  constructor must receive A in its `deps` array.
+- Factories that previously used `graph.connect(from, to)` for edge
+  decoration (annotating a dep that wasn't in the constructor array) now
+  have no way to surface that in describe — don't try. If the dep isn't
+  a real `_deps` entry, it isn't an edge.
+- Factories that needed **runtime dep discovery** (wire later based on
+  observed values) use `autoTrackNode` (TS) — `track(dep)` inside the fn
+  calls `_addDep` under the hood. Discovered deps surface in `edges()`
+  automatically on next call (no stored registry, always fresh).
+- Producer-pattern factories that manually `source.subscribe` inside their
+  fn body (like old `stratify`, `gate`) produce nodes whose `_deps` is
+  empty even though they react to something. Those edges are intentionally
+  invisible — the describe output reflects constructor-time deps only.
+  If you want the edge visible, restructure so the dep is a real
+  constructor argument.
+
+**Rule of thumb:** if `describe()` shows an edge, there is a real protocol
+subscription behind it. If a factory wants to hide an edge, it keeps the
+subscription private (producer pattern). There is no in-between.
 
 ### 25. Activation wave is ceremony, not transition
 
@@ -780,3 +796,89 @@ equivalence, mandatory emit-not-return, `equals`-config encoding, and testabilit
 **Testing rule:** Always include a two-way bridge test — subscribe directly to `._node` and
 compare the DATA sequence against the compat subscribe path. `.get()`/`.cache` assertions
 alone miss mid-wave glitch bugs.
+
+### 27. Tiered storage composition
+
+`graph.attachStorage(tiers)` takes an **ordered list** of `StorageTier`
+instances — hot tier first, cold tier last. Each tier has its own cadence
+(`debounceMs`), compaction frequency (`compactEvery`), and optional
+`filter`. One primitive covers the full hot/warm/cold spectrum:
+
+```ts
+graph.attachStorage([
+  memoryStorage(),                           // hot: sync-through
+  fileStorage(".graphrefly"),                // warm: periodic (default)
+  indexedDbStorage({                         // cold: async, long debounce
+    dbName: "my-app",
+    storeName: "graph-snapshots",
+    debounceMs: 60_000,
+    compactEvery: 100,
+  }),
+]);
+```
+
+**Composition rules:**
+
+- **Order matters for reads.** `fromStorage(name, tiers)` tries tiers in
+  order and takes the first hit. Put fastest-to-read tier first.
+- **Order matters for writes too.** On each triggering event, sync tiers
+  (`debounceMs === 0`) all fire in the same microtask using one shared
+  `snapshot()` result. Debounced tiers fire independently on their timer,
+  each computing its own fresh snapshot.
+- **Per-tier baseline.** Each tier tracks its own `{lastSnapshot, lastFingerprint}`.
+  A cold tier's diff is against its own last save, not the hot tier's last
+  save. No cross-tier contamination.
+- **V0 short-circuit.** If a tier's version fingerprint hasn't changed since
+  its last save, the save is skipped entirely (regardless of debounce).
+  Works per-tier, so hot tier can skip redundant 0-second saves while cold
+  tier is still waiting to flush.
+- **Filter first, then compact.** A tier's `filter` returning `false`
+  rolls back the tier's `seq` counter so `compactEvery` alignment against
+  the actually-persisted records is preserved.
+- **Async tiers don't block sync tiers.** The `save` return is typed
+  `void | Promise<void>`. Sync tiers return `undefined`; async tiers
+  return a Promise that's attached to `options.onError` for surfacing
+  failures. Callers that `await` a sync tier's save get an immediate
+  no-op resolution.
+
+**Migration from pre-unification APIs:**
+
+| Old | New |
+|-----|-----|
+| `graph.autoCheckpoint(adapter, {debounceMs})` | `graph.attachStorage([adapter], { ... })` |
+| `new MemoryCheckpointAdapter()` | `memoryStorage()` |
+| `new FileCheckpointAdapter(dir)` | `fileStorage(dir)` |
+| `new SqliteCheckpointAdapter(path)` | `sqliteStorage(path)` |
+| `saveGraphCheckpointIndexedDb(graph, spec)` | `graph.attachStorage([indexedDbStorage(spec)])` |
+| `tieredStorage([a, b])` | `cascadingCache([a, b])` (for keyed lookup cache) |
+| `graph.toJSONString()` | `graph.snapshot({format: "json-string"})` |
+| `graph.toObject()` | `graph.snapshot()` (object by default) |
+
+**Bytes and envelopes:**
+
+Storage tiers that sit at a true I/O boundary (disk, wire, IPC) serialize
+via codecs:
+
+```ts
+import { createDagCborCodec } from "@graphrefly/graphrefly-ts";
+import * as dagCbor from "@ipld/dag-cbor";
+
+config.registerCodec(createDagCborCodec(dagCbor));  // before first node
+
+// Inside a storage tier's save:
+const bytes = graph.snapshot({ format: "bytes", codec: "dag-cbor" });
+await writeToDisk(bytes);
+
+// On read:
+const bytes = await readFromDisk();
+const snap = Graph.decode(bytes, { config });  // envelope self-describes
+```
+
+The v1 envelope carries the codec name and version, so the read side
+doesn't need prior knowledge of which codec produced the bytes. Built-in
+`JsonCodec` is registered on `defaultConfig` at module load.
+
+**What doesn't change:** in-memory `GraphCheckpointRecord` / `WALEntry`
+stays a JS object throughout the attachStorage pipeline. Envelopes appear
+only at the I/O boundary. If a tier keeps its data in-process (memory
+tier, test fixture), no codec is involved — everything is JS objects.
