@@ -224,36 +224,40 @@ Use `!= null` (not `!== null`) in guards to catch both `null` and `undefined`.
 
 ### 9. Diamond resolution and two-phase protocol
 
-Diamond topologies (A→B,C→D) are resolved glitch-free at both connection time
-and during subsequent updates:
-
-**Connection-time:** When D activates, it subscribes to all deps sequentially.
-All DepRecords start with `dirty=true` (pre-set). Settlement is deferred until
-all deps have pushed at least one DATA/RESOLVED. After all deps settle, fn runs
-exactly once with all deps' latest values from DepRecord.
-
-**Subsequent updates (two-phase required):** Derived nodes auto-emit
-`[[DIRTY], [DATA, value]]` — the two-phase protocol ensures DIRTY propagates
-through the entire graph before DATA. In diamond topologies, both B and C
-receive DIRTY before either settles with DATA, so D waits for both.
-
-**Source nodes in diamonds:** `state.down([[DATA, v]])` sends bare DATA (no
-DIRTY). For single-path updates this is fine — derived nodes auto-prepend DIRTY.
-But if you need glitch-free propagation from a source node through a diamond,
-use two-phase explicitly:
+Use `batch()` explicitly in source nodes for diamond paths; derived nodes
+auto-emit `[[DIRTY], [DATA, value]]` so they're already two-phase. One update
+wave produces one settle — downstream fn runs exactly once with all deps'
+latest values, glitch-free.
 
 ```ts
-// Single-path: bare DATA is fine (derived auto-prepends DIRTY)
-source.down([[DATA, 42]]);
-
-// Diamond path: use two-phase for glitch-free resolution
-batch(() => {
-  source.down([[DIRTY]]);
-  source.down([[DATA, 42]]);
-});
+// Diamond path: use two-phase for glitch-free resolution from a source node
+batch(() => { source.down([[DIRTY]]); source.down([[DATA, 42]]); });
 // or equivalently:
 source.down([[DIRTY], [DATA, 42]]);
 ```
+
+(See GRAPHREFLY-SPEC.md §2.7 for the protocol-level guarantee and §1.3 invariant 1 for the two-phase invariant.)
+
+### 9a. Batch-coalescing rule
+
+K consecutive `.emit()` calls to the same source inside `batch(() => {...})`
+coalesce per-node into ONE multi-message delivery per child edge — one
+DIRTY-bundle (tier 1) + one DATA-bundle (tier 3).
+
+Without `batch()`, K emits produce K full DIRTY/DATA waves, so K fan-in
+over-fires at diamonds. Inside `batch()`, downstream `fn` runs once with
+`data: [v1, v2, …, vK]` — all values delivered in a single wave.
+
+```ts
+batch(() => {
+  source.emit(1);
+  source.emit(2);
+  source.emit(3);
+});
+// downstream fn receives data: [1, 2, 3] in one call — not three separate waves
+```
+
+(GRAPHREFLY-SPEC.md §1.3 invariant 7 amends this rule.)
 
 ### 10. SENTINEL vs null-guard cascading in pipelines
 
@@ -882,38 +886,11 @@ stays a JS object throughout the attachStorage pipeline. Envelopes appear
 only at the I/O boundary. If a tier keeps its data in-process (memory
 tier, test fixture), no codec is involved — everything is JS objects.
 
-### 28. Multi-dep push-on-subscribe ordering — factory-time seed over `withLatestFrom` for initial-state pairing
+### 28. Factory-time seed pattern (multi-dep push-on-subscribe)
 
-**The gap.** When a compute node has multiple deps that are all `state()` nodes
-with cached values at activation time, `_activate` subscribes them sequentially
-in declaration order. Each subscribe synchronously fires that dep's
-push-on-subscribe — **as its own wave**. They don't coalesce into one
-"initial activation wave." Consequences for operators whose semantic depends
-on pair coincidence:
-
-1. Dep[0]'s push-on-subscribe wave arrives while dep[1] is still SENTINEL →
-   first-run gate (spec §2.7) forces RESOLVED.
-2. Dep[1]'s push-on-subscribe wave arrives with dep[0] now silent **this
-   wave** (its DATA landed in a prior wave and advanced `prevData[0]`).
-3. Any operator fn that emits only on "primary fired this wave" silently
-   drops the initial paired emission.
-
-This is NOT a protocol invariant violation (push-on-subscribe, first-run
-gate, DIRTY/DATA ordering all behave correctly per their contracts). It IS a
-semantic gap users hit when composing operators like `withLatestFrom` over
-state-backed deps.
-
-**Symptom.** `verified.cache === null` after `verifiable(state(2), trigger)`
-when you expect an initial verification to have fired. `store.has("seed")`
-returns false after `distill(state("seed"), extractFn, ...)` when the
-initial extraction was supposed to populate. Both silently dropped because
-the underlying `withLatestFrom(source, storeOrTrigger)` composition lost the
-first paired emission.
-
-**Fix: factory-time seed + subscribe-handler update.** Capture the dep's
-`.cache` at wiring time (explicitly sanctioned as an external-observer
-boundary read per foundation-redesign §3.6), stash in a closure, update via
-a subscribe handler, read the closure inside the reactive fn:
+**The fix.** Capture the dep's `.cache` at wiring time (sanctioned as an
+external-observer boundary read per foundation-redesign §3.6), stash in a
+closure, update via a subscribe handler, read the closure inside the reactive fn:
 
 ```ts
 // WRONG: withLatestFrom drops the initial pair under state+state deps
@@ -933,21 +910,24 @@ const verifyStream = switchMap(triggerNode, () => verifyFn(latestSource as T));
 ```
 
 The closure reads inside the reactive fn are NOT P3 violations — they read a
-closure variable, not a `.cache`. The subscribe handler outside the fn
-updates the closure via protocol delivery. This is the pattern used by
-`stratify`'s `latestRules`, `budgetGate`'s `latestValues`, `gate()`'s
-`latestIsOpen`, and `distill`'s `latestStore`.
+closure variable, not a `.cache`. This is the pattern used by `stratify`'s
+`latestRules`, `budgetGate`'s `latestValues`, `gate()`'s `latestIsOpen`, and
+`distill`'s `latestStore`.
 
-**When `withLatestFrom` is still fine.** When the primary is a raw `node()`
-without an initial cached value, or when you only care about emissions from
-run-time events (not the push-on-subscribe wave), `withLatestFrom` works as
-documented. The gap only bites for `state()` + `state()` combinations on
-initial activation.
+**Why it's needed.** When a compute node has multiple `state()` deps,
+`_activate` subscribes them sequentially. Each push-on-subscribe fires **as
+its own wave** — they don't coalesce. Any operator fn that emits only on
+"primary fired this wave" silently drops the initial paired emission.
 
-**Why not fix `withLatestFrom` directly?** A naïve `[secondary, primary]`
-flip in the dep declaration produces the correct initial pair but breaks
-topology-sensitive diamond callers (e.g. `harness/loop.ts:executeContextNode`
-depends on the current ordering for same-wave dep settlement through
-`executeInput → executeNode → executeContextNode` plus `executeInput →
-executeContextNode` diamond). A broader fix needs careful audit of all
-in-tree diamond topologies. Tracked in `docs/optimizations.md`.
+**Symptom.** `verified.cache === null` after `verifiable(state(2), trigger)`;
+`store.has("seed")` returns false after `distill(state("seed"), ...)`. Both
+are caused by `withLatestFrom` losing the first paired emission under
+`state()` + `state()` deps on initial activation.
+
+**When `withLatestFrom` is still fine.** When the primary has no initial
+cached value, or you only care about run-time emissions (not push-on-subscribe),
+`withLatestFrom` works as documented.
+
+**Why not fix `withLatestFrom` directly?** A naïve dep-order flip breaks
+topology-sensitive diamond callers. A broader fix needs audit of all in-tree
+diamond topologies. Tracked in `docs/optimizations.md`.

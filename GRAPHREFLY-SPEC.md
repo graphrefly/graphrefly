@@ -120,6 +120,9 @@ SHOULD reject or ignore it rather than silently coercing to `undefined`/`None`.
    (where `flushInProgress` is true but `batchDepth` is 0 — e.g. inside a subscriber
    callback or a node fn firing mid-drain) do NOT coalesce; each such emit is its own
    wave. Outside any batch context, every `.emit()` is its own wave as usual.
+   (See COMPOSITION-GUIDE.md §9a "Batch-coalescing rule" for the operational recipe and
+   §19 "Batch input model" subsection for how downstream `fn` receives the coalesced
+   batch via raw `node()` vs sugar constructors.)
 
 8. **START precedes any other message on a subscription.** A sink never receives DATA,
    DIRTY, RESOLVED, COMPLETE, ERROR, or any other message from a node without first
@@ -261,7 +264,9 @@ has delivered at least one real value. The dep's subscribe-time push delivers it
 cached value as `[[DATA, cached]]` — a dep that pushes only `[[START]]` (SENTINEL) is
 NOT considered settled, and the derived stays in `"pending"` status. This is the
 composition-guide §1 rule: "derived nodes depending on a SENTINEL dep will not
-compute until that dep receives a real value."
+compute until that dep receives a real value." This is the SENTINEL mechanism:
+`node<T>()` with no `initial` is unsettled until first real DATA; the gate releases
+when every dep has crossed that threshold.
 
 `dynamicNode` uses the same first-run gate as static nodes: all declared deps must
 deliver at least one value before fn fires. The difference is that fn receives a
@@ -299,7 +304,8 @@ consequence that operator authors must handle. Two mitigations:
 `withLatestFrom` today uses the second-fire-onwards pattern via `ctx.prevData[1]`, but
 does not fire a paired emission on its very first fn-fire (when primary is the first
 dep to subscribe and fires alone in its wave). Callers who need initial-state pairing
-should use the factory-time seed pattern instead.
+should use the factory-time seed pattern instead. See COMPOSITION-GUIDE.md §28 for the
+factory-time seed pattern that handles this case.
 
 #### cache (readonly getter)
 
@@ -1454,3 +1460,24 @@ Zustand fires on every `setState` → `equals: () => false` at node construction
    the DATA sequence against the compat subscribe path.
 
 **Scope.** Applies to every compat layer in `compat/` and any future compat layer.
+
+---
+
+## Appendix E: Verification
+
+Two formal substrates back the protocol invariants stated in this spec.
+
+**TLA+ model** (`formal/` in `graphrefly`): a TLA+ model of the wave protocol
+(`wave_protocol.tla`) covering a 4-node diamond topology. TLC exhaustive state-space
+exploration over small topologies produces 76,984 reachable states with 0
+counter-examples against 7 invariants (DIRTY-before-DATA ordering, glitch-free
+diamond resolution, no data loss, and others).
+
+**Property-based harness** (`src/__tests__/properties/_invariants.ts` in
+`graphrefly-ts`): a fast-check harness with 9 invariants in a registry-style
+`INVARIANTS` array. The registry format makes the full contract enumerable — each
+invariant is a named entry that LLMs and auditors can inspect directly.
+
+TLC explores exhaustively at small scale; fast-check samples randomly across realistic
+operator compositions. Together they form the formal substrate for the protocol
+invariants in §1.3 and §2.
