@@ -100,11 +100,26 @@ SHOULD reject or ignore it rather than silently coercing to `undefined`/`None`.
 
 6. **Unknown message types forward unchanged.** Forward compatibility.
 
-7. **Batch defers DATA and RESOLVED, not DIRTY.** Inside a batch, DIRTY propagates
-   immediately. DATA and RESOLVED (phase-2 messages) are deferred until batch exits.
-   During drain, further phase-2 emissions are re-deferred to preserve strict
-   DIRTY-before-DATA ordering across the entire flush. Dirty state established across
-   the graph before recomputation.
+7. **Batch defers DATA and RESOLVED, not DIRTY; consecutive emits to the same node
+   inside an explicit `batch()` scope coalesce into one multi-message sink call.**
+   Inside a batch, DIRTY propagates immediately. DATA and RESOLVED (phase-2 messages)
+   are deferred until batch exits. During drain, further phase-2 emissions are
+   re-deferred to preserve strict DIRTY-before-DATA ordering across the entire flush.
+   Dirty state established across the graph before recomputation.
+
+   **Per-node emit coalescing.** Within one explicit `batch()` scope, multiple emissions
+   from the same node accumulate into a single multi-message delivery (tier-sorted at
+   batch end). K consecutive `.emit()` calls to the same source collapse to K DIRTYs in
+   one tier-1 sink call plus K DATAs in one tier-3 sink call — not K separate sink
+   calls per tier. Downstream nodes' fns receive the full wave batch
+   (`batchData[i] = [v1, v2, ..., vK]`) and run once per wave, not K times. This fixes
+   the fan-in over-fire that arose when K per-emit waves interleaved through diamond
+   topologies.
+
+   Coalescing applies ONLY inside an explicit `batch()` scope. Emissions during a drain
+   (where `flushInProgress` is true but `batchDepth` is 0 — e.g. inside a subscriber
+   callback or a node fn firing mid-drain) do NOT coalesce; each such emit is its own
+   wave. Outside any batch context, every `.emit()` is its own wave as usual.
 
 8. **START precedes any other message on a subscription.** A sink never receives DATA,
    DIRTY, RESOLVED, COMPLETE, ERROR, or any other message from a node without first

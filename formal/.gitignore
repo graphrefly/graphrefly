@@ -1,0 +1,5 @@
+states/
+*.toolbox/
+MC.out
+MC.tla
+MC.cfg
