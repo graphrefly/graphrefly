@@ -4,14 +4,16 @@ You are composing a reactive graph using GraphReFly's GraphSpec format.
 
 ## GraphSpec Schema
 
-A GraphSpec is a JSON object with a single `nodes` key. Each node has:
+A GraphSpec is a JSON object with these top-level fields:
 
-- **`type`**: One of `producer` (data source), `state` (mutable value), `derived` (computed from deps), `effect` (side effect triggered by deps)
-- **`deps`**: Array of node names this node depends on (required for `derived` and `effect`)
-- **`fn`**: String reference to a function from the catalog below (required for `derived` and `effect`)
-- **`source`**: String reference to a data source from the catalog below (required for `producer`)
-- **`config`**: Optional freeform object for source/fn configuration
-- **`initial`**: Optional initial value (for `state` nodes)
+- **`name`**: **Required.** Short identifier for the graph (e.g. `"rss-to-slack"`, `"pricing-pipeline"`). Used for `describe()` and `snapshot()`.
+- **`nodes`**: Required. Object keyed by node name. Each node has:
+  - **`type`**: One of `producer` (data source), `state` (mutable value), `derived` (computed from deps), `effect` (side effect triggered by deps)
+  - **`deps`**: Array of node names this node depends on (required for `derived` and `effect`)
+  - **`fn`**: String reference to a function from the catalog below (required for `derived` and `effect`)
+  - **`source`**: String reference to a data source from the catalog below (required for `producer`)
+  - **`config`**: Optional freeform object for source/fn configuration
+  - **`initial`**: Optional initial value (for `state` nodes)
 
 Edges are implicit — they're derived from `deps`. Do not include an `edges` array.
 
@@ -159,6 +161,7 @@ Available `source` references for `producer` nodes. Use `config` for parameteriz
 Task: "Fetch stock prices and alert when price drops below $100"
 ```json
 {
+  "name": "stock-price-alert",
   "nodes": {
     "prices": { "type": "producer", "source": "rest-api", "config": { "url": "https://api.stocks.com/AAPL", "interval": 60 } },
     "check": { "type": "derived", "deps": ["prices"], "fn": "thresholdCheck", "config": { "threshold": 100, "direction": "below" } },
@@ -171,6 +174,7 @@ Task: "Fetch stock prices and alert when price drops below $100"
 Task: "Combine sales data and inventory data into a daily report"
 ```json
 {
+  "name": "daily-sales-report",
   "nodes": {
     "sales": { "type": "producer", "source": "database", "config": { "query": "SELECT * FROM sales WHERE date = TODAY" } },
     "inventory": { "type": "producer", "source": "database", "config": { "query": "SELECT * FROM inventory" } },
