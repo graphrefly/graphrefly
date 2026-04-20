@@ -931,3 +931,209 @@ cached value, or you only care about run-time emissions (not push-on-subscribe),
 **Why not fix `withLatestFrom` directly?** A naïve dep-order flip breaks
 topology-sensitive diamond callers. A broader fix needs audit of all in-tree
 diamond topologies. Tracked in `docs/optimizations.md`.
+
+---
+
+### 29. Multi-agent handoff pattern
+
+**Context.** The "handoff" is the dominant mental model for multi-agent routing
+(popularized by OpenAI Agents SDK, CrewAI, AutoGen). GraphReFly's harness loop
+(§9.0) already implements handoffs — this section names the patterns explicitly
+so newcomers recognize them.
+
+**Two handoff modes:**
+
+| Mode | Mechanism | Use when |
+|------|-----------|----------|
+| **Full handoff** | Triage `promptNode` routes to specialist queue via TopicGraph fan-out; specialist becomes the active agent for the rest of the task | Specialist should own the response; prompts stay focused |
+| **Agent-as-tool** | Manager `promptNode` calls a specialist `promptNode` as a bounded subtask tool; manager retains control and combines outputs | Manager needs to synthesize multiple specialist results |
+
+**Full handoff wiring:**
+
+```ts
+// Triage outputs a routing decision
+const triageNode = promptNode(graph, "triage", {
+  prompt: (item) => `Classify: ${item.summary}. Route to: codefix | docs | investigate`,
+  deps: [intakeTopic.latest],
+  model: adapter,
+  output: "json",
+});
+
+// Fan-out to specialist queues based on triage result
+const codeFix = derived([triageNode], (result) =>
+  result.route === "codefix" ? result : undefined,
+);
+const docsfix = derived([triageNode], (result) =>
+  result.route === "docs" ? result : undefined,
+);
+
+// Each specialist is its own promptNode consuming from its queue
+const codeFixAgent = promptNode(graph, "codefix-agent", {
+  prompt: (item) => `Fix this code issue: ${item.summary}\n${item.evidence}`,
+  deps: [codeFix],
+  model: adapter,
+});
+```
+
+The `TopicGraph` + `SubscriptionGraph` infrastructure (cursor-based, independent
+pace) is GraphReFly's native handoff channel. The specialist doesn't "become
+active" imperatively — it's always wired, it just doesn't fire until data arrives.
+
+**Agent-as-tool wiring:**
+
+```ts
+// Specialist wrapped as a tool
+const researchTool = {
+  name: "research",
+  description: "Deep-dive research on a topic",
+  parameters: { query: { type: "string" } },
+  execute: async (args) => {
+    // Fire specialist promptNode and await result
+    researchInput.down([[DATA, args.query]]);
+    return firstValueFrom(researchOutput);
+  },
+};
+
+// Manager can call the specialist as one of its tools
+const managerAgent = promptNode(graph, "manager", {
+  prompt: "You are a project manager. Use tools to gather info, then synthesize.",
+  deps: [userInput],
+  model: adapter,
+  tools: [researchTool, lintTool, testTool],
+});
+```
+
+**Context transfer on handoff.** Use `agentMemory` shared between agents — the
+specialist reads the same memory store the triage agent wrote to. No explicit
+"context object" passing needed; the graph IS the shared state.
+
+**Relation to harness stages.** The 7-stage loop (INTAKE→TRIAGE→QUEUE→GATE→
+EXECUTE→VERIFY→REFLECT) is a chain of handoffs with gates between them. Each
+stage "hands off" to the next via its output topic. The strategy model makes
+future handoff routing better over time — no other framework has this.
+
+---
+
+### 30. Parallel guardrail pattern (optimistic execution + cancel)
+
+**Context.** OpenAI Agents SDK popularized "parallel guardrails" — the agent
+starts executing concurrently with the guardrail check; if the guardrail trips,
+the agent is cancelled mid-execution. GraphReFly implements this natively via
+`switchMap` + `AbortSignal` (shipped in §9.0 `gatedStream`).
+
+**The pattern:**
+
+```
+input ──→ streamingPromptNode ──→ streamTopic ──→ contentGate(classifier)
+              │                        │                    │
+              │                        └─→ thinkingRenderer │
+              │                                             ▼
+              └──── cancel (AbortSignal) ◄──── tripwire fires
+```
+
+**Wiring:**
+
+```ts
+// Agent executes optimistically (starts immediately)
+const agentStream = streamingPromptNode(graph, "agent", {
+  prompt: dynamicPrompt,
+  deps: [userInput],
+  model: adapter,
+  stream: true,
+});
+
+// Guardrail runs concurrently on the same stream
+const safety = contentGate(agentStream.streamTopic, toxicityClassifier, {
+  threshold: 0.7,
+});
+
+// On tripwire: cancel in-flight generation
+const guarded = gatedStream(agentStream, {
+  gate: safety,           // 'allow' | 'review' | 'block'
+  onBlock: "cancel",      // AbortController.abort() kills generation
+  onReview: "hold",       // pause output, wait for human gate.approve()
+});
+```
+
+**Three execution modes (all supported today):**
+
+| Mode | Mechanism | Cost/latency tradeoff |
+|------|-----------|----------------------|
+| **Blocking** | `gate` before `promptNode` — agent doesn't start until guardrail passes | Zero wasted tokens; adds guardrail latency |
+| **Parallel** (optimistic) | `gatedStream` + cancel — agent starts immediately, cancelled if guardrail trips | May waste partial generation tokens; zero added latency on pass |
+| **Post-hoc** | `contentGate` after completion — checks final output, rejects or rewrites | Full generation cost; only useful for output validation |
+
+**When to use parallel mode:**
+- Guardrail is fast (cheap model / regex / embedding similarity)
+- Agent is expensive (large model, long generation)
+- Tripwire rate is low (< 5% of inputs are malicious)
+- Acceptable to waste partial tokens on the rare trip
+
+**When to use blocking mode:**
+- Agent has side effects (tool calls that can't be undone)
+- Cost is critical (pay-per-token with tight budget)
+- Tripwire rate is high (untrusted input source)
+
+**Relation to `valve` vs `gate`:**
+- `valve` (boolean flow control) → blocking guardrail (auto, no human)
+- `gate` (human approval) → blocking with human review
+- `gatedStream` + cancel → parallel guardrail (optimistic)
+- `contentGate` + downstream check → post-hoc guardrail
+
+---
+
+### 31. Dynamic tool selection (reactive tool availability)
+
+**Context.** In multi-agent systems, the set of available tools should change
+based on system state — budget depletion removes expensive tools, policy
+violations disable destructive tools, pipeline stage determines which tools
+are relevant. Static tool lists miss this. (Inspired by "Logit Masking" pattern
+from structured-output defense literature.)
+
+**The pattern:**
+
+```ts
+// All possible tools registered globally
+const allTools: Tool[] = [searchTool, writeTool, deleteTool, llmTool, ...];
+
+// Constraints are reactive nodes
+const budgetRemaining = derived([costMeter], (cost) => cost.total < budget);
+const destructiveAllowed = derived([policyNode], (p) => p.allowDestructive);
+const stageTools = derived([currentStage], (stage) => STAGE_TOOL_MAP[stage]);
+
+// Tool selector composes constraints reactively
+const availableTools = derived(
+  [budgetRemaining, destructiveAllowed, stageTools],
+  (hasBudget, canDestruct, stageSet) =>
+    allTools.filter((t) => {
+      if (!hasBudget && t.meta?.expensive) return false;
+      if (!canDestruct && t.meta?.destructive) return false;
+      if (stageSet && !stageSet.includes(t.name)) return false;
+      return true;
+    }),
+);
+
+// promptNode receives reactive tool list
+const agent = promptNode(graph, "agent", {
+  prompt: taskPrompt,
+  deps: [userInput],
+  model: adapter,
+  tools: availableTools,  // Node<Tool[]> — re-evaluated each turn
+});
+```
+
+**Key properties:**
+- **Reactive:** tool list updates mid-conversation as state changes
+- **Composable:** each constraint is an independent node; add/remove freely
+- **Observable:** `describe(availableTools)` shows current tool set + why
+- **Auditable:** `observe(availableTools)` logs every tool-set change
+
+**Relation to tool interception (§11, Composition C):**
+- Tool **selection** controls what's offered to the LLM (pre-generation)
+- Tool **interception** gates what's executed after LLM chooses (post-generation)
+- Both compose: selection narrows the menu, interception validates the order
+
+**Anti-pattern:** Don't use tool selection as a security boundary alone. An
+LLM can hallucinate tool calls not in its offered set. Always pair with
+`toolInterceptor` for enforcement. Selection is UX (reduce confusion);
+interception is security (prevent unauthorized execution).
