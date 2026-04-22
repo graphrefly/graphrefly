@@ -16,6 +16,33 @@
 
 ---
 
+## Pattern registry
+
+Quick index — jump to the section that matches your problem.
+
+| If you're asking… | See |
+|---|---|
+| "Why isn't my derived computing?" | §1 (first-run gate), §3 (guard patterns) |
+| "Why are values missing/stale?" | §1 (SENTINEL), §2 (subscription ordering) |
+| "How do I guard `null`/`undefined`?" | §3 (the only two guards) |
+| "How do I break an infinite loop?" | §7 (feedback cycles) |
+| "How do I wire a factory?" | §5 (graph factory wiring order) |
+| "What's glitch-free diamond resolution?" | §9, §9a (two-phase + batch-coalescing) |
+| "How do I get `withLatestFrom` initial pair?" | §28 (factory-time seed) |
+| "How do I pair triggers with context?" | §16 (nested `withLatestFrom`) |
+| "How do I dedupe retried items?" | §17 (`trackingKey` / `relatedTo`) |
+| "Where do I put persistent fn state?" | §20 (`ctx.store`) |
+| "What's `actions.emit` vs `actions.down`?" | §21 |
+| "Why is my operator leaking mid-wave emits?" | §19 (terminal-emission operators) |
+| "How do I make a rescue / error-to-fallback op?" | §23 (`errorWhenDepsError: false`) |
+| "How do I tier persistence (hot/warm/cold)?" | §27 (`attachStorage`) |
+| "How do multi-agent handoffs work?" | §29 (full handoff vs agent-as-tool) |
+| "How do I cancel the agent mid-generation?" | §30 (parallel guardrail) |
+| "How do I expose a reactive tool list?" | §31 (dynamic tool selection) |
+| "PY test hangs for 60s then times out?" | §14 (blocking async bridge deadlock) |
+
+---
+
 ## Categories
 
 ### 1. Push-on-subscribe and activation (START + first-run gate)
@@ -261,35 +288,25 @@ batch(() => {
 
 ### 10. SENTINEL vs null-guard cascading in pipelines
 
-When composing multi-stage pipelines with `join`, the choice between SENTINEL
-deps and null guards has cascading consequences:
-
-- **SENTINEL** (no `initial`): deps don't push on subscribe. Downstream
-  effects/derived nodes simply wait for the first real value. No intermediate
-  emissions. Preferred when "no value yet" is the intent.
-
-- **Null guard** (`if (val == null) return defaultValue`): converts the null
-  push into a real emission with a default value. This propagates downstream
-  through all derived/join nodes, causing intermediate results where you
-  expected none.
+The choice between SENTINEL and null-guard (see §3) propagates through every
+downstream stage — a single wrong guard cascades into intermediate emissions
+across the whole pipeline.
 
 ```ts
-// WRONG: null guard creates intermediate emissions through join
-const input = sensor(g, "input");  // SENTINEL
+// WRONG: null guard creates intermediate emissions through every join
 const classify = task(g, "classify", ([doc]) => {
-  if (doc == null) return "pending";  // ← emits "pending" immediately
+  if (doc == null) return "pending";   // ← emits "pending" on every activation
   return doc.type;
 }, { deps: ["input"] });
 
-// RIGHT: SENTINEL deps — pipeline only fires when input arrives
-const input = sensor(g, "input");  // SENTINEL — no push
-const classify = task(g, "classify", ([doc]) => {
-  return doc.type;  // no guard needed — fn only runs when input has value
-}, { deps: ["input"] });
+// RIGHT: SENTINEL deps — pipeline stays quiet until real input arrives
+const classify = task(g, "classify", ([doc]) => doc.type, { deps: ["input"] });
 ```
 
-**Rule of thumb:** Use SENTINEL for "not ready yet". Use `state(null)` + guard
-only when `null` is a meaningful domain value.
+**Cascading rule:** The first SENTINEL anywhere in the pipeline silences
+every downstream node through the first-run gate (§1). Any null-guard break
+in that chain re-starts downstream emissions with the default value — usually
+not what you want. See §3 for the full SENTINEL-vs-null-guard decision.
 
 ---
 
@@ -483,45 +500,26 @@ computation until real data arrives.
 
 ### 14. Blocking async bridge deadlock (PY only)
 
-**Symptom:** PY test or application hangs for 60s, then `TimeoutError` from
-`first_value_from`. Happens when `AsyncioRunner` is the default runner and any
-factory internally calls `first_value_from()` (e.g. `promptNode`, `_resolve_node_input`,
-tool handlers).
+**Symptom:** PY test hangs 60s then raises `TimeoutError` from `first_value_from`.
 
-**Root cause:** `first_value_from()` blocks the calling thread with
-`threading.Event.wait()`. If the calling thread IS the asyncio event loop thread,
-and the runner is `AsyncioRunner` (which schedules work on that same loop via
-`call_soon_threadsafe`), the scheduled task can never execute — deadlock.
+**Cause:** `first_value_from()` blocks on `threading.Event.wait()`. Under
+`AsyncioRunner`, that wait happens on the event-loop thread, starving the
+coroutine that would unblock it — classic deadlock. TS is unaffected because
+`firstDataFromNode` returns a `Promise`, so the microtask queue keeps advancing.
 
-```
-Event loop thread:
-  promptNode fn → _resolve_node_input → first_value_from → Event.wait() ← BLOCKED
-                                                                ↑
-  AsyncioRunner task (needs loop to run) ───────────────────────┘ NEVER RUNS
-```
+**Workaround:** use `_ThreadRunner` (test conftest) when the pipeline contains
+blocking bridges. It runs coroutines in separate threads so the main-thread
+wait doesn't starve them.
 
-**TS does not have this problem.** TS `resolveToolHandlerResult` is `async` and
-returns a `Promise`. `firstDataFromNode` returns a `Promise` too — non-blocking.
-The microtask queue stays free. PY has no equivalent — `first_value_from` must
-block because Python node fns are synchronous.
+**Long-term fix:** refactor `_resolve_node_input` to return `NodeInput`
+(Node or plain value) instead of resolving to a plain value; callers wire
+reactively via `from_any`, matching TS's `switchMap` pattern.
 
-**Workaround:** Use a thread-spawning runner (e.g. `_ThreadRunner` in test
-conftest) instead of `AsyncioRunner` when the pipeline includes blocking bridges.
-The thread-spawning runner runs coroutines in separate threads, so
-`first_value_from` blocks the main thread while the coroutine completes in the
-other thread — no deadlock.
-
-**Long-term fix:** Refactor PY `_resolve_node_input` to return a `NodeInput`
-(Node or plain value) instead of always resolving to a plain value. The calling
-factory (promptNode) would then wire the result reactively via `from_any`, matching
-TS's `switchMap`-based approach. This eliminates blocking entirely and makes
-`AsyncioRunner` safe for the full pipeline.
-
-| Runner | `first_value_from` safe? | Use case |
-|--------|--------------------------|----------|
-| `_ThreadRunner` (test conftest) | Yes — coroutines run in threads | Sync tests, any pipeline with blocking bridges |
-| `AsyncioRunner` | **No** — deadlocks if called from event loop thread | Pure-reactive pipelines without `first_value_from` |
-| `TrioRunner` | Same deadlock risk as AsyncioRunner | — |
+| Runner | Safe with `first_value_from`? |
+|--------|--------------------------------|
+| `_ThreadRunner` (test conftest) | Yes |
+| `AsyncioRunner` | **No** — deadlocks from event-loop thread |
+| `TrioRunner` | Same risk as `AsyncioRunner` |
 
 ### 15. Scenario patterns (spec Appendix C)
 
