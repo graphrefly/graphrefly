@@ -40,6 +40,7 @@ Quick index — jump to the section that matches your problem.
 | "How do I cancel the agent mid-generation?" | §30 (parallel guardrail) |
 | "How do I expose a reactive tool list?" | §31 (dynamic tool selection) |
 | "PY test hangs for 60s then times out?" | §14 (blocking async bridge deadlock) |
+| "Why does `_terminalResult` see the prior LLM response?" | §32 (nested-drain state-mirror pattern) |
 
 ---
 
@@ -1135,3 +1136,109 @@ const agent = promptNode(graph, "agent", {
 LLM can hallucinate tool calls not in its offered set. Always pair with
 `toolInterceptor` for enforcement. Selection is UX (reduce confusion);
 interception is security (prevent unauthorized execution).
+
+---
+
+### 32. Nested-drain state-mirror pattern
+
+**Context.** When a sink of wave X runs `batch(() => ...)` inside its
+callback (e.g. an `effect` that emits into another node), the nested batch
+drains synchronously. During that nested drain, other dependent nodes see
+peer deps whose wave-X delivery is still **pending in the outer sink
+queue** — so they read the PRIOR value, not the one currently mid-delivery.
+
+This is distinct from the feedback-cycle hazard in §7. §7 is about cycles
+caused by an effect writing a reactive dep. §32 is about drain *timing
+ordering* even when there is no cycle: a nested drain fires dependent
+nodes before the outer wave has visited every sink, producing stale reads
+of peer wave state.
+
+**Concrete repro (from `agentLoop` pre-fix).**
+
+```ts
+// A switchMap whose response drives two sinks: effResponse and _terminalResult.
+const llmResponse = switchMap(promptInput, (input) => fromAny(adapter.invoke(input)));
+
+// effResponse runs first; its fn contains a nested batch().
+const effResponse = effect([llmResponse], ([resp]) => {
+  batch(() => statusNode.emit("done"));  // <- nested drain
+});
+
+// _terminalResult needs BOTH {llmResponse: finalResp, status: done}.
+const _terminalResult = derived([llmResponse, statusNode], ([resp, stat]) =>
+  stat === "done" ? resp : null,
+);
+```
+
+On the wave that delivers `finalResp` to `llmResponse`:
+
+1. Outer drain starts. Sinks are notified in order: `effResponse` first,
+   `_terminalResult` second.
+2. `effResponse`'s fn runs — emits `statusNode.emit("done")` inside a
+   nested `batch(() => ...)`. Nested drain starts synchronously.
+3. Inside the nested drain, `_terminalResult`'s dep on `statusNode` fires
+   with `"done"`.
+4. `_terminalResult`'s fn runs. But its dep on `llmResponse` **hasn't been
+   visited yet** in the outer wave — `prevData[llmResponse]` holds the
+   PREVIOUS response (`toolCallResp`), not `finalResp`.
+5. `_terminalResult` emits the wrong response. `awaitSettled` resolves
+   with stale data.
+
+**Fix: state-mirror pattern.**
+
+Write the consumer-facing value to a `state()` node BEFORE the nested
+batch that transitions status. Downstream dependents depend on the mirror,
+not on `llmResponse` directly. Drain order (state-mirror → status inside
+the effect's batch) guarantees the mirror is current by the time the
+status-wave propagation reaches `_terminalResult`.
+
+```ts
+const lastResponseState = state<LLMResponse | null>(null, { name: "lastResponse" });
+const effResponse = effect([llmResponse], ([resp]) => {
+  batch(() => {
+    lastResponseState.emit(resp);   // mirror FIRST — drains before status wave
+    statusNode.emit("done");         // triggers _terminalResult's dep
+  });
+});
+
+// _terminalResult depends on the mirror, not the producer.
+const _terminalResult = derived([lastResponseState, statusNode], ([resp, stat]) =>
+  stat === "done" ? resp : null,
+);
+```
+
+**Key properties:**
+- **Purposeful checkpoint.** The mirror is the canonical value the rest
+  of the pipeline consumes. It decouples producer-driven timing (switchMap
+  re-dispatch) from consumer-visible semantics.
+- **Reactive-compliant.** No imperative queue, no `.cache` reads inside
+  callbacks. The mirror is a real state node; dependents depend on it via
+  constructor-declared deps (§24 edges are derived).
+- **Visible in `describe()`.** The mirror surfaces as a node with its own
+  edges — future auditors can see the "checkpoint" shape in the graph
+  structure.
+
+**When NOT to use.** If there is no nested batch in the sink, there is no
+drain-ordering hazard — depend on the producer directly. State-mirror
+adds one more node and equals-dedup layer; reach for it only when you
+know you have a same-wave peer read inside a nested drain.
+
+**Related framework-level concern (deferred).** Whether the current
+sink-drain ordering (peer sinks of the outer wave drain before any nested
+wave fires) is an invariant the spec should enforce vs. a footgun that
+callers paper over with state-mirror is a live design question. Three
+framework-level options:
+
+- **(i) Document state-mirror as sanctioned** — keeps current sync-drain
+  semantics; this section is the doc. Lowest-risk.
+- **(ii) Amend `_emit`** to defer nested batch drains until the parent
+  wave's sink iteration completes. Removes the footgun. Breaks factories
+  that rely on sync drain. Activation-phase batching tried 2026-04-22
+  confirmed 5 in-tree regressions — a real audit is required.
+- **(iii) Versioned tagging** — stamp emissions with monotonic version,
+  dependents detect and defer "pre-drain prior state" reads. Most
+  invasive.
+
+Ship (i) now (this section). Revisit (ii)/(iii) once rigor infra
+(fast-check + TLA+) can validate invariants hold before touching
+`_maybeRunFnOnSettlement` or `_activate`.
