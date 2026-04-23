@@ -44,4 +44,16 @@ GapAwareActivationMC == FALSE
 SinkNestedEmitsMC == {}
 MaxNestedEmitsMC  == 0
 
+\* §2.6 PAUSE/RESUME + resubscribable axes (added 2026-04-23) — disabled in
+\* the default model. `LockIdsMC = {}` makes the `Pause(src, lockId)` and
+\* `Resume(src, lockId)` quantifiers vacuously empty, so no new transitions
+\* fire and the default state space is unchanged. `Pausable` all "off"
+\* AND `ResubscribableNodes = {}` double-belts-and-braces. Exercised by
+\* `wave_protocol_pause_MC`, `wave_protocol_bufferall_MC`, and
+\* `wave_protocol_resubscribe_MC` variants.
+LockIdsMC             == {}
+PausableMC            == [n \in NodeIdsMC |-> "off"]
+ResubscribableNodesMC == {}
+MaxPauseActionsMC     == 0
+
 ============================================================================

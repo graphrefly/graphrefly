@@ -68,7 +68,23 @@ CONSTANTS
                           \*   `SinkNestedEmit` action, modeling a sink callback that runs
                           \*   batch(() => target.emit(value)) inside its own callback.
                           \*   Empty set = feature disabled (matches the original model).
-    MaxNestedEmits        \* Bound on SinkNestedEmit firings (prevents unbounded fanout).
+    MaxNestedEmits,       \* Bound on SinkNestedEmit firings (prevents unbounded fanout).
+    LockIds,              \* Pause-lock identifiers. Opaque to the protocol; tier-2
+                          \*   [PAUSE, lockId] / [RESUME, lockId] messages reference these.
+                          \*   Empty set disables the pause axis — matches the baseline
+                          \*   MC where PAUSE/RESUME are not modeled.
+    Pausable,             \* NodeId -> {"off", "on", "resumeAll"}. Mirrors the runtime
+                          \*   `pausable` option (§2.6). "off" → ignore PAUSE/RESUME, no
+                          \*   lock tracking. "on" → track locks. "resumeAll" → track locks
+                          \*   AND capture outgoing tier-3/4 emissions into pauseBuffer
+                          \*   while any lock is held; drain on final-lock RESUME.
+    ResubscribableNodes,  \* SUBSET NodeIds. Nodes that clear lifecycle state
+                          \*   (pauseLocks, pauseBuffer, dirtyMask, cache for derived,
+                          \*   handshake, trace, activated) when the `Resubscribe` action
+                          \*   fires on a terminated instance. Matches `resubscribable: true`.
+    MaxPauseActions       \* Bound on Pause + Resume + Resubscribe firings (keeps the
+                          \*   state space finite — a single Pause/Resume pair can repeat
+                          \*   indefinitely without this guard).
 
 ASSUME SourceIds \subseteq NodeIds
 ASSUME SinkIds \subseteq NodeIds
@@ -77,6 +93,9 @@ ASSUME DefaultInitial \in Values
 ASSUME GapAwareActivation \in BOOLEAN
 ASSUME SinkNestedEmits \subseteq (NodeIds \X NodeIds \X Values)
 ASSUME MaxNestedEmits \in Nat
+ASSUME Pausable \in [NodeIds -> {"off", "on", "resumeAll"}]
+ASSUME ResubscribableNodes \subseteq NodeIds
+ASSUME MaxPauseActions \in Nat
 
 Parents(n) == {p \in NodeIds : <<p, n>> \in Edges}
 
@@ -104,14 +123,18 @@ DATA     == "DATA"
 RESOLVED == "RESOLVED"
 COMPLETE == "COMPLETE"
 ERROR    == "ERROR"
-MsgTypes == {START, DIRTY, DATA, RESOLVED, COMPLETE, ERROR}
+PAUSE    == "PAUSE"       \* tier-2, carries lockId payload (§2.6)
+RESUME   == "RESUME"      \* tier-2, carries lockId payload (§2.6)
+MsgTypes == {START, DIRTY, DATA, RESOLVED, COMPLETE, ERROR, PAUSE, RESUME}
 
-\* A message: type + always-present payload. For tuples that have no
-\* semantic payload (DIRTY, RESOLVED, COMPLETE, ERROR) we use the
+\* A message: type + always-present payload. Tuples that have no
+\* semantic payload (DIRTY, RESOLVED, COMPLETE, ERROR, START) use the
 \* integer sentinel `NullPayload = -1`, which is outside `Values` so
-\* equality is homogeneous for TLC's hashing.
+\* equality is homogeneous for TLC's hashing. Tier-2 PAUSE/RESUME carry
+\* a `lockId \in LockIds` payload (§2.6 — "bare [[PAUSE]] is a protocol
+\* violation"); the payload domain is widened accordingly.
 NullPayload == -1
-PayloadDomain == Values \cup {NullPayload}
+PayloadDomain == Values \cup {NullPayload} \cup LockIds
 
 Msg(type, v) == [type |-> type, value |-> v]
 
@@ -152,10 +175,20 @@ VARIABLES
     \* parents AT THE MOMENT the DATA was computed. A glitch is a recorded tuple
     \* whose parent values don't match the final settled cache — i.e. the fn fired
     \* with stale peer data because another parent's DATA wave was still in flight.
-    emitWitness       \* NodeId -> Seq of <<value, [p \in Parents(n) |-> cache[p]]>>
+    emitWitness,      \* NodeId -> Seq of <<value, [p \in Parents(n) |-> cache[p]]>>
+    \* --- §2.6 PAUSE/RESUME + resubscribable-lifecycle state (added 2026-04-23) ---
+    \* Mirror of the runtime's `_pauseLocks` / `_pauseBuffer` per-node state. The
+    \* substrate derives `_paused` from `_pauseLocks.size > 0`; we mirror that by
+    \* using `pauseLocks[n] # {}` as the paused predicate rather than a separate
+    \* variable — multi-pauser correctness holds by construction.
+    pauseLocks,       \* NodeId -> SUBSET LockIds
+    pauseBuffer,      \* NodeId -> Seq of messages captured while paused + "resumeAll"
+    resubscribeCount, \* Nat, bounds Resubscribe action firings
+    pauseActionCount  \* Nat, bounds Pause + Resume action firings
 
 vars == <<cache, status, version, dirtyMask, queues, trace, emitCount,
-          activated, handshake, nestedEmitCount, emitWitness>>
+          activated, handshake, nestedEmitCount, emitWitness,
+          pauseLocks, pauseBuffer, resubscribeCount, pauseActionCount>>
 
 ----------------------------------------------------------------------------
 Init ==
@@ -170,12 +203,30 @@ Init ==
     /\ handshake = [n \in NodeIds |-> <<>>]
     /\ nestedEmitCount = 0
     /\ emitWitness = [n \in NodeIds |-> <<>>]
+    /\ pauseLocks = [n \in NodeIds |-> {}]
+    /\ pauseBuffer = [n \in NodeIds |-> <<>>]
+    /\ resubscribeCount = 0
+    /\ pauseActionCount = 0
 
 ----------------------------------------------------------------------------
+(* BufferAll predicate: a node n captures its outgoing tier-3/4 emissions into
+   `pauseBuffer[n]` when it's holding at least one pause lock AND its
+   `Pausable[n]` is "resumeAll". Mirrors the runtime check at node.ts
+   `_emit` L1958 (`this._paused && this._pausable === "resumeAll"`).
+*)
+IsCapturedByBuffer(n) == Pausable[n] = "resumeAll" /\ pauseLocks[n] # {}
+
 (* A source emits a value. Per equals-substitution at the source:
-   - if v = cache[src]: enqueue [DIRTY, RESOLVED], no cache/version change
-   - else:              enqueue [DIRTY, DATA(v)], cache' := v, version' += 1
-   The source itself observes its own emission if it's a sink.
+   - if v = cache[src]: settle msg is RESOLVED, no cache/version change
+   - else:              settle msg is DATA(v), cache' := v, version' += 1
+
+   Ordinary (not bufferAll-captured) path: enqueue [DIRTY, settle] to every
+   child edge and record to trace[src] if src is a sink.
+
+   BufferAll path (`IsCapturedByBuffer(src)`): DIRTY is tier-1 (immediate)
+   and still flows to children + trace; the settle message is captured into
+   `pauseBuffer[src]` instead. Mirrors §2.6 "tier 0–2 and tier 5 continue
+   to dispatch synchronously while paused."
 *)
 Emit(src, v) ==
     /\ src \in SourceIds
@@ -186,15 +237,25 @@ Emit(src, v) ==
                                            ELSE Msg(DATA, v)
            dirtyMsg     == Msg(DIRTY, NullPayload)
            pair         == <<dirtyMsg, settleMsg>>
+           captured     == IsCapturedByBuffer(src)
        IN
-       /\ queues' = EnqueueSeqOutFrom(queues, src, pair)
-       /\ trace'  = RecordSeqAtSinkIfAny(trace, src, pair)
+       /\ IF captured
+            THEN
+              \* DIRTY flows immediately; settle diverts to buffer.
+              /\ queues' = EnqueueOutFrom(queues, src, dirtyMsg)
+              /\ trace'  = RecordAtSinkIfAny(trace, src, dirtyMsg)
+              /\ pauseBuffer' = [pauseBuffer EXCEPT ![src] = Append(@, settleMsg)]
+            ELSE
+              /\ queues' = EnqueueSeqOutFrom(queues, src, pair)
+              /\ trace'  = RecordSeqAtSinkIfAny(trace, src, pair)
+              /\ pauseBuffer' = pauseBuffer
        /\ cache'   = IF equalToCache THEN cache
                                      ELSE [cache EXCEPT ![src] = v]
        /\ version' = IF equalToCache THEN version
                                      ELSE [version EXCEPT ![src] = @ + 1]
        /\ UNCHANGED <<status, dirtyMask, activated, handshake,
-                      nestedEmitCount, emitWitness>>
+                      nestedEmitCount, emitWitness,
+                      pauseLocks, resubscribeCount, pauseActionCount>>
        /\ emitCount' = emitCount + 1
 
 (* BatchEmitMulti(src, vs): atomic multi-emit inside a user `batch()` scope.
@@ -246,18 +307,35 @@ BatchEmitMulti(src, vs) ==
     /\ LET settles == BuildSettleSeq(vs, cache[src])
            dataCount == CountDataEmits(vs, cache[src])
            finalCacheVal == FinalCache(vs, cache[src])
-           bundle == DirtySeqOf(Len(vs)) \o settles
+           dirtyPrefix == DirtySeqOf(Len(vs))
+           bundle == dirtyPrefix \o settles
+           captured == IsCapturedByBuffer(src)
        IN
-       /\ queues' = EnqueueSeqOutFrom(queues, src, bundle)
-       /\ trace'  = RecordSeqAtSinkIfAny(trace, src, bundle)
+       /\ IF captured
+            THEN
+              \* DIRTYs flow immediately; settles divert to buffer in order.
+              /\ queues' = EnqueueSeqOutFrom(queues, src, dirtyPrefix)
+              /\ trace'  = RecordSeqAtSinkIfAny(trace, src, dirtyPrefix)
+              /\ pauseBuffer' = [pauseBuffer EXCEPT ![src] = @ \o settles]
+            ELSE
+              /\ queues' = EnqueueSeqOutFrom(queues, src, bundle)
+              /\ trace'  = RecordSeqAtSinkIfAny(trace, src, bundle)
+              /\ pauseBuffer' = pauseBuffer
        /\ cache'  = [cache EXCEPT ![src] = finalCacheVal]
        /\ version' = [version EXCEPT ![src] = @ + dataCount]
        /\ UNCHANGED <<status, dirtyMask, activated, handshake,
-                      nestedEmitCount, emitWitness>>
+                      nestedEmitCount, emitWitness,
+                      pauseLocks, resubscribeCount, pauseActionCount>>
        /\ emitCount' = emitCount + Len(vs)
 
 (* A source terminates. Enqueues COMPLETE to every child and transitions
    to "terminated" — the source refuses further Emit actions thereafter.
+
+   Per §2.6 "Teardown": terminal state hard-resets the node's pause lockset
+   and bufferAll buffer. Buffered in-flight DATA is NOT drained — terminal
+   is a hard reset, NOT a graceful flush. This clears leaks across the
+   terminal boundary (catches the lock-leak class the spec explicitly
+   warns about).
 *)
 Terminate(src) ==
     /\ src \in SourceIds
@@ -266,8 +344,11 @@ Terminate(src) ==
        /\ queues' = EnqueueOutFrom(queues, src, m)
        /\ trace'  = RecordAtSinkIfAny(trace, src, m)
        /\ status' = [status EXCEPT ![src] = "terminated"]
+       /\ pauseLocks' = [pauseLocks EXCEPT ![src] = {}]
+       /\ pauseBuffer' = [pauseBuffer EXCEPT ![src] = <<>>]
        /\ UNCHANGED <<cache, version, dirtyMask, emitCount, activated, handshake,
-                      nestedEmitCount, emitWitness>>
+                      nestedEmitCount, emitWitness,
+                      resubscribeCount, pauseActionCount>>
 
 ----------------------------------------------------------------------------
 \* Tier-drain predicates enforcing §1.3 invariant 7 message ordering.
@@ -336,7 +417,8 @@ DeliverDirty(p, c) ==
        /\ status' = [status EXCEPT ![c] = "dirty"]
        /\ dirtyMask' = [dirtyMask EXCEPT ![c] = @ \cup {p}]
        /\ UNCHANGED <<cache, version, emitCount, activated, handshake,
-                      nestedEmitCount, emitWitness>>
+                      nestedEmitCount, emitWitness,
+                      pauseLocks, pauseBuffer, resubscribeCount, pauseActionCount>>
 
 (* DeliverSettle: consume the entire tier-3 (DATA/RESOLVED) prefix at head
    of queue[<<p, c>>] as one atomic delivery — matches the runtime after
@@ -371,12 +453,14 @@ DeliverSettle(p, c) ==
        /\ IF ~allSettled
             THEN /\ queues' = qs0
                  /\ trace'  = trace
+                 /\ pauseBuffer' = pauseBuffer
                  /\ emitWitness' = emitWitness
                  /\ UNCHANGED <<cache, status, version>>
             ELSE LET newCache  == Compute(c, cache)
                      sameAsOld == newCache = cache[c]
                      settleMsg == IF sameAsOld THEN Msg(RESOLVED, NullPayload)
                                                ELSE Msg(DATA, newCache)
+                     captured  == IsCapturedByBuffer(c)
                      \* Record a ghost witness when a multi-parent derived emits DATA:
                      \* the value it chose, plus the parents' cache values at the
                      \* moment of recompute. Used by NestedDrainPeerConsistency.
@@ -385,8 +469,18 @@ DeliverSettle(p, c) ==
                      isMultiParentDataEmit ==
                          ~sameAsOld /\ Cardinality(Parents(c)) >= 2
                  IN
-                 /\ queues' = EnqueueOutFrom(qs0, c, settleMsg)
-                 /\ trace'  = RecordAtSinkIfAny(trace, c, settleMsg)
+                 /\ IF captured
+                      THEN
+                        \* Cache/status/version still advance — matches the runtime
+                        \* where `_updateState` runs BEFORE the bufferAll check.
+                        \* Only the downstream delivery diverts to pauseBuffer[c].
+                        /\ queues' = qs0
+                        /\ trace'  = trace
+                        /\ pauseBuffer' = [pauseBuffer EXCEPT ![c] = Append(@, settleMsg)]
+                      ELSE
+                        /\ queues' = EnqueueOutFrom(qs0, c, settleMsg)
+                        /\ trace'  = RecordAtSinkIfAny(trace, c, settleMsg)
+                        /\ pauseBuffer' = pauseBuffer
                  /\ cache'  = IF sameAsOld THEN cache
                                             ELSE [cache EXCEPT ![c] = newCache]
                  /\ version' = IF sameAsOld THEN version
@@ -395,7 +489,8 @@ DeliverSettle(p, c) ==
                  /\ emitWitness' = IF isMultiParentDataEmit
                                      THEN [emitWitness EXCEPT ![c] = Append(@, witness)]
                                      ELSE emitWitness
-       /\ UNCHANGED <<emitCount, activated, handshake, nestedEmitCount>>
+       /\ UNCHANGED <<emitCount, activated, handshake, nestedEmitCount,
+                      pauseLocks, resubscribeCount, pauseActionCount>>
 
 (* DeliverTerminal: consume COMPLETE or ERROR from queue[<<p, c>>].
    - Forwards the terminal to c's children exactly once.
@@ -416,8 +511,11 @@ DeliverTerminal(p, c) ==
        /\ queues' = EnqueueOutFrom(qs0, c, m)
        /\ trace'  = RecordAtSinkIfAny(trace, c, m)
        /\ status' = [status EXCEPT ![c] = "terminated"]
+       /\ pauseLocks' = [pauseLocks EXCEPT ![c] = {}]
+       /\ pauseBuffer' = [pauseBuffer EXCEPT ![c] = <<>>]
        /\ UNCHANGED <<cache, version, dirtyMask, emitCount, activated, handshake,
-                      nestedEmitCount, emitWitness>>
+                      nestedEmitCount, emitWitness,
+                      resubscribeCount, pauseActionCount>>
 
 ----------------------------------------------------------------------------
 (* SubscribeSink(sid): fires once per sink. Synthesizes the handshake
@@ -473,7 +571,8 @@ SubscribeSink(sid) ==
        IN /\ handshake' = [handshake EXCEPT ![sid] = @ \o handshakeSeq]
           /\ activated' = [activated EXCEPT ![sid] = TRUE]
           /\ UNCHANGED <<cache, status, version, dirtyMask, queues, trace, emitCount,
-                         nestedEmitCount, emitWitness>>
+                         nestedEmitCount, emitWitness,
+                         pauseLocks, pauseBuffer, resubscribeCount, pauseActionCount>>
 
 (* SinkNestedEmit(observer, target, v): models a sink callback that runs
    batch(() => target.emit(v)) inside its own callback. Enabled only when:
@@ -502,16 +601,182 @@ SinkNestedEmit(observer, target, v) ==
                                            ELSE Msg(DATA, v)
            dirtyMsg     == Msg(DIRTY, NullPayload)
            pair         == <<dirtyMsg, settleMsg>>
+           captured     == IsCapturedByBuffer(target)
        IN
-       /\ queues' = EnqueueSeqOutFrom(queues, target, pair)
-       /\ trace'  = RecordSeqAtSinkIfAny(trace, target, pair)
+       /\ IF captured
+            THEN
+              /\ queues' = EnqueueOutFrom(queues, target, dirtyMsg)
+              /\ trace'  = RecordAtSinkIfAny(trace, target, dirtyMsg)
+              /\ pauseBuffer' = [pauseBuffer EXCEPT ![target] = Append(@, settleMsg)]
+            ELSE
+              /\ queues' = EnqueueSeqOutFrom(queues, target, pair)
+              /\ trace'  = RecordSeqAtSinkIfAny(trace, target, pair)
+              /\ pauseBuffer' = pauseBuffer
        /\ cache'   = IF equalToCache THEN cache
                                      ELSE [cache EXCEPT ![target] = v]
        /\ version' = IF equalToCache THEN version
                                      ELSE [version EXCEPT ![target] = @ + 1]
-       /\ UNCHANGED <<status, dirtyMask, activated, handshake, emitWitness>>
+       /\ UNCHANGED <<status, dirtyMask, activated, handshake, emitWitness,
+                      pauseLocks, resubscribeCount, pauseActionCount>>
        /\ emitCount' = emitCount + 1
        /\ nestedEmitCount' = nestedEmitCount + 1
+
+----------------------------------------------------------------------------
+(*                §2.6 PAUSE/RESUME + resubscribable-lifecycle actions       *)
+(*                                                                            *)
+(* Pause(src, lockId) — originate a tier-2 PAUSE at a source. Adds lockId to *)
+(*   pauseLocks[src] (if Pausable[src] # "off"), enqueues [PAUSE, lockId] to *)
+(*   every outbound edge, records to trace[src] if it's a sink.              *)
+(*                                                                            *)
+(* Resume(src, lockId) — originate a tier-2 RESUME at a source. Must target  *)
+(*   a lockId currently held (unknown-lockId resumes are modeled at the      *)
+(*   `DeliverPauseResume` layer where forwarded RESUMEs can reach nodes      *)
+(*   that never received the matching PAUSE). On final-lock release with    *)
+(*   Pausable[src] = "resumeAll", `pauseBuffer[src]` drains to child queues *)
+(*   AND trace BEFORE the [RESUME, lockId] is enqueued — per-edge FIFO      *)
+(*   then guarantees buffered settlements arrive at descendants strictly    *)
+(*   before the RESUME.                                                     *)
+(*                                                                            *)
+(* DeliverPauseResume(p, c) — consume a tier-2 head from queue[<<p,c>>]. On *)
+(*   PAUSE: idempotently add lockId to pauseLocks[c]; forward PAUSE to      *)
+(*   children. On RESUME with known lockId: remove, possibly drain buffer,  *)
+(*   forward. On RESUME with unknown lockId: swallow (remove from queue,    *)
+(*   no state change, no forward) — matches §2.6 "Unknown-lockId RESUME is  *)
+(*   a no-op, so `dispose()` on a pauser is idempotent."                    *)
+(*                                                                            *)
+(* Resubscribe(sid) — re-activate a terminated resubscribable sink. Clears   *)
+(*   lifecycle state (pauseLocks, pauseBuffer, dirtyMask, handshake, trace, *)
+(*   activated, cache-for-derived, status) so a subsequent SubscribeSink    *)
+(*   can fire fresh. Enforces §2.6 "Resubscribable nodes also clear the     *)
+(*   lock set on resubscribe so a new lifecycle cannot inherit a lock from  *)
+(*   a prior one."                                                          *)
+(******************************************************************************)
+
+Pause(src, lockId) ==
+    /\ src \in SourceIds
+    /\ lockId \in LockIds
+    /\ status[src] # "terminated"
+    /\ pauseActionCount < MaxPauseActions
+    /\ lockId \notin pauseLocks[src]  \* disallow redundant re-pause of same lockId
+    /\ LET msg == Msg(PAUSE, lockId) IN
+       /\ pauseLocks' =
+            IF Pausable[src] # "off"
+              THEN [pauseLocks EXCEPT ![src] = @ \cup {lockId}]
+              ELSE pauseLocks
+       /\ queues' = EnqueueOutFrom(queues, src, msg)
+       /\ trace'  = RecordAtSinkIfAny(trace, src, msg)
+       /\ pauseActionCount' = pauseActionCount + 1
+       /\ UNCHANGED <<cache, status, version, dirtyMask, emitCount, activated,
+                      handshake, nestedEmitCount, emitWitness,
+                      pauseBuffer, resubscribeCount>>
+
+(* Resume only fires when `src` is actually holding `lockId`. The
+   "unknown-lockId RESUME is a no-op" case is modeled at `DeliverPauseResume`
+   — a forwarded RESUME can reach a downstream node whose pauseLocks set
+   doesn't contain the lockId (e.g. resubscribe cleared it). That's the
+   observable case TLC should explore.
+*)
+Resume(src, lockId) ==
+    /\ src \in SourceIds
+    /\ lockId \in LockIds
+    /\ status[src] # "terminated"
+    /\ pauseActionCount < MaxPauseActions
+    /\ lockId \in pauseLocks[src]
+    /\ LET msg == Msg(RESUME, lockId)
+           newLocks == pauseLocks[src] \ {lockId}
+           drainBuf == pauseBuffer[src]
+           fullDrain == newLocks = {} /\ Pausable[src] = "resumeAll"
+       IN
+       /\ pauseLocks' = [pauseLocks EXCEPT ![src] = newLocks]
+       /\ IF fullDrain
+            THEN
+              /\ pauseBuffer' = [pauseBuffer EXCEPT ![src] = <<>>]
+              /\ queues' = LET qd == EnqueueSeqOutFrom(queues, src, drainBuf)
+                           IN EnqueueOutFrom(qd, src, msg)
+              /\ trace'  = LET td == RecordSeqAtSinkIfAny(trace, src, drainBuf)
+                           IN RecordAtSinkIfAny(td, src, msg)
+            ELSE
+              /\ pauseBuffer' = pauseBuffer
+              /\ queues' = EnqueueOutFrom(queues, src, msg)
+              /\ trace'  = RecordAtSinkIfAny(trace, src, msg)
+       /\ pauseActionCount' = pauseActionCount + 1
+       /\ UNCHANGED <<cache, status, version, dirtyMask, emitCount, activated,
+                      handshake, nestedEmitCount, emitWitness,
+                      resubscribeCount>>
+
+DeliverPauseResume(p, c) ==
+    /\ <<p, c>> \in EdgePairs
+    /\ Len(queues[<<p, c>>]) > 0
+    /\ Head(queues[<<p, c>>]).type \in {PAUSE, RESUME}
+    /\ status[c] # "terminated"
+    /\ LET m == Head(queues[<<p, c>>])
+           qs0 == [queues EXCEPT ![<<p, c>>] = Tail(@)]
+           isPause == m.type = PAUSE
+           lockId == m.value
+           hasLock == lockId \in pauseLocks[c]
+           newLocks == pauseLocks[c] \ {lockId}
+           drainBuf == pauseBuffer[c]
+           fullDrain == hasLock /\ newLocks = {} /\ Pausable[c] = "resumeAll"
+       IN
+       /\ IF Pausable[c] = "off"
+            THEN
+              \* No lock tracking at c; just forward tier-2 onwards.
+              /\ pauseLocks' = pauseLocks
+              /\ pauseBuffer' = pauseBuffer
+              /\ queues' = EnqueueOutFrom(qs0, c, m)
+              /\ trace'  = RecordAtSinkIfAny(trace, c, m)
+            ELSE IF isPause
+              THEN
+                /\ pauseLocks' = [pauseLocks EXCEPT ![c] = @ \cup {lockId}]
+                /\ pauseBuffer' = pauseBuffer
+                /\ queues' = EnqueueOutFrom(qs0, c, m)
+                /\ trace'  = RecordAtSinkIfAny(trace, c, m)
+              ELSE
+                \* RESUME branch
+                IF ~hasLock
+                  THEN
+                    \* Unknown lockId at c — swallow: consume from queue, no
+                    \* state change, no forward. Propagation stops here.
+                    /\ pauseLocks' = pauseLocks
+                    /\ pauseBuffer' = pauseBuffer
+                    /\ queues' = qs0
+                    /\ trace'  = trace
+                  ELSE IF fullDrain
+                    THEN
+                      /\ pauseLocks' = [pauseLocks EXCEPT ![c] = newLocks]
+                      /\ pauseBuffer' = [pauseBuffer EXCEPT ![c] = <<>>]
+                      /\ queues' = LET qd == EnqueueSeqOutFrom(qs0, c, drainBuf)
+                                   IN EnqueueOutFrom(qd, c, m)
+                      /\ trace'  = LET td == RecordSeqAtSinkIfAny(trace, c, drainBuf)
+                                   IN RecordAtSinkIfAny(td, c, m)
+                    ELSE
+                      /\ pauseLocks' = [pauseLocks EXCEPT ![c] = newLocks]
+                      /\ pauseBuffer' = pauseBuffer
+                      /\ queues' = EnqueueOutFrom(qs0, c, m)
+                      /\ trace'  = RecordAtSinkIfAny(trace, c, m)
+       /\ UNCHANGED <<cache, status, version, dirtyMask, emitCount, activated,
+                      handshake, nestedEmitCount, emitWitness,
+                      resubscribeCount, pauseActionCount>>
+
+Resubscribe(sid) ==
+    /\ sid \in ResubscribableNodes
+    /\ status[sid] = "terminated"
+    /\ resubscribeCount < MaxPauseActions
+    /\ LET isSource == Parents(sid) = {}
+       IN
+       /\ pauseLocks' = [pauseLocks EXCEPT ![sid] = {}]
+       /\ pauseBuffer' = [pauseBuffer EXCEPT ![sid] = <<>>]
+       /\ dirtyMask' = [dirtyMask EXCEPT ![sid] = {}]
+       /\ cache' = IF isSource
+                     THEN cache  \* source nodes preserve initial cache on resubscribe
+                     ELSE [cache EXCEPT ![sid] = DefaultInitial]
+       /\ status' = [status EXCEPT ![sid] = "settled"]
+       /\ handshake' = [handshake EXCEPT ![sid] = <<>>]
+       /\ trace'    = [trace EXCEPT ![sid] = <<>>]
+       /\ activated' = [activated EXCEPT ![sid] = FALSE]
+       /\ resubscribeCount' = resubscribeCount + 1
+       /\ UNCHANGED <<version, queues, emitCount, nestedEmitCount, emitWitness,
+                      pauseActionCount>>
 
 Next ==
     \/ \E src \in SourceIds, v \in Values : Emit(src, v)
@@ -520,10 +785,14 @@ Next ==
     \/ \E sid \in SinkIds : SubscribeSink(sid)
     \/ \E triple \in SinkNestedEmits :
          SinkNestedEmit(triple[1], triple[2], triple[3])
+    \/ \E src \in SourceIds, lockId \in LockIds : Pause(src, lockId)
+    \/ \E src \in SourceIds, lockId \in LockIds : Resume(src, lockId)
+    \/ \E sid \in ResubscribableNodes : Resubscribe(sid)
     \/ \E e \in EdgePairs :
         \/ DeliverDirty(e[1], e[2])
         \/ DeliverSettle(e[1], e[2])
         \/ DeliverTerminal(e[1], e[2])
+        \/ DeliverPauseResume(e[1], e[2])
 
 Spec == Init /\ [][Next]_vars
 
@@ -550,17 +819,41 @@ NoDataWithoutDirty ==
 
 \* #2: At every reachable state, every DIRTY in the trace that has arrived
 \*     must have a corresponding settlement in the trace OR still be in
-\*     flight via a downstream queue. For model-checking simplicity we
-\*     assert: at states where all queues drain to empty, every sink's
-\*     DIRTY count equals (DATA+RESOLVED) count.
+\*     flight via a downstream queue OR parked in a pauseBuffer (bufferAll
+\*     mode holds settlements across the pause window). For model-checking
+\*     simplicity we assert: at states where all queues drain to empty,
+\*     every sink's DIRTY count equals (trace-DATA + trace-RESOLVED
+\*     + pauseBuffer-DATA + pauseBuffer-RESOLVED). Buffered settlements
+\*     count toward balance because they're "owed" — they will emerge on
+\*     the next final-lock RESUME. In legacy MCs (Pausable = [n |-> "off"])
+\*     pauseBuffer is always empty, so the buffered-count term is 0 and the
+\*     invariant reduces to the original shape.
 AllQueuesEmpty == \A e \in EdgePairs : queues[e] = <<>>
+AllBuffersEmpty == \A n \in NodeIds : pauseBuffer[n] = <<>>
+AllLocksEmpty == \A n \in NodeIds : pauseLocks[n] = {}
 
 BalancedWaves ==
-    AllQueuesEmpty =>
+    (AllQueuesEmpty /\ AllBuffersEmpty) =>
         \A n \in SinkIds :
-            Cardinality({i \in 1..Len(trace[n]) : trace[n][i].type = DIRTY}) =
-            Cardinality({i \in 1..Len(trace[n]) :
-                            trace[n][i].type \in {DATA, RESOLVED}})
+            \* Terminated nodes are excluded: §2.6 "Teardown" discards
+            \* `pauseBuffer` on terminal without draining, which strands DIRTYs
+            \* in trace whose buffered settlements never emerged. This is
+            \* sanctioned hard-reset behaviour, not a protocol bug. Pre-terminal
+            \* balance is unaffected and still checked.
+            \*
+            \* The `AllBuffersEmpty` precondition handles a subtler case: a
+            \* DIRTY forwarded from paused upstream U through a settled
+            \* intermediate I to a downstream sink D. I settles (cache
+            \* advances), but D's matching settlement is in `pauseBuffer[U]`
+            \* upstream — not in `pauseBuffer[D]`. Per-sink buffer counting
+            \* misses this cross-node owed-settlement. Restricting to full-
+            \* graph quiesced states (queues AND buffers empty) sidesteps
+            \* the cross-node accounting without losing coverage of the
+            \* invariant's intent.
+            status[n] # "terminated" =>
+                Cardinality({i \in 1..Len(trace[n]) : trace[n][i].type = DIRTY}) =
+                Cardinality({i \in 1..Len(trace[n]) :
+                                trace[n][i].type \in {DATA, RESOLVED}})
 
 \* #3: After the first COMPLETE or ERROR in a sink's trace, no further
 \*     DIRTY / DATA / RESOLVED messages appear.
@@ -583,6 +876,8 @@ TerminalAbsorbing ==
 SettlementCount(n) ==
     Cardinality({i \in 1..Len(trace[n]) :
                    trace[n][i].type \in {DATA, RESOLVED}})
+  + Cardinality({i \in 1..Len(pauseBuffer[n]) :
+                   pauseBuffer[n][i].type \in {DATA, RESOLVED}})
 
 FanInNodes == {n \in NodeIds : Cardinality(Parents(n)) >= 2}
 
@@ -598,11 +893,22 @@ DiamondConvergence ==
 \*     source itself (when the source is a sink). If the source is not a
 \*     sink the invariant is vacuous here; fast-check has the companion
 \*     sink-side coverage.
+\*
+\*     Settlements deferred by bufferAll mode count here too — they've
+\*     logically happened (cache advanced, version bumped) but are parked
+\*     in pauseBuffer until the final-lock RESUME drains them. Without this
+\*     term the invariant would trip mid-pause window.
 EqualsFaithful ==
     \A s \in (SourceIds \cap SinkIds) :
-        Cardinality({i \in 1..Len(trace[s]) :
-                       trace[s][i].type \in {DATA, RESOLVED}})
-        = emitCount
+        \* Terminated sources excluded: §2.6 "Teardown" discards pauseBuffer
+        \* without draining, so dropped settlements can't be accounted for in
+        \* either trace or buffer. Same reasoning as BalancedWaves.
+        status[s] # "terminated" =>
+            Cardinality({i \in 1..Len(trace[s]) :
+                           trace[s][i].type \in {DATA, RESOLVED}})
+          + Cardinality({i \in 1..Len(pauseBuffer[s]) :
+                           pauseBuffer[s][i].type \in {DATA, RESOLVED}})
+            = emitCount
 
 \* #7: START handshake well-formedness. For every activated sink,
 \* `handshake[sid]` matches one of the valid shapes per §2.2:
@@ -689,7 +995,7 @@ MultiDepHandshakeClean ==
 \*
 \* Ties to fast-check invariant #11 and COMPOSITION-GUIDE §32.
 NestedDrainPeerConsistency ==
-    AllQueuesEmpty =>
+    (AllQueuesEmpty /\ AllBuffersEmpty /\ AllLocksEmpty) =>
         \A n \in NodeIds :
             Cardinality(Parents(n)) >= 2 =>
                 \A i \in 1..Len(emitWitness[n]) :
@@ -707,8 +1013,70 @@ NestedDrainPeerConsistency ==
 \*     restricted to the source-observed form.
 VersionPerChange ==
     \A s \in (SourceIds \cap SinkIds) :
-        version[s] =
-            Cardinality({i \in 1..Len(trace[s]) : trace[s][i].type = DATA})
+        \* Terminated sources excluded for the same reason as EqualsFaithful:
+        \* buffer drop on terminal can strand value-changing emits (version
+        \* bumped at Emit time, DATA discarded with the buffer).
+        status[s] # "terminated" =>
+            version[s] =
+                Cardinality({i \in 1..Len(trace[s]) : trace[s][i].type = DATA})
+              + Cardinality({i \in 1..Len(pauseBuffer[s]) :
+                                pauseBuffer[s][i].type = DATA})
+
+\* #10 — TerminalClearsPauseState (§2.6 Teardown).
+\* After a node reaches terminal status, and the node is NOT in the
+\* resubscribable set, its pauseLocks and pauseBuffer MUST be empty.
+\* Enforces the spec's explicit hard-reset contract: "On TEARDOWN or
+\* deactivation, the buffer and lock set are discarded." Catches lock-leak
+\* regressions across the terminal boundary (the spec §2.6 "Teardown" warning).
+TerminalClearsPauseState ==
+    \A n \in NodeIds :
+        (status[n] = "terminated" /\ n \notin ResubscribableNodes) =>
+            (pauseLocks[n] = {} /\ pauseBuffer[n] = <<>>)
+
+\* #11 — BufferImpliesLockedAndResumeAll (§2.6 bufferAll).
+\* pauseBuffer[n] can only be non-empty if:
+\*   (a) n is holding at least one pause lock (pauseLocks[n] # {}), AND
+\*   (b) n's Pausable mode is "resumeAll".
+\* Catches: buffer leaks into nodes with pausable="on" or "off"; buffered
+\* messages surviving final-lock release (the drain step failing to clear
+\* the buffer). Combined with TerminalClearsPauseState, guarantees the
+\* buffer only exists in its sanctioned window.
+BufferImpliesLockedAndResumeAll ==
+    \A n \in NodeIds :
+        pauseBuffer[n] # <<>> =>
+            (pauseLocks[n] # {} /\ Pausable[n] = "resumeAll")
+
+\* #12 — BufferHoldsOnlyDeferredTiers (§2.6 bufferAll).
+\* Only tier-3 (DATA, RESOLVED) payloads accumulate in pauseBuffer while a
+\* node is paused. Tier 0–2 (START, DIRTY, INVALIDATE, PAUSE, RESUME), tier
+\* 4 (COMPLETE, ERROR), and tier 5 (TEARDOWN) dispatch synchronously even
+\* while paused — the spec carves them out so end-of-stream signals and
+\* control-plane messages cannot be stranded by a leaked pause lock.
+\* Catches: accidental capture of control-plane OR stream-lifecycle messages
+\* into the buffer, which would strand downstream subscribers without the
+\* ability to observe flow control OR to know the stream has ended.
+BufferHoldsOnlyDeferredTiers ==
+    \A n \in NodeIds :
+        \A i \in 1..Len(pauseBuffer[n]) :
+            pauseBuffer[n][i].type \in {DATA, RESOLVED}
+
+\* #13 — ResubscribeYieldsCleanState (§2.6 Teardown → Resubscribable).
+\* For every resubscribable sink that has been terminal-reset via Resubscribe
+\* (status is back to "settled" and activated is FALSE — the window between
+\* Resubscribe and the next SubscribeSink), the lifecycle-owned state must
+\* match fresh-init: no leftover locks, no leftover buffer, no leftover dirty
+\* mask, no leftover handshake, no leftover trace. This is the protocol-level
+\* statement of "observationally indistinguishable from a fresh node." If this
+\* invariant holds, a subsequent SubscribeSink on `sid` lands in a known-good
+\* initial state regardless of what happened in prior lifecycles.
+ResubscribeYieldsCleanState ==
+    \A sid \in ResubscribableNodes :
+        (status[sid] = "settled" /\ ~activated[sid] /\ resubscribeCount > 0) =>
+            /\ pauseLocks[sid] = {}
+            /\ pauseBuffer[sid] = <<>>
+            /\ dirtyMask[sid] = {}
+            /\ handshake[sid] = <<>>
+            /\ trace[sid] = <<>>
 
 ----------------------------------------------------------------------------
 (* Type invariant — guards against syntactic drift during model changes. *)
@@ -729,5 +1097,9 @@ TypeOK ==
     \* system costs more than it buys in catching drift.
     /\ \A n \in NodeIds : emitWitness[n] \in Seq([value: PayloadDomain,
                                                     parents: [Parents(n) -> PayloadDomain]])
+    /\ pauseLocks \in [NodeIds -> SUBSET LockIds]
+    /\ pauseBuffer \in [NodeIds -> Seq([type: MsgTypes, value: PayloadDomain])]
+    /\ resubscribeCount \in Nat
+    /\ pauseActionCount \in Nat
 
 ============================================================================

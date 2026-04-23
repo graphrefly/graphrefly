@@ -61,10 +61,21 @@ informational for wave tracking — it does not participate in DIRTY/DATA/RESOLV
 and is not forwarded through intermediate nodes (each node emits its own `START` to its own
 new sinks).
 
-**DATA requires a payload.** `[DATA, value]` MUST include the second element. The value
-MAY be `undefined` (TS) / `None` (PY) / `null` — these are valid data values. A bare
-`[DATA]` tuple (missing the payload entirely) is a protocol violation. Implementations
-SHOULD reject or ignore it rather than silently coercing to `undefined`/`None`.
+**DATA requires a non-`undefined` payload.** `[DATA, value]` MUST include the second
+element AND the value MUST NOT be `undefined` (TS) / `None` (PY). `undefined` / `None`
+is reserved as the protocol-internal "never sent DATA" sentinel (§2.5). `null` is a
+valid DATA value — use it for domain-level absence. A bare `[DATA]` tuple (missing the
+payload) or `[[DATA, undefined]]` is a protocol violation; implementations MUST reject
+or ignore it rather than silently coercing to `undefined`/`None`.
+
+**ERROR requires a non-`undefined` payload.** `[ERROR, payload]` MUST include the
+second element AND the payload MUST NOT be `undefined` (TS) / `None` (PY). `payload`
+should be an `Error` object or domain-tag value. The `undefined` reservation matters
+acutely for ERROR: `DepRecord.terminal === undefined` means "dep is live", so an
+`ERROR(undefined)` would be indistinguishable from a non-terminated dep, swallowing
+the error at every downstream `_maybeAutoTerminalAfterWave` check. Implementations
+MUST reject `[[ERROR, undefined]]` and bare `[ERROR]` at the dispatch boundary
+(typically `_emit`) with a clear developer error.
 
 ### 1.3 Protocol Invariants
 
@@ -278,34 +289,46 @@ equals absorption prevents downstream propagation.
 deps sequentially in declaration order; each dep's subscribe synchronously fires its
 own push-on-subscribe as a **separate wave**. When a compute node has N deps and each
 dep's source is already cached (e.g. N `state()` nodes), the activation produces N
-sequential waves — not one combined initial wave. For operators that depend on dep
-coincidence (e.g. pair primary with latest secondary on every primary settle), this
-means:
+sequential dep-settlement callbacks — not one combined initial wave.
 
-1. The first dep to fire push-on-subscribe is gated by the first-run gate (later deps
-   still SENTINEL) → fn emits RESOLVED.
-2. Subsequent deps' push-on-subscribe waves find prior deps silent **this wave**
-   (their DATA already landed in earlier waves and advanced `prevData[i]`).
-3. Operators that only consider `batch[i]` this wave (not `prevData[i]`) silently
-   drop the initial paired emission.
+**First-run gate (authoritative — amended 2026-04-23):** fn does not fire until every
+declared dep has delivered at least one DATA or terminal since the last reset. The gate
+is implemented in the core `NodeImpl` and controlled by the `partial` option
+(§2.5):
 
-This is NOT a protocol invariant violation — push-on-subscribe, the first-run gate, and
-DIRTY/DATA ordering all work correctly per their individual contracts. It IS a semantic
-consequence that operator authors must handle. Two mitigations:
+- **`partial: false`** (sugar `derived` / `effect` default) — gate applies. Multi-parent
+  activation holds fn through the sequential dep callbacks and fires exactly once after
+  the last dep delivers, producing one combined initial wave
+  `[[START], [DIRTY], [DATA, fn(init...)]]`. No intermediate RESOLVED is emitted.
+- **`partial: true`** (raw `node(deps, fn)` default) — no gate. fn fires as soon as
+  `_dirtyDepCount === 0` regardless of whether any dep is still sentinel. Appropriate
+  for operators like `withLatestFrom` / `merge` whose fn body handles sentinel deps
+  explicitly (emitting RESOLVED, routing only certain wave combinations, etc.).
 
+Gate scope: the gate applies only until fn has fired once in the current activation
+(`_hasCalledFnOnce`). `_addDep` post-activation, subsequent waves, and INVALIDATE do
+not re-gate. Terminal reset on a resubscribable node (§2.2) clears `_hasCalledFnOnce`
+and re-arms the gate for the next activation cycle.
+
+Raw `node()` operators that want to fire on partial deps (the default `partial: true`)
+can still emit RESOLVED from their fn body to balance outstanding DIRTY messages:
+
+- **`ctx.prevData[i]` fallback.** When `batch[i]` is null for a dep that must be paired,
+  read `ctx.prevData[i]` — it holds the last-emitted DATA for that dep regardless of
+  which wave that emission occurred in.
 - **Factory-time seed pattern.** Read the dep's `.cache` at wiring time (explicitly
   sanctioned as an external-observer boundary read), stash it in a closure, update via
-  a subscribe handler. Used by `stratify`, `budgetGate`, `distill`, `verifiable`.
-- **`ctx.prevData[i]` fallback in the fn.** When `batch[i]` is null for a dep that
-  must be paired, read `ctx.prevData[i]` — it holds the last-emitted DATA for that
-  dep regardless of which wave that emission occurred in. Suitable for operators whose
-  first-fire intent is "pair all settled deps."
+  a subscribe handler. **Still required** for factories built on raw `node()` with
+  producer-pattern semantics (zero declared deps + closure-driven `subscribe` handlers)
+  — the gate has no multi-dep work to hold on an empty `_deps` array, so those
+  factories bypass the gate entirely and must manage the "read initial peer state"
+  problem themselves. `stratify`, `budgetGate`, `distill`, `verifiable` are current
+  examples. Sugar `derived` / `effect` callers no longer need the pattern **for the
+  multi-dep initial-pair case** — the core gate delivers one combined initial wave.
+  The factory-time seed remains valid for any coordination pattern that involves
+  closure-owned state outside the declared-deps graph.
 
-`withLatestFrom` today uses the second-fire-onwards pattern via `ctx.prevData[1]`, but
-does not fire a paired emission on its very first fn-fire (when primary is the first
-dep to subscribe and fires alone in its wave). Callers who need initial-state pairing
-should use the factory-time seed pattern instead. See COMPOSITION-GUIDE.md §28 for the
-factory-time seed pattern that handles this case.
+See COMPOSITION-GUIDE.md §28 for the factory-time seed pattern.
 
 #### cache (readonly getter)
 
@@ -499,6 +522,7 @@ All nodes accept these options:
 | `replayBuffer` | number | — | Buffer last N outgoing DATA for late subscribers |
 | `completeWhenDepsComplete` | bool | `true` | Auto-emit COMPLETE when all deps have completed. Set to `false` for terminal-emission operators (e.g. `last`, `reduce`) that control their own COMPLETE timing. |
 | `errorWhenDepsError` | bool | `true` | Auto-emit ERROR when any dep errors. Set to `false` for rescue/catchError operators that handle errors explicitly via `ctx.terminalDeps[i]`. |
+| `partial` | bool | `true` (raw `node()`) / `false` (sugar `derived` / `effect`) | First-run gate (§2.7). When `false`, fn is held until every declared dep has delivered at least one DATA or terminal — sugar default so multi-parent activation produces the clean `[[START], [DIRTY], [DATA, fn(init...)]]` handshake. When `true`, fn fires as soon as `_dirtyDepCount === 0`, matching operators like `withLatestFrom` / `merge` that handle sentinel deps in their own fn body. Gate is first-run only (`_hasCalledFnOnce`); subsequent waves, `_addDep`, and INVALIDATE do not re-gate. |
 
 **`initial` semantics:** When `initial` is provided and is **not** `undefined` (TS) /
 `None` (PY), the node's cache is pre-populated and `.cache` returns that value before
@@ -509,6 +533,13 @@ is **absent** or explicitly set to `undefined` (TS) / `None` (PY), the cache hol
 SENTINEL; the node does not push on subscribe, and the first emission always produces
 `DATA` regardless of the value. `INVALIDATE` and `resetOnTeardown` return the cache to
 the SENTINEL state.
+
+**INVALIDATE does NOT re-arm the first-run gate (§2.7).** The gate is `_hasCalledFnOnce`-
+scoped — once fn has fired in an activation cycle, subsequent INVALIDATEs reset per-dep
+`prevData` / `dataBatch` / `terminal` but do not block fn from firing on partial
+settlements thereafter. Callers that need the gate to re-engage after a logical reset
+must use terminal-reset on a resubscribable node (§2.2), which clears
+`_hasCalledFnOnce` along with the DepRecords.
 
 **`undefined` / `None` as DATA payload.** `undefined` (TS) is reserved as the
 protocol-internal "never sent DATA" sentinel — it is the value `.cache` returns when a
@@ -557,20 +588,24 @@ DepRecord continues updating with latest values. On final-lock RESUME, if any
 wave completed while paused, fn fires immediately with the latest dep values.
 
 **bufferAll mode (`pausable: "resumeAll"`).** While any lock is held, the
-node captures every outgoing tier-3 / tier-4 message from its own emission
-pipeline into a per-node buffer. Tier 0–2 (START / DIRTY / INVALIDATE /
-PAUSE / RESUME) and tier 5 (TEARDOWN) continue to dispatch synchronously
-while paused — subscribers, downstream pausers, and graph teardown MUST
-observe them regardless of flow control. On final-lock RESUME, the buffered
-messages are replayed through the node's own `_emit` pipeline BEFORE the
-RESUME signal is forwarded downstream. The replay passes through the normal
-tier-3 equals substitution walk (§1.3.3), so a buffered `[DATA, v]` whose
-value matches the pre-pause cache collapses to `[RESOLVED]` on replay —
-producer "pulses" that write the same value while paused are absorbed. This
-matches diamond-safety intent: `.cache` remains coherent with "the last
-DATA actually delivered to sinks." Producers that need pulse semantics
-(every write observable regardless of value) should set `equals: () => false`
-on the node.
+node captures every outgoing **tier-3** (DATA / RESOLVED) message from its
+own emission pipeline into a per-node buffer. Everything else — tier 0–2
+(START / DIRTY / INVALIDATE / PAUSE / RESUME), **tier 4 (COMPLETE / ERROR)**,
+and tier 5 (TEARDOWN) — continues to dispatch synchronously while paused.
+Subscribers, downstream pausers, graph teardown, and end-of-stream signals
+MUST observe them regardless of flow control. Buffering tier-4 would strand
+subscribers without an end-of-stream signal if a controller leaks (holds a
+lock and never issues RESUME) — tier-4 bypass ensures stream termination
+always reaches observers, parallel to tier-5 TEARDOWN's bypass. On final-lock
+RESUME, the buffered tier-3 messages are replayed through the node's own
+`_emit` pipeline BEFORE the RESUME signal is forwarded downstream. The
+replay passes through the normal tier-3 equals substitution walk (§1.3.3),
+so a buffered `[DATA, v]` whose value matches the pre-pause cache collapses
+to `[RESOLVED]` on replay — producer "pulses" that write the same value
+while paused are absorbed. This matches diamond-safety intent: `.cache`
+remains coherent with "the last DATA actually delivered to sinks." Producers
+that need pulse semantics (every write observable regardless of value)
+should set `equals: () => false` on the node.
 
 **Teardown.** On TEARDOWN or deactivation, the buffer and lock set are
 discarded. Buffered in-flight DATA is NOT drained before teardown — TEARDOWN

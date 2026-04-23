@@ -60,4 +60,11 @@ GapAwareActivationMC == FALSE
 SinkNestedEmitsMC == { <<"B", "A", 2>> }
 MaxNestedEmitsMC  == 2
 
+\* Pause axis disabled — orthogonal to the nested-drain axis this MC
+\* isolates. Combining axes is a future cross-axis MC.
+LockIdsMC             == {}
+PausableMC            == [n \in NodeIdsMC |-> "off"]
+ResubscribableNodesMC == {}
+MaxPauseActionsMC     == 0
+
 ============================================================================
