@@ -14,23 +14,26 @@ so the regression is covered in both layers.
 
 | File | Role |
 |---|---|
-| [`wave_protocol.tla`](wave_protocol.tla) | The spec itself — state, actions, invariants. Topology-agnostic; defaults to a 4-node diamond via the `Compute` operator. |
-| [`wave_protocol_MC.tla`](wave_protocol_MC.tla) | Model-checking entry point. Pins concrete topology / alphabet / bounds (TLC `.cfg` can't express tuple-literal sets). |
-| [`wave_protocol.cfg`](wave_protocol.cfg) | TLC config — names the spec, the constant substitutions, and the invariants to check. |
+| [`wave_protocol.tla`](wave_protocol.tla) | The spec itself — state, actions, invariants. Topology-agnostic; defaults to a 4-node diamond via the `Compute` operator. Parametric over `GapAwareActivation` (bool) and `SinkNestedEmits` (set of nested-emit triples). |
+| [`wave_protocol_MC.tla`](wave_protocol_MC.tla) + [`wave_protocol.cfg`](wave_protocol.cfg) | **Clean model.** `GapAwareActivation = FALSE`, `SinkNestedEmits = {}`. All invariants hold. |
+| [`wave_protocol_gap_MC.tla`](wave_protocol_gap_MC.tla) + [`wave_protocol_gap.cfg`](wave_protocol_gap.cfg) | **Substrate-faithful model for item 3.** `GapAwareActivation = TRUE` — multi-parent derived handshake synthesizes the real substrate's `<START, DIRTY, RESOLVED, DIRTY, DATA>` shape. `MultiDepHandshakeClean` FAILS with counter-example — matches the bug. |
+| [`wave_protocol_nested_MC.tla`](wave_protocol_nested_MC.tla) + [`wave_protocol_nested.cfg`](wave_protocol_nested.cfg) | **Nested-drain regression guard for item 2.** `SinkNestedEmits = {<<B, A, 2>>}` models a sink callback running `batch(() => A.emit(2))`. `NestedDrainPeerConsistency` holds — tier ordering prevents §32-class peer-read glitch in the simple 3-node topology. |
 
-## The 7 TLC invariants
+## The 9 TLC invariants
 
-Each corresponds 1-1 to a [fast-check property](../../graphrefly-ts/src/__tests__/properties/_invariants.ts). Fast-check invariants 8 and 9 (`throw-recovery-consistency` and `subscribe-unsubscribe-reentry`) are intentionally not modeled here — they concern JS-level exception handling and multiple-subscriber registration, which aren't protocol-observable in this spec.
+Invariants #1–#7 correspond 1-1 to [fast-check properties](../../graphrefly-ts/src/__tests__/properties/_invariants.ts). Fast-check invariants 8 and 9 (`throw-recovery-consistency` and `subscribe-unsubscribe-reentry`) concern JS-level exception handling and multiple-subscriber registration, not protocol-observable. Invariants #8 `MultiDepHandshakeClean` and #9 `NestedDrainPeerConsistency` are TLA+-side extensions added 2026-04-23 to model item 3's activation-sequence gap and item 2's nested-drain class.
 
-| # | TLA+ name | Description |
-|---|---|---|
-| 1 | `NoDataWithoutDirty` | Every DATA/RESOLVED at a sink is preceded by an unmatched DIRTY. |
-| 2 | `BalancedWaves` | When all queues drain, DIRTY count = settlement count at every sink. |
-| 3 | `TerminalAbsorbing` | After COMPLETE/ERROR, no further DIRTY/DATA/RESOLVED. |
-| 4 | `DiamondConvergence` | Fan-in settlements bounded by source emits — no 2× per dep edge. |
-| 5 | `EqualsFaithful` | Every source emit yields exactly one settlement (never silent). |
-| 6 | `VersionPerChange` | Source `version` = count of DATA in its self-observed trace. |
-| 7 | `StartHandshakeValid` | After a `SubscribeSink` action, `handshake[sid]` is `[[START],[DATA]]` (source), `[[START],[DIRTY],[DATA]]` (derived), or `[[START],[COMPLETE]]` (terminated). |
+| # | TLA+ name | Status | Description |
+|---|---|---|---|
+| 1 | `NoDataWithoutDirty` | clean ✓ / gap ✓ / nested ✓ | Every DATA/RESOLVED at a sink is preceded by an unmatched DIRTY. |
+| 2 | `BalancedWaves` | clean ✓ / gap ✓ / nested ✓ | When all queues drain, DIRTY count = settlement count at every sink. |
+| 3 | `TerminalAbsorbing` | clean ✓ / gap ✓ / nested ✓ | After COMPLETE/ERROR, no further DIRTY/DATA/RESOLVED. |
+| 4 | `DiamondConvergence` | clean ✓ / gap ✓ / nested ✓ | Fan-in settlements bounded by source emits — no 2× per dep edge. |
+| 5 | `EqualsFaithful` | clean ✓ / gap ✓ / **n/a** (nested) | Every source emit yields exactly one settlement. **Single-source-implicit**: its reference to the global `emitCount` makes it break on multi-source topologies. Excluded from the nested MC (which has two sources). Tracked as I4 in `docs/optimizations.md` — generalize with a per-source emit counter. |
+| 6 | `VersionPerChange` | clean ✓ / gap ✓ / nested ✓ | Source `version` = count of DATA in its self-observed trace. |
+| 7 | `StartHandshakeValid` | clean ✓ / gap ✓ / nested ✓ | `handshake[sid]` matches one of: source `<START,DATA>`, single-parent derived `<START,DIRTY,DATA>`, multi-parent derived (clean `<START,DIRTY,DATA>` OR gap-aware `<START,DIRTY,RESOLVED,DIRTY,DATA>`), terminated `<START,COMPLETE>`. **Loosened 2026-04-23** to accept the gap-aware shape, matching fast-check invariant #7. |
+| 8 | `MultiDepHandshakeClean` | clean ✓ / **gap ✗** / nested ✓ | No RESOLVED between first DIRTY and DATA in a multi-parent derived's handshake. Fails under `GapAwareActivation = TRUE` — TLA+-side mirror of fast-check #10. Counter-example: any multi-parent derived subscribe in 2 steps. |
+| 9 | `NestedDrainPeerConsistency` | clean ✓ / gap ✓ / nested ✓ | After all queues drain, every multi-parent derived's recorded DATA matches `Compute(n, finalCache)`. Mirror of fast-check #11 — regression guard against any relaxation of tier ordering in `DeliverSettle`. |
 
 ## Running TLC
 
@@ -41,8 +44,19 @@ Each corresponds 1-1 to a [fast-check property](../../graphrefly-ts/src/__tests_
 TLA_JAR="/Applications/TLA+ Toolbox.app/Contents/Eclipse/tla2tools.jar"
 
 cd ~/src/graphrefly/formal
+
+# Clean model — all invariants must hold.
 java -XX:+UseParallelGC -cp "$TLA_JAR" tlc2.TLC \
     -config wave_protocol.cfg wave_protocol_MC
+
+# Substrate-faithful (item 3) — MultiDepHandshakeClean MUST fail.
+# Flipping this green is the TLA+-side gate for the substrate fix.
+java -XX:+UseParallelGC -cp "$TLA_JAR" tlc2.TLC \
+    -config wave_protocol_gap.cfg wave_protocol_gap_MC
+
+# Nested-drain regression guard (item 2) — all invariants must hold.
+java -XX:+UseParallelGC -cp "$TLA_JAR" tlc2.TLC \
+    -config wave_protocol_nested.cfg wave_protocol_nested_MC
 ```
 
 Expected output (success):

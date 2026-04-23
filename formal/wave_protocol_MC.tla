@@ -33,4 +33,15 @@ MaxEmitsMC    == 3
 \* for invariant verification of the Bug 2 fix.
 BatchSeqsMC   == { <<1, 2>>, <<0, 0>>, <<1, 1>> }
 
+\* Clean handshake model (item 3's substrate fix would land here). D has two
+\* parents so its SubscribeSink uses the clean shape. Both `StartHandshakeValid`
+\* and the new `MultiDepHandshakeClean` invariants pass under this model.
+GapAwareActivationMC == FALSE
+
+\* Sink-callback nested-emit is disabled in the default model (keeps state
+\* space tight). Exercised by `wave_protocol_gap_MC` + `wave_protocol_nested_MC`
+\* variants.
+SinkNestedEmitsMC == {}
+MaxNestedEmitsMC  == 0
+
 ============================================================================

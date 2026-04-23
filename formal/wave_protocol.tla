@@ -51,19 +51,32 @@ MODEL SIMPLIFICATIONS (intentional):
 EXTENDS Integers, Sequences, FiniteSets, TLC
 
 CONSTANTS
-    NodeIds,          \* Set of all node ids (strings)
-    SourceIds,        \* Manual sources that can Emit independently
-    Edges,            \* Set of <<parent, child>> pairs encoding topology
-    Values,           \* Payload alphabet, e.g. {0, 1}
-    DefaultInitial,   \* Initial cached value assigned to every node (must be in Values)
-    SinkIds,          \* NodeIds with external observers (record to trace)
-    MaxEmits,         \* Bound on source emits consumed
-    BatchSeqs         \* Set of sequences representing multi-emit batches (Bug 2 model)
+    NodeIds,              \* Set of all node ids (strings)
+    SourceIds,            \* Manual sources that can Emit independently
+    Edges,                \* Set of <<parent, child>> pairs encoding topology
+    Values,               \* Payload alphabet, e.g. {0, 1}
+    DefaultInitial,       \* Initial cached value assigned to every node (must be in Values)
+    SinkIds,              \* NodeIds with external observers (record to trace)
+    MaxEmits,             \* Bound on source emits consumed
+    BatchSeqs,            \* Set of sequences representing multi-emit batches (Bug 2 model)
+    GapAwareActivation,   \* BOOLEAN — TRUE: derived-multi handshake synthesizes the
+                          \*   gap-aware shape matching the substrate (docs/optimizations.md
+                          \*   "Multi-dep push-on-subscribe ordering"). FALSE: the ideal
+                          \*   clean shape. The new MultiDepHandshakeClean invariant fails
+                          \*   under TRUE — exactly the bug we want TLC to find.
+    SinkNestedEmits,      \* Set of <<observer, target, value>> triples. Activates the
+                          \*   `SinkNestedEmit` action, modeling a sink callback that runs
+                          \*   batch(() => target.emit(value)) inside its own callback.
+                          \*   Empty set = feature disabled (matches the original model).
+    MaxNestedEmits        \* Bound on SinkNestedEmit firings (prevents unbounded fanout).
 
 ASSUME SourceIds \subseteq NodeIds
 ASSUME SinkIds \subseteq NodeIds
 ASSUME Edges \subseteq (NodeIds \X NodeIds)
 ASSUME DefaultInitial \in Values
+ASSUME GapAwareActivation \in BOOLEAN
+ASSUME SinkNestedEmits \subseteq (NodeIds \X NodeIds \X Values)
+ASSUME MaxNestedEmits \in Nat
 
 Parents(n) == {p \in NodeIds : <<p, n>> \in Edges}
 
@@ -124,17 +137,25 @@ RecordSeqAtSinkIfAny(t, n, msgs) ==
 
 ----------------------------------------------------------------------------
 VARIABLES
-    cache,       \* NodeId -> Values  (always a real value in this simplified model)
-    status,      \* NodeId -> {"settled", "dirty", "terminated"}
-    version,     \* NodeId -> Nat  (advances only on DATA)
-    dirtyMask,   \* NodeId -> Set of parent ids whose DIRTY is unmatched
-    queues,      \* <<parent, child>> -> Seq of messages
-    trace,       \* NodeId -> Seq of messages observed at sinks (protocol emissions only)
-    emitCount,   \* Nat, bounds exploration
-    activated,   \* NodeId -> BOOLEAN (has a subscriber attached to this sink?)
-    handshake    \* NodeId -> Seq of messages delivered during the subscribe handshake
+    cache,            \* NodeId -> Values  (always a real value in this simplified model)
+    status,           \* NodeId -> {"settled", "dirty", "terminated"}
+    version,          \* NodeId -> Nat  (advances only on DATA)
+    dirtyMask,        \* NodeId -> Set of parent ids whose DIRTY is unmatched
+    queues,           \* <<parent, child>> -> Seq of messages
+    trace,            \* NodeId -> Seq of messages observed at sinks (protocol emissions only)
+    emitCount,        \* Nat, bounds exploration
+    activated,        \* NodeId -> BOOLEAN (has a subscriber attached to this sink?)
+    handshake,        \* NodeId -> Seq of messages delivered during the subscribe handshake
+    nestedEmitCount,  \* Nat, bounds SinkNestedEmit action firings
+    \* Ghost variable for NestedDrainPeerConsistency (item 2). Each entry records a
+    \* DATA emitted by a multi-dep derived together with the cache values of its
+    \* parents AT THE MOMENT the DATA was computed. A glitch is a recorded tuple
+    \* whose parent values don't match the final settled cache — i.e. the fn fired
+    \* with stale peer data because another parent's DATA wave was still in flight.
+    emitWitness       \* NodeId -> Seq of <<value, [p \in Parents(n) |-> cache[p]]>>
 
-vars == <<cache, status, version, dirtyMask, queues, trace, emitCount, activated, handshake>>
+vars == <<cache, status, version, dirtyMask, queues, trace, emitCount,
+          activated, handshake, nestedEmitCount, emitWitness>>
 
 ----------------------------------------------------------------------------
 Init ==
@@ -147,6 +168,8 @@ Init ==
     /\ emitCount = 0
     /\ activated = [n \in NodeIds |-> FALSE]
     /\ handshake = [n \in NodeIds |-> <<>>]
+    /\ nestedEmitCount = 0
+    /\ emitWitness = [n \in NodeIds |-> <<>>]
 
 ----------------------------------------------------------------------------
 (* A source emits a value. Per equals-substitution at the source:
@@ -170,7 +193,8 @@ Emit(src, v) ==
                                      ELSE [cache EXCEPT ![src] = v]
        /\ version' = IF equalToCache THEN version
                                      ELSE [version EXCEPT ![src] = @ + 1]
-       /\ UNCHANGED <<status, dirtyMask, activated, handshake>>
+       /\ UNCHANGED <<status, dirtyMask, activated, handshake,
+                      nestedEmitCount, emitWitness>>
        /\ emitCount' = emitCount + 1
 
 (* BatchEmitMulti(src, vs): atomic multi-emit inside a user `batch()` scope.
@@ -228,7 +252,8 @@ BatchEmitMulti(src, vs) ==
        /\ trace'  = RecordSeqAtSinkIfAny(trace, src, bundle)
        /\ cache'  = [cache EXCEPT ![src] = finalCacheVal]
        /\ version' = [version EXCEPT ![src] = @ + dataCount]
-       /\ UNCHANGED <<status, dirtyMask, activated, handshake>>
+       /\ UNCHANGED <<status, dirtyMask, activated, handshake,
+                      nestedEmitCount, emitWitness>>
        /\ emitCount' = emitCount + Len(vs)
 
 (* A source terminates. Enqueues COMPLETE to every child and transitions
@@ -241,7 +266,8 @@ Terminate(src) ==
        /\ queues' = EnqueueOutFrom(queues, src, m)
        /\ trace'  = RecordAtSinkIfAny(trace, src, m)
        /\ status' = [status EXCEPT ![src] = "terminated"]
-       /\ UNCHANGED <<cache, version, dirtyMask, emitCount, activated, handshake>>
+       /\ UNCHANGED <<cache, version, dirtyMask, emitCount, activated, handshake,
+                      nestedEmitCount, emitWitness>>
 
 ----------------------------------------------------------------------------
 \* Tier-drain predicates enforcing §1.3 invariant 7 message ordering.
@@ -309,7 +335,8 @@ DeliverDirty(p, c) ==
                  /\ trace'  = trace
        /\ status' = [status EXCEPT ![c] = "dirty"]
        /\ dirtyMask' = [dirtyMask EXCEPT ![c] = @ \cup {p}]
-       /\ UNCHANGED <<cache, version, emitCount, activated, handshake>>
+       /\ UNCHANGED <<cache, version, emitCount, activated, handshake,
+                      nestedEmitCount, emitWitness>>
 
 (* DeliverSettle: consume the entire tier-3 (DATA/RESOLVED) prefix at head
    of queue[<<p, c>>] as one atomic delivery — matches the runtime after
@@ -344,11 +371,19 @@ DeliverSettle(p, c) ==
        /\ IF ~allSettled
             THEN /\ queues' = qs0
                  /\ trace'  = trace
+                 /\ emitWitness' = emitWitness
                  /\ UNCHANGED <<cache, status, version>>
             ELSE LET newCache  == Compute(c, cache)
                      sameAsOld == newCache = cache[c]
                      settleMsg == IF sameAsOld THEN Msg(RESOLVED, NullPayload)
                                                ELSE Msg(DATA, newCache)
+                     \* Record a ghost witness when a multi-parent derived emits DATA:
+                     \* the value it chose, plus the parents' cache values at the
+                     \* moment of recompute. Used by NestedDrainPeerConsistency.
+                     witness == [value |-> newCache,
+                                 parents |-> [pp \in Parents(c) |-> cache[pp]]]
+                     isMultiParentDataEmit ==
+                         ~sameAsOld /\ Cardinality(Parents(c)) >= 2
                  IN
                  /\ queues' = EnqueueOutFrom(qs0, c, settleMsg)
                  /\ trace'  = RecordAtSinkIfAny(trace, c, settleMsg)
@@ -357,7 +392,10 @@ DeliverSettle(p, c) ==
                  /\ version' = IF sameAsOld THEN version
                                              ELSE [version EXCEPT ![c] = @ + 1]
                  /\ status' = [status EXCEPT ![c] = "settled"]
-       /\ UNCHANGED <<emitCount, activated, handshake>>
+                 /\ emitWitness' = IF isMultiParentDataEmit
+                                     THEN [emitWitness EXCEPT ![c] = Append(@, witness)]
+                                     ELSE emitWitness
+       /\ UNCHANGED <<emitCount, activated, handshake, nestedEmitCount>>
 
 (* DeliverTerminal: consume COMPLETE or ERROR from queue[<<p, c>>].
    - Forwards the terminal to c's children exactly once.
@@ -378,7 +416,8 @@ DeliverTerminal(p, c) ==
        /\ queues' = EnqueueOutFrom(qs0, c, m)
        /\ trace'  = RecordAtSinkIfAny(trace, c, m)
        /\ status' = [status EXCEPT ![c] = "terminated"]
-       /\ UNCHANGED <<cache, version, dirtyMask, emitCount, activated, handshake>>
+       /\ UNCHANGED <<cache, version, dirtyMask, emitCount, activated, handshake,
+                      nestedEmitCount, emitWitness>>
 
 ----------------------------------------------------------------------------
 (* SubscribeSink(sid): fires once per sink. Synthesizes the handshake
@@ -404,23 +443,83 @@ SubscribeSink(sid) ==
     /\ ~activated[sid]
     /\ LET isSource == Parents(sid) = {}
            isTerminated == status[sid] = "terminated"
+           isMultiParent == Cardinality(Parents(sid)) >= 2
            startMsg == Msg(START, NullPayload)
+           \* Multi-parent derived activation under GapAwareActivation:
+           \* _activate subscribes deps sequentially, each push-on-subscribe
+           \* fires as its own wave. The first dep's settle opens a DIRTY at
+           \* the derived's downstream without any other dep settled yet →
+           \* first-run gate emits RESOLVED to balance the DIRTY. The second
+           \* dep's push-on-subscribe then fires another DIRTY, which produces
+           \* the real DATA after both deps settle. Net shape:
+           \* [[START], [DIRTY], [RESOLVED], [DIRTY], [DATA, cached]]. See
+           \* docs/optimizations.md "Multi-dep push-on-subscribe ordering" and
+           \* fast-check invariant #7 (derived-multi branch) for the substrate
+           \* observation that motivated this modeling.
+           gapAwareMultiSeq ==
+               <<startMsg, Msg(DIRTY, NullPayload), Msg(RESOLVED, NullPayload),
+                 Msg(DIRTY, NullPayload), Msg(DATA, cache[sid])>>
+           cleanSeq ==
+               <<startMsg, Msg(DIRTY, NullPayload), Msg(DATA, cache[sid])>>
            handshakeSeq ==
                CASE isTerminated ->
                       <<startMsg, Msg(COMPLETE, NullPayload)>>
                  [] isSource ->
                       <<startMsg, Msg(DATA, cache[sid])>>
+                 [] isMultiParent /\ GapAwareActivation ->
+                      gapAwareMultiSeq
                  [] OTHER ->
-                      <<startMsg, Msg(DIRTY, NullPayload), Msg(DATA, cache[sid])>>
+                      cleanSeq
        IN /\ handshake' = [handshake EXCEPT ![sid] = @ \o handshakeSeq]
           /\ activated' = [activated EXCEPT ![sid] = TRUE]
-          /\ UNCHANGED <<cache, status, version, dirtyMask, queues, trace, emitCount>>
+          /\ UNCHANGED <<cache, status, version, dirtyMask, queues, trace, emitCount,
+                         nestedEmitCount, emitWitness>>
+
+(* SinkNestedEmit(observer, target, v): models a sink callback that runs
+   batch(() => target.emit(v)) inside its own callback. Enabled only when:
+     - the triple is in the user-supplied `SinkNestedEmits` set;
+     - `observer` has already received a DATA in its trace (the callback is
+       firing BECAUSE that DATA arrived);
+     - target is a live source (not terminated) and the emitCount bound
+       allows one more wave.
+   The action enqueues `[[DIRTY], [DATA, v]]` to all of target's outbound
+   edges (standard emit semantics), then bumps `nestedEmitCount`. TLC then
+   explores how this nested bundle interleaves with the already-in-flight
+   outer-wave deliveries — the exact timing window where the §32 bug lives.
+*)
+ObserverHasReceivedData(observer) ==
+    \E i \in 1..Len(trace[observer]) : trace[observer][i].type = DATA
+
+SinkNestedEmit(observer, target, v) ==
+    /\ <<observer, target, v>> \in SinkNestedEmits
+    /\ target \in SourceIds
+    /\ status[target] = "settled"
+    /\ emitCount < MaxEmits
+    /\ nestedEmitCount < MaxNestedEmits
+    /\ ObserverHasReceivedData(observer)
+    /\ LET equalToCache == cache[target] = v
+           settleMsg    == IF equalToCache THEN Msg(RESOLVED, NullPayload)
+                                           ELSE Msg(DATA, v)
+           dirtyMsg     == Msg(DIRTY, NullPayload)
+           pair         == <<dirtyMsg, settleMsg>>
+       IN
+       /\ queues' = EnqueueSeqOutFrom(queues, target, pair)
+       /\ trace'  = RecordSeqAtSinkIfAny(trace, target, pair)
+       /\ cache'   = IF equalToCache THEN cache
+                                     ELSE [cache EXCEPT ![target] = v]
+       /\ version' = IF equalToCache THEN version
+                                     ELSE [version EXCEPT ![target] = @ + 1]
+       /\ UNCHANGED <<status, dirtyMask, activated, handshake, emitWitness>>
+       /\ emitCount' = emitCount + 1
+       /\ nestedEmitCount' = nestedEmitCount + 1
 
 Next ==
     \/ \E src \in SourceIds, v \in Values : Emit(src, v)
     \/ \E src \in SourceIds, vs \in BatchSeqs : BatchEmitMulti(src, vs)
     \/ \E src \in SourceIds : Terminate(src)
     \/ \E sid \in SinkIds : SubscribeSink(sid)
+    \/ \E triple \in SinkNestedEmits :
+         SinkNestedEmit(triple[1], triple[2], triple[3])
     \/ \E e \in EdgePairs :
         \/ DeliverDirty(e[1], e[2])
         \/ DeliverSettle(e[1], e[2])
@@ -506,17 +605,28 @@ EqualsFaithful ==
         = emitCount
 
 \* #7: START handshake well-formedness. For every activated sink,
-\* `handshake[sid]` matches one of the three valid shapes per §2.2:
+\* `handshake[sid]` matches one of the valid shapes per §2.2:
 \*   - source (no parents, not terminated): [[START], [DATA, cached]]
-\*   - derived (has parents, not terminated): [[START], [DIRTY], [DATA, computed]]
+\*   - single-parent derived (not terminated): [[START], [DIRTY], [DATA, computed]]
+\*   - multi-parent derived (not terminated):
+\*       clean:      [[START], [DIRTY], [DATA, computed]]           (ideal)
+\*       gap-aware:  [[START], [DIRTY], [RESOLVED], [DIRTY], [DATA]] (substrate today)
 \*   - terminated: [[START], [COMPLETE]]
-\* The check is structural — message TYPES at each position — not value-
-\* specific; specific value correctness is covered by invariants #1-6.
+\*
+\* This invariant is loosened vs. the original: the multi-parent derived
+\* case accepts both handshake shapes. The tight distinction between the two
+\* lives in `MultiDepHandshakeClean` below — that invariant fails under
+\* GapAwareActivation = TRUE, matching fast-check invariant #10.
 StartHandshakeValid ==
     \A sid \in SinkIds :
         activated[sid] =>
             LET H == handshake[sid]
                 isSource == Parents(sid) = {}
+                isMultiParent == Cardinality(Parents(sid)) >= 2
+                Content(msgs) == [i \in 1..Len(msgs) |-> msgs[i].type]
+                MatchesShape(shape) ==
+                    Len(H) = Len(shape)
+                    /\ \A i \in 1..Len(shape) : H[i].type = shape[i]
             IN
             /\ Len(H) >= 1
             /\ H[1].type = START
@@ -525,11 +635,67 @@ StartHandshakeValid ==
                  /\ H[2].type \in {COMPLETE, ERROR}
             /\ (~\E i \in 1..Len(H) : H[i].type \in {COMPLETE, ERROR}) =>
                  IF isSource
-                   THEN /\ Len(H) = 2
-                        /\ H[2].type = DATA
-                   ELSE /\ Len(H) = 3
-                        /\ H[2].type = DIRTY
-                        /\ H[3].type = DATA
+                   THEN MatchesShape(<<START, DATA>>)
+                   ELSE IF isMultiParent
+                          THEN \/ MatchesShape(<<START, DIRTY, DATA>>)
+                               \/ MatchesShape(<<START, DIRTY, RESOLVED, DIRTY, DATA>>)
+                          ELSE MatchesShape(<<START, DIRTY, DATA>>)
+
+\* #8 — MultiDepHandshakeClean (OPEN, ahead of substrate fix).
+\* For any activated multi-parent derived sink whose handshake completed
+\* WITHOUT a terminal, the handshake must NOT contain a RESOLVED. Equivalently:
+\* the handshake must be the clean `[[START], [DIRTY], [DATA]]` shape.
+\*
+\* This invariant FAILS under GapAwareActivation = TRUE — the counter-example
+\* is any multi-parent derived sink's synthesized gap-aware handshake. It
+\* PASSES under GapAwareActivation = FALSE (the ideal model where the
+\* substrate has been fixed to synthesize one combined initial wave).
+\*
+\* Ties to fast-check invariant #10 and docs/optimizations.md "Multi-dep
+\* push-on-subscribe ordering." Flipping this green is the TLA+-side gate
+\* for item 3's substrate fix; paired with the fast-check suite it forms an
+\* exhaustive-plus-randomized verification.
+MultiDepHandshakeClean ==
+    \A sid \in SinkIds :
+        activated[sid] =>
+            LET H == handshake[sid]
+                isMultiParent == Cardinality(Parents(sid)) >= 2
+                hasTerminal == \E i \in 1..Len(H) :
+                                 H[i].type \in {COMPLETE, ERROR}
+            IN
+            (isMultiParent /\ ~hasTerminal) =>
+                ~\E i \in 1..Len(H) : H[i].type = RESOLVED
+
+\* #9 — NestedDrainPeerConsistency. Every DATA recorded by a multi-parent
+\* derived must reflect peer cache values that are consistent with the
+\* eventual settled state — specifically, once all queues have drained, every
+\* witness in `emitWitness[n]` must have `witness.value = Compute(n, stable)`
+\* where `stable` is the fixed-point cache. The COMPOSITION-GUIDE §32 bug —
+\* if it were reproducible in the model — would manifest as a witness
+\* recording `value = Compute(n, staleCache)` where staleCache has a peer
+\* value that differs from the final cache.
+\*
+\* Modeling note: in the current state, DeliverSettle uses the FINAL cache
+\* at the moment of firing, not any prior wave's value. Because DeliverSettle
+\* is gated by `NoDirtyAnywhere` (tier ordering) and only fires when all
+\* dirty deps have delivered, the invariant holds by construction — there is
+\* no state where a derived recomputes with peer DIRTY still pending.
+\*
+\* Under SinkNestedEmits (non-empty), the action adds MORE interleavings via
+\* nested-wave source emissions, but still cannot violate the tier ordering
+\* (DIRTY drains before any DATA fires). The invariant therefore serves as a
+\* regression guard: any future substrate change that relaxes tier ordering
+\* or removes the `NoDirtyAnywhere` guard on `DeliverSettle` will trip this.
+\*
+\* Ties to fast-check invariant #11 and COMPOSITION-GUIDE §32.
+NestedDrainPeerConsistency ==
+    AllQueuesEmpty =>
+        \A n \in NodeIds :
+            Cardinality(Parents(n)) >= 2 =>
+                \A i \in 1..Len(emitWitness[n]) :
+                    LET w == emitWitness[n][i]
+                    IN w.parents = [pp \in Parents(n) |-> cache[pp]]
+                       => w.value = Compute(n, cache)
 
 \* #6: A source's `version` equals the count of DATA tuples in its own
 \*     trace, because a source that is also a sink records every
@@ -556,5 +722,12 @@ TypeOK ==
     /\ emitCount \in Nat
     /\ activated \in [NodeIds -> BOOLEAN]
     /\ handshake \in [NodeIds -> Seq([type: MsgTypes, value: PayloadDomain])]
+    /\ nestedEmitCount \in Nat
+    \* emitWitness is a ghost sequence of structured records; we keep its type
+    \* check loose because the inner `parents` map is defined over Parents(n),
+    \* a per-node subset of NodeIds — encoding that precisely in TLC's type
+    \* system costs more than it buys in catching drift.
+    /\ \A n \in NodeIds : emitWitness[n] \in Seq([value: PayloadDomain,
+                                                    parents: [Parents(n) -> PayloadDomain]])
 
 ============================================================================
