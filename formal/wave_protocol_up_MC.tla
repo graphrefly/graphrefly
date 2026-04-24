@@ -52,4 +52,27 @@ MaxUpActionsMC    == 2
 
 \* §2.4 multi-sink iteration axis disabled — single-sink semantics preserved.
 ExtraSinksMC      == [n \in NodeIdsMC |-> 0]
+
+\* Package 4 (2026-04-23): preserve existing "reset all derived" semantics
+\* — sources keep cache, derived clear. Flip to `{}` for a preserve-all MC.
+ResetOnTeardownNodesMC == NodeIdsMC \ SourceIdsMC
+
+\* Package 6 (2026-04-23): INVALIDATE axis disabled in existing MCs.
+InvalidateOriginatorsMC == {}
+MaxInvalidatesMC        == 0
+
+\* Package 5 (2026-04-23): auto-terminal gating — all nodes default TRUE
+\* so existing MCs preserve prior "any dep terminal cascades" behavior.
+AutoCompleteOnDepsCompleteMC == [n \in NodeIdsMC |-> TRUE]
+AutoErrorOnDepsErrorMC       == [n \in NodeIdsMC |-> TRUE]
+
+\* Package 3 (2026-04-23): replayBuffer + equals variance axes disabled
+\* by default in existing MCs. ReplayBufferSize = 0 and EqualsAbsorbs = TRUE
+\* preserve prior behavior exactly.
+ReplayBufferSizeMC == [n \in NodeIdsMC |-> 0]
+EqualsAbsorbsMC    == [n \in NodeIdsMC |-> TRUE]
+
+\* Package 7 (2026-04-23): meta companion TEARDOWN axis disabled in existing MCs.
+MetaCompanionsMC == [n \in NodeIdsMC |-> {}]
+MaxTeardownsMC   == 0
 ==============================================================================

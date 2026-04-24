@@ -97,6 +97,56 @@ CONSTANTS
                           \*   / UpTeardown originators are future work — when
                           \*   added they'll share this counter and likewise be
                           \*   covered by `UpQueuesCarryControlPlane`'s tier set.
+    ReplayBufferSize,     \* NodeIds -> Nat. Mirrors spec §2.5 `replayBuffer`.
+                          \*   0 = disabled (default all existing MCs). > 0
+                          \*   caps a per-node ring of last N DATA values
+                          \*   appended by the `Emit` action (other emission
+                          \*   actions deferred as Package 3 extension).
+                          \*   Added 2026-04-23 batch 3 Package 3.
+    EqualsAbsorbs,        \* NodeIds -> BOOLEAN. Mirrors spec §2.5 `equals`
+                          \*   variance. TRUE (default) = normal strict
+                          \*   equality suppresses same-value emits as
+                          \*   RESOLVED. FALSE = `equals: () => false` —
+                          \*   every Emit produces DATA regardless of value
+                          \*   sameness. Added 2026-04-23 batch 3 Package 3.
+    AutoCompleteOnDepsComplete, \* NodeIds -> BOOLEAN. Mirrors spec §2.5
+                                 \*   `completeWhenDepsComplete`. When TRUE
+                                 \*   (default), `DeliverTerminal` with a
+                                 \*   COMPLETE message transitions c to
+                                 \*   "terminated" and forwards. When FALSE,
+                                 \*   the COMPLETE is ABSORBED at c (consumed
+                                 \*   but not forwarded) — c stays live to
+                                 \*   emit recovery values (rescue/catchError
+                                 \*   semantic). Added 2026-04-23 batch 3
+                                 \*   Package 5.
+    AutoErrorOnDepsError, \* NodeIds -> BOOLEAN. Mirrors spec §2.5
+                           \*   `errorWhenDepsError`. Same shape as
+                           \*   `AutoCompleteOnDepsComplete` but for ERROR.
+    MetaCompanions,       \* NodeIds -> SUBSET NodeIds. Parent → its meta
+                          \*   children (spec §2.3). Default `[n |-> {}]` in
+                          \*   existing MCs → axis disabled. When non-empty,
+                          \*   `Teardown(parent)` fans out to each meta
+                          \*   child, recording parent's pre-reset cache and
+                          \*   status to `teardownWitness[child]`. Added
+                          \*   2026-04-23 batch 3 Package 7.
+    MaxTeardowns,         \* Bound on `Teardown` firings — keeps state space
+                          \*   finite when the axis is enabled.
+    InvalidateOriginators, \* SUBSET NodeIds. Nodes that can originate an
+                           \*   `Invalidate(n)` action. Empty set disables the
+                           \*   axis — default for all existing MCs. Added
+                           \*   2026-04-23 batch 3 Package 6.
+    MaxInvalidates,       \* Bound on `Invalidate` firings — keeps state space
+                           \*   finite when the axis is enabled.
+    ResetOnTeardownNodes, \* SUBSET NodeIds. Mirrors per-node `resetOnTeardown`
+                          \*   (spec §2.5). When a node in this set is
+                          \*   resubscribed after a terminal, its cache is
+                          \*   CLEARED to `DefaultInitial`. When NOT in this
+                          \*   set, the cache is PRESERVED across the terminal
+                          \*   boundary (spec default `false`). Added 2026-04-23
+                          \*   as Package 4 of the rigor iterator — existing MCs
+                          \*   default to (NodeIds \ SourceIds) to preserve
+                          \*   the prior "reset all derived" behavior so the
+                          \*   shipped invariants remain green.
     ExtraSinks            \* NodeId -> Nat. For every sink node `n`, ExtraSinks[n]
                           \*   counts how many ADDITIONAL external subscribers observe
                           \*   `n` beyond the "primary sink" whose trace lives in
@@ -124,6 +174,15 @@ ASSUME MaxPauseActions \in Nat
 ASSUME UpOriginators \subseteq NodeIds
 ASSUME MaxUpActions \in Nat
 ASSUME ExtraSinks \in [NodeIds -> Nat]
+ASSUME ResetOnTeardownNodes \subseteq NodeIds
+ASSUME InvalidateOriginators \subseteq NodeIds
+ASSUME MaxInvalidates \in Nat
+ASSUME AutoCompleteOnDepsComplete \in [NodeIds -> BOOLEAN]
+ASSUME AutoErrorOnDepsError \in [NodeIds -> BOOLEAN]
+ASSUME ReplayBufferSize \in [NodeIds -> Nat]
+ASSUME EqualsAbsorbs \in [NodeIds -> BOOLEAN]
+ASSUME MetaCompanions \in [NodeIds -> SUBSET NodeIds]
+ASSUME MaxTeardowns \in Nat
 
 Parents(n) == {p \in NodeIds : <<p, n>> \in Edges}
 
@@ -153,7 +212,17 @@ COMPLETE == "COMPLETE"
 ERROR    == "ERROR"
 PAUSE    == "PAUSE"       \* tier-2, carries lockId payload (§2.6)
 RESUME   == "RESUME"      \* tier-2, carries lockId payload (§2.6)
-MsgTypes == {START, DIRTY, DATA, RESOLVED, COMPLETE, ERROR, PAUSE, RESUME}
+INVALIDATE == "INVALIDATE" \* tier-1 (§1.4 — cache-reset broadcast). Added
+                           \* 2026-04-23 batch 3 Package 6; modeled as a
+                           \* source-side action with cleanup-witness ghost,
+                           \* no queue propagation yet (propagation is a
+                           \* future axis — see "Invalidate" action below).
+TEARDOWN == "TEARDOWN"     \* tier-5 (§2.3 — meta companion fan-out). Added
+                           \* 2026-04-23 batch 3 Package 7; modeled as a
+                           \* parent-side action with meta-TEARDOWN-witness
+                           \* ghost — verifies meta children observe TEARDOWN
+                           \* with parent's PRE-reset cache/status.
+MsgTypes == {START, DIRTY, DATA, RESOLVED, COMPLETE, ERROR, PAUSE, RESUME, INVALIDATE, TEARDOWN}
 
 \* A message: type + always-present payload. Tuples that have no
 \* semantic payload (DIRTY, RESOLVED, COMPLETE, ERROR, START) use the
@@ -209,6 +278,48 @@ EnqueuePendingExtraSeq(ped, n, msgs, cch) ==
                                   [j \in 1..Len(msgs) |-> PendingItem(msgs[j], cch)]]]
       ELSE ped
 
+\* Per-item variant (added 2026-04-23, Package 2 fix). Takes a sequence of
+\* pre-built PendingItem records — each already stamped with its OWN cache-at-
+\* emit-time snapshot. Used by `BatchEmitMulti` so intermediate DATAs in a
+\* K-emit batch don't all carry the batch-final cache (the prior bug: every
+\* item got `cacheAfter = finalCacheVal` regardless of its own emit order).
+EnqueuePendingExtraItems(ped, n, items) ==
+    IF n \in SinkIds /\ ExtraSinks[n] > 0
+      THEN [ped EXCEPT ![n] = [i \in 1..ExtraSinks[n] |-> ped[n][i] \o items]]
+      ELSE ped
+
+\* Build per-item PendingItem records for a BatchEmitMulti bundle at src.
+\* DIRTYs (tier-1) all stamp the pre-batch cache — tier-1 doesn't advance
+\* cache. Settles each stamp the cache AFTER their own emit (running state).
+RECURSIVE BuildSettleItemsRec(_, _, _, _)
+BuildSettleItemsRec(vs, curCacheVal, initialCacheMap, src) ==
+    IF Len(vs) = 0 THEN <<>>
+    ELSE LET v == Head(vs)
+             isEq == v = curCacheVal
+             newCacheVal == IF isEq THEN curCacheVal ELSE v
+             sMsg == IF isEq THEN Msg(RESOLVED, NullPayload) ELSE Msg(DATA, v)
+             snapAfter == IF isEq THEN initialCacheMap
+                                   ELSE [initialCacheMap EXCEPT ![src] = newCacheVal]
+         IN <<PendingItem(sMsg, snapAfter)>> \o
+              BuildSettleItemsRec(Tail(vs), newCacheVal, snapAfter, src)
+
+BuildBatchPendingItems(vs, initialCacheMap, src) ==
+    LET k == Len(vs)
+        dirtyItems == [j \in 1..k |-> PendingItem(Msg(DIRTY, NullPayload), initialCacheMap)]
+        settleItems == BuildSettleItemsRec(vs, initialCacheMap[src], initialCacheMap, src)
+    IN dirtyItems \o settleItems
+
+\* --- §2.5 replayBuffer helper (added 2026-04-23 batch 3 Package 3) ---
+\* Append `v` to the ring at node `n`, bounded by `ReplayBufferSize[n]`.
+\* Oldest value drops when at cap. When size is 0, the buffer is disabled —
+\* no update. Called from `Emit` on DATA emissions.
+AppendToReplayBuffer(rb, n, v) ==
+    IF ReplayBufferSize[n] = 0
+      THEN rb
+      ELSE IF Len(rb[n]) < ReplayBufferSize[n]
+             THEN [rb EXCEPT ![n] = Append(@, v)]
+             ELSE [rb EXCEPT ![n] = Append(Tail(@), v)]
+
 ----------------------------------------------------------------------------
 VARIABLES
     cache,            \* NodeId -> Values  (always a real value in this simplified model)
@@ -217,7 +328,13 @@ VARIABLES
     dirtyMask,        \* NodeId -> Set of parent ids whose DIRTY is unmatched
     queues,           \* <<parent, child>> -> Seq of messages
     trace,            \* NodeId -> Seq of messages observed at sinks (protocol emissions only)
-    emitCount,        \* Nat, bounds exploration
+    emitCount,        \* Nat, bounds exploration (global across all sources)
+    \* Per-source emit counter (added 2026-04-23 as I4 fix). Generalizes
+    \* `EqualsFaithful` from single-source-implicit to multi-source-sound.
+    \* Incremented by `Emit(src, v)`, `BatchEmitMulti(src, vs)`,
+    \* `SinkNestedEmit(observer, target, v)` — always at the emitting source's
+    \* slot. Parallel to `emitCount` (which stays the global bound).
+    perSourceEmitCount, \* NodeIds -> Nat
     activated,        \* NodeId -> BOOLEAN (has a subscriber attached to this sink?)
     handshake,        \* NodeId -> Seq of messages delivered during the subscribe handshake
     nestedEmitCount,  \* Nat, bounds SinkNestedEmit action firings
@@ -262,13 +379,37 @@ VARIABLES
     \* map at enqueue time. If cache has moved between enqueue and dequeue
     \* for a DATA payload, the multi-sink ordering invariant trips.
     extraSinkTrace,          \* [NodeId -> [1..ExtraSinks[n] -> Seq(Message)]]
-    pendingExtraDelivery     \* [NodeId -> [1..ExtraSinks[n] -> Seq(Record)]]
+    pendingExtraDelivery,    \* [NodeId -> [1..ExtraSinks[n] -> Seq(Record)]]
+    \* --- §1.4 INVALIDATE + cleanup witness (added 2026-04-23, batch 3 Package 6) ---
+    \* Each `Invalidate(n)` firing appends the current `cache[n]` to the
+    \* witness. The invariant `CleanupWitnessInValueDomain` verifies every
+    \* witness entry holds a valid Value — structural guard that the cleanup
+    \* hook observed a real cached state (not the post-reset sentinel).
+    invalidateCount,         \* Nat — bounds Invalidate action firings
+    cleanupWitness,          \* NodeIds -> Seq(Values)
+    \* --- §2.5 replayBuffer (added 2026-04-23, batch 3 Package 3) ---
+    \* Per-node ring buffer of last N DATA values. Appended by `Emit` only
+    \* in this MVP (BatchEmitMulti / DeliverSettle / SinkNestedEmit deferred).
+    \* Bounded by `ReplayBufferSize[n]`; oldest dropped when at cap.
+    replayBuffer,            \* NodeIds -> Seq(Values)
+    \* --- §2.3 meta companion TEARDOWN (added 2026-04-23, batch 3 Package 7) ---
+    \* `teardownCount` bounds `Teardown` firings. `teardownWitness[child]`
+    \* records, for each meta child, the parent's cache[parent] and
+    \* status[parent] at the moment TEARDOWN fanned out — the invariant
+    \* `MetaTeardownObservedPreReset` verifies no child saw a post-reset
+    \* parent (status = "terminated" or a sentinel cache).
+    teardownCount,           \* Nat
+    teardownWitness          \* NodeIds -> Seq([cache: Values, status: ...])
 
 vars == <<cache, status, version, dirtyMask, queues, trace, emitCount,
+          perSourceEmitCount,
           activated, handshake, nestedEmitCount, emitWitness,
           pauseLocks, pauseBuffer, resubscribeCount, pauseActionCount,
           upQueues, upActionCount,
-          extraSinkTrace, pendingExtraDelivery>>
+          extraSinkTrace, pendingExtraDelivery,
+          invalidateCount, cleanupWitness,
+          replayBuffer,
+          teardownCount, teardownWitness>>
 
 ----------------------------------------------------------------------------
 Init ==
@@ -279,6 +420,7 @@ Init ==
     /\ queues = [e \in EdgePairs |-> <<>>]
     /\ trace = [n \in NodeIds |-> <<>>]
     /\ emitCount = 0
+    /\ perSourceEmitCount = [n \in NodeIds |-> 0]
     /\ activated = [n \in NodeIds |-> FALSE]
     /\ handshake = [n \in NodeIds |-> <<>>]
     /\ nestedEmitCount = 0
@@ -291,6 +433,11 @@ Init ==
     /\ upActionCount = 0
     /\ extraSinkTrace = [n \in NodeIds |-> [i \in 1..ExtraSinks[n] |-> <<>>]]
     /\ pendingExtraDelivery = [n \in NodeIds |-> [i \in 1..ExtraSinks[n] |-> <<>>]]
+    /\ invalidateCount = 0
+    /\ cleanupWitness = [n \in NodeIds |-> <<>>]
+    /\ replayBuffer = [n \in NodeIds |-> <<>>]
+    /\ teardownCount = 0
+    /\ teardownWitness = [n \in NodeIds |-> <<>>]
 
 ----------------------------------------------------------------------------
 (* BufferAll predicate: a node n captures its outgoing tier-3/4 emissions into
@@ -299,6 +446,41 @@ Init ==
    `_emit` L1958 (`this._paused && this._pausable === "resumeAll"`).
 *)
 IsCapturedByBuffer(n) == Pausable[n] = "resumeAll" /\ pauseLocks[n] # {}
+
+(* --- §2.4 multi-sink iteration gate (added 2026-04-23 batch 3 Package 2) ---
+
+`AllExtraPendingEmpty` models the runtime's atomic `_deliverToSinks`
+iteration: while iteration is in progress (any node has non-empty
+`pendingExtraDelivery`), no other emission-like action can fire.
+
+Gated (waits for drain): Emit, BatchEmitMulti, Terminate, DeliverDirty,
+DeliverSettle, DeliverTerminal, Pause, Resume, DeliverPauseResume,
+DeliverUp (because its bufferAll-drain branches also enqueue to
+pendingExtraDelivery).
+
+Exempt (may fire mid-iteration):
+  - `DeliverToExtraSink` — the drain action itself.
+  - `SinkNestedEmit` — models the runtime's nested-emit-from-sink-callback
+    window (COMPOSITION-GUIDE §32). Firing it mid-iteration is the whole
+    point.
+  - `Invalidate`, `Teardown` — witness-only ghost actions; no queue /
+    pending writes so they can't disturb the iteration contract.
+  - `UpPause`, `UpResume` — write only to `upQueues`; no pending writes.
+  - `SubscribeSink`, `Resubscribe` — write handshake / lifecycle state;
+    no pending writes at the emitting-node slot.
+
+Under this gate, the deferred `MultiSinkIterationDriftClean` (#21) would
+surface COMPOSITION-GUIDE §32 peer-read bugs: the only way a pending
+DATA's `msg.value` can disagree with the current `cache[n]` is if a
+`SinkNestedEmit` fired mid-iteration and advanced cache at that node.
+(The drift form is not shipped today — see #21 docblock below for why.)
+
+Vacuous in all MCs with `ExtraSinks = [n |-> 0]` (pending always empty →
+gate is tautology). Exercised by the multisink / multisink_batch MCs.
+*)
+AllExtraPendingEmpty ==
+    \A n \in NodeIds : \A i \in 1..ExtraSinks[n] :
+        pendingExtraDelivery[n][i] = <<>>
 
 (* A source emits a value. Per equals-substitution at the source:
    - if v = cache[src]: settle msg is RESOLVED, no cache/version change
@@ -314,9 +496,15 @@ IsCapturedByBuffer(n) == Pausable[n] = "resumeAll" /\ pauseLocks[n] # {}
 *)
 Emit(src, v) ==
     /\ src \in SourceIds
+    /\ AllExtraPendingEmpty
     /\ emitCount < MaxEmits
     /\ status[src] = "settled"
-    /\ LET equalToCache == cache[src] = v
+    \* Package 3 (2026-04-23): equality is gated by `EqualsAbsorbs[src]`.
+    \* TRUE (default) = strict equality, same-value emits become RESOLVED.
+    \* FALSE = `equals: () => false` — every emit produces DATA (v != cur
+    \* always holds, so settleMsg is DATA). Cache still advances to v (but
+    \* since v might equal cur, cache may not numerically change).
+    /\ LET equalToCache == EqualsAbsorbs[src] /\ cache[src] = v
            settleMsg    == IF equalToCache THEN Msg(RESOLVED, NullPayload)
                                            ELSE Msg(DATA, v)
            dirtyMsg     == Msg(DIRTY, NullPayload)
@@ -343,11 +531,18 @@ Emit(src, v) ==
           /\ cache'   = cacheAfter
           /\ version' = IF equalToCache THEN version
                                         ELSE [version EXCEPT ![src] = @ + 1]
+          \* Package 3: append to ring on DATA emits (equalToCache = FALSE).
+          \* On RESOLVED emits (no cache change), ring is untouched.
+          /\ replayBuffer' = IF equalToCache THEN replayBuffer
+                                              ELSE AppendToReplayBuffer(replayBuffer, src, v)
           /\ UNCHANGED <<status, dirtyMask, activated, handshake,
                          nestedEmitCount, emitWitness,
                          pauseLocks, resubscribeCount, pauseActionCount,
-                         upQueues, upActionCount, extraSinkTrace>>
+                         upQueues, upActionCount, extraSinkTrace,
+                      invalidateCount, cleanupWitness,
+                      teardownCount, teardownWitness>>
           /\ emitCount' = emitCount + 1
+          /\ perSourceEmitCount' = [perSourceEmitCount EXCEPT ![src] = @ + 1]
 
 (* BatchEmitMulti(src, vs): atomic multi-emit inside a user `batch()` scope.
    Models Bug 2 fix — K consecutive `.emit()` calls to `src` coalesce into
@@ -392,6 +587,7 @@ DirtySeqOf(k) == [i \in 1..k |-> Msg(DIRTY, NullPayload)]
 
 BatchEmitMulti(src, vs) ==
     /\ src \in SourceIds
+    /\ AllExtraPendingEmpty
     /\ vs # <<>>
     /\ status[src] = "settled"
     /\ emitCount + Len(vs) <= MaxEmits
@@ -407,24 +603,36 @@ BatchEmitMulti(src, vs) ==
           /\ IF captured
                THEN
                  \* DIRTYs flow immediately; settles divert to buffer in order.
+                 \* DIRTYs stamp pre-batch cache (tier-1 doesn't advance cache).
                  /\ queues' = EnqueueSeqOutFrom(queues, src, dirtyPrefix)
                  /\ trace'  = RecordSeqAtSinkIfAny(trace, src, dirtyPrefix)
                  /\ pendingExtraDelivery' =
-                      EnqueuePendingExtraSeq(pendingExtraDelivery, src, dirtyPrefix, cacheAfter)
+                      EnqueuePendingExtraSeq(pendingExtraDelivery, src, dirtyPrefix, cache)
                  /\ pauseBuffer' = [pauseBuffer EXCEPT ![src] = @ \o settles]
                ELSE
+                 \* Per-item snapshots: DIRTYs stamp pre-batch cache, each
+                 \* settle stamps cache-after-its-own-emit. Package 2 fix:
+                 \* previously every item was stamped with the BATCH-FINAL
+                 \* cacheAfter, so intermediate DATAs falsely carried the
+                 \* final value — vacuous without the stricter invariant but
+                 \* a false-positive source once it landed.
                  /\ queues' = EnqueueSeqOutFrom(queues, src, bundle)
                  /\ trace'  = RecordSeqAtSinkIfAny(trace, src, bundle)
                  /\ pendingExtraDelivery' =
-                      EnqueuePendingExtraSeq(pendingExtraDelivery, src, bundle, cacheAfter)
+                      EnqueuePendingExtraItems(pendingExtraDelivery, src,
+                          BuildBatchPendingItems(vs, cache, src))
                  /\ pauseBuffer' = pauseBuffer
           /\ cache'  = cacheAfter
           /\ version' = [version EXCEPT ![src] = @ + dataCount]
           /\ UNCHANGED <<status, dirtyMask, activated, handshake,
                          nestedEmitCount, emitWitness,
                          pauseLocks, resubscribeCount, pauseActionCount,
-                         upQueues, upActionCount, extraSinkTrace>>
+                         upQueues, upActionCount, extraSinkTrace,
+                      invalidateCount, cleanupWitness,
+                      replayBuffer,
+                      teardownCount, teardownWitness>>
           /\ emitCount' = emitCount + Len(vs)
+          /\ perSourceEmitCount' = [perSourceEmitCount EXCEPT ![src] = @ + Len(vs)]
 
 (* A source terminates. Enqueues COMPLETE to every child and transitions
    to "terminated" — the source refuses further Emit actions thereafter.
@@ -437,6 +645,7 @@ BatchEmitMulti(src, vs) ==
 *)
 Terminate(src) ==
     /\ src \in SourceIds
+    /\ AllExtraPendingEmpty
     /\ status[src] = "settled"
     /\ LET m == Msg(COMPLETE, NullPayload) IN
        /\ queues' = EnqueueOutFrom(queues, src, m)
@@ -452,10 +661,13 @@ Terminate(src) ==
        \* flight would strand messages indefinitely.
        /\ upQueues' = [e \in EdgePairs |->
                           IF e[1] = src THEN <<>> ELSE upQueues[e]]
-       /\ UNCHANGED <<cache, version, dirtyMask, emitCount, activated, handshake,
+       /\ UNCHANGED <<cache, version, dirtyMask, emitCount, perSourceEmitCount, activated, handshake,
                       nestedEmitCount, emitWitness,
                       resubscribeCount, pauseActionCount,
-                      upActionCount, extraSinkTrace>>
+                      upActionCount, extraSinkTrace,
+                      invalidateCount, cleanupWitness,
+                      replayBuffer,
+                      teardownCount, teardownWitness>>
 
 ----------------------------------------------------------------------------
 \* Tier-drain predicates enforcing §1.3 invariant 7 message ordering.
@@ -507,6 +719,7 @@ Tier1DirtyPrefixLen(q) ==
 *)
 DeliverDirty(p, c) ==
     /\ <<p, c>> \in EdgePairs
+    /\ AllExtraPendingEmpty
     /\ Len(queues[<<p, c>>]) > 0
     /\ IsDirtyMsg(Head(queues[<<p, c>>]))
     /\ status[c] # "terminated"
@@ -526,10 +739,13 @@ DeliverDirty(p, c) ==
                  /\ pendingExtraDelivery' = pendingExtraDelivery
        /\ status' = [status EXCEPT ![c] = "dirty"]
        /\ dirtyMask' = [dirtyMask EXCEPT ![c] = @ \cup {p}]
-       /\ UNCHANGED <<cache, version, emitCount, activated, handshake,
+       /\ UNCHANGED <<cache, version, emitCount, perSourceEmitCount, activated, handshake,
                       nestedEmitCount, emitWitness,
                       pauseLocks, pauseBuffer, resubscribeCount, pauseActionCount,
-                      upQueues, upActionCount, extraSinkTrace>>
+                      upQueues, upActionCount, extraSinkTrace,
+                      invalidateCount, cleanupWitness,
+                      replayBuffer,
+                      teardownCount, teardownWitness>>
 
 (* DeliverSettle: consume the entire tier-3 (DATA/RESOLVED) prefix at head
    of queue[<<p, c>>] as one atomic delivery — matches the runtime after
@@ -550,6 +766,7 @@ DeliverDirty(p, c) ==
 *)
 DeliverSettle(p, c) ==
     /\ <<p, c>> \in EdgePairs
+    /\ AllExtraPendingEmpty
     /\ Len(queues[<<p, c>>]) > 0
     /\ IsSettlementMsg(Head(queues[<<p, c>>]))
     /\ status[c] # "terminated"
@@ -567,7 +784,10 @@ DeliverSettle(p, c) ==
                  /\ pauseBuffer' = pauseBuffer
                  /\ pendingExtraDelivery' = pendingExtraDelivery
                  /\ emitWitness' = emitWitness
-                 /\ UNCHANGED <<cache, status, version>>
+                 /\ UNCHANGED <<cache, status, version,
+                      invalidateCount, cleanupWitness,
+                      replayBuffer,
+                      teardownCount, teardownWitness>>
             ELSE LET newCache  == Compute(c, cache)
                      sameAsOld == newCache = cache[c]
                      settleMsg == IF sameAsOld THEN Msg(RESOLVED, NullPayload)
@@ -605,9 +825,12 @@ DeliverSettle(p, c) ==
                  /\ emitWitness' = IF isMultiParentDataEmit
                                      THEN [emitWitness EXCEPT ![c] = Append(@, witness)]
                                      ELSE emitWitness
-       /\ UNCHANGED <<emitCount, activated, handshake, nestedEmitCount,
+       /\ UNCHANGED <<emitCount, perSourceEmitCount, activated, handshake, nestedEmitCount,
                       pauseLocks, resubscribeCount, pauseActionCount,
-                      upQueues, upActionCount, extraSinkTrace>>
+                      upQueues, upActionCount, extraSinkTrace,
+                      invalidateCount, cleanupWitness,
+                      replayBuffer,
+                      teardownCount, teardownWitness>>
 
 (* DeliverTerminal: consume COMPLETE or ERROR from queue[<<p, c>>].
    - Forwards the terminal to c's children exactly once.
@@ -617,6 +840,7 @@ DeliverSettle(p, c) ==
 *)
 DeliverTerminal(p, c) ==
     /\ <<p, c>> \in EdgePairs
+    /\ AllExtraPendingEmpty
     /\ Len(queues[<<p, c>>]) > 0
     /\ Head(queues[<<p, c>>]).type \in {COMPLETE, ERROR}
     /\ status[c] # "terminated"
@@ -624,23 +848,96 @@ DeliverTerminal(p, c) ==
     /\ NoSettleAnywhere
     /\ LET m   == Head(queues[<<p, c>>])
            qs0 == [queues EXCEPT ![<<p, c>>] = Tail(@)]
+           \* Package 5 (2026-04-23) per-node auto-terminal gating. When the
+           \* gate is FALSE for this message type, the terminal is ABSORBED
+           \* at c (consumed, not forwarded, no status transition). Rescue /
+           \* catchError operator semantic: c stays live to emit recovery
+           \* values downstream.
+           gate == IF m.type = COMPLETE
+                     THEN AutoCompleteOnDepsComplete[c]
+                     ELSE AutoErrorOnDepsError[c]
+           newMask == dirtyMask[c] \ {p}
+           \* D1 fix (2026-04-23 QA): when absorb branch clears the last
+           \* dirty dep, we must recompute and settle — same shape as
+           \* DeliverSettle's allSettled branch. Without this, the node
+           \* sits in "dirty" with empty mask but never re-emits, which
+           \* misses the rescue/catchError "emit recovery value on dep
+           \* terminal" semantic.
+           rescueRecompute == ~gate /\ newMask = {} /\ status[c] = "dirty"
+           rNewCache == Compute(c, cache)
+           rSameAsOld == rNewCache = cache[c]
+           rSettleMsg == IF rSameAsOld THEN Msg(RESOLVED, NullPayload)
+                                       ELSE Msg(DATA, rNewCache)
+           rCaptured == IsCapturedByBuffer(c)
+           rCacheAfter == IF rSameAsOld THEN cache
+                                         ELSE [cache EXCEPT ![c] = rNewCache]
        IN
-       /\ queues' = EnqueueOutFrom(qs0, c, m)
-       /\ trace'  = RecordAtSinkIfAny(trace, c, m)
-       /\ pendingExtraDelivery' =
-            EnqueuePendingExtra(pendingExtraDelivery, c, m, cache)
-       /\ status' = [status EXCEPT ![c] = "terminated"]
-       /\ pauseLocks' = [pauseLocks EXCEPT ![c] = {}]
-       /\ pauseBuffer' = [pauseBuffer EXCEPT ![c] = <<>>]
-       \* Clear upQueues TO the now-terminated node (same reasoning as
-       \* `Terminate(src)`): DeliverUp gates on `status[p] # "terminated"`,
-       \* so stranded messages would compound state forever.
-       /\ upQueues' = [e \in EdgePairs |->
-                          IF e[1] = c THEN <<>> ELSE upQueues[e]]
-       /\ UNCHANGED <<cache, version, dirtyMask, emitCount, activated, handshake,
+       /\ IF gate
+            THEN
+              \* Default auto-terminal path: forward + transition + cleanup.
+              /\ queues' = EnqueueOutFrom(qs0, c, m)
+              /\ trace'  = RecordAtSinkIfAny(trace, c, m)
+              /\ pendingExtraDelivery' =
+                   EnqueuePendingExtra(pendingExtraDelivery, c, m, cache)
+              /\ status' = [status EXCEPT ![c] = "terminated"]
+              /\ pauseLocks' = [pauseLocks EXCEPT ![c] = {}]
+              /\ pauseBuffer' = [pauseBuffer EXCEPT ![c] = <<>>]
+              /\ cache' = cache
+              /\ version' = version
+              \* Clear upQueues TO the now-terminated node (same reasoning
+              \* as `Terminate(src)`): DeliverUp gates on
+              \* `status[p] # "terminated"`, so stranded messages would
+              \* compound state forever.
+              /\ upQueues' = [e \in EdgePairs |->
+                                 IF e[1] = c THEN <<>> ELSE upQueues[e]]
+            ELSE IF rescueRecompute
+                   THEN
+                     \* D1 rescue path: mask fully cleared by this dep's
+                     \* terminal absorption → recompute + settle (mirroring
+                     \* DeliverSettle all-settled branch).
+                     /\ IF rCaptured
+                          THEN
+                            /\ queues' = qs0
+                            /\ trace'  = trace
+                            /\ pendingExtraDelivery' = pendingExtraDelivery
+                            /\ pauseBuffer' =
+                                 [pauseBuffer EXCEPT ![c] = Append(@, rSettleMsg)]
+                          ELSE
+                            /\ queues' = EnqueueOutFrom(qs0, c, rSettleMsg)
+                            /\ trace'  = RecordAtSinkIfAny(trace, c, rSettleMsg)
+                            /\ pendingExtraDelivery' =
+                                 EnqueuePendingExtra(pendingExtraDelivery, c,
+                                                      rSettleMsg, rCacheAfter)
+                            /\ pauseBuffer' = pauseBuffer
+                     /\ cache' = rCacheAfter
+                     /\ version' = IF rSameAsOld THEN version
+                                                  ELSE [version EXCEPT ![c] = @ + 1]
+                     /\ status' = [status EXCEPT ![c] = "settled"]
+                     /\ pauseLocks' = pauseLocks
+                     /\ upQueues' = upQueues
+                   ELSE
+                     \* Gated-off rescue path: absorb the terminal, stay live.
+                     \* dirtyMask is cleared for p (dep-terminal counts as dep-
+                     \* settlement for rescue's purposes — runtime parallel is
+                     \* `_dirtyDepCount` decrementing on terminal receipt).
+                     /\ queues' = qs0
+                     /\ trace'  = trace
+                     /\ pendingExtraDelivery' = pendingExtraDelivery
+                     /\ status' = status
+                     /\ pauseLocks' = pauseLocks
+                     /\ pauseBuffer' = pauseBuffer
+                     /\ upQueues' = upQueues
+                     /\ cache' = cache
+                     /\ version' = version
+       /\ dirtyMask' = IF gate THEN dirtyMask
+                                ELSE [dirtyMask EXCEPT ![c] = newMask]
+       /\ UNCHANGED <<emitCount, perSourceEmitCount, activated, handshake,
                       nestedEmitCount, emitWitness,
                       resubscribeCount, pauseActionCount,
-                      upActionCount, extraSinkTrace>>
+                      upActionCount, extraSinkTrace,
+                      invalidateCount, cleanupWitness,
+                      replayBuffer,
+                      teardownCount, teardownWitness>>
 
 ----------------------------------------------------------------------------
 (* SubscribeSink(sid): fires once per sink. Synthesizes the handshake
@@ -695,11 +992,14 @@ SubscribeSink(sid) ==
                       cleanSeq
        IN /\ handshake' = [handshake EXCEPT ![sid] = @ \o handshakeSeq]
           /\ activated' = [activated EXCEPT ![sid] = TRUE]
-          /\ UNCHANGED <<cache, status, version, dirtyMask, queues, trace, emitCount,
+          /\ UNCHANGED <<cache, status, version, dirtyMask, queues, trace, emitCount, perSourceEmitCount,
                          nestedEmitCount, emitWitness,
                          pauseLocks, pauseBuffer, resubscribeCount, pauseActionCount,
                          upQueues, upActionCount,
-                         extraSinkTrace, pendingExtraDelivery>>
+                         extraSinkTrace, pendingExtraDelivery,
+                      invalidateCount, cleanupWitness,
+                      replayBuffer,
+                      teardownCount, teardownWitness>>
 
 (* SinkNestedEmit(observer, target, v): models a sink callback that runs
    batch(() => target.emit(v)) inside its own callback. Enabled only when:
@@ -750,8 +1050,12 @@ SinkNestedEmit(observer, target, v) ==
                                      ELSE [version EXCEPT ![target] = @ + 1]
        /\ UNCHANGED <<status, dirtyMask, activated, handshake, emitWitness,
                       pauseLocks, resubscribeCount, pauseActionCount,
-                      upQueues, upActionCount, extraSinkTrace>>
+                      upQueues, upActionCount, extraSinkTrace,
+                      invalidateCount, cleanupWitness,
+                      replayBuffer,
+                      teardownCount, teardownWitness>>
        /\ emitCount' = emitCount + 1
+       /\ perSourceEmitCount' = [perSourceEmitCount EXCEPT ![target] = @ + 1]
        /\ nestedEmitCount' = nestedEmitCount + 1
 
 ----------------------------------------------------------------------------
@@ -787,6 +1091,7 @@ SinkNestedEmit(observer, target, v) ==
 
 Pause(src, lockId) ==
     /\ src \in SourceIds
+    /\ AllExtraPendingEmpty
     /\ lockId \in LockIds
     /\ status[src] # "terminated"
     /\ pauseActionCount < MaxPauseActions
@@ -801,10 +1106,13 @@ Pause(src, lockId) ==
        /\ pendingExtraDelivery' =
             EnqueuePendingExtra(pendingExtraDelivery, src, msg, cache)
        /\ pauseActionCount' = pauseActionCount + 1
-       /\ UNCHANGED <<cache, status, version, dirtyMask, emitCount, activated,
+       /\ UNCHANGED <<cache, status, version, dirtyMask, emitCount, perSourceEmitCount, activated,
                       handshake, nestedEmitCount, emitWitness,
                       pauseBuffer, resubscribeCount,
-                      upQueues, upActionCount, extraSinkTrace>>
+                      upQueues, upActionCount, extraSinkTrace,
+                      invalidateCount, cleanupWitness,
+                      replayBuffer,
+                      teardownCount, teardownWitness>>
 
 (* Resume only fires when `src` is actually holding `lockId`. The
    "unknown-lockId RESUME is a no-op" case is modeled at `DeliverPauseResume`
@@ -814,6 +1122,7 @@ Pause(src, lockId) ==
 *)
 Resume(src, lockId) ==
     /\ src \in SourceIds
+    /\ AllExtraPendingEmpty
     /\ lockId \in LockIds
     /\ status[src] # "terminated"
     /\ pauseActionCount < MaxPauseActions
@@ -841,13 +1150,17 @@ Resume(src, lockId) ==
               /\ pendingExtraDelivery' =
                    EnqueuePendingExtra(pendingExtraDelivery, src, msg, cache)
        /\ pauseActionCount' = pauseActionCount + 1
-       /\ UNCHANGED <<cache, status, version, dirtyMask, emitCount, activated,
+       /\ UNCHANGED <<cache, status, version, dirtyMask, emitCount, perSourceEmitCount, activated,
                       handshake, nestedEmitCount, emitWitness,
                       resubscribeCount,
-                      upQueues, upActionCount, extraSinkTrace>>
+                      upQueues, upActionCount, extraSinkTrace,
+                      invalidateCount, cleanupWitness,
+                      replayBuffer,
+                      teardownCount, teardownWitness>>
 
 DeliverPauseResume(p, c) ==
     /\ <<p, c>> \in EdgePairs
+    /\ AllExtraPendingEmpty
     /\ Len(queues[<<p, c>>]) > 0
     /\ Head(queues[<<p, c>>]).type \in {PAUSE, RESUME}
     /\ status[c] # "terminated"
@@ -906,10 +1219,13 @@ DeliverPauseResume(p, c) ==
                       /\ trace'  = RecordAtSinkIfAny(trace, c, m)
                       /\ pendingExtraDelivery' =
                            EnqueuePendingExtra(pendingExtraDelivery, c, m, cache)
-       /\ UNCHANGED <<cache, status, version, dirtyMask, emitCount, activated,
+       /\ UNCHANGED <<cache, status, version, dirtyMask, emitCount, perSourceEmitCount, activated,
                       handshake, nestedEmitCount, emitWitness,
                       resubscribeCount, pauseActionCount,
-                      upQueues, upActionCount, extraSinkTrace>>
+                      upQueues, upActionCount, extraSinkTrace,
+                      invalidateCount, cleanupWitness,
+                      replayBuffer,
+                      teardownCount, teardownWitness>>
 
 Resubscribe(sid) ==
     /\ sid \in ResubscribableNodes
@@ -920,8 +1236,13 @@ Resubscribe(sid) ==
        /\ pauseLocks' = [pauseLocks EXCEPT ![sid] = {}]
        /\ pauseBuffer' = [pauseBuffer EXCEPT ![sid] = <<>>]
        /\ dirtyMask' = [dirtyMask EXCEPT ![sid] = {}]
-       /\ cache' = IF isSource
-                     THEN cache  \* source nodes preserve initial cache on resubscribe
+       \* Cache reset is gated on `ResetOnTeardownNodes` per spec §2.5. Sources
+       \* always preserve (no dep-driven recompute to re-populate). Derived
+       \* nodes clear to DefaultInitial when in `ResetOnTeardownNodes` (matches
+       \* `resetOnTeardown: true`); otherwise preserve the last computed value
+       \* across the terminal boundary.
+       /\ cache' = IF isSource \/ sid \notin ResetOnTeardownNodes
+                     THEN cache
                      ELSE [cache EXCEPT ![sid] = DefaultInitial]
        /\ status' = [status EXCEPT ![sid] = "settled"]
        /\ handshake' = [handshake EXCEPT ![sid] = <<>>]
@@ -941,8 +1262,18 @@ Resubscribe(sid) ==
                           IF e[2] = sid THEN <<>> ELSE upQueues[e]]
        /\ activated' = [activated EXCEPT ![sid] = FALSE]
        /\ resubscribeCount' = resubscribeCount + 1
-       /\ UNCHANGED <<version, queues, emitCount, nestedEmitCount, emitWitness,
-                      pauseActionCount, upActionCount>>
+       \* A4 (QA 2026-04-23): a new lifecycle must NOT inherit cleanup /
+       \* teardown witnesses or ring-buffer contents from the prior one.
+       \* Clear per-sid slots to match the pauseLocks/pauseBuffer/handshake/
+       \* trace reset semantics above.
+       /\ cleanupWitness' = [cleanupWitness EXCEPT ![sid] = <<>>]
+       /\ teardownWitness' = [teardownWitness EXCEPT ![sid] = <<>>]
+       /\ replayBuffer' = [replayBuffer EXCEPT ![sid] = <<>>]
+       /\ UNCHANGED <<version, queues, emitCount, perSourceEmitCount,
+                      nestedEmitCount, emitWitness,
+                      pauseActionCount, upActionCount,
+                      invalidateCount,
+                      teardownCount>>
 
 ----------------------------------------------------------------------------
 (*              §1.4 `up()` upstream-direction actions (added 2026-04-23)    *)
@@ -983,10 +1314,13 @@ UpPause(child, lockId) ==
     /\ LET msg == Msg(PAUSE, lockId) IN
        /\ upQueues' = EnqueueUpFrom(upQueues, child, msg)
        /\ upActionCount' = upActionCount + 1
-       /\ UNCHANGED <<cache, status, version, dirtyMask, queues, trace, emitCount,
+       /\ UNCHANGED <<cache, status, version, dirtyMask, queues, trace, emitCount, perSourceEmitCount,
                       activated, handshake, nestedEmitCount, emitWitness,
                       pauseLocks, pauseBuffer, resubscribeCount, pauseActionCount,
-                      extraSinkTrace, pendingExtraDelivery>>
+                      extraSinkTrace, pendingExtraDelivery,
+                      invalidateCount, cleanupWitness,
+                      replayBuffer,
+                      teardownCount, teardownWitness>>
 
 UpResume(child, lockId) ==
     /\ child \in UpOriginators
@@ -996,10 +1330,13 @@ UpResume(child, lockId) ==
     /\ LET msg == Msg(RESUME, lockId) IN
        /\ upQueues' = EnqueueUpFrom(upQueues, child, msg)
        /\ upActionCount' = upActionCount + 1
-       /\ UNCHANGED <<cache, status, version, dirtyMask, queues, trace, emitCount,
+       /\ UNCHANGED <<cache, status, version, dirtyMask, queues, trace, emitCount, perSourceEmitCount,
                       activated, handshake, nestedEmitCount, emitWitness,
                       pauseLocks, pauseBuffer, resubscribeCount, pauseActionCount,
-                      extraSinkTrace, pendingExtraDelivery>>
+                      extraSinkTrace, pendingExtraDelivery,
+                      invalidateCount, cleanupWitness,
+                      replayBuffer,
+                      teardownCount, teardownWitness>>
 
 (* DeliverUp(p, c) — consume an upstream message at parent p coming from
    child c. First positional is parent, second is child — matches the
@@ -1021,6 +1358,7 @@ UpResume(child, lockId) ==
 *)
 DeliverUp(p, c) ==
     /\ <<p, c>> \in EdgePairs
+    /\ AllExtraPendingEmpty
     /\ Len(upQueues[<<p, c>>]) > 0
     /\ status[p] # "terminated"
     /\ LET m == Head(upQueues[<<p, c>>])
@@ -1087,10 +1425,13 @@ DeliverUp(p, c) ==
                       /\ pendingExtraDelivery' =
                            EnqueuePendingExtra(pendingExtraDelivery, p, m, cache)
                       /\ upQueues' = uqs0
-       /\ UNCHANGED <<cache, status, version, dirtyMask, emitCount, activated,
+       /\ UNCHANGED <<cache, status, version, dirtyMask, emitCount, perSourceEmitCount, activated,
                       handshake, nestedEmitCount, emitWitness,
                       resubscribeCount, pauseActionCount, upActionCount,
-                      extraSinkTrace>>
+                      extraSinkTrace,
+                      invalidateCount, cleanupWitness,
+                      replayBuffer,
+                      teardownCount, teardownWitness>>
 
 ----------------------------------------------------------------------------
 (*              §2.4 multi-sink iteration actions (added 2026-04-23)          *)
@@ -1124,10 +1465,84 @@ DeliverToExtraSink(n, i) ==
        IN
        /\ pendingExtraDelivery' = [pendingExtraDelivery EXCEPT ![n][i] = Tail(@)]
        /\ extraSinkTrace' = [extraSinkTrace EXCEPT ![n][i] = Append(@, msg)]
-       /\ UNCHANGED <<cache, status, version, dirtyMask, queues, trace, emitCount,
+       /\ UNCHANGED <<cache, status, version, dirtyMask, queues, trace, emitCount, perSourceEmitCount,
                       activated, handshake, nestedEmitCount, emitWitness,
                       pauseLocks, pauseBuffer, resubscribeCount, pauseActionCount,
-                      upQueues, upActionCount>>
+                      upQueues, upActionCount,
+                      invalidateCount, cleanupWitness,
+                      replayBuffer,
+                      teardownCount, teardownWitness>>
+
+----------------------------------------------------------------------------
+(*            §1.4 INVALIDATE + cleanup-witness action                      *)
+(*                                                                            *)
+(* `Invalidate(n)` models a user-originated `graph.signal([[INVALIDATE]])`   *)
+(* or an operator-originated cache-bust at node n. The cleanup-hook         *)
+(* side-effect is represented by appending the PRE-invalidate `cache[n]`    *)
+(* to `cleanupWitness[n]` — the witness lets the invariant check that       *)
+(* every recorded snapshot is in the valid `Values` domain (structural      *)
+(* guarantee that the cleanup hook observed a real cached state, not the   *)
+(* post-reset sentinel).                                                    *)
+(*                                                                            *)
+(* MVP modeling decision (2026-04-23 batch 3 Package 6): this action does  *)
+(* NOT propagate INVALIDATE through `queues` and does NOT reset `cache`.   *)
+(* Propagation would require a downstream `DeliverInvalidate` action and a *)
+(* tier-ordering guard similar to `NoDirtyAnywhere`; cache reset would    *)
+(* disturb `EqualsFaithful` / `VersionPerChange` by rolling cache to     *)
+(* DefaultInitial mid-stream. Both are future axes — see the optimizations*)
+(* "Remaining rigor-infra coverage gaps" index. This MVP ships the axis's *)
+(* hook-firing side-effect semantic only, which is the bug class: cleanup *)
+(* hook must fire BEFORE cache reset — guaranteed here by construction.   *)
+(******************************************************************************)
+Invalidate(n) ==
+    /\ n \in InvalidateOriginators
+    /\ invalidateCount < MaxInvalidates
+    /\ status[n] # "terminated"
+    /\ cleanupWitness' = [cleanupWitness EXCEPT ![n] = Append(@, cache[n])]
+    /\ invalidateCount' = invalidateCount + 1
+    /\ UNCHANGED <<cache, status, version, dirtyMask, queues, trace, emitCount,
+                   perSourceEmitCount, activated, handshake, nestedEmitCount,
+                   emitWitness, pauseLocks, pauseBuffer, resubscribeCount,
+                   pauseActionCount, upQueues, upActionCount,
+                   extraSinkTrace, pendingExtraDelivery,
+                      replayBuffer,
+                      teardownCount, teardownWitness>>
+
+----------------------------------------------------------------------------
+(*            §2.3 meta companion TEARDOWN action (Package 7)               *)
+(*                                                                            *)
+(* `Teardown(parent)` models the top-of-`_emit` fan-out of TEARDOWN to a    *)
+(* parent's meta children BEFORE the parent's own state-transition walk.   *)
+(* The witness captures parent's cache + status AT FAN-OUT — which must   *)
+(* be the PRE-reset values (parent still "settled"/"dirty", cache in     *)
+(* Values). The invariant `MetaTeardownObservedPreReset` verifies this.  *)
+(*                                                                            *)
+(* MVP modeling decision: this action does NOT perform the parent's own   *)
+(* state transition (cache reset, status→"terminated"). Adding that would  *)
+(* disturb `EqualsFaithful` / `VersionPerChange` etc. by rolling cache    *)
+(* without a Compute step. The witness-only model captures the ordering  *)
+(* contract — the bug class this invariant catches is: meta child observes *)
+(* parent post-reset because fan-out was reordered. Full state-transition  *)
+(* is tracked as future work.                                              *)
+(******************************************************************************)
+Teardown(parent) ==
+    /\ parent \in NodeIds
+    /\ MetaCompanions[parent] # {}
+    /\ teardownCount < MaxTeardowns
+    /\ status[parent] # "terminated"
+    /\ teardownWitness' =
+           [child \in NodeIds |->
+               IF child \in MetaCompanions[parent]
+                 THEN Append(teardownWitness[child],
+                              [cache |-> cache[parent], status |-> status[parent]])
+                 ELSE teardownWitness[child]]
+    /\ teardownCount' = teardownCount + 1
+    /\ UNCHANGED <<cache, status, version, dirtyMask, queues, trace, emitCount,
+                   perSourceEmitCount, activated, handshake, nestedEmitCount,
+                   emitWitness, pauseLocks, pauseBuffer, resubscribeCount,
+                   pauseActionCount, upQueues, upActionCount,
+                   extraSinkTrace, pendingExtraDelivery,
+                   invalidateCount, cleanupWitness, replayBuffer>>
 
 Next ==
     \/ \E src \in SourceIds, v \in Values : Emit(src, v)
@@ -1142,6 +1557,8 @@ Next ==
     \/ \E child \in UpOriginators, lockId \in LockIds : UpPause(child, lockId)
     \/ \E child \in UpOriginators, lockId \in LockIds : UpResume(child, lockId)
     \/ \E n \in SinkIds : \E i \in 1..ExtraSinks[n] : DeliverToExtraSink(n, i)
+    \/ \E n \in InvalidateOriginators : Invalidate(n)
+    \/ \E parent \in NodeIds : Teardown(parent)
     \/ \E e \in EdgePairs :
         \/ DeliverDirty(e[1], e[2])
         \/ DeliverSettle(e[1], e[2])
@@ -1253,6 +1670,13 @@ DiamondConvergence ==
 \*     logically happened (cache advanced, version bumped) but are parked
 \*     in pauseBuffer until the final-lock RESUME drains them. Without this
 \*     term the invariant would trip mid-pause window.
+\*
+\*     I4 fix (2026-04-23): previously compared `trace[s]` against the global
+\*     `emitCount` — sound for single-source topologies but broken for multi-
+\*     source (the nested MC has two sources A and B; A's trace records only
+\*     A's emits while `emitCount` aggregates both). `perSourceEmitCount[s]`
+\*     — incremented by Emit/BatchEmitMulti/SinkNestedEmit at the emitting
+\*     source's slot — is the per-source counter this invariant needs.
 EqualsFaithful ==
     \A s \in (SourceIds \cap SinkIds) :
         \* Terminated sources excluded: §2.6 "Teardown" discards pauseBuffer
@@ -1263,7 +1687,7 @@ EqualsFaithful ==
                            trace[s][i].type \in {DATA, RESOLVED}})
           + Cardinality({i \in 1..Len(pauseBuffer[s]) :
                            pauseBuffer[s][i].type \in {DATA, RESOLVED}})
-            = emitCount
+            = perSourceEmitCount[s]
 
 \* #7: START handshake well-formedness. For every activated sink,
 \* `handshake[sid]` matches one of the valid shapes per §2.2:
@@ -1519,6 +1943,98 @@ MultiSinkTracesConverge ==
             \A i \in 1..ExtraSinks[n] :
                 extraSinkTrace[n][i] = trace[n]
 
+\* #18 — MultiSinkIterationCoherent (§2.4 multi-sink iteration, structural form).
+\*
+\* Every DATA payload parked in `pendingExtraDelivery[n][i]` must carry a
+\* snapshot whose cache-at-n matches the DATA's own value. This is the
+\* per-item faithfulness contract: when a DATA is enqueued for an extra
+\* sink, the runtime has already advanced `cache[n] = v`, so the snapshot
+\* must reflect that advancement at the emitting-source's slot.
+\*
+\* Package 2 bug this catches: `BatchEmitMulti(src, vs)` previously stamped
+\* every item in the K-emit bundle with `finalCacheVal` — so intermediate
+\* DATAs in a `<<1, 2>>` batch would falsely carry snap[src] = 2 while
+\* msg.value = 1. Invariant trips with a concrete counter-example pending
+\* queue.
+\*
+\* This is the STRUCTURAL form — it verifies enqueue-time faithfulness. A
+\* stricter DRIFT form (compare `msg.value` against CURRENT `cache[n]` at
+\* delivery) would catch COMPOSITION-GUIDE §32-class peer-read bugs where a
+\* nested emit advances cache between enqueue and dequeue. That drift form
+\* requires gating emission actions on `AllExtraPendingEmpty` so only
+\* `SinkNestedEmit` populates pending mid-iteration — tracked as the still-
+\* deferred portion of this work in docs/optimizations.md.
+MultiSinkIterationCoherent ==
+    \A n \in SinkIds :
+        \A i \in 1..ExtraSinks[n] :
+            \A j \in 1..Len(pendingExtraDelivery[n][i]) :
+                LET item == pendingExtraDelivery[n][i][j] IN
+                item.msg.type = DATA => item.snap[n] = item.msg.value
+
+\* #19 — CleanupWitnessInValueDomain (§1.4 INVALIDATE, added 2026-04-23 batch 3
+\* Package 6).
+\*
+\* Every entry in `cleanupWitness[n]` holds a value in `Values` — i.e., the
+\* cleanup hook observed a REAL cached state, not the post-reset sentinel
+\* (SENTINEL values are outside `Values` in this model since `cache` is typed
+\* `[NodeIds -> Values]`). Tautological at write time by construction of the
+\* `Invalidate(n)` action (it appends `cache[n]` before any reset) — but this
+\* invariant is the regression guard: a future variant of `Invalidate` that
+\* reorders the reset BEFORE the witness write would trip it immediately.
+\* Vacuous when `InvalidateOriginators = {}` (all existing MCs default).
+CleanupWitnessInValueDomain ==
+    \A n \in NodeIds :
+        \A k \in 1..Len(cleanupWitness[n]) :
+            cleanupWitness[n][k] \in Values
+
+\* #20 — ReplayBufferBounded (§2.5 replayBuffer, added 2026-04-23 batch 3
+\* Package 3). Structural bound: `replayBuffer[n]` never exceeds
+\* `ReplayBufferSize[n]` — the ring's drop-oldest-on-cap logic is enforced.
+\* Vacuous when `ReplayBufferSize[n] = 0` (all existing MCs default).
+ReplayBufferBounded ==
+    \A n \in NodeIds : Len(replayBuffer[n]) <= ReplayBufferSize[n]
+
+\* #21 — MultiSinkIterationDriftClean (§2.4 drift form) — DEFERRED.
+\*
+\* The gate helper `AllExtraPendingEmpty` ships; the stricter drift
+\* invariant (`item.msg.value = cache[n]` for every pending DATA) does NOT
+\* ship because it false-positives on `BatchEmitMulti`'s atomic K-emit
+\* cache advance: the TLA+ model enqueues K pending items in one atomic
+\* step but cache ends at the FINAL value, so intermediate DATA items
+\* appear to "drift" even without §32 nested-emit interference.
+\*
+\* Clean fix requires refactoring `BatchEmitMulti` into K separate step
+\* actions (each enqueuing one item, advancing cache one step) — substantial
+\* restructuring that loses the atomicity-simplification currently used to
+\* keep state space tractable. Tracked in docs/optimizations.md as the
+\* remaining deferred portion of Package 2.
+\*
+\* What ships: the emission-action gate. Under it, the runtime's atomic
+\* iteration semantic is modeled structurally — other emission actions
+\* serialize with the extra-sink drain. The regression catcher for the
+\* §32 bug at the multi-sink primitive layer remains the existing
+\* `MultiSinkIterationCoherent` (#18, per-item faithfulness).
+
+\* #22 — MetaTeardownObservedPreReset (§2.3 meta companion, added 2026-04-23
+\* batch 3 Package 7).
+\*
+\* Every witness entry records what a meta child saw when TEARDOWN fanned
+\* out: parent's cache + status at that moment. Both must be pre-reset —
+\* cache in `Values` domain (not a sentinel), status in {"settled","dirty"}
+\* (never "terminated"). Tautological at write time by construction of the
+\* `Teardown(parent)` action (it guards `status[parent] # "terminated"`
+\* before recording, and cache is always in Values by `TypeOK`) — but this
+\* invariant is the regression guard: a future refactor that reorders the
+\* parent's own state transition BEFORE the meta fan-out would trip it
+\* immediately. Vacuous when `MetaCompanions = [n |-> {}]` (all existing
+\* MCs default).
+MetaTeardownObservedPreReset ==
+    \A child \in NodeIds :
+        \A k \in 1..Len(teardownWitness[child]) :
+            LET w == teardownWitness[child][k] IN
+            /\ w.cache \in Values
+            /\ w.status \in {"settled", "dirty"}
+
 ----------------------------------------------------------------------------
 (* Type invariant — guards against syntactic drift during model changes. *)
 TypeOK ==
@@ -1529,6 +2045,7 @@ TypeOK ==
     /\ queues \in [EdgePairs -> Seq([type: MsgTypes, value: PayloadDomain])]
     /\ trace \in [NodeIds -> Seq([type: MsgTypes, value: PayloadDomain])]
     /\ emitCount \in Nat
+    /\ perSourceEmitCount \in [NodeIds -> Nat]
     /\ activated \in [NodeIds -> BOOLEAN]
     /\ handshake \in [NodeIds -> Seq([type: MsgTypes, value: PayloadDomain])]
     /\ nestedEmitCount \in Nat
@@ -1553,5 +2070,11 @@ TypeOK ==
     /\ \A n \in NodeIds : pendingExtraDelivery[n] \in
             [1..ExtraSinks[n] -> Seq([msg: [type: MsgTypes, value: PayloadDomain],
                                        snap: [NodeIds -> Values]])]
+    /\ invalidateCount \in Nat
+    /\ cleanupWitness \in [NodeIds -> Seq(Values)]
+    /\ replayBuffer \in [NodeIds -> Seq(Values)]
+    /\ teardownCount \in Nat
+    /\ teardownWitness \in [NodeIds ->
+            Seq([cache: Values, status: {"settled", "dirty", "terminated"}])]
 
 ============================================================================
