@@ -89,10 +89,10 @@ AutoCompleteOnDepsCompleteMC == [n \in NodeIdsMC |-> TRUE]
 AutoErrorOnDepsErrorMC       == [n \in NodeIdsMC |-> TRUE]
 
 \* Package 3 (2026-04-23): replayBuffer + equals variance axes disabled
-\* by default in existing MCs. ReplayBufferSize = 0 and EqualsAbsorbs = TRUE
+\* by default in existing MCs. ReplayBufferSize = 0 and EqualsPairs = identity
 \* preserve prior behavior exactly.
 ReplayBufferSizeMC == [n \in NodeIdsMC |-> 0]
-EqualsAbsorbsMC    == [n \in NodeIdsMC |-> TRUE]
+EqualsPairsMC    == [n \in NodeIdsMC |-> {<<v, v>> : v \in ValuesMC}]
 
 \* Package 7 (2026-04-23): meta companion TEARDOWN axis disabled in existing MCs.
 MetaCompanionsMC == [n \in NodeIdsMC |-> {}]

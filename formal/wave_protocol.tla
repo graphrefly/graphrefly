@@ -103,12 +103,48 @@ CONSTANTS
                           \*   appended by the `Emit` action (other emission
                           \*   actions deferred as Package 3 extension).
                           \*   Added 2026-04-23 batch 3 Package 3.
-    EqualsAbsorbs,        \* NodeIds -> BOOLEAN. Mirrors spec §2.5 `equals`
-                          \*   variance. TRUE (default) = normal strict
-                          \*   equality suppresses same-value emits as
-                          \*   RESOLVED. FALSE = `equals: () => false` —
-                          \*   every Emit produces DATA regardless of value
-                          \*   sameness. Added 2026-04-23 batch 3 Package 3.
+    EqualsPairs,          \* NodeIds -> SUBSET (Values \X Values). Mirrors
+                          \*   spec §2.5 `equals`. Per-node absorption
+                          \*   relation over value pairs — generalization
+                          \*   of the batch-3-Package-3 `EqualsAbsorbs`
+                          \*   boolean (batch 9, 2026-04-24).
+                          \*
+                          \*   Semantics: `<<prev, next>> \in EqualsPairs[n]`
+                          \*   means "emitting `next` when cache is `prev` is
+                          \*   absorbed as RESOLVED (cache unchanged)." Three
+                          \*   canonical values:
+                          \*     * `{<<v, v>> : v \in Values}` (identity
+                          \*       diagonal) = default strict equality — the
+                          \*       legacy `EqualsAbsorbs[n] = TRUE` behavior.
+                          \*     * `{}` (empty) = `equals: () => false`; every
+                          \*       emit produces DATA regardless of value
+                          \*       sameness — the legacy
+                          \*       `EqualsAbsorbs[n] = FALSE` behavior.
+                          \*     * Any other subset = custom `equals` fn —
+                          \*       e.g. `{<<0,0>>,<<1,1>>,<<2,2>>,<<0,1>>,
+                          \*       <<1,0>>}` models "0 and 1 are
+                          \*       interchangeable; 2 is distinct."
+                          \*
+                          \*   Threaded through every emission site (Emit /
+                          \*   BatchEmitBegin+Step / SinkNestedEmit /
+                          \*   DeliverSettle / DeliverTerminal rescue) via
+                          \*   the `IsAbsorbed(n, prev, next)` helper.
+                          \*   Before batch 9, only `Emit` was gated — the
+                          \*   other sites used raw `=`; batch 9 closes that
+                          \*   modeling gap.
+                          \*
+                          \*   **Purity assumption (batch 11 QA, 2026-04-24):**
+                          \*   `EqualsPairs[n]` is a fixed set per MC run —
+                          \*   the model cannot express stateful `equals`
+                          \*   fns (e.g. one whose return depends on hidden
+                          \*   counter state) or non-deterministic ones.
+                          \*   Asymmetric / non-reflexive / non-transitive
+                          \*   relations ARE permitted — no ASSUME enforces
+                          \*   equivalence-relation laws. The runtime's
+                          \*   spec §2.5 `equals` fn is expected to be pure
+                          \*   and deterministic; stateful equals is a
+                          \*   user-facing footgun outside the model's
+                          \*   expressiveness.
     AutoCompleteOnDepsComplete, \* NodeIds -> BOOLEAN. Mirrors spec §2.5
                                  \*   `completeWhenDepsComplete`. When TRUE
                                  \*   (default), `DeliverTerminal` with a
@@ -180,7 +216,7 @@ ASSUME MaxInvalidates \in Nat
 ASSUME AutoCompleteOnDepsComplete \in [NodeIds -> BOOLEAN]
 ASSUME AutoErrorOnDepsError \in [NodeIds -> BOOLEAN]
 ASSUME ReplayBufferSize \in [NodeIds -> Nat]
-ASSUME EqualsAbsorbs \in [NodeIds -> BOOLEAN]
+ASSUME EqualsPairs \in [NodeIds -> SUBSET (Values \X Values)]
 ASSUME MetaCompanions \in [NodeIds -> SUBSET NodeIds]
 ASSUME MaxTeardowns \in Nat
 
@@ -255,6 +291,17 @@ RecordAtSinkIfAny(t, n, msg) ==
 RecordSeqAtSinkIfAny(t, n, msgs) ==
     IF n \in SinkIds THEN [t EXCEPT ![n] = @ \o msgs] ELSE t
 
+(* --- §2.5 `equals` absorption helper (added 2026-04-24 batch 9, E) ---
+   `IsAbsorbed(n, prev, next)` returns TRUE when emitting `next` at node n
+   while cache[n] = prev should be treated as equivalent — i.e. the
+   emission produces RESOLVED (cache unchanged) rather than DATA (cache
+   advanced). Mirrors the runtime's `equals(prev, next)` call; the
+   generalization from the batch-3 boolean `EqualsAbsorbs[n]` to the
+   relation `EqualsPairs[n]` lets custom equality fns be modeled directly
+   instead of approximated as all-absorbs / never-absorbs binaries.
+*)
+IsAbsorbed(n, prev, next) == <<prev, next>> \in EqualsPairs[n]
+
 \* --- §2.4 multi-sink iteration helpers (added 2026-04-23) ---
 \*
 \* Each emission action that writes to `trace[n]` also enqueues the same
@@ -288,32 +335,11 @@ EnqueuePendingExtraItems(ped, n, items) ==
       THEN [ped EXCEPT ![n] = [i \in 1..ExtraSinks[n] |-> ped[n][i] \o items]]
       ELSE ped
 
-\* Build per-item PendingItem records for a BatchEmitMulti bundle at src.
-\* DIRTYs (tier-1) all stamp the pre-batch cache — tier-1 doesn't advance
-\* cache. Settles each stamp the cache AFTER their own emit (running state).
-RECURSIVE BuildSettleItemsRec(_, _, _, _)
-BuildSettleItemsRec(vs, curCacheVal, initialCacheMap, src) ==
-    IF Len(vs) = 0 THEN <<>>
-    ELSE LET v == Head(vs)
-             isEq == v = curCacheVal
-             newCacheVal == IF isEq THEN curCacheVal ELSE v
-             sMsg == IF isEq THEN Msg(RESOLVED, NullPayload) ELSE Msg(DATA, v)
-             snapAfter == IF isEq THEN initialCacheMap
-                                   ELSE [initialCacheMap EXCEPT ![src] = newCacheVal]
-         IN <<PendingItem(sMsg, snapAfter)>> \o
-              BuildSettleItemsRec(Tail(vs), newCacheVal, snapAfter, src)
-
-BuildBatchPendingItems(vs, initialCacheMap, src) ==
-    LET k == Len(vs)
-        dirtyItems == [j \in 1..k |-> PendingItem(Msg(DIRTY, NullPayload), initialCacheMap)]
-        settleItems == BuildSettleItemsRec(vs, initialCacheMap[src], initialCacheMap, src)
-    IN dirtyItems \o settleItems
-
 \* --- §2.5 replayBuffer helper (added 2026-04-23 batch 3 Package 3) ---
 \* Append `v` to the ring at node `n`, bounded by `ReplayBufferSize[n]`.
 \* Oldest value drops when at cap. When size is 0, the buffer is disabled —
-\* no update. Called from `Emit` / `SinkNestedEmit` / `DeliverSettle` on
-\* DATA emissions.
+\* no update. Called from `Emit` / `SinkNestedEmit` / `DeliverSettle` /
+\* `BatchEmitStep` on DATA emissions.
 AppendToReplayBuffer(rb, n, v) ==
     IF ReplayBufferSize[n] = 0
       THEN rb
@@ -321,20 +347,14 @@ AppendToReplayBuffer(rb, n, v) ==
              THEN [rb EXCEPT ![n] = Append(@, v)]
              ELSE [rb EXCEPT ![n] = Append(Tail(@), v)]
 
-\* `ApplyBatchToRing(rb, src, vs, curCacheVal)` — append every DATA-producing
-\* value in the batch `vs` to the ring at `src`, skipping RESOLVED emits.
-\* RESOLVED means `v = curCacheVal` (no cache change); DATA means cache
-\* advances to `v`. Threads the running cache through so the skip decision
-\* matches `BuildSettleSeq`'s settle/resolved determination exactly.
-\* Added 2026-04-23 QA round 2 (item 1 extension).
-RECURSIVE ApplyBatchToRing(_, _, _, _)
-ApplyBatchToRing(rb, src, vs, curCacheVal) ==
-    IF Len(vs) = 0 THEN rb
-    ELSE LET v == Head(vs)
-             isEq == v = curCacheVal
-             newCacheVal == IF isEq THEN curCacheVal ELSE v
-             rbNext == IF isEq THEN rb ELSE AppendToReplayBuffer(rb, src, v)
-         IN ApplyBatchToRing(rbNext, src, Tail(vs), newCacheVal)
+\* (Batch 11 QA, 2026-04-24 — removed `BuildSettleItemsRec` /
+\* `BuildBatchPendingItems` / `BuildSettleSeq` / `FinalCache` /
+\* `CountDataEmits` / `ApplyBatchToRing`. All six were helpers for the
+\* pre-batch-11 atomic `BatchEmitMulti` action; the Begin + Step state
+\* machine replaces them with per-step inline computation. Dead code as
+\* of batch 11, deleted as of batch 11 QA. Historical context lives in
+\* the optimizations.md batches 3 Package 2 / batch 9 E / batch 11 I
+\* entries.)
 
 ----------------------------------------------------------------------------
 VARIABLES
@@ -424,7 +444,56 @@ VARIABLES
     \* buffered DATA from the ring even though the base handshake already
     \* pushed the cached value. Vacuous in any MC where `ReplayBufferSize = 0`
     \* everywhere — the ring never fills, so the snapshot is always empty.
-    replaySnapshot           \* NodeIds -> Seq(Values)
+    replaySnapshot,           \* NodeIds -> Seq(Values)
+    \* --- §1.4 batch-emit state machine (added 2026-04-24 batch 11, I) ---
+    \* Per-source batch-run state. When a `BatchEmitBegin(src, vs)` fires,
+    \* `batchActive[src]` transitions from `[status |-> "idle", ...]` to
+    \* `[status |-> "running", pending |-> vs]`. Each `BatchEmitStep(src)`
+    \* processes the head of `pending`, advances cache one value, and
+    \* decrements `pending`. When pending reaches empty, status returns
+    \* to "idle". Pre-batch-11 this state was implicit in an atomic
+    \* `BatchEmitMulti(src, vs)` action; splitting into Begin + Step
+    \* exposes intermediate cache states to TLC interleaving and enables
+    \* the strict `MultiSinkIterationDriftClean` (#27) invariant, which
+    \* asserts no drift between enqueue-time value and delivery-time
+    \* cache[n] at each `pendingExtraDelivery` head. Both Begin and Step
+    \* gate on `AllExtraPendingEmpty` so extra-sink drain happens between
+    \* every step — strict drift always holds at the observation
+    \* boundary.
+    batchActive,              \* NodeIds -> [status: {"idle","running"},
+                              \*              pending: Seq(Values)]
+    \* --- §2.5 rescue cascade accounting (added 2026-04-24 batch 8, A) ---
+    \* Ghost: records WHICH transition caused each node's status to become
+    \* "terminated". Companion to Package 5 (`AutoCompleteOnDepsComplete` /
+    \* `AutoErrorOnDepsError`). Domain:
+    \*   "none"                  — node has not been terminated.
+    \*   "self-source-terminate" — set by `Terminate(src)`.
+    \*   "self-teardown"         — set by `Teardown(parent)` (origin).
+    \*   "teardown-cascade"      — set by `DeliverTeardown(p, c)`.
+    \*   "dep-cascade-complete"  — set by `DeliverTerminal` gate-TRUE branch
+    \*                             when the absorbed message is COMPLETE.
+    \*   "dep-cascade-error"     — set by `DeliverTerminal` gate-TRUE branch
+    \*                             when the absorbed message is ERROR.
+    \* The invariant `NoDepCascadeTerminalWhenGateFalse` asserts that a node
+    \* only terminates via dep-cascade when the matching gate is TRUE — the
+    \* rescue / catchError operator contract. Load-bearing in `rescue_MC`:
+    \* removing the `IF gate` branch in `DeliverTerminal` trips the invariant
+    \* because the FALSE-gated absorption would then set
+    \* `terminatedBy[c] = "dep-cascade-complete"` with
+    \* `AutoCompleteOnDepsComplete[c] = FALSE`.
+    terminatedBy,             \* NodeIds -> TerminationCauseDomain
+    \* --- §1.4 INVALIDATE accounting (added 2026-04-24 batch 8, D) ---
+    \* Ghost counter: number of NON-vacuous `Invalidate(n)` / `DeliverInvalidate`
+    \* firings at each node — i.e., firings that actually transitioned
+    \* `cache[n]` from a real Value to `DefaultInitial`. Vacuous firings
+    \* (diamond fan-in second-arrival where cache was already reset) do NOT
+    \* increment. Invariant `CleanupWitnessAccounting` asserts the witness
+    \* length matches this counter — catches regressions where the batch 5 B
+    \* `wasReset` guard is dropped on the witness but not on the cache reset
+    \* (or vice versa), producing off-by-N between cleanup hook firings and
+    \* real cache resets. Complements `CleanupWitnessNotSentinel` (value
+    \* domain) with a quantitative counting law.
+    nonVacuousInvalidateCount \* NodeIds -> Nat
 
 vars == <<cache, status, version, dirtyMask, queues, trace, emitCount,
           perSourceEmitCount,
@@ -435,7 +504,9 @@ vars == <<cache, status, version, dirtyMask, queues, trace, emitCount,
           invalidateCount, cleanupWitness,
           replayBuffer,
           teardownCount, teardownWitness,
-          replaySnapshot>>
+          replaySnapshot,
+          terminatedBy, nonVacuousInvalidateCount,
+          batchActive>>
 
 ----------------------------------------------------------------------------
 Init ==
@@ -465,6 +536,9 @@ Init ==
     /\ teardownCount = 0
     /\ teardownWitness = [n \in NodeIds |-> <<>>]
     /\ replaySnapshot = [n \in NodeIds |-> <<>>]
+    /\ terminatedBy = [n \in NodeIds |-> "none"]
+    /\ nonVacuousInvalidateCount = [n \in NodeIds |-> 0]
+    /\ batchActive = [n \in NodeIds |-> [status |-> "idle", pending |-> <<>>]]
 
 ----------------------------------------------------------------------------
 (* BufferAll predicate: a node n captures its outgoing tier-3/4 emissions into
@@ -480,10 +554,11 @@ IsCapturedByBuffer(n) == Pausable[n] = "resumeAll" /\ pauseLocks[n] # {}
 iteration: while iteration is in progress (any node has non-empty
 `pendingExtraDelivery`), no other emission-like action can fire.
 
-Gated (waits for drain): Emit, BatchEmitMulti, Terminate, DeliverDirty,
-DeliverSettle, DeliverTerminal, Pause, Resume, DeliverPauseResume,
-DeliverUp (bufferAll-drain branches enqueue to pendingExtraDelivery),
-Invalidate, Teardown, DeliverInvalidate, DeliverTeardown (all now
+Gated (waits for drain): Emit, BatchEmitBegin, BatchEmitStep, Terminate,
+DeliverDirty, DeliverSettle, DeliverTerminal, Pause, Resume,
+DeliverPauseResume, DeliverUp (bufferAll-drain branches enqueue to
+pendingExtraDelivery), Invalidate, Teardown, DeliverInvalidate,
+DeliverTeardown (all now
 enqueue to `queues` — gated for consistency with the iteration
 contract, per batch-4 QA).
 
@@ -500,7 +575,7 @@ Under this gate, the deferred `MultiSinkIterationDriftClean` (#21) would
 surface COMPOSITION-GUIDE §32 peer-read bugs: the only way a pending
 DATA's `msg.value` can disagree with the current `cache[n]` is if a
 `SinkNestedEmit` fired mid-iteration and advanced cache at that node.
-(The drift form is not shipped today — see #21 docblock below for why.)
+(The drift form ships as `MultiSinkIterationDriftClean` (#27), batch 11 I.)
 
 Vacuous in all MCs with `ExtraSinks = [n |-> 0]` (pending always empty →
 gate is tautology). Exercised by the multisink / multisink_batch MCs.
@@ -548,12 +623,17 @@ Emit(src, v) ==
     /\ NoInvalidateAnywhere
     /\ emitCount < MaxEmits
     /\ status[src] = "settled"
-    \* Package 3 (2026-04-23): equality is gated by `EqualsAbsorbs[src]`.
-    \* TRUE (default) = strict equality, same-value emits become RESOLVED.
-    \* FALSE = `equals: () => false` — every emit produces DATA (v != cur
-    \* always holds, so settleMsg is DATA). Cache still advances to v (but
-    \* since v might equal cur, cache may not numerically change).
-    /\ LET equalToCache == EqualsAbsorbs[src] /\ cache[src] = v
+    \* Batch 11 (2026-04-24, I): single-emit Emit cannot fire mid-batch —
+    \* the batch state machine owns `src` while `batchActive[src].status
+    \* = "running"`. Attempts to call `source.emit(v)` outside the enclosing
+    \* `batch()` scope on the same source semantically can't interleave
+    \* with the in-flight batch's step actions.
+    /\ batchActive[src].status = "idle"
+    \* Package 3 / batch 9: equality is gated by `EqualsPairs[src]` via
+    \* the `IsAbsorbed` helper. Identity-diagonal (default) = strict
+    \* equality; empty = `equals: () => false`; arbitrary subset = custom
+    \* equals fn. See the constant docstring for the relation semantics.
+    /\ LET equalToCache == IsAbsorbed(src, cache[src], v)
            settleMsg    == IF equalToCache THEN Msg(RESOLVED, NullPayload)
                                            ELSE Msg(DATA, v)
            dirtyMsg     == Msg(DIRTY, NullPayload)
@@ -589,102 +669,151 @@ Emit(src, v) ==
                          pauseLocks, resubscribeCount, pauseActionCount,
                          upQueues, upActionCount, extraSinkTrace,
                       invalidateCount, cleanupWitness,
-                      teardownCount, teardownWitness, replaySnapshot>>
+                      teardownCount, teardownWitness, replaySnapshot,
+                      terminatedBy, nonVacuousInvalidateCount,
+                      batchActive>>
           /\ emitCount' = emitCount + 1
           /\ perSourceEmitCount' = [perSourceEmitCount EXCEPT ![src] = @ + 1]
 
-(* BatchEmitMulti(src, vs): atomic multi-emit inside a user `batch()` scope.
-   Models Bug 2 fix — K consecutive `.emit()` calls to `src` coalesce into
-   ONE downstream bundle per child edge of the form `<<K DIRTYs, K DATAs>>`
-   (tier-sorted). The bundle is delivered via one sink call per tier group;
-   with the multi-message `DeliverDirty` / `DeliverSettle` above, the
-   fan-in node sees all K DATAs from one parent atomically and its `fn`
-   runs exactly once per wave — resolving the K+1 over-fire.
+(* Batched emit — K consecutive `.emit()` calls to `src` inside a user
+   `batch()` scope. Models the spec §1.4 "Bug 2" coalescing — K emits on
+   the same source coalesce into ONE downstream bundle per child edge of
+   the form `<<K DIRTYs, K DATAs>>` (tier-sorted). With the multi-message
+   `DeliverDirty` / `DeliverSettle` below, the fan-in node sees all K
+   DATAs from one parent atomically and its `fn` runs exactly once per
+   wave — resolving the K+1 over-fire.
 
-   Each value in `vs` is compared against the running cache and produces
-   DATA or RESOLVED accordingly; `dataCount` tracks value-changing emits
-   for version counting and `emitCount` bounding.
+   **Batch 11 I (2026-04-24)** split this from a single atomic
+   `BatchEmitMulti(src, vs)` action into a `BatchEmitBegin(src, vs)` +
+   `BatchEmitStep(src)` state machine tracked by the `batchActive` ghost.
+   The split exposes intermediate cache states to TLC interleaving —
+   necessary to ship the strict `MultiSinkIterationDriftClean` (#27)
+   invariant. See each action below for details.
 *)
-RECURSIVE BuildSettleSeq(_, _)
-BuildSettleSeq(vs, curCache) ==
-    IF Len(vs) = 0
-      THEN <<>>
-      ELSE LET v == Head(vs)
-               isEqual == v = curCache
-               settleMsg == IF isEqual THEN Msg(RESOLVED, NullPayload)
-                                       ELSE Msg(DATA, v)
-               newCache == IF isEqual THEN curCache ELSE v
-           IN <<settleMsg>> \o BuildSettleSeq(Tail(vs), newCache)
-
-RECURSIVE FinalCache(_, _)
-FinalCache(vs, curCache) ==
-    IF Len(vs) = 0 THEN curCache
-    ELSE LET v == Head(vs)
-             isEqual == v = curCache
-             newCache == IF isEqual THEN curCache ELSE v
-         IN FinalCache(Tail(vs), newCache)
-
-RECURSIVE CountDataEmits(_, _)
-CountDataEmits(vs, curCache) ==
-    IF Len(vs) = 0 THEN 0
-    ELSE LET v == Head(vs)
-             isEqual == v = curCache
-             newCache == IF isEqual THEN curCache ELSE v
-         IN (IF isEqual THEN 0 ELSE 1) + CountDataEmits(Tail(vs), newCache)
-
 DirtySeqOf(k) == [i \in 1..k |-> Msg(DIRTY, NullPayload)]
 
-BatchEmitMulti(src, vs) ==
+(*****************************************************************************
+  `BatchEmitBegin(src, vs)` — step 1 of the batch state machine (batch 11 I).
+  Enqueues the K-DIRTY tier-1 prefix to primary + extra sinks at pre-batch
+  cache, reserves `emitCount += Len(vs)` + `perSourceEmitCount[src] += Len(vs)`,
+  and transitions `batchActive[src]` from "idle" to "running" with `pending =
+  vs`. Cache, version, replayBuffer are UNCHANGED — settles follow in
+  step-by-step `BatchEmitStep(src)` actions, each gated on
+  `AllExtraPendingEmpty` so every step's pending extra items drain before the
+  next step fires. That gating is what makes the strict
+  `MultiSinkIterationDriftClean` (#27) invariant hold: at any delivery
+  boundary, `head.msg.value = cache[n]`.
+
+  Pre-batch-11 `BatchEmitMulti(src, vs)` fired atomically with K settles
+  enqueued in one step; cache jumped from pre-batch to batch-final in a
+  single transition. That made the strict drift form false-positive on
+  intermediate DATA items whose value stamp trailed the now-final cache.
+  See `docs/optimizations.md` batch 11 I entry for the full refactor
+  motivation.
+*****************************************************************************)
+BatchEmitBegin(src, vs) ==
     /\ src \in SourceIds
     /\ AllExtraPendingEmpty
     /\ NoInvalidateAnywhere
     /\ vs # <<>>
     /\ status[src] = "settled"
+    /\ batchActive[src].status = "idle"
+    \* Batch 11 QA (2026-04-24): reserve `emitCount += Len(vs)` atomically
+    \* at Begin. Pre-QA this bound-checked without reserving, which let a
+    \* concurrent `Emit(other-src, v)` fire between Begin and the final
+    \* Step and starve `MaxEmits` — leaving the batch's last step
+    \* un-fireable and `batchActive[src]` permanently running. Reserving
+    \* at Begin matches the runtime semantic that `batch()` claims its
+    \* full K-emit quota synchronously when it opens.
+    \* `perSourceEmitCount` stays in BatchEmitStep because `EqualsFaithful`
+    \* (#5) ties it to settlement delivery — settlements fire per-step,
+    \* so the counter must advance per-step too.
     /\ emitCount + Len(vs) <= MaxEmits
-    /\ LET settles == BuildSettleSeq(vs, cache[src])
-           dataCount == CountDataEmits(vs, cache[src])
-           finalCacheVal == FinalCache(vs, cache[src])
-           dirtyPrefix == DirtySeqOf(Len(vs))
-           bundle == dirtyPrefix \o settles
-           captured == IsCapturedByBuffer(src)
+    /\ LET dirtyPrefix == DirtySeqOf(Len(vs))
        IN
-       /\ LET cacheAfter == [cache EXCEPT ![src] = finalCacheVal]
-          IN
-          /\ IF captured
-               THEN
-                 \* DIRTYs flow immediately; settles divert to buffer in order.
-                 \* DIRTYs stamp pre-batch cache (tier-1 doesn't advance cache).
-                 /\ queues' = EnqueueSeqOutFrom(queues, src, dirtyPrefix)
-                 /\ trace'  = RecordSeqAtSinkIfAny(trace, src, dirtyPrefix)
-                 /\ pendingExtraDelivery' =
-                      EnqueuePendingExtraSeq(pendingExtraDelivery, src, dirtyPrefix, cache)
-                 /\ pauseBuffer' = [pauseBuffer EXCEPT ![src] = @ \o settles]
-               ELSE
-                 \* Per-item snapshots: DIRTYs stamp pre-batch cache, each
-                 \* settle stamps cache-after-its-own-emit. Package 2 fix:
-                 \* previously every item was stamped with the BATCH-FINAL
-                 \* cacheAfter, so intermediate DATAs falsely carried the
-                 \* final value — vacuous without the stricter invariant but
-                 \* a false-positive source once it landed.
-                 /\ queues' = EnqueueSeqOutFrom(queues, src, bundle)
-                 /\ trace'  = RecordSeqAtSinkIfAny(trace, src, bundle)
-                 /\ pendingExtraDelivery' =
-                      EnqueuePendingExtraItems(pendingExtraDelivery, src,
-                          BuildBatchPendingItems(vs, cache, src))
-                 /\ pauseBuffer' = pauseBuffer
-          /\ cache'  = cacheAfter
-          /\ version' = [version EXCEPT ![src] = @ + dataCount]
-          \* Item 1 extension: apply each DATA-producing emit to the ring
-          \* in batch order. RESOLVED emits (v = running-cache) skip.
-          /\ replayBuffer' = ApplyBatchToRing(replayBuffer, src, vs, cache[src])
-          /\ UNCHANGED <<status, dirtyMask, activated, handshake,
-                         nestedEmitCount, emitWitness,
-                         pauseLocks, resubscribeCount, pauseActionCount,
-                         upQueues, upActionCount, extraSinkTrace,
-                      invalidateCount, cleanupWitness,
-                      teardownCount, teardownWitness, replaySnapshot>>
-          /\ emitCount' = emitCount + Len(vs)
-          /\ perSourceEmitCount' = [perSourceEmitCount EXCEPT ![src] = @ + Len(vs)]
+       /\ queues' = EnqueueSeqOutFrom(queues, src, dirtyPrefix)
+       /\ trace'  = RecordSeqAtSinkIfAny(trace, src, dirtyPrefix)
+       /\ pendingExtraDelivery' =
+            EnqueuePendingExtraSeq(pendingExtraDelivery, src, dirtyPrefix, cache)
+    /\ batchActive' = [batchActive EXCEPT ![src] =
+                          [status |-> "running", pending |-> vs]]
+    /\ emitCount' = emitCount + Len(vs)
+    /\ UNCHANGED <<cache, status, version, dirtyMask,
+                   perSourceEmitCount,
+                   activated, handshake,
+                   nestedEmitCount, emitWitness,
+                   pauseLocks, pauseBuffer, resubscribeCount, pauseActionCount,
+                   upQueues, upActionCount, extraSinkTrace,
+                   invalidateCount, cleanupWitness, replayBuffer,
+                   teardownCount, teardownWitness, replaySnapshot,
+                   terminatedBy, nonVacuousInvalidateCount>>
+
+(*****************************************************************************
+  `BatchEmitStep(src)` — step N>=2 of the batch state machine. Consumes
+  the head value from `batchActive[src].pending`, routes through
+  `IsAbsorbed` to pick RESOLVED vs DATA, advances cache (on DATA),
+  enqueues one settle to primary + extras, and decrements pending.
+  When pending reaches empty, transitions batchActive back to "idle".
+  Gated on `AllExtraPendingEmpty` + `NoInvalidateAnywhere` so:
+    (a) each settle's extra-sink delivery fully drains before the next
+        step fires — strict `head.msg.value = cache[n]` holds at every
+        `DeliverToExtraSink` action boundary;
+    (b) tier-1 INVALIDATE still drains ahead of mid-batch settles per
+        spec §1.4.
+*****************************************************************************)
+BatchEmitStep(src) ==
+    /\ src \in SourceIds
+    /\ batchActive[src].status = "running"
+    /\ status[src] = "settled"
+    /\ AllExtraPendingEmpty
+    /\ NoInvalidateAnywhere
+    /\ LET v == Head(batchActive[src].pending)
+           isEq == IsAbsorbed(src, cache[src], v)
+           settleMsg == IF isEq THEN Msg(RESOLVED, NullPayload)
+                                 ELSE Msg(DATA, v)
+           cacheAfter == IF isEq THEN cache
+                                  ELSE [cache EXCEPT ![src] = v]
+           captured == IsCapturedByBuffer(src)
+           newPending == Tail(batchActive[src].pending)
+       IN
+       /\ IF captured
+            THEN
+              \* BufferAll capture: settle diverts to pauseBuffer. Extras
+              \* see no settle (captured mirrors runtime's `_paused &&
+              \* _pausable = resumeAll` short-circuit).
+              /\ queues' = queues
+              /\ trace'  = trace
+              /\ pendingExtraDelivery' = pendingExtraDelivery
+              /\ pauseBuffer' =
+                   [pauseBuffer EXCEPT ![src] = Append(@, settleMsg)]
+            ELSE
+              /\ queues' = EnqueueOutFrom(queues, src, settleMsg)
+              /\ trace'  = RecordAtSinkIfAny(trace, src, settleMsg)
+              /\ pendingExtraDelivery' =
+                   EnqueuePendingExtra(pendingExtraDelivery, src, settleMsg, cacheAfter)
+              /\ pauseBuffer' = pauseBuffer
+       /\ cache'   = cacheAfter
+       /\ version' = IF isEq THEN version
+                              ELSE [version EXCEPT ![src] = @ + 1]
+       /\ replayBuffer' = IF isEq THEN replayBuffer
+                                   ELSE AppendToReplayBuffer(replayBuffer, src, v)
+       /\ batchActive' = IF newPending = <<>>
+                           THEN [batchActive EXCEPT ![src] =
+                                    [status |-> "idle", pending |-> <<>>]]
+                           ELSE [batchActive EXCEPT ![src].pending = newPending]
+    \* Batch 11 QA (2026-04-24): `emitCount` is reserved atomically at
+    \* `BatchEmitBegin` — don't double-count here. `perSourceEmitCount`
+    \* stays per-step because `EqualsFaithful` ties it to settlement
+    \* delivery at the trace / pauseBuffer boundary.
+    /\ perSourceEmitCount' = [perSourceEmitCount EXCEPT ![src] = @ + 1]
+    /\ UNCHANGED <<status, dirtyMask, emitCount,
+                   activated, handshake,
+                   nestedEmitCount, emitWitness,
+                   pauseLocks, resubscribeCount, pauseActionCount,
+                   upQueues, upActionCount, extraSinkTrace,
+                   invalidateCount, cleanupWitness,
+                   teardownCount, teardownWitness, replaySnapshot,
+                   terminatedBy, nonVacuousInvalidateCount>>
 
 (* A source terminates. Enqueues COMPLETE to every child and transitions
    to "terminated" — the source refuses further Emit actions thereafter.
@@ -699,12 +828,19 @@ Terminate(src) ==
     /\ src \in SourceIds
     /\ AllExtraPendingEmpty
     /\ status[src] = "settled"
+    \* Batch 11 (2026-04-24, I): cannot terminate mid-batch. Terminates
+    \* issued while `batchActive[src].status = "running"` would strand
+    \* the batch's pending suffix. In the runtime, users must not call
+    \* `source.down([[COMPLETE]])` inside a `batch(() => ...)` scope
+    \* before the enclosing batch() returns.
+    /\ batchActive[src].status = "idle"
     /\ LET m == Msg(COMPLETE, NullPayload) IN
        /\ queues' = EnqueueOutFrom(queues, src, m)
        /\ trace'  = RecordAtSinkIfAny(trace, src, m)
        /\ pendingExtraDelivery' =
             EnqueuePendingExtra(pendingExtraDelivery, src, m, cache)
        /\ status' = [status EXCEPT ![src] = "terminated"]
+       /\ terminatedBy' = [terminatedBy EXCEPT ![src] = "self-source-terminate"]
        /\ pauseLocks' = [pauseLocks EXCEPT ![src] = {}]
        /\ pauseBuffer' = [pauseBuffer EXCEPT ![src] = <<>>]
        \* §2.6 hard-reset: clear upQueues TO this node — a terminated
@@ -713,13 +849,21 @@ Terminate(src) ==
        \* flight would strand messages indefinitely.
        /\ upQueues' = [e \in EdgePairs |->
                           IF e[1] = src THEN <<>> ELSE upQueues[e]]
+       \* Batch 11 QA (2026-04-24): ensure no zombie batch outlives the
+       \* terminal. Paired with the `batchActive[src].status = "idle"`
+       \* guard at this action's entry — that guard blocks Terminate
+       \* mid-batch, so this reset is a belt-and-suspenders structural
+       \* guarantee for the `TerminatedImpliesBatchIdle` invariant.
+       /\ batchActive' = [batchActive EXCEPT ![src] =
+                              [status |-> "idle", pending |-> <<>>]]
        /\ UNCHANGED <<cache, version, dirtyMask, emitCount, perSourceEmitCount, activated, handshake,
                       nestedEmitCount, emitWitness,
                       resubscribeCount, pauseActionCount,
                       upActionCount, extraSinkTrace,
                       invalidateCount, cleanupWitness,
                       replayBuffer,
-                      teardownCount, teardownWitness, replaySnapshot>>
+                      teardownCount, teardownWitness, replaySnapshot,
+                      nonVacuousInvalidateCount>>
 
 \* Tier-drain predicates (moved to emission block during batch-4 QA so
 \* `Emit` / `BatchEmitMulti` / `SinkNestedEmit` can reference
@@ -791,7 +935,9 @@ DeliverDirty(p, c) ==
                       upQueues, upActionCount, extraSinkTrace,
                       invalidateCount, cleanupWitness,
                       replayBuffer,
-                      teardownCount, teardownWitness, replaySnapshot>>
+                      teardownCount, teardownWitness, replaySnapshot,
+                      terminatedBy, nonVacuousInvalidateCount,
+                      batchActive>>
 
 (* DeliverSettle: consume the entire tier-3 (DATA/RESOLVED) prefix at head
    of queue[<<p, c>>] as one atomic delivery — matches the runtime after
@@ -834,9 +980,15 @@ DeliverSettle(p, c) ==
                  /\ replayBuffer' = replayBuffer
                  /\ UNCHANGED <<cache, status, version,
                       invalidateCount, cleanupWitness,
-                      teardownCount, teardownWitness, replaySnapshot>>
+                      teardownCount, teardownWitness, replaySnapshot,
+                      terminatedBy, nonVacuousInvalidateCount,
+                      batchActive>>
             ELSE LET newCache  == Compute(c, cache)
-                     sameAsOld == newCache = cache[c]
+                     \* Batch 9 (2026-04-24, E): derived-node absorption
+                     \* now also routes through `IsAbsorbed` so a custom
+                     \* `EqualsPairs[c]` applies uniformly across fn
+                     \* outputs too (not just source Emit).
+                     sameAsOld == IsAbsorbed(c, cache[c], newCache)
                      settleMsg == IF sameAsOld THEN Msg(RESOLVED, NullPayload)
                                                ELSE Msg(DATA, newCache)
                      captured  == IsCapturedByBuffer(c)
@@ -879,7 +1031,9 @@ DeliverSettle(p, c) ==
                       pauseLocks, resubscribeCount, pauseActionCount,
                       upQueues, upActionCount, extraSinkTrace,
                       invalidateCount, cleanupWitness,
-                      teardownCount, teardownWitness, replaySnapshot>>
+                      teardownCount, teardownWitness, replaySnapshot,
+                      terminatedBy, nonVacuousInvalidateCount,
+                      batchActive>>
 
 (* DeliverTerminal: consume COMPLETE or ERROR from queue[<<p, c>>].
    - Forwards the terminal to c's children exactly once.
@@ -915,7 +1069,12 @@ DeliverTerminal(p, c) ==
            \* terminal" semantic.
            rescueRecompute == ~gate /\ newMask = {} /\ status[c] = "dirty"
            rNewCache == Compute(c, cache)
-           rSameAsOld == rNewCache = cache[c]
+           \* Batch 9 (2026-04-24, E): rescue-recompute absorption uses
+           \* the same `IsAbsorbed` helper as DeliverSettle's main
+           \* settle path — same semantic: if the fn's new output is
+           \* absorbed against current cache under `EqualsPairs[c]`,
+           \* emit RESOLVED (cache unchanged). Previously used raw `=`.
+           rSameAsOld == IsAbsorbed(c, cache[c], rNewCache)
            rSettleMsg == IF rSameAsOld THEN Msg(RESOLVED, NullPayload)
                                        ELSE Msg(DATA, rNewCache)
            rCaptured == IsCapturedByBuffer(c)
@@ -981,13 +1140,34 @@ DeliverTerminal(p, c) ==
                      /\ version' = version
        /\ dirtyMask' = IF gate THEN dirtyMask
                                 ELSE [dirtyMask EXCEPT ![c] = newMask]
+       \* Package 5 accounting (batch 8, 2026-04-24): only the gate=TRUE
+       \* branch transitions c to "terminated" via dep cascade. Classify
+       \* by message type so the `NoDepCascadeTerminalWhenGateFalse`
+       \* invariant can distinguish COMPLETE from ERROR cascades — each
+       \* is gated by its own flag (`AutoCompleteOnDepsComplete` vs
+       \* `AutoErrorOnDepsError`).
+       /\ terminatedBy' = IF gate
+                            THEN [terminatedBy EXCEPT ![c] =
+                                    IF m.type = COMPLETE
+                                      THEN "dep-cascade-complete"
+                                      ELSE "dep-cascade-error"]
+                            ELSE terminatedBy
+       \* Batch 11 QA (2026-04-24): if the cascade transitions c to
+       \* "terminated" (gate=TRUE branch), clear any in-flight batch at c.
+       \* Rescue recompute and gate-FALSE absorb branches leave batchActive
+       \* alone — they don't transition status.
+       /\ batchActive' = IF gate
+                           THEN [batchActive EXCEPT ![c] =
+                                    [status |-> "idle", pending |-> <<>>]]
+                           ELSE batchActive
        /\ UNCHANGED <<emitCount, perSourceEmitCount, activated, handshake,
                       nestedEmitCount, emitWitness,
                       resubscribeCount, pauseActionCount,
                       upActionCount, extraSinkTrace,
                       invalidateCount, cleanupWitness,
                       replayBuffer,
-                      teardownCount, teardownWitness, replaySnapshot>>
+                      teardownCount, teardownWitness, replaySnapshot,
+                      nonVacuousInvalidateCount>>
 
 ----------------------------------------------------------------------------
 (* SubscribeSink(sid): fires once per sink. Synthesizes the handshake
@@ -1080,7 +1260,9 @@ SubscribeSink(sid) ==
                          invalidateCount, cleanupWitness,
                          replayBuffer,
                          teardownCount,
-                         teardownWitness>>
+                         teardownWitness,
+                         terminatedBy, nonVacuousInvalidateCount,
+                      batchActive>>
 
 (* SinkNestedEmit(observer, target, v): models a sink callback that runs
    batch(() => target.emit(v)) inside its own callback. Enabled only when:
@@ -1142,7 +1324,14 @@ SinkNestedEmit(observer, target, v) ==
     /\ emitCount < MaxEmits
     /\ nestedEmitCount < MaxNestedEmits
     /\ ObserverCallbackActive(observer)
-    /\ LET equalToCache == cache[target] = v
+    \* Batch 11 (2026-04-24, I): nested emit on a target mid-batch on THAT
+    \* target would interleave with the batch state machine. Require idle.
+    /\ batchActive[target].status = "idle"
+    \* Batch 9 (2026-04-24, E): route absorption through `IsAbsorbed`
+    \* so `SinkNestedEmit` honors `EqualsPairs[target]` the same as
+    \* `Emit(target, v)` would. Pre-batch-9 this used raw `=` which
+    \* silently bypassed the axis.
+    /\ LET equalToCache == IsAbsorbed(target, cache[target], v)
            settleMsg    == IF equalToCache THEN Msg(RESOLVED, NullPayload)
                                            ELSE Msg(DATA, v)
            dirtyMsg     == Msg(DIRTY, NullPayload)
@@ -1174,7 +1363,9 @@ SinkNestedEmit(observer, target, v) ==
                       pauseLocks, resubscribeCount, pauseActionCount,
                       upQueues, upActionCount, extraSinkTrace,
                       invalidateCount, cleanupWitness,
-                      teardownCount, teardownWitness, replaySnapshot>>
+                      teardownCount, teardownWitness, replaySnapshot,
+                      terminatedBy, nonVacuousInvalidateCount,
+                      batchActive>>
        /\ emitCount' = emitCount + 1
        /\ perSourceEmitCount' = [perSourceEmitCount EXCEPT ![target] = @ + 1]
        /\ nestedEmitCount' = nestedEmitCount + 1
@@ -1233,7 +1424,9 @@ Pause(src, lockId) ==
                       upQueues, upActionCount, extraSinkTrace,
                       invalidateCount, cleanupWitness,
                       replayBuffer,
-                      teardownCount, teardownWitness, replaySnapshot>>
+                      teardownCount, teardownWitness, replaySnapshot,
+                      terminatedBy, nonVacuousInvalidateCount,
+                      batchActive>>
 
 (* Resume only fires when `src` is actually holding `lockId`. The
    "unknown-lockId RESUME is a no-op" case is modeled at `DeliverPauseResume`
@@ -1277,7 +1470,9 @@ Resume(src, lockId) ==
                       upQueues, upActionCount, extraSinkTrace,
                       invalidateCount, cleanupWitness,
                       replayBuffer,
-                      teardownCount, teardownWitness, replaySnapshot>>
+                      teardownCount, teardownWitness, replaySnapshot,
+                      terminatedBy, nonVacuousInvalidateCount,
+                      batchActive>>
 
 DeliverPauseResume(p, c) ==
     /\ <<p, c>> \in EdgePairs
@@ -1346,7 +1541,9 @@ DeliverPauseResume(p, c) ==
                       upQueues, upActionCount, extraSinkTrace,
                       invalidateCount, cleanupWitness,
                       replayBuffer,
-                      teardownCount, teardownWitness, replaySnapshot>>
+                      teardownCount, teardownWitness, replaySnapshot,
+                      terminatedBy, nonVacuousInvalidateCount,
+                      batchActive>>
 
 Resubscribe(sid) ==
     /\ sid \in ResubscribableNodes
@@ -1394,6 +1591,22 @@ Resubscribe(sid) ==
        \* subscribe's replay snapshot. Cleared in lockstep with the
        \* cleanup / teardown / replayBuffer resets above.
        /\ replaySnapshot' = [replaySnapshot EXCEPT ![sid] = <<>>]
+       \* Batch 8 (2026-04-24): fresh lifecycle also resets the per-sid
+       \* termination-cause classification. `status[sid]` transitions to
+       \* "settled" above, so `terminatedBy[sid]` must return to "none" —
+       \* the prior lifecycle's cascade classification is dead history.
+       /\ terminatedBy' = [terminatedBy EXCEPT ![sid] = "none"]
+       \* Batch 8 (2026-04-24): clear in lockstep with the cleanupWitness
+       \* clear above. Required for `CleanupWitnessAccounting` to stay
+       \* in balance across a resubscribe — both sides zero together.
+       /\ nonVacuousInvalidateCount' = [nonVacuousInvalidateCount EXCEPT ![sid] = 0]
+       \* Batch 11 QA (2026-04-24): clear any zombie batch state the prior
+       \* lifecycle may have left behind. Prior to this fix, `batchActive`
+       \* was in UNCHANGED — a resubscribed source could inherit a
+       \* `status = "running"` with stale pending from its prior lifecycle.
+       \* Fresh lifecycle starts idle, matching the other per-sid resets.
+       /\ batchActive' = [batchActive EXCEPT ![sid] =
+                              [status |-> "idle", pending |-> <<>>]]
        /\ UNCHANGED <<version, queues, emitCount, perSourceEmitCount,
                       nestedEmitCount, emitWitness,
                       pauseActionCount, upActionCount,
@@ -1445,7 +1658,9 @@ UpPause(child, lockId) ==
                       extraSinkTrace, pendingExtraDelivery,
                       invalidateCount, cleanupWitness,
                       replayBuffer,
-                      teardownCount, teardownWitness, replaySnapshot>>
+                      teardownCount, teardownWitness, replaySnapshot,
+                      terminatedBy, nonVacuousInvalidateCount,
+                      batchActive>>
 
 UpResume(child, lockId) ==
     /\ child \in UpOriginators
@@ -1461,7 +1676,9 @@ UpResume(child, lockId) ==
                       extraSinkTrace, pendingExtraDelivery,
                       invalidateCount, cleanupWitness,
                       replayBuffer,
-                      teardownCount, teardownWitness, replaySnapshot>>
+                      teardownCount, teardownWitness, replaySnapshot,
+                      terminatedBy, nonVacuousInvalidateCount,
+                      batchActive>>
 
 (* DeliverUp(p, c) — consume an upstream message at parent p coming from
    child c. First positional is parent, second is child — matches the
@@ -1556,7 +1773,9 @@ DeliverUp(p, c) ==
                       extraSinkTrace,
                       invalidateCount, cleanupWitness,
                       replayBuffer,
-                      teardownCount, teardownWitness, replaySnapshot>>
+                      teardownCount, teardownWitness, replaySnapshot,
+                      terminatedBy, nonVacuousInvalidateCount,
+                      batchActive>>
 
 ----------------------------------------------------------------------------
 (*              §2.4 multi-sink iteration actions (added 2026-04-23)          *)
@@ -1596,7 +1815,9 @@ DeliverToExtraSink(n, i) ==
                       upQueues, upActionCount,
                       invalidateCount, cleanupWitness,
                       replayBuffer,
-                      teardownCount, teardownWitness, replaySnapshot>>
+                      teardownCount, teardownWitness, replaySnapshot,
+                      terminatedBy, nonVacuousInvalidateCount,
+                      batchActive>>
 
 ----------------------------------------------------------------------------
 (*            §1.4 INVALIDATE + cleanup-witness actions                      *)
@@ -1643,13 +1864,25 @@ Invalidate(n) ==
           /\ cache' = [cache EXCEPT ![n] = DefaultInitial]
           /\ queues' = EnqueueOutFrom(queues, n, msg)
           /\ invalidateCount' = invalidateCount + 1
+          \* Batch 8 (2026-04-24): mirror the witness-append condition on
+          \* a separate ghost counter. Must use the SAME `wasReset`
+          \* predicate as the witness guard — the `CleanupWitnessAccounting`
+          \* invariant ties them together structurally, so any future
+          \* regression that diverges the two guards (e.g. drops the
+          \* witness skip but keeps the counter skip, or vice versa)
+          \* produces `Len(cleanupWitness[n]) # nonVacuousInvalidateCount[n]`.
+          /\ nonVacuousInvalidateCount' =
+              IF wasReset
+                THEN nonVacuousInvalidateCount
+                ELSE [nonVacuousInvalidateCount EXCEPT ![n] = @ + 1]
     /\ UNCHANGED <<status, version, dirtyMask, trace, emitCount,
                    perSourceEmitCount, activated, handshake, nestedEmitCount,
                    emitWitness, pauseLocks, pauseBuffer, resubscribeCount,
                    pauseActionCount, upQueues, upActionCount,
                    extraSinkTrace, pendingExtraDelivery,
                       replayBuffer,
-                      teardownCount, teardownWitness, replaySnapshot>>
+                      teardownCount, teardownWitness, replaySnapshot,
+                      terminatedBy, batchActive>>
 
 (* `DeliverInvalidate(p, c)` — consume the INVALIDATE message head at edge  *)
 (*   <<p, c>>, record `cache[c]` to `cleanupWitness[c]` (pre-reset), reset  *)
@@ -1689,13 +1922,20 @@ DeliverInvalidate(p, c) ==
                 THEN cleanupWitness
                 ELSE [cleanupWitness EXCEPT ![c] = Append(@, cache[c])]
           /\ cache' = [cache EXCEPT ![c] = DefaultInitial]
+          \* Batch 8 (2026-04-24): companion to the witness append. See
+          \* `Invalidate` above for the accounting-law rationale.
+          /\ nonVacuousInvalidateCount' =
+              IF wasReset
+                THEN nonVacuousInvalidateCount
+                ELSE [nonVacuousInvalidateCount EXCEPT ![c] = @ + 1]
     /\ UNCHANGED <<status, version, dirtyMask, trace, emitCount,
                    perSourceEmitCount, activated, handshake, nestedEmitCount,
                    emitWitness, pauseLocks, pauseBuffer, resubscribeCount,
                    pauseActionCount, upQueues, upActionCount,
                    extraSinkTrace, pendingExtraDelivery,
                       invalidateCount, replayBuffer,
-                      teardownCount, teardownWitness, replaySnapshot>>
+                      teardownCount, teardownWitness, replaySnapshot,
+                      terminatedBy, batchActive>>
 
 ----------------------------------------------------------------------------
 (*            §2.3 meta companion TEARDOWN action (Package 7)               *)
@@ -1706,19 +1946,30 @@ DeliverInvalidate(p, c) ==
 (* be the PRE-reset values (parent still "settled"/"dirty", cache in     *)
 (* Values). The invariant `MetaTeardownObservedPreReset` verifies this.  *)
 (*                                                                            *)
-(* MVP modeling decision: this action does NOT perform the parent's own   *)
-(* state transition (cache reset, status→"terminated"). Adding that would  *)
-(* disturb `EqualsFaithful` / `VersionPerChange` etc. by rolling cache    *)
-(* without a Compute step. The witness-only model captures the ordering  *)
-(* contract — the bug class this invariant catches is: meta child observes *)
-(* parent post-reset because fan-out was reordered. Full state-transition  *)
-(* is tracked as future work.                                              *)
+(* Batch 3 QA round 2 item 6 (2026-04-23) extended this action to ALSO   *)
+(* perform the parent's own hard-reset per §2.6 "Teardown": status       *)
+(* transitions to "terminated", pauseLocks / pauseBuffer / upQueues clear,*)
+(* dirtyMask clears. Cache and version are preserved (TEARDOWN is        *)
+(* lifecycle disposal, not cache bust — that's INVALIDATE's job). The   *)
+(* `terminatedBy` classification is set to "self-teardown" (batch 8).   *)
+(* Next-batch item C (same day) added `DeliverTeardown` for DAG-child    *)
+(* cascade; `teardownCount` + `MaxTeardowns` bound the fan-out.         *)
+(*                                                                            *)
+(* The witness fan-out happens BEFORE the parent's own transition so the  *)
+(* meta child sees the PRE-reset `cache[parent]` / `status[parent]` —   *)
+(* which is the contract `MetaTeardownObservedPreReset` pins. A future   *)
+(* refactor that reorders the transition ahead of the witness write     *)
+(* would trip the invariant immediately with a concrete counter-example.*)
 (******************************************************************************)
 Teardown(parent) ==
     /\ parent \in NodeIds
     /\ AllExtraPendingEmpty
     /\ teardownCount < MaxTeardowns
     /\ status[parent] # "terminated"
+    \* Batch 11 QA (2026-04-24): don't Teardown while a batch is mid-run
+    \* on `parent`. Combined with the `batchActive' = [... idle ...]`
+    \* reset below, this keeps `TerminatedImpliesBatchIdle` holding.
+    /\ batchActive[parent].status = "idle"
     \* Witness recorded BEFORE parent state transition — the invariant
     \* `MetaTeardownObservedPreReset` verifies this ordering.
     /\ teardownWitness' =
@@ -1739,6 +1990,7 @@ Teardown(parent) ==
     \* cascades to c's meta children + DAG children. Full-graph cascade
     \* bounded by graph depth × `MaxTeardowns`.
     /\ status' = [status EXCEPT ![parent] = "terminated"]
+    /\ terminatedBy' = [terminatedBy EXCEPT ![parent] = "self-teardown"]
     /\ pauseLocks' = [pauseLocks EXCEPT ![parent] = {}]
     /\ pauseBuffer' = [pauseBuffer EXCEPT ![parent] = <<>>]
     /\ upQueues' = [e \in EdgePairs |->
@@ -1748,12 +2000,19 @@ Teardown(parent) ==
     \* `_deactivate` path that clears DepRecord state on TEARDOWN. Prevents
     \* stale mask entries on a terminated node.
     /\ dirtyMask' = [dirtyMask EXCEPT ![parent] = {}]
+    \* Batch 11 QA (2026-04-24): reset batchActive alongside the hard-reset.
+    \* Redundant with the `batchActive[parent].status = "idle"` guard at
+    \* this action's entry, but kept for defense-in-depth: any future
+    \* refactor that drops the guard still maintains the
+    \* `TerminatedImpliesBatchIdle` invariant.
+    /\ batchActive' = [batchActive EXCEPT ![parent] =
+                           [status |-> "idle", pending |-> <<>>]]
     /\ UNCHANGED <<cache, version, trace, emitCount,
                    perSourceEmitCount, activated, handshake, nestedEmitCount,
                    emitWitness, resubscribeCount, pauseActionCount,
                    upActionCount, extraSinkTrace, pendingExtraDelivery,
                    invalidateCount, cleanupWitness, replayBuffer,
-                   replaySnapshot>>
+                   replaySnapshot, nonVacuousInvalidateCount>>
 
 (* `DeliverTeardown(p, c)` — consume the TEARDOWN message head at edge      *)
 (*   <<p, c>>, record pre-reset `cache[c]` / `status[c]` at c's meta        *)
@@ -1774,6 +2033,10 @@ DeliverTeardown(p, c) ==
     /\ Len(queues[<<p, c>>]) > 0
     /\ Head(queues[<<p, c>>]).type = TEARDOWN
     /\ status[c] # "terminated"
+    \* Batch 11 QA (2026-04-24): TEARDOWN cascade can't land on a node
+    \* with an active batch (would strand its pending). Matches the
+    \* `Teardown` origin guard.
+    /\ batchActive[c].status = "idle"
     /\ LET qs0 == [queues EXCEPT ![<<p, c>>] = Tail(@)]
            tMsg == Msg(TEARDOWN, NullPayload)
        IN /\ queues' = EnqueueOutFrom(qs0, c, tMsg)
@@ -1784,6 +2047,7 @@ DeliverTeardown(p, c) ==
                                  [cache |-> cache[c], status |-> status[c]])
                     ELSE teardownWitness[child]]
           /\ status' = [status EXCEPT ![c] = "terminated"]
+          /\ terminatedBy' = [terminatedBy EXCEPT ![c] = "teardown-cascade"]
           /\ pauseLocks' = [pauseLocks EXCEPT ![c] = {}]
           /\ pauseBuffer' = [pauseBuffer EXCEPT ![c] = <<>>]
           /\ upQueues' = [e \in EdgePairs |->
@@ -1792,16 +2056,23 @@ DeliverTeardown(p, c) ==
           \* runtime `_deactivate` on TEARDOWN. Same semantic as Teardown
           \* origin above.
           /\ dirtyMask' = [dirtyMask EXCEPT ![c] = {}]
+          \* Batch 11 QA (2026-04-24): match `Teardown` origin's batchActive
+          \* reset (redundant with the entry guard; defense-in-depth for
+          \* `TerminatedImpliesBatchIdle`).
+          /\ batchActive' = [batchActive EXCEPT ![c] =
+                                 [status |-> "idle", pending |-> <<>>]]
     /\ UNCHANGED <<cache, version, trace, emitCount,
                    perSourceEmitCount, activated, handshake, nestedEmitCount,
                    emitWitness, resubscribeCount, pauseActionCount,
                    upActionCount, extraSinkTrace, pendingExtraDelivery,
                    invalidateCount, cleanupWitness, replayBuffer,
-                   teardownCount, replaySnapshot>>
+                   teardownCount, replaySnapshot,
+                   nonVacuousInvalidateCount>>
 
 Next ==
     \/ \E src \in SourceIds, v \in Values : Emit(src, v)
-    \/ \E src \in SourceIds, vs \in BatchSeqs : BatchEmitMulti(src, vs)
+    \/ \E src \in SourceIds, vs \in BatchSeqs : BatchEmitBegin(src, vs)
+    \/ \E src \in SourceIds : BatchEmitStep(src)
     \/ \E src \in SourceIds : Terminate(src)
     \/ \E sid \in SinkIds : SubscribeSink(sid)
     \/ \E triple \in SinkNestedEmits :
@@ -1861,8 +2132,14 @@ AllQueuesEmpty == \A e \in EdgePairs : queues[e] = <<>>
 AllBuffersEmpty == \A n \in NodeIds : pauseBuffer[n] = <<>>
 AllLocksEmpty == \A n \in NodeIds : pauseLocks[n] = {}
 
+\* Helper (batch 11 I): all batches have returned to idle. Used by
+\* quiesced-state invariants that would otherwise see the transient
+\* window between `BatchEmitBegin` (K DIRTYs enqueued, 0 settles) and
+\* all `BatchEmitStep`s completing.
+NoActiveBatch == \A n \in NodeIds : batchActive[n].status = "idle"
+
 BalancedWaves ==
-    (AllQueuesEmpty /\ AllBuffersEmpty) =>
+    (AllQueuesEmpty /\ AllBuffersEmpty /\ NoActiveBatch) =>
         \A n \in SinkIds :
             \* Terminated nodes are excluded: §2.6 "Teardown" discards
             \* `pauseBuffer` on terminal without draining, which strands DIRTYs
@@ -2263,6 +2540,64 @@ MultiSinkIterationCoherent ==
                 LET item == pendingExtraDelivery[n][i][j] IN
                 item.msg.type = DATA => item.snap[n] = item.msg.value
 
+\* #27 — MultiSinkIterationDriftClean (§2.4 drift form, added 2026-04-24
+\* batch 11 I via `BatchEmitMulti` step-action refactor).
+\*
+\* STRONGER than `MultiSinkIterationCoherent` (#18): asserts every pending
+\* DATA item's value matches `cache[n]` at observation time. Under atomic
+\* `BatchEmitMulti` (pre-batch-11) this false-positived because cache
+\* jumped to batch-final in one step while pending held K items stamped at
+\* intermediate values. The batch 11 I refactor splits that atomic action
+\* into `BatchEmitBegin` + `BatchEmitStep`, both gated on
+\* `AllExtraPendingEmpty` — every step's extra-sink items fully drain
+\* before the next step fires, so `cache[n]` advances monotonically and
+\* pending-head DATA always matches current cache.
+\*
+\* Bug class caught: §32 peer-read at the multi-sink primitive. If an
+\* emission site enqueues DATA(v1) to `pendingExtraDelivery[n][i]` but a
+\* subsequent action advances `cache[n]` to v2 before the next
+\* `DeliverToExtraSink(n, i)` fires, the drift invariant trips — that's
+\* exactly the scenario where a §32-class sink callback reading cache
+\* would observe a value inconsistent with the pending DATA it's about
+\* to receive. Vacuous when `ExtraSinks = [n |-> 0]` (all pending queues
+\* stay empty).
+\*
+\* Load-bearing: reverting `BatchEmitStep`'s `AllExtraPendingEmpty` gate
+\* would let two steps enqueue before extras drain — pending ends up with
+\* multiple items, head's value trails cache, invariant trips in
+\* `multisink_batch_MC`. Also load-bearing under `SinkNestedEmit`: if a
+\* nested emit advances cache between a single `Emit` and its delivery,
+\* the pending head's value no longer matches cache.
+MultiSinkIterationDriftClean ==
+    \A n \in SinkIds :
+        \A i \in 1..ExtraSinks[n] :
+            \A j \in 1..Len(pendingExtraDelivery[n][i]) :
+                LET item == pendingExtraDelivery[n][i][j] IN
+                item.msg.type = DATA => item.msg.value = cache[n]
+
+\* #28 — TerminatedImpliesBatchIdle (batch 11 QA, 2026-04-24).
+\*
+\* Regression catcher for the zombie-batchActive class surfaced in QA:
+\* a source that transitioned to `status = "terminated"` while
+\* `batchActive.status = "running"` would strand its pending suffix, and
+\* (before the Resubscribe fix) could inherit the zombie into its next
+\* lifecycle post-resubscribe. Enforces the structural contract: any
+\* terminated node has an idle batchActive slot — no in-flight batch
+\* survives a terminal transition.
+\*
+\* Load-bearing: reverting the `batchActive' = [... idle ...]` clear in
+\* any of `Terminate` / `Teardown` / `DeliverTeardown` / `DeliverTerminal`
+\* (gate=TRUE branch) / `Resubscribe` produces a state where
+\* `status[n] = "terminated" /\ batchActive[n].status = "running"`,
+\* tripping this invariant.
+\*
+\* Vacuous in all MCs where `BatchSeqs = {}` (batchActive always idle).
+\* Exercised by any MC that combines BatchSeqs with a terminal-inducing
+\* action on the batching source.
+TerminatedImpliesBatchIdle ==
+    \A n \in NodeIds :
+        status[n] = "terminated" => batchActive[n].status = "idle"
+
 \* #19 — CleanupWitnessInValueDomain (§1.4 INVALIDATE, added 2026-04-23 batch 3
 \* Package 6).
 \*
@@ -2380,26 +2715,13 @@ CleanupWitnessNotSentinel ==
         \A k \in 1..Len(cleanupWitness[n]) :
             cleanupWitness[n][k] # DefaultInitial
 
-\* #21 — MultiSinkIterationDriftClean (§2.4 drift form) — DEFERRED.
+\* #21 number retired — see #27 `MultiSinkIterationDriftClean`.
 \*
-\* The gate helper `AllExtraPendingEmpty` ships; the stricter drift
-\* invariant (`item.msg.value = cache[n]` for every pending DATA) does NOT
-\* ship because it false-positives on `BatchEmitMulti`'s atomic K-emit
-\* cache advance: the TLA+ model enqueues K pending items in one atomic
-\* step but cache ends at the FINAL value, so intermediate DATA items
-\* appear to "drift" even without §32 nested-emit interference.
-\*
-\* Clean fix requires refactoring `BatchEmitMulti` into K separate step
-\* actions (each enqueuing one item, advancing cache one step) — substantial
-\* restructuring that loses the atomicity-simplification currently used to
-\* keep state space tractable. Tracked in docs/optimizations.md as the
-\* remaining deferred portion of Package 2.
-\*
-\* What ships: the emission-action gate. Under it, the runtime's atomic
-\* iteration semantic is modeled structurally — other emission actions
-\* serialize with the extra-sink drain. The regression catcher for the
-\* §32 bug at the multi-sink primitive layer remains the existing
-\* `MultiSinkIterationCoherent` (#18, per-item faithfulness).
+\* **RESOLVED batch 11 I (2026-04-24).** Originally this slot held a
+\* deferral note explaining why the strict drift invariant couldn't ship
+\* under atomic `BatchEmitMulti`. Batch 11 split that atomic action into
+\* `BatchEmitBegin(src, vs)` + `BatchEmitStep(src)`, which enabled the
+\* strict form to ship as `MultiSinkIterationDriftClean` (#27).
 
 \* #22 — MetaTeardownObservedPreReset (§2.3 meta companion, added 2026-04-23
 \* batch 3 Package 7).
@@ -2463,5 +2785,81 @@ TypeOK ==
     /\ teardownWitness \in [NodeIds ->
             Seq([cache: Values, status: {"settled", "dirty", "terminated"}])]
     /\ replaySnapshot \in [NodeIds -> Seq(Values)]
+    /\ terminatedBy \in [NodeIds -> {"none",
+                                       "self-source-terminate",
+                                       "self-teardown",
+                                       "teardown-cascade",
+                                       "dep-cascade-complete",
+                                       "dep-cascade-error"}]
+    /\ nonVacuousInvalidateCount \in [NodeIds -> Nat]
+    /\ batchActive \in [NodeIds ->
+            [status: {"idle", "running"}, pending: Seq(Values)]]
+
+\* #25 — NoDepCascadeTerminalWhenGateFalse (Package 5 rescue, added
+\* 2026-04-24 batch 8 A).
+\*
+\* A node only transitions to `status = "terminated"` via dep-terminal
+\* cascade when the matching gate — `AutoCompleteOnDepsComplete` for
+\* COMPLETE, `AutoErrorOnDepsError` for ERROR — is TRUE. This is the
+\* protocol-layer encoding of the rescue / catchError operator contract:
+\* with either gate FALSE, a downstream terminal from a dep must be
+\* absorbed (D1 rescue recompute) rather than forwarded with a
+\* status transition at this node.
+\*
+\* Implementation: `DeliverTerminal(p, c)` classifies the transition as
+\* "dep-cascade-complete" or "dep-cascade-error" only on the gate=TRUE
+\* branch; the rescue-recompute and gate-FALSE-absorb branches leave
+\* `terminatedBy[c]` at its prior value ("none" for a live node). Other
+\* termination paths (`Terminate`, `Teardown`, `DeliverTeardown`) use
+\* dedicated causes ("self-source-terminate", "self-teardown",
+\* "teardown-cascade") outside the two dep-cascade strings, so they
+\* cannot falsely satisfy either premise of the implication.
+\*
+\* Load-bearing on `wave_protocol_rescue_MC` (`AutoCompleteOnDepsComplete[B]
+\* = FALSE`): reverting the gate in `DeliverTerminal` — i.e. unconditionally
+\* taking the gate=TRUE branch — would set
+\* `terminatedBy[B] = "dep-cascade-complete"` while the constant says the
+\* gate is FALSE, tripping the implication. Vacuous in every MC where
+\* both gate maps are TRUE everywhere (the legacy baseline).
+NoDepCascadeTerminalWhenGateFalse ==
+    /\ \A n \in NodeIds :
+           terminatedBy[n] = "dep-cascade-complete" =>
+               AutoCompleteOnDepsComplete[n]
+    /\ \A n \in NodeIds :
+           terminatedBy[n] = "dep-cascade-error" =>
+               AutoErrorOnDepsError[n]
+
+\* #26 — CleanupWitnessAccounting (§1.4 INVALIDATE counting law, added
+\* 2026-04-24 batch 8 D).
+\*
+\* Quantitative companion to `CleanupWitnessNotSentinel` (#24, value domain)
+\* and `CleanupWitnessInValueDomain` (#19, witness entry shape). Where the
+\* value-domain invariants catch "witness contains the wrong kind of
+\* value," this invariant catches "witness contains the wrong NUMBER of
+\* entries." Specifically: every non-vacuous cache-reset event at n
+\* (Invalidate / DeliverInvalidate where `cache[n] # DefaultInitial` at
+\* action time) appends exactly one cleanup witness, and every append
+\* corresponds to exactly one non-vacuous reset. Off-by-N between the
+\* two — e.g. a regression that drops the `wasReset` guard on the
+\* witness append but keeps it on the counter, or vice versa — trips
+\* the invariant.
+\*
+\* Reset behavior: `Resubscribe(sid)` clears both `cleanupWitness[sid]`
+\* and `nonVacuousInvalidateCount[sid]` in one step, so the accounting
+\* stays in balance across a fresh lifecycle. Any future Resubscribe
+\* refactor that clears only one side would be caught by the first
+\* subsequent Invalidate at sid.
+\*
+\* Vacuous when `InvalidateOriginators = {}` (legacy baseline MCs); the
+\* counter and the witness are both zero-length and trivially equal.
+\* Load-bearing on `wave_protocol_invalidate_MC` and
+\* `wave_protocol_invalidate_diamond_MC`: removing the `wasReset` guard
+\* from only the `cleanupWitness'` conditional in `DeliverInvalidate`
+\* (while leaving it on `nonVacuousInvalidateCount'`) would produce
+\* `Len(cleanupWitness[D]) = 2 /\ nonVacuousInvalidateCount[D] = 1` at
+\* the diamond join node, tripping the equality.
+CleanupWitnessAccounting ==
+    \A n \in NodeIds :
+        Len(cleanupWitness[n]) = nonVacuousInvalidateCount[n]
 
 ============================================================================

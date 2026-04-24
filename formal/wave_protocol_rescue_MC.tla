@@ -63,7 +63,7 @@ AutoCompleteOnDepsCompleteMC == [n \in NodeIdsMC |-> IF n = "B" THEN FALSE ELSE 
 AutoErrorOnDepsErrorMC       == [n \in NodeIdsMC |-> IF n = "B" THEN FALSE ELSE TRUE]
 
 ReplayBufferSizeMC == [n \in NodeIdsMC |-> 0]
-EqualsAbsorbsMC    == [n \in NodeIdsMC |-> TRUE]
+EqualsPairsMC    == [n \in NodeIdsMC |-> {<<v, v>> : v \in ValuesMC}]
 
 MetaCompanionsMC == [n \in NodeIdsMC |-> {}]
 MaxTeardownsMC   == 0

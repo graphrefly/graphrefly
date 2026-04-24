@@ -71,7 +71,7 @@ AutoCompleteOnDepsCompleteMC == [n \in NodeIdsMC |-> TRUE]
 AutoErrorOnDepsErrorMC       == [n \in NodeIdsMC |-> TRUE]
 
 ReplayBufferSizeMC == [n \in NodeIdsMC |-> 0]
-EqualsAbsorbsMC    == [n \in NodeIdsMC |-> TRUE]
+EqualsPairsMC    == [n \in NodeIdsMC |-> {<<v, v>> : v \in ValuesMC}]
 
 \* Package 7 axis ON: M is A's meta companion. `Teardown(A)` records
 \* witness at M with A's PRE-reset cache + status, then transitions A to

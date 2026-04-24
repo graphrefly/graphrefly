@@ -71,7 +71,7 @@ AutoErrorOnDepsErrorMC       == [n \in NodeIdsMC |-> TRUE]
 \* per batch 3 QA round 2 ("Item 1 full threading"); the next
 \* `SubscribeSink(B)` would capture the non-empty snapshot.
 ReplayBufferSizeMC == [n \in NodeIdsMC |-> IF n = "B" THEN 1 ELSE 0]
-EqualsAbsorbsMC    == [n \in NodeIdsMC |-> TRUE]
+EqualsPairsMC    == [n \in NodeIdsMC |-> {<<v, v>> : v \in ValuesMC}]
 
 MetaCompanionsMC == [n \in NodeIdsMC |-> {}]
 MaxTeardownsMC   == 0
