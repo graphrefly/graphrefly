@@ -82,9 +82,34 @@ CONSTANTS
                           \*   (pauseLocks, pauseBuffer, dirtyMask, cache for derived,
                           \*   handshake, trace, activated) when the `Resubscribe` action
                           \*   fires on a terminated instance. Matches `resubscribable: true`.
-    MaxPauseActions       \* Bound on Pause + Resume + Resubscribe firings (keeps the
+    MaxPauseActions,      \* Bound on Pause + Resume + Resubscribe firings (keeps the
                           \*   state space finite — a single Pause/Resume pair can repeat
                           \*   indefinitely without this guard).
+    UpOriginators,        \* SUBSET NodeIds. Nodes that can originate upstream
+                          \*   tier-1/2/5 messages via the §1.4 `up()` action. In the
+                          \*   runtime, this is any sink that can call `leaf.up([...])`
+                          \*   on a subscription — modeled here at the node level since
+                          \*   per-sink actors are out of scope. Empty set disables the
+                          \*   up-axis — matches legacy MCs where `up()` is not modeled.
+    MaxUpActions,         \* Bound on UpPause + UpResume firings (otherwise a
+                          \*   single UpPause/UpResume pair could repeat without
+                          \*   bound). Keeps the state space finite. UpInvalidate
+                          \*   / UpTeardown originators are future work — when
+                          \*   added they'll share this counter and likewise be
+                          \*   covered by `UpQueuesCarryControlPlane`'s tier set.
+    ExtraSinks            \* NodeId -> Nat. For every sink node `n`, ExtraSinks[n]
+                          \*   counts how many ADDITIONAL external subscribers observe
+                          \*   `n` beyond the "primary sink" whose trace lives in
+                          \*   `trace[n]`. Each extra sink `i` has its own trace in
+                          \*   `extraSinkTrace[n][i]` populated lazily via the
+                          \*   `DeliverToExtraSink(n, i)` action — the iterative-
+                          \*   delivery analogue of the runtime's `_deliverToSinks`
+                          \*   loop (node.ts L2248). Default 0 for all existing MCs
+                          \*   (single-sink semantics preserved). New `wave_protocol_
+                          \*   multisink_MC` sets `ExtraSinks[B] = 1` so one shared
+                          \*   node carries two observers — the minimal topology for
+                          \*   surfacing COMPOSITION-GUIDE §32-class peer-read bugs
+                          \*   via SinkNestedEmit firing mid-iteration.
 
 ASSUME SourceIds \subseteq NodeIds
 ASSUME SinkIds \subseteq NodeIds
@@ -96,6 +121,9 @@ ASSUME MaxNestedEmits \in Nat
 ASSUME Pausable \in [NodeIds -> {"off", "on", "resumeAll"}]
 ASSUME ResubscribableNodes \subseteq NodeIds
 ASSUME MaxPauseActions \in Nat
+ASSUME UpOriginators \subseteq NodeIds
+ASSUME MaxUpActions \in Nat
+ASSUME ExtraSinks \in [NodeIds -> Nat]
 
 Parents(n) == {p \in NodeIds : <<p, n>> \in Edges}
 
@@ -158,6 +186,29 @@ RecordAtSinkIfAny(t, n, msg) ==
 RecordSeqAtSinkIfAny(t, n, msgs) ==
     IF n \in SinkIds THEN [t EXCEPT ![n] = @ \o msgs] ELSE t
 
+\* --- §2.4 multi-sink iteration helpers (added 2026-04-23) ---
+\*
+\* Each emission action that writes to `trace[n]` also enqueues the same
+\* payload to each extra sink's pending queue. The payload is tagged with
+\* the full cache snapshot at enqueue time so the multi-sink ordering
+\* invariant can check that cache didn't drift between enqueue and the
+\* eventual `DeliverToExtraSink` dequeue. In single-sink MCs (`ExtraSinks`
+\* = 0 everywhere) these helpers are no-ops and add no state.
+PendingItem(msg, cch) == [msg |-> msg, snap |-> cch]
+
+EnqueuePendingExtra(ped, n, msg, cch) ==
+    IF n \in SinkIds /\ ExtraSinks[n] > 0
+      THEN [ped EXCEPT ![n] = [i \in 1..ExtraSinks[n] |->
+                                  Append(ped[n][i], PendingItem(msg, cch))]]
+      ELSE ped
+
+EnqueuePendingExtraSeq(ped, n, msgs, cch) ==
+    IF n \in SinkIds /\ ExtraSinks[n] > 0
+      THEN [ped EXCEPT ![n] = [i \in 1..ExtraSinks[n] |->
+                                  ped[n][i] \o
+                                  [j \in 1..Len(msgs) |-> PendingItem(msgs[j], cch)]]]
+      ELSE ped
+
 ----------------------------------------------------------------------------
 VARIABLES
     cache,            \* NodeId -> Values  (always a real value in this simplified model)
@@ -184,11 +235,40 @@ VARIABLES
     pauseLocks,       \* NodeId -> SUBSET LockIds
     pauseBuffer,      \* NodeId -> Seq of messages captured while paused + "resumeAll"
     resubscribeCount, \* Nat, bounds Resubscribe action firings
-    pauseActionCount  \* Nat, bounds Pause + Resume action firings
+    pauseActionCount, \* Nat, bounds Pause + Resume action firings
+    \* --- §1.4 `up()` upstream direction state (added 2026-04-23) ---
+    \* Per-edge queues for upstream-flowing messages. The child originates a
+    \* tier-1/2/5 message (INVALIDATE / PAUSE / RESUME / TEARDOWN) via `up()`;
+    \* `DeliverUp(c, p)` at the parent's end consumes and applies it — PAUSE/
+    \* RESUME integrates with the existing `pauseLocks[p]` model, so upstream
+    \* and downstream pause origins compose. Spec §1.4 says directions are
+    \* conventions, not enforced constraints; tier-3/4 downstream-only content
+    \* is modeled by disabling the action for those types at origin.
+    upQueues,         \* <<child, parent>> -> Seq of messages (reverse of `queues`)
+    upActionCount,    \* Nat, bounds UpPause/UpResume/UpInvalidate/UpTeardown firings
+    \* --- §2.4 multi-sink iteration state (added 2026-04-23) ---
+    \* Every emission action that writes to `trace[n]` ALSO enqueues the same
+    \* payload to each extra sink's pendingExtraDelivery[n][i] — but the
+    \* actual delivery to extra sinks is deferred to a separate action
+    \* `DeliverToExtraSink(n, i)`, modeling the runtime's `_deliverToSinks`
+    \* iteration (node.ts L2248). The gap between "delivered to primary" and
+    \* "delivered to sink i" is the window where COMPOSITION-GUIDE §32 peer-
+    \* read bugs manifest: `SinkNestedEmit` fires mid-iteration, advances a
+    \* remote cache, and a stale pending payload is later delivered to a
+    \* later sink whose callback reads the now-divergent cache.
+    \*
+    \* Each pending item is a record <<msg, cacheSnapAtEnqueue>> — the `msg`
+    \* is what the sink will observe, `cacheSnapAtEnqueue` is the full-cache
+    \* map at enqueue time. If cache has moved between enqueue and dequeue
+    \* for a DATA payload, the multi-sink ordering invariant trips.
+    extraSinkTrace,          \* [NodeId -> [1..ExtraSinks[n] -> Seq(Message)]]
+    pendingExtraDelivery     \* [NodeId -> [1..ExtraSinks[n] -> Seq(Record)]]
 
 vars == <<cache, status, version, dirtyMask, queues, trace, emitCount,
           activated, handshake, nestedEmitCount, emitWitness,
-          pauseLocks, pauseBuffer, resubscribeCount, pauseActionCount>>
+          pauseLocks, pauseBuffer, resubscribeCount, pauseActionCount,
+          upQueues, upActionCount,
+          extraSinkTrace, pendingExtraDelivery>>
 
 ----------------------------------------------------------------------------
 Init ==
@@ -207,6 +287,10 @@ Init ==
     /\ pauseBuffer = [n \in NodeIds |-> <<>>]
     /\ resubscribeCount = 0
     /\ pauseActionCount = 0
+    /\ upQueues = [e \in EdgePairs |-> <<>>]
+    /\ upActionCount = 0
+    /\ extraSinkTrace = [n \in NodeIds |-> [i \in 1..ExtraSinks[n] |-> <<>>]]
+    /\ pendingExtraDelivery = [n \in NodeIds |-> [i \in 1..ExtraSinks[n] |-> <<>>]]
 
 ----------------------------------------------------------------------------
 (* BufferAll predicate: a node n captures its outgoing tier-3/4 emissions into
@@ -239,24 +323,31 @@ Emit(src, v) ==
            pair         == <<dirtyMsg, settleMsg>>
            captured     == IsCapturedByBuffer(src)
        IN
-       /\ IF captured
-            THEN
-              \* DIRTY flows immediately; settle diverts to buffer.
-              /\ queues' = EnqueueOutFrom(queues, src, dirtyMsg)
-              /\ trace'  = RecordAtSinkIfAny(trace, src, dirtyMsg)
-              /\ pauseBuffer' = [pauseBuffer EXCEPT ![src] = Append(@, settleMsg)]
-            ELSE
-              /\ queues' = EnqueueSeqOutFrom(queues, src, pair)
-              /\ trace'  = RecordSeqAtSinkIfAny(trace, src, pair)
-              /\ pauseBuffer' = pauseBuffer
-       /\ cache'   = IF equalToCache THEN cache
-                                     ELSE [cache EXCEPT ![src] = v]
-       /\ version' = IF equalToCache THEN version
-                                     ELSE [version EXCEPT ![src] = @ + 1]
-       /\ UNCHANGED <<status, dirtyMask, activated, handshake,
-                      nestedEmitCount, emitWitness,
-                      pauseLocks, resubscribeCount, pauseActionCount>>
-       /\ emitCount' = emitCount + 1
+       /\ LET cacheAfter == IF equalToCache THEN cache
+                                              ELSE [cache EXCEPT ![src] = v]
+          IN
+          /\ IF captured
+               THEN
+                 \* DIRTY flows immediately; settle diverts to buffer.
+                 /\ queues' = EnqueueOutFrom(queues, src, dirtyMsg)
+                 /\ trace'  = RecordAtSinkIfAny(trace, src, dirtyMsg)
+                 /\ pendingExtraDelivery' =
+                      EnqueuePendingExtra(pendingExtraDelivery, src, dirtyMsg, cacheAfter)
+                 /\ pauseBuffer' = [pauseBuffer EXCEPT ![src] = Append(@, settleMsg)]
+               ELSE
+                 /\ queues' = EnqueueSeqOutFrom(queues, src, pair)
+                 /\ trace'  = RecordSeqAtSinkIfAny(trace, src, pair)
+                 /\ pendingExtraDelivery' =
+                      EnqueuePendingExtraSeq(pendingExtraDelivery, src, pair, cacheAfter)
+                 /\ pauseBuffer' = pauseBuffer
+          /\ cache'   = cacheAfter
+          /\ version' = IF equalToCache THEN version
+                                        ELSE [version EXCEPT ![src] = @ + 1]
+          /\ UNCHANGED <<status, dirtyMask, activated, handshake,
+                         nestedEmitCount, emitWitness,
+                         pauseLocks, resubscribeCount, pauseActionCount,
+                         upQueues, upActionCount, extraSinkTrace>>
+          /\ emitCount' = emitCount + 1
 
 (* BatchEmitMulti(src, vs): atomic multi-emit inside a user `batch()` scope.
    Models Bug 2 fix — K consecutive `.emit()` calls to `src` coalesce into
@@ -311,22 +402,29 @@ BatchEmitMulti(src, vs) ==
            bundle == dirtyPrefix \o settles
            captured == IsCapturedByBuffer(src)
        IN
-       /\ IF captured
-            THEN
-              \* DIRTYs flow immediately; settles divert to buffer in order.
-              /\ queues' = EnqueueSeqOutFrom(queues, src, dirtyPrefix)
-              /\ trace'  = RecordSeqAtSinkIfAny(trace, src, dirtyPrefix)
-              /\ pauseBuffer' = [pauseBuffer EXCEPT ![src] = @ \o settles]
-            ELSE
-              /\ queues' = EnqueueSeqOutFrom(queues, src, bundle)
-              /\ trace'  = RecordSeqAtSinkIfAny(trace, src, bundle)
-              /\ pauseBuffer' = pauseBuffer
-       /\ cache'  = [cache EXCEPT ![src] = finalCacheVal]
-       /\ version' = [version EXCEPT ![src] = @ + dataCount]
-       /\ UNCHANGED <<status, dirtyMask, activated, handshake,
-                      nestedEmitCount, emitWitness,
-                      pauseLocks, resubscribeCount, pauseActionCount>>
-       /\ emitCount' = emitCount + Len(vs)
+       /\ LET cacheAfter == [cache EXCEPT ![src] = finalCacheVal]
+          IN
+          /\ IF captured
+               THEN
+                 \* DIRTYs flow immediately; settles divert to buffer in order.
+                 /\ queues' = EnqueueSeqOutFrom(queues, src, dirtyPrefix)
+                 /\ trace'  = RecordSeqAtSinkIfAny(trace, src, dirtyPrefix)
+                 /\ pendingExtraDelivery' =
+                      EnqueuePendingExtraSeq(pendingExtraDelivery, src, dirtyPrefix, cacheAfter)
+                 /\ pauseBuffer' = [pauseBuffer EXCEPT ![src] = @ \o settles]
+               ELSE
+                 /\ queues' = EnqueueSeqOutFrom(queues, src, bundle)
+                 /\ trace'  = RecordSeqAtSinkIfAny(trace, src, bundle)
+                 /\ pendingExtraDelivery' =
+                      EnqueuePendingExtraSeq(pendingExtraDelivery, src, bundle, cacheAfter)
+                 /\ pauseBuffer' = pauseBuffer
+          /\ cache'  = cacheAfter
+          /\ version' = [version EXCEPT ![src] = @ + dataCount]
+          /\ UNCHANGED <<status, dirtyMask, activated, handshake,
+                         nestedEmitCount, emitWitness,
+                         pauseLocks, resubscribeCount, pauseActionCount,
+                         upQueues, upActionCount, extraSinkTrace>>
+          /\ emitCount' = emitCount + Len(vs)
 
 (* A source terminates. Enqueues COMPLETE to every child and transitions
    to "terminated" — the source refuses further Emit actions thereafter.
@@ -343,12 +441,21 @@ Terminate(src) ==
     /\ LET m == Msg(COMPLETE, NullPayload) IN
        /\ queues' = EnqueueOutFrom(queues, src, m)
        /\ trace'  = RecordAtSinkIfAny(trace, src, m)
+       /\ pendingExtraDelivery' =
+            EnqueuePendingExtra(pendingExtraDelivery, src, m, cache)
        /\ status' = [status EXCEPT ![src] = "terminated"]
        /\ pauseLocks' = [pauseLocks EXCEPT ![src] = {}]
        /\ pauseBuffer' = [pauseBuffer EXCEPT ![src] = <<>>]
+       \* §2.6 hard-reset: clear upQueues TO this node — a terminated
+       \* parent can't consume upstream PAUSE/RESUME anyway (DeliverUp
+       \* guards on `status[p] # "terminated"`), so leaving them in
+       \* flight would strand messages indefinitely.
+       /\ upQueues' = [e \in EdgePairs |->
+                          IF e[1] = src THEN <<>> ELSE upQueues[e]]
        /\ UNCHANGED <<cache, version, dirtyMask, emitCount, activated, handshake,
                       nestedEmitCount, emitWitness,
-                      resubscribeCount, pauseActionCount>>
+                      resubscribeCount, pauseActionCount,
+                      upActionCount, extraSinkTrace>>
 
 ----------------------------------------------------------------------------
 \* Tier-drain predicates enforcing §1.3 invariant 7 message ordering.
@@ -412,13 +519,17 @@ DeliverDirty(p, c) ==
        /\ IF firstDirtyThisWave
             THEN /\ queues' = EnqueueOutFrom(qs0, c, dirtyMsg)
                  /\ trace'  = RecordAtSinkIfAny(trace, c, dirtyMsg)
+                 /\ pendingExtraDelivery' =
+                      EnqueuePendingExtra(pendingExtraDelivery, c, dirtyMsg, cache)
             ELSE /\ queues' = qs0
                  /\ trace'  = trace
+                 /\ pendingExtraDelivery' = pendingExtraDelivery
        /\ status' = [status EXCEPT ![c] = "dirty"]
        /\ dirtyMask' = [dirtyMask EXCEPT ![c] = @ \cup {p}]
        /\ UNCHANGED <<cache, version, emitCount, activated, handshake,
                       nestedEmitCount, emitWitness,
-                      pauseLocks, pauseBuffer, resubscribeCount, pauseActionCount>>
+                      pauseLocks, pauseBuffer, resubscribeCount, pauseActionCount,
+                      upQueues, upActionCount, extraSinkTrace>>
 
 (* DeliverSettle: consume the entire tier-3 (DATA/RESOLVED) prefix at head
    of queue[<<p, c>>] as one atomic delivery — matches the runtime after
@@ -454,6 +565,7 @@ DeliverSettle(p, c) ==
             THEN /\ queues' = qs0
                  /\ trace'  = trace
                  /\ pauseBuffer' = pauseBuffer
+                 /\ pendingExtraDelivery' = pendingExtraDelivery
                  /\ emitWitness' = emitWitness
                  /\ UNCHANGED <<cache, status, version>>
             ELSE LET newCache  == Compute(c, cache)
@@ -461,6 +573,8 @@ DeliverSettle(p, c) ==
                      settleMsg == IF sameAsOld THEN Msg(RESOLVED, NullPayload)
                                                ELSE Msg(DATA, newCache)
                      captured  == IsCapturedByBuffer(c)
+                     cacheAfter == IF sameAsOld THEN cache
+                                                 ELSE [cache EXCEPT ![c] = newCache]
                      \* Record a ghost witness when a multi-parent derived emits DATA:
                      \* the value it chose, plus the parents' cache values at the
                      \* moment of recompute. Used by NestedDrainPeerConsistency.
@@ -476,13 +590,15 @@ DeliverSettle(p, c) ==
                         \* Only the downstream delivery diverts to pauseBuffer[c].
                         /\ queues' = qs0
                         /\ trace'  = trace
+                        /\ pendingExtraDelivery' = pendingExtraDelivery
                         /\ pauseBuffer' = [pauseBuffer EXCEPT ![c] = Append(@, settleMsg)]
                       ELSE
                         /\ queues' = EnqueueOutFrom(qs0, c, settleMsg)
                         /\ trace'  = RecordAtSinkIfAny(trace, c, settleMsg)
+                        /\ pendingExtraDelivery' =
+                             EnqueuePendingExtra(pendingExtraDelivery, c, settleMsg, cacheAfter)
                         /\ pauseBuffer' = pauseBuffer
-                 /\ cache'  = IF sameAsOld THEN cache
-                                            ELSE [cache EXCEPT ![c] = newCache]
+                 /\ cache'  = cacheAfter
                  /\ version' = IF sameAsOld THEN version
                                              ELSE [version EXCEPT ![c] = @ + 1]
                  /\ status' = [status EXCEPT ![c] = "settled"]
@@ -490,7 +606,8 @@ DeliverSettle(p, c) ==
                                      THEN [emitWitness EXCEPT ![c] = Append(@, witness)]
                                      ELSE emitWitness
        /\ UNCHANGED <<emitCount, activated, handshake, nestedEmitCount,
-                      pauseLocks, resubscribeCount, pauseActionCount>>
+                      pauseLocks, resubscribeCount, pauseActionCount,
+                      upQueues, upActionCount, extraSinkTrace>>
 
 (* DeliverTerminal: consume COMPLETE or ERROR from queue[<<p, c>>].
    - Forwards the terminal to c's children exactly once.
@@ -510,12 +627,20 @@ DeliverTerminal(p, c) ==
        IN
        /\ queues' = EnqueueOutFrom(qs0, c, m)
        /\ trace'  = RecordAtSinkIfAny(trace, c, m)
+       /\ pendingExtraDelivery' =
+            EnqueuePendingExtra(pendingExtraDelivery, c, m, cache)
        /\ status' = [status EXCEPT ![c] = "terminated"]
        /\ pauseLocks' = [pauseLocks EXCEPT ![c] = {}]
        /\ pauseBuffer' = [pauseBuffer EXCEPT ![c] = <<>>]
+       \* Clear upQueues TO the now-terminated node (same reasoning as
+       \* `Terminate(src)`): DeliverUp gates on `status[p] # "terminated"`,
+       \* so stranded messages would compound state forever.
+       /\ upQueues' = [e \in EdgePairs |->
+                          IF e[1] = c THEN <<>> ELSE upQueues[e]]
        /\ UNCHANGED <<cache, version, dirtyMask, emitCount, activated, handshake,
                       nestedEmitCount, emitWitness,
-                      resubscribeCount, pauseActionCount>>
+                      resubscribeCount, pauseActionCount,
+                      upActionCount, extraSinkTrace>>
 
 ----------------------------------------------------------------------------
 (* SubscribeSink(sid): fires once per sink. Synthesizes the handshake
@@ -572,7 +697,9 @@ SubscribeSink(sid) ==
           /\ activated' = [activated EXCEPT ![sid] = TRUE]
           /\ UNCHANGED <<cache, status, version, dirtyMask, queues, trace, emitCount,
                          nestedEmitCount, emitWitness,
-                         pauseLocks, pauseBuffer, resubscribeCount, pauseActionCount>>
+                         pauseLocks, pauseBuffer, resubscribeCount, pauseActionCount,
+                         upQueues, upActionCount,
+                         extraSinkTrace, pendingExtraDelivery>>
 
 (* SinkNestedEmit(observer, target, v): models a sink callback that runs
    batch(() => target.emit(v)) inside its own callback. Enabled only when:
@@ -602,22 +729,28 @@ SinkNestedEmit(observer, target, v) ==
            dirtyMsg     == Msg(DIRTY, NullPayload)
            pair         == <<dirtyMsg, settleMsg>>
            captured     == IsCapturedByBuffer(target)
+           cacheAfter   == IF equalToCache THEN cache
+                                            ELSE [cache EXCEPT ![target] = v]
        IN
        /\ IF captured
             THEN
               /\ queues' = EnqueueOutFrom(queues, target, dirtyMsg)
               /\ trace'  = RecordAtSinkIfAny(trace, target, dirtyMsg)
+              /\ pendingExtraDelivery' =
+                   EnqueuePendingExtra(pendingExtraDelivery, target, dirtyMsg, cacheAfter)
               /\ pauseBuffer' = [pauseBuffer EXCEPT ![target] = Append(@, settleMsg)]
             ELSE
               /\ queues' = EnqueueSeqOutFrom(queues, target, pair)
               /\ trace'  = RecordSeqAtSinkIfAny(trace, target, pair)
+              /\ pendingExtraDelivery' =
+                   EnqueuePendingExtraSeq(pendingExtraDelivery, target, pair, cacheAfter)
               /\ pauseBuffer' = pauseBuffer
-       /\ cache'   = IF equalToCache THEN cache
-                                     ELSE [cache EXCEPT ![target] = v]
+       /\ cache'   = cacheAfter
        /\ version' = IF equalToCache THEN version
                                      ELSE [version EXCEPT ![target] = @ + 1]
        /\ UNCHANGED <<status, dirtyMask, activated, handshake, emitWitness,
-                      pauseLocks, resubscribeCount, pauseActionCount>>
+                      pauseLocks, resubscribeCount, pauseActionCount,
+                      upQueues, upActionCount, extraSinkTrace>>
        /\ emitCount' = emitCount + 1
        /\ nestedEmitCount' = nestedEmitCount + 1
 
@@ -665,10 +798,13 @@ Pause(src, lockId) ==
               ELSE pauseLocks
        /\ queues' = EnqueueOutFrom(queues, src, msg)
        /\ trace'  = RecordAtSinkIfAny(trace, src, msg)
+       /\ pendingExtraDelivery' =
+            EnqueuePendingExtra(pendingExtraDelivery, src, msg, cache)
        /\ pauseActionCount' = pauseActionCount + 1
        /\ UNCHANGED <<cache, status, version, dirtyMask, emitCount, activated,
                       handshake, nestedEmitCount, emitWitness,
-                      pauseBuffer, resubscribeCount>>
+                      pauseBuffer, resubscribeCount,
+                      upQueues, upActionCount, extraSinkTrace>>
 
 (* Resume only fires when `src` is actually holding `lockId`. The
    "unknown-lockId RESUME is a no-op" case is modeled at `DeliverPauseResume`
@@ -695,14 +831,20 @@ Resume(src, lockId) ==
                            IN EnqueueOutFrom(qd, src, msg)
               /\ trace'  = LET td == RecordSeqAtSinkIfAny(trace, src, drainBuf)
                            IN RecordAtSinkIfAny(td, src, msg)
+              /\ pendingExtraDelivery' =
+                   LET ped1 == EnqueuePendingExtraSeq(pendingExtraDelivery, src, drainBuf, cache)
+                   IN EnqueuePendingExtra(ped1, src, msg, cache)
             ELSE
               /\ pauseBuffer' = pauseBuffer
               /\ queues' = EnqueueOutFrom(queues, src, msg)
               /\ trace'  = RecordAtSinkIfAny(trace, src, msg)
+              /\ pendingExtraDelivery' =
+                   EnqueuePendingExtra(pendingExtraDelivery, src, msg, cache)
        /\ pauseActionCount' = pauseActionCount + 1
        /\ UNCHANGED <<cache, status, version, dirtyMask, emitCount, activated,
                       handshake, nestedEmitCount, emitWitness,
-                      resubscribeCount>>
+                      resubscribeCount,
+                      upQueues, upActionCount, extraSinkTrace>>
 
 DeliverPauseResume(p, c) ==
     /\ <<p, c>> \in EdgePairs
@@ -725,12 +867,16 @@ DeliverPauseResume(p, c) ==
               /\ pauseBuffer' = pauseBuffer
               /\ queues' = EnqueueOutFrom(qs0, c, m)
               /\ trace'  = RecordAtSinkIfAny(trace, c, m)
+              /\ pendingExtraDelivery' =
+                   EnqueuePendingExtra(pendingExtraDelivery, c, m, cache)
             ELSE IF isPause
               THEN
                 /\ pauseLocks' = [pauseLocks EXCEPT ![c] = @ \cup {lockId}]
                 /\ pauseBuffer' = pauseBuffer
                 /\ queues' = EnqueueOutFrom(qs0, c, m)
                 /\ trace'  = RecordAtSinkIfAny(trace, c, m)
+                /\ pendingExtraDelivery' =
+                     EnqueuePendingExtra(pendingExtraDelivery, c, m, cache)
               ELSE
                 \* RESUME branch
                 IF ~hasLock
@@ -741,6 +887,7 @@ DeliverPauseResume(p, c) ==
                     /\ pauseBuffer' = pauseBuffer
                     /\ queues' = qs0
                     /\ trace'  = trace
+                    /\ pendingExtraDelivery' = pendingExtraDelivery
                   ELSE IF fullDrain
                     THEN
                       /\ pauseLocks' = [pauseLocks EXCEPT ![c] = newLocks]
@@ -749,14 +896,20 @@ DeliverPauseResume(p, c) ==
                                    IN EnqueueOutFrom(qd, c, m)
                       /\ trace'  = LET td == RecordSeqAtSinkIfAny(trace, c, drainBuf)
                                    IN RecordAtSinkIfAny(td, c, m)
+                      /\ pendingExtraDelivery' =
+                           LET ped1 == EnqueuePendingExtraSeq(pendingExtraDelivery, c, drainBuf, cache)
+                           IN EnqueuePendingExtra(ped1, c, m, cache)
                     ELSE
                       /\ pauseLocks' = [pauseLocks EXCEPT ![c] = newLocks]
                       /\ pauseBuffer' = pauseBuffer
                       /\ queues' = EnqueueOutFrom(qs0, c, m)
                       /\ trace'  = RecordAtSinkIfAny(trace, c, m)
+                      /\ pendingExtraDelivery' =
+                           EnqueuePendingExtra(pendingExtraDelivery, c, m, cache)
        /\ UNCHANGED <<cache, status, version, dirtyMask, emitCount, activated,
                       handshake, nestedEmitCount, emitWitness,
-                      resubscribeCount, pauseActionCount>>
+                      resubscribeCount, pauseActionCount,
+                      upQueues, upActionCount, extraSinkTrace>>
 
 Resubscribe(sid) ==
     /\ sid \in ResubscribableNodes
@@ -773,10 +926,208 @@ Resubscribe(sid) ==
        /\ status' = [status EXCEPT ![sid] = "settled"]
        /\ handshake' = [handshake EXCEPT ![sid] = <<>>]
        /\ trace'    = [trace EXCEPT ![sid] = <<>>]
+       /\ extraSinkTrace' = [extraSinkTrace EXCEPT ![sid] =
+                                [i \in 1..ExtraSinks[sid] |-> <<>>]]
+       /\ pendingExtraDelivery' = [pendingExtraDelivery EXCEPT ![sid] =
+                                      [i \in 1..ExtraSinks[sid] |-> <<>>]]
+       \* Clear upQueues for every edge whose child is `sid` — a stale
+       \* upstream PAUSE/RESUME enqueued by the pre-terminate lifecycle
+       \* MUST NOT fire against a fresh resubscribed instance. Mirrors
+       \* the pauseLocks/pauseBuffer reset above per §2.6 "Resubscribable
+       \* nodes also clear the lock set on resubscribe so a new lifecycle
+       \* cannot inherit a lock from a prior one" — upstream in-flight
+       \* tier-2 is semantically equivalent lifecycle-owned state.
+       /\ upQueues' = [e \in EdgePairs |->
+                          IF e[2] = sid THEN <<>> ELSE upQueues[e]]
        /\ activated' = [activated EXCEPT ![sid] = FALSE]
        /\ resubscribeCount' = resubscribeCount + 1
        /\ UNCHANGED <<version, queues, emitCount, nestedEmitCount, emitWitness,
-                      pauseActionCount>>
+                      pauseActionCount, upActionCount>>
+
+----------------------------------------------------------------------------
+(*              §1.4 `up()` upstream-direction actions (added 2026-04-23)    *)
+(*                                                                            *)
+(* Spec §1.4: messages flow in two directions. `up()` carries the tier-1/2/5 *)
+(* control-plane set (INVALIDATE / PAUSE / RESUME / TEARDOWN) from a         *)
+(* subscriber back toward its parent. Tier-3/4 (DATA/RESOLVED/COMPLETE/     *)
+(* ERROR) are downstream-only per the spec; attempting to send one upstream *)
+(* is not modeled (runtime throws; TLA+-side the action isn't defined).     *)
+(*                                                                            *)
+(* Per-edge semantics: `upQueues[<<child, parent>>]` is the FIFO queue of    *)
+(* upstream-flowing messages from `child` to `parent`. When a node n \in     *)
+(* UpOriginators originates an `up()` action, the message enqueues to every *)
+(* `<<n, p>>` where p is a parent of n. `DeliverUp(c, p)` at the parent's   *)
+(* end consumes and applies the message — PAUSE/RESUME integrate with       *)
+(* `pauseLocks[p]` via the same semantics as the downstream variant (same   *)
+(* spec §2.6 lockset tracking). INVALIDATE and TEARDOWN currently apply at  *)
+(* the parent without further propagation — full tree-wide INVALIDATE/     *)
+(* TEARDOWN propagation is out of scope for this axis (tracked separately). *)
+(*                                                                            *)
+(* Scope note for diamond topologies: when `n` has multiple parents (e.g. D *)
+(* in the 4-node diamond has parents B and C), `up()` from a sink at D     *)
+(* enqueues to BOTH `<<D, B>>` and `<<D, C>>`. Whether deeper propagation  *)
+(* back to A happens is up to the parent's own `up()` forwarding — which   *)
+(* the protocol does not mandate. This matches the spec's "conventions,    *)
+(* not enforced constraints" framing.                                       *)
+(******************************************************************************)
+
+EnqueueUpFrom(uqs, child, msg) ==
+    [e \in EdgePairs |->
+        IF e[2] = child THEN Append(uqs[e], msg) ELSE uqs[e]]
+
+UpPause(child, lockId) ==
+    /\ child \in UpOriginators
+    /\ lockId \in LockIds
+    /\ upActionCount < MaxUpActions
+    /\ Parents(child) # {}
+    /\ LET msg == Msg(PAUSE, lockId) IN
+       /\ upQueues' = EnqueueUpFrom(upQueues, child, msg)
+       /\ upActionCount' = upActionCount + 1
+       /\ UNCHANGED <<cache, status, version, dirtyMask, queues, trace, emitCount,
+                      activated, handshake, nestedEmitCount, emitWitness,
+                      pauseLocks, pauseBuffer, resubscribeCount, pauseActionCount,
+                      extraSinkTrace, pendingExtraDelivery>>
+
+UpResume(child, lockId) ==
+    /\ child \in UpOriginators
+    /\ lockId \in LockIds
+    /\ upActionCount < MaxUpActions
+    /\ Parents(child) # {}
+    /\ LET msg == Msg(RESUME, lockId) IN
+       /\ upQueues' = EnqueueUpFrom(upQueues, child, msg)
+       /\ upActionCount' = upActionCount + 1
+       /\ UNCHANGED <<cache, status, version, dirtyMask, queues, trace, emitCount,
+                      activated, handshake, nestedEmitCount, emitWitness,
+                      pauseLocks, pauseBuffer, resubscribeCount, pauseActionCount,
+                      extraSinkTrace, pendingExtraDelivery>>
+
+(* DeliverUp(p, c) — consume an upstream message at parent p coming from
+   child c. First positional is parent, second is child — matches the
+   dispatch convention of sibling actions (`DeliverDirty(p, c)`,
+   `DeliverSettle(p, c)`, etc.) called via `\E e \in EdgePairs :
+   DeliverUp(e[1], e[2])` where `EdgePairs` uses `<<parent, child>>`
+   pairs. On PAUSE: idempotently add lockId to pauseLocks[p] when
+   Pausable[p] # "off". On RESUME: if lockId is held, remove it; on
+   final-lock release in "resumeAll" mode, drain `pauseBuffer[p]` and
+   forward a downstream RESUME via `queues` so descendants unwind their
+   locks too. Unknown-lockId RESUME is a no-op (consume from upQueues;
+   per §2.6 idempotent-dispose).
+
+   Note: we do NOT re-forward upstream to p's own parents here. That's
+   the node implementation's choice in the runtime (a node MAY forward
+   tier-2 up through its own subscription); modeling that recursion is
+   outside the current axis scope and would compose with the existing
+   downstream-origin PAUSE model at p.
+*)
+DeliverUp(p, c) ==
+    /\ <<p, c>> \in EdgePairs
+    /\ Len(upQueues[<<p, c>>]) > 0
+    /\ status[p] # "terminated"
+    /\ LET m == Head(upQueues[<<p, c>>])
+           uqs0 == [upQueues EXCEPT ![<<p, c>>] = Tail(@)]
+           isPause == m.type = PAUSE
+           lockId == m.value
+           hasLock == lockId \in pauseLocks[p]
+           newLocks == pauseLocks[p] \ {lockId}
+           drainBuf == pauseBuffer[p]
+           fullDrain == hasLock /\ newLocks = {} /\ Pausable[p] = "resumeAll"
+       IN
+       /\ IF Pausable[p] = "off"
+            THEN
+              \* No lock tracking at p; tier-2 is absorbed (not re-forwarded
+              \* upstream). Matches the §2.6 off-semantic.
+              /\ pauseLocks' = pauseLocks
+              /\ pauseBuffer' = pauseBuffer
+              /\ queues' = queues
+              /\ trace' = trace
+              /\ pendingExtraDelivery' = pendingExtraDelivery
+              /\ upQueues' = uqs0
+            ELSE IF isPause
+              THEN
+                /\ pauseLocks' = [pauseLocks EXCEPT ![p] = @ \cup {lockId}]
+                /\ pauseBuffer' = pauseBuffer
+                /\ queues' = queues
+                /\ trace' = trace
+                /\ pendingExtraDelivery' = pendingExtraDelivery
+                /\ upQueues' = uqs0
+              ELSE
+                \* RESUME branch — symmetric with DeliverPauseResume's RESUME.
+                IF ~hasLock
+                  THEN
+                    \* Unknown lockId at p — consume from upQueue, no state change.
+                    /\ pauseLocks' = pauseLocks
+                    /\ pauseBuffer' = pauseBuffer
+                    /\ queues' = queues
+                    /\ trace' = trace
+                    /\ pendingExtraDelivery' = pendingExtraDelivery
+                    /\ upQueues' = uqs0
+                  ELSE IF fullDrain
+                    THEN
+                      \* Final-lock RESUME at p with bufferAll: drain p's buffered
+                      \* tier-3 messages downstream, then a downstream RESUME so
+                      \* descendants release their locks.
+                      /\ pauseLocks' = [pauseLocks EXCEPT ![p] = newLocks]
+                      /\ pauseBuffer' = [pauseBuffer EXCEPT ![p] = <<>>]
+                      /\ queues' = LET qd == EnqueueSeqOutFrom(queues, p, drainBuf)
+                                   IN EnqueueOutFrom(qd, p, m)
+                      /\ trace'  = LET td == RecordSeqAtSinkIfAny(trace, p, drainBuf)
+                                   IN RecordAtSinkIfAny(td, p, m)
+                      /\ pendingExtraDelivery' =
+                           LET ped1 == EnqueuePendingExtraSeq(pendingExtraDelivery, p, drainBuf, cache)
+                           IN EnqueuePendingExtra(ped1, p, m, cache)
+                      /\ upQueues' = uqs0
+                    ELSE
+                      \* Partial release (multi-pauser): just drop this lockId;
+                      \* still forward a downstream RESUME so descendants can
+                      \* decrement their own locksets.
+                      /\ pauseLocks' = [pauseLocks EXCEPT ![p] = newLocks]
+                      /\ pauseBuffer' = pauseBuffer
+                      /\ queues' = EnqueueOutFrom(queues, p, m)
+                      /\ trace'  = RecordAtSinkIfAny(trace, p, m)
+                      /\ pendingExtraDelivery' =
+                           EnqueuePendingExtra(pendingExtraDelivery, p, m, cache)
+                      /\ upQueues' = uqs0
+       /\ UNCHANGED <<cache, status, version, dirtyMask, emitCount, activated,
+                      handshake, nestedEmitCount, emitWitness,
+                      resubscribeCount, pauseActionCount, upActionCount,
+                      extraSinkTrace>>
+
+----------------------------------------------------------------------------
+(*              §2.4 multi-sink iteration actions (added 2026-04-23)          *)
+(*                                                                            *)
+(* `DeliverToExtraSink(n, i)` models one step of the runtime's              *)
+(* `_deliverToSinks` iteration (node.ts L2248): the primary trace has       *)
+(* already been appended atomically by whichever emission action fired,    *)
+(* and each extra sink's pending queue holds the same payload plus a      *)
+(* cache snapshot at enqueue time. This action pops one payload for one  *)
+(* extra sink and appends it to that sink's trace.                         *)
+(*                                                                            *)
+(* The "mid-iteration" window that COMPOSITION-GUIDE §32 peer-read bugs   *)
+(* live in is precisely the state where some extra sink has a non-empty  *)
+(* pending queue. `SinkNestedEmit` remains enabled; when it fires during *)
+(* this window and advances the cache at the same node, subsequent      *)
+(* DeliverToExtraSink calls for that node observe a DATA payload whose   *)
+(* `value` disagrees with the current `cache[n]` — the invariant        *)
+(* `MultiSinkIterationCoherent` traps that disagreement.                 *)
+(*                                                                            *)
+(* When `ExtraSinks[n] = 0` (all existing MCs), pendingExtraDelivery[n] *)
+(* is always empty so this action is vacuously disabled and adds zero   *)
+(* state to the existing MC state spaces.                               *)
+(******************************************************************************)
+
+DeliverToExtraSink(n, i) ==
+    /\ n \in SinkIds
+    /\ i \in 1..ExtraSinks[n]
+    /\ Len(pendingExtraDelivery[n][i]) > 0
+    /\ LET item == Head(pendingExtraDelivery[n][i])
+           msg == item.msg
+       IN
+       /\ pendingExtraDelivery' = [pendingExtraDelivery EXCEPT ![n][i] = Tail(@)]
+       /\ extraSinkTrace' = [extraSinkTrace EXCEPT ![n][i] = Append(@, msg)]
+       /\ UNCHANGED <<cache, status, version, dirtyMask, queues, trace, emitCount,
+                      activated, handshake, nestedEmitCount, emitWitness,
+                      pauseLocks, pauseBuffer, resubscribeCount, pauseActionCount,
+                      upQueues, upActionCount>>
 
 Next ==
     \/ \E src \in SourceIds, v \in Values : Emit(src, v)
@@ -788,11 +1139,15 @@ Next ==
     \/ \E src \in SourceIds, lockId \in LockIds : Pause(src, lockId)
     \/ \E src \in SourceIds, lockId \in LockIds : Resume(src, lockId)
     \/ \E sid \in ResubscribableNodes : Resubscribe(sid)
+    \/ \E child \in UpOriginators, lockId \in LockIds : UpPause(child, lockId)
+    \/ \E child \in UpOriginators, lockId \in LockIds : UpResume(child, lockId)
+    \/ \E n \in SinkIds : \E i \in 1..ExtraSinks[n] : DeliverToExtraSink(n, i)
     \/ \E e \in EdgePairs :
         \/ DeliverDirty(e[1], e[2])
         \/ DeliverSettle(e[1], e[2])
         \/ DeliverTerminal(e[1], e[2])
         \/ DeliverPauseResume(e[1], e[2])
+        \/ DeliverUp(e[1], e[2])
 
 Spec == Init /\ [][Next]_vars
 
@@ -1077,6 +1432,92 @@ ResubscribeYieldsCleanState ==
             /\ dirtyMask[sid] = {}
             /\ handshake[sid] = <<>>
             /\ trace[sid] = <<>>
+            \* Upstream in-flight tier-2 from the prior lifecycle is also
+            \* lifecycle-owned state and must not leak across resubscribe.
+            \* Checks every <<p, sid>> edge (where sid is the child-end,
+            \* i.e. the resubscribed node's in-flight upstream messages).
+            /\ \A e \in EdgePairs : e[2] = sid => upQueues[e] = <<>>
+            \* Multi-sink per-extra-sink lifecycle state must also reset —
+            \* the `Resubscribe` action clears these but a future refactor
+            \* dropping the reset would silently regress coverage. Empty
+            \* over the (possibly empty) range 1..ExtraSinks[sid].
+            /\ \A i \in 1..ExtraSinks[sid] :
+                    extraSinkTrace[sid][i] = <<>>
+                 /\ pendingExtraDelivery[sid][i] = <<>>
+
+\* #14 — UpQueuesCarryControlPlane (§1.4 up() direction).
+\* Spec §1.4: `up()` carries tier-1 (DIRTY, INVALIDATE), tier-2 (PAUSE /
+\* RESUME), and tier-5 (TEARDOWN) only. Tier-3 (DATA / RESOLVED) and
+\* tier-4 (COMPLETE / ERROR) are downstream-only; the runtime throws on
+\* `up()` of those tiers at `_validateUpTiers`. Structural invariant:
+\* `upQueues` never holds a tier-3/4 message.
+\*
+\* The allowed set is widened beyond what the current originators (only
+\* `UpPause` / `UpResume`) actually emit, so future `UpInvalidate` /
+\* `UpTeardown` additions (foreseen in the `MaxUpActions` docstring's
+\* roadmap) won't spuriously trip this invariant. Today trivially true
+\* by construction — no originator emits anything outside the set.
+UpQueuesCarryControlPlane ==
+    \A e \in EdgePairs :
+        \A i \in 1..Len(upQueues[e]) :
+            upQueues[e][i].type \in {DIRTY, PAUSE, RESUME}
+            \* Per §1.4 INVALIDATE is tier-1 and TEARDOWN is tier-5; both
+            \* are up-carriable per the spec. We'd include them here as
+            \* `{DIRTY, PAUSE, RESUME, INVALIDATE, TEARDOWN}` except that
+            \* MsgTypes (line ~128) is a closed set and adding unmodeled
+            \* message types just to satisfy a future check noises up the
+            \* payload-domain type. When the Invalidate / Teardown originators
+            \* land, extend both `MsgTypes` and this set in one pass.
+
+\* #15 — UpPauseOriginatorBound (§1.4 + §2.6).
+\* Protocol sanity: `pauseLocks[n]` cannot be non-empty without some pause
+\* origination event — either downstream (`Pause` action, counted in
+\* `pauseActionCount`) or upstream (`UpPause` action, counted in
+\* `upActionCount`). Rules out "lock appears from nowhere" regressions.
+UpPauseOriginatorBound ==
+    \A n \in NodeIds :
+        pauseLocks[n] # {} =>
+            pauseActionCount + upActionCount > 0
+
+\* #16 — PausableOffStructural (§2.6 pausable: false).
+\* When a node declares `Pausable[n] = "off"`, the protocol explicitly opts
+\* out of lock tracking: the node MUST NOT accumulate pauseLocks and MUST NOT
+\* divert outgoing settlements into a pauseBuffer. Runtime precedent: the
+\* `fromTimer`-class source uses `pausable: false` because its flow control
+\* is upstream of any downstream-originated PAUSE — stranding its ticks in a
+\* buffer would silently break periodic work.
+\*
+\* Structural regression guard: if a future refactor accidentally routed
+\* `Pause()` → `pauseLocks[src]` even when `Pausable[src] = "off"`, or
+\* redirected `Emit()` → `pauseBuffer` while `Pausable[src] = "off"` but some
+\* aggregate pause flag was on, this invariant trips. Trivially true by
+\* construction today (see `Pause()` action's `Pausable[src] # "off"` guard
+\* and `IsCapturedByBuffer(n)`'s `Pausable[n] = "resumeAll"` gate), but
+\* invaluable as a lock-down on that contract.
+PausableOffStructural ==
+    \A n \in NodeIds :
+        Pausable[n] = "off" =>
+            (pauseLocks[n] = {} /\ pauseBuffer[n] = <<>>)
+
+\* #17 — MultiSinkTracesConverge (§2.4 multi-sink iteration — full drain).
+\*
+\* When all queues drain AND all extra-sink pending queues drain, the primary
+\* sink's trace at n must equal every extra sink's trace at n. Both saw the
+\* same sequence of messages because every emission action atomically
+\* enqueues the same payload to both the primary and each extra sink.
+\*
+\* This is strictly weaker than `MultiSinkIterationCoherent` (which catches
+\* mid-iteration cache inconsistencies), but it's a good end-state sanity
+\* check: if a future refactor decoupled the primary-trace append from the
+\* extra-sink enqueue (e.g. dropped extra sinks on some message-type paths),
+\* this invariant would trip at drain.
+MultiSinkTracesConverge ==
+    (AllQueuesEmpty /\ AllBuffersEmpty
+        /\ \A n \in SinkIds : \A i \in 1..ExtraSinks[n] :
+             pendingExtraDelivery[n][i] = <<>>) =>
+        \A n \in SinkIds :
+            \A i \in 1..ExtraSinks[n] :
+                extraSinkTrace[n][i] = trace[n]
 
 ----------------------------------------------------------------------------
 (* Type invariant — guards against syntactic drift during model changes. *)
@@ -1101,5 +1542,16 @@ TypeOK ==
     /\ pauseBuffer \in [NodeIds -> Seq([type: MsgTypes, value: PayloadDomain])]
     /\ resubscribeCount \in Nat
     /\ pauseActionCount \in Nat
+    /\ upQueues \in [EdgePairs -> Seq([type: MsgTypes, value: PayloadDomain])]
+    /\ upActionCount \in Nat
+    \* extraSinkTrace / pendingExtraDelivery are loose-typed like emitWitness:
+    \* the inner index range `1..ExtraSinks[n]` varies per node, and TLC's
+    \* type system doesn't benefit from encoding it precisely — catches drift
+    \* structurally via `DeliverToExtraSink`'s action guards instead.
+    /\ \A n \in NodeIds : extraSinkTrace[n] \in
+            [1..ExtraSinks[n] -> Seq([type: MsgTypes, value: PayloadDomain])]
+    /\ \A n \in NodeIds : pendingExtraDelivery[n] \in
+            [1..ExtraSinks[n] -> Seq([msg: [type: MsgTypes, value: PayloadDomain],
+                                       snap: [NodeIds -> Values]])]
 
 ============================================================================

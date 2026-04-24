@@ -14,17 +14,19 @@ so the regression is covered in both layers.
 
 | File | Role |
 |---|---|
-| [`wave_protocol.tla`](wave_protocol.tla) | The spec itself — state, actions, invariants. Topology-agnostic; defaults to a 4-node diamond via the `Compute` operator. Parametric over `GapAwareActivation` (bool), `SinkNestedEmits` (set of nested-emit triples), `LockIds` (pause lockset domain), `Pausable` (per-node mode), `ResubscribableNodes` (subset), `MaxPauseActions` (bound). |
-| [`wave_protocol_MC.tla`](wave_protocol_MC.tla) + [`wave_protocol.cfg`](wave_protocol.cfg) | **Clean model.** `GapAwareActivation = FALSE`, `SinkNestedEmits = {}`, pause axis off (`LockIds = {}`). All invariants hold. |
+| [`wave_protocol.tla`](wave_protocol.tla) | The spec itself — state, actions, invariants. Topology-agnostic; defaults to a 4-node diamond via the `Compute` operator. Parametric over `GapAwareActivation` (bool), `SinkNestedEmits` (set of nested-emit triples), `LockIds` (pause lockset domain), `Pausable` (per-node mode), `ResubscribableNodes` (subset), `MaxPauseActions` (bound), `UpOriginators` / `MaxUpActions` (§1.4 up-axis), `ExtraSinks` (§2.4 multi-sink axis). |
+| [`wave_protocol_MC.tla`](wave_protocol_MC.tla) + [`wave_protocol.cfg`](wave_protocol.cfg) | **Clean model.** `GapAwareActivation = FALSE`, `SinkNestedEmits = {}`, pause axis off (`LockIds = {}`), up-axis off (`UpOriginators = {}`), multi-sink off (`ExtraSinks = [n |-> 0]`). All invariants hold. |
 | [`wave_protocol_gap_MC.tla`](wave_protocol_gap_MC.tla) + [`wave_protocol_gap.cfg`](wave_protocol_gap.cfg) | **Substrate-faithful model for item 3.** `GapAwareActivation = TRUE` — multi-parent derived handshake synthesizes the real substrate's `<START, DIRTY, RESOLVED, DIRTY, DATA>` shape. `MultiDepHandshakeClean` FAILS with counter-example — matches the bug. |
 | [`wave_protocol_nested_MC.tla`](wave_protocol_nested_MC.tla) + [`wave_protocol_nested.cfg`](wave_protocol_nested.cfg) | **Nested-drain regression guard for item 2.** `SinkNestedEmits = {<<B, A, 2>>}` models a sink callback running `batch(() => A.emit(2))`. `NestedDrainPeerConsistency` holds — tier ordering prevents §32-class peer-read glitch in the simple 3-node topology. |
-| [`wave_protocol_pause_MC.tla`](wave_protocol_pause_MC.tla) + [`wave_protocol_pause.cfg`](wave_protocol_pause.cfg) | **§2.6 PAUSE/RESUME multi-pauser axis (added 2026-04-23).** 3-node linear chain, `Pausable = "on"` everywhere, `LockIds = {10, 11}`, `MaxPauseActions = 3`. Exhaustive coverage of tier-2 PAUSE/RESUME propagation, multi-pauser lockset tracking, and unknown-lockId RESUME swallow at intermediate nodes. All 13 invariants hold. |
-| [`wave_protocol_bufferall_MC.tla`](wave_protocol_bufferall_MC.tla) + [`wave_protocol_bufferall.cfg`](wave_protocol_bufferall.cfg) | **§2.6 bufferAll axis (added 2026-04-23).** 3-node linear chain, `Pausable = "resumeAll"` everywhere, `LockIds = {10}`, `MaxPauseActions = 2`. Verifies tier-3 capture into `pauseBuffer` during pause, drain-then-forward ordering on final-lock RESUME, and the new `BufferImpliesLockedAndResumeAll` / `BufferHoldsOnlyDeferredTiers` structural invariants. All 13 invariants hold. |
-| [`wave_protocol_resubscribe_MC.tla`](wave_protocol_resubscribe_MC.tla) + [`wave_protocol_resubscribe.cfg`](wave_protocol_resubscribe.cfg) | **§2.6 resubscribable-lifecycle axis (added 2026-04-23).** 2-node chain `A → B`, `ResubscribableNodes = {B}`, pause axis enabled so lock-leak-across-terminal scenarios are exercised. Verifies `TerminalClearsPauseState` (hard-reset clears locks/buffer) and `ResubscribeYieldsCleanState` (post-reset state matches fresh-init). All 13 invariants hold. |
+| [`wave_protocol_pause_MC.tla`](wave_protocol_pause_MC.tla) + [`wave_protocol_pause.cfg`](wave_protocol_pause.cfg) | **§2.6 PAUSE/RESUME multi-pauser axis (added 2026-04-23).** 3-node linear chain, `Pausable = "on"` everywhere, `LockIds = {10, 11}`, `MaxPauseActions = 3`. Exhaustive coverage of tier-2 PAUSE/RESUME propagation, multi-pauser lockset tracking, and unknown-lockId RESUME swallow at intermediate nodes. |
+| [`wave_protocol_bufferall_MC.tla`](wave_protocol_bufferall_MC.tla) + [`wave_protocol_bufferall.cfg`](wave_protocol_bufferall.cfg) | **§2.6 bufferAll axis (added 2026-04-23).** 3-node linear chain, `Pausable = "resumeAll"` everywhere, `LockIds = {10}`, `MaxPauseActions = 2`. Verifies tier-3 capture into `pauseBuffer` during pause, drain-then-forward ordering on final-lock RESUME, and the `BufferImpliesLockedAndResumeAll` / `BufferHoldsOnlyDeferredTiers` structural invariants. |
+| [`wave_protocol_resubscribe_MC.tla`](wave_protocol_resubscribe_MC.tla) + [`wave_protocol_resubscribe.cfg`](wave_protocol_resubscribe.cfg) | **§2.6 resubscribable-lifecycle axis (added 2026-04-23).** 2-node chain `A → B`, `ResubscribableNodes = {B}`, pause axis enabled so lock-leak-across-terminal scenarios are exercised. Verifies `TerminalClearsPauseState` (hard-reset clears locks/buffer) and `ResubscribeYieldsCleanState` (post-reset state matches fresh-init). |
+| [`wave_protocol_up_MC.tla`](wave_protocol_up_MC.tla) + [`wave_protocol_up.cfg`](wave_protocol_up.cfg) | **§1.4 `up()` upstream-direction axis (added 2026-04-23).** 2-node chain `A → B`, `UpOriginators = {B}`, `MaxUpActions = 2`, `LockIds = {10}`, `Pausable = "on"` everywhere. Exercises `UpPause` / `UpResume` originators plus `DeliverUp(c, p)` integration with the existing `pauseLocks[p]` model. Verifies the two new up-axis structural invariants (`UpQueuesCarryControlPlane`, `UpPauseOriginatorBound`) plus the baseline 13 still hold when upstream and downstream PAUSE/RESUME compose. |
+| [`wave_protocol_multisink_MC.tla`](wave_protocol_multisink_MC.tla) + [`wave_protocol_multisink.cfg`](wave_protocol_multisink.cfg) | **§2.4 multi-sink iteration axis (added 2026-04-23).** 2-node chain `A → B`, `ExtraSinks[B] = 1` (one extra subscriber at B beyond the primary), `SinkNestedEmits = {<<A, A, 1>>}` to exercise mid-iteration nested emits. New `DeliverToExtraSink(n, i)` action drains `pendingExtraDelivery[n][i]`; `MultiSinkTracesConverge` structurally checks that primary and extra sinks observe the same message sequence at full drain. |
 
-## The 13 TLC invariants
+## The 17 TLC invariants
 
-Invariants #1–#7 correspond 1-1 to [fast-check properties](../../graphrefly-ts/src/__tests__/properties/_invariants.ts). Fast-check invariants 8 and 9 (`throw-recovery-consistency` and `subscribe-unsubscribe-reentry`) concern JS-level exception handling and multiple-subscriber registration, not protocol-observable. Invariants #8 `MultiDepHandshakeClean` and #9 `NestedDrainPeerConsistency` are TLA+-side extensions added 2026-04-23 to model item 3's activation-sequence gap and item 2's nested-drain class. Invariants #10–#13 are the §2.6 PAUSE/RESUME + resubscribable-lifecycle extensions added 2026-04-23 alongside fast-check invariants #10–#12 (the TLA+ side adds `BufferHoldsOnlyDeferredTiers` as a cheap structural fourth not mirrored in fast-check — it's subsumed by the three fast-check pause properties).
+Invariants #1–#7 correspond 1-1 to [fast-check properties](../../graphrefly-ts/src/__tests__/properties/_invariants.ts). Fast-check invariants 8 and 9 (`throw-recovery-consistency` and `subscribe-unsubscribe-reentry`) concern JS-level exception handling and multiple-subscriber registration, not protocol-observable. Invariants #8 `MultiDepHandshakeClean` and #9 `NestedDrainPeerConsistency` are TLA+-side extensions added 2026-04-23 to model item 3's activation-sequence gap and item 2's nested-drain class. Invariants #10–#13 are the §2.6 PAUSE/RESUME + resubscribable-lifecycle extensions added 2026-04-23 alongside fast-check invariants #10–#12 (the TLA+ side adds `BufferHoldsOnlyDeferredTiers` as a cheap structural fourth not mirrored in fast-check — it's subsumed by the three fast-check pause properties). Invariants #14–#17 are the **batch 2 additions (2026-04-23)** — §1.4 up-axis (`UpQueuesCarryControlPlane`, `UpPauseOriginatorBound`), §2.4 multi-sink (`MultiSinkTracesConverge`), and §2.6 pausable:off structural (`PausableOffStructural`).
 
 | # | TLA+ name | Status | Description |
 |---|---|---|---|
@@ -40,7 +42,11 @@ Invariants #1–#7 correspond 1-1 to [fast-check properties](../../graphrefly-ts
 | 10 | `TerminalClearsPauseState` | clean ✓ / gap ✓ / nested ✓ / pause ✓ / bufferall ✓ / resub ✓ | Non-resubscribable terminated nodes MUST have empty `pauseLocks` and `pauseBuffer`. Catches the lock-leak-across-terminal class the spec §2.6 "Teardown" warning targets. |
 | 11 | `BufferImpliesLockedAndResumeAll` | clean ✓ / gap ✓ / nested ✓ / pause ✓ / bufferall ✓ / resub ✓ | `pauseBuffer[n] ≠ <<>>` implies `pauseLocks[n] ≠ {}` AND `Pausable[n] = "resumeAll"`. Structural invariant — catches buffer leaks into wrong modes or survival past final-lock release. |
 | 12 | `BufferHoldsOnlyDeferredTiers` | clean ✓ / gap ✓ / nested ✓ / pause ✓ / bufferall ✓ / resub ✓ | Every message in `pauseBuffer[n]` has `type ∈ {DATA, RESOLVED, COMPLETE, ERROR}` (tier 3/4 only). Catches accidental capture of control-plane messages (DIRTY, PAUSE, RESUME, TEARDOWN) into the buffer. |
-| 13 | `ResubscribeYieldsCleanState` | clean ✓ / gap ✓ / nested ✓ / pause ✓ / bufferall ✓ / resub ✓ | Post-`Resubscribe` state matches fresh-init: `pauseLocks = {}`, `pauseBuffer = <<>>`, `dirtyMask = {}`, `handshake = <<>>`, `trace = <<>>`. Exercised actively only by `wave_protocol_resubscribe_MC` (other MCs have `ResubscribableNodes = {}` → vacuous). |
+| 13 | `ResubscribeYieldsCleanState` | clean ✓ / gap ✓ / nested ✓ / pause ✓ / bufferall ✓ / resub ✓ / up ✓ / multisink ✓ | Post-`Resubscribe` state matches fresh-init: `pauseLocks = {}`, `pauseBuffer = <<>>`, `dirtyMask = {}`, `handshake = <<>>`, `trace = <<>>`. Exercised actively only by `wave_protocol_resubscribe_MC` (other MCs have `ResubscribableNodes = {}` → vacuous). |
+| 14 | `UpQueuesCarryControlPlane` | clean ✓ / gap ✓ / nested ✓ / pause ✓ / bufferall ✓ / resub ✓ / up ✓ / multisink ✓ | Spec §1.4: `up()` carries only tier-1/2/5 control-plane (DIRTY/PAUSE/RESUME). Structural regression guard — `upQueues` never holds tier-3 (DATA/RESOLVED) or tier-4 (COMPLETE/ERROR). Exercised actively by `wave_protocol_up_MC`; vacuous when `UpOriginators = {}`. |
+| 15 | `UpPauseOriginatorBound` | clean ✓ / gap ✓ / nested ✓ / pause ✓ / bufferall ✓ / resub ✓ / up ✓ / multisink ✓ | `pauseLocks[n] # {}` implies `pauseActionCount + upActionCount > 0` — rules out "lock appears from nowhere." Composes the downstream `Pause` and upstream `UpPause` origination counters. |
+| 16 | `MultiSinkTracesConverge` | clean ✓ / gap ✓ / nested ✓ / pause ✓ / bufferall ✓ / resub ✓ / up ✓ / multisink ✓ | At full drain (all queues empty AND all `pendingExtraDelivery[n][i] = <<>>`), `extraSinkTrace[n][i] = trace[n]` for every extra sink. Structural regression guard — if a future refactor drops an `EnqueuePendingExtra` call from any emission action, primary and extra traces diverge and this invariant trips. Exercised actively by `wave_protocol_multisink_MC`; vacuous when `ExtraSinks = [n |-> 0]`. |
+| 17 | `PausableOffStructural` | clean ✓ / gap ✓ / nested ✓ / pause ✓ / bufferall ✓ / resub ✓ / up ✓ / multisink ✓ | Spec §2.6 "pausable: false" opts out of lock tracking: `Pausable[n] = "off"` implies `pauseLocks[n] = {}` AND `pauseBuffer[n] = <<>>`. Structural regression guard — traps refactor accidents that would route a lock or buffer entry into an opted-out node (e.g. the `fromTimer`-class sources that must keep ticking regardless of downstream pause). |
 
 ## Running TLC
 
@@ -72,6 +78,12 @@ java -XX:+UseParallelGC -cp "$TLA_JAR" tlc2.TLC \
     -config wave_protocol_bufferall.cfg wave_protocol_bufferall_MC
 java -XX:+UseParallelGC -cp "$TLA_JAR" tlc2.TLC \
     -config wave_protocol_resubscribe.cfg wave_protocol_resubscribe_MC
+
+# Batch 2 (added 2026-04-23) — §1.4 up-axis + §2.4 multi-sink axis.
+java -XX:+UseParallelGC -cp "$TLA_JAR" tlc2.TLC \
+    -config wave_protocol_up.cfg wave_protocol_up_MC
+java -XX:+UseParallelGC -cp "$TLA_JAR" tlc2.TLC \
+    -config wave_protocol_multisink.cfg wave_protocol_multisink_MC
 ```
 
 Expected output (success):
@@ -93,6 +105,8 @@ Approximate state-space sizes (2026-04-23):
 | `wave_protocol_pause_MC` | ~23K | ~1s |
 | `wave_protocol_bufferall_MC` | ~11K | ~1s |
 | `wave_protocol_resubscribe_MC` | ~13K | ~1s |
+| `wave_protocol_up_MC` | ~118K | ~6s |
+| `wave_protocol_multisink_MC` | ~2K | <1s |
 
 The pause-axis MCs use smaller topologies (3-node chain, 2-node chain for resubscribe) because pause invariants are per-node, and combinatorial interleavings of Pause/Resume × emit × edges × multiple lockIds blow up the state space on the 4-node diamond (a probe with `MaxPauseActions = 4` on the diamond exceeded 8M distinct states in 10 minutes and still had 1M+ on queue). Topology coverage of the pause invariants is orthogonal to pause-axis coverage.
 
@@ -130,6 +144,8 @@ hold.
 - **§2.6 PAUSE/RESUME lock semantics (added 2026-04-23)** — `pauseLocks` as a per-node set keyed by opaque `lockId`, tier-2 propagation via `DeliverPauseResume`, unknown-lockId RESUME swallowing, `Pausable ∈ {"off", "on", "resumeAll"}` per-node modes.
 - **§2.6 bufferAll mode (added 2026-04-23)** — `pauseBuffer` capture of outgoing tier-3/4 during pause, atomic drain-then-forward on final-lock RESUME, tier-1/2/5 synchronous dispatch while paused.
 - **§2.6 resubscribable lifecycle (added 2026-04-23)** — `Resubscribe(sid)` action clears lifecycle-owned state so a new subscribe on a resubscribable terminated node starts fresh.
+- **§1.4 `up()` upstream direction (added 2026-04-23, batch 2)** — per-edge `upQueues` mirror of downstream `queues`, `UpPause` / `UpResume` originators at sinks, `DeliverUp(c, p)` integrates with existing `pauseLocks[p]` model. Composes with the existing downstream-origin PAUSE/RESUME model.
+- **§2.4 multi-sink iteration (added 2026-04-23, batch 2)** — per-node `ExtraSinks[n]` count, `extraSinkTrace[n][i]` per-extra-sink trace, `pendingExtraDelivery[n][i]` FIFO queue populated by every emission action and drained by `DeliverToExtraSink(n, i)`. Models the runtime's `_deliverToSinks` iteration at the primitive level.
 
 **Not covered (out of scope by design — compose on top):**
 - Operators (`map`, `filter`, `switchMap`, …)
@@ -139,6 +155,7 @@ hold.
 - Meta companion TEARDOWN fan-out (§2.3, future MC axis)
 - Mount / unmount topology (future MC axis)
 - Nested batch drain interleavings (partial coverage via `BatchEmitMulti`; deeper nested-batch modeling deferred)
+- Tight multi-sink iteration-coherence invariant (`cache[n] == pending-head.value` at DeliverToExtraSink time) — the current permissive model allows benign wave-lag between primary and extra sinks, so the stricter form false-positives on legitimate behavior. Tightening requires per-node pending-drain gating on emission actions to mirror the runtime's atomic `_deliverToSinks` iteration — tracked in `graphrefly-ts/docs/optimizations.md` as "Multi-sink iteration cache coherence — tighten TLA+ invariant."
 
 **Batch coalescing is now modeled** via the `BatchEmitMulti(src, vs)`
 action (added 2026-04-17 alongside the Bug 2 fix in `graphrefly-ts`).

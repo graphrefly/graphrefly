@@ -73,4 +73,11 @@ PausableMC            == [n \in NodeIdsMC |-> "on"]
 ResubscribableNodesMC == {}
 MaxPauseActionsMC     == 3
 
+
+\* §1.4 up() axis disabled — orthogonal to this MC's axis.
+UpOriginatorsMC   == {}
+MaxUpActionsMC    == 0
+
+\* §2.4 multi-sink iteration axis disabled — single-sink semantics preserved.
+ExtraSinksMC      == [n \in NodeIdsMC |-> 0]
 ============================================================================

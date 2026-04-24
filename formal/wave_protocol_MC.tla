@@ -56,4 +56,14 @@ PausableMC            == [n \in NodeIdsMC |-> "off"]
 ResubscribableNodesMC == {}
 MaxPauseActionsMC     == 0
 
+\* §1.4 `up()` upstream axis (added 2026-04-23) — disabled in the default
+\* model. `UpOriginatorsMC = {}` makes the `UpPause(c, l)` / `UpResume(c, l)`
+\* quantifiers vacuously empty, so no upstream-flow transitions fire and the
+\* default state space is unchanged. Exercised by `wave_protocol_up_MC`.
+UpOriginatorsMC   == {}
+MaxUpActionsMC    == 0
+
+
+\* §2.4 multi-sink iteration axis disabled — single-sink semantics preserved.
+ExtraSinksMC      == [n \in NodeIdsMC |-> 0]
 ============================================================================
