@@ -312,13 +312,29 @@ BuildBatchPendingItems(vs, initialCacheMap, src) ==
 \* --- §2.5 replayBuffer helper (added 2026-04-23 batch 3 Package 3) ---
 \* Append `v` to the ring at node `n`, bounded by `ReplayBufferSize[n]`.
 \* Oldest value drops when at cap. When size is 0, the buffer is disabled —
-\* no update. Called from `Emit` on DATA emissions.
+\* no update. Called from `Emit` / `SinkNestedEmit` / `DeliverSettle` on
+\* DATA emissions.
 AppendToReplayBuffer(rb, n, v) ==
     IF ReplayBufferSize[n] = 0
       THEN rb
       ELSE IF Len(rb[n]) < ReplayBufferSize[n]
              THEN [rb EXCEPT ![n] = Append(@, v)]
              ELSE [rb EXCEPT ![n] = Append(Tail(@), v)]
+
+\* `ApplyBatchToRing(rb, src, vs, curCacheVal)` — append every DATA-producing
+\* value in the batch `vs` to the ring at `src`, skipping RESOLVED emits.
+\* RESOLVED means `v = curCacheVal` (no cache change); DATA means cache
+\* advances to `v`. Threads the running cache through so the skip decision
+\* matches `BuildSettleSeq`'s settle/resolved determination exactly.
+\* Added 2026-04-23 QA round 2 (item 1 extension).
+RECURSIVE ApplyBatchToRing(_, _, _, _)
+ApplyBatchToRing(rb, src, vs, curCacheVal) ==
+    IF Len(vs) = 0 THEN rb
+    ELSE LET v == Head(vs)
+             isEq == v = curCacheVal
+             newCacheVal == IF isEq THEN curCacheVal ELSE v
+             rbNext == IF isEq THEN rb ELSE AppendToReplayBuffer(rb, src, v)
+         IN ApplyBatchToRing(rbNext, src, Tail(vs), newCacheVal)
 
 ----------------------------------------------------------------------------
 VARIABLES
@@ -455,16 +471,16 @@ iteration: while iteration is in progress (any node has non-empty
 
 Gated (waits for drain): Emit, BatchEmitMulti, Terminate, DeliverDirty,
 DeliverSettle, DeliverTerminal, Pause, Resume, DeliverPauseResume,
-DeliverUp (because its bufferAll-drain branches also enqueue to
-pendingExtraDelivery).
+DeliverUp (bufferAll-drain branches enqueue to pendingExtraDelivery),
+Invalidate, Teardown, DeliverInvalidate, DeliverTeardown (all now
+enqueue to `queues` — gated for consistency with the iteration
+contract, per batch-4 QA).
 
 Exempt (may fire mid-iteration):
   - `DeliverToExtraSink` — the drain action itself.
   - `SinkNestedEmit` — models the runtime's nested-emit-from-sink-callback
     window (COMPOSITION-GUIDE §32). Firing it mid-iteration is the whole
     point.
-  - `Invalidate`, `Teardown` — witness-only ghost actions; no queue /
-    pending writes so they can't disturb the iteration contract.
   - `UpPause`, `UpResume` — write only to `upQueues`; no pending writes.
   - `SubscribeSink`, `Resubscribe` — write handshake / lifecycle state;
     no pending writes at the emitting-node slot.
@@ -482,6 +498,27 @@ AllExtraPendingEmpty ==
     \A n \in NodeIds : \A i \in 1..ExtraSinks[n] :
         pendingExtraDelivery[n][i] = <<>>
 
+\* Tier-drain predicates enforcing §1.3 invariant 7 message ordering.
+\* DIRTY (tier 1) must drain globally before any tier-3 message delivers;
+\* tier-3 (DATA/RESOLVED) must drain before any tier-4 (COMPLETE/ERROR).
+\* INVALIDATE is tier-1 per §1.4 (batch-4 QA added `NoInvalidateAnywhere`
+\* as a conjunct on emit-side actions + settle/terminal delivery so tier-1
+\* semantics hold both on producer AND consumer).
+NoDirtyAnywhere ==
+    \A e \in EdgePairs :
+        \A i \in 1..Len(queues[e]) :
+            queues[e][i].type # DIRTY
+
+NoInvalidateAnywhere ==
+    \A e \in EdgePairs :
+        \A i \in 1..Len(queues[e]) :
+            queues[e][i].type # INVALIDATE
+
+NoSettleAnywhere ==
+    \A e \in EdgePairs :
+        \A i \in 1..Len(queues[e]) :
+            queues[e][i].type \notin {DATA, RESOLVED}
+
 (* A source emits a value. Per equals-substitution at the source:
    - if v = cache[src]: settle msg is RESOLVED, no cache/version change
    - else:              settle msg is DATA(v), cache' := v, version' += 1
@@ -497,6 +534,7 @@ AllExtraPendingEmpty ==
 Emit(src, v) ==
     /\ src \in SourceIds
     /\ AllExtraPendingEmpty
+    /\ NoInvalidateAnywhere
     /\ emitCount < MaxEmits
     /\ status[src] = "settled"
     \* Package 3 (2026-04-23): equality is gated by `EqualsAbsorbs[src]`.
@@ -588,6 +626,7 @@ DirtySeqOf(k) == [i \in 1..k |-> Msg(DIRTY, NullPayload)]
 BatchEmitMulti(src, vs) ==
     /\ src \in SourceIds
     /\ AllExtraPendingEmpty
+    /\ NoInvalidateAnywhere
     /\ vs # <<>>
     /\ status[src] = "settled"
     /\ emitCount + Len(vs) <= MaxEmits
@@ -624,12 +663,14 @@ BatchEmitMulti(src, vs) ==
                  /\ pauseBuffer' = pauseBuffer
           /\ cache'  = cacheAfter
           /\ version' = [version EXCEPT ![src] = @ + dataCount]
+          \* Item 1 extension: apply each DATA-producing emit to the ring
+          \* in batch order. RESOLVED emits (v = running-cache) skip.
+          /\ replayBuffer' = ApplyBatchToRing(replayBuffer, src, vs, cache[src])
           /\ UNCHANGED <<status, dirtyMask, activated, handshake,
                          nestedEmitCount, emitWitness,
                          pauseLocks, resubscribeCount, pauseActionCount,
                          upQueues, upActionCount, extraSinkTrace,
                       invalidateCount, cleanupWitness,
-                      replayBuffer,
                       teardownCount, teardownWitness>>
           /\ emitCount' = emitCount + Len(vs)
           /\ perSourceEmitCount' = [perSourceEmitCount EXCEPT ![src] = @ + Len(vs)]
@@ -669,19 +710,13 @@ Terminate(src) ==
                       replayBuffer,
                       teardownCount, teardownWitness>>
 
-----------------------------------------------------------------------------
-\* Tier-drain predicates enforcing §1.3 invariant 7 message ordering.
-\* DIRTY (tier 1) must drain globally before any tier-3 message delivers;
-\* tier-3 (DATA/RESOLVED) must drain before any tier-4 (COMPLETE/ERROR).
-NoDirtyAnywhere ==
-    \A e \in EdgePairs :
-        \A i \in 1..Len(queues[e]) :
-            queues[e][i].type # DIRTY
-
-NoSettleAnywhere ==
-    \A e \in EdgePairs :
-        \A i \in 1..Len(queues[e]) :
-            queues[e][i].type \notin {DATA, RESOLVED}
+\* Tier-drain predicates (moved to emission block during batch-4 QA so
+\* `Emit` / `BatchEmitMulti` / `SinkNestedEmit` can reference
+\* `NoInvalidateAnywhere` — TLA+ requires operators to be defined before
+\* their first use). Definitions remain in the emission block.
+\*
+\* See the "Tier-drain predicates enforcing §1.3 invariant 7 message
+\* ordering" section below for the originals; kept unchanged.
 
 \* Same-tier prefix helpers — a `Deliver*` action consumes ALL consecutive
 \* same-tier messages from a queue's head atomically, matching the runtime
@@ -771,6 +806,7 @@ DeliverSettle(p, c) ==
     /\ IsSettlementMsg(Head(queues[<<p, c>>]))
     /\ status[c] # "terminated"
     /\ NoDirtyAnywhere
+    /\ NoInvalidateAnywhere
     /\ LET q == queues[<<p, c>>]
            k == Tier3PrefixLen(q)
            qs0 == [queues EXCEPT ![<<p, c>>] = SubSeq(q, k + 1, Len(q))]
@@ -784,9 +820,9 @@ DeliverSettle(p, c) ==
                  /\ pauseBuffer' = pauseBuffer
                  /\ pendingExtraDelivery' = pendingExtraDelivery
                  /\ emitWitness' = emitWitness
+                 /\ replayBuffer' = replayBuffer
                  /\ UNCHANGED <<cache, status, version,
                       invalidateCount, cleanupWitness,
-                      replayBuffer,
                       teardownCount, teardownWitness>>
             ELSE LET newCache  == Compute(c, cache)
                      sameAsOld == newCache = cache[c]
@@ -825,11 +861,13 @@ DeliverSettle(p, c) ==
                  /\ emitWitness' = IF isMultiParentDataEmit
                                      THEN [emitWitness EXCEPT ![c] = Append(@, witness)]
                                      ELSE emitWitness
+                 \* Item 1 extension: append to ring on DATA emits at c.
+                 /\ replayBuffer' = IF sameAsOld THEN replayBuffer
+                                                  ELSE AppendToReplayBuffer(replayBuffer, c, newCache)
        /\ UNCHANGED <<emitCount, perSourceEmitCount, activated, handshake, nestedEmitCount,
                       pauseLocks, resubscribeCount, pauseActionCount,
                       upQueues, upActionCount, extraSinkTrace,
                       invalidateCount, cleanupWitness,
-                      replayBuffer,
                       teardownCount, teardownWitness>>
 
 (* DeliverTerminal: consume COMPLETE or ERROR from queue[<<p, c>>].
@@ -845,6 +883,7 @@ DeliverTerminal(p, c) ==
     /\ Head(queues[<<p, c>>]).type \in {COMPLETE, ERROR}
     /\ status[c] # "terminated"
     /\ NoDirtyAnywhere
+    /\ NoInvalidateAnywhere
     /\ NoSettleAnywhere
     /\ LET m   == Head(queues[<<p, c>>])
            qs0 == [queues EXCEPT ![<<p, c>>] = Tail(@)]
@@ -1019,6 +1058,7 @@ ObserverHasReceivedData(observer) ==
 SinkNestedEmit(observer, target, v) ==
     /\ <<observer, target, v>> \in SinkNestedEmits
     /\ target \in SourceIds
+    /\ NoInvalidateAnywhere
     /\ status[target] = "settled"
     /\ emitCount < MaxEmits
     /\ nestedEmitCount < MaxNestedEmits
@@ -1048,11 +1088,13 @@ SinkNestedEmit(observer, target, v) ==
        /\ cache'   = cacheAfter
        /\ version' = IF equalToCache THEN version
                                      ELSE [version EXCEPT ![target] = @ + 1]
+       \* Item 1 extension (QA round 2): append to ring on DATA emits at target.
+       /\ replayBuffer' = IF equalToCache THEN replayBuffer
+                                           ELSE AppendToReplayBuffer(replayBuffer, target, v)
        /\ UNCHANGED <<status, dirtyMask, activated, handshake, emitWitness,
                       pauseLocks, resubscribeCount, pauseActionCount,
                       upQueues, upActionCount, extraSinkTrace,
                       invalidateCount, cleanupWitness,
-                      replayBuffer,
                       teardownCount, teardownWitness>>
        /\ emitCount' = emitCount + 1
        /\ perSourceEmitCount' = [perSourceEmitCount EXCEPT ![target] = @ + 1]
@@ -1474,38 +1516,79 @@ DeliverToExtraSink(n, i) ==
                       teardownCount, teardownWitness>>
 
 ----------------------------------------------------------------------------
-(*            §1.4 INVALIDATE + cleanup-witness action                      *)
+(*            §1.4 INVALIDATE + cleanup-witness actions                      *)
 (*                                                                            *)
 (* `Invalidate(n)` models a user-originated `graph.signal([[INVALIDATE]])`   *)
-(* or an operator-originated cache-bust at node n. The cleanup-hook         *)
-(* side-effect is represented by appending the PRE-invalidate `cache[n]`    *)
-(* to `cleanupWitness[n]` — the witness lets the invariant check that       *)
-(* every recorded snapshot is in the valid `Values` domain (structural      *)
-(* guarantee that the cleanup hook observed a real cached state, not the   *)
-(* post-reset sentinel).                                                    *)
+(* or an operator-originated cache-bust at node n. Records the PRE-reset    *)
+(* `cache[n]` to `cleanupWitness[n]`, resets `cache[n]` to `DefaultInitial`, *)
+(* and enqueues an INVALIDATE message to every child of `n` (one-step       *)
+(* propagation). Full-graph propagation (grandchildren etc.) is deferred —  *)
+(* see `DeliverInvalidate` docblock below for the MVP scope rationale.      *)
 (*                                                                            *)
-(* MVP modeling decision (2026-04-23 batch 3 Package 6): this action does  *)
-(* NOT propagate INVALIDATE through `queues` and does NOT reset `cache`.   *)
-(* Propagation would require a downstream `DeliverInvalidate` action and a *)
-(* tier-ordering guard similar to `NoDirtyAnywhere`; cache reset would    *)
-(* disturb `EqualsFaithful` / `VersionPerChange` by rolling cache to     *)
-(* DefaultInitial mid-stream. Both are future axes — see the optimizations*)
-(* "Remaining rigor-infra coverage gaps" index. This MVP ships the axis's *)
-(* hook-firing side-effect semantic only, which is the bug class: cleanup *)
-(* hook must fire BEFORE cache reset — guaranteed here by construction.   *)
+(* Extended 2026-04-23 QA round 2 (item 5): previous version was witness-   *)
+(* only (no queue propagation, no cache reset). Now models the full spec    *)
+(* §1.4 contract at the origin + one-step propagation:                      *)
+(*   - origin: witness recorded, cache reset, INVALIDATE enqueued to kids.  *)
+(*   - child delivery (`DeliverInvalidate`): witness recorded, cache reset. *)
+(*     Does NOT re-forward to grandchildren (bounded-cascade MVP).          *)
+(*                                                                            *)
+(* Interaction with existing invariants: cache reset may cause subsequent   *)
+(* emits at `n` to produce DATA where they'd previously produce RESOLVED.  *)
+(* Vacuous when `InvalidateOriginators = {}` (all existing MCs default).   *)
 (******************************************************************************)
 Invalidate(n) ==
     /\ n \in InvalidateOriginators
+    /\ AllExtraPendingEmpty
     /\ invalidateCount < MaxInvalidates
     /\ status[n] # "terminated"
-    /\ cleanupWitness' = [cleanupWitness EXCEPT ![n] = Append(@, cache[n])]
-    /\ invalidateCount' = invalidateCount + 1
-    /\ UNCHANGED <<cache, status, version, dirtyMask, queues, trace, emitCount,
+    /\ LET msg == Msg(INVALIDATE, NullPayload)
+       IN /\ cleanupWitness' =
+              [cleanupWitness EXCEPT ![n] = Append(@, cache[n])]
+          /\ cache' = [cache EXCEPT ![n] = DefaultInitial]
+          /\ queues' = EnqueueOutFrom(queues, n, msg)
+          /\ invalidateCount' = invalidateCount + 1
+    /\ UNCHANGED <<status, version, dirtyMask, trace, emitCount,
                    perSourceEmitCount, activated, handshake, nestedEmitCount,
                    emitWitness, pauseLocks, pauseBuffer, resubscribeCount,
                    pauseActionCount, upQueues, upActionCount,
                    extraSinkTrace, pendingExtraDelivery,
                       replayBuffer,
+                      teardownCount, teardownWitness>>
+
+(* `DeliverInvalidate(p, c)` — consume the INVALIDATE message head at edge  *)
+(*   <<p, c>>, record `cache[c]` to `cleanupWitness[c]` (pre-reset), reset  *)
+(*   `cache[c]` to `DefaultInitial`, AND forward INVALIDATE to every child  *)
+(*   of c (full cascade).                                                    *)
+(*                                                                            *)
+(* Extended 2026-04-23 next-batch item A: previously one-step only. Full    *)
+(* cascade is bounded by graph depth × `MaxInvalidates` — each origin       *)
+(* `Invalidate(n)` produces ≤ |reachable-descendants-of-n| DeliverInvalidate*)
+(* firings. Tractable because `MaxInvalidates` caps origins (typically 1-2).*)
+(*                                                                            *)
+(* Does NOT record INVALIDATE to `trace[c]` — keeps the `NoDataWithoutDirty`*)
+(* and `BalancedWaves` invariants focused on DATA/DIRTY accounting and     *)
+(* avoids cross-tier interactions (INVALIDATE and DIRTY are both tier-1    *)
+(* but have different meanings). Spec-faithful runtime behavior of         *)
+(* observable INVALIDATE is a follow-on.                                    *)
+(******************************************************************************)
+DeliverInvalidate(p, c) ==
+    /\ <<p, c>> \in EdgePairs
+    /\ AllExtraPendingEmpty
+    /\ Len(queues[<<p, c>>]) > 0
+    /\ Head(queues[<<p, c>>]).type = INVALIDATE
+    /\ status[c] # "terminated"
+    /\ LET qs0 == [queues EXCEPT ![<<p, c>>] = Tail(@)]
+           invMsg == Msg(INVALIDATE, NullPayload)
+       IN /\ queues' = EnqueueOutFrom(qs0, c, invMsg)
+          /\ cleanupWitness' =
+              [cleanupWitness EXCEPT ![c] = Append(@, cache[c])]
+          /\ cache' = [cache EXCEPT ![c] = DefaultInitial]
+    /\ UNCHANGED <<status, version, dirtyMask, trace, emitCount,
+                   perSourceEmitCount, activated, handshake, nestedEmitCount,
+                   emitWitness, pauseLocks, pauseBuffer, resubscribeCount,
+                   pauseActionCount, upQueues, upActionCount,
+                   extraSinkTrace, pendingExtraDelivery,
+                      invalidateCount, replayBuffer,
                       teardownCount, teardownWitness>>
 
 ----------------------------------------------------------------------------
@@ -1527,9 +1610,11 @@ Invalidate(n) ==
 (******************************************************************************)
 Teardown(parent) ==
     /\ parent \in NodeIds
-    /\ MetaCompanions[parent] # {}
+    /\ AllExtraPendingEmpty
     /\ teardownCount < MaxTeardowns
     /\ status[parent] # "terminated"
+    \* Witness recorded BEFORE parent state transition — the invariant
+    \* `MetaTeardownObservedPreReset` verifies this ordering.
     /\ teardownWitness' =
            [child \in NodeIds |->
                IF child \in MetaCompanions[parent]
@@ -1537,12 +1622,75 @@ Teardown(parent) ==
                               [cache |-> cache[parent], status |-> status[parent]])
                  ELSE teardownWitness[child]]
     /\ teardownCount' = teardownCount + 1
-    /\ UNCHANGED <<cache, status, version, dirtyMask, queues, trace, emitCount,
+    \* Full state transition: mirror Terminate's hard-reset semantic.
+    \* Parent transitions to "terminated", pauseLocks / pauseBuffer clear
+    \* per §2.6 "Teardown", upQueues clear. Cache and version preserved —
+    \* TEARDOWN models lifecycle disposal, not a cache bust (that's
+    \* INVALIDATE).
+    \*
+    \* Next-batch item C (2026-04-23): TEARDOWN now also enqueues to
+    \* DAG children (tier-5 fan-out). `DeliverTeardown(p, c)` consumes,
+    \* cascades to c's meta children + DAG children. Full-graph cascade
+    \* bounded by graph depth × `MaxTeardowns`.
+    /\ status' = [status EXCEPT ![parent] = "terminated"]
+    /\ pauseLocks' = [pauseLocks EXCEPT ![parent] = {}]
+    /\ pauseBuffer' = [pauseBuffer EXCEPT ![parent] = <<>>]
+    /\ upQueues' = [e \in EdgePairs |->
+                       IF e[1] = parent THEN <<>> ELSE upQueues[e]]
+    /\ queues' = EnqueueOutFrom(queues, parent, Msg(TEARDOWN, NullPayload))
+    \* F5 fix (2026-04-23 QA batch-4): clear dirtyMask — mirrors runtime's
+    \* `_deactivate` path that clears DepRecord state on TEARDOWN. Prevents
+    \* stale mask entries on a terminated node.
+    /\ dirtyMask' = [dirtyMask EXCEPT ![parent] = {}]
+    /\ UNCHANGED <<cache, version, trace, emitCount,
                    perSourceEmitCount, activated, handshake, nestedEmitCount,
-                   emitWitness, pauseLocks, pauseBuffer, resubscribeCount,
-                   pauseActionCount, upQueues, upActionCount,
-                   extraSinkTrace, pendingExtraDelivery,
+                   emitWitness, resubscribeCount, pauseActionCount,
+                   upActionCount, extraSinkTrace, pendingExtraDelivery,
                    invalidateCount, cleanupWitness, replayBuffer>>
+
+(* `DeliverTeardown(p, c)` — consume the TEARDOWN message head at edge      *)
+(*   <<p, c>>, record pre-reset `cache[c]` / `status[c]` at c's meta        *)
+(*   children, transition c to "terminated", clear locks/buffer/upQueues,   *)
+(*   and forward TEARDOWN to c's DAG children (full cascade).               *)
+(*                                                                            *)
+(* Next-batch item C (2026-04-23). Mirrors `Teardown(parent)` semantics at  *)
+(* every descendant — the §2.3 meta-observes-TEARDOWN-pre-reset contract   *)
+(* holds uniformly across the reached subgraph. Cache preserved (lifecycle *)
+(* disposal, not cache bust). Does NOT re-gate on tier-5 ordering — the   *)
+(* spec's tier-5 synchronous semantic is modeled by action-level           *)
+(* interleaving here (any action can fire between TEARDOWN propagation    *)
+(* steps; TLC explores all orderings).                                     *)
+(******************************************************************************)
+DeliverTeardown(p, c) ==
+    /\ <<p, c>> \in EdgePairs
+    /\ AllExtraPendingEmpty
+    /\ Len(queues[<<p, c>>]) > 0
+    /\ Head(queues[<<p, c>>]).type = TEARDOWN
+    /\ status[c] # "terminated"
+    /\ LET qs0 == [queues EXCEPT ![<<p, c>>] = Tail(@)]
+           tMsg == Msg(TEARDOWN, NullPayload)
+       IN /\ queues' = EnqueueOutFrom(qs0, c, tMsg)
+          /\ teardownWitness' =
+              [child \in NodeIds |->
+                  IF child \in MetaCompanions[c]
+                    THEN Append(teardownWitness[child],
+                                 [cache |-> cache[c], status |-> status[c]])
+                    ELSE teardownWitness[child]]
+          /\ status' = [status EXCEPT ![c] = "terminated"]
+          /\ pauseLocks' = [pauseLocks EXCEPT ![c] = {}]
+          /\ pauseBuffer' = [pauseBuffer EXCEPT ![c] = <<>>]
+          /\ upQueues' = [e \in EdgePairs |->
+                              IF e[1] = c THEN <<>> ELSE upQueues[e]]
+          \* F5 fix (2026-04-23 QA batch-4): clear dirtyMask at c — mirrors
+          \* runtime `_deactivate` on TEARDOWN. Same semantic as Teardown
+          \* origin above.
+          /\ dirtyMask' = [dirtyMask EXCEPT ![c] = {}]
+    /\ UNCHANGED <<cache, version, trace, emitCount,
+                   perSourceEmitCount, activated, handshake, nestedEmitCount,
+                   emitWitness, resubscribeCount, pauseActionCount,
+                   upActionCount, extraSinkTrace, pendingExtraDelivery,
+                   invalidateCount, cleanupWitness, replayBuffer,
+                   teardownCount>>
 
 Next ==
     \/ \E src \in SourceIds, v \in Values : Emit(src, v)
@@ -1558,7 +1706,9 @@ Next ==
     \/ \E child \in UpOriginators, lockId \in LockIds : UpResume(child, lockId)
     \/ \E n \in SinkIds : \E i \in 1..ExtraSinks[n] : DeliverToExtraSink(n, i)
     \/ \E n \in InvalidateOriginators : Invalidate(n)
+    \/ \E e \in EdgePairs : DeliverInvalidate(e[1], e[2])
     \/ \E parent \in NodeIds : Teardown(parent)
+    \/ \E e \in EdgePairs : DeliverTeardown(e[1], e[2])
     \/ \E e \in EdgePairs :
         \/ DeliverDirty(e[1], e[2])
         \/ DeliverSettle(e[1], e[2])
@@ -1868,6 +2018,16 @@ ResubscribeYieldsCleanState ==
             /\ \A i \in 1..ExtraSinks[sid] :
                     extraSinkTrace[sid][i] = <<>>
                  /\ pendingExtraDelivery[sid][i] = <<>>
+            \* Witness / ring state (added batch 3 QA round 2, item 3): a
+            \* resubscribed lifecycle must NOT inherit cleanup-hook or
+            \* TEARDOWN-witness records, nor replay-ring contents, from the
+            \* prior lifecycle. Resubscribe resets these per-sid in its
+            \* action; this invariant locks the reset in as a structural
+            \* contract so any future refactor dropping the clears trips
+            \* TLC here with a concrete counter-example state.
+            /\ cleanupWitness[sid] = <<>>
+            /\ teardownWitness[sid] = <<>>
+            /\ replayBuffer[sid] = <<>>
 
 \* #14 — UpQueuesCarryControlPlane (§1.4 up() direction).
 \* Spec §1.4: `up()` carries tier-1 (DIRTY, INVALIDATE), tier-2 (PAUSE /

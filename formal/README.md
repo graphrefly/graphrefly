@@ -24,7 +24,28 @@ so the regression is covered in both layers.
 | [`wave_protocol_up_MC.tla`](wave_protocol_up_MC.tla) + [`wave_protocol_up.cfg`](wave_protocol_up.cfg) | **§1.4 `up()` upstream-direction axis (added 2026-04-23).** 2-node chain `A → B`, `UpOriginators = {B}`, `MaxUpActions = 2`, `LockIds = {10}`, `Pausable = "on"` everywhere. Exercises `UpPause` / `UpResume` originators plus `DeliverUp(c, p)` integration with the existing `pauseLocks[p]` model. Verifies the two new up-axis structural invariants (`UpQueuesCarryControlPlane`, `UpPauseOriginatorBound`) plus the baseline 13 still hold when upstream and downstream PAUSE/RESUME compose. |
 | [`wave_protocol_multisink_MC.tla`](wave_protocol_multisink_MC.tla) + [`wave_protocol_multisink.cfg`](wave_protocol_multisink.cfg) | **§2.4 multi-sink iteration axis (added 2026-04-23).** 2-node chain `A → B`, `ExtraSinks[B] = 1` (one extra subscriber at B beyond the primary), `SinkNestedEmits = {<<A, A, 1>>}` to exercise mid-iteration nested emits. New `DeliverToExtraSink(n, i)` action drains `pendingExtraDelivery[n][i]`; `MultiSinkTracesConverge` structurally checks that primary and extra sinks observe the same message sequence at full drain. |
 
-## The 21 TLC invariants (batch-3 extended 2026-04-23)
+## The 21 TLC invariants across 13 MCs (batch-4, 2026-04-23)
+
+**Batch 4** added full cascades for Packages 6 + 7 + tier-1 ordering guard:
+- `DeliverInvalidate` now forwards INVALIDATE to grandchildren (full cascade).
+- `DeliverTeardown` action added for DAG-child TEARDOWN fan-out; `Teardown(parent)` now enqueues TEARDOWN to DAG children. Subgraph-wide §2.3 ordering exercised.
+- `NoInvalidateAnywhere` guard added to `DeliverSettle` + `DeliverTerminal` — tier-1 INVALIDATE drains before tier-3/4 per spec §1.4.
+- `invalidate_MC` promoted to 3-node chain (A→B→C) exercising full cascade; `meta_teardown_MC` promoted to 4-node (A→B, A→M meta, B→N meta) exercising `DeliverTeardown` witness at cascaded nodes.
+
+
+
+**Batch-3 QA round 2 adds 4 dedicated exercise MCs** so every Package 3/5/6/7 invariant is load-bearing (not just vacuous on disabled defaults). New MCs:
+
+| MC | Axis enabled | Distinct states | Purpose |
+|---|---|---|---|
+| `wave_protocol_rescue_MC` | `AutoCompleteOnDepsComplete[B] = FALSE` | 464 | Exercises Package 5 rescue/catchError path + the D1 rescue recompute (B absorbs A's COMPLETE without cascading; D1 recompute restores B to "settled"). |
+| `wave_protocol_meta_teardown_MC` | `MetaCompanions[A] = {M}` | 350 | Exercises Package 7 meta TEARDOWN ordering: `Teardown(A)` records witness at M BEFORE A transitions to "terminated". `MetaTeardownObservedPreReset` is now load-bearing. |
+| `wave_protocol_replay_MC` | `ReplayBufferSize[A] = 2` + `BatchSeqs = {<<1, 0>>}` | 1912 | Exercises Package 3 replay ring — drop-oldest-on-cap verified via `ReplayBufferBounded` across multiple Emit + BatchEmitMulti firings. |
+| `wave_protocol_invalidate_MC` | `InvalidateOriginators = {A}` | 2139 | Exercises Package 6 INVALIDATE queue propagation — `Invalidate(A)` records witness + resets cache + enqueues to B; `DeliverInvalidate(A, B)` records witness at B + resets cache[B]. |
+
+Total state space across 13 MCs: ~420K distinct states / ~40 seconds runtime.
+
+
 
 Invariants #1–#7 correspond 1-1 to [fast-check properties](../../graphrefly-ts/src/__tests__/properties/_invariants.ts). Fast-check invariants 8 and 9 (`throw-recovery-consistency` and `subscribe-unsubscribe-reentry`) concern JS-level exception handling and multiple-subscriber registration, not protocol-observable. Invariants #8–#9 are the TLA+-side multi-dep/nested-drain extensions. Invariants #10–#13 are the §2.6 PAUSE/RESUME + resubscribable-lifecycle extensions. Invariants #14–#17 are the batch-2 additions — §1.4 up-axis, §2.4 multi-sink traces, §2.6 pausable:off structural.
 
