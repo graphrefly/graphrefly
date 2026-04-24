@@ -23,8 +23,31 @@ so the regression is covered in both layers.
 | [`wave_protocol_resubscribe_MC.tla`](wave_protocol_resubscribe_MC.tla) + [`wave_protocol_resubscribe.cfg`](wave_protocol_resubscribe.cfg) | **§2.6 resubscribable-lifecycle axis (added 2026-04-23).** 2-node chain `A → B`, `ResubscribableNodes = {B}`, pause axis enabled so lock-leak-across-terminal scenarios are exercised. Verifies `TerminalClearsPauseState` (hard-reset clears locks/buffer) and `ResubscribeYieldsCleanState` (post-reset state matches fresh-init). |
 | [`wave_protocol_up_MC.tla`](wave_protocol_up_MC.tla) + [`wave_protocol_up.cfg`](wave_protocol_up.cfg) | **§1.4 `up()` upstream-direction axis (added 2026-04-23).** 2-node chain `A → B`, `UpOriginators = {B}`, `MaxUpActions = 2`, `LockIds = {10}`, `Pausable = "on"` everywhere. Exercises `UpPause` / `UpResume` originators plus `DeliverUp(c, p)` integration with the existing `pauseLocks[p]` model. Verifies the two new up-axis structural invariants (`UpQueuesCarryControlPlane`, `UpPauseOriginatorBound`) plus the baseline 13 still hold when upstream and downstream PAUSE/RESUME compose. |
 | [`wave_protocol_multisink_MC.tla`](wave_protocol_multisink_MC.tla) + [`wave_protocol_multisink.cfg`](wave_protocol_multisink.cfg) | **§2.4 multi-sink iteration axis (added 2026-04-23).** 2-node chain `A → B`, `ExtraSinks[B] = 1` (one extra subscriber at B beyond the primary), `SinkNestedEmits = {<<A, A, 1>>}` to exercise mid-iteration nested emits. New `DeliverToExtraSink(n, i)` action drains `pendingExtraDelivery[n][i]`; `MultiSinkTracesConverge` structurally checks that primary and extra sinks observe the same message sequence at full drain. |
+| [`wave_protocol_invalidate_diamond_MC.tla`](wave_protocol_invalidate_diamond_MC.tla) + [`wave_protocol_invalidate_diamond.cfg`](wave_protocol_invalidate_diamond.cfg) | **§1.4 INVALIDATE diamond-fan-in axis (added 2026-04-23, batch 5 B).** 4-node diamond `A → {B, C} → D`, `InvalidateOriginators = {A}`, `MaxInvalidates = 1`. Exercises the fan-in where D receives INVALIDATE from both parents; the second delivery lands on an already-reset cache and must NOT append a spurious witness entry. `CleanupWitnessNotSentinel` is load-bearing here — reverting the batch-5 guard on `DeliverInvalidate` trips this invariant. 2555 distinct states, < 1s runtime. |
+| [`wave_protocol_equals_false_MC.tla`](wave_protocol_equals_false_MC.tla) + [`wave_protocol_equals_false.cfg`](wave_protocol_equals_false.cfg) | **§2.5 `equals: () => false` axis (added 2026-04-23, batch 6 F).** 2-node chain `A → B`, `EqualsAbsorbs[A] = FALSE`. Every emit at A produces DATA (never RESOLVED), exercising the absorbs-FALSE branches in `Emit` / `BatchEmitMulti` / `SinkNestedEmit` / `DeliverSettle`. `EqualsFaithful` (#5) is now load-bearing via the DATA path — a regression that ignores the `EqualsAbsorbs[n]` flag would produce RESOLVED where DATA is required and trip the invariant. 2391 distinct states, < 1s runtime. |
+| [`wave_protocol_replay_resubscribe_MC.tla`](wave_protocol_replay_resubscribe_MC.tla) + [`wave_protocol_replay_resubscribe.cfg`](wave_protocol_replay_resubscribe.cfg) | **§2.5 replay × §2.6 resubscribable cross-axis (added 2026-04-23, batch 6 G).** 2-node chain `A → B`, `ReplayBufferSize[B] = 1`, `ResubscribableNodes = {B}`. Makes the batch-6-G extension of `ResubscribeYieldsCleanState` (#13) — the `replaySnapshot[sid] = <<>>` post-resubscribe check — load-bearing: `DeliverSettle(A, B)` populates `replayBuffer[B]`, initial `SubscribeSink(B)` captures a non-empty snapshot, Resubscribe must clear it. Reverting the batch-5 `replaySnapshot' = <<>>` clear in `Resubscribe` trips `ResubscribeYieldsCleanState` here. 550 distinct states, < 1s runtime. |
 
-## The 21 TLC invariants across 13 MCs (batch-4, 2026-04-23)
+## The 24 TLC invariants across 16 MCs — batch 7 tightening (2026-04-23)
+
+**Batch 7 (2026-04-23)** tightens `SinkNestedEmit`'s firing window to match the §32 bug semantic precisely:
+
+- **H. `SinkNestedEmit` `ObserverHasReceivedData` → `ObserverCallbackActive`.** The prior guard allowed the action to fire any time after any DATA had appeared in observer's trace — including long after the sink callback completed. The §32 bug class only lives in the narrow window where the sink callback is actually running (i.e. the DATA that triggered it has just been delivered and no subsequent tier-3 message has fired on observer). The new `ObserverCallbackActive(observer)` predicate requires `trace[observer][Len(...)].type = DATA` — the last trace entry must be DATA. State-space effect on `wave_protocol_nested_MC`: 125216 → 123732 distinct states (~1.2% shrink) — the action still fires meaningfully (nested-wave interleaving is still explored) but only in the callback-active window, eliminating spurious firings that didn't correspond to any runtime scenario. All invariants continue to hold, confirming the protocol-layer tier ordering is sound within the §32 window as well. Tracked in `docs/optimizations.md` strategy update 2026-04-23 as the #1 deferred item.
+
+## The 24 TLC invariants across 16 MCs (batch-6, 2026-04-23)
+
+**Batch 6 (2026-04-23)** makes two previously-vacuous axes load-bearing by cross-cutting them in dedicated MCs + extends one existing invariant:
+
+- **F. Dedicated `EqualsAbsorbs = FALSE` exercise MC.** Batch 3 Package 3 shipped the `EqualsAbsorbs` axis but no MC flipped it off — so the `equals: () => false` code path in `Emit` / `BatchEmitMulti` / `SinkNestedEmit` / `DeliverSettle` was entirely unexercised. New `wave_protocol_equals_false_MC` (2-node chain `A → B`, `EqualsAbsorbs[A] = FALSE`, BatchSeqs include same-value sequences) forces every emit at A to produce DATA (never RESOLVED). Makes `EqualsFaithful` (#5) load-bearing via a different semantic path — same contract, DATA counts just like RESOLVED did. 2391 distinct states; a regression that drops the `EqualsAbsorbs[n]` guard would produce RESOLVED where DATA is required and trip `EqualsFaithful` here.
+- **G. `ResubscribeYieldsCleanState` (#13) extended with `replaySnapshot[sid] = <<>>`.** Batch 5 A added the `replaySnapshot' = <<>>` clear to `Resubscribe` but the structural invariant didn't check it — a future refactor dropping the clear would silently regress. Added the check in lockstep with the existing `cleanupWitness` / `teardownWitness` / `replayBuffer` post-resubscribe checks. Load-bearing via the new `wave_protocol_replay_resubscribe_MC` (2-node chain `A → B`, `ResubscribableNodes = {B}`, `ReplayBufferSize[B] = 1`) which cross-cuts the replay-ring and resubscribable axes so pre-resubscribe `replaySnapshot[B]` can be non-empty. 550 distinct states; reverting the `Resubscribe` clear immediately trips `ResubscribeYieldsCleanState` here.
+
+Total runtime across all 15 green MCs: ~40s. State-space deltas vs. batch-5: existing MCs unchanged; two new MCs add ~3K distinct states.
+
+## The 23 TLC invariants across 14 MCs (batch-5, 2026-04-23)
+
+**Batch 5 (2026-04-23)** adds two invariants and one new MC, continuing the systematic protocol-mapping per the 2026-04-23 strategy update:
+
+- **A. §2.5 replayBuffer consumption side.** `SubscribeSink(sid)` now appends `replayBuffer[sid]` contents as DATA messages after the base handshake (for non-terminated sinks). New ghost `replaySnapshot: NodeIds -> Seq(Values)` captures the buffer at subscribe time and is cleared by `Resubscribe`. New invariant `LateSubscriberReceivesReplay` verifies the handshake tail matches the snapshot. `StartHandshakeValid` was extended with a `baseLen = Len(H) - Len(replaySnapshot[sid])` decomposition so its shape check runs over the base handshake and the replay tail is validated separately. `wave_protocol_replay_MC` state space grew from ~1912 → 2265 distinct states — the new snapshot ghost captures different ring contents across interleavings of Emit/BatchEmitMulti before SubscribeSink fires.
+- **B. Diamond `DeliverInvalidate` witness guard.** Both `Invalidate(n)` and `DeliverInvalidate(p, c)` now skip the cleanup-witness append when `cache[n] = DefaultInitial` / `cache[c] = DefaultInitial` (cache already at the reset sentinel). Mirrors the runtime's `cleanupHook` no-op on already-reset `prevData`. New invariant `CleanupWitnessNotSentinel` verifies every witness entry is non-default. New MC `wave_protocol_invalidate_diamond_MC` (4-node `A → {B, C} → D`, `InvalidateOriginators = {A}`, `MaxInvalidates = 1`) exercises the fan-in scenario where the second `DeliverInvalidate(C, D)` — arriving after `DeliverInvalidate(B, D)` has reset `cache[D]` — would have appended the sentinel as a spurious second witness pre-batch-5. 2555 distinct states; reverting the guard in `wave_protocol.tla` immediately fails `CleanupWitnessNotSentinel`.
 
 **Batch 4** added full cascades for Packages 6 + 7 + tier-1 ordering guard:
 - `DeliverInvalidate` now forwards INVALIDATE to grandchildren (full cascade).
@@ -65,7 +88,7 @@ Invariants #1–#7 correspond 1-1 to [fast-check properties](../../graphrefly-ts
 | 10 | `TerminalClearsPauseState` | clean ✓ / gap ✓ / nested ✓ / pause ✓ / bufferall ✓ / resub ✓ | Non-resubscribable terminated nodes MUST have empty `pauseLocks` and `pauseBuffer`. Catches the lock-leak-across-terminal class the spec §2.6 "Teardown" warning targets. |
 | 11 | `BufferImpliesLockedAndResumeAll` | clean ✓ / gap ✓ / nested ✓ / pause ✓ / bufferall ✓ / resub ✓ | `pauseBuffer[n] ≠ <<>>` implies `pauseLocks[n] ≠ {}` AND `Pausable[n] = "resumeAll"`. Structural invariant — catches buffer leaks into wrong modes or survival past final-lock release. |
 | 12 | `BufferHoldsOnlyDeferredTiers` | clean ✓ / gap ✓ / nested ✓ / pause ✓ / bufferall ✓ / resub ✓ | Every message in `pauseBuffer[n]` has `type ∈ {DATA, RESOLVED, COMPLETE, ERROR}` (tier 3/4 only). Catches accidental capture of control-plane messages (DIRTY, PAUSE, RESUME, TEARDOWN) into the buffer. |
-| 13 | `ResubscribeYieldsCleanState` | clean ✓ / gap ✓ / nested ✓ / pause ✓ / bufferall ✓ / resub ✓ / up ✓ / multisink ✓ | Post-`Resubscribe` state matches fresh-init: `pauseLocks = {}`, `pauseBuffer = <<>>`, `dirtyMask = {}`, `handshake = <<>>`, `trace = <<>>`. Exercised actively only by `wave_protocol_resubscribe_MC` (other MCs have `ResubscribableNodes = {}` → vacuous). |
+| 13 | `ResubscribeYieldsCleanState` | clean ✓ / gap ✓ / nested ✓ / pause ✓ / bufferall ✓ / resub ✓ / up ✓ / multisink ✓ / replay_resub ✓ | Post-`Resubscribe` state matches fresh-init: `pauseLocks = {}`, `pauseBuffer = <<>>`, `dirtyMask = {}`, `handshake = <<>>`, `trace = <<>>`, `cleanupWitness = <<>>`, `teardownWitness = <<>>`, `replayBuffer = <<>>`, `replaySnapshot = <<>>` (batch 6 G adds the last clause). Exercised actively by `wave_protocol_resubscribe_MC` (pause-lock leak) AND `wave_protocol_replay_resubscribe_MC` (replay-snapshot leak, batch 6). |
 | 14 | `UpQueuesCarryControlPlane` | clean ✓ / gap ✓ / nested ✓ / pause ✓ / bufferall ✓ / resub ✓ / up ✓ / multisink ✓ | Spec §1.4: `up()` carries only tier-1/2/5 control-plane (DIRTY/PAUSE/RESUME). Structural regression guard — `upQueues` never holds tier-3 (DATA/RESOLVED) or tier-4 (COMPLETE/ERROR). Exercised actively by `wave_protocol_up_MC`; vacuous when `UpOriginators = {}`. |
 | 15 | `UpPauseOriginatorBound` | clean ✓ / gap ✓ / nested ✓ / pause ✓ / bufferall ✓ / resub ✓ / up ✓ / multisink ✓ | `pauseLocks[n] # {}` implies `pauseActionCount + upActionCount > 0` — rules out "lock appears from nowhere." Composes the downstream `Pause` and upstream `UpPause` origination counters. |
 | 16 | `MultiSinkTracesConverge` | clean ✓ / gap ✓ / nested ✓ / pause ✓ / bufferall ✓ / resub ✓ / up ✓ / multisink ✓ | At full drain (all queues empty AND all `pendingExtraDelivery[n][i] = <<>>`), `extraSinkTrace[n][i] = trace[n]` for every extra sink. Structural regression guard — if a future refactor drops an `EnqueuePendingExtra` call from any emission action, primary and extra traces diverge and this invariant trips. Exercised actively by `wave_protocol_multisink_MC`; vacuous when `ExtraSinks = [n |-> 0]`. |
@@ -74,6 +97,8 @@ Invariants #1–#7 correspond 1-1 to [fast-check properties](../../graphrefly-ts
 | 19 | `CleanupWitnessInValueDomain` | all ✓ | Every `cleanupWitness[n]` entry holds a value in `Values` — the cleanup hook observed a real cached state, not a post-reset sentinel. Batch 3 Package 6 (§1.4). Vacuous when `InvalidateOriginators = {}` (all existing MCs default). |
 | 20 | `ReplayBufferBounded` | all ✓ | `Len(replayBuffer[n]) <= ReplayBufferSize[n]` — the ring's drop-oldest-on-cap logic. Batch 3 Package 3 (§2.5). Vacuous when `ReplayBufferSize[n] = 0`. |
 | 22 | `MetaTeardownObservedPreReset` | all ✓ | Every meta-child `teardownWitness` entry records `status \in {"settled","dirty"}` and `cache \in Values` — the meta child observed the parent PRE-reset. Batch 3 Package 7 (§2.3). Vacuous when `MetaCompanions = [n \|-> {}]`. |
+| 23 | `LateSubscriberReceivesReplay` | all ✓ | After `SubscribeSink(sid)` fires, the handshake's tail contains a DATA message for every entry in the captured `replaySnapshot[sid]`, in order. Batch 5 A (§2.5 replayBuffer consumption side). Vacuous when `ReplayBufferSize = [n \|-> 0]`; exercised actively by `wave_protocol_replay_MC`. |
+| 24 | `CleanupWitnessNotSentinel` | all ✓ | Every `cleanupWitness[n]` entry is non-default — catches the diamond fan-in bug where a second `DeliverInvalidate` arriving at an already-reset node would have appended the sentinel as a spurious second witness. Batch 5 B (§1.4 INVALIDATE cascade). Vacuous when `InvalidateOriginators = {}`; exercised by `wave_protocol_invalidate_MC` (chain — holds by construction) and actively load-bearing in `wave_protocol_invalidate_diamond_MC` (fan-in topology). |
 | — | `MultiSinkIterationDriftClean` | **DEFERRED** | Stricter §32 drift form — compares pending DATA to current `cache[n]`. Does NOT ship: false-positives on `BatchEmitMulti`'s atomic K-emit cache advance (intermediate DATAs appear to drift without any §32 nested-emit interference). Clean fix requires refactoring `BatchEmitMulti` into K step actions. The `AllExtraPendingEmpty` gate ships alongside — structurally models the runtime's atomic iteration even without the drift invariant. |
 
 ## Running TLC
@@ -112,6 +137,16 @@ java -XX:+UseParallelGC -cp "$TLA_JAR" tlc2.TLC \
     -config wave_protocol_up.cfg wave_protocol_up_MC
 java -XX:+UseParallelGC -cp "$TLA_JAR" tlc2.TLC \
     -config wave_protocol_multisink.cfg wave_protocol_multisink_MC
+
+# Batch 5 (added 2026-04-23) — §1.4 INVALIDATE diamond fan-in guard.
+java -XX:+UseParallelGC -cp "$TLA_JAR" tlc2.TLC \
+    -config wave_protocol_invalidate_diamond.cfg wave_protocol_invalidate_diamond_MC
+
+# Batch 6 (added 2026-04-23) — §2.5 equals-variance + replay×resubscribe cross-axis.
+java -XX:+UseParallelGC -cp "$TLA_JAR" tlc2.TLC \
+    -config wave_protocol_equals_false.cfg wave_protocol_equals_false_MC
+java -XX:+UseParallelGC -cp "$TLA_JAR" tlc2.TLC \
+    -config wave_protocol_replay_resubscribe.cfg wave_protocol_replay_resubscribe_MC
 ```
 
 Expected output (success):
@@ -129,12 +164,17 @@ Approximate state-space sizes (2026-04-23):
 |----|-----------------|---------|
 | `wave_protocol_MC` (clean) | ~77K | ~5s |
 | `wave_protocol_gap_MC` (expected fail) | ~10 (counter-example found immediately) | <1s |
-| `wave_protocol_nested_MC` | ~125K | ~6s |
+| `wave_protocol_nested_MC` | ~124K (batch 7 tightened from 125K) | ~6s |
 | `wave_protocol_pause_MC` | ~23K | ~1s |
 | `wave_protocol_bufferall_MC` | ~11K | ~1s |
 | `wave_protocol_resubscribe_MC` | ~13K | ~1s |
-| `wave_protocol_up_MC` | ~118K | ~6s |
-| `wave_protocol_multisink_MC` | ~2K | <1s |
+| `wave_protocol_up_MC` | ~160K | ~4s |
+| `wave_protocol_multisink_MC` | ~1K | <1s |
+| `wave_protocol_replay_MC` | ~2.3K (batch 5 grew from 1.9K via `replaySnapshot`) | <1s |
+| `wave_protocol_invalidate_MC` | ~1.7K | <1s |
+| `wave_protocol_invalidate_diamond_MC` | ~2.6K (batch 5) | <1s |
+| `wave_protocol_equals_false_MC` | ~2.4K (batch 6) | <1s |
+| `wave_protocol_replay_resubscribe_MC` | ~550 (batch 6) | <1s |
 
 The pause-axis MCs use smaller topologies (3-node chain, 2-node chain for resubscribe) because pause invariants are per-node, and combinatorial interleavings of Pause/Resume × emit × edges × multiple lockIds blow up the state space on the 4-node diamond (a probe with `MaxPauseActions = 4` on the diamond exceeded 8M distinct states in 10 minutes and still had 1M+ on queue). Topology coverage of the pause invariants is orthogonal to pause-axis coverage.
 

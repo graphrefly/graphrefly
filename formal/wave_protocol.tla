@@ -415,7 +415,16 @@ VARIABLES
     \* `MetaTeardownObservedPreReset` verifies no child saw a post-reset
     \* parent (status = "terminated" or a sentinel cache).
     teardownCount,           \* Nat
-    teardownWitness          \* NodeIds -> Seq([cache: Values, status: ...])
+    teardownWitness,         \* NodeIds -> Seq([cache: Values, status: ...])
+    \* --- §2.5 replayBuffer consumption side (added 2026-04-23 batch 5, A) ---
+    \* Ghost: snapshot of `replayBuffer[sid]` at the moment `SubscribeSink(sid)`
+    \* fired. Captured once per subscribe lifecycle; cleared by `Resubscribe`.
+    \* The invariant `LateSubscriberReceivesReplay` verifies the handshake's
+    \* tail matches this snapshot — i.e. a late subscriber observes every
+    \* buffered DATA from the ring even though the base handshake already
+    \* pushed the cached value. Vacuous in any MC where `ReplayBufferSize = 0`
+    \* everywhere — the ring never fills, so the snapshot is always empty.
+    replaySnapshot           \* NodeIds -> Seq(Values)
 
 vars == <<cache, status, version, dirtyMask, queues, trace, emitCount,
           perSourceEmitCount,
@@ -425,7 +434,8 @@ vars == <<cache, status, version, dirtyMask, queues, trace, emitCount,
           extraSinkTrace, pendingExtraDelivery,
           invalidateCount, cleanupWitness,
           replayBuffer,
-          teardownCount, teardownWitness>>
+          teardownCount, teardownWitness,
+          replaySnapshot>>
 
 ----------------------------------------------------------------------------
 Init ==
@@ -454,6 +464,7 @@ Init ==
     /\ replayBuffer = [n \in NodeIds |-> <<>>]
     /\ teardownCount = 0
     /\ teardownWitness = [n \in NodeIds |-> <<>>]
+    /\ replaySnapshot = [n \in NodeIds |-> <<>>]
 
 ----------------------------------------------------------------------------
 (* BufferAll predicate: a node n captures its outgoing tier-3/4 emissions into
@@ -578,7 +589,7 @@ Emit(src, v) ==
                          pauseLocks, resubscribeCount, pauseActionCount,
                          upQueues, upActionCount, extraSinkTrace,
                       invalidateCount, cleanupWitness,
-                      teardownCount, teardownWitness>>
+                      teardownCount, teardownWitness, replaySnapshot>>
           /\ emitCount' = emitCount + 1
           /\ perSourceEmitCount' = [perSourceEmitCount EXCEPT ![src] = @ + 1]
 
@@ -671,7 +682,7 @@ BatchEmitMulti(src, vs) ==
                          pauseLocks, resubscribeCount, pauseActionCount,
                          upQueues, upActionCount, extraSinkTrace,
                       invalidateCount, cleanupWitness,
-                      teardownCount, teardownWitness>>
+                      teardownCount, teardownWitness, replaySnapshot>>
           /\ emitCount' = emitCount + Len(vs)
           /\ perSourceEmitCount' = [perSourceEmitCount EXCEPT ![src] = @ + Len(vs)]
 
@@ -708,7 +719,7 @@ Terminate(src) ==
                       upActionCount, extraSinkTrace,
                       invalidateCount, cleanupWitness,
                       replayBuffer,
-                      teardownCount, teardownWitness>>
+                      teardownCount, teardownWitness, replaySnapshot>>
 
 \* Tier-drain predicates (moved to emission block during batch-4 QA so
 \* `Emit` / `BatchEmitMulti` / `SinkNestedEmit` can reference
@@ -780,7 +791,7 @@ DeliverDirty(p, c) ==
                       upQueues, upActionCount, extraSinkTrace,
                       invalidateCount, cleanupWitness,
                       replayBuffer,
-                      teardownCount, teardownWitness>>
+                      teardownCount, teardownWitness, replaySnapshot>>
 
 (* DeliverSettle: consume the entire tier-3 (DATA/RESOLVED) prefix at head
    of queue[<<p, c>>] as one atomic delivery — matches the runtime after
@@ -823,7 +834,7 @@ DeliverSettle(p, c) ==
                  /\ replayBuffer' = replayBuffer
                  /\ UNCHANGED <<cache, status, version,
                       invalidateCount, cleanupWitness,
-                      teardownCount, teardownWitness>>
+                      teardownCount, teardownWitness, replaySnapshot>>
             ELSE LET newCache  == Compute(c, cache)
                      sameAsOld == newCache = cache[c]
                      settleMsg == IF sameAsOld THEN Msg(RESOLVED, NullPayload)
@@ -868,7 +879,7 @@ DeliverSettle(p, c) ==
                       pauseLocks, resubscribeCount, pauseActionCount,
                       upQueues, upActionCount, extraSinkTrace,
                       invalidateCount, cleanupWitness,
-                      teardownCount, teardownWitness>>
+                      teardownCount, teardownWitness, replaySnapshot>>
 
 (* DeliverTerminal: consume COMPLETE or ERROR from queue[<<p, c>>].
    - Forwards the terminal to c's children exactly once.
@@ -976,7 +987,7 @@ DeliverTerminal(p, c) ==
                       upActionCount, extraSinkTrace,
                       invalidateCount, cleanupWitness,
                       replayBuffer,
-                      teardownCount, teardownWitness>>
+                      teardownCount, teardownWitness, replaySnapshot>>
 
 ----------------------------------------------------------------------------
 (* SubscribeSink(sid): fires once per sink. Synthesizes the handshake
@@ -1020,7 +1031,7 @@ SubscribeSink(sid) ==
                  Msg(DIRTY, NullPayload), Msg(DATA, cache[sid])>>
            cleanSeq ==
                <<startMsg, Msg(DIRTY, NullPayload), Msg(DATA, cache[sid])>>
-           handshakeSeq ==
+           baseSeq ==
                CASE isTerminated ->
                       <<startMsg, Msg(COMPLETE, NullPayload)>>
                  [] isSource ->
@@ -1029,31 +1040,99 @@ SubscribeSink(sid) ==
                       gapAwareMultiSeq
                  [] OTHER ->
                       cleanSeq
+           \* §2.5 replayBuffer consumption side (batch 5, A). A late subscriber
+           \* on a node with a non-empty `replayBuffer` receives every buffered
+           \* DATA in ring order after the base handshake. Terminated sinks
+           \* receive NO replay — the `<<START, COMPLETE>>` handshake is
+           \* lifecycle-only; buffered DATA would be inconsistent with the
+           \* "no further DATA after terminal" contract (spec §1.3 invariant 4).
+           \* Pre-1.0 design simplification: replay is appended verbatim (no
+           \* dedup against the cached push). The runtime will dedupe the
+           \* cache-push-vs-last-buffer duplicate — modeling dedup would
+           \* require tracking "was the last buffered value equal to cache at
+           \* subscribe?" which buys no additional invariant coverage.
+           \*
+           \* Batch 7 QA (BH-6): the `isTerminated` guard is unconditional —
+           \* it applies equally to `sid \in ResubscribableNodes`. This is
+           \* intentional. For a resubscribable terminated sink, `SubscribeSink`
+           \* cannot fire today anyway (requires `~activated[sid]`, which is
+           \* only cleared by `Resubscribe` — which also clears
+           \* `replayBuffer[sid]`). A literal "resubscribable terminated" fix
+           \* that sent replay would produce `<<START, COMPLETE>> \o replayTail`,
+           \* violating `TerminalAbsorbing` (#3: no DATA after COMPLETE).
+           \* The guard is kept strict as a belt-and-suspenders measure: if
+           \* some future action bypasses Resubscribe and reaches
+           \* `SubscribeSink` on a still-terminated sink, no replay is emitted.
+           replayVals == IF isTerminated THEN <<>> ELSE replayBuffer[sid]
+           replayTail ==
+               [k \in 1..Len(replayVals) |-> Msg(DATA, replayVals[k])]
+           handshakeSeq == baseSeq \o replayTail
        IN /\ handshake' = [handshake EXCEPT ![sid] = @ \o handshakeSeq]
           /\ activated' = [activated EXCEPT ![sid] = TRUE]
-          /\ UNCHANGED <<cache, status, version, dirtyMask, queues, trace, emitCount, perSourceEmitCount,
+          /\ replaySnapshot' = [replaySnapshot EXCEPT ![sid] = replayVals]
+          /\ UNCHANGED <<cache, status, version, dirtyMask, queues, trace,
+                         emitCount, perSourceEmitCount,
                          nestedEmitCount, emitWitness,
-                         pauseLocks, pauseBuffer, resubscribeCount, pauseActionCount,
+                         pauseLocks, pauseBuffer, resubscribeCount,
+                         pauseActionCount,
                          upQueues, upActionCount,
                          extraSinkTrace, pendingExtraDelivery,
-                      invalidateCount, cleanupWitness,
-                      replayBuffer,
-                      teardownCount, teardownWitness>>
+                         invalidateCount, cleanupWitness,
+                         replayBuffer,
+                         teardownCount,
+                         teardownWitness>>
 
 (* SinkNestedEmit(observer, target, v): models a sink callback that runs
    batch(() => target.emit(v)) inside its own callback. Enabled only when:
      - the triple is in the user-supplied `SinkNestedEmits` set;
-     - `observer` has already received a DATA in its trace (the callback is
-       firing BECAUSE that DATA arrived);
+     - `observer`'s callback is currently active — the last entry in
+       `trace[observer]` is DATA, meaning the DATA that triggered the
+       callback has just been delivered AND no subsequent DIRTY/RESOLVED
+       has fired on observer yet (which would indicate the next wave has
+       started and the callback has already returned);
      - target is a live source (not terminated) and the emitCount bound
        allows one more wave.
    The action enqueues `[[DIRTY], [DATA, v]]` to all of target's outbound
    edges (standard emit semantics), then bumps `nestedEmitCount`. TLC then
    explores how this nested bundle interleaves with the already-in-flight
    outer-wave deliveries — the exact timing window where the §32 bug lives.
+
+   Tightening note (batch 7, 2026-04-23): the guard was changed from
+   `ObserverHasReceivedData` (any past DATA anywhere in observer's trace)
+   to `ObserverCallbackActive` (DATA must be the LAST trace entry). This
+   restricts firings to the narrow "sink callback running" window — the
+   exact semantic of the §32 bug class, where the nested `batch()` call
+   happens inside the sink callback that the DATA delivery just invoked.
+   Under the old loose guard, TLC would also fire the action at any later
+   post-wave state, which doesn't correspond to any runtime scenario (the
+   JS runtime's `batch()` must be called synchronously from the callback).
+   Effect on coverage: narrows the state space to the legitimate §32
+   window without losing any bug-reachability — the tier-ordering guards
+   on `DeliverSettle` still prevent peer-read glitches in the protocol
+   layer, and TLC continues to confirm that under exhaustive exploration.
 *)
-ObserverHasReceivedData(observer) ==
-    \E i \in 1..Len(trace[observer]) : trace[observer][i].type = DATA
+\* Batch 7 QA notes:
+\* - BH-7: the predicate relies on atomic trace appends. Each action that
+\*   appends to `trace[observer]` (DeliverDirty, DeliverSettle, DeliverTerminal,
+\*   Emit-when-observer-is-self-sink, DeliverPauseResume's bufferAll drain)
+\*   appends one message per action step. Between atomic action steps, the
+\*   last trace entry reflects the MOST RECENT message delivered to the
+\*   observer. The predicate closes the callback-active window as soon as
+\*   any subsequent message arrives (DIRTY for the next wave, RESOLVED for
+\*   an equals-absorb, COMPLETE/ERROR for a terminal) — which matches the
+\*   runtime's "sink callback runs synchronously while a specific tier-3
+\*   message is being dispatched; once dispatch advances to the next
+\*   message, the prior callback has returned."
+\* - ECH-9: for compound batches like `<<DIRTY, DATA, DIRTY, DATA>>` the
+\*   predicate is TRUE only at the state where the tail is DATA. A sink
+\*   receiving a two-DATA batch (rare: RESOLVED absorption usually
+\*   collapses the pair) would hit ObserverCallbackActive twice — once
+\*   after each DATA append — and SinkNestedEmit is correctly enabled in
+\*   both windows. The action-level interleaving model explores every
+\*   such window.
+ObserverCallbackActive(observer) ==
+    /\ Len(trace[observer]) > 0
+    /\ trace[observer][Len(trace[observer])].type = DATA
 
 SinkNestedEmit(observer, target, v) ==
     /\ <<observer, target, v>> \in SinkNestedEmits
@@ -1062,7 +1141,7 @@ SinkNestedEmit(observer, target, v) ==
     /\ status[target] = "settled"
     /\ emitCount < MaxEmits
     /\ nestedEmitCount < MaxNestedEmits
-    /\ ObserverHasReceivedData(observer)
+    /\ ObserverCallbackActive(observer)
     /\ LET equalToCache == cache[target] = v
            settleMsg    == IF equalToCache THEN Msg(RESOLVED, NullPayload)
                                            ELSE Msg(DATA, v)
@@ -1095,7 +1174,7 @@ SinkNestedEmit(observer, target, v) ==
                       pauseLocks, resubscribeCount, pauseActionCount,
                       upQueues, upActionCount, extraSinkTrace,
                       invalidateCount, cleanupWitness,
-                      teardownCount, teardownWitness>>
+                      teardownCount, teardownWitness, replaySnapshot>>
        /\ emitCount' = emitCount + 1
        /\ perSourceEmitCount' = [perSourceEmitCount EXCEPT ![target] = @ + 1]
        /\ nestedEmitCount' = nestedEmitCount + 1
@@ -1154,7 +1233,7 @@ Pause(src, lockId) ==
                       upQueues, upActionCount, extraSinkTrace,
                       invalidateCount, cleanupWitness,
                       replayBuffer,
-                      teardownCount, teardownWitness>>
+                      teardownCount, teardownWitness, replaySnapshot>>
 
 (* Resume only fires when `src` is actually holding `lockId`. The
    "unknown-lockId RESUME is a no-op" case is modeled at `DeliverPauseResume`
@@ -1198,7 +1277,7 @@ Resume(src, lockId) ==
                       upQueues, upActionCount, extraSinkTrace,
                       invalidateCount, cleanupWitness,
                       replayBuffer,
-                      teardownCount, teardownWitness>>
+                      teardownCount, teardownWitness, replaySnapshot>>
 
 DeliverPauseResume(p, c) ==
     /\ <<p, c>> \in EdgePairs
@@ -1267,7 +1346,7 @@ DeliverPauseResume(p, c) ==
                       upQueues, upActionCount, extraSinkTrace,
                       invalidateCount, cleanupWitness,
                       replayBuffer,
-                      teardownCount, teardownWitness>>
+                      teardownCount, teardownWitness, replaySnapshot>>
 
 Resubscribe(sid) ==
     /\ sid \in ResubscribableNodes
@@ -1311,6 +1390,10 @@ Resubscribe(sid) ==
        /\ cleanupWitness' = [cleanupWitness EXCEPT ![sid] = <<>>]
        /\ teardownWitness' = [teardownWitness EXCEPT ![sid] = <<>>]
        /\ replayBuffer' = [replayBuffer EXCEPT ![sid] = <<>>]
+       \* Batch 5 A: a resubscribed lifecycle must NOT inherit the prior
+       \* subscribe's replay snapshot. Cleared in lockstep with the
+       \* cleanup / teardown / replayBuffer resets above.
+       /\ replaySnapshot' = [replaySnapshot EXCEPT ![sid] = <<>>]
        /\ UNCHANGED <<version, queues, emitCount, perSourceEmitCount,
                       nestedEmitCount, emitWitness,
                       pauseActionCount, upActionCount,
@@ -1362,7 +1445,7 @@ UpPause(child, lockId) ==
                       extraSinkTrace, pendingExtraDelivery,
                       invalidateCount, cleanupWitness,
                       replayBuffer,
-                      teardownCount, teardownWitness>>
+                      teardownCount, teardownWitness, replaySnapshot>>
 
 UpResume(child, lockId) ==
     /\ child \in UpOriginators
@@ -1378,7 +1461,7 @@ UpResume(child, lockId) ==
                       extraSinkTrace, pendingExtraDelivery,
                       invalidateCount, cleanupWitness,
                       replayBuffer,
-                      teardownCount, teardownWitness>>
+                      teardownCount, teardownWitness, replaySnapshot>>
 
 (* DeliverUp(p, c) — consume an upstream message at parent p coming from
    child c. First positional is parent, second is child — matches the
@@ -1473,7 +1556,7 @@ DeliverUp(p, c) ==
                       extraSinkTrace,
                       invalidateCount, cleanupWitness,
                       replayBuffer,
-                      teardownCount, teardownWitness>>
+                      teardownCount, teardownWitness, replaySnapshot>>
 
 ----------------------------------------------------------------------------
 (*              §2.4 multi-sink iteration actions (added 2026-04-23)          *)
@@ -1513,7 +1596,7 @@ DeliverToExtraSink(n, i) ==
                       upQueues, upActionCount,
                       invalidateCount, cleanupWitness,
                       replayBuffer,
-                      teardownCount, teardownWitness>>
+                      teardownCount, teardownWitness, replaySnapshot>>
 
 ----------------------------------------------------------------------------
 (*            §1.4 INVALIDATE + cleanup-witness actions                      *)
@@ -1542,8 +1625,21 @@ Invalidate(n) ==
     /\ invalidateCount < MaxInvalidates
     /\ status[n] # "terminated"
     /\ LET msg == Msg(INVALIDATE, NullPayload)
+           \* Batch 5 B (2026-04-23): only record a cleanup witness when
+           \* `cache[n]` is currently non-default. When it's already
+           \* `DefaultInitial`, there's nothing to "clean up" — the cache
+           \* either was never advanced past the sentinel or has already
+           \* been reset by a prior INVALIDATE cascade arriving at n. Skipping
+           \* the witness mirrors the runtime's `cleanupHook` semantic of
+           \* a no-op on an already-reset prevData. Catches the diamond
+           \* fan-in bug where two INVALIDATE arrivals at the same node
+           \* would have recorded the already-reset sentinel as a second
+           \* (spurious) witness entry.
+           wasReset == cache[n] = DefaultInitial
        IN /\ cleanupWitness' =
-              [cleanupWitness EXCEPT ![n] = Append(@, cache[n])]
+              IF wasReset
+                THEN cleanupWitness
+                ELSE [cleanupWitness EXCEPT ![n] = Append(@, cache[n])]
           /\ cache' = [cache EXCEPT ![n] = DefaultInitial]
           /\ queues' = EnqueueOutFrom(queues, n, msg)
           /\ invalidateCount' = invalidateCount + 1
@@ -1553,7 +1649,7 @@ Invalidate(n) ==
                    pauseActionCount, upQueues, upActionCount,
                    extraSinkTrace, pendingExtraDelivery,
                       replayBuffer,
-                      teardownCount, teardownWitness>>
+                      teardownCount, teardownWitness, replaySnapshot>>
 
 (* `DeliverInvalidate(p, c)` — consume the INVALIDATE message head at edge  *)
 (*   <<p, c>>, record `cache[c]` to `cleanupWitness[c]` (pre-reset), reset  *)
@@ -1579,9 +1675,19 @@ DeliverInvalidate(p, c) ==
     /\ status[c] # "terminated"
     /\ LET qs0 == [queues EXCEPT ![<<p, c>>] = Tail(@)]
            invMsg == Msg(INVALIDATE, NullPayload)
+           \* Batch 5 B (2026-04-23): same guard as `Invalidate` above. In a
+           \* diamond A → {B, C} → D, after DeliverInvalidate(B, D) resets
+           \* cache[D] = DefaultInitial, a subsequent DeliverInvalidate(C, D)
+           \* must NOT record the already-reset sentinel as a second witness
+           \* entry — the cleanup hook has effectively already fired. Kept
+           \* symmetric with Invalidate(n) so all witness writes go through
+           \* the same pre-reset precondition.
+           wasReset == cache[c] = DefaultInitial
        IN /\ queues' = EnqueueOutFrom(qs0, c, invMsg)
           /\ cleanupWitness' =
-              [cleanupWitness EXCEPT ![c] = Append(@, cache[c])]
+              IF wasReset
+                THEN cleanupWitness
+                ELSE [cleanupWitness EXCEPT ![c] = Append(@, cache[c])]
           /\ cache' = [cache EXCEPT ![c] = DefaultInitial]
     /\ UNCHANGED <<status, version, dirtyMask, trace, emitCount,
                    perSourceEmitCount, activated, handshake, nestedEmitCount,
@@ -1589,7 +1695,7 @@ DeliverInvalidate(p, c) ==
                    pauseActionCount, upQueues, upActionCount,
                    extraSinkTrace, pendingExtraDelivery,
                       invalidateCount, replayBuffer,
-                      teardownCount, teardownWitness>>
+                      teardownCount, teardownWitness, replaySnapshot>>
 
 ----------------------------------------------------------------------------
 (*            §2.3 meta companion TEARDOWN action (Package 7)               *)
@@ -1646,7 +1752,8 @@ Teardown(parent) ==
                    perSourceEmitCount, activated, handshake, nestedEmitCount,
                    emitWitness, resubscribeCount, pauseActionCount,
                    upActionCount, extraSinkTrace, pendingExtraDelivery,
-                   invalidateCount, cleanupWitness, replayBuffer>>
+                   invalidateCount, cleanupWitness, replayBuffer,
+                   replaySnapshot>>
 
 (* `DeliverTeardown(p, c)` — consume the TEARDOWN message head at edge      *)
 (*   <<p, c>>, record pre-reset `cache[c]` / `status[c]` at c's meta        *)
@@ -1690,7 +1797,7 @@ DeliverTeardown(p, c) ==
                    emitWitness, resubscribeCount, pauseActionCount,
                    upActionCount, extraSinkTrace, pendingExtraDelivery,
                    invalidateCount, cleanupWitness, replayBuffer,
-                   teardownCount>>
+                   teardownCount, replaySnapshot>>
 
 Next ==
     \/ \E src \in SourceIds, v \in Values : Emit(src, v)
@@ -1859,16 +1966,33 @@ StartHandshakeValid ==
                 isSource == Parents(sid) = {}
                 isMultiParent == Cardinality(Parents(sid)) >= 2
                 Content(msgs) == [i \in 1..Len(msgs) |-> msgs[i].type]
+                \* Batch 5 A (2026-04-23): the handshake tail carries the
+                \* `replaySnapshot[sid]` DATAs appended by `SubscribeSink`.
+                \* `BaseH` is the handshake minus the replay tail — the
+                \* original shape check runs over `BaseH` only, and the tail
+                \* is constrained separately (all DATA, values match the
+                \* captured snapshot) by `LateSubscriberReceivesReplay`.
+                replayLen == Len(replaySnapshot[sid])
+                baseLen == Len(H) - replayLen
+                TypeAt(i, t) == H[i].type = t
                 MatchesShape(shape) ==
-                    Len(H) = Len(shape)
-                    /\ \A i \in 1..Len(shape) : H[i].type = shape[i]
+                    baseLen = Len(shape)
+                    /\ \A i \in 1..Len(shape) : TypeAt(i, shape[i])
             IN
+            \* Batch 7 QA (2026-04-23): `baseLen >= 1` is hoisted to the top
+            \* of the conjunction so the downstream `\E i \in 1..baseLen`
+            \* quantifiers are never reached with a zero or negative range
+            \* (which would evaluate vacuously and let pathological states
+            \* pass silently). On all legitimate handshakes baseLen >= 2;
+            \* this explicit guard catches any state where `replaySnapshot`
+            \* outgrew `handshake` due to a refactor bug.
             /\ Len(H) >= 1
+            /\ baseLen >= 1
             /\ H[1].type = START
-            /\ (\E i \in 1..Len(H) : H[i].type \in {COMPLETE, ERROR}) =>
-                 /\ Len(H) = 2
-                 /\ H[2].type \in {COMPLETE, ERROR}
-            /\ (~\E i \in 1..Len(H) : H[i].type \in {COMPLETE, ERROR}) =>
+            /\ (\E i \in 1..baseLen : H[i].type \in {COMPLETE, ERROR}) =>
+                 /\ baseLen = 2
+                 /\ TypeAt(2, COMPLETE) \/ TypeAt(2, ERROR)
+            /\ (~\E i \in 1..baseLen : H[i].type \in {COMPLETE, ERROR}) =>
                  IF isSource
                    THEN MatchesShape(<<START, DATA>>)
                    ELSE IF isMultiParent
@@ -2028,6 +2152,14 @@ ResubscribeYieldsCleanState ==
             /\ cleanupWitness[sid] = <<>>
             /\ teardownWitness[sid] = <<>>
             /\ replayBuffer[sid] = <<>>
+            \* Batch 6 G (2026-04-23): the subscribe-time replay snapshot
+            \* captured by `SubscribeSink` in the prior lifecycle is also
+            \* lifecycle-owned. `Resubscribe` clears it in lockstep with
+            \* the above; extending the invariant here locks that clear in
+            \* structurally so a future refactor dropping the per-sid
+            \* reset on `replaySnapshot` immediately trips TLC with a
+            \* concrete counter-example.
+            /\ replaySnapshot[sid] = <<>>
 
 \* #14 — UpQueuesCarryControlPlane (§1.4 up() direction).
 \* Spec §1.4: `up()` carries tier-1 (DIRTY, INVALIDATE), tier-2 (PAUSE /
@@ -2154,6 +2286,100 @@ CleanupWitnessInValueDomain ==
 ReplayBufferBounded ==
     \A n \in NodeIds : Len(replayBuffer[n]) <= ReplayBufferSize[n]
 
+\* #23 — LateSubscriberReceivesReplay (§2.5 replayBuffer consumption side,
+\* added 2026-04-23 batch 5, A).
+\*
+\* Closes the explicit "Remaining rigor-infra coverage gaps" item on
+\* subscribe-time replay. When `SubscribeSink(sid)` fires with a non-empty
+\* `replayBuffer[sid]`, the captured snapshot appears as a tail of DATA
+\* messages at the end of `handshake[sid]`. The invariant verifies that
+\* for every activated sink whose snapshot is non-empty, the last
+\* `Len(replaySnapshot[sid])` handshake entries are DATA messages carrying
+\* exactly the snapshot values in ring order.
+\*
+\* Vacuous in any MC where `ReplayBufferSize = [n |-> 0]` — the ring never
+\* fills, `replayBuffer[sid]` is always empty at subscribe, so
+\* `replaySnapshot[sid]` stays `<<>>`. Exercised actively by
+\* `wave_protocol_replay_MC` (ReplayBufferSize[A] = 2) once Emit / batch
+\* actions interleave BEFORE `SubscribeSink(A)` fires — which TLC's
+\* action-level exploration covers without further changes.
+\* Batch 7 QA note (ECH-7): the invariant is vacuous on terminated sinks
+\* by design — `SubscribeSink`'s `replayVals == IF isTerminated THEN <<>>
+\* ELSE replayBuffer[sid]` guarantees `replaySnapshot[sid] = <<>>` for any
+\* terminated sink, so `sLen = 0` and the `\A k \in 1..sLen` range is
+\* empty. This is the correct behavior: emitting replay DATA after a
+\* terminated sink's `<<START, COMPLETE>>` handshake would violate
+\* `TerminalAbsorbing` (#3). The vacuous branch is a feature, not a bug.
+LateSubscriberReceivesReplay ==
+    \A sid \in SinkIds :
+        activated[sid] =>
+            LET H == handshake[sid]
+                snap == replaySnapshot[sid]
+                hLen == Len(H)
+                sLen == Len(snap)
+                baseLen == hLen - sLen
+            IN \* Batch 7 QA (BH-4): `hLen >= sLen` is equivalent to
+               \* `baseLen >= 0`, but the latter is the value we index
+               \* with. Making the range guard explicit catches any
+               \* pathological state where handshake is shorter than the
+               \* captured snapshot and prevents TLC from evaluating
+               \* `H[baseLen + k]` at a non-positive index. Under legitimate
+               \* SubscribeSink semantics, baseLen is always >= 1 (the base
+               \* handshake always includes at least START); the >= 0 guard
+               \* allows the all-replay case should a future refactor make
+               \* it reachable, while still preventing index arithmetic
+               \* from underflowing.
+               /\ baseLen >= 0
+               /\ hLen >= sLen
+               /\ \A k \in 1..sLen :
+                    /\ baseLen + k <= hLen
+                    /\ H[baseLen + k].type = DATA
+                    /\ H[baseLen + k].value = snap[k]
+
+\* #24 — CleanupWitnessNotSentinel (§1.4 INVALIDATE witness guard, added
+\* 2026-04-23 batch 5 B; renamed from `CleanupWitnessNonTrivial` in batch 7
+\* QA for honest naming — the invariant checks "witness entry is not the
+\* reset sentinel," not any stronger semantic non-triviality property).
+\*
+\* Complements `CleanupWitnessInValueDomain` (#19). Every recorded witness
+\* entry must be a value other than `DefaultInitial` — i.e. the cleanup
+\* hook observed the cache BEFORE it was reset to the sentinel. Catches
+\* the diamond fan-in bug documented in docs/optimizations.md batch-4 QA
+\* deferred findings: in topology `A → {B, C} → D`, the second
+\* `DeliverInvalidate(C, D)` arriving AFTER `DeliverInvalidate(B, D)` has
+\* already reset `cache[D] = DefaultInitial` would, under the pre-batch-5
+\* action, append that already-reset sentinel as a spurious second witness.
+\* The batch-5 guards on `Invalidate` and `DeliverInvalidate` skip the
+\* witness append in that case, so every remaining witness value is
+\* non-sentinel — the invariant holds.
+\*
+\* Caveat (TLA+-model-only): a user who legitimately drove
+\* `Emit(src, DefaultInitial)` then immediately `Invalidate(src)` would
+\* also skip the witness under the batch-5 guard. The TLA+ model accepts
+\* this simplification — the bug class we care about (double-witness on
+\* already-reset nodes) is caught; the edge case of
+\* "emit-default-then-invalidate" is semantically a no-op cleanup and
+\* skipping the witness matches the runtime's hook contract ("hook fires
+\* on a reset event; observes no non-trivial prior value").
+\*
+\* No TS analogue (ECH-8, batch 7 QA): the TS runtime cannot emit
+\* `DATA(undefined)` per spec §1.2 (TypeError at `_emit`), so there is no
+\* "emit-sentinel-then-invalidate" edge case to worry about in TS. The
+\* runtime guard at [src/core/node.ts] `_onDepMessage`'s INVALIDATE
+\* branch uses `_cached === undefined` — which means "already reset" OR
+\* "never populated" (see Option B doc at that site). The caveat here is
+\* formal-model-specific.
+\*
+\* Vacuous when `InvalidateOriginators = {}` (all legacy MCs default).
+\* Exercised actively by `wave_protocol_invalidate_MC` (chain, already
+\* holds by construction pre-batch-5 because chains only deliver once per
+\* node) AND by `wave_protocol_invalidate_diamond_MC` (added batch 5,
+\* which is where the bug surfaces and the guard is load-bearing).
+CleanupWitnessNotSentinel ==
+    \A n \in NodeIds :
+        \A k \in 1..Len(cleanupWitness[n]) :
+            cleanupWitness[n][k] # DefaultInitial
+
 \* #21 — MultiSinkIterationDriftClean (§2.4 drift form) — DEFERRED.
 \*
 \* The gate helper `AllExtraPendingEmpty` ships; the stricter drift
@@ -2236,5 +2462,6 @@ TypeOK ==
     /\ teardownCount \in Nat
     /\ teardownWitness \in [NodeIds ->
             Seq([cache: Values, status: {"settled", "dirty", "terminated"}])]
+    /\ replaySnapshot \in [NodeIds -> Seq(Values)]
 
 ============================================================================
