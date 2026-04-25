@@ -104,6 +104,17 @@ MUST reject `[[ERROR, undefined]]` and bare `[ERROR]` at the dispatch boundary
    forwarding — so the node's cache cannot drift from "the last DATA payload actually
    delivered downstream." Downstream nodes skip recompute on RESOLVED entirely.
 
+   **Substitution scope.** Equals substitution only fires when a wave contains a
+   *single* DATA emission whose payload matches `cache`. Multi-DATA waves
+   (e.g. `[[DATA, v1], [DATA, v1]]`) pass through verbatim — the substrate does not
+   per-item-substitute inside a multi-DATA batch. Operators that drop or filter
+   items (e.g. `filter`, `take`, `skip`) do NOT synthesize `[RESOLVED]` for dropped
+   batch elements: dropping is silent, not signalled. `RESOLVED` reaches downstream
+   only via (a) substrate substitution on a single-DATA wave matching cache, or
+   (b) explicit user emission via `actions.down([[RESOLVED]])` / `node.down(...)`.
+   Consumers that need per-item batch-drain accounting must either count upstream
+   of any filtering operator or emit explicit `RESOLVED` markers from their own fn.
+
 4. **COMPLETE and ERROR are terminal.** After either, no further messages from that node.
    A node MAY be resubscribable (opt-in), in which case a new subscription starts fresh.
 
@@ -170,6 +181,30 @@ message types by direction. In particular, lifecycle messages (TEARDOWN, INVALID
 may propagate downstream for graph-wide lifecycle management (e.g. `graph.destroy()`
 sends TEARDOWN downstream to all nodes). Similarly, a source may forward PAUSE/RESUME
 downstream when pausing consumers.
+
+**INVALIDATE delivery is idempotent within a wave.** A node that has already broadcast
+`INVALIDATE` to its sinks during the current wave does not re-broadcast on subsequent
+arrivals from other parents. Diamond fan-in topologies (multiple paths from one
+originator converging at a join node) cascade `INVALIDATE` once per node per wave,
+not once per arriving path. Equivalent rule for implementations: an `INVALIDATE`
+arrival at a node whose cache is already at the reset sentinel (i.e. the node has
+already processed an `INVALIDATE` this wave) is a no-op — neither the cleanup hook
+nor the downstream broadcast fires a second time. This guarantees that the cleanup
+hook of an object-form fn (`{ fn, invalidate }`) fires at most once per wave per node
+regardless of fan-in shape.
+
+**Never-populated case.** An `INVALIDATE` arriving at a node whose cache is the
+**never-populated sentinel** (a node that has not yet settled in this lifetime,
+distinct from "reset by an earlier `INVALIDATE` this wave") is also a no-op. There
+is no cached value to clean up and no semantically meaningful downstream state to
+invalidate, so the cleanup hook does not fire and downstream broadcast is suppressed.
+A practical consequence: `graph.observe()` on a never-populated mid-chain derived
+node will not see `INVALIDATE` propagate through that node — observers must subscribe
+to the originating source (or to a downstream node that has settled at least once)
+to receive cache-bust notifications. Implementations that overload the
+"reset sentinel" check to cover both cases (post-reset and never-populated) are
+spec-compliant; the two states are observationally equivalent for downstream
+purposes.
 
 ---
 

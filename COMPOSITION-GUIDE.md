@@ -40,7 +40,9 @@ Quick index — jump to the section that matches your problem.
 | "How do I cancel the agent mid-generation?" | §30 (parallel guardrail) |
 | "How do I expose a reactive tool list?" | §31 (dynamic tool selection) |
 | "PY test hangs for 60s then times out?" | §14 (blocking async bridge deadlock) |
-| "Why does `_terminalResult` see the prior LLM response?" | §32 (nested-drain state-mirror pattern) |
+| "Consumer reads stale switchMap cache across session boundaries?" | §32 (state-mirror for cross-wave reset) |
+| "How do I keep system prompts prefix-cache-friendly?" | §33 (`frozenContext` snapshot) |
+| "How do I route between agents reactively?" | §34 (`handoff` primitive — sugar over §29) |
 
 ---
 
@@ -1139,78 +1141,70 @@ interception is security (prevent unauthorized execution).
 
 ---
 
-### 32. Nested-drain state-mirror pattern
+### 32. State-mirror pattern — cross-wave reset checkpoints
 
-**Context.** When a sink of wave X runs `batch(() => ...)` inside its
-callback (e.g. an `effect` that emits into another node), the nested batch
-drains synchronously. During that nested drain, other dependent nodes see
-peer deps whose wave-X delivery is still **pending in the outer sink
-queue** — so they read the PRIOR value, not the one currently mid-delivery.
+**Context.** Some upstream nodes hold cache that persists across logical
+"runs" of a higher-level operation, with no built-in reset path. The most
+common case is a `switchMap` output: each new outer DATA causes switchMap
+to subscribe a fresh inner, but the OUTPUT node's cache stays at the last
+DATA the prior inner emitted. There's no "clear" semantic on switchMap
+output — caches are carried forward indefinitely.
 
-This is distinct from the feedback-cycle hazard in §7. §7 is about cycles
-caused by an effect writing a reactive dep. §32 is about drain *timing
-ordering* even when there is no cycle: a nested drain fires dependent
-nodes before the outer wave has visited every sink, producing stale reads
-of peer wave state.
+When a downstream consumer needs to distinguish "currently active inner
+emission" from "stale cache from a prior session," depending directly on
+the switchMap output is unsafe — the consumer can resolve with cached
+state from a prior session. The fix: introduce a `state()` mirror that the
+session boundary explicitly resets, and depend on the mirror.
 
-**Concrete repro (from `agentLoop` pre-fix).**
+**Worked example (from `agentLoop`).**
 
 ```ts
-// A switchMap whose response drives two sinks: effResponse and _terminalResult.
+// llmResponse is a switchMap output — its cache survives across run() calls.
 const llmResponse = switchMap(promptInput, (input) => fromAny(adapter.invoke(input)));
 
-// effResponse runs first; its fn contains a nested batch().
-const effResponse = effect([llmResponse], ([resp]) => {
-  batch(() => statusNode.emit("done"));  // <- nested drain
-});
-
-// _terminalResult needs BOTH {llmResponse: finalResp, status: done}.
-const _terminalResult = derived([llmResponse, statusNode], ([resp, stat]) =>
-  stat === "done" ? resp : null,
-);
-```
-
-On the wave that delivers `finalResp` to `llmResponse`:
-
-1. Outer drain starts. Sinks are notified in order: `effResponse` first,
-   `_terminalResult` second.
-2. `effResponse`'s fn runs — emits `statusNode.emit("done")` inside a
-   nested `batch(() => ...)`. Nested drain starts synchronously.
-3. Inside the nested drain, `_terminalResult`'s dep on `statusNode` fires
-   with `"done"`.
-4. `_terminalResult`'s fn runs. But its dep on `llmResponse` **hasn't been
-   visited yet** in the outer wave — `prevData[llmResponse]` holds the
-   PREVIOUS response (`toolCallResp`), not `finalResp`.
-5. `_terminalResult` emits the wrong response. `awaitSettled` resolves
-   with stale data.
-
-**Fix: state-mirror pattern.**
-
-Write the consumer-facing value to a `state()` node BEFORE the nested
-batch that transitions status. Downstream dependents depend on the mirror,
-not on `llmResponse` directly. Drain order (state-mirror → status inside
-the effect's batch) guarantees the mirror is current by the time the
-status-wave propagation reaches `_terminalResult`.
-
-```ts
+// State mirror: gets reset to null at every new run() boundary.
 const lastResponseState = state<LLMResponse | null>(null, { name: "lastResponse" });
+
 const effResponse = effect([llmResponse], ([resp]) => {
   batch(() => {
-    lastResponseState.emit(resp);   // mirror FIRST — drains before status wave
-    statusNode.emit("done");         // triggers _terminalResult's dep
+    lastResponseState.emit(resp);   // mirror tracks current session response
+    statusNode.emit("done");         // drives terminalResult
   });
 });
 
-// _terminalResult depends on the mirror, not the producer.
-const _terminalResult = derived([lastResponseState, statusNode], ([resp, stat]) =>
-  stat === "done" ? resp : null,
-);
+// terminalResult depends on the MIRROR, not the producer — so when run()'s
+// reset batch nulls the mirror, a subsequent status="done" emission (e.g.
+// from an abort path) reads `resp = null` and emits ERROR(AbortError) instead
+// of resolving with the prior session's cached response.
+const _terminalResult = derived([lastResponseState, statusNode], ([resp, stat]) => {
+  if (stat === "done" && resp != null) return resp;
+  if (stat === "done" && resp == null) throw new Error("aborted");
+  return null;
+});
+
+// In the public run() method:
+async run(input?: string, signal?: AbortSignal): Promise<LLMResponse | null> {
+  batch(() => {
+    this.turn.emit(0);
+    this.aborted.emit(false);
+    this.status.emit("idle");
+    this.lastResponse.emit(null);  // ← LOAD-BEARING: the actual reset
+  });
+  // … kick the session, await terminalResult …
+}
 ```
 
+**Why this works.** `llmResponse.cache` would still hold the prior
+session's response after the reset batch — switchMap output has no reset.
+But the mirror is a `state()` node, which DOES reset cleanly. The reset
+batch nulls it. The next `effAbort` → `status.emit("done")` wave fires
+`terminalResult`'s fn with `resp = null`, which throws AbortError instead
+of resolving with stale data.
+
 **Key properties:**
-- **Purposeful checkpoint.** The mirror is the canonical value the rest
-  of the pipeline consumes. It decouples producer-driven timing (switchMap
-  re-dispatch) from consumer-visible semantics.
+- **Reset is the point.** The mirror exists so the session boundary has a
+  reset target. Without the mirror, `terminalResult` would see whatever
+  `llmResponse` last cached, with no clean way to invalidate.
 - **Reactive-compliant.** No imperative queue, no `.cache` reads inside
   callbacks. The mirror is a real state node; dependents depend on it via
   constructor-declared deps (§24 edges are derived).
@@ -1218,27 +1212,179 @@ const _terminalResult = derived([lastResponseState, statusNode], ([resp, stat]) 
   edges — future auditors can see the "checkpoint" shape in the graph
   structure.
 
-**When NOT to use.** If there is no nested batch in the sink, there is no
-drain-ordering hazard — depend on the producer directly. State-mirror
-adds one more node and equals-dedup layer; reach for it only when you
-know you have a same-wave peer read inside a nested drain.
+**When to use.** Whenever a downstream consumer's correctness depends on
+distinguishing "fresh value for THIS session" from "leftover cache from a
+prior session," AND the upstream is a `switchMap` / `producer` / external
+boundary that doesn't accept a reset signal. The checklist:
+1. Upstream cache survives session boundaries.
+2. A reset event (new run, new turn, abort) needs to invalidate
+   downstream's view of that cache.
+3. Downstream `derived` would otherwise re-evaluate against stale upstream
+   cache and emit a wrong DATA.
 
-**Related framework-level concern (deferred).** Whether the current
-sink-drain ordering (peer sinks of the outer wave drain before any nested
-wave fires) is an invariant the spec should enforce vs. a footgun that
-callers paper over with state-mirror is a live design question. Three
-framework-level options:
+If any of (1)–(3) doesn't hold, depend on the producer directly — the
+mirror adds one node and equals-dedup layer for no benefit.
 
-- **(i) Document state-mirror as sanctioned** — keeps current sync-drain
-  semantics; this section is the doc. Lowest-risk.
-- **(ii) Amend `_emit`** to defer nested batch drains until the parent
-  wave's sink iteration completes. Removes the footgun. Breaks factories
-  that rely on sync drain. Activation-phase batching tried 2026-04-22
-  confirmed 5 in-tree regressions — a real audit is required.
-- **(iii) Versioned tagging** — stamp emissions with monotonic version,
-  dependents detect and defer "pre-drain prior state" reads. Most
-  invasive.
+**Verified by:** the agentLoop QA C3 regression tests (`run() with
+pre-aborted signal rejects AbortError` and `second run() with pre-aborted
+signal rejects AbortError (no stale response leak)`) — both fail when
+`_terminalResult` is rewired to depend on `llmResponse` directly.
 
-Ship (i) now (this section). Revisit (ii)/(iii) once rigor infra
-(fast-check + TLA+) can validate invariants hold before touching
-`_maybeRunFnOnSettlement` or `_activate`.
+---
+
+#### Historical note: the mid-wave hazard hypothesis
+
+Earlier versions of this section (and the `agentLoop` source comment)
+described §32 as a fix for a **mid-wave** "stale peer-read" hazard: when
+`effResponse`'s nested `batch(() => statusNode.emit("done"))` fires inside
+`llmResponse`'s outer wave, terminalResult's status dep would settle while
+its `llmResponse` dep was still pending in the outer sink iteration —
+terminalResult's fn would run with stale `prevData[llmResponse]`.
+
+A focused investigation on 2026-04-25 confirmed **this hazard does not
+actually reproduce on the current substrate**. The `_dirtyDepCount` gate
+in `_maybeRunFnOnSettlement` already blocks the dependent's fn from
+running while ANY peer dep is still DIRTY for the in-flight wave. When
+`effResponse`'s nested batch fires `status.emit("done")` mid-iteration:
+- terminal's status dep settles
+- terminal's `llmResponse` dep is still DIRTY (Phase 1 marked it, Phase 2
+  hasn't reached it yet)
+- The fn does NOT run
+- Phase 2 then visits terminal, settles the `llmResponse` dep, fn runs
+  once with both peers consistent
+
+Verification artifacts:
+- The agentLoop multi-turn test (`executes tool calls and loops`) passes
+  with the mirror reverted to `[statusNode, llmResponse]` — the canonical
+  trigger pattern doesn't fire the bug.
+- Fast-check invariant `#12b nested-drain-peer-consistency-compound`
+  exercises the switchMap-upstream shape and passes on bare substrate.
+
+So the framework-level options that this section once flagged as
+"deferred" — `_emit` defer, Versioned emission tagging — are **not
+needed**. The protocol layer is correct as-is. The state-mirror pattern
+remains the right pattern, but the right *reason* is cross-wave reset
+semantics (above), not protocol-layer mid-wave consistency.
+
+---
+
+### 33. `frozenContext` — prefix-cache-friendly snapshot
+
+**Context.** LLM providers (Anthropic, OpenAI, Google) charge a discount and
+return faster on tokens that match a previously-sent prefix. Long-running
+harness loops typically include heavyweight context — `agentMemory` summary,
+stage history, user profile — in every system prompt. If that context is a
+reactive node whose value drifts on every change, the prefix cache is
+invalidated on every turn and the discount disappears.
+
+**Pattern.** Wrap the drifting source in `frozenContext(source, opts?)` so
+downstream `promptNode` / `agentLoop` consumers see a stable snapshot. The
+snapshot only re-materializes when an explicit `refreshTrigger` fires (or
+on graph-wide `INVALIDATE` for the single-shot variant) — coarse-grained
+refresh keeps 90%+ prefix cache hits while context stays useful.
+
+```ts
+import { frozenContext, promptNode } from "@graphrefly/graphrefly/patterns/ai";
+import { fromCron } from "@graphrefly/graphrefly";
+
+// Single-shot: read once on first activation, never refresh.
+// Use for session-start snapshots that must stay byte-stable for the
+// lifetime of the loop.
+const sessionContext = frozenContext(memory.context);
+
+// Refresh-on-trigger: re-materialize only when the trigger fires.
+// Source-only drifts (memory writes, store mutations) are silently held.
+const stageContext = frozenContext(memory.context, {
+  refreshTrigger: fromCron("*/30 * * * *"),  // every 30 min
+});
+
+const reply = promptNode({
+  context: stageContext,
+  // ...
+});
+```
+
+**Two modes, one primitive:**
+
+| Mode | When `refreshTrigger` is | Refresh fires on |
+|------|--------------------------|------------------|
+| Single-shot | omitted | first activation only (+ graph-wide `INVALIDATE` escape hatch) |
+| Refresh-on-trigger | a `Node<unknown>` | each `DATA` from the trigger; source-only drifts are held |
+
+**Trade-off.** Slightly stale context vs. prefix cache hit rate. The
+freshness window is bounded by your refresh cadence — pick a cron / stage
+transition that matches how stale the context can be without affecting
+correctness. Memory writes that MUST be visible immediately should bypass
+`frozenContext` and be wired as a separate reactive dep on the consumer.
+
+**Composes with:** `agentMemory.context`, `promptNode.context`, `agentLoop`'s
+system prompt slot. The frozen value flows through `derived` / `effect`
+edges normally — `describe()` shows the snapshot node and its trigger
+upstream, so the cache shape is inspectable.
+
+**Pairs with §28 (factory-time seed)** for the "captured at wiring time, kept
+fresh by subscribe" pattern: `frozenContext` is the explicit primitive when
+the freshness needs to be a first-class graph node rather than a closure
+mirror.
+
+---
+
+### 34. `handoff` primitive — reactive sugar over §29
+
+**Context.** §29 names the two handoff modes (full handoff vs agent-as-tool)
+and shows them wired manually. The `handoff(from, toFactory, opts?)` sugar
+is the named primitive for the **full handoff** mode — a reactive route
+from one agent's output into a specialist factory, with an optional
+condition gate.
+
+**Use the sugar when:**
+- The specialist's lifetime is "active while condition is open."
+- The triage / source agent's output is the input the specialist consumes.
+- You want describe() to clearly show the handoff edge.
+
+**Use the manual §29 wiring when:**
+- The handoff is one-of-many fan-out (multiple specialists from one source);
+  use a `TopicGraph` + per-route `derived` filter instead.
+- The specialist needs a transformed input (combine source with other
+  reactive deps before handing off); compose `derived` then call `handoff`
+  on the combined node.
+
+**Shape:**
+
+```ts
+import { handoff, promptNode } from "@graphrefly/graphrefly/patterns/ai";
+
+// Triage node decides urgency.
+const triage = promptNode(adapter, [userMessage], (msg) =>
+  `Classify urgency of: ${msg}. Reply "high" or "normal".`);
+const isUrgent = derived([triage], ([v]) => v === "high");
+
+// `handoff` routes userMessage into the specialist when isUrgent is true;
+// passes through `userMessage` directly when isUrgent is false.
+const specialist = handoff(
+  userMessage,
+  (input) => promptNode(specialistAdapter, [input], (m) =>
+    `Respond urgently: ${m}`),
+  { condition: isUrgent },
+);
+```
+
+**Lifecycle.** The specialist factory is called per source emission via
+`switchMap` — each `v != null` DATA on `from` allocates a fresh
+`state<T>(v)` and invokes `toFactory`; switchMap supersede cancels the
+prior branch. For per-turn routing (≤ 1 emit/sec) this is negligible. For
+high-frequency sources, batch upstream via `audit` / `throttle` /
+`distinctUntilChanged` before the `handoff`.
+
+**Context transfer.** The specialist sees only the value `from` emits. To
+share `agentMemory` / tool registries, wire them as additional reactive
+deps INSIDE the `toFactory` closure — same memory bundle threaded into
+both triage and specialist makes the handoff context-preserving without
+explicit "context object" passing (§29's "the graph IS the shared state"
+principle applies).
+
+**Agent-as-tool handoff stays manual.** Register a `promptNode` instance as
+a `ToolDefinition` on the parent's `toolRegistry`. No new primitive needed
+— the tool registry IS the bounded-subtask channel.
+
+---
