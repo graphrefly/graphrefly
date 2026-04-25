@@ -43,6 +43,9 @@ Quick index — jump to the section that matches your problem.
 | "Consumer reads stale switchMap cache across session boundaries?" | §32 (state-mirror for cross-wave reset) |
 | "How do I keep system prompts prefix-cache-friendly?" | §33 (`frozenContext` snapshot) |
 | "How do I route between agents reactively?" | §34 (`handoff` primitive — sugar over §29) |
+| "How do I share an audit log + rollback shape across primitives?" | §35 (imperative-controller-with-audit) |
+| "How do I model a long-running multi-step async workflow?" | §36 (process manager) |
+| "How do I track which handler version produced an output?" | §37 (handler versioning via audit metadata) |
 
 ---
 
@@ -187,6 +190,47 @@ handles "not ready yet" automatically.
 `state(null)` + `== null` guard when `null` is a meaningful domain value. Use
 `partial: true` only when you need the fn to run with a mix of initialized and
 uninitialized deps and guard explicitly with `=== undefined`.
+
+**Companion-node pattern for "last value with disambiguation."** When a
+primitive needs to expose "the most recently delivered value" *and* `T`
+itself may include nullish:
+
+```ts
+// reactiveLog, TopicGraph, JobQueueGraph.events, cqrs.dispatches, etc.
+log.lastValue;   // Node<T | undefined> — RESOLVED on empty, never DATA(undefined)
+log.hasLatest;   // Node<boolean>       — disambiguates "no entries" from "T = undefined was appended"
+```
+
+Both companions are **lazy** — accessing either getter (or calling
+`withLatest()`) activates them; subsequent accesses return the same
+nodes. They appear in `describe()` once activated, so cross-graph
+explainability still resolves.
+
+The companion pair (`Node<T | undefined>` + `Node<boolean>`) is the
+project-wide convention whenever `T` may include nullish. Surfaces that
+ship this:
+
+| Surface | Last-value node | Boolean disambiguation |
+|---|---|---|
+| `reactiveLog` bundle | `bundle.lastValue` | `bundle.hasLatest` |
+| `TopicGraph<T>` | `topic.lastValue` | `topic.hasLatest` |
+
+When the companion's compute fn would otherwise emit `DATA(undefined)`
+on the **empty-log path** (no entries yet, or post-`clear()`), it emits
+`RESOLVED` instead — keeping the spec §1.2 "DATA(undefined) is not a
+valid emission" invariant intact.
+
+**When `T` itself includes `undefined`**, appending a literal `undefined`
+value DOES produce a `DATA(undefined)` emission on the companion (the
+per-value transition is preserved so subscribers can observe it).
+`hasLatest` is the only reliable way to tell "no entries yet" from "an
+undefined value was appended" — `lastValue.cache` is ambiguous.
+
+Some legacy surfaces use the older **null-sentinel** pattern instead —
+e.g. CQRS `cmdNode.meta.error: Node<unknown | null>` returns `null` to
+mean "no error" (the value never includes null itself, so the sentinel
+is unambiguous). Don't introduce new null-sentinel pairs in new code;
+prefer the SENTINEL + companion pattern above.
 
 ### 4. Versioned wrapper navigation
 
@@ -801,91 +845,165 @@ equivalence, mandatory emit-not-return, `equals`-config encoding, and testabilit
 compare the DATA sequence against the compat subscribe path. `.get()`/`.cache` assertions
 alone miss mid-wave glitch bugs.
 
-### 27. Tiered storage composition
+### 27. Tiered storage composition (three-layer architecture)
 
-`graph.attachStorage(tiers)` takes an **ordered list** of `StorageTier`
-instances — hot tier first, cold tier last. Each tier has its own cadence
-(`debounceMs`), compaction frequency (`compactEvery`), and optional
-`filter`. One primitive covers the full hot/warm/cold spectrum:
+Storage is **N-tier and free-form** — users decide hot/cold combinations.
+The framework prescribes nothing about how many tiers, in what order, or
+which kinds. Three layers compose cleanly:
+
+```
+Layer 3 — wiring         graph.attachStorage(tiers)
+                         bundle.attachStorage(tiers)
+                         cqrs.attachEventStorage(tiers)
+                         jobQueue.attachEventStorage(tiers)
+              │
+              ▼
+Layer 2 — typed tiers    SnapshotStorageTier<T>     // one record per save
+                         AppendLogStorageTier<T>    // sequential entries
+                         KvStorageTier<T>           // arbitrary keyed records
+                          ↳ flush() / rollback()
+                          ↳ debounceMs / compactEvery / filter
+                          ↳ keyOf? for partitioning
+              │
+              ▼
+Layer 1 — bytes backend  StorageBackend
+                          ↳ read / write / delete / list
+                          ↳ memory / file / sqlite / indexedDb
+```
+
+**Layer 1 — bytes-level `StorageBackend`.** Pure byte I/O. No tier-level
+concerns (debounce, codec, transactions) — those live at Layer 2.
+Reference backends: `memoryBackend()`, `fileBackend(dir)`,
+`sqliteBackend(path)` (Node-only), `indexedDbBackend(spec)` (browser-only).
+
+**Layer 2 — tier specializations.** Wrap a backend with a typed shape +
+codec + write semantics:
+
+- `snapshotStorage<T>(backend, opts?)` — one record per `save(snapshot)`;
+  full-state replacement.
+- `appendLogStorage<T>(backend, opts?)` — bulk-friendly sequential entries;
+  partition via `keyOf?`.
+- `kvStorage<T>(backend, opts?)` — many records under arbitrary keys.
+
+Convenience factories combine each kind with each backend:
+`memorySnapshot<T>()`, `memoryAppendLog<T>()`, `memoryKv<T>()`,
+`fileSnapshot<T>(dir)`, `fileAppendLog<T>(dir)`, `fileKv<T>(dir)`,
+`sqliteSnapshot<T>(path)`, `sqliteAppendLog<T>(path)`, `sqliteKv<T>(path)`,
+`indexedDbSnapshot<T>(spec)`, `indexedDbAppendLog<T>(spec)`,
+`indexedDbKv<T>(spec)`.
+
+**Layer 3 — high-level wiring.** Primitives that own state expose
+`attachStorage(tiers)` (or domain-named variants like
+`attachEventStorage`):
 
 ```ts
+// Graph snapshots — one snapshot tier per ordered slot.
 graph.attachStorage([
-  memoryStorage(),                           // hot: sync-through
-  fileStorage(".graphrefly"),                // warm: periodic (default)
-  indexedDbStorage({                         // cold: async, long debounce
-    dbName: "my-app",
-    storeName: "graph-snapshots",
-    debounceMs: 60_000,
-    compactEvery: 100,
-  }),
+  memorySnapshot(),                                          // hot
+  fileSnapshot(".graphrefly", { debounceMs: 5_000 }),        // warm
+  indexedDbSnapshot(spec, { debounceMs: 60_000 }),           // cold
+]);
+
+// CQRS event log — append-log tiers, partition by aggregate.
+cqrs.attachEventStorage([
+  fileAppendLog(".audit", { keyOf: cqrsEventKeyOf }),
+]);
+
+// Reactive-log audit (gate, queue, dispatches, invocations, etc.)
+queue.events.attachStorage([
+  fileAppendLog(".audit", { keyOf: jobEventKeyOf }),
 ]);
 ```
 
 **Composition rules:**
 
-- **Order matters for reads.** `fromStorage(name, tiers)` tries tiers in
-  order and takes the first hit. Put fastest-to-read tier first.
-- **Order matters for writes too.** On each triggering event, sync tiers
-  (`debounceMs === 0`) all fire in the same microtask using one shared
-  `snapshot()` result. Debounced tiers fire independently on their timer,
-  each computing its own fresh snapshot.
-- **Per-tier baseline.** Each tier tracks its own `{lastSnapshot, lastFingerprint}`.
-  A cold tier's diff is against its own last save, not the hot tier's last
-  save. No cross-tier contamination.
-- **V0 short-circuit.** If a tier's version fingerprint hasn't changed since
-  its last save, the save is skipped entirely (regardless of debounce).
-  Works per-tier, so hot tier can skip redundant 0-second saves while cold
-  tier is still waiting to flush.
-- **Filter first, then compact.** A tier's `filter` returning `false`
-  rolls back the tier's `seq` counter so `compactEvery` alignment against
-  the actually-persisted records is preserved.
-- **Async tiers don't block sync tiers.** The `save` return is typed
-  `void | Promise<void>`. Sync tiers return `undefined`; async tiers
-  return a Promise that's attached to `options.onError` for surfacing
-  failures. Callers that `await` a sync tier's save get an immediate
-  no-op resolution.
+- **Tier count is the user's call.** Single tier (just memory, just file),
+  two tier (memory + file), N-tier (memory + file + remote). Snapshot only,
+  append-only, or fan out to both. The framework doesn't recommend a
+  combination — pick the latency / durability profile that fits.
+- **Read order.** First tier in the array is checked first. The
+  primitive's wiring layer (`graph.attachStorage`,
+  `reactiveLog.attachStorage`, `cqrs.attachEventStorage`) iterates tiers
+  in order on the pre-load path and stops at the first hit; userspace
+  code that fans reads across multiple tiers walks the array the same
+  way. Put the fastest tier first. **Cross-tier merge for append-log
+  reads is not in v0.1** — first-tier-wins is the only mode; users who
+  need to fold entries from multiple tiers iterate explicitly today.
+- **Per-tier baseline.** Each tier tracks its own pending state and last
+  fingerprint. A cold tier's diff is against its own last save, not the
+  hot tier's. No cross-tier contamination.
+- **Debounced writes are independent.** Sync tiers (`debounceMs === 0`)
+  flush at every wave-close. Debounced tiers fire on their own timer; one
+  debounce window covers N waves.
+- **`filter?` skips wholesale.** A snapshot tier whose `filter` returns
+  `false` skips the save entirely.
+- **`compactEvery: N` forces flush.** Useful for append-log tiers — caps
+  the buffer at N entries regardless of debounce.
 
-**Migration from pre-unification APIs:**
+**Transaction model — "one wave = one transaction":**
 
-| Old | New |
-|-----|-----|
-| `graph.autoCheckpoint(adapter, {debounceMs})` | `graph.attachStorage([adapter], { ... })` |
-| `new MemoryCheckpointAdapter()` | `memoryStorage()` |
-| `new FileCheckpointAdapter(dir)` | `fileStorage(dir)` |
-| `new SqliteCheckpointAdapter(path)` | `sqliteStorage(path)` |
-| `saveGraphCheckpointIndexedDb(graph, spec)` | `graph.attachStorage([indexedDbStorage(spec)])` |
-| `tieredStorage([a, b])` | `cascadingCache([a, b])` (for keyed lookup cache) |
-| `graph.toJSONString()` | `graph.snapshot({format: "json-string"})` |
-| `graph.toObject()` | `graph.snapshot()` (object by default) |
+Every storage tier exposes `flush?()` and `rollback?()` lifecycle hooks
+called by the framework:
 
-**Bytes and envelopes:**
+- `save(snapshot)` / `appendEntries(entries)` adds to an in-memory buffer
+  (does NOT persist immediately when debounced).
+- After a successful wave (or `batch()` close), the framework calls
+  `tier.flush()` on each attached tier to commit pending writes.
+- On wave-throw, the framework calls `tier.rollback()` to discard pending
+  writes — pairs with the spec-level `batch()` rollback (see §29 below).
+- If `debounceMs > 0`, `flush()` is deferred until the debounce timer
+  fires; the buffer accumulates across waves and the transaction-of-record
+  extends to the debounce boundary.
+- If `compactEvery: N`, flush is forced every N buffered writes regardless
+  of debounce.
 
-Storage tiers that sit at a true I/O boundary (disk, wire, IPC) serialize
-via codecs:
+**Cross-tier atomicity is best-effort.** Each tier is its own transaction.
+If tier A flushes successfully and tier B fails, partial persistence
+results. The default contract is "every tier flushes independently;
+errors surface via `options.onError`." Callers needing strict cross-tier
+atomicity build a transactional adapter that internally coordinates flush
+across multiple backends (e.g., one SQL transaction wrapping snapshot +
+append).
+
+**Codec parameterization:**
+
+`Codec<T>` is the (de)serialization shim between tier-level `T` and
+backend-level bytes. Built-in `jsonCodec` covers most cases; users
+register others (`dag-cbor`, etc.) via `defaultConfig.registerCodec(codec)`
+before first node.
 
 ```ts
 import { createDagCborCodec } from "@graphrefly/graphrefly-ts";
 import * as dagCbor from "@ipld/dag-cbor";
 
-config.registerCodec(createDagCborCodec(dagCbor));  // before first node
+defaultConfig.registerCodec(createDagCborCodec(dagCbor));
 
-// Inside a storage tier's save:
-const bytes = graph.snapshot({ format: "bytes", codec: "dag-cbor" });
-await writeToDisk(bytes);
-
-// On read:
-const bytes = await readFromDisk();
-const snap = Graph.decode(bytes, { config });  // envelope self-describes
+// Pass an explicit codec at tier construction:
+fileSnapshot<MyState>(dir, { codec: createDagCborCodec(dagCbor) });
 ```
 
-The v1 envelope carries the codec name and version, so the read side
-doesn't need prior knowledge of which codec produced the bytes. Built-in
-`JsonCodec` is registered on `defaultConfig` at module load.
+The v1 envelope carries the codec name + version so the read side doesn't
+need prior knowledge of which codec produced the bytes.
 
-**What doesn't change:** in-memory `GraphCheckpointRecord` / `WALEntry`
-stays a JS object throughout the attachStorage pipeline. Envelopes appear
-only at the I/O boundary. If a tier keeps its data in-process (memory
-tier, test fixture), no codec is involved — everything is JS objects.
+**`keyOf` recommended exports.** Each primitive that emits audit /
+event records exports a default `keyOf` for partitioning:
+
+| Primitive | Recommended `keyOf` | Default partitions by |
+|---|---|---|
+| `cqrs.attachEventStorage` | `cqrsEventKeyOf` | `${type}::${aggregateId ?? "__default__"}` |
+| `gate.decisions.attachStorage` | `decisionKeyOf` | `action` (`approve`/`reject`/`modify`/...) |
+| `queue.events.attachStorage` | `jobEventKeyOf` | `action` (`enqueue`/`claim`/`ack`/`nack`) |
+| `cqrs.dispatches.attachStorage` | `dispatchKeyOf` | `commandName` |
+| `saga.invocations.attachStorage` | `sagaInvocationKeyOf` | `eventType` |
+| `processManager.instances.attachStorage` | `processInstanceKeyOf` | `correlationId` |
+
+Users override with custom `keyOf` if their storage strategy differs
+(e.g., partition by `id` instead of `action`).
+
+**What doesn't change:** in-memory records stay JS objects throughout the
+pipeline. Codec encoding happens only at the Layer 1 boundary. Memory
+tiers / test fixtures don't involve a codec — everything stays as JS
+values.
 
 ### 28. Factory-time seed pattern (multi-dep push-on-subscribe)
 
@@ -1386,5 +1504,341 @@ principle applies).
 **Agent-as-tool handoff stays manual.** Register a `promptNode` instance as
 a `ToolDefinition` on the parent's `toolRegistry`. No new primitive needed
 — the tool registry IS the bounded-subtask channel.
+
+---
+
+### 35. Imperative-controller-with-audit pattern
+
+**Context.** Five primitives across orchestration / messaging / job-queue /
+CQRS share the same shape: imperative mutations holding closure state,
+emitting a reactive audit log, with rollback-on-throw and freeze-at-entry.
+Rather than a base class, the library ships **helpers** in
+`patterns/_internal/imperative-audit.ts`.
+
+| Primitive | Mutation methods | Audit log | `keyOf` export |
+|---|---|---|---|
+| `pipeline.gate` | `approve` / `reject` / `modify` / `open` / `close` | `decisions: ReactiveLogBundle<Decision>` | `decisionKeyOf` |
+| `JobQueueGraph` | `enqueue` / `claim` / `ack` / `nack` / `removeById` | `events: ReactiveLogBundle<JobEvent>` | `jobEventKeyOf` |
+| `CqrsGraph.dispatch` | `dispatch(name, payload)` | `dispatches: ReactiveLogBundle<DispatchRecord>` | `dispatchKeyOf` |
+| `CqrsGraph.saga` | per-event handler invocation | `invocations: ReactiveLogBundle<SagaInvocation>` | `sagaInvocationKeyOf` |
+| `processManager` | `start` / `cancel` / step transitions | `instances: ReactiveLogBundle<ProcessInstance>` | `processInstanceKeyOf` |
+
+Every primitive also exposes a `.audit` property pointing at the same
+bundle. Tools that traverse `.audit` work uniformly across primitives;
+domain code uses the readable name.
+
+**Helpers (internal):**
+
+- `createAuditLog<R>(opts)` — wraps `reactiveLog` with audit defaults:
+  bounded `retainedLimit = 1024`, `DEFAULT_AUDIT_GUARD` denies external
+  writes, `withLatest()` activated.
+- `wrapMutation<TArgs, TResult, R>(action, opts)` — surrounds a closure
+  mutation with: freeze-at-entry (`Object.freeze(structuredClone(args))`),
+  open `batch()` frame, run action, append `onSuccess(args, result, meta)`
+  audit record on success; on throw, **rolls back the in-band batch** and
+  appends a separate failure record OUTSIDE the rolled-back transaction,
+  then re-throws.
+- `registerCursor(graph, name, initial)` — promotes a closure counter
+  (e.g. `_seq`) to a state node mounted under `graph` for observability.
+- `registerCursorMap(graph, name, keys, initial?)` — promotes a closure
+  `Map<K, number>` to N state nodes (used by saga's per-event-type cursor).
+- `DEFAULT_AUDIT_GUARD` — denies external `write`, allows `observe` /
+  `signal` (constants from `core/guard.ts`).
+
+**Rollback-on-throw — two layers, with one limit:**
+
+1. **Helper-level:** `wrapMutation` catches throws inside an open
+   `batch()`. The throw aborts the batch, which discards
+   `drainPhase2`/`drainPhase3`/`drainPhase4` work for that frame —
+   downstream consumers never see the in-band emissions. The failure
+   record is appended OUTSIDE the rolled-back batch so the audit trail
+   still captures the failed attempt with `errorType` set. The cursor
+   advance from `seq?` is bumped INSIDE the batch and rolled back too,
+   so the audit-log seq stays in sync with successful invocations.
+2. **Spec-level (core `batch.ts`):** Universal protection — any user code
+   that throws inside `batch(() => …)` triggers the same rollback. Helpers
+   layer on top; user-authored imperative code gets the same guarantee.
+
+**What rollback does NOT cover.** The `batch()` rollback discards
+**reactive emissions** (anything that flowed through `node.down(...)` /
+`node.emit(...)`) and the `seq` cursor. It does **not** roll back
+**closure-state mutations** the action performed — array splices,
+`Map.set`, counter increments via plain JS, etc. Author the action so
+those mutations happen *after* potentially-throwing work, or treat them
+as committed and recover in `onFailure`. Example: gate's
+`modifyImpl` dequeues items via `queue.splice()` *before* calling the
+user-supplied `fn`; if `fn` throws, the splice has already happened, so
+those items are gone from the pending queue regardless of rollback. This
+is the documented contract — keep it in mind when authoring new
+`wrapMutation`-backed primitives.
+
+**Saga error policy** is the one variation. Per-event handler invocations
+in `saga(name, eventNames, handler, { errorPolicy })`:
+- `"advance"` (default) — failure is recorded; cursor moves past the
+  failing event so subsequent events still process.
+- `"hold"` — cursor stops at the failure; subsequent events are NOT
+  processed until the handler stops throwing.
+
+**`.audit` is property duplication, not a getter.** Set once in the
+constructor: `this.audit = this.decisions;`. No getter overhead, no
+method-call ergonomics, clean readonly property.
+
+**Storage attach via the bundle.** Storage tiers attach directly to the
+audit log bundle with the recommended `keyOf`:
+
+```ts
+queue.events.attachStorage([
+  fileAppendLog(".audit", { keyOf: jobEventKeyOf }),
+]);
+
+cqrs.dispatches.attachStorage([
+  fileAppendLog(".audit", { keyOf: dispatchKeyOf }),
+]);
+```
+
+**Don't** roll your own:
+
+- Imperative mutation that should atomically emit + audit → use
+  `wrapMutation`.
+- Closure counter that needs to appear in `describe()` or persist across
+  restarts → use `registerCursor` (or `registerCursorMap` for keyed sets).
+- New primitive joining the family → expose `.<domain>` (the named bundle)
+  and `.audit` (the alias). Stamp records via `wrapMutation`'s
+  `onSuccess` / `onFailure` callbacks. Export a `keyOf` for the record
+  shape.
+
+---
+
+### 36. Process manager pattern
+
+**Context.** `cqrs.saga` handles **synchronous** side effects per event;
+`cqrs.command + dispatch` is **one-shot**. Long-running async stateful
+workflows that correlate events across aggregates with retries and
+compensation need a separate primitive — `processManager` in
+`patterns/process/`.
+
+**Use a process manager when:**
+- The workflow has multiple steps spread across time (minutes, hours, days).
+- Per-instance state must survive across event arrivals.
+- Events from multiple aggregates correlate via `correlationId`.
+- You need retry-with-backoff or compensating actions on failure.
+- Step bodies may be async (HTTP calls, queue publishes, sleeps).
+
+**Don't use a process manager when:**
+- The reaction is one-shot, sync, no per-instance state → use `saga`.
+- It's a linear pipeline with no cross-aggregate correlation → use
+  `jobFlow`.
+- The workflow is expressed naturally as a graph of `derived` / `effect`
+  nodes → just compose primitives directly.
+
+**Differences from saga and jobFlow:**
+
+| Primitive | Sync/async | Per-instance state | Cross-aggregate correlation | Timer/scheduling | Compensation | Use case |
+|---|---|---|---|---|---|---|
+| `cqrs.saga` | sync | none | aggregate filter (single) | none | error policy only | sync side effects per event |
+| `jobFlow` | sync or async (`work` hook) | per-job | none | none | nack on error | linear queue chain pipelines |
+| `processManager` | sync or async | per-correlation | yes (across aggregates) | yes | full compensation | long-running multi-step workflows |
+
+**Shape:**
+
+```ts
+import { processManager, type ProcessStepResult } from
+  "@graphrefly/graphrefly/patterns/process";
+
+type FulfillmentState = {
+  step: "awaiting-payment" | "awaiting-shipment" | "complete";
+  orderId: string;
+  paid?: boolean;
+  shipped?: boolean;
+};
+
+const fulfillment = processManager<FulfillmentState, MyEventMap>(cqrs, "fulfillment", {
+  initial: { step: "awaiting-payment", orderId: "" },
+  watching: ["paymentReceived", "shipmentSent"],
+  steps: {
+    paymentReceived: (state, event) => {
+      if (state.step !== "awaiting-payment") {
+        return { kind: "continue", state };
+      }
+      return {
+        kind: "continue",
+        state: { ...state, step: "awaiting-shipment", paid: true },
+        emit: [{ type: "shippingRequested", payload: { orderId: state.orderId } }],
+        schedule: { afterMs: 60_000 * 30, eventType: "shipmentTimeout" },
+      };
+    },
+    shipmentSent: (state) => ({
+      kind: "terminate",
+      state: { ...state, step: "complete", shipped: true },
+    }),
+  },
+  compensate: async (state, error) => {
+    if (state.paid && !state.shipped) {
+      await issueRefund(state.orderId);
+    }
+  },
+  retryMax: 3,
+  backoffMs: [100, 500, 2_000],
+  handlerVersion: { id: "fulfillment", version: "2.1.0" },  // Audit 5
+});
+
+// Start an instance.
+fulfillment.start("order-123", { orderId: "order-123" });
+
+// Or cancel one in flight (triggers compensate).
+fulfillment.cancel("order-123", "user-requested");
+```
+
+**Discriminated union step result.** Every step returns one of:
+
+```ts
+type ProcessStepResult<TState> =
+  | { kind: "continue"; state: TState; emit?: ...; schedule?: ProcessSchedule }
+  | { kind: "terminate"; state: TState; emit?: ...; reason?: string }
+  | { kind: "fail"; error: unknown };          // triggers compensate
+```
+
+`continue` advances state and optionally emits side-effect events / schedules
+a timer. `terminate` archives the instance. `fail` (or a thrown step) runs
+the user-supplied `compensate` handler and marks the instance compensated.
+
+**Synthetic event types** namespace the per-process lifecycle stream.
+The current implementation reserves the `_process_<name>_*` prefix and
+emits `_process_<name>_started` per `start()` call as an event-sourced
+audit trail; future state-snapshot and timer-event channels (`_state`,
+`_timer`) are reserved by the same prefix. Avoid user event-type names
+starting with `_process_` to prevent collisions even today.
+
+Side-effect events (`result.emit`) dispatch under the user-declared event
+type — they're not namespaced. Scheduled events (`result.schedule`) fire
+under the user-supplied `eventType`, not a synthetic timer type.
+
+**Persistence (Audit 4 wiring).** Pass `eventStorage` tiers via
+`opts.persistence` — the started-event stream (and any future synthetic
+streams) is persisted via `cqrs.attachEventStorage`, so process audit
+trail survives restarts:
+
+```ts
+processManager(cqrs, "fulfillment", {
+  // ...
+  persistence: {
+    eventStorage: [fileAppendLog(".processes", { keyOf: cqrsEventKeyOf })],
+  },
+});
+```
+
+**Audit log** — `result.instances` (and `result.audit` alias) is a
+`ReactiveLogBundle<ProcessInstance>` per Audit 2. Recommended `keyOf` for
+storage partitioning is `processInstanceKeyOf` (partitions by
+`correlationId`).
+
+**Concurrency safety.** Multiple events for the same `correlationId`
+serialize through the step pipeline — the second event waits for the
+first step's promise to resolve before its own step runs.
+`cancel()` during an in-flight async step is single-shot: the in-flight
+step completes (or rejects), but its result is discarded; compensate runs
+once.
+
+**Out of scope (post-1.0):** state-machine validation, distributed
+cross-CqrsGraph correlation. Users with strict transition validation
+needs construct their own (e.g., switch on `state.step` inside the step
+fn and throw on impossible transitions).
+
+---
+
+### 37. Versioning handlers via audit metadata
+
+**Context.** Tracking "which version of the handler produced this output"
+matters for incident analysis, A/B testing, regression debugging, and
+replay determinism. The library exposes versioning as **opt-in
+registration metadata** stamped onto audit records — no handler-as-node
+ceremony, no hot-swap atomicity contract.
+
+**Shape:**
+
+```ts
+// CQRS command
+cqrs.command("placeOrder", {
+  handler: (payload, actions) => actions.emit("orderPlaced", payload),
+  emits: ["orderPlaced"],
+  handlerVersion: { id: "place-order", version: "1.2.0" },
+});
+
+// CQRS saga
+cqrs.saga("orderProcessor", ["orderPlaced"], handler, {
+  errorPolicy: "advance",
+  handlerVersion: { id: "order-processor", version: "1.0.0" },
+});
+
+// jobFlow stage
+jobFlow("pipeline", {
+  stages: [
+    { name: "process", work: workFn,
+      handlerVersion: { id: "process-stage", version: "2.0.0" } },
+  ],
+});
+
+// pipeline.catch
+pipeline.catch("recover", src, recoverFn, {
+  on: "error",
+  handlerVersion: { id: "recover-strategy", version: "1.0" },
+});
+
+// processManager
+processManager(cqrs, "fulfillment", {
+  // ...
+  handlerVersion: { id: "fulfillment", version: "2.1.0" },
+});
+```
+
+The version is stamped onto the corresponding audit record — every
+`DispatchRecord`, `SagaInvocation`, `JobEvent`, `Decision`, or
+`ProcessInstance` produced by the handler carries the matching
+`handlerVersion: { id, version }` triple.
+
+**`BaseAuditRecord.handlerVersion`** is the canonical field
+(`patterns/_internal/imperative-audit.ts`). Every audit record extends
+this base; the field stays optional so callers who don't care don't need
+to pass anything.
+
+**Conventions:**
+- `id: string` — stable identifier (e.g., `"place-order-handler"`).
+- `version: string | number` — semver string (`"1.2.0"`), build number
+  (`42`), or git SHA (`"abc1234"`). User-supplied; the library doesn't
+  hash function bodies (cross-runtime flakiness, surprising behavior).
+
+**What versioning is for:**
+
+| Use case | How it helps |
+|---|---|
+| Incident analysis | "Which dispatch records produced bad output?" → grep audit log by `handlerVersion.id + version`. |
+| A/B testing | Wire two handler versions behind a feature flag; the audit log stamps which version was active per record. |
+| Regression debugging | Bisect `version` values until you find when a behavior broke. |
+| Compliance | "Reproduce the decision" — record the version + the audit record's payload, replay later. |
+
+**Hot-swap is intentionally NOT a library feature.** Production hot-swap
+happens via deploy, not runtime mutation. Hot-swap atomicity has subtle
+issues (in-flight calls, version skew across replicas). Users who
+genuinely need runtime swap construct their own indirection in user code:
+
+```ts
+let currentHandler = handlerV1;
+cqrs.command("placeOrder", {
+  handler: (p, a) => currentHandler(p, a),
+  emits: ["orderPlaced"],
+  handlerVersion: { id: "place-order", version: "ref" },
+});
+// Later in user code:
+currentHandler = handlerV2;
+```
+
+The `handlerVersion: "ref"` is then a stable label; the user's own code
+manages which body the indirection points at.
+
+**Replay determinism stays intact.** Projection reducers are NOT
+versioned at the registration site — projections always replay from the
+event log via a pure reducer, and the reducer is the same code that ran
+originally (deploy-time-pinned). Don't version projection reducers; do
+version handlers that emit events or have side effects.
 
 ---
