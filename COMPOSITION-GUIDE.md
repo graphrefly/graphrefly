@@ -1842,3 +1842,148 @@ originally (deploy-time-pinned). Don't version projection reducers; do
 version handlers that emit events or have side effects.
 
 ---
+
+### 38. Naming conventions — `::` vs `/` path separators
+
+GraphReFly uses two distinct path separators for node names. They are
+not interchangeable and should not be mixed inside a single path.
+
+**`::` — compound-factory internals.** When one factory ships multiple
+sub-nodes that operate together as a single unit, the sub-nodes share a
+base name and use `::` to separate the role:
+
+```ts
+// promptNode topology — three named sub-nodes from one factory
+prompt_node::messages   // derived: builds ChatMessage[] from deps
+prompt_node::call       // producer: per-wave LLM invocation
+prompt_node::output     // switchMap product: parsed response
+
+// suggestStrategy
+suggestStrategy::call
+
+// reduction stage
+${stage.name}::input
+${stage.name}::output
+```
+
+The `::` prefix matches `meta.ai.kind` filters (e.g.
+`meta.ai.kind === "prompt_node::call"`) and is what
+`describe({ format: "pretty" })` renders. Factory authors own the
+convention; downstream tools match on the prefix.
+
+**`/` — namespace / domain grouping.** Independent nodes that are not
+sub-parts of any compound factory but belong together by topic use `/`:
+
+```ts
+pane/main-ratio
+pane/side-split
+viewport/width
+graph/mermaid
+hover/target
+highlight/code-scroll
+meta/debug
+```
+
+`/` reads as a path under a logical domain (filesystem-friendly mental
+model). Anyone naming nodes can use it.
+
+**Rule of thumb.** If you authored a factory that returns multiple
+coordinated nodes, use `::`. If you are naming independent nodes that
+just happen to live in the same domain, use `/`. Do not mix the two in
+one path (avoid `pane/main::ratio`).
+
+---
+
+### 39. Function identity via meta — fn-id convention
+
+Functions are **non-serializable**. They survive in-memory, but cannot be
+round-tripped through `decompileSpec` → `compileSpec`, audit logs, or
+cross-process snapshots. A graph that closes over `(deps) => deps[0] +
+deps[1]` cannot tell a future replay which lambda was attached, even
+though that lambda governs the node's behavior.
+
+The convention: when fn identity matters (replay determinism, version
+tracking, A/B comparison, incident analysis), the **caller** stamps an
+identifier onto the node's `meta`:
+
+```ts
+import { meta } from "@graphrefly/graphrefly";
+
+const extractor = derived([raw], extractFn, {
+  meta: { ...meta.fnId("extractor::v1"), domain: "memory" },
+});
+```
+
+`describe()` surfaces `meta.fnId` like any other meta field, so consumers
+filtering by version (`meta.fnId === "extractor::v1"`) find the node
+without holding the function reference.
+
+**Why caller-stamped, not factory-implicit:** factories cannot synthesize
+stable identifiers from function bodies — closure-state (variable
+captures, environment) breaks naive `Function.prototype.toString` hashing
+across runtimes. The user knows what label is meaningful for their
+versioning scheme; the library just preserves whatever they stamp.
+
+**Naming format:** `{role}::{version}` aligns with §38 (compound-factory
+internals): `"extractor::v1"`, `"verifier::tier-3"`, `"reducer::2026-04-15"`.
+Free-form strings work too — the convention is just for readability.
+
+**Pairs with handler-version audit (§37).** §37 stamps version on audit
+*records* (per-invocation provenance); §39 stamps version on the node
+*itself* (topology-time identity). Use both when both matter.
+
+---
+
+### 40. Reactive `extractFn` for `distill` — cancel-on-new-input recipe
+
+`distill`'s `extractFn` is called **once at wiring time** and receives
+both the source and the existing-store as `Node`s. The user wires the
+reactive flow — distill no longer wraps the callback in a switchMap, so
+the user picks the cancellation / queueing semantics.
+
+**Cancel-on-new-input (most common — supersedes in-flight extraction):**
+
+```ts
+import { switchMap } from "@graphrefly/graphrefly/extra";
+import { DATA } from "@graphrefly/graphrefly";
+
+const bundle = distill(source, (rawNode, existingNode) => {
+  // Closure mirror: read `existingNode.cache` ONCE at wiring time
+  // (§5.12-sanctioned boundary read), keep current via subscribe so
+  // the inner switchMap fn never peeks across the reactive boundary.
+  let latest: ReadonlyMap<string, TMem> = existingNode.cache ?? new Map();
+  existingNode.subscribe((msgs) => {
+    for (const m of msgs) if (m[0] === DATA) latest = m[1];
+  });
+  return switchMap(rawNode, (raw) => extractFromLLM(raw, latest));
+}, opts);
+```
+
+**Other reactive operators give different semantics:**
+
+| Operator | Behavior |
+|---|---|
+| `switchMap(rawNode, fn)` | Cancel-on-new-input — supersede in-flight |
+| `concat(rawNode, fn)` | Queue — run sequentially in order |
+| `mergeMap(rawNode, fn)` | Parallel — run all concurrently, results interleave |
+| `derived([rawNode], fn)` | Synchronous transform per emission — no async at all |
+
+**Why closure-mirror, not `withLatestFrom`:** `withLatestFrom(rawNode,
+existingNode)` swallows the initial source emission because primary's
+push-on-subscribe fires before secondary subscribes (same hazard
+described in §32). The closure-mirror at wiring time + subscribe-handler
+pattern avoids this and makes `existing` available inside any reactive
+fn body.
+
+**Sync transforms (when no async / cancel needed):**
+
+```ts
+distill(source, (rawNode) => derived([rawNode], ([raw]) => ({
+  upsert: [{ key: String(raw), value: raw }],
+})), opts);
+```
+
+Pure transforms don't need `existing` — the existing-store node is
+ignored and the function runs synchronously per source emission.
+
+---
