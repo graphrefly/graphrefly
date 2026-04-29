@@ -46,6 +46,7 @@ Quick index — jump to the section that matches your problem.
 | "How do I share an audit log + rollback shape across primitives?" | §35 (imperative-controller-with-audit) |
 | "How do I model a long-running multi-step async workflow?" | §36 (process manager) |
 | "How do I track which handler version produced an output?" | §37 (handler versioning via audit metadata) |
+| "Why can't I mix `RESOLVED` and `DATA` in the same wave?" | §41 (tier-3 wave exclusivity) |
 
 ---
 
@@ -1985,5 +1986,86 @@ distill(source, (rawNode) => derived([rawNode], ([raw]) => ({
 
 Pure transforms don't need `existing` — the existing-store node is
 ignored and the function runs synchronously per source emission.
+
+---
+
+### 41. Tier-3 wave exclusivity — `RESOLVED` and `DATA` are mutually exclusive per wave
+
+**The rule.** Within any single wave at any single node, the tier-3 slot is
+either ≥1 `DATA` *or* exactly 1 `RESOLVED` — **never mixed**. `RESOLVED`
+represents "wave settled with no observable change" (the equals-substituted
+form of a single `DATA`). It is not interleavable with real `DATA`
+emissions in the same wave.
+
+This is the author-facing version of the rule documented in
+`GRAPHREFLY-SPEC.md` §1.3.3 "Tier-3 wave exclusivity." The spec describes
+the contract; this section describes how to author fns and operators that
+respect it.
+
+**Both of these are protocol violations:**
+
+```ts
+// ❌ Mixed in a single delivery
+actions.down([[DATA, v1], [RESOLVED], [DATA, v2]]);
+
+// ❌ Mixed across deliveries to the same node within one batch frame
+batch(() => {
+  node.down([[RESOLVED]]);
+  node.emit(v2);
+});
+```
+
+**Legal shapes** (one tier-3 message kind per wave):
+
+```ts
+// ✅ Multiple DATAs in one wave
+actions.down([[DATA, v1], [DATA, v2]]);
+batch(() => { node.emit(v1); node.emit(v2); });
+
+// ✅ Single DATA — equals-eval may substitute to RESOLVED at _emit
+actions.emit(v1);
+node.down([[DATA, v1]]);
+
+// ✅ Explicit RESOLVED standalone (e.g. operator drop-all path)
+actions.down([[RESOLVED]]);
+```
+
+**Operator convention.** Operators that drop entries from a multi-value
+batch (`filter`, `take`, `skip`, `takeWhile`, `distinctUntilChanged`) emit
+one `RESOLVED` only when the entire wave produces zero `DATA`. Per-dropped-
+item `RESOLVED` is **not** part of the operator contract — see the current
+`filter` shape at `extra/operators/index.ts`:
+
+```ts
+let emitted = false;
+for (const v of batch0) {
+  if (predicate(v as T)) { a.emit(v as T); emitted = true; }
+}
+if (!emitted) a.down([[RESOLVED]]);  // ← only when nothing passed
+```
+
+A consumer that needs per-item batch-drain accounting (e.g. tier-3
+counters tracking "every input got a settlement signal") must count
+**upstream** of any filtering operator, not at the operator's output.
+`tap` on the upstream source is the canonical pattern; or a counter
+inside the source-side fn body.
+
+**Why this rule exists.**
+- `RESOLVED` is defined as "single-DATA equals-substituted" (spec §1.3.3).
+  Mixing it with real DATA breaks that semantic — a downstream observer
+  cannot tell whether `RESOLVED` reflects "previous DATA was equal to
+  cache" or "this wave also emitted a different DATA."
+- `_frameBatch` ([core/node.ts](../graphrefly-ts/src/core/node.ts)) tier-
+  sorts but does NOT enforce wave-exclusivity. Authors are responsible
+  for the contract; runtime enforcement is implementation-defined.
+- The rule keeps the per-wave protocol "either changed (≥1 DATA) or
+  settled-unchanged (RESOLVED)" — a clean two-valued state at every
+  node boundary.
+
+**Diagnostic.** If your fn emits `actions.down([[DATA, v], [RESOLVED]])`
+or interleaves them via `batch()`, downstream nodes see protocol-incorrect
+input. Symptoms: spurious recompute (downstream re-runs on the trailing
+RESOLVED expecting a settle but cache already advanced), or stale-cache
+reads in fan-in topologies. Refactor to a single tier-3-kind per wave.
 
 ---

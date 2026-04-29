@@ -115,6 +115,27 @@ MUST reject `[[ERROR, undefined]]` and bare `[ERROR]` at the dispatch boundary
    Consumers that need per-item batch-drain accounting must either count upstream
    of any filtering operator or emit explicit `RESOLVED` markers from their own fn.
 
+   **Tier-3 wave exclusivity.** Within any single wave at any single node, the
+   tier-3 slot is either ≥1 `DATA` *or* exactly 1 `RESOLVED` — never mixed.
+   `RESOLVED` represents "wave settled with no observable change" via the
+   single-DATA substitution path; it is not interleavable with real `DATA`
+   emissions in the same wave. Both of the following are protocol violations:
+
+   - A single delivery containing both — e.g.
+     `actions.down([[DATA, v1], [RESOLVED], [DATA, v2]])`.
+   - Multiple deliveries to the same node within one `batch()` frame whose
+     union mixes the two — e.g.
+     `batch(() => { node.down([[RESOLVED]]); node.emit(v2); })`.
+
+   Operators that drop entries from a multi-value batch (`filter`, `take`,
+   `skip`, `takeWhile`, `distinctUntilChanged`) emit one `RESOLVED` only when
+   the entire wave produces zero `DATA` — never per-dropped-item, and never
+   trailing a wave that already emitted `DATA`. The rule is a protocol-level
+   contract for fn authors and operator implementations; runtime enforcement
+   is implementation-defined and not currently performed at the `_emit`
+   boundary. See `COMPOSITION-GUIDE.md` "Tier-3 wave exclusivity" for the
+   author-facing version of this rule with examples.
+
 4. **COMPLETE and ERROR are terminal.** After either, no further messages from that node.
    A node MAY be resubscribable (opt-in), in which case a new subscription starts fresh.
 
