@@ -88,14 +88,18 @@ handles "not ready yet" automatically.
 `partial: true` only when you need the fn to run with a mix of initialized and
 uninitialized deps and guard explicitly with `=== undefined`.
 
-**Companion-node pattern for "last value with disambiguation."** When a
-primitive needs to expose "the most recently delivered value" *and* `T`
-itself may include nullish:
+**Companion-node pattern for "last value with disambiguation."** Restricted to
+the data-layer primitive `reactiveLog`, where `T` may include `undefined`
+(the protocol SENTINEL itself is allowed at the log layer because `append` is
+unrestricted). Higher-layer surfaces (topic, queue, etc.) do NOT need the
+companion pair — they reject `publish(undefined)` at the API boundary, so
+SENTINEL on the latest-value node is unambiguous. See [PROTOCOL §1a](./COMPOSITION-GUIDE-PROTOCOL.md#1a-stay-sentinel-for-no-value-yet--dont-add-hasvalue-companion-deps)
+for the no-companion rule at higher layers.
 
 ```ts
-// reactiveLog, TopicGraph, JobQueueGraph.events, cqrs.dispatches, etc.
+// reactiveLog only — the primitive that genuinely needs `T | undefined` semantics.
 log.lastValue;   // Node<T | undefined> — RESOLVED on empty, never DATA(undefined)
-log.hasLatest;   // Node<boolean>       — disambiguates "no entries" from "T = undefined was appended"
+log.hasLatest;   // Node<boolean>       — disambiguates "no entries" from "undefined was appended"
 ```
 
 Both companions are **lazy** — accessing either getter (or calling
@@ -103,19 +107,17 @@ Both companions are **lazy** — accessing either getter (or calling
 nodes. They appear in `describe()` once activated, so cross-graph
 explainability still resolves.
 
-The companion pair (`Node<T | undefined>` + `Node<boolean>`) is the
-project-wide convention whenever `T` may include nullish. Surfaces that
-ship this:
-
 | Surface | Last-value node | Boolean disambiguation |
 |---|---|---|
 | `reactiveLog` bundle | `bundle.lastValue` | `bundle.hasLatest` |
-| `TopicGraph<T>` | `topic.lastValue` | `topic.hasLatest` |
+| `TopicGraph<T>` | `topic.latest: Node<T>` (SENTINEL on empty) | — (use `cache === undefined` / `prevData[i] === undefined`) |
 
-When the companion's compute fn would otherwise emit `DATA(undefined)`
+When `reactiveLog.lastValue`'s compute fn would otherwise emit `DATA(undefined)`
 on the **empty-log path** (no entries yet, or post-`clear()`), it emits
 `RESOLVED` instead — keeping the spec §1.2 "DATA(undefined) is not a
 valid emission" invariant intact.
+
+**Why TopicGraph dropped the companion pair (2026-04-30):** `topic.publish(undefined)` is rejected at the publish boundary, so `T` cannot include `undefined` on the read side; SENTINEL therefore unambiguously means "empty" — the boolean companion was redundant. PROTOCOL §1a covers the design rule.
 
 **When `T` itself includes `undefined`**, appending a literal `undefined`
 value DOES produce a `DATA(undefined)` emission on the companion (the

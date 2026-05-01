@@ -14,6 +14,8 @@
 |---|---|
 | "Why isn't my derived computing?" | §1 (first-run gate) |
 | "Why are values missing/stale?" | §1 (SENTINEL), §2 (subscription ordering) |
+| "Should I emit a `null` placeholder for 'no value yet'?" | §1a (no — stay SENTINEL) |
+| "Should I add a `hasValue` / `hasLatest` companion dep?" | §1a (almost never — `prevData[i] === undefined` is the answer) |
 | "What's glitch-free diamond resolution?" | §9, §9a (two-phase + batch-coalescing) |
 | "What's `actions.emit` vs `actions.down`?" | §21 |
 | "Why is my operator leaking mid-wave emits?" | §19 (terminal-emission operators) |
@@ -70,6 +72,51 @@ absorption prevents downstream propagation. No rewire buffer, no `MAX_RERUN` cap
 - `"pending"` → subscribed but fn hasn't run (SENTINEL dep blocking the first-run gate)
 - `"settled"` or `"resolved"` → value is current, it really is `undefined`/`None`
 - `"errored"` → fn threw
+
+### 1a. Stay SENTINEL for "no value yet" — don't add `hasValue` companion deps
+
+When a node needs to signal "no real value yet," **do not emit a placeholder** (`null`, `0`, empty string, empty array passed as DATA). Stay SENTINEL — return `[]` from a derived fn for RESOLVED-only waves; omit `initial:` from a state node. SENTINEL IS the answer.
+
+A consumer fn that needs to detect "has this dep ever delivered DATA?" reads it directly:
+
+```ts
+const data = batchData.map((batch, i) =>
+    batch != null && batch.length > 0 ? batch.at(-1) : ctx.prevData[i],
+);
+if (data[i] === undefined) return; // dep is SENTINEL — never emitted DATA
+```
+
+`ctx.prevData[i]` is `undefined` until the dep emits its first DATA, then carries the cached value. Combined with `batchData[i]` empty, this is the canonical "no value yet" detector — already in every fn that follows the standard `batch.at(-1) ?? ctx.prevData[i]` pattern.
+
+**Anti-pattern: eager-placeholder + companion `hasFooData: Node<boolean>` dep.**
+
+```ts
+// BAD — eagerly emits null on empty; type leaks `T | null`
+this.latest = derived([events], (d) => {
+    const entries = d[0] as readonly T[];
+    return [entries.length === 0 ? null : entries.at(-1)!]; // ⚠
+});
+// Consumer must now add a sibling `hasLatest: Node<boolean>` dep to
+// disambiguate "topic empty" from "topic published `null` when T includes `null`".
+```
+
+```ts
+// GOOD — stay SENTINEL on empty; type stays `Node<T>`
+this.latest = derived([events], (d) => {
+    const entries = d[0] as readonly T[];
+    return entries.length === 0 ? [] : [entries.at(-1) as T]; // ✓ RESOLVED-only on empty
+});
+// Consumer just guards `data[i] === undefined`. No companion dep needed.
+```
+
+**Why this keeps biting people:**
+- A `T | null` type makes `null` ambiguous the moment `T` itself includes `null` — the placeholder collides with legit DATA. Same trap with `T | 0`, `T | ""`, `T | -1`, etc.
+- A `hasValue` companion duplicates information already encoded in SENTINEL state. Every downstream consumer has to remember to wire it. Failure is silent — the side effect fires with the placeholder.
+- The fix at the source costs one branch (`return []` instead of `return [null]`); the workaround at every call site costs N companion deps + N matching gates.
+
+**Decision rule when designing a derived/state Node:**
+- "What value should I emit when there's no real value yet?" → **none. Don't emit. Stay SENTINEL.**
+- The only legitimate reason to emit a "no-value" placeholder is when `T` *requires* a non-SENTINEL initial (rare — usually a layering mistake). When it's truly required, document the placeholder semantics explicitly and ship a companion that disambiguates (e.g., `reactiveLog.hasLatest` exists because the log accepts `T = undefined` payloads at the data layer).
 
 ### 2. Subscription ordering (streaming sources only)
 

@@ -29,6 +29,7 @@ Each level imports concepts from the level below but can be read independently.
 |---|---|
 | "Why isn't my derived computing?" | L0 §1 (first-run gate), L1 §3 (guard patterns) |
 | "Why are values missing/stale?" | L0 §1 (SENTINEL), L0 §2 (subscription ordering) |
+| "Should I emit `null` for 'no value yet' / add a `hasValue` companion dep?" | L0 §1a (no — stay SENTINEL; `prevData[i] === undefined` is the detector) |
 | "How do I guard `null`/`undefined`?" | L1 §3 (the only two guards) |
 | "How do I break an infinite loop?" | L1 §7 (feedback cycles) |
 | "How do I wire a factory?" | L0 §5 (graph factory wiring order) |
