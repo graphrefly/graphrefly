@@ -53,6 +53,7 @@ Each level imports concepts from the level below but can be read independently.
 | "How do I model a long-running multi-step async workflow?" | L2 §36 (process manager) |
 | "How do I track which handler version produced an output?" | L2 §37 (handler versioning via audit metadata) |
 | "Why can't I mix `RESOLVED` and `DATA` in the same wave?" | L0 §41 (tier-3 wave exclusivity) |
+| "Should I wrap this imperative helper as a reactive primitive?" | L2 §44 (no — widen with `T \| Node<T>` if the bundle has no new semantics) |
 
 ---
 

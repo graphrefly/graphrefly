@@ -866,3 +866,208 @@ distill(source, (rawNode) => derived([rawNode], ([raw]) => ({
 
 Pure transforms don't need `existing` — the existing-store node is
 ignored and the function runs synchronously per source emission.
+
+---
+
+### 41. Criteria-grid verifier recipe (Phase 13.G7 reframe)
+
+**Context.** The "verifier rubber-stamps" pain point (Anthropic 2026-04
+multi-agent failure-modes survey, item 7): a single LLM verifier asked
+"is this good?" tends to approve marginal outputs because it has no
+forced decomposition of the criteria. The fix is the **criteria-grid**
+pattern: replace the single yes/no verifier with N binary axes.
+
+**Originally proposed as a factory; reframed as a recipe** (Phase 13.G7,
+2026-04-28) — per the "schema convention is not a factory" rule from the
+human-LLM intervention session. The substrate ships everything needed:
+`humanInput<{axes}>` for human verifiers, `promptNode` with structured
+output for LLM verifiers, `derived(.every)` for aggregation, and
+`approvalGate` for the gate.
+
+**Human verifier:**
+
+```ts
+import { humanInput, approvalGate } from "@graphrefly/graphrefly-ts";
+
+interface CriteriaResult {
+  axes: { id: string; pass: boolean; evidence: string }[];
+}
+
+const criteria = humanInput<CriteriaResult>({
+  hub,
+  prompt: state(`Verify the change against the criteria grid.`),
+  schema: {
+    type: "object",
+    required: ["axes"],
+    properties: {
+      axes: {
+        type: "array",
+        items: {
+          type: "object",
+          required: ["id", "pass", "evidence"],
+          properties: {
+            id: { type: "string" },
+            pass: { type: "boolean" },
+            evidence: { type: "string" },
+          },
+        },
+      },
+    },
+  },
+});
+
+const verified = derived([criteria], ([r]) => r.axes.every((a) => a.pass));
+const approved = approvalGate(verified, opts);
+```
+
+**LLM verifier:** swap `humanInput` for a structured-output `promptNode`
+over the same schema; the rest of the pipeline is identical. This is the
+key advantage of the recipe form — human and LLM verifiers are
+substitutable. Tests can exercise both by swapping the source Node.
+
+**Why decomposition matters.** Each axis independently forces evidence;
+`every(.pass)` is the conjunction. The single yes/no verifier collapses
+to one boolean with no forced structure — the criteria grid forces N
+bool + N evidence strings, which makes failure modes legible.
+
+**Pairs with `auto-solidify`** (Phase 15 catalog automation): each
+verified-true criterion can be promoted into the catalog as a learned
+heuristic, with the evidence as the audit trail.
+
+---
+
+### 42. Cost-bubble recipe (Phase 13.G8 hardened)
+
+**Context.** Industry pain #8: "cost explosion hard to control by
+harness engineering" — multi-agent compositions amplify per-call cost
+without a shared observable. graphrefly's `agent()` (Phase 13.G) ships
+`bundle.cost: Node<CostState>` per agent; the recipe is how parents
+aggregate.
+
+**Per-agent cost is shipped.** `bundle.cost` carries `{ usage, turns }`
+where `usage` is the canonical `TokenUsage` (cache classes / reasoning /
+audio / multimodal / extensions / auxiliary all preserved). USD
+conversion is a downstream `derived` over `usage`.
+
+**Parent aggregator:**
+
+```ts
+import { agent, derived, sumInputTokens, sumOutputTokens } from "@graphrefly/graphrefly-ts";
+
+const a = agent(parent, { name: "researcher", adapter, ... });
+const b = agent(parent, { name: "coder", adapter, ... });
+
+// Token total across both agents (current input scope).
+const totalTokens = derived([a.cost, b.cost], ([costA, costB]) =>
+  sumInputTokens(costA.usage) + sumOutputTokens(costA.usage) +
+  sumInputTokens(costB.usage) + sumOutputTokens(costB.usage),
+);
+
+// USD total (pricing function is caller-supplied, e.g. from
+// `patterns/ai/adapters/core/pricing.ts`).
+const totalUsd = derived([a.cost, b.cost], ([costA, costB]) =>
+  pricer.priceCall(costA.usage) + pricer.priceCall(costB.usage),
+);
+```
+
+**Budget gate:**
+
+```ts
+const budgetGate = state<BudgetConstraint[]>([{ kind: "max", maxUsd: 5.0 }]);
+const canSpawn = budgetGate(totalUsd, budgetGate);
+const sp = spawnable({ hub, registry, budgetGate: canSpawn });
+```
+
+(Where `budgetGate(...)` is the existing resilience-layer factory that
+gates a stream when its cost exceeds the constraint.)
+
+**Honest cost control.** Two pieces are needed: **(1)** the bubble
+above for observability + propagation cuts, **(2)** the adapter-abort
+hookup so closing the gate also cancels in-flight HTTP calls (Phase 1
+adapter-abort, shipped 2026-04). Without (2), `budgetGate` cuts only
+propagation — the in-flight token burn continues.
+
+---
+
+### 43. `boundaryDrain` recipe (Phase 13.J — locked as recipe, no factory)
+
+**Context.** Next-boundary injection — accumulate items on a topic until
+a "boundary" signal pulses (an LLM token-finished event, a turn
+boundary, a user keypress), then drain the accumulated batch downstream.
+Common shape for context injection between LLM turns, batched user
+inputs, etc.
+
+**Locked as a recipe** (Phase 13.J, 2026-05-01) — the existing
+`buffer(source, notifier)` operator already covers `bufferWhen`
+semantics. No new factory; document the alias.
+
+**Recipe:**
+
+```ts
+import { buffer } from "@graphrefly/graphrefly-ts";
+
+// Drain `topic.events` whenever `boundary` fires (LLM-turn-end, user
+// pulse, etc.). `drained` is a Node<readonly T[]> of accumulated items
+// flushed at each boundary.
+const drained = buffer(topic.events, boundary);
+```
+
+`buffer(source, notifier)`'s contract: accumulate every `source` DATA
+since the last emission, emit the batch when `notifier` fires. Maps
+directly onto the `bufferWhen` shape from Rx / callbag with no rename.
+
+**When to upgrade to a factory.** If a second consumer surfaces with
+non-trivial wiring around the buffer (e.g., max-buffer-size cap,
+fallback emission on timeout, per-boundary TTL), introduce
+`boundaryDrain(topic, notifier, opts)` as a thin sugar. Until then, the
+recipe is the canonical form.
+
+---
+
+### 44. `T | Node<T>` parameter widening (when not to make a primitive)
+
+**Context.** When a working imperative helper operates on an existing reactive Node (e.g., `tryIncrementBounded(counter, cap)` over a `Node<number>`), the temptation is to wrap it as a "reactive primitive" — `boundedCounter(cap)` returning a bundle with the counter Node, derived companions, the imperative helper renamed as a method, and a reset.
+
+**Skip the wrap when the bundle's contents are all trivially expressible inline.** If the proposed primitive contains:
+
+1. The Node the helper already operates on (already reactive)
+2. A trivially-derivable companion (`derived(node, fn)` one-liner)
+3. The imperative helper itself, renamed as a method
+4. A reset/init one-liner
+
+…then no new semantic content is being introduced. The wrap is packaging — net new API surface, zero new behavior. The vicious cycle: take a working imperative helper → wrap it as a primitive → realize the primitive needs the imperative entry point → bolt it back on as a method → ship more API for no semantic gain.
+
+**Why `reactiveMap.set` / `reactiveList.push` / `Topic.publish` exist:** because the underlying reactive thing has non-trivial reactive structure that the mutation method commits into (a map's keys, a list's elements, a topic's log). A counter Node with a `tryIncrementBounded` helper does NOT — the Node is the structure; the function is just a sanctioned read-then-write boundary.
+
+**The right widening.** Instead of wrapping, accept `T | Node<T>` on the helper's parameters. Inside the function, branch:
+
+```ts
+function tryIncrementBounded(
+  counter: Node<number>,
+  cap: number | Node<number>,
+  by = 1,
+): boolean {
+  const capValue = typeof cap === "number" ? cap : (cap.cache as number);
+  const cur = counter.cache as number;
+  if (cur + by > capValue) return false;
+  counter.down([[DATA, cur + by]]);
+  return true;
+}
+```
+
+Callers opt into reactive control by passing a Node when they need it; opt out by passing a scalar. Same function, no new abstraction.
+
+**Decision rubric — wrap as primitive vs widen with `T | Node<T>`:**
+
+| Sign | → wrap as primitive | → widen helper |
+|---|---|---|
+| Underlying *structure* is reactive (map/list/topic/queue) | ✓ | |
+| Single value being read-then-written | | ✓ |
+| Bundle has 3+ members that are one-line each | | ✓ |
+| Mutation commits into multi-edge graph state | ✓ | |
+| Reactive composition just needs Node-shaped input | | ✓ |
+| Caller wants `instanceof <Primitive>` narrowing | ✓ | |
+
+**Cross-reference:** §35 (Imperative-controller-with-audit) — a different shape where imperative-with-discipline IS the right answer because the controller coordinates multiple reactive edges. §44 covers when *no controller is needed at all* and a parameter widening suffices.
+
+**Decision provenance:** DS-13.5.D walk, 2026-05-01. Original proposal was `boundedCounter` primitive wrapping `tryIncrementBounded`; user pushed back on the "wrap-imperative-as-reactive-then-bolt-imperative-back" anti-pattern. Revised to keep `tryIncrementBounded` as-is, optionally widen `cap` to `number | Node<number>`.
