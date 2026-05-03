@@ -179,21 +179,49 @@ ordering):
 | Tier | Signals | Role | Batch behavior |
 |------|---------|------|----------------|
 | 0 | `START` | Subscribe handshake | Immediate |
-| 1 | `DIRTY`, `INVALIDATE` | Notification | Immediate |
+| 1 | `DIRTY` | Notification | Immediate |
 | 2 | `PAUSE`, `RESUME` | Flow control | Immediate |
 | 3 | `DATA`, `RESOLVED` | Value settlement | Deferred in batch |
-| 4 | `COMPLETE`, `ERROR` | Terminal lifecycle | Deferred (drains after phase-3) |
-| 5 | `TEARDOWN` | Destruction | Immediate |
+| 4 | `INVALIDATE` | Settle-class cache reset | Deferred (drains alongside tier 3 in the settle slice) |
+| 5 | `COMPLETE`, `ERROR` | Terminal lifecycle | Deferred (drains after the settle slice) |
+| 6 | `TEARDOWN` | Destruction | Deferred (drains last) |
 
-Auto-checkpoint saves (§3.8) gate on `messageTier >= 3` (DATA / RESOLVED / COMPLETE /
-ERROR / TEARDOWN). Worker-bridge wire filtering (extra layer) uses the same threshold.
+**DS-13.5.A (2026-05-01):** `INVALIDATE` is its own tier-4 settle group between value
+settlement (tier-3 `DATA`/`RESOLVED`) and terminal lifecycle (tier-5 `COMPLETE`/`ERROR`).
+`INVALIDATE` settles a wave for `_dirtyDepCount` accounting on the receiving node — a
+single `[[INVALIDATE]]` arrival on a previously-dirty dep clears the dirty flag and
+decrements the counter (same role as `RESOLVED`). A single arrival on a clean dep is a
+no-op for the counter. The emitting node's status transitions to **`"sentinel"`**
+("no value, nothing pending") — NOT `"dirty"` ("value about to change") — because
+INVALIDATE has just cleared the cache outright with no new value pending. This makes
+`defaultOnSubscribe`'s push-on-subscribe send only `[START]` to subsequent
+subscribers, rather than `[START, DIRTY]`, so a freshly-attached dep doesn't inherit
+a phantom dirty count from a prior INVALIDATE. The deadlock where INVALIDATE-only
+emissions left dependents wedged in DIRTY and never re-fired is eliminated; the
+`[[INVALIDATE], [RESOLVED]]` paired-reset pattern in caller code retires; plain
+`[[INVALIDATE]]` is sufficient.
+
+Auto-checkpoint saves (§3.8) gate on `messageTier >= 3` (DATA / RESOLVED / INVALIDATE /
+COMPLETE / ERROR), excluding tier-6 TEARDOWN (graph teardown skips the final
+checkpoint). Worker-bridge wire filtering (extra layer) uses the same threshold.
 
 ### 1.4 Directions
 
 Messages flow in two directions:
 
-- **down** — downstream from source toward sinks (DATA, DIRTY, RESOLVED, COMPLETE, ERROR)
-- **up** — upstream from sink toward source (PAUSE, RESUME, INVALIDATE, TEARDOWN)
+- **down** — downstream from source toward sinks (DATA, DIRTY, RESOLVED, INVALIDATE, COMPLETE, ERROR)
+- **up** — upstream from sink toward source (DIRTY, PAUSE, RESUME, INVALIDATE, TEARDOWN)
+
+These are **conventions** plus an enforced tier filter on `up` (`actions.up` /
+`node.up` reject tier-3 DATA/RESOLVED and tier-5 COMPLETE/ERROR — the value and
+terminal-lifecycle planes are downstream-only). All other tiers pass.
+
+`INVALIDATE` is bidirectional in the convention sense: downstream as part of
+cascading cache reset on a settle wave (DS-13.5.A); upstream as a forwarded
+control signal so observers along the dep chain can react. Note that the
+upstream `up()` path is a **plain forward** — it does not self-process
+INVALIDATE on intermediate or terminal nodes (no `_emit`, no cache clear at
+the source). Cache-clearing semantics apply to the downstream side only.
 
 Both directions use the same `[[Type, Data?], ...]` format.
 
@@ -562,6 +590,48 @@ format to a scalar per dep using the pattern:
 Direct `node()` callers receive the raw batch arrays and must handle that format
 themselves. This separation keeps the primitive clean while providing ergonomic APIs.
 
+### 2.4a Same-wave merge rules (DS-13.5.A)
+
+When a single emission carries multiple settle-class messages on one node, the
+framing pipeline relies on **tier ordering** to produce the right end state.
+Tier sort puts tier-3 (DATA/RESOLVED) before tier-4 (INVALIDATE), so
+`_updateState` walks the wave as DIRTY → DATA(v) → INVALIDATE: cache advances
+to `v` on DATA, then INVALIDATE clears it back to `undefined`. Subscribers
+observe the full sequence (no message is silently dropped) and `_cached` ends
+up cleared — INVALIDATE wins by virtue of running last in the tier order.
+
+| Mix on same node in one wave | Wire delivery | End cache |
+|---|---|---|
+| `DATA(v)` + `INVALIDATE` | `[DIRTY, DATA(v), INVALIDATE]` | `undefined` (cleared by INVALIDATE) |
+| `RESOLVED` + `INVALIDATE` | `[DIRTY, RESOLVED, INVALIDATE]` | `undefined` (RESOLVED is no-op for cache; INVALIDATE clears) |
+| `INVALIDATE` + `INVALIDATE` | `[DIRTY, INVALIDATE]` | `undefined` (Q9 — collapses repeats) |
+| `DATA` + `RESOLVED` (same wave on same node) | Protocol violation (§1.3.3 tier-3 wave exclusivity) | — |
+| `INVALIDATE` + `COMPLETE`/`ERROR` | Both pass through; tier ordering puts INVALIDATE first | `undefined` (terminal lifecycle then takes over) |
+
+The dispatcher applies **only one** explicit merge rule:
+
+- **Q9 — INVALIDATE + INVALIDATE collapse.** Multiple INVALIDATEs in one wave
+  collapse to a single occurrence so cleanup hooks fire at most once and the
+  wire stays compact.
+
+The original Q1 / Q3 "DATA wins / RESOLVED wins" merge rules from the lockdown
+session were retired during implementation: the natural tier-sort behavior
+already produces the desired end state (cache cleared when INVALIDATE rides
+the same wave) without silently elising messages, and subscribers benefit from
+seeing the full chronology rather than a merged shorthand.
+
+These rules apply within one node's outgoing wave (one `down(...)` call OR one
+`batch()` frame's accumulated emissions on the same node). Cross-node merge
+is not performed: an INVALIDATE on dep A and a DATA on dep B in the same wave
+are independent — each consumer's `_dirtyDepCount` accounting reconciles them
+in arrival order.
+
+The §1.3.3 single-DATA equals-substitution rule runs in `_updateState` (after
+the tier-sort framing). For a wave `[[DATA, v], [INVALIDATE]]` where
+`equals(cache, v)` is true, the walk produces `[[RESOLVED], [INVALIDATE]]` on
+the wire — the cache transition is identical (DATA → RESOLVED elides the
+no-op cache write; INVALIDATE then clears).
+
 ### 2.5 Options
 
 All nodes accept these options:
@@ -644,20 +714,26 @@ DepRecord continues updating with latest values. On final-lock RESUME, if any
 wave completed while paused, fn fires immediately with the latest dep values.
 
 **bufferAll mode (`pausable: "resumeAll"`).** While any lock is held, the
-node captures every outgoing **tier-3** (DATA / RESOLVED) message from its
-own emission pipeline into a per-node buffer. Everything else — tier 0–2
-(START / DIRTY / INVALIDATE / PAUSE / RESUME), **tier 4 (COMPLETE / ERROR)**,
-and tier 5 (TEARDOWN) — continues to dispatch synchronously while paused.
+node captures every outgoing **settle slice** message — tier-3 (DATA /
+RESOLVED) and tier-4 (INVALIDATE per DS-13.5.A Q7) — from its own emission
+pipeline into a per-node buffer. Everything else — tier 0–2
+(START / DIRTY / PAUSE / RESUME), **tier 5 (COMPLETE / ERROR)**,
+and tier 6 (TEARDOWN) — continues to dispatch synchronously while paused.
 Subscribers, downstream pausers, graph teardown, and end-of-stream signals
-MUST observe them regardless of flow control. Buffering tier-4 would strand
-subscribers without an end-of-stream signal if a controller leaks (holds a
-lock and never issues RESUME) — tier-4 bypass ensures stream termination
-always reaches observers, parallel to tier-5 TEARDOWN's bypass. On final-lock
-RESUME, the buffered tier-3 messages are replayed through the node's own
-`_emit` pipeline BEFORE the RESUME signal is forwarded downstream. The
-replay passes through the normal tier-3 equals substitution walk (§1.3.3),
-so a buffered `[DATA, v]` whose value matches the pre-pause cache collapses
-to `[RESOLVED]` on replay — producer "pulses" that write the same value
+MUST observe them regardless of flow control. Buffering tier-5
+(COMPLETE / ERROR) would strand subscribers without an end-of-stream signal
+if a controller leaks (holds a lock and never issues RESUME) — tier-5 bypass
+ensures stream termination always reaches observers, parallel to tier-6
+TEARDOWN's bypass. On final-lock RESUME, the buffered settle-slice messages
+are replayed through the node's own `_emit` pipeline **one entry at a time
+in arrival order** before the RESUME signal is forwarded downstream
+(DS-13.5.A N3(a) — per-entry replay preserves the cross-tier ordering of
+DATA/RESOLVED/INVALIDATE so a buffered sequence like
+`[DATA(v1), INVALIDATE, DATA(v2)]` is observed as three distinct waves on
+resume rather than a single re-sorted batch). Each replay wave passes
+through the normal tier-3 equals substitution walk (§1.3.3), so a buffered
+`[DATA, v]` whose value matches the live cache collapses to `[RESOLVED]` on
+replay — producer "pulses" that write the same value
 while paused are absorbed. This matches diamond-safety intent: `.cache`
 remains coherent with "the last DATA actually delivered to sinks." Producers
 that need pulse semantics (every write observable regardless of value)
@@ -667,6 +743,38 @@ should set `equals: () => false` on the node.
 discarded. Buffered in-flight DATA is NOT drained before teardown — TEARDOWN
 is a hard reset. Resubscribable nodes also clear the lock set on resubscribe
 so a new lifecycle cannot inherit a lock from a prior one.
+
+#### TEARDOWN auto-precedes with COMPLETE (DS-13.5.A Q16)
+
+When a `[[TEARDOWN]]` arrives at a node that has not yet reached terminal
+lifecycle (`status` is not `"completed"` or `"errored"`), the dispatcher
+synthesizes a `[COMPLETE]` prefix in the same outgoing wave:
+`[[TEARDOWN]]` → `[[COMPLETE], [TEARDOWN]]`. Sinks observe a clean
+"complete-then-teardown" lifecycle pair — bridge subscribers like
+`firstWhere`/`firstValueFrom` resolve from the COMPLETE before the
+subscription unwires.
+
+This applies to `"sentinel"`-status nodes as well — a state node that
+never delivered DATA (e.g. `node<T>([])` with no `initial`, or a node
+that was just INVALIDATE'd) still gets the synthetic COMPLETE on
+TEARDOWN. Bridge subscribers waiting on a stream that never emitted
+need the COMPLETE to reject cleanly (with "completed without matching
+value") rather than hang on a TEARDOWN-only wave. The framework's
+`processManager.dispose()` path relies on this loosening; any future
+spec/implementation tightening must amend both sides together.
+
+The auto-precede is **idempotent**: a node tracks whether it has already
+processed a TEARDOWN, and subsequent TEARDOWN arrivals (e.g. from
+`Graph.destroy()` broadcast colliding with dep cascade) deliver `[[TEARDOWN]]`
+alone without re-emitting COMPLETE. The auto-precede also skips when the
+wave already carries a terminal lifecycle signal (`COMPLETE` or `ERROR`):
+the user's explicit terminal expression takes precedence, and Q16 does not
+stack a redundant COMPLETE.
+
+This is the spec amendment that retires the manual workaround pattern
+`node.down([[COMPLETE]])` immediately before `node.down([[TEARDOWN]])` (or
+before a `Graph.remove`/`destroy` call). Any framework that previously used
+the workaround can simplify to `[[TEARDOWN]]` alone.
 
 #### `replayBuffer` option
 
