@@ -183,7 +183,7 @@ CONSTANTS
                           \*   default to (NodeIds \ SourceIds) to preserve
                           \*   the prior "reset all derived" behavior so the
                           \*   shipped invariants remain green.
-    ExtraSinks            \* NodeId -> Nat. For every sink node `n`, ExtraSinks[n]
+    ExtraSinks,           \* NodeId -> Nat. For every sink node `n`, ExtraSinks[n]
                           \*   counts how many ADDITIONAL external subscribers observe
                           \*   `n` beyond the "primary sink" whose trace lives in
                           \*   `trace[n]`. Each extra sink `i` has its own trace in
@@ -196,6 +196,16 @@ CONSTANTS
                           \*   node carries two observers — the minimal topology for
                           \*   surfacing COMPOSITION-GUIDE §32-class peer-read bugs
                           \*   via SinkNestedEmit firing mid-iteration.
+    BatchInvSeqs          \* Set of finite sequences of records modeling mixed
+                          \*   in-batch tier-3/tier-4 emissions for the
+                          \*   `BatchEmitWithInv(src, items)` action (Q14 / DS-13.5.A).
+                          \*   Each item is `[kind |-> "EMIT", value |-> v]` or
+                          \*   `[kind |-> "INV"]`. The action models `_frameBatch`
+                          \*   coalescing per Q1/Q3/Q9 merge rules: any EMIT in the
+                          \*   batch wins over interleaved INVs (Q1/Q3); all-INV
+                          \*   batches collapse to one INVALIDATE (Q9). Empty set
+                          \*   disables the action — default for all existing MCs.
+                          \*   Added 2026-05-07.
 
 ASSUME SourceIds \subseteq NodeIds
 ASSUME SinkIds \subseteq NodeIds
@@ -219,6 +229,11 @@ ASSUME ReplayBufferSize \in [NodeIds -> Nat]
 ASSUME EqualsPairs \in [NodeIds -> SUBSET (Values \X Values)]
 ASSUME MetaCompanions \in [NodeIds -> SUBSET NodeIds]
 ASSUME MaxTeardowns \in Nat
+\* Q14 (2026-05-07): `BatchInvSeqs` is a set of sequences. Each element is a
+\* finite seq of records `[kind: {"EMIT", "INV"}, value: Values \cup {NullPayload}]`.
+\* Structural ASSUME left to MC harnesses (TLA+'s SUBSET notation over records is
+\* unwieldy; the action body checks shape inline via `\A i: items[i].kind \in
+\* {"EMIT", "INV"}`).
 
 Parents(n) == {p \in NodeIds : <<p, n>> \in Edges}
 
@@ -248,11 +263,18 @@ COMPLETE == "COMPLETE"
 ERROR    == "ERROR"
 PAUSE    == "PAUSE"       \* tier-2, carries lockId payload (§2.6)
 RESUME   == "RESUME"      \* tier-2, carries lockId payload (§2.6)
-INVALIDATE == "INVALIDATE" \* tier-1 (§1.4 — cache-reset broadcast). Added
-                           \* 2026-04-23 batch 3 Package 6; modeled as a
-                           \* source-side action with cleanup-witness ghost,
-                           \* no queue propagation yet (propagation is a
-                           \* future axis — see "Invalidate" action below).
+INVALIDATE == "INVALIDATE" \* tier-4 (§1.4 + DS-13.5.A 2026-05-02 lock —
+                           \* cache-reset cleanup signal that settles the
+                           \* wave like RESOLVED). Tier renumbered from
+                           \* tier-1 → tier-4 by Q15 (between tier-3
+                           \* DATA/RESOLVED and tier-5 COMPLETE/ERROR).
+                           \* Auto-DIRTY-prefix per Q15: every INVALIDATE
+                           \* emission/cascade flows as `<<DIRTY, INVALIDATE>>`
+                           \* so the dependent's wave settles via
+                           \* DeliverDirty + DeliverInvalidate. Added
+                           \* 2026-04-23 batch 3 Package 6; tier moved +
+                           \* settles-wave semantic added 2026-05-07
+                           \* (Q14 deferral closing).
 TEARDOWN == "TEARDOWN"     \* tier-5 (§2.3 — meta companion fan-out). Added
                            \* 2026-04-23 batch 3 Package 7; modeled as a
                            \* parent-side action with meta-TEARDOWN-witness
@@ -620,7 +642,11 @@ NoSettleAnywhere ==
 Emit(src, v) ==
     /\ src \in SourceIds
     /\ AllExtraPendingEmpty
-    /\ NoInvalidateAnywhere
+    \* Q14 (2026-05-07): NoInvalidateAnywhere precondition removed. Pre-Q14
+    \* INVALIDATE was tier-1 and gated tier-3 emissions; under DS-13.5.A
+    \* tier-4 ordering, tier-3 settles drain BEFORE tier-4 INVALIDATE so
+    \* a tier-3 emit may fire with INVALIDATE in-flight. The new
+    \* DeliverInvalidate gate (NoSettleAnywhere) enforces drain order.
     /\ emitCount < MaxEmits
     /\ status[src] = "settled"
     \* Batch 11 (2026-04-24, I): single-emit Emit cannot fire mid-batch —
@@ -714,7 +740,8 @@ DirtySeqOf(k) == [i \in 1..k |-> Msg(DIRTY, NullPayload)]
 BatchEmitBegin(src, vs) ==
     /\ src \in SourceIds
     /\ AllExtraPendingEmpty
-    /\ NoInvalidateAnywhere
+    \* Q14 (2026-05-07): NoInvalidateAnywhere removed (tier-3 emits no
+    \* longer wait on tier-4 drain — see Emit's comment for full rationale).
     /\ vs # <<>>
     /\ status[src] = "settled"
     /\ batchActive[src].status = "idle"
@@ -766,7 +793,8 @@ BatchEmitStep(src) ==
     /\ batchActive[src].status = "running"
     /\ status[src] = "settled"
     /\ AllExtraPendingEmpty
-    /\ NoInvalidateAnywhere
+    \* Q14 (2026-05-07): NoInvalidateAnywhere removed (tier-3 emits no
+    \* longer wait on tier-4 drain — see Emit's comment for full rationale).
     /\ LET v == Head(batchActive[src].pending)
            isEq == IsAbsorbed(src, cache[src], v)
            settleMsg == IF isEq THEN Msg(RESOLVED, NullPayload)
@@ -814,6 +842,137 @@ BatchEmitStep(src) ==
                    invalidateCount, cleanupWitness,
                    teardownCount, teardownWitness, replaySnapshot,
                    terminatedBy, nonVacuousInvalidateCount>>
+
+(******************************************************************************)
+(* `BatchEmitWithInv(src, items)` — Q14 / DS-13.5.A 2026-05-02 mixed in-batch *)
+(* tier-3 + tier-4 coalesce model. `items` is a finite sequence of records:   *)
+(*   `[kind |-> "EMIT", value |-> v]` (tier-3 emit) or `[kind |-> "INV"]`    *)
+(* (tier-4 invalidate). Models `_frameBatch`'s merge logic per Q1/Q3/Q9:     *)
+(*   Q1: any EMIT in `items` wins over interleaved INVs. Last EMIT's value  *)
+(*       determines the post-batch cache.                                    *)
+(*   Q3: EMIT(v) absorbing to current cache produces RESOLVED that wins      *)
+(*       over INV (RESOLVED is same-tier-as-DATA flow control; INV is the   *)
+(*       tier-4 cleanup that doesn't override normal flow).                 *)
+(*   Q9: all-INV batch collapses to a single `<<DIRTY, INVALIDATE>>`.        *)
+(*                                                                            *)
+(* `BatchInvSeqs` is the constant bound — TLC explores `items` shapes from  *)
+(* this set. Disabled when `BatchInvSeqs = {}` (default for all pre-Q14    *)
+(* MCs). Atomic single-step: the merge is modeled at the WAVE granularity  *)
+(* — one outgoing `<<DIRTY, settle>>` pair per child edge, not the           *)
+(* sequence of pending pre-coalesce emissions. Counts each EMIT against    *)
+(* `MaxEmits` and each INV against `MaxInvalidates`; Q9 collapse means the *)
+(* counter increments by `invCnt` even though only one INVALIDATE message   *)
+(* is enqueued (mirrors the runtime's `_frameBatch.invalidateCount` ghost   *)
+(* that tracks dropped duplicates separately).                              *)
+(*                                                                            *)
+(* The witness/non-vacuous accounting fires once per Q9-collapsed action     *)
+(* (at most one cache→default transition per fire), keeping                 *)
+(* `CleanupWitnessAccounting` (#26) sound under the new action.             *)
+(******************************************************************************)
+BatchEmitWithInv(src, items) ==
+    /\ src \in SourceIds
+    /\ src \in InvalidateOriginators
+    /\ items \in BatchInvSeqs
+    /\ Len(items) >= 1
+    /\ AllExtraPendingEmpty
+    /\ status[src] = "settled"
+    /\ batchActive[src].status = "idle"
+    \* Bufferall-paused source not modeled by this action — the existing
+    \* `Emit` / `BatchEmitBegin` paths cover that interaction.
+    /\ ~IsCapturedByBuffer(src)
+    /\ \A i \in 1..Len(items) :
+         /\ items[i].kind \in {"EMIT", "INV"}
+         /\ items[i].kind = "EMIT" => items[i].value \in Values
+    \* Q14 (2026-05-07): items must contain at most one EMIT. Rationale:
+    \* multi-EMIT-in-batch coalescing is the SEPARATE concern modeled by
+    \* `BatchEmitMulti(src, vs)` (Bug 2 — K DIRTYs + K DATAs expanded). This
+    \* action specifically models the tier-3/tier-4 INTERACTION (Q1/Q3/Q9
+    \* merge) — orthogonal to the Bug 2 axis. With multi-EMIT items the
+    \* model would require either: (a) expand to K trace entries with
+    \* `perSourceEmitCount += K` (consistent with Bug 2, but breaks Q1
+    \* "DATA wins" semantic since each EMIT becomes its own outgoing
+    \* settle), or (b) collapse to 1 trace entry with `perSourceEmitCount
+    \* += 1` (loses the per-emit-call accounting that EqualsFaithful relies
+    \* on). Rather than pick a side, scope this action to the strict Q14
+    \* concern: how INV interacts with one EMIT inside a batch. Composing
+    \* with multi-EMIT goes through `BatchEmitMulti` followed by
+    \* `Invalidate` as separate waves — tier ordering guarantees the DATA
+    \* wave fully drains before any INVALIDATE delivers (NoSettleAnywhere
+    \* gate on DeliverInvalidate), preserving the Q1 "DATA wins" semantic
+    \* across separate-batch interleavings.
+    /\ Cardinality({i \in 1..Len(items) : items[i].kind = "EMIT"}) <= 1
+    /\ LET emitIdxs == {i \in 1..Len(items) : items[i].kind = "EMIT"}
+           invIdxs  == {i \in 1..Len(items) : items[i].kind = "INV"}
+           emitCnt  == Cardinality(emitIdxs)
+           invCnt   == Cardinality(invIdxs)
+       IN /\ emitCount + emitCnt <= MaxEmits
+          /\ invalidateCount + invCnt <= MaxInvalidates
+          /\ LET hasEmit == emitIdxs # {}
+                 lastEmitIdx ==
+                     IF hasEmit
+                       THEN CHOOSE i \in emitIdxs :
+                              \A k \in emitIdxs : k <= i
+                       ELSE 0
+                 vLast ==
+                     IF hasEmit THEN items[lastEmitIdx].value
+                                ELSE DefaultInitial
+                 dirtyMsg == Msg(DIRTY, NullPayload)
+                 emitAbsorbed ==
+                     IF hasEmit
+                       THEN IsAbsorbed(src, cache[src], vLast)
+                       ELSE FALSE
+                 emitSettle ==
+                     IF emitAbsorbed
+                       THEN Msg(RESOLVED, NullPayload)
+                       ELSE Msg(DATA, vLast)
+                 invSettle == Msg(INVALIDATE, NullPayload)
+                 settleMsg == IF hasEmit THEN emitSettle ELSE invSettle
+                 pair == <<dirtyMsg, settleMsg>>
+                 cacheAfter ==
+                     IF hasEmit
+                       THEN IF emitAbsorbed
+                              THEN cache
+                              ELSE [cache EXCEPT ![src] = vLast]
+                       ELSE [cache EXCEPT ![src] = DefaultInitial]
+                 wasReset == cache[src] = DefaultInitial
+                 \* Q9 collapse: at most one cleanup-witness append per
+                 \* fire, even when `invCnt > 1`. Mirrors the runtime's
+                 \* coalescing (one cleanup hook fires per source per batch
+                 \* regardless of how many INVALIDATE calls coalesced).
+                 recordWitness == ~hasEmit /\ ~wasReset
+                 versionBump == hasEmit /\ ~emitAbsorbed
+             IN /\ queues' = EnqueueSeqOutFrom(queues, src, pair)
+                /\ trace' = RecordSeqAtSinkIfAny(trace, src, pair)
+                /\ pendingExtraDelivery' =
+                     EnqueuePendingExtraSeq(pendingExtraDelivery, src, pair, cacheAfter)
+                /\ cache' = cacheAfter
+                /\ version' =
+                     IF versionBump
+                       THEN [version EXCEPT ![src] = @ + 1]
+                       ELSE version
+                /\ replayBuffer' =
+                     IF versionBump
+                       THEN AppendToReplayBuffer(replayBuffer, src, vLast)
+                       ELSE replayBuffer
+                /\ cleanupWitness' =
+                     IF recordWitness
+                       THEN [cleanupWitness EXCEPT ![src] = Append(@, cache[src])]
+                       ELSE cleanupWitness
+                /\ nonVacuousInvalidateCount' =
+                     IF recordWitness
+                       THEN [nonVacuousInvalidateCount EXCEPT ![src] = @ + 1]
+                       ELSE nonVacuousInvalidateCount
+                /\ emitCount' = emitCount + emitCnt
+                /\ perSourceEmitCount' =
+                     [perSourceEmitCount EXCEPT ![src] = @ + emitCnt]
+                /\ invalidateCount' = invalidateCount + invCnt
+                /\ pauseBuffer' = pauseBuffer
+                /\ UNCHANGED <<status, dirtyMask, activated, handshake,
+                               nestedEmitCount, emitWitness,
+                               pauseLocks, resubscribeCount, pauseActionCount,
+                               upQueues, upActionCount, extraSinkTrace,
+                               teardownCount, teardownWitness, replaySnapshot,
+                               terminatedBy, batchActive>>
 
 (* A source terminates. Enqueues COMPLETE to every child and transitions
    to "terminated" — the source refuses further Emit actions thereafter.
@@ -963,7 +1122,9 @@ DeliverSettle(p, c) ==
     /\ IsSettlementMsg(Head(queues[<<p, c>>]))
     /\ status[c] # "terminated"
     /\ NoDirtyAnywhere
-    /\ NoInvalidateAnywhere
+    \* Q14 (2026-05-07): NoInvalidateAnywhere removed. Tier-3 settles drain
+    \* before tier-4 INVALIDATE — DeliverInvalidate's gate (NoSettleAnywhere)
+    \* enforces ordering from the other direction.
     /\ LET q == queues[<<p, c>>]
            k == Tier3PrefixLen(q)
            qs0 == [queues EXCEPT ![<<p, c>>] = SubSeq(q, k + 1, Len(q))]
@@ -1319,7 +1480,8 @@ ObserverCallbackActive(observer) ==
 SinkNestedEmit(observer, target, v) ==
     /\ <<observer, target, v>> \in SinkNestedEmits
     /\ target \in SourceIds
-    /\ NoInvalidateAnywhere
+    \* Q14 (2026-05-07): NoInvalidateAnywhere removed (tier-3 emits no
+    \* longer wait on tier-4 drain — see Emit's comment for full rationale).
     /\ status[target] = "settled"
     /\ emitCount < MaxEmits
     /\ nestedEmitCount < MaxNestedEmits
@@ -1839,13 +2001,24 @@ DeliverToExtraSink(n, i) ==
 (* Interaction with existing invariants: cache reset may cause subsequent   *)
 (* emits at `n` to produce DATA where they'd previously produce RESOLVED.  *)
 (* Vacuous when `InvalidateOriginators = {}` (all existing MCs default).   *)
+(*                                                                            *)
+(* Q14 / DS-13.5.A 2026-05-07: `msg` widened from a single INVALIDATE to    *)
+(* the auto-DIRTY-prefix pair `<<DIRTY, INVALIDATE>>` per Q15 — every       *)
+(* INVALIDATE emission flows behind a synthetic DIRTY so the dependent's   *)
+(* wave settles via DeliverDirty + DeliverInvalidate (the latter clears    *)
+(* the parent's bit from `dirtyMask[c]`, mirroring DeliverSettle's wave-   *)
+(* settle semantic). Without the DIRTY prefix, DeliverInvalidate would     *)
+(* arrive at a `dirtyMask[c]` that doesn't yet contain `n` and the         *)
+(* `InvalidateSettlesWave` invariant would be vacuous on those firings.   *)
 (******************************************************************************)
 Invalidate(n) ==
     /\ n \in InvalidateOriginators
     /\ AllExtraPendingEmpty
     /\ invalidateCount < MaxInvalidates
     /\ status[n] # "terminated"
-    /\ LET msg == Msg(INVALIDATE, NullPayload)
+    /\ LET dirtyMsg == Msg(DIRTY, NullPayload)
+           invMsg   == Msg(INVALIDATE, NullPayload)
+           pair     == <<dirtyMsg, invMsg>>
            \* Batch 5 B (2026-04-23): only record a cleanup witness when
            \* `cache[n]` is currently non-default. When it's already
            \* `DefaultInitial`, there's nothing to "clean up" — the cache
@@ -1857,12 +2030,24 @@ Invalidate(n) ==
            \* would have recorded the already-reset sentinel as a second
            \* (spurious) witness entry.
            wasReset == cache[n] = DefaultInitial
+           cacheAfter == [cache EXCEPT ![n] = DefaultInitial]
        IN /\ cleanupWitness' =
               IF wasReset
                 THEN cleanupWitness
                 ELSE [cleanupWitness EXCEPT ![n] = Append(@, cache[n])]
-          /\ cache' = [cache EXCEPT ![n] = DefaultInitial]
-          /\ queues' = EnqueueOutFrom(queues, n, msg)
+          /\ cache' = cacheAfter
+          \* Q14 (2026-05-07): enqueue the auto-DIRTY-prefix pair instead
+          \* of a bare INVALIDATE — Q15 §1.3.1 extends DIRTY-auto-prefix to
+          \* tier-4 INVALIDATE.
+          /\ queues' = EnqueueSeqOutFrom(queues, n, pair)
+          \* Q14 (2026-05-07): record DIRTY + INVALIDATE to trace[n] when
+          \* n is a sink. Mirrors Emit's `<<DIRTY, settle>>` trace recording
+          \* — observers at the origin sink see both messages from their
+          \* own emission. Required for `BalancedWaves` to balance under
+          \* the new INVALIDATE-as-settle accounting.
+          /\ trace' = RecordSeqAtSinkIfAny(trace, n, pair)
+          /\ pendingExtraDelivery' =
+              EnqueuePendingExtraSeq(pendingExtraDelivery, n, pair, cacheAfter)
           /\ invalidateCount' = invalidateCount + 1
           \* Batch 8 (2026-04-24): mirror the witness-append condition on
           \* a separate ghost counter. Must use the SAME `wasReset`
@@ -1875,19 +2060,19 @@ Invalidate(n) ==
               IF wasReset
                 THEN nonVacuousInvalidateCount
                 ELSE [nonVacuousInvalidateCount EXCEPT ![n] = @ + 1]
-    /\ UNCHANGED <<status, version, dirtyMask, trace, emitCount,
+    /\ UNCHANGED <<status, version, dirtyMask, emitCount,
                    perSourceEmitCount, activated, handshake, nestedEmitCount,
                    emitWitness, pauseLocks, pauseBuffer, resubscribeCount,
                    pauseActionCount, upQueues, upActionCount,
-                   extraSinkTrace, pendingExtraDelivery,
+                   extraSinkTrace,
                       replayBuffer,
                       teardownCount, teardownWitness, replaySnapshot,
                       terminatedBy, batchActive>>
 
 (* `DeliverInvalidate(p, c)` — consume the INVALIDATE message head at edge  *)
 (*   <<p, c>>, record `cache[c]` to `cleanupWitness[c]` (pre-reset), reset  *)
-(*   `cache[c]` to `DefaultInitial`, AND forward INVALIDATE to every child  *)
-(*   of c (full cascade).                                                    *)
+(*   `cache[c]` to `DefaultInitial`, AND forward `<<DIRTY, INVALIDATE>>` to *)
+(*   every child of c (full cascade with Q15 auto-DIRTY-prefix).            *)
 (*                                                                            *)
 (* Extended 2026-04-23 next-batch item A: previously one-step only. Full    *)
 (* cascade is bounded by graph depth × `MaxInvalidates` — each origin       *)
@@ -1895,10 +2080,19 @@ Invalidate(n) ==
 (* firings. Tractable because `MaxInvalidates` caps origins (typically 1-2).*)
 (*                                                                            *)
 (* Does NOT record INVALIDATE to `trace[c]` — keeps the `NoDataWithoutDirty`*)
-(* and `BalancedWaves` invariants focused on DATA/DIRTY accounting and     *)
-(* avoids cross-tier interactions (INVALIDATE and DIRTY are both tier-1    *)
-(* but have different meanings). Spec-faithful runtime behavior of         *)
-(* observable INVALIDATE is a follow-on.                                    *)
+(* and `BalancedWaves` invariants focused on DATA/DIRTY accounting.        *)
+(*                                                                            *)
+(* Q14 / DS-13.5.A 2026-05-07: tier-4 ordering + settles-wave semantic:     *)
+(*   - Preconditions widened: NoDirtyAnywhere + NoSettleAnywhere (tier-4   *)
+(*     INVALIDATE drains AFTER tier-1 DIRTY and tier-3 DATA/RESOLVED).      *)
+(*   - `dirtyMask[c]` clears `p` (mirrors DeliverSettle's wave-settle       *)
+(*     semantic). This is the load-bearing fix for the deadlock the runtime *)
+(*     redesign closed: without this, c stays "dirty" forever after INV     *)
+(*     arrives alone (no paired DATA/RESOLVED to clear the bit).            *)
+(*     `InvalidateSettlesWave` invariant pins this; flipping the line back  *)
+(*     produces a 2-step counter-example.                                   *)
+(*   - Cascade enqueues `<<DIRTY, INVALIDATE>>` pair (Q15 auto-prefix      *)
+(*     extends to every cascade hop, not just the origin).                  *)
 (******************************************************************************)
 DeliverInvalidate(p, c) ==
     /\ <<p, c>> \in EdgePairs
@@ -1906,8 +2100,16 @@ DeliverInvalidate(p, c) ==
     /\ Len(queues[<<p, c>>]) > 0
     /\ Head(queues[<<p, c>>]).type = INVALIDATE
     /\ status[c] # "terminated"
+    \* Q14 (2026-05-07) tier-4 gate: tier-1 DIRTY and tier-3 DATA/RESOLVED
+    \* must drain globally before tier-4 INVALIDATE delivers. Mirrors
+    \* DeliverTerminal's tier-5 gate (which additionally requires
+    \* NoInvalidateAnywhere — tier-5 waits for tier-4 too).
+    /\ NoDirtyAnywhere
+    /\ NoSettleAnywhere
     /\ LET qs0 == [queues EXCEPT ![<<p, c>>] = Tail(@)]
+           dirtyMsg == Msg(DIRTY, NullPayload)
            invMsg == Msg(INVALIDATE, NullPayload)
+           pair == <<dirtyMsg, invMsg>>
            \* Batch 5 B (2026-04-23): same guard as `Invalidate` above. In a
            \* diamond A → {B, C} → D, after DeliverInvalidate(B, D) resets
            \* cache[D] = DefaultInitial, a subsequent DeliverInvalidate(C, D)
@@ -1916,23 +2118,55 @@ DeliverInvalidate(p, c) ==
            \* symmetric with Invalidate(n) so all witness writes go through
            \* the same pre-reset precondition.
            wasReset == cache[c] = DefaultInitial
-       IN /\ queues' = EnqueueOutFrom(qs0, c, invMsg)
+           \* Q14 (2026-05-07): clear `p` from `dirtyMask[c]`. INVALIDATE
+           \* settles the wave for `p` at `c` symmetrically to how
+           \* DeliverSettle does for tier-3. Required for
+           \* `InvalidateSettlesWave` to hold under quiesced state.
+           newMask == dirtyMask[c] \ {p}
+           \* Q14 (2026-05-07): mirror DeliverSettle's `allSettled` —
+           \* observable INV at the sink + status transition fire only on
+           \* the LAST delivery clearing the dirty mask. Earlier per-dep
+           \* arrivals are silent at the observer level (Q12 default-ON
+           \* coalesce: one outgoing INV per wave per node, regardless of
+           \* how many parents contributed). Without this, fan-in produces
+           \* asymmetric trace counts: 1 DIRTY (firstDirtyThisWave guard at
+           \* DeliverDirty) but K INVs from K parents — `BalancedWaves`
+           \* (DIRTY = DATA + RESOLVED + INV) would trip.
+           allSettled == newMask = {} /\ status[c] = "dirty"
+       IN /\ queues' = EnqueueSeqOutFrom(qs0, c, pair)
           /\ cleanupWitness' =
               IF wasReset
                 THEN cleanupWitness
                 ELSE [cleanupWitness EXCEPT ![c] = Append(@, cache[c])]
           /\ cache' = [cache EXCEPT ![c] = DefaultInitial]
+          /\ dirtyMask' = [dirtyMask EXCEPT ![c] = newMask]
+          \* Status transitions to "settled" on the wave-closing delivery.
+          \* The post-INV cache value is `DefaultInitial`; the dependent
+          \* observer reads `status = settled` + cache = sentinel as the
+          \* "wave settled with cleanup" outcome. Mirrors DeliverSettle.
+          /\ status' = IF allSettled
+                         THEN [status EXCEPT ![c] = "settled"]
+                         ELSE status
+          \* Q14 (2026-05-07): record INVALIDATE to trace[c] only when this
+          \* is the wave-closing delivery (matches DeliverSettle pattern).
+          /\ trace' = IF allSettled
+                        THEN RecordAtSinkIfAny(trace, c, invMsg)
+                        ELSE trace
+          /\ pendingExtraDelivery' =
+              IF allSettled
+                THEN EnqueuePendingExtra(pendingExtraDelivery, c, invMsg, [cache EXCEPT ![c] = DefaultInitial])
+                ELSE pendingExtraDelivery
           \* Batch 8 (2026-04-24): companion to the witness append. See
           \* `Invalidate` above for the accounting-law rationale.
           /\ nonVacuousInvalidateCount' =
               IF wasReset
                 THEN nonVacuousInvalidateCount
                 ELSE [nonVacuousInvalidateCount EXCEPT ![c] = @ + 1]
-    /\ UNCHANGED <<status, version, dirtyMask, trace, emitCount,
+    /\ UNCHANGED <<version, emitCount,
                    perSourceEmitCount, activated, handshake, nestedEmitCount,
                    emitWitness, pauseLocks, pauseBuffer, resubscribeCount,
                    pauseActionCount, upQueues, upActionCount,
-                   extraSinkTrace, pendingExtraDelivery,
+                   extraSinkTrace,
                       invalidateCount, replayBuffer,
                       teardownCount, teardownWitness, replaySnapshot,
                       terminatedBy, batchActive>>
@@ -2073,6 +2307,7 @@ Next ==
     \/ \E src \in SourceIds, v \in Values : Emit(src, v)
     \/ \E src \in SourceIds, vs \in BatchSeqs : BatchEmitBegin(src, vs)
     \/ \E src \in SourceIds : BatchEmitStep(src)
+    \/ \E src \in SourceIds, items \in BatchInvSeqs : BatchEmitWithInv(src, items)
     \/ \E src \in SourceIds : Terminate(src)
     \/ \E sid \in SinkIds : SubscribeSink(sid)
     \/ \E triple \in SinkNestedEmits :
@@ -2156,10 +2391,19 @@ BalancedWaves ==
             \* graph quiesced states (queues AND buffers empty) sidesteps
             \* the cross-node accounting without losing coverage of the
             \* invariant's intent.
+            \*
+            \* Q14 (2026-05-07): INVALIDATE included on the settle side.
+            \* Under Q15 auto-DIRTY-prefix, every INVALIDATE emission is
+            \* preceded by a synthetic DIRTY recorded to trace[n] via
+            \* DeliverDirty. The matching INVALIDATE (recorded by
+            \* `Invalidate(n)` at origin or `DeliverInvalidate(p, n)` on
+            \* delivery) balances that DIRTY. Pre-Q14 INVALIDATE flowed
+            \* without a DIRTY prefix and was deliberately excluded from
+            \* trace; the new auto-prefix wave is fully observable.
             status[n] # "terminated" =>
                 Cardinality({i \in 1..Len(trace[n]) : trace[n][i].type = DIRTY}) =
                 Cardinality({i \in 1..Len(trace[n]) :
-                                trace[n][i].type \in {DATA, RESOLVED}})
+                                trace[n][i].type \in {DATA, RESOLVED, INVALIDATE}})
 
 \* #3: After the first COMPLETE or ERROR in a sink's trace, no further
 \*     DIRTY / DATA / RESOLVED messages appear.
@@ -2211,6 +2455,16 @@ DiamondConvergence ==
 \*     A's emits while `emitCount` aggregates both). `perSourceEmitCount[s]`
 \*     — incremented by Emit/BatchEmitMulti/SinkNestedEmit at the emitting
 \*     source's slot — is the per-source counter this invariant needs.
+\*
+\*     Q14 / Q8 update (2026-05-07): INVALIDATE is excluded from both sides
+\*     of the equality. `Invalidate(s)` and `BatchEmitWithInv(s, items)`
+\*     (Q9 collapse path) do NOT increment `perSourceEmitCount[s]`; the
+\*     INVALIDATE messages they enqueue do NOT count on the LHS. This
+\*     reflects Q8: INVALIDATE is not a value emission and is never
+\*     substituted by `IsAbsorbed`. Any refactor that routes INVALIDATE
+\*     through the equals oracle would either count INV as a settle (LHS
+\*     mismatch) or drop a settle (RHS mismatch) — see also #31
+\*     `InvalidateNotInValueDomain` for the structural counterpart.
 EqualsFaithful ==
     \A s \in (SourceIds \cap SinkIds) :
         \* Terminated sources excluded: §2.6 "Teardown" discards pauseBuffer
@@ -2861,5 +3115,137 @@ NoDepCascadeTerminalWhenGateFalse ==
 CleanupWitnessAccounting ==
     \A n \in NodeIds :
         Len(cleanupWitness[n]) = nonVacuousInvalidateCount[n]
+
+\* #29 — InvalidateSettlesWave (Q14 / DS-13.5.A 2026-05-07 — closing the
+\* deferred Q14 TLA+ coverage from the 2026-05-02 INVALIDATE redesign).
+\*
+\* Counter-test for the deadlock the runtime redesign closed: pre-DS-13.5.A,
+\* an INVALIDATE arriving at a derived's only dep would NOT clear the dep's
+\* bit from `dirtyMask[c]`, leaving c stuck in `status = "dirty"` with no
+\* paired DATA/RESOLVED to settle the wave. The runtime fix ("`_depInvalidated`
+\* decrements `_dirtyDepCount`") is mirrored in this model by
+\* `DeliverInvalidate(p, c)` clearing `p` from `dirtyMask[c]`.
+\*
+\* Statement: at any quiesced state (queues drained, buffers drained), no
+\* derived non-terminated node has unmatched dirty bits. Equivalently: every
+\* DIRTY that arrived at a derived has been matched by a settle (DATA,
+\* RESOLVED, or INVALIDATE) that cleared its parent's bit.
+\*
+\* Counter-example construction: in the 4-node diamond A → {B, C} → D,
+\* `Invalidate(A)` enqueues `<<DIRTY, INVALIDATE>>` to B and C. DIRTY drains:
+\* dirtyMask[B/C] gain {A}. Without the Q14 dirtyMask clear in
+\* DeliverInvalidate, INV drains and cache resets but dirtyMask[B/C] still
+\* holds {A}. Cascade fires, dirtyMask[D] gains {B, C}; INVs drain at D
+\* without clearing. Quiesced state: dirtyMask[B/C/D] all non-empty →
+\* `InvalidateSettlesWave` trips with a 2-step counter (Invalidate(A);
+\* DeliverDirty + DeliverInvalidate cycle).
+\*
+\* Holds vacuously when `InvalidateOriginators = {}` (cascade never fires).
+\*
+\* Quiesce gate: the precondition matches `BalancedWaves` —
+\* `AllQueuesEmpty /\ AllBuffersEmpty /\ NoActiveBatch`. Without
+\* `NoActiveBatch`, a transient mid-batch state where DIRTYs have drained
+\* but `batchActive[src].status = "running"` (settles still pending in the
+\* batch state machine) would trigger false positives: dirtyMask non-empty
+\* while waiting for `BatchEmitStep` to deliver the settles. Without
+\* `AllBuffersEmpty`, a paused source with cross-node deferred settles
+\* could similarly leave dirtyMask non-empty.
+InvalidateSettlesWave ==
+    (AllQueuesEmpty /\ AllBuffersEmpty /\ NoActiveBatch) =>
+        \A c \in NodeIds :
+            (Cardinality(Parents(c)) >= 1 /\ status[c] # "terminated") =>
+                dirtyMask[c] = {}
+
+\* #30 — MergeRulesRespected (Q14 / DS-13.5.A 2026-05-07 — closing the
+\* deferred Q14 TLA+ coverage).
+\*
+\* Q1/Q3/Q9 merge rules from the DS-13.5.A INVALIDATE redesign:
+\*   Q1: DATA + INVALIDATE in same batch → DATA wins.
+\*   Q3: RESOLVED + INVALIDATE in same batch → RESOLVED wins.
+\*   Q9: INVALIDATE + INVALIDATE in same batch → coalesces to ONE.
+\*
+\* The runtime enforces these inside `_frameBatch` at construction time;
+\* the `BatchEmitWithInv` action mirrors that construction in the model
+\* (one merged settle per fire). The structural protocol-level invariant
+\* below catches refactor regressions that would either:
+\*   (a) emit two INVALIDATEs adjacent on a child edge (Q9 collapse failure
+\*       — without an intervening DIRTY + tier-3 settle pair separating two
+\*       distinct waves), or
+\*   (b) emit DATA/RESOLVED immediately followed by INVALIDATE without a
+\*       DIRTY between (Q1/Q3 wins-rule failure — the EMIT should have
+\*       overridden the INV at coalesce time).
+\*
+\* Multi-emit batches (`BatchEmitBegin/Step`) intentionally produce
+\* `<<DIRTY*K, settle*K>>` where K consecutive non-INV settles is allowed
+\* — that's the K-emit coalesce, NOT a merge-rule violation.
+\*
+\* Two structural shapes are forbidden:
+\*   `<<INVALIDATE, INVALIDATE>>` adjacent on any edge (Q9 violation)
+\*   `<<DATA|RESOLVED, INVALIDATE>>` adjacent on any edge (Q1/Q3 violation)
+\* Note we don't forbid `<<INVALIDATE, DATA|RESOLVED>>` because that's the
+\* legal cross-batch shape: batch1 emitted INV, batch2 emitted DATA. The
+\* DIRTY auto-prefix on batch2 separates them — but the FIFO queue lists
+\* `<<INV, DIRTY, DATA>>` which is fine. (NoSettleInvSandwich would have
+\* required NO settle adjacent to INV in either direction; that's stricter
+\* than needed.)
+NoAdjacentInvalidates ==
+    \A e \in EdgePairs :
+        \A i \in 1..(Len(queues[e]) - 1) :
+            ~(queues[e][i].type = INVALIDATE /\ queues[e][i+1].type = INVALIDATE)
+
+NoEmitToInvNoDirtySandwich ==
+    \A e \in EdgePairs :
+        \A i \in 1..(Len(queues[e]) - 1) :
+            (queues[e][i].type \in {DATA, RESOLVED}
+             /\ queues[e][i+1].type = INVALIDATE)
+                => FALSE
+
+MergeRulesRespected ==
+    /\ NoAdjacentInvalidates
+    /\ NoEmitToInvNoDirtySandwich
+
+\* #31 — InvalidateNotInValueDomain (Q14 / Q8 — DS-13.5.A 2026-05-07).
+\*
+\* Q8 lock: "INVALIDATE is not a value emission; equals never substitutes
+\* it. Always propagates." The structural form: every INVALIDATE message
+\* in the system carries `NullPayload`, never a `Value`-domain payload.
+\* This holds vacuously today because `Invalidate(n)` and `DeliverInvalidate`
+\* construct INVALIDATE via `Msg(INVALIDATE, NullPayload)` directly,
+\* bypassing `IsAbsorbed`. The invariant is a regression guard: any future
+\* refactor that routes INVALIDATE through the equals oracle (e.g.
+\* attempting to "absorb" an INV into a RESOLVED via custom equals) would
+\* either drop the type tag or carry a Value payload — both trip this
+\* invariant.
+\*
+\* Companion to `EqualsFaithful` (#5): the latter counts DATA + RESOLVED
+\* settlements at sources; this one structurally guards INVALIDATE from
+\* being silently rewritten as a tier-3 settlement.
+InvalidateNotInValueDomain ==
+    /\ \A e \in EdgePairs :
+         \A i \in 1..Len(queues[e]) :
+             queues[e][i].type = INVALIDATE => queues[e][i].value = NullPayload
+    /\ \A n \in NodeIds :
+         \A i \in 1..Len(pauseBuffer[n]) :
+             pauseBuffer[n][i].type = INVALIDATE => pauseBuffer[n][i].value = NullPayload
+    /\ \A n \in SinkIds :
+         \A i \in 1..Len(trace[n]) :
+             trace[n][i].type = INVALIDATE => trace[n][i].value = NullPayload
+    \* QA P2 (2026-05-07): also cover extra-sink delivery surfaces. Both
+    \* `pendingExtraDelivery` (the iterator-style ping queue, populated by
+    \* `EnqueuePendingExtra` / `EnqueuePendingExtraSeq`) and `extraSinkTrace`
+    \* (per-extra-sink observation log, populated by `DeliverToExtraSink`)
+    \* receive INVALIDATE messages via the same code paths as `trace`. A
+    \* regression that smuggles a Value-domain payload through INVALIDATE
+    \* would otherwise be visible only on the primary `trace` and missed by
+    \* extra-sink consumers. Vacuous in MCs where ExtraSinks is 0 every-
+    \* where (existing baseline); active in any future multi-sink + INV MC.
+    /\ \A n \in NodeIds : \A i \in 1..ExtraSinks[n] :
+         \A j \in 1..Len(pendingExtraDelivery[n][i]) :
+             pendingExtraDelivery[n][i][j].msg.type = INVALIDATE
+                 => pendingExtraDelivery[n][i][j].msg.value = NullPayload
+    /\ \A n \in NodeIds : \A i \in 1..ExtraSinks[n] :
+         \A j \in 1..Len(extraSinkTrace[n][i]) :
+             extraSinkTrace[n][i][j].type = INVALIDATE
+                 => extraSinkTrace[n][i][j].value = NullPayload
 
 ============================================================================

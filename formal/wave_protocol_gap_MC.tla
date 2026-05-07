@@ -63,6 +63,7 @@ ResetOnTeardownNodesMC == NodeIdsMC \ SourceIdsMC
 \* Package 6 (2026-04-23): INVALIDATE axis disabled in existing MCs.
 InvalidateOriginatorsMC == {}
 MaxInvalidatesMC        == 0
+BatchInvSeqsMC          == {}
 
 \* Package 5 (2026-04-23): auto-terminal gating — all nodes default TRUE
 \* so existing MCs preserve prior "any dep terminal cascades" behavior.

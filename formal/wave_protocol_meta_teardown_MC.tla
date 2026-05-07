@@ -86,4 +86,5 @@ MaxTeardownsMC   == 1
 
 InvalidateOriginatorsMC == {}
 MaxInvalidatesMC        == 0
+BatchInvSeqsMC          == {}
 ==============================================================================

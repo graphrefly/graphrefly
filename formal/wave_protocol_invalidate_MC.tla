@@ -68,4 +68,5 @@ MaxTeardownsMC   == 0
 \* via DeliverInvalidate.
 InvalidateOriginatorsMC == {"A"}
 MaxInvalidatesMC        == 1
+BatchInvSeqsMC          == {}
 ==============================================================================

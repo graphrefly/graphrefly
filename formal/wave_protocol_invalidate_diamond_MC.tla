@@ -79,4 +79,5 @@ MaxTeardownsMC   == 0
 \* becomes load-bearing.
 InvalidateOriginatorsMC == {"A"}
 MaxInvalidatesMC        == 1
+BatchInvSeqsMC          == {}
 ==============================================================================
