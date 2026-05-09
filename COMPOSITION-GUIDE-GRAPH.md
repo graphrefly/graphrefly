@@ -349,12 +349,27 @@ Convenience factories combine each kind with each backend:
 `attachEventStorage`):
 
 ```ts
-// Graph snapshots — one snapshot tier per ordered slot.
+// Graph snapshots — paired tier slots (Phase 14.6, DS-14-storage). Each
+// slot pairs a snapshot tier (mode:"full" baselines) with an optional WAL
+// companion (intermediate WALFrame records between baselines). Omit `wal`
+// to skip WAL replay — that slot writes only baselines (effectively
+// `compactEvery: 1` since intermediate state can't be recovered).
 graph.attachStorage([
-  memorySnapshot(),                                          // hot
-  fileSnapshot(".graphrefly", { debounceMs: 5_000 }),        // warm
-  indexedDbSnapshot(spec, { debounceMs: 60_000 }),           // cold
+  { snapshot: memorySnapshot(),                          wal: memoryKv() },         // hot
+  { snapshot: fileSnapshot(".graphrefly", { debounceMs: 5_000 }), wal: fileKv(".graphrefly") }, // warm
+  { snapshot: indexedDbSnapshot(spec, { debounceMs: 60_000 }) },                    // cold (no WAL)
 ]);
+
+// Forward-replay an existing graph from a paired slot:
+const result = await graph.restoreSnapshot({
+  mode: "diff",
+  source: { tier: snapshotTier, walTier },
+  // Optional Q9 controls:
+  // lifecycle: ["data"],          // skip topology rewinds
+  // targetSeq: 1234,              // point-in-time recovery
+  // onTornWrite: ({ frame_seq, reason }) => "skip",
+});
+// result.replayedFrames / .skippedFrames / .finalSeq / .phases for inspection.
 
 // CQRS event log — append-log tiers, partition by aggregate.
 cqrs.attachEventStorage([
@@ -391,6 +406,20 @@ queue.events.attachStorage([
   `false` skips the save entirely.
 - **`compactEvery: N` forces flush.** Useful for append-log tiers — caps
   the buffer at N entries regardless of debounce.
+
+- **WAL-paired slots (Phase 14.6 — `graph.attachStorage`).** A slot that
+  pairs `{ snapshot, wal }` writes `mode:"full"` baselines to `snapshot`
+  and intermediate `WALFrame<T>` records to `wal` between them. The shared
+  per-slot `seq` cursor lets `graph.restoreSnapshot({ mode: "diff" })`
+  filter `frame_seq > baseline.seq` against either tier. The WAL companion
+  must implement `BaseStorageTier.listByPrefix` (the default `kvStorage`
+  does); other shapes throw `StorageError("backend-no-list-support")` on
+  first replay. Cross-scope replay order is `spec → data → ownership`
+  (DS-14 PART 4); each phase runs inside its own `graph.batch()` so a
+  phase failure rolls back its own writes. **Loud caveat:** strict
+  cross-tier atomicity is M4-side (Rust `redb`); pure-TS impl is
+  best-effort under crash. See §3.8 "WAL replay" in the spec for the
+  six-section amendment.
 
 **Transaction model — "one wave = one transaction":**
 

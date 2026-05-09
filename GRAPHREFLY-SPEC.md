@@ -1137,6 +1137,125 @@ Reconstruction order:
 If a snapshot node has no matching factory and isn't `state`, `fromSnapshot` throws with
 the unresolvable path list.
 
+#### WAL replay (DS-14-storage, Phase 14.6)
+
+*Ratified 2026-05-08 by `archive/docs/SESSION-DS-14-storage-wal-replay.md` (locked Q1–Q9).
+Folds the §8.7 amendment that the deviation-audit thread referenced. Per-impl rigor (ACID,
+auto-tuning compaction, cross-replica WAL merging, forward recovery past mid-stream torn
+writes) STRONG-DEFER to the M4 Rust `graphrefly-storage` crate; the user contract + frame
+format + replay ordering land here as the stable target both impls honor.*
+
+`attachStorage` accepts paired tier slots — one snapshot tier (holds `mode:"full"`
+baselines) plus an optional WAL companion (holds intermediate frames). Diff records are
+no longer written to the snapshot tier; they decompose into one `WALFrame<T>` per discrete
+change and flow to the WAL tier. The two tiers may share a backend or live on separate
+backends; the shared write-cursor (`seq`) lets replay filter `frame_seq > baseline.seq`
+against either.
+
+```
+graph.attachStorage([{ snapshot: snapshotTier, wal: walTier? }, ...], opts?)
+graph.restoreSnapshot({ mode: "diff", source, lifecycle?, targetSeq?, onTornWrite? })
+                                       — replay WAL onto an existing graph
+```
+
+##### §a — WAL frame structure (Q1)
+
+```
+WALFrame<T> = {
+  t: "c",                                     // bridge tag (DS-14 PART 5)
+  lifecycle: "spec" | "data" | "ownership",   // scope discriminant (DS-14 PART 4)
+  path: string,                               // qualified node / bundle path
+  change: BaseChange<T>,                      // DS-14 universal envelope
+  frame_seq: number,                          // WAL-tier monotonic cursor
+  frame_t_ns: number,                         // wall clock at WAL-write time
+  checksum: <impl-specific 32-byte digest>,   // torn-write detection
+}
+```
+
+Two `seq` fields and two `t_ns` fields are intentional: `change.seq` is the bundle's
+`mutations` cursor (DS-14 T1) while `frame_seq` is the WAL-tier cursor; `change.t_ns` is
+the mutation-entry wall clock while `frame_t_ns` is the WAL-write wall clock (these
+diverge under debounced tiers). Per-frame codec hint is rejected — codec migration goes
+via baseline rewrite.
+
+**Checksum function — locked: 32 bytes over canonical-JSON of the frame body sans the
+checksum field itself.** Locked design specified BLAKE3; pure-TS impl ships SHA-256 (hex)
+to stay zero-dependency (no BLAKE3 in WebCrypto). M4 Rust impl matches via `sha2` + `hex`.
+BLAKE3 returns when post-1.0 DagCbor IPLD content-addressing lands and a real ecosystem
+reason emerges. Both impls produce byte-identical SHA-256 output on byte-identical
+canonical JSON.
+
+##### §b — Replay ordering (Q2)
+
+Cross-scope: `spec → data → ownership`. Within a lifecycle: `frame_seq` ASC. Each
+lifecycle phase runs inside one `graph.batch()` so a phase failure rolls back its own
+writes without tearing down earlier phases (`RestoreError("phase-failed")`). The
+`atomicAllPhases` knob is deferred — recommended `false` falls out of per-phase rollback
+for free.
+
+##### §c — Recovery boundary (Q3)
+
+`restoreSnapshot({ mode:"diff" })` loads the most-recent `mode:"full"` baseline from the
+snapshot tier, then replays WAL frames where `frame_seq > baseline.seq`. Checksum
+mismatches are classified by position:
+
+- **WAL tail** (no later frame): default policy `"skip"` — drop the frame, count in
+  `RestoreResult.skippedFrames`, continue.
+- **Mid-stream**: default policy `"abort"` — throw
+  `RestoreError("torn-write-mid-stream")`. Forward recovery past mid-stream torn frames
+  is M4-side; pure-TS impl is best-effort.
+
+Override either default via `onTornWrite(info) → "skip" | "abort"`.
+
+##### §d — Codec contract (Q4)
+
+`jsonCodec` default; `DagCborCodec` opt-in for content-addressed scenarios; tier-level
+uniformity (one tier → one codec). Mixed codecs in a single WAL rejected at restore with
+`RestoreError("codec-mismatch")`. `format_version` extends from `GraphCheckpointRecord` to
+`WALFrame` per-tier; codec migration via baseline rewrite (no per-frame codec hint).
+
+##### §e — `listByPrefix` interface (Q5)
+
+```
+BaseStorageTier.listByPrefix?(prefix: string): AsyncIterable<{ key, value }>
+```
+
+Lazy AsyncIterable (NOT eager) so RAM budgets on edge runtimes hold. Key format
+`${prefix}/${frame_seq.padStart(20, "0")}` makes lex-ASC string sort = numeric ASC up to
+`frame_seq < 10^20`. Literal byte-prefix match — no glob, no regex. Backends without
+`list?` throw `StorageError("backend-no-list-support")` on first iteration.
+
+##### §f — INVALIDATE persistence (Q7)
+
+INVALIDATE messages persist as a dedicated `GraphValueChange{kind:"node.invalidate"}` frame
+in the `"data"` lifecycle. Replay applies via `graph.invalidate(path)`, restoring the
+SENTINEL slot so downstream `prevData[i] === undefined` detectors work deterministically
+post-replay. INVALIDATE remains `messageTier === 4`, inside the `tier >= 3`
+auto-checkpoint trigger. Ordering is `frame_seq` ASC alongside other data-lifecycle
+frames; no special tier ordering.
+
+##### §g — Compaction discipline (Q8)
+
+`compactEvery: 10` default; `truncateOnCompact: false` default for TS (conservative — no
+ACID), `true` default for the M4 Rust impl (`redb`-backed). Optional `tier.compact()`
+forces an immediate baseline regardless of cadence (test fixtures, deploy boundaries,
+end-of-process drains). Frames between baselines are RETAINED until the NEXT baseline
+lands successfully.
+
+##### §h — Single-impl deferrals (Q6)
+
+These ship Rust-side at M4 close; pure-TS impl does NOT replicate:
+
+- Strict cross-tier ACID via `redb` write-transactions (TS is best-effort).
+- O(log n) per-frame replay via `imbl::Versioned<T>` (TS applies frames sequentially).
+- Cross-replica WAL merging (`peerGraph(transport)` post-1.0).
+- Auto-tuning `compactEvery` based on cumulative diff bytes.
+- Forward recovery past mid-stream torn writes.
+- `loom`-checked storage-tier concurrency.
+
+Pure-TS impl's `restoreSnapshot` API surface is identical across impls (parity-tests gate
+divergence at M4 close); only the underlying rigor differs.
+
 ---
 
 ## 4. Utilities
@@ -1395,9 +1514,10 @@ Follows semver:
 - **Minor** (0.x.0): new optional features, new message types
 - **Major** (x.0.0): breaking changes to protocol or primitive contracts
 
-Current: **v0.4.0** — unified dispatch waist; `actions.bundle` deleted; mandatory PAUSE/RESUME lockId; versioning §7 expanded
+Current: **v0.4.1** — §3.8 WAL replay amendment (DS-14-storage); paired-tier `attachStorage` shape; `restoreSnapshot({ mode: "diff" })` Q9 surface; SHA-256 hex checksum (BLAKE3 deferred to post-1.0 IPLD)
 
 **Changelog:**
+- **v0.4.1** — §3.8 "WAL replay (DS-14-storage, Phase 14.6)" sub-section added (sub-sections §a–§h). Locks `WALFrame<T>` shape, `BaseStorageTier.listByPrefix` interface, cross-scope replay ordering `spec → data → ownership`, baseline + WAL tail recovery semantics, codec contract, INVALIDATE persistence as `node.invalidate` frame, compaction discipline, and the M4 Rust deferral fence. Pure-TS impl uses SHA-256 hex for the checksum (zero-dep tradeoff vs. the locked-design BLAKE3); M4 matches via `sha2`+`hex`. `walTier` is REQUIRED for tier-handle restore source (snapshot tier doesn't expose `listByPrefix`); empty `lifecycle: []` and `targetSeq < baseline.seq` are rejected with `RestoreError` to surface caller bugs early. Compatible patch — no behavior change for existing callers; new `restoreSnapshot({ mode: "diff" })` API surface and paired tier shape are additive.
 - **v0.4.0** — Unified dispatch waist. The `actions.bundle` / `Bundle` / `BundleFactory`
   user-facing framing surface is **deleted**: actions are `emit`, `down`, `up` only.
   Every emission path — `node.emit(v)`, `node.down(msgs)`, `actions.emit(v)`,
