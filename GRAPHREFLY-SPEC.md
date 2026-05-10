@@ -45,7 +45,7 @@ Examples:
 | `RESET` | — | Clear cache + re-push initial (INVALIDATE then push) |
 | `PAUSE` | lockId | Suspend activity (lock identifies the pauser) |
 | `RESUME` | lockId | Resume after pause (must match PAUSE lockId) |
-| `TEARDOWN` | — | Permanent cleanup, release resources |
+| `TEARDOWN` | — | Cleanup of current lifecycle (resubscribable nodes may re-activate per R2.2.7.a) |
 | `COMPLETE` | — | Clean termination |
 | `ERROR` | error | Error termination |
 
@@ -323,20 +323,40 @@ the sink. This is the **only** way to connect to a node's output.
 
 ```
 subscribe(sink, actor?):
-  1. if terminal and resubscribable → reset (clear cache, status, DepRecords)
-  2. increment sinkCount; register sink
-  3. if not terminal → emit START handshake to `sink` via `downWithBatch`:
+  1. if terminal and not resubscribable → REJECT (R2.2.7.b)
+        — throw an Error / RuntimeError / language-idiomatic rejection
+        — the stream is permanently over; subscribe receives no handshake
+  2. if terminal and resubscribable → reset (R2.2.7.a)
+        — clear terminal, has_fired_once, has_received_teardown, DepRecords
+        — drain pause lockset; clear replay buffer
+        — fire wipe_ctx so binding `ctx.store` starts fresh
+        — TEARDOWN does NOT block reset (D118): TEARDOWN is the cleanup
+          signal of the prior activation cycle, not permanent destruction
+  3. increment sinkCount; register sink
+  4. if not terminal → emit START handshake to `sink` via `downWithBatch`:
         • cache is SENTINEL → [[START]]
         • cache has value v → [[START], [DATA, v]]
         • if replayBuffer enabled → deliver buffered DATA after START
-  4. if sinkCount == 1 and not terminal → activate:
+  5. if sinkCount == 1 and not terminal → activate:
         • state node (no deps, no fn): no-op
         • producer (no deps, with fn): run fn (may emit via actions)
         • derived/effect (deps, with fn): subscribe to all deps
-  5. if activation did not produce a value and cache is still SENTINEL,
+  6. if activation did not produce a value and cache is still SENTINEL,
      transition status to `"pending"`
-  6. return unsubscribe function (last unsub → deactivate)
+  7. return unsubscribe function (last unsub → deactivate)
 ```
+
+**R2.2.7.a — Resubscribable + terminal → reset on subscribe (D118, 2026-05-10).** A late `subscribe()` to a `resubscribable: true` node that has terminated (`status === "completed" | "errored"`) resets the lifecycle BEFORE installing the new sink. The reset clears `terminal`, `has_fired_once`, `has_received_teardown`, all per-dep `prevData` / `dataBatch` / `terminal`, drains the pause lockset, and clears the replay buffer. Cache survives for state nodes per ROM rule below; compute nodes start sentinel. **TEARDOWN does NOT block reset.** The previous F3 audit guard (`!has_received_teardown`) conflated TEARDOWN with permanent destruction; TEARDOWN is the cleanup signal of the prior activation cycle and a fresh activation legitimately begins on the next subscribe. The `wipe_ctx` cleanup hook fires lock-released so binding-side `ctx.store` starts fresh per R2.4.6.
+
+**R2.2.7.b — Non-resubscribable + terminal → reject subscribe (D118, 2026-05-10).** A late `subscribe()` to a `resubscribable: false` node that has terminated is REJECTED. The stream is permanently over; the late subscriber receives no handshake. Each implementation surfaces this via its idiomatic error channel:
+
+- **TS:** `subscribe()` throws `Error("subscribe(...): node is non-resubscribable and has terminated; the stream is permanently over (R2.2.7.b)")`.
+- **PY:** `subscribe()` raises `RuntimeError` with the same message.
+- **Rust:** `Core::try_subscribe` returns `Err(SubscribeError::TornDown { node })`. `Core::subscribe` (the panic-on-error variant) panics.
+
+The TEARDOWN flag is irrelevant for the rejection decision — `terminal` alone gates rejection on non-resubscribable nodes (the TS `_isTerminal` getter checks `_status` ∈ `{"completed", "errored"}`; the Rust check is `terminal.is_some()`). Operators that subscribe to upstream sources (zip / concat / race / take_until / merge / switch_map / etc.) MUST handle the rejection by skipping that source — concat advances to the next; merge ignores; etc.
+
+**Rationale.** Pre-D118, the implementations replayed `[START, DATA?, COMPLETE | ERROR, TEARDOWN?]` to late subscribers of non-resubscribable terminal nodes. That delivered useful signal but conflated "subscribe to a live stream" with "receive a courtesy replay of past lifecycle events." R2.2.7.b makes the contract explicit: `resubscribable` IS the property that gates whether late subscribe re-activates, and non-resubscribable terminal = stream over = honest error. R2.2.7.a removes the parallel over-defensive guard that blocked reset on torn-down resubscribable nodes.
 
 The `START` message is the first thing any sink ever receives from a subscription.
 It is emitted through `downWithBatch`, so when `subscribe()` is called inside
