@@ -154,5 +154,4 @@ const supervisor = agentLoop(supervisorAdapter, {
 As the library grows upward, additional solution-level patterns will be added here:
 
 - **Eval harness** — two-tier eval (fast synthetic + slow human-graded) composing verifiable + distill + harness stages
-- **MCP Server composition** — reactive tool serving via MCP protocol, composing tool selection (§31) + guardrails (§30)
 - **Multi-tenant orchestration** — per-tenant subgraphs with shared infrastructure nodes
