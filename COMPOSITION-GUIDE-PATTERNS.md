@@ -22,6 +22,8 @@
 | "How do I share an audit log + rollback shape across primitives?" | §35 (imperative-controller-with-audit) |
 | "How do I model a long-running multi-step async workflow?" | §36 (process manager) |
 | "How do I track which handler version produced an output?" | §37 (handler versioning via audit metadata) |
+| "How do I make an LLM call that stops when its node is torn down?" | §45 (abort-on-deactivate producer) |
+| "Static `spawnable` or dynamic `actorPool` for multi-agent?" | §46 (spawnable vs actorPool selection) |
 
 ---
 
@@ -1071,3 +1073,106 @@ Callers opt into reactive control by passing a Node when they need it; opt out b
 **Cross-reference:** §35 (Imperative-controller-with-audit) — a different shape where imperative-with-discipline IS the right answer because the controller coordinates multiple reactive edges. §44 covers when *no controller is needed at all* and a parameter widening suffices.
 
 **Decision provenance:** DS-13.5.D walk, 2026-05-01. Original proposal was `boundedCounter` primitive wrapping `tryIncrementBounded`; user pushed back on the "wrap-imperative-as-reactive-then-bolt-imperative-back" anti-pattern. Revised to keep `tryIncrementBounded` as-is, optionally widen `cap` to `number | Node<number>`.
+
+---
+
+### 45. Abort-on-deactivate producer recipe (DS-14.5 / AB-4)
+
+**Problem.** You want an LLM call that participates in a reactive graph and
+**stops the in-flight HTTP request** the moment its node is torn down —
+superseded by `switchMap`, gated off by `valve`, or unmounted with its
+parent graph. Cutting reactive propagation alone leaves the request burning
+tokens to natural completion (the §6 gap #1 cost-control hole).
+
+**Why a recipe, not a primitive.** A factory that wraps `adapter.invoke` and
+re-exposes an imperative `.abort()` hits the §44 anti-pattern
+("wrap-imperative-as-reactive-then-bolt-imperative-back"). The reactive
+substrate already owns a teardown edge — a `producer`'s deactivate hook. The
+abort just rides it. (DS-14.5 D-AB4.)
+
+**Recipe — mint an `AbortController` inside the producer body, thread its
+signal into BOTH `adapter.invoke({ signal })` and `fromAny({ signal })`, and
+`ac.abort()` from the deactivate cleanup:**
+
+```ts
+import { node, COMPLETE, DATA, ERROR } from "@graphrefly/graphrefly";
+import { fromAny } from "@graphrefly/graphrefly/extra";
+
+function llmCall(adapter: LLMAdapter, messages: ChatMessage[]) {
+  return node(
+    (_data, actions) => {
+      const ac = new AbortController();
+      const call = fromAny(adapter.invoke(messages, { signal: ac.signal }), {
+        signal: ac.signal,
+      });
+      const unsub = call.subscribe((batch) => {
+        for (const m of batch) {
+          if (m[0] === DATA) actions.down([[DATA, m[1]], [COMPLETE]]);
+          else if (m[0] === ERROR) actions.down([[ERROR, m[1]]]);
+        }
+      });
+      // Deactivate edge → abort the in-flight HTTP request.
+      return () => { ac.abort(); unsub(); };
+    },
+    { describeKind: "producer" },
+  );
+}
+```
+
+**Composing the three cancellation paths (all free once the producer aborts
+on deactivate):**
+
+```ts
+// Steering / inline-edit / param-swap — supersede cancels the prior call:
+switchMap(editableInputs, (p) => llmCall(adapter, buildMessages(p)));
+
+// Panic stop — valve close cancels the active call:
+valve(llmCall(adapter, messages), killSwitch);
+
+// Cascade — parent graph unmount tears the producer down, aborting.
+```
+
+`switchMap`/`valve` themselves also accept an `abortInFlight` opt (AB-2/AB-3
+— a bare `AbortController` or factory `() => AbortController | undefined`)
+for the case where the call site owns the controller rather than a producer.
+Prefer **this producer recipe** when the call is naturally a graph node;
+prefer the `abortInFlight` opt when an external caller threads the signal.
+
+**Provenance:** DS-14.5 §9Q walk / D-AB4 (2026-05-15). Internal reference
+impl: `_oneShotLlmCall` (harness defaults). The §6 gap #1 cost-control hole
+("valve cuts propagation but the HTTP call keeps generating") closes when
+the call is shaped as an abort-on-deactivate producer.
+
+---
+
+### 46. `spawnable()` vs `actorPool()` — multi-agent topology selection (DS-14.6.A L8)
+
+Two multi-agent presets, **dual-track by design** (SESSION-DS-14.6-A L7/L8).
+They are NOT interchangeable — the choice is a topology decision.
+
+| | `spawnable()` (static track) | `actorPool()` (dynamic track) |
+|---|---|---|
+| **An agent is** | a **subgraph** (`agent()` / `AgentGraph`) mounted at `spawn-{id}/` | a lightweight **`ActorHandle`** (id + context view + todo cursor + publish closure) — **not a subgraph** |
+| **`describe()` shows** | the agent set — each agent is describe-visible topology | only the pool / todo / context-hub collections; actor count drifts inside one reactive `active` map node |
+| **Agent identities** | pre-known / catalogued (preset registry keyed by `presetId`) | unknown at wire time; minted at runtime |
+| **Topology over time** | reflects the agent set (mount/unmount per spawn) | stable — pool/todo/hub fixed; agents drift inside collections |
+| **Use when** | a bounded, catalogued set of named agents; you want each agent's subgraph inspectable | recursive fan-out ("every agent may spawn N helpers"); agent count unbounded/unknown; you do NOT want N drifting subgraphs in `describe()` |
+| **Cancellation** | unmount the agent subgraph | `handle.release()` — cascades teardown to the actor's context/cursor subscriptions (§3i) |
+| **Write isolation** | per-agent subgraph (L2) | per-actor segment via `actor:<id>` tag; same L2 guarantee, finer grain |
+
+**Decision rule:** *Can you enumerate the agents at construction and do you
+want each one's internals describe-visible?* → `spawnable()`. *Does the agent
+count drift at runtime / is it recursively fanned-out and you only need the
+pool+todo+hub structure visible?* → `actorPool()`. Mixed systems compose
+both (a `spawnable` catalogued supervisor that itself drives an
+`actorPool`).
+
+**Both share the substrate** (DS-14.6-A): the messaging hub + standard topic
+constants (`SPAWNS_TOPIC` for spawnable; `CONTEXT_TOPIC` / `TODOS_TOPIC` for
+actorPool) + the changeset machinery. Neither requires an imperative
+supervisor returning a next-agent-name (contrast LangGraph) — coordination
+is message flow + reactive `active`/`todoCursor` derivations.
+
+**Provenance:** SESSION-DS-14.6-A L7/L8 + DS-14.6.A 9Q implementation walk
+D-B1 (2026-05-15). `spawnable()` shipped Phase 13.I; `actorPool()` shipped
+Phase 14.5 (DS-14.6.A U-B).
