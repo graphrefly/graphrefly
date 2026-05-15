@@ -24,6 +24,7 @@
 | "How do I track which handler version produced an output?" | §37 (handler versioning via audit metadata) |
 | "How do I make an LLM call that stops when its node is torn down?" | §45 (abort-on-deactivate producer) |
 | "Static `spawnable` or dynamic `actorPool` for multi-agent?" | §46 (spawnable vs actorPool selection) |
+| "How do multiple agents co-own a subgraph without colliding?" | §47 (multi-agent subgraph ownership) |
 
 ---
 
@@ -1176,3 +1177,89 @@ is message flow + reactive `active`/`todoCursor` derivations.
 **Provenance:** SESSION-DS-14.6-A L7/L8 + DS-14.6.A 9Q implementation walk
 D-B1 (2026-05-15). `spawnable()` shipped Phase 13.I; `actorPool()` shipped
 Phase 14.5 (DS-14.6.A U-B).
+
+---
+
+### 47. Multi-agent subgraph ownership protocol (DS-14.5.A)
+
+When several coding agents co-edit one shared `Graph` (the Wave 2 narrative:
+"spec is code's blueprint; multi-agent worktrees co-edit it without
+colliding"), a subgraph needs an *owner* so two agents don't dirty-write the
+same region. The protocol is a **recipe + preset, NOT a new primitive** (L6):
+`ownershipController({ ttl, heartbeat?, supervisor? })` wires a `messagingHub`
++ `topic.latest` + `derived` + the existing Actor/Guard ABAC. It emits the
+existing DS-14 `OwnershipChange` envelope (`packages/pure-ts/.../change.ts`) —
+do not redefine that type; consume it.
+
+#### The L0–L3 staircase
+
+| Rung | Mechanism | Where it lives |
+|---|---|---|
+| **L0** static | `meta.owner: "<actorId>"` spec annotation; `validateOwnership(spec, prDiff)` hard-fails cross-owner PR edits | spec annotation + lint helper |
+| **L1** TTL | claim carries `ttl`; the claim auto-releases when wall-clock passes `last-sign-of-life + ttl` | `ownershipController({ ttl })` |
+| **L2** heartbeat | `heartbeat: NodeInput<unknown>` — *any* reactive trigger Node; each emission resets the TTL countdown | `ownershipController({ ttl, heartbeat })` |
+| **L3** supervisor | a supervisor claim with `kind:"override"` wins by `level` priority regardless of expiry/heartbeat | `ownershipController({ …, supervisor })` (hook this batch) |
+
+L0/L1/L2/L3 in `OwnershipChange.level` is a **priority axis, not a mechanism
+declaration** (Q10). Override arbitration is a pure level comparison; expiry
+and heartbeat are an independent axis. L1 honors its TTL *strictly* — a crash
+during the TTL window does NOT early-release (Q4); recommend `ttl ≤ 60s` for
+L1 holds and upgrade to L2 (`heartbeat`) for longer holds. "Max tolerance
+since last sign of life" is the unified TTL semantic across L1/L2: L1 has
+nothing that renews the countdown; L2's heartbeat emission renews it.
+
+#### Wiring discipline (the four composition rules this recipe must obey)
+
+1. **Lazy activation (§8/§11).** The controller's `current` owner derivation
+   stays SENTINEL (no DATA) until the first claim. Build `ownershipController`
+   so a never-claimed subgraph emits nothing and incurs zero Guard cost — the
+   un-annotated / un-claimed case is the fast path (mirrors §31's reactive
+   tool-availability lazy gate). Use `ctx.prevData[i] === undefined` to detect
+   "no claim yet," not a `hasClaim` companion.
+
+2. **Subscription ordering — wire observers before emitters (§29/§44).** The
+   Guard-swap effect that re-points `policy({ allowed })` MUST be subscribed to
+   the ownership `topic.latest` *before* any claim is published, otherwise the
+   first claim drains past a late subscriber and the subgraph is left
+   un-guarded for one wave. Construct the controller so the internal
+   claim→Guard wiring is complete at factory-return time; only then expose the
+   claim entry point.
+
+3. **Topic wire-back (§29).** Claim / release / override all flow through one
+   shared ownership topic (Q3 — NOT a separate priority topic). The supervisor
+   publishes `kind:"override"` to the *same* topic; non-supervisor agents
+   subscribe once and narrow by `kind`. The `current`-owner `derived` reads
+   `topic.latest` and re-emits the resolved owner back as the Guard's reactive
+   `allowed` set — that is the wire-back loop. Keep it acyclic: the Guard
+   effect consumes `current`; it never publishes to the ownership topic.
+
+4. **No imperative triggers (§44; spec §5.9).** Heartbeat is
+   `heartbeat: NodeInput<unknown>` — a reactive trigger the caller supplies
+   (`fromTimer({ ms: 30_000 })` for the simple case;
+   `derived([toolCallsTopic.events], …)` for activity-based; a manual
+   `state(0)` tick in tests). Do **not** ship a library timer producer and do
+   **not** expose a `claim.heartbeat()` method — both hit the §44 anti-pattern
+   (`feedback_no_imperative` + `feedback_no_imperative_wrap_as_primitive`).
+   TTL expiry is likewise reactive: gate it on a caller-supplied clock trigger
+   or the heartbeat stream's absence, never a bare `setTimeout`.
+
+#### Runtime enforcement (Q7)
+
+A claim auto-mounts a Guard on the owned subgraph equivalent to
+`policy({ allowed: [ownerId] })`, but with `allowed` as a **reactive option**
+(`NodeInput<readonly string[]>`) so release/override re-point it without
+rebuilding topology. This is the DS-13.5.B reactive-options widening applied to
+Guard (`policyAllowing(allowed)`). Only annotated/claimed subgraphs pay the
+O(1)-per-write Guard cost; a non-owner write throws `GuardDenied`.
+
+**Cross-reference:** §35 (imperative-controller-with-audit) — the ownership
+topic IS an audit log of `OwnershipChange`s, same shape. §44 (`T | Node<T>`
+widening) — `heartbeat`/`allowed` are the widened reactive params; the
+controller is the rare case where a coordinating composition *is* warranted
+(contrast §44's "no controller needed"). §46 (spawnable vs actorPool) —
+ownership composes on top of either multi-agent track; the owner is an
+`Actor.id`, agnostic to whether the agent is a subgraph or an `ActorHandle`.
+
+**Provenance:** DS-14.5.A L5/L6 + Q1–Q10 walk (2026-05-05); spec §2.3a
+(`meta.owner` INV-OWNER-1/2). `validateOwnership` + `ownershipController` +
+the Guard `policyAllowing` widening land Phase 14.5 (deltas #5/#7/#8).

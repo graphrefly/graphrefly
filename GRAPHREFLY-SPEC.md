@@ -534,9 +534,52 @@ Common meta fields:
 | `access` | string | Who can write: "human", "llm", "both", "system" |
 | `tags` | string[] | Categorization |
 | `unit` | string | Measurement unit |
+| `owner` | string | Owning actor id for multi-agent subgraph ownership (§2.3a) |
 
 Because meta fields are nodes, they appear in `describe()` output and are individually
 observable via `observe()`.
+
+#### 2.3a `meta.owner` — subgraph ownership annotation (DS-14.5.A)
+
+`meta.owner` is a reserved meta field whose string value is the `Actor.id`
+that owns the node (and, by extension, the subgraph it anchors). It is the
+static **L0** rung of the L0–L3 multi-agent ownership staircase
+(DS-14.5.A L5): L0 is the spec annotation enforced at PR time, L1 adds a TTL,
+L2 adds a heartbeat, L3 adds supervisor override. The annotation is **opt-in
+per node** — nodes without `meta.owner` carry zero ownership semantics and
+zero enforcement overhead ("shared infrastructure" is exactly the un-annotated
+case; no separate allow-list is maintained).
+
+Two enforcement invariants are normative wherever `meta.owner` is present:
+
+- **INV-OWNER-1 (runtime ABAC enforcement; DS-14.5.A Q7).** When a node carries
+  `meta.owner`, write access MUST be hard-blocked for any actor other than the
+  owner via the Actor/Guard ABAC layer (§1.5). An ownership *claim* auto-mounts
+  a `policy({ allowed: [owner] })`-equivalent Guard on the annotated subgraph;
+  *release* / *override* swaps or clears that Guard. The Guard's allow-set is a
+  reactive option (Node-form `allowed`) so claim/release/override re-point it
+  without rebuilding topology — same reactive-options widening pattern as
+  DS-13.5.B. Guard cost is O(1) per write and is incurred only by annotated
+  nodes; an un-annotated node is exactly as fast as before. Override delivery
+  rides the shared ownership topic with a `kind:"override"` discriminant
+  carrying `previousActor` + `reason` (DS-14 `OwnershipChange`); the supervisor
+  rung (L3) wins by `level` priority, independent of the expiry/heartbeat axis.
+
+- **INV-OWNER-2 (PR-lint enforcement; DS-14.5.A Q5).** A spec lint check
+  (`validateOwnership(spec, prDiff)`) MUST hard-fail a pull request whose diff
+  edits a node carrying `meta.owner` when the PR author is not that owner. An
+  edited node with **no** `meta.owner` is silent (no advisory, no failure). The
+  only sanctioned bypass is an `Override-Owner: <reason>` commit trailer, which
+  is available to any committer and is a pure audit-trail mechanism (CI greps
+  the trailer; the override is recorded, never silently granted). PR-diff →
+  spec-node mapping resolves through `meta.factory` provenance (the
+  `factoryTag` / `decompileSpec` round-trip), not a separate path glob.
+
+Both invariants are independent: INV-OWNER-1 prevents in-process cross-owner
+writes at runtime; INV-OWNER-2 prevents cross-owner edits from landing in the
+committed spec. A system MAY enforce either or both, but a conforming
+implementation that surfaces `meta.owner` MUST NOT weaken the hard-block /
+hard-fail semantics to advisory-only.
 
 **Companion lifecycle:** Meta nodes are companion stores — they survive graph-wide
 lifecycle signals that would disrupt their cached values:
