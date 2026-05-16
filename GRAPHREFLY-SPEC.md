@@ -554,9 +554,14 @@ Two enforcement invariants are normative wherever `meta.owner` is present:
 
 - **INV-OWNER-1 (runtime ABAC enforcement; DS-14.5.A Q7).** When a node carries
   `meta.owner`, write access MUST be hard-blocked for any actor other than the
-  owner via the Actor/Guard ABAC layer (§1.5). An ownership *claim* auto-mounts
-  a `policy({ allowed: [owner] })`-equivalent Guard on the annotated subgraph;
-  *release* / *override* swaps or clears that Guard. The Guard's allow-set is a
+  owner via the Actor/Guard ABAC layer (§1.5). The ownership controller **makes
+  available** a `policy({ allowed: [owner] })`-equivalent Guard whose allow-set
+  re-points reactively on *claim* / *release* / *override*; a conforming host
+  **MUST mount that Guard on every `meta.owner`-annotated node** (caller-mounted
+  — matching DS-14.5.A L6 "recipe + preset, NO new primitive"). The controller
+  does not auto-mount; the host owns wiring the Guard onto annotated nodes. The
+  hard-block intent is unchanged — a conforming implementation MUST NOT weaken
+  it to advisory-only (see the closing paragraph). The Guard's allow-set is a
   reactive option (Node-form `allowed`) so claim/release/override re-point it
   without rebuilding topology — same reactive-options widening pattern as
   DS-13.5.B. Guard cost is O(1) per write and is incurred only by annotated
@@ -1580,6 +1585,17 @@ Follows semver:
 Current: **v0.4.1** — §3.8 WAL replay amendment (DS-14-storage); paired-tier `attachStorage` shape; `restoreSnapshot({ mode: "diff" })` Q9 surface; SHA-256 hex checksum (BLAKE3 deferred to post-1.0 IPLD)
 
 **Changelog:**
+- **v0.4.2** — §2.3a INV-OWNER-1 deliberately weakened (pre-1.0): the Guard
+  mounting responsibility moves from the controller to the host. Previously the
+  text mandated that an ownership *claim* "auto-mounts" a
+  `policy({allowed:[owner]})`-equivalent Guard on the annotated subgraph; it now
+  states the controller **makes available** such a Guard and a conforming host
+  **MUST mount it on every `meta.owner`-annotated node** (caller-mounted —
+  aligns with DS-14.5.A L6 "recipe + preset, NO new primitive"; the
+  `ownershipController()` preset exposes `.guard` but does not auto-wire it).
+  The hard-block intent is UNCHANGED (MUST NOT weaken to advisory-only); only
+  the locus of the mount moved. Behavioral note: existing implementations that
+  relied on auto-mount must now mount `oc.guard` explicitly on annotated nodes.
 - **v0.4.1** — §3.8 "WAL replay (DS-14-storage, Phase 14.6)" sub-section added (sub-sections §a–§h). Locks `WALFrame<T>` shape, `BaseStorageTier.listByPrefix` interface, cross-scope replay ordering `spec → data → ownership`, baseline + WAL tail recovery semantics, codec contract, INVALIDATE persistence as `node.invalidate` frame, compaction discipline, and the M4 Rust deferral fence. Pure-TS impl uses SHA-256 hex for the checksum (zero-dep tradeoff vs. the locked-design BLAKE3); M4 matches via `sha2`+`hex`. `walTier` is REQUIRED for tier-handle restore source (snapshot tier doesn't expose `listByPrefix`); empty `lifecycle: []` and `targetSeq < baseline.seq` are rejected with `RestoreError` to surface caller bugs early. Compatible patch — no behavior change for existing callers; new `restoreSnapshot({ mode: "diff" })` API surface and paired tier shape are additive.
 - **v0.4.0** — Unified dispatch waist. The `actions.bundle` / `Bundle` / `BundleFactory`
   user-facing framing surface is **deleted**: actions are `emit`, `down`, `up` only.
