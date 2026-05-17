@@ -798,14 +798,50 @@ in arrival order** before the RESUME signal is forwarded downstream
 (DS-13.5.A N3(a) — per-entry replay preserves the cross-tier ordering of
 DATA/RESOLVED/INVALIDATE so a buffered sequence like
 `[DATA(v1), INVALIDATE, DATA(v2)]` is observed as three distinct waves on
-resume rather than a single re-sorted batch). Each replay wave passes
-through the normal tier-3 equals substitution walk (§1.3.3), so a buffered
-`[DATA, v]` whose value matches the live cache collapses to `[RESOLVED]` on
-replay — producer "pulses" that write the same value
-while paused are absorbed. This matches diamond-safety intent: `.cache`
-remains coherent with "the last DATA actually delivered to sinks." Producers
-that need pulse semantics (every write observable regardless of value)
-should set `equals: () => false` on the node.
+resume rather than a single re-sorted batch).
+
+**R2.6.1 — Pre-pause baseline replay (Lock 2.C; amended 2026-05-17).** On the
+**first** PAUSE of a pause cycle the node snapshots its pre-pause
+`{ cache, status, versioning }` baseline (versioning = the mutable `version`
+counter plus, for V1, the `cid`/`prev` linked-history fields). Mid-pause
+emissions still advance the node's live `cache`/`versioning` through the
+normal `_emit` pipeline (state mutation is not gated on pause — only
+*delivery* of the tier-3/4 settle slice is deferred into the buffer). On
+final-lock RESUME, **before** the buffer drains, the node restores that
+baseline (skipped if the node went terminal mid-pause — a buffered tier-3/4
+replay is already a post-terminal no-op and rolling `status` back would
+resurrect a dead node). Each buffered wave then replays through the normal
+tier-3 equals-substitution walk (§1.3.3), so the equals reference for a
+replayed wave is **the cache as at the end of the previous wave in the
+buffer, starting from the pre-pause baseline** — wave 1 compares against the
+pre-pause cache; wave N against the cache shaped by replayed waves 1..N-1.
+The observable DATA-vs-RESOLVED pattern on resume is therefore identical to
+what a never-paused run of the same emission sequence would have produced,
+merely time-shifted to resume. (A mid-drain re-pause — a subscriber reacting
+to a replayed wave by issuing a fresh PAUSE — starts a new cycle and
+re-snapshots the *then-current* baseline; the snapshot capture is gated on
+the same "first PAUSE of cycle" signal as the pause-cycle bookkeeping, not on
+buffer nullity, since the drain leaves the buffer non-null.)
+
+This **supersedes** the prior "absorbed pulse" rule (pre-2026-05-17): a
+buffered `[DATA, v]` whose value matched the *mid-pause-advanced* cache used
+to collapse to `[RESOLVED]`, silently swallowing N same-value pulses to a
+single RESOLVED. Under R2.6.1, only a same-value wave relative to the
+*conceptual-timeline* cache (i.e. a genuine no-op write) collapses; a value
+change followed by a same-value pulse delivers `[DATA(v)]` then `[RESOLVED]`,
+not two RESOLVEDs. Multi-DATA *within a single wave*
+(`down([[DATA,v],[DATA,v]])`) still replays verbatim with no equals
+substitution (the `dataCount > 1` guard, §1.3.3) — R2.6.1 only governs
+*across-wave* equals references. `.cache` after drain remains coherent with
+"the last DATA actually delivered to sinks". Producers that want **every**
+write observable regardless of value (no equals collapse at all) still set
+`equals: () => false` on the node.
+
+*Source: Phase 13.6.A Lock 2.C; implemented + /qa-hardened 2026-05-17
+(graphrefly-ts). Cross-ref `docs/optimizations.md` "Lock 2.C — pre-pause
+cache snapshot for replay equals". Cross-language: `graphrefly-py` PAUSE
+buffer must mirror R2.6.1 (was implementing the retired "absorbed" rule —
+parity ticket under the `[py-parity-*]` umbrella).*
 
 **Teardown.** On TEARDOWN or deactivation, the buffer and lock set are
 discarded. Buffered in-flight DATA is NOT drained before teardown — TEARDOWN
