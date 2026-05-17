@@ -781,6 +781,47 @@ keyed by `lockId`; when the set is non-empty, wave completion skips fn but
 DepRecord continues updating with latest values. On final-lock RESUME, if any
 wave completed while paused, fn fires immediately with the latest dep values.
 
+**R2.6.0 — Default-mode PAUSE gating is dep-wave-scoped; a leaf source's
+own `down()` is not deferred in default mode (Option A; pinned
+2026-05-17).** Default `pausable: true` gating operates **only on the
+node's dep-driven fn re-execution** — it coalesces dep waves (the
+"skip fn, fire once on RESUME" rule above). A **leaf source** (a node
+with no deps, e.g. `node([], { initial })`) under a held pause lock that
+then emits via a **direct external `down([[DATA, v]])`** has **no dep
+wave to coalesce**, so in **default mode** that self-emitted DATA is
+**delivered to sinks immediately at `down()` time**: the node's `cache`
+advances immediately, RESUME replays nothing, and no PAUSE tier is
+synthesized for the lock acquisition. This holds **regardless of who
+holds the lock** — the source itself (self-pause) or an external
+controller: default mode never gates a depless source's own production,
+so the pauser identity is irrelevant (the gate is `lockSet.size > 0`,
+pauser-agnostic; only the dep-wave fn path it does not traverse would
+have been gated). This makes default mode a single
+rule with no source carve-out — PAUSE is backpressure on
+*recomputation/propagation*; a leaf source keeps producing unless the
+producer opts out (cf. the `pausable: false` row's "production keeps
+running unless opted out" reasoning).
+
+`"resumeAll"` is the **explicit opt-in** that DOES gate a leaf source's
+own production: it buffers the node's outgoing tier-3/4 settle slices
+while paused — **including a leaf source's own direct
+`down([[DATA, v]])`** — and replays them on final-lock RESUME (per
+"bufferAll mode" + R2.6.1 below; `cache` still advances mid-pause).
+**The two modes are therefore NOT equivalent for a self-paused leaf
+source's external push:** default = deliver immediately (production not
+gated); `"resumeAll"` = buffer & replay everything the node emits.
+(Rejected: extending settle-slice buffering to a leaf source's external
+`down()` in *default* mode — it would re-derive `"resumeAll"` inside
+default mode with no defined "fire once with latest" meaning for a
+producer's own pushes; production-gating is `"resumeAll"`'s job.)
+*Source: §2.6 spec call 2026-05-17; default-mode cross-impl pin
+`packages/parity-tests/scenarios/core/pause-resume.test.ts`; the
+default-vs-`"resumeAll"` boundary is raw-API-pinned in
+`packages/pure-ts/src/__tests__/core/protocol.test.ts` ("R2.6.0
+boundary"); `docs/optimizations.md` "PAUSE/RESUME self-pause";
+cross-language: the `@graphrefly/native` arm's convergence to R2.6.0
+(default mode) is tracked in `docs/cross-track-ledger.md` §2.*
+
 **bufferAll mode (`pausable: "resumeAll"`).** While any lock is held, the
 node captures every outgoing **settle slice** message — tier-3 (DATA /
 RESOLVED) and tier-4 (INVALIDATE per DS-13.5.A Q7) — from its own emission
