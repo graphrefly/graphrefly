@@ -374,45 +374,24 @@ is a function of live subscriptions; reconnect re-runs fn from scratch. Conseque
   giving effects with cleanup a fresh fire/cleanup cycle.
 - Runtime writes via `state.down([[DATA, v]])` persist across subscriber churn.
 
-**First-run gate (§2.7):** a compute node does NOT run fn until every declared dep
-has delivered at least one real value. The dep's subscribe-time push delivers its
-cached value as `[[DATA, cached]]` — a dep that pushes only `[[START]]` (SENTINEL) is
-NOT considered settled, and the derived stays in `"pending"` status. This is the
-composition-guide §1 rule: "derived nodes depending on a SENTINEL dep will not
-compute until that dep receives a real value." This is the SENTINEL mechanism:
-`node<T>()` with no `initial` is unsettled until first real DATA; the gate releases
-when every dep has crossed that threshold.
+**First-run gate (§2.7) — authoritative (amended 2026-05-19, DS-2.7.A lock; supersedes the prior 2026-04-23 wording).** A compute node does NOT run fn until every declared dep has contributed at least one *real DATA* message — either in the current wave (`d.dataBatch.length > 0`) or in a prior wave (`d.prevData !== SENTINEL`).
 
-`dynamicNode` uses the same first-run gate as static nodes: all declared deps must
-deliver at least one value before fn fires. The difference is that fn receives a
-`track(dep)` function instead of a flat array — it picks which deps to read per
-invocation. Unused deps still participate in wave tracking; their updates fire fn but
-equals absorption prevents downstream propagation.
+RESOLVED, INVALIDATE, START, and DIRTY messages do NOT settle the gate. A dep that only ever emits RESOLVED holds the gate forever.
 
-**Multi-dep push-on-subscribe serialization (§2.7 corollary):** `_activate` subscribes
-deps sequentially in declaration order; each dep's subscribe synchronously fires its
-own push-on-subscribe as a **separate wave**. When a compute node has N deps and each
-dep's source is already cached (e.g. N `state()` nodes), the activation produces N
-sequential dep-settlement callbacks — not one combined initial wave.
+Terminal (COMPLETE / ERROR / TEARDOWN) does NOT settle the gate by default. Reduce-class operators (`reduce`, `scan`, `last`, and any other factory that needs to fire on upstream-COMPLETE-without-DATA to emit a seed) opt in via `terminalAsRealInput: true` on the node options — when set, `d.terminal !== undefined` is also a settled state for the gate.
 
-**First-run gate (authoritative — amended 2026-04-23):** fn does not fire until every
-declared dep has delivered at least one DATA or terminal since the last reset. The gate
-is implemented in the core `NodeImpl` and controlled by the `partial` option
-(§2.5):
+The `partial` option (default `false`):
 
-- **`partial: false`** (sugar `derived` / `effect` default) — gate applies. Multi-parent
-  activation holds fn through the sequential dep callbacks and fires exactly once after
-  the last dep delivers, producing one combined initial wave
-  `[[START], [DIRTY], [DATA, fn(init...)]]`. No intermediate RESOLVED is emitted.
-- **`partial: true`** (raw `node(deps, fn)` default) — no gate. fn fires as soon as
-  `_dirtyDepCount === 0` regardless of whether any dep is still sentinel. Appropriate
-  for operators like `withLatestFrom` / `merge` whose fn body handles sentinel deps
-  explicitly (emitting RESOLVED, routing only certain wave combinations, etc.).
+- **`partial: false`** — gate applies. fn does not fire until every dep has contributed real DATA (or terminal, if `terminalAsRealInput: true`). Multi-parent activation holds fn through the sequential dep callbacks and fires exactly once after the last dep settles, producing one combined initial wave `[[START], [DIRTY], [DATA, fn(init...)]]`. No intermediate RESOLVED is emitted.
+- **`partial: true`** — gate is OFF. fn fires as soon as `_dirtyDepCount === 0`, regardless of whether any dep is still SENTINEL. **The fn body MUST guard every dep slot for SENTINEL** (`ctx.prevData[i] === undefined` / batch slot empty); failing to do so will read SENTINEL as `undefined` pass-through and is the operator author's bug, not a gate failure. Use for operators like `valve` (control-alone-on-activation), `merge`, and effects like `agentLoop.effFullDeny` that detect RESOLVED-only-on-one-dep diamonds. `withLatestFrom`-style coalescing operators that need both deps real before the first paired emission belong on `partial: false`, not here (per the `combine.ts` Phase 10.5 author lock).
 
-Gate scope: the gate applies only until fn has fired once in the current activation
-(`_hasCalledFnOnce`). `_addDep` post-activation, subsequent waves, and INVALIDATE do
-not re-gate. Terminal reset on a resubscribable node (§2.2) clears `_hasCalledFnOnce`
-and re-arms the gate for the next activation cycle.
+Gate scope: the gate applies only until fn has fired once in the current activation (`_hasCalledFnOnce`). `_addDep` post-activation, subsequent waves, and INVALIDATE do not re-gate. Terminal reset on a resubscribable node (§2.2) clears `_hasCalledFnOnce` and re-arms the gate for the next activation cycle.
+
+`dynamicNode` uses the same first-run gate as static nodes: all declared deps must deliver at least one real DATA value before fn fires (or terminal if the node opts in via `terminalAsRealInput: true`). The difference is that fn receives a `track(dep)` function instead of a flat array — it picks which deps to read per invocation. Unused deps still participate in wave tracking; their updates fire fn but equals absorption prevents downstream propagation.
+
+**Multi-dep push-on-subscribe serialization (§2.7 corollary):** `_activate` subscribes deps sequentially in declaration order; each dep's subscribe synchronously fires its own push-on-subscribe as a **separate wave**. When a compute node has N deps and each dep's source is already cached (e.g. N `state()` nodes), the activation produces N sequential dep-settlement callbacks — not one combined initial wave. The first-run gate handles this correctly under both `partial` settings (per the rules above).
+
+**Cross-port lock.** This contract is canonical across all three ports (`@graphrefly/pure-ts`, `@graphrefly/native`, `graphrefly-py`). `@graphrefly/native` is already conformant (Rust impl `has_sentinel_deps` predicate + R2.5.3/R5.4 `partial`-bypass match the lock). `graphrefly-py`'s reconciliation (add `partial`, exclude RESOLVED from the settle-set) rides under the existing `[py-parity-am]` rigor-infra deferred umbrella per `docs/optimizations.md`. Session record: `archive/docs/SESSION-DS-2.7.A-first-run-gate.md`.
 
 Raw `node()` operators that want to fire on partial deps (the default `partial: true`)
 can still emit RESOLVED from their fn body to balance outstanding DIRTY messages:
