@@ -52,6 +52,13 @@ Examples:
 The message type set is open. Implementations MAY define additional types. Nodes MUST forward
 message types they don't recognize — this ensures forward compatibility.
 
+**SENTINEL (reserved marker, not a wire message).** The reserved value representing "no DATA
+ever received" for a cache slot. Materializes as `undefined` (TS) / `None` (PY) in a node's
+`.cache` and in the per-dep last-DATA slot (`ctx.latestData[i]`, internally `DepRecord.prevData`).
+SENTINEL is **not** a valid DATA payload (a fn returning SENTINEL would be indistinguishable from
+"no value yet"); see `feedback_guard_patterns.md`. The §2.7 first-run gate predicate is defined
+against the SENTINEL marker.
+
 **`START` handshake (§2.2):** Emitted by a node to each new sink at the top of `subscribe()`,
 before any other downstream delivery for that subscription. Shape: `[[START]]` alone when the
 node's cache is SENTINEL, or `[[START], [DATA, cached]]` when the node has a cached value.
@@ -374,31 +381,42 @@ is a function of live subscriptions; reconnect re-runs fn from scratch. Conseque
   giving effects with cleanup a fresh fire/cleanup cycle.
 - Runtime writes via `state.down([[DATA, v]])` persist across subscriber churn.
 
-**First-run gate (§2.7) — authoritative (amended 2026-05-19, DS-2.7.A lock; supersedes the prior 2026-04-23 wording).** A compute node does NOT run fn until every declared dep has contributed at least one *real DATA* message — either in the current wave (`d.dataBatch.length > 0`) or in a prior wave (`d.prevData !== SENTINEL`).
+**First-run gate (§2.7) — authoritative (amended 2026-05-19, DS-2.7.A lock; supersedes the prior 2026-04-23 wording).** Locks four normative rules (`R2.7.0`–`R2.7.3`) on when a compute node's fn first fires after activation. Scope: the gate is evaluated only until fn has fired once in the current activation cycle (see `R2.7.3` below for the canonical scope rule); once fn has fired, the predicate stops governing — subsequent waves are gated only by `_dirtyDepCount`.
 
-RESOLVED, INVALIDATE, START, and DIRTY messages do NOT settle the gate. A dep that only ever emits RESOLVED holds the gate forever.
+**`R2.7.3` — Gate scope (read first).** The gate applies only until fn has fired once in the current activation (`_hasCalledFnOnce`). `_addDep` post-activation, subsequent waves, and INVALIDATE do NOT re-gate even though INVALIDATE clears the per-dep last-DATA slot back to SENTINEL — the gate predicate below is not re-evaluated after first fire. Terminal reset on a resubscribable node (§2.2 `R2.2.7.a`) clears `_hasCalledFnOnce` and re-arms the gate for the next activation cycle.
 
-Terminal (COMPLETE / ERROR / TEARDOWN) does NOT settle the gate by default. Reduce-class operators (`reduce`, `scan`, `last`, and any other factory that needs to fire on upstream-COMPLETE-without-DATA to emit a seed) opt in via `terminalAsRealInput: true` on the node options — when set, `d.terminal !== undefined` is also a settled state for the gate.
+**`R2.7.0` — Gate predicate.** For each declared dep `d` of a compute node, the gate considers `d` "settled" when EITHER of the following holds:
 
-The `partial` option (default `false`):
+- `d` delivered ≥1 DATA in the current wave (the dep's `batchData` slot for this fn invocation is non-empty), OR
+- `d` delivered ≥1 DATA in a prior wave (the dep's `ctx.latestData[i]` user-context slot — internally `DepRecord.prevData` — is not SENTINEL; see §1.2 SENTINEL definition).
 
-- **`partial: false`** — gate applies. fn does not fire until every dep has contributed real DATA (or terminal, if `terminalAsRealInput: true`). Multi-parent activation holds fn through the sequential dep callbacks and fires exactly once after the last dep settles, producing one combined initial wave `[[START], [DIRTY], [DATA, fn(init...)]]`. No intermediate RESOLVED is emitted.
-- **`partial: true`** — gate is OFF. fn fires as soon as `_dirtyDepCount === 0`, regardless of whether any dep is still SENTINEL. **The fn body MUST guard every dep slot for SENTINEL** (`ctx.prevData[i] === undefined` / batch slot empty); failing to do so will read SENTINEL as `undefined` pass-through and is the operator author's bug, not a gate failure. Use for operators like `valve` (control-alone-on-activation), `merge`, and effects like `agentLoop.effFullDeny` that detect RESOLVED-only-on-one-dep diamonds. `withLatestFrom`-style coalescing operators that need both deps real before the first paired emission belong on `partial: false`, not here (per the `combine.ts` Phase 10.5 author lock).
+RESOLVED, INVALIDATE, START, and DIRTY messages do NOT settle the gate under `R2.7.0`. A dep that only ever emits RESOLVED holds the gate forever (under `partial: false`).
 
-Gate scope: the gate applies only until fn has fired once in the current activation (`_hasCalledFnOnce`). `_addDep` post-activation, subsequent waves, and INVALIDATE do not re-gate. Terminal reset on a resubscribable node (§2.2) clears `_hasCalledFnOnce` and re-arms the gate for the next activation cycle.
+**`R2.7.1` — Terminal does NOT settle by default; `terminalAsRealInput` opts in.** A terminal message (COMPLETE / ERROR / TEARDOWN) does NOT settle the gate for a dep by default. Reduce-class operators (`reduce`, `scan`, `last`, and any other factory that needs to fire on upstream-COMPLETE-without-DATA to emit a seed/accumulator) opt in via `terminalAsRealInput: true` on the node options — when set, `d` is also considered settled when `d` has terminated.
+
+**`R2.7.2` — `partial` controls the gate.** The `partial` option (default `false`):
+
+- **`partial: false`** — gate applies. fn does not fire until every dep is settled per `R2.7.0` (or per `R2.7.0` ∪ "terminated" if `terminalAsRealInput: true`). Multi-parent activation holds fn through the sequential dep callbacks and fires exactly once after the last dep settles, producing one combined initial wave `[[START], [DIRTY], [DATA, fn(init...)]]`. No intermediate RESOLVED is emitted.
+- **`partial: true`** — gate is OFF. fn fires as soon as `_dirtyDepCount === 0`, regardless of whether any dep is still SENTINEL. **The fn body MUST guard every dep slot for SENTINEL** (`ctx.latestData[i] === undefined` / batch slot empty); failing to do so will read SENTINEL as `undefined` pass-through and is the operator author's bug, not a gate failure. Use for operators that explicitly want partial-dep waves (e.g. `valve` for control-stream-alone activation, or effects that need to fire on diamond topologies where one dep settles only via RESOLVED while another delivers DATA). Operators that need every dep real before the first paired emission belong on `partial: false`, not here.
+
+**`R2.7.2` — `partial: true` × `terminalAsRealInput`.** When `partial: true`, `terminalAsRealInput` is ignored — the gate is OFF either way; the flag only relaxes the `partial: false` gate.
 
 `dynamicNode` uses the same first-run gate as static nodes: all declared deps must deliver at least one real DATA value before fn fires (or terminal if the node opts in via `terminalAsRealInput: true`). The difference is that fn receives a `track(dep)` function instead of a flat array — it picks which deps to read per invocation. Unused deps still participate in wave tracking; their updates fire fn but equals absorption prevents downstream propagation.
 
-**Multi-dep push-on-subscribe serialization (§2.7 corollary):** `_activate` subscribes deps sequentially in declaration order; each dep's subscribe synchronously fires its own push-on-subscribe as a **separate wave**. When a compute node has N deps and each dep's source is already cached (e.g. N `state()` nodes), the activation produces N sequential dep-settlement callbacks — not one combined initial wave. The first-run gate handles this correctly under both `partial` settings (per the rules above).
+**Multi-dep push-on-subscribe serialization (§2.7 corollary).** `_activate` subscribes deps sequentially in declaration order; each dep's subscribe synchronously fires its own push-on-subscribe as a **separate wave**. When a compute node has N deps and each dep's source is already cached (e.g. N `state()` nodes), the activation produces N sequential dep-settlement callbacks — not one combined initial wave. The first-run gate handles this correctly under both `partial` settings (per `R2.7.2`).
 
-**Cross-port lock.** This contract is canonical across all three ports (`@graphrefly/pure-ts`, `@graphrefly/native`, `graphrefly-py`). `@graphrefly/native` is already conformant (Rust impl `has_sentinel_deps` predicate + R2.5.3/R5.4 `partial`-bypass match the lock). `graphrefly-py`'s reconciliation (add `partial`, exclude RESOLVED from the settle-set) rides under the existing `[py-parity-am]` rigor-infra deferred umbrella per `docs/optimizations.md`. Session record: `archive/docs/SESSION-DS-2.7.A-first-run-gate.md`.
+**Cross-port lock (DS-2.7.A, 2026-05-19) — `@graphrefly/pure-ts` + `@graphrefly/native` only.** `R2.7.0`–`R2.7.3` above are canonical for these two ports. `@graphrefly/native`'s predicate already excludes RESOLVED and excludes terminal for non-Reduce-class operators (the implementation pattern matches `R2.7.0` and the Reduce-class half of `R2.7.1`); promoting the Reduce-class terminal-aware behavior to a user-facing `NodeOptions.terminalAsRealInput` flag is a thin follow-on Rust slice (no semantic change for the existing dispatch). `graphrefly-py` is **carved out** of this lock (DS-2.7.A Q4): PY's first-run gate currently treats RESOLVED as DATA-equivalent and has no `partial` flag, and PY tests remain green under that behavior. PY reconciliation is tracked separately as a `[py-parity-am]` row under the rigor-infra umbrella per `docs/optimizations.md`. Session record: `archive/docs/SESSION-DS-2.7.A-first-run-gate.md`.
 
-Raw `node()` operators that want to fire on partial deps (the default `partial: true`)
-can still emit RESOLVED from their fn body to balance outstanding DIRTY messages:
+Operators that opt into `partial: true` (per `R2.7.2`) can still emit RESOLVED from their fn body
+to balance outstanding DIRTY messages — that is, the post-first-fire behavior is unchanged by
+`R2.7.0`–`R2.7.3`; this section documents two long-standing patterns that compose with the new
+gate rules:
 
-- **`ctx.prevData[i]` fallback.** When `batch[i]` is null for a dep that must be paired,
-  read `ctx.prevData[i]` — it holds the last-emitted DATA for that dep regardless of
-  which wave that emission occurred in.
+- **`ctx.latestData[i]` fallback.** When `batchData[i]` is null/empty for a dep that must be
+  paired, read `ctx.latestData[i]` — it holds the last-emitted DATA for that dep regardless of
+  which wave that emission occurred in. (Internally backed by `DepRecord.prevData`; the public
+  surface is `ctx.latestData` per §2.4. Note: under `R2.7.2` `partial: true`, the slot may be
+  SENTINEL on first fire; guard before dereferencing.)
 - **Factory-time seed pattern.** Read the dep's `.cache` at wiring time (explicitly
   sanctioned as an external-observer boundary read), stash it in a closure, update via
   a subscribe handler. **Still required** for factories built on raw `node()` with
@@ -695,7 +713,8 @@ All nodes accept these options:
 | `replayBuffer` | number | — | Buffer last N outgoing DATA for late subscribers |
 | `completeWhenDepsComplete` | bool | `true` | Auto-emit COMPLETE when all deps have completed. Set to `false` for terminal-emission operators (e.g. `last`, `reduce`) that control their own COMPLETE timing. |
 | `errorWhenDepsError` | bool | `true` | Auto-emit ERROR when any dep errors. Set to `false` for rescue/catchError operators that handle errors explicitly via `ctx.terminalDeps[i]`. |
-| `partial` | bool | `true` (raw `node()`) / `false` (sugar `derived` / `effect`) | First-run gate (§2.7). When `false`, fn is held until every declared dep has delivered at least one DATA or terminal — sugar default so multi-parent activation produces the clean `[[START], [DIRTY], [DATA, fn(init...)]]` handshake. When `true`, fn fires as soon as `_dirtyDepCount === 0`, matching operators like `withLatestFrom` / `merge` that handle sentinel deps in their own fn body. Gate is first-run only (`_hasCalledFnOnce`); subsequent waves, `_addDep`, and INVALIDATE do not re-gate. |
+| `partial` | bool | `false` (uniform, per `R2.7.2` / DS-2.7.A) | First-run gate (§2.7). When `false`, fn is held per `R2.7.0` until every declared dep has delivered at least one **real DATA** (or terminal if `terminalAsRealInput: true`, per `R2.7.1`) — produces the clean `[[START], [DIRTY], [DATA, fn(init...)]]` activation handshake. When `true`, the gate is OFF — fn fires as soon as `_dirtyDepCount === 0` regardless of SENTINEL deps; the fn body MUST guard `ctx.latestData[i] === undefined` for each dep slot (`R2.7.2` author contract). Gate is first-run only (`_hasCalledFnOnce`, `R2.7.3`); subsequent waves, `_addDep`, and INVALIDATE do not re-gate. |
+| `terminalAsRealInput` | bool | `false` | First-run gate opt-in (§2.7 `R2.7.1`). When `true`, a dep terminal (COMPLETE / ERROR / TEARDOWN) also settles the gate for that dep — used by Reduce-class operators (`reduce`, `scan`, `last`) that fire on upstream-COMPLETE-without-DATA to emit a seed/accumulator. Ignored when `partial: true` (the gate is OFF either way). |
 
 **`initial` semantics:** When `initial` is provided and is **not** `undefined` (TS) /
 `None` (PY), the node's cache is pre-populated and `.cache` returns that value before
