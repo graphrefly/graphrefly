@@ -1263,3 +1263,103 @@ ownership composes on top of either multi-agent track; the owner is an
 **Provenance:** DS-14.5.A L5/L6 + Q1–Q10 walk (2026-05-05); spec §2.3a
 (`meta.owner` INV-OWNER-1/2). `validateOwnership` + `ownershipController` +
 the Guard `policyAllowing` widening land Phase 14.5 (deltas #5/#7/#8).
+
+### 48. Soft forward edges (`attachEdgeMeta` — explainability without protocol churn)
+
+**Problem.** Some factories own a subscribe-and-publish bridge from an
+internal node to an *external* leaf source (e.g. `topicBridge` subscribes
+to its `output` derived and publishes each item into a target
+`TopicGraph`'s `events` log). This is **sanctioned imperative escape per
+spec §5.9** — it lives inside the factory's own graph and dispose scope,
+not a side-channel from outside — and **wave propagation works fine**
+because `targetTopic.publish(v)` synchronously emits into the target's
+events node.
+
+But `Graph.describe()` records only declared `deps`, and `explainPath`'s
+BFS walks only that dep graph. The bridge hop therefore looks opaque:
+
+```
+src::events → bridge::subscription::available → bridge::output → ???
+                                                                 ↑
+                                          dst::events is reachable at
+                                          runtime, but explain stops here.
+```
+
+**Solution.** Two complementary mechanisms:
+
+1. **Declare the imperative attach as an `effect` mount** on the factory's
+   own graph (instead of a free-floating `node.subscribe(...)` helper).
+   This makes the bridge a first-class node in the snapshot — visible in
+   `describe()`, with a declared dep on its source. `topicBridge` does
+   this with `this.effect("attach", ["output"], …)`; `ackPump` already
+   followed the same pattern from the bridge's earlier iterations.
+
+2. **Stamp `meta.attachTarget`** (via the `attachEdgeMeta(targetNode)`
+   helper) on the effect node, carrying a `Node` reference to the
+   external target. `Graph.describe()` resolves the Node ref to its
+   qualified path string at snapshot time — the same way `deps` are
+   resolved via the internal `nodeToPath` map. `explainPath` reads the
+   resulting reverse-pred index and treats each entry as a **"soft
+   forward edge"** — the BFS walks past the imperative attach hop and
+   the step at the attach effect carries `via_attach_edge: true` (with
+   `dep_index` *absent*, since no dep slot exists).
+
+```ts
+import { attachEdgeMeta } from "@graphrefly/graphrefly";
+
+// Inside a factory whose body does `source.subscribe(... target.publish(v))`:
+const attach = this.effect(
+  "attach",
+  ["output"],
+  () => {
+    const outBatch = outputRef.cache as readonly TOut[];
+    if (outBatch.length === 0) return;
+    batch(() => {
+      for (const v of outBatch) targetTopic.publish(v);
+    });
+  },
+  {
+    meta: {
+      ...messagingMeta("topic_bridge_attach"),
+      ...attachEdgeMeta(targetTopic.events),
+    },
+  },
+);
+this.addDisposer(keepalive(attach));
+```
+
+After `parent.describe()`, the bridge's `attach` node has
+`meta.attachTarget = "dst::events"` (string), and
+`parent.describe({ explain: { from: "src::events", to: "dst::events" } })`
+walks the full chain through `bridge::attach → dst::events`.
+
+**Invariants (READ THIS).**
+
+- **Soft edges are an explainability concern only.** Wave propagation
+  does NOT follow `meta.attachTarget` — the wave flows via the
+  imperative `targetTopic.publish(v)` in the effect body, as it always
+  did. If you need the protocol's wave to see the edge, declare a normal
+  `dep`; this helper is for the case where you *can't* declare a dep
+  (e.g., publishing into a leaf source that other producers also
+  publish into).
+- **Single target per attach effect.** Mount one attach per target.
+  Multi-target (`attachTargets: Node[]`) is a future extension when a
+  real consumer surfaces.
+- **The attach effect *must* declare its source as a dep.** That's how
+  the wave reaches it. Soft edges don't replace declared deps — they
+  cover the *outgoing* hop that has no dep slot, not the incoming one.
+- **`describe({ detail: "minimal" })` strips meta.** Soft edges only
+  appear when meta is included (`"standard"` / `"full"` / `"spec"`, or
+  via `Graph.explain()` which auto-passes `detail: "full"`).
+
+**When NOT to use this.** If the imperative attach can be replaced with
+a declared `dep` (e.g., the target is a derived you control, not a leaf
+source), do that — wave + explain converge for free. `attachEdgeMeta`
+exists for the irreducible cases (leaf sources, cross-graph bridges
+into externally-owned topics, worker bridges, future `materializeTo`).
+
+**Provenance:** Phase 13.K resolution / dispatch D (2026-05-22). Helper
+at `src/base/meta/attach-edge-meta.ts`; describe-time resolution in
+`packages/pure-ts/src/graph/graph.ts`; BFS soft-pred consumption in
+`packages/pure-ts/src/graph/explain.ts`. Regression test:
+`packages/pure-ts/src/__tests__/graph/explain-cross-mount.test.ts`.
