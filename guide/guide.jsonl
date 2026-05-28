@@ -1,0 +1,4 @@
+{"id":"G-composition","title":"Composition patterns (lazy activation, subscription order, null guards, feedback cycles)","path":"guide/COMPOSITION.md","lang":"all","area":"composition","status":"stub","migrate_from":"COMPOSITION-GUIDE*.md"}
+{"id":"G-docs","title":"Docs guidance (jsonl 数据层 + 仪表盘约定；何时写哪个文档)","path":"guide/DOCS.md","lang":"all","area":"meta","status":"stub"}
+{"id":"G-test","title":"Test guidance (单元/属性/conformance 场景分层)","path":"guide/TEST.md","lang":"all","area":"test","status":"stub"}
+{"id":"G-contribute","title":"Contribute (spec-first amendment flow; D# / DS# / conformance 流程)","path":"guide/CONTRIBUTE.md","lang":"all","area":"meta","status":"stub"}

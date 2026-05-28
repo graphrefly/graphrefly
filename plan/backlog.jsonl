@@ -1,0 +1,7 @@
+{"id":"B1","title":"WorkerPool + RemotePool 实现","state":"deferred","trigger":"cross-process / 同机多核 consumer 出现","lang":"all","ref":"D20"}
+{"id":"B2","title":"protobuf wire codec 实现","state":"deferred","trigger":"cross-runtime wire bridge 落地(L2.F)","lang":"all","ref":"D33"}
+{"id":"B3","title":"versioning v1-v3 content-addressing (cid/schema/caps)","state":"deferred","trigger":"post-1.0 audit-anchor / cross-graph ref demand","lang":"all","ref":"D26"}
+{"id":"B4","title":"live viz UI (topology + per-node cache)","state":"deferred","trigger":"post-1.0；substrate streaming describe/observe ready(L5-Q3)","lang":"all","ref":"DS-1"}
+{"id":"B5","title":"domain 概念(一 domain 含多 graph)","state":"deferred","trigger":"inspection 边界 vs 并发边界冲突真实出现","lang":"all","ref":"DR-4"}
+{"id":"B6","title":"end-user 说明书站(getting-started + 生成 API ref)","state":"deferred","trigger":"pre-1.0 public 发布前","lang":"per-package","ref":"DS-1"}
+{"id":"B7","title":"全 jsonl 文档迁移：现有 GRAPHREFLY-SPEC.md/COMPOSITION-GUIDE*.md → rules.jsonl/guide.jsonl","state":"open","trigger":"CSP-0 spec finalize","lang":"all","ref":"D14"}

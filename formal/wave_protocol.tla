@@ -3,12 +3,51 @@
 GraphReFly wave protocol — formal specification.
 
 Corresponds to:
-  - GRAPHREFLY-SPEC.md §1 (message protocol), §7 (versioning)
+  - spec/rules.jsonl — the clean-slate normative rule set (CANONICAL authority)
   - graphrefly-ts/src/__tests__/properties/_invariants.ts (fast-check)
   - archive/docs/SESSION-rigor-infrastructure-plan.md § "Project 3"
 
 Each INVARIANT below has a counterpart in the fast-check harness; TLC
 counter-examples translate directly into new fast-check properties.
+
+----------------------------------------------------------------------------
+CLEAN-SLATE ALIGNMENT (CSP-0, 2026-05-28).
+
+This model formalizes the clean-slate core wave protocol. Because clean-slate
+CARRIES the core protocol unchanged (D1-D33), the existing invariants already
+pin most clean-slate rules. Invariant <-> rule map:
+
+  NoDataWithoutDirty        -> R-dirty-before-data
+  BalancedWaves             -> R-two-phase
+  DiamondConvergence        -> R-diamond
+  EqualsFaithful            -> R-equals  (single-DATA substitution, D15)
+  TerminalAbsorbing         -> R-terminal
+  Start/MultiDepHandshake*  -> R-push-subscribe, R-first-run-gate
+  Up*ControlPlane / UpPause -> R-ctx-up  (up carries control tier only, DR-5)
+  Buffer* / PausableOff*    -> R-pause-modes (D10); covers R-async-paused's
+                               synchronous analog (a buffered-while-paused
+                               settle slice replays on final-lock RESUME — the
+                               async source is abstracted away by the model)
+  Invalidate* / MergeRules  -> R-invalidate-idempotent, R-same-wave-merge
+  Cleanup* / Resubscribe*   -> R-cleanup-hooks, R-terminal (resubscribe reset)
+  ReplayBuffer* / LateSub*  -> R-replay-buffer
+  NoDepCascade*Gate         -> R-deps-terminal
+
+Tier numbering: rules.jsonl R-tier / D34 relabels tiers (PAUSE/RESUME=1,
+DIRTY=2, DATA/RESOLVED=3, INVALIDATE=4, COMPLETE/ERROR=5, TEARDOWN=6). This
+model enforces the tier ORDERING (immediate <3, deferred >=3), which the D34
+relabel PRESERVES — the PAUSE/RESUME<->DIRTY swap stays within the immediate
+group, so no modeled transition changes. Old "tier-1 DIRTY / tier-2 PAUSE"
+labels in comments below are pre-D34 names for the same ordering.
+
+Models concepts clean-slate moved OUT of the substrate (retained as historical,
+NOT clean-slate-substrate-normative): VersionPerChange (versioning -> deferred,
+backlog B3); MetaTeardownObservedPreReset (meta -> presentation, D36).
+
+KNOWN FORMAL GAP: cross-graph diamond (conformance C-1) — a 2-causal-domain
+topology with DIRTY crossing the wire bridge at DATA priority (R-graph-domain,
+L2.F) — is NOT modeled here (this module is single-graph). It is deferred
+alongside the wire-bridge implementation (backlog B2).
 
 Scope: the core wave protocol only — nodes with cache/status/version,
 ordered per-edge message queues, DIRTY-then-settlement propagation with

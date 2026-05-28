@@ -1,0 +1,9 @@
+{"id":"CSP-0","title":"spec finalize (rules + .proto IDL + .tla + conformance scenarios)","status":"done","deps":[],"sessions":["DS-1"],"gap":false,"note":"DONE 2026-05-28: 52 rules (B7 migration), protocol.proto IDL (DR-2), conformance C-1..C-5 detailed, formal modules wave_xgraph/wave_async/wave_async_paused (C-1/C-4/C-2) TLC-green + existing wave_protocol (C-3/C-5); dashboard gate green. Rules status=draft until CSP-1+ impl arms flip them active. Unblocks CSP-1/CSP-5/CSP-7"}
+{"id":"CSP-1","title":"TS substrate: node/dispatcher/pool(LocalSync+LocalAsync)/wave protocol","status":"design","deps":["CSP-0"],"sessions":["DS-1"],"gap":true}
+{"id":"CSP-2","title":"TS graph layer: graph/sugar(8 verb)/operators/inspection(describe·observe·profile)","status":"design","deps":["CSP-1"],"sessions":["DS-1"],"gap":true}
+{"id":"CSP-3","title":"conformance suite (TS arm green; DR-5 hard scenarios)","status":"design","deps":["CSP-2"],"sessions":["DS-1"],"gap":true}
+{"id":"CSP-4","title":"dashboard generator (jsonl→HTML static + consistency check)","status":"design","deps":[],"sessions":["DS-1"],"gap":true,"note":"bootstrap static; dogfood via GraphReFly at CSP-8"}
+{"id":"CSP-5","title":"Rust substrate (single-thread core, no actor model)","status":"design","deps":["CSP-0"],"sessions":["DS-1"],"gap":true}
+{"id":"CSP-6","title":"Rust conformance arm green","status":"design","deps":["CSP-3","CSP-5"],"sessions":["DS-1"],"gap":true}
+{"id":"CSP-7","title":"Py substrate + conformance arm","status":"design","deps":["CSP-0","CSP-3"],"sessions":["DS-1"],"gap":true}
+{"id":"CSP-8","title":"dogfood dashboard via GraphReFly (reactive jira / messaging-hub)","status":"design","deps":["CSP-2","CSP-4"],"sessions":["DS-1"],"gap":true,"note":"user vision: messaging-hub reactive jira built on clean-slate"}

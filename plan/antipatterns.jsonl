@@ -1,0 +1,7 @@
+{"id":"AP1","pattern":"把命令式 helper 包成 reactive primitive","why":"primitive 不可避免地再暴露命令式 helper 作 method","instead":"widen helper 的 args 到 T|Node<T>，caller opt-in reactive 控制","ref":"feedback_no_imperative_wrap_as_primitive"}
+{"id":"AP2","pattern":"eager-placeholder 上游污染 SENTINEL","why":"ctx 永远拿不到真正的 absence-of-DATA 状态","instead":"修上游别 eager-emit；用 prevData[i]===undefined 作 never-emitted 检测","ref":"feedback_use_prevdata_for_sentinel"}
+{"id":"AP3","pattern":";-chain 后台 cargo/长命令","why":"deadlock≠thrash 混淆；进程组杀不干净","instead":"一次一 target；bounded -j；按进程组杀；direct log + DONE sentinel","ref":"feedback_no_chained_background_cargo"}
+{"id":"AP4","pattern":"stale premise propagation","why":"design session task table lag code；按过期前提开 9Q","instead":"grep 命名符号+check landed marker；过期前提作 HALT 上报","ref":"feedback_verify_premise_before_greenfield"}
+{"id":"AP5","pattern":"自作主张做架构决策","why":"silently 选边，掩盖 spec↔code 冲突","instead":"surface 冲突让 user 拍；多文件重写按文件 review","ref":"feedback_no_autonomous_decisions"}
+{"id":"AP6","pattern":"在 archive 用文字标 active/superseded","why":"标记易腐，active 和 superseded 混在一个目录","instead":"物理目录分 active/archive；状态进 jsonl status 字段","ref":"P3"}
+{"id":"AP7","pattern":"canonical 职责分裂到多文档","why":"sequencer/decision-log 散多处，迁移期混乱","instead":"单一 canonical per 职责；decisions 单一 D# 序列","ref":"P1,P2"}

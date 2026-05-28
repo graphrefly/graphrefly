@@ -1,7 +1,22 @@
 # GraphReFly formal specification
 
 This directory contains the TLA+ formal specification of the GraphReFly
-wave protocol — the message protocol defined in [`GRAPHREFLY-SPEC.md`](../GRAPHREFLY-SPEC.md) § 1.
+wave protocol. The CANONICAL normative source is [`spec/rules.jsonl`](../spec/rules.jsonl)
+(clean-slate); each TLA+ invariant pins one or more `R-*` rules.
+
+## Clean-slate module map (CSP-0)
+
+| Module | Covers | Conformance |
+|---|---|---|
+| `wave_protocol.tla` (+ 18 MCs) | core wave protocol — R-dirty-before-data, R-two-phase, R-diamond, R-equals, R-terminal, R-ctx-up, R-pause-*, R-invalidate-*, R-cleanup-*, R-deps-terminal | C-3, C-5 |
+| `wave_xgraph.tla` | cross-graph diamond — R-diamond + R-graph-domain across a wire bridge (L2.F) | **C-1** |
+| `wave_async.tla` | mixed sync/async diamond — R-graph-domain + R-first-run-gate with a LocalAsync leg | **C-4** |
+| `wave_async_paused.tla` | async-result-at-paused-node — R-async-paused + R-pause-lockset | **C-2** |
+
+The three new modules are single-wave-serialized focused models (status: draft);
+they flip active alongside the impl that exercises them (wire bridge → backlog B2;
+LocalAsync pool → CSP-1). See each module header for its invariant set + abstraction
+boundary. Run any module: `java -cp <tla2tools.jar> tlc2.TLC -config <name>.cfg <name>`.
 
 TLA+ provides **exhaustive model checking** over bounded instances: TLC
 enumerates every reachable state sequence of the protocol and verifies

@@ -1,0 +1,89 @@
+// GraphReFly wave-protocol contract IDL.
+//
+// Single source (DR-2 / D33): this .proto is BOTH the cross-runtime wire format
+// AND the protocol-contract IDL each runtime codegens an interface skeleton from
+// (a light structural guarantee on top of behavioral conformance, spec/conformance.jsonl).
+//
+// In-process messages are language-native tuples (D11); this protobuf shape is the
+// representation at the wire-bridge boundary only (D13). Implementation is DEFERRED
+// (backlog B2 — protobuf wire codec lands with the cross-runtime wire bridge, L2.F);
+// the schema is locked now so all three runtimes codegen against one source.
+//
+// status: draft (flips to active when B2 lands + conformance C-1 cross-graph passes).
+
+syntax = "proto3";
+
+package graphrefly.protocol.v1;
+
+// ── Message types — CLOSED set (R-msg-closed-set / D9) ──
+// 10 types: START handshake + 9 protocol types. No open set, no custom types.
+// Adding a type is a constitutional spec change, not a wire-compatible extension.
+enum MessageType {
+  MESSAGE_TYPE_UNSPECIFIED = 0;  // proto3 zero guard — never a valid wire type
+  MSG_START = 1;                 // subscribe handshake (R-push-subscribe)
+  MSG_DIRTY = 2;                 // phase-1 notification (R-two-phase)
+  MSG_DATA = 3;                  // value delivery (payload required, non-SENTINEL)
+  MSG_RESOLVED = 4;              // phase-2: settled, value unchanged (R-equals)
+  MSG_INVALIDATE = 5;            // clear cached state, no auto-emit (R-invalidate-idempotent)
+  MSG_COMPLETE = 6;              // clean terminal (R-terminal)
+  MSG_ERROR = 7;                 // error terminal (payload required, non-SENTINEL)
+  MSG_TEARDOWN = 8;              // lifecycle destruction (R-teardown-complete)
+  MSG_PAUSE = 9;                 // flow control, lock_id required (R-pause-lockset)
+  MSG_RESUME = 10;               // flow control, lock_id required (R-pause-lockset)
+}
+
+// ── Tier const table (R-tier / D34) — batch-ordering ranks, distinct from the
+// MessageType enum. Tiers < TIER_VALUE dispatch immediately; tiers >= TIER_VALUE
+// are batch-deferred. This is a compile-time const table (D18), not runtime config.
+enum Tier {
+  TIER_START = 0;     // START — handshake, immediate
+  TIER_CONTROL = 1;   // PAUSE/RESUME — immediate
+  TIER_NOTIFY = 2;    // DIRTY — immediate
+  TIER_VALUE = 3;     // DATA/RESOLVED — deferred in batch (settle slice)
+  TIER_SETTLE = 4;    // INVALIDATE — deferred alongside the settle slice
+  TIER_TERMINAL = 5;  // COMPLETE/ERROR — deferred after the settle slice
+  TIER_TEARDOWN = 6;  // TEARDOWN — deferred last
+}
+
+// Direction of a wave (R-ctx-up / DR-5). DOWN = toward sinks (all tiers).
+// UP = toward deps — restricted to control tiers (DIRTY/PAUSE/RESUME/INVALIDATE/
+// TEARDOWN); DATA/RESOLVED/COMPLETE/ERROR are down-only.
+enum Direction {
+  DIRECTION_DOWN = 0;
+  DIRECTION_UP = 1;
+}
+
+// One protocol message = the tuple [Type, Data?] (R-msg-format).
+message Message {
+  MessageType type = 1;
+  // Present only for DATA / ERROR. Opaque codec-encoded value bytes — the value
+  // type is per-language; the protocol never inspects it (R-data-payload). Absence
+  // of `data` on a DATA/ERROR message is a violation; SENTINEL is never encoded.
+  optional bytes data = 2;
+  // Present only for PAUSE / RESUME. Caller-generated, opaque (R-pause-lockset).
+  optional string lock_id = 3;
+}
+
+// One array of messages delivered in one call = one Wave (R-wave-boundary).
+// A wave may mix tiers (e.g. [[DATA,v],[COMPLETE]]); the receiver tier-sorts.
+message Wave {
+  repeated Message messages = 1;
+  Direction direction = 2;
+}
+
+// Dispatcher handle — pure data, no methods (R-handle / D7). A serializable index
+// into a pool's dispatch table; snapshottable and wire-transferable. node != handle.
+message Handle {
+  uint64 pool_id = 1;
+  uint64 handle_id = 2;
+}
+
+// Cross-runtime wire-bridge frame (D13 / D33). Each runtime owns a local dispatcher;
+// the bridge delivers a Wave to a target node in a target graph (causal domain).
+// DIRTY crosses the wire at the same priority as DATA (R12 / conformance C-1), so a
+// diamond split across runtimes stays glitch-free.
+message WireFrame {
+  string graph_id = 1;    // target causal domain (D22: graph = single thread)
+  string node_path = 2;   // :: delimited node path within the target graph
+  Wave wave = 3;
+}
