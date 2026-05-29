@@ -14,9 +14,10 @@ wave protocol. The CANONICAL normative source is [`spec/rules.jsonl`](../spec/ru
 | `wave_async_paused.tla` | async-result-at-paused-node — R-async-paused + R-pause-lockset | **C-2** |
 | `wave_reentrancy.tla` | synchronous feedback-cycle rejection — R-reentrancy (node-local in-wave reject; cyclic→ERROR at the cycle-closing compute node, acyclic→clean) | **C-6** |
 | `wave_up_source.tla` | upstream control at a depless source — R-up-at-source (INVALIDATE→honor: self-invalidate + down-cascade; DIRTY/TEARDOWN→drop) | **C-7** |
-| `wave_rewire.tla` | intra-graph runtime rewire — R-rewire (setDeps/addDep/removeDep; per-node Q1–Q7 + rewire×INVALIDATE drain + rewire×terminal reject; equals/multi-sink cross-axes deferred to wave_protocol integration) | **C-8** |
+| `wave_rewire.tla` | intra-graph runtime rewire (dep side) — R-rewire (setDeps/addDep/removeDep; per-node Q1–Q7 + rewire×INVALIDATE drain + rewire×terminal reject) | **C-8** |
+| `wave_rewire_emit.tla` | rewire cross-axis (emit side) — R-rewire (rewire×equals output-absorption + rewire×multi-sink fanout; the downstream-emit dimension wave_rewire.tla omits) | **C-8** |
 
-The six focused modules are single-wave-serialized models (status: draft); they
+The seven focused modules are single-wave-serialized models (status: draft); they
 flip active alongside the impl that exercises them (wire bridge → backlog B2;
 LocalAsync pool → CSP-1; re-entrancy reject + up-at-source → CSP-1/CSP-2; rewire →
 CSP-2.5). See each module header for its invariant set + abstraction boundary. Run any module:
@@ -43,12 +44,24 @@ messages, incl INVALIDATE, are drained) and rewire×terminal (`RewireOnlyOnLiveN
 603k states / depth 11. Both new invariants are mutation-verified load-bearing:
 disabling the removed-dep drain trips `NoStaleEdgeMessages` (33 states), and removing
 the terminal-this guard (with C terminable) trips `RewireOnlyOnLiveNode` (163 states).
-ABSTRACTION BOUNDARY: no downstream fn-fire-emit, so rewire×equals (R-equals output
-absorption) and rewire×multi-sink are NOT modeled here — per D42 SD-2 they gate
-R-rewire active and need the SetDeps action integrated into `wave_protocol.tla`
-(the downstream-emit dimension; design-notes deferred follow-up #1). "adding a
-non-resubscribable terminal dep is rejected" is guard-modeled (the SetDeps guard,
-not a standing invariant — a kept dep that terminates later is permitted).
+ABSTRACTION BOUNDARY: `wave_rewire.tla` has no downstream fn-fire-emit, so the
+rewire×equals and rewire×multi-sink cross-axes (D42 SD-2) live in the companion
+`wave_rewire_emit.tla` (below), not here. "adding a non-resubscribable terminal dep
+is rejected" is guard-modeled (the SetDeps guard, not a standing invariant — a kept
+dep that terminates later is permitted).
+
+`wave_rewire_emit.tla` (D42 / C-8 / B14) supplies the downstream-emit dimension
+`wave_rewire.tla` omits and composes it with rewire — discharging the last two D42
+SD-2 cross-axes: rewire×equals (`CacheMatchesLastData` — cache equals the last
+emitted DATA; a RESOLVED absorption never advances it and a rewire never corrupts
+it, since rewire preserves cache per Q7) and rewire×multi-sink (`MultiSinkConsistent`
+— every sink observes the same drained++queued stream; rewire is upstream-only so it
+never desyncs them). 2 sinks; TLC-green at 3003 states / depth 10. Both invariants
+mutation-verified load-bearing: a single-sink Emit trips `MultiSinkConsistent`
+(2 states), a cache-corrupting Rewire trips `CacheMatchesLastData` (4 states). Rewire
+is abstracted to the emit side (preserves cache, doesn't touch sinks); the dep-side
+mechanics are `wave_rewire.tla`'s job — the two modules together cover all four
+cross-axes (INVALIDATE / terminal / equals / multi-sink).
 
 TLA+ provides **exhaustive model checking** over bounded instances: TLC
 enumerates every reachable state sequence of the protocol and verifies
