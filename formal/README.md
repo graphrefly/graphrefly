@@ -12,11 +12,27 @@ wave protocol. The CANONICAL normative source is [`spec/rules.jsonl`](../spec/ru
 | `wave_xgraph.tla` | cross-graph diamond — R-diamond + R-graph-domain across a wire bridge (L2.F) | **C-1** |
 | `wave_async.tla` | mixed sync/async diamond — R-graph-domain + R-first-run-gate with a LocalAsync leg | **C-4** |
 | `wave_async_paused.tla` | async-result-at-paused-node — R-async-paused + R-pause-lockset | **C-2** |
+| `wave_reentrancy.tla` | synchronous feedback-cycle rejection — R-reentrancy (node-local in-wave reject; cyclic→ERROR at the cycle-closing compute node, acyclic→clean) | **C-6** |
+| `wave_up_source.tla` | upstream control at a depless source — R-up-at-source (INVALIDATE→honor: self-invalidate + down-cascade; DIRTY/TEARDOWN→drop) | **C-7** |
 
-The three new modules are single-wave-serialized focused models (status: draft);
-they flip active alongside the impl that exercises them (wire bridge → backlog B2;
-LocalAsync pool → CSP-1). See each module header for its invariant set + abstraction
-boundary. Run any module: `java -cp <tla2tools.jar> tlc2.TLC -config <name>.cfg <name>`.
+The five focused modules are single-wave-serialized models (status: draft); they
+flip active alongside the impl that exercises them (wire bridge → backlog B2;
+LocalAsync pool → CSP-1; re-entrancy reject + up-at-source → CSP-1/CSP-2). See each
+module header for its invariant set + abstraction boundary. Run any module:
+`java -cp <tla2tools.jar> tlc2.TLC -config <name>.cfg <name>`.
+
+`wave_up_source.tla` exercises all three upstream-allowed non-pause control kinds
+in one run (`upKind ∈ {INVALIDATE, DIRTY, TEARDOWN}`): `InvalidateHonored` (source
+clears + onInvalidate + down-cascade) and `DirtyDropped` / `TeardownDropped`
+(source untouched, no down-effect). `InvalidateHonored` is load-bearing — making
+the terminus not clear the cache trips it (mutation-verified). A node guard that
+denies INVALIDATE (R-observe) is an unmodeled opt-out (honor is the default).
+
+`wave_reentrancy.tla` ships two cfgs: `wave_reentrancy.cfg` (cyclic, `HasFeedback=TRUE`
+— the cycle is rejected at E) and `wave_reentrancy_acyclic.cfg` (`HasFeedback=FALSE`
+— the forward chain quiesces with no ERROR, proving the guard does not false-positive
+on an acyclic graph). Core invariant `NoReentrantCompute` is load-bearing: removing the
+reject lets a compute node re-enter and it trips immediately (verified by mutation).
 
 TLA+ provides **exhaustive model checking** over bounded instances: TLC
 enumerates every reachable state sequence of the protocol and verifies
