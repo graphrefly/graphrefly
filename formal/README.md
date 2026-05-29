@@ -14,11 +14,12 @@ wave protocol. The CANONICAL normative source is [`spec/rules.jsonl`](../spec/ru
 | `wave_async_paused.tla` | async-result-at-paused-node — R-async-paused + R-pause-lockset | **C-2** |
 | `wave_reentrancy.tla` | synchronous feedback-cycle rejection — R-reentrancy (node-local in-wave reject; cyclic→ERROR at the cycle-closing compute node, acyclic→clean) | **C-6** |
 | `wave_up_source.tla` | upstream control at a depless source — R-up-at-source (INVALIDATE→honor: self-invalidate + down-cascade; DIRTY/TEARDOWN→drop) | **C-7** |
+| `wave_rewire.tla` | intra-graph runtime rewire — R-rewire (setDeps/addDep/removeDep; per-node Q1–Q7 + rewire×INVALIDATE drain + rewire×terminal reject; equals/multi-sink cross-axes deferred to wave_protocol integration) | **C-8** |
 
-The five focused modules are single-wave-serialized models (status: draft); they
+The six focused modules are single-wave-serialized models (status: draft); they
 flip active alongside the impl that exercises them (wire bridge → backlog B2;
-LocalAsync pool → CSP-1; re-entrancy reject + up-at-source → CSP-1/CSP-2). See each
-module header for its invariant set + abstraction boundary. Run any module:
+LocalAsync pool → CSP-1; re-entrancy reject + up-at-source → CSP-1/CSP-2; rewire →
+CSP-2.5). See each module header for its invariant set + abstraction boundary. Run any module:
 `java -cp <tla2tools.jar> tlc2.TLC -config <name>.cfg <name>`.
 
 `wave_up_source.tla` exercises all three upstream-allowed non-pause control kinds
@@ -33,6 +34,21 @@ denies INVALIDATE (R-observe) is an unmodeled opt-out (honor is the default).
 — the forward chain quiesces with no ERROR, proving the guard does not false-positive
 on an acyclic graph). Core invariant `NoReentrantCompute` is load-bearing: removing the
 reject lets a compute node re-enter and it trips immediately (verified by mutation).
+
+`wave_rewire.tla` (D42 / C-8) ports the TLA+-verified port-model rewire design
+(`graphrefly-ts/docs/research/wave_protocol_rewire.tla`, Q1–Q7) and EXTENDS it with
+two cross-axes: rewire×INVALIDATE (`NoStaleEdgeMessages` — a removed dep's queued
+messages, incl INVALIDATE, are drained) and rewire×terminal (`RewireOnlyOnLiveNode`
+— SetDeps is rejected on a terminal `this`). 3-node topology A,B→C; TLC-green at
+603k states / depth 11. Both new invariants are mutation-verified load-bearing:
+disabling the removed-dep drain trips `NoStaleEdgeMessages` (33 states), and removing
+the terminal-this guard (with C terminable) trips `RewireOnlyOnLiveNode` (163 states).
+ABSTRACTION BOUNDARY: no downstream fn-fire-emit, so rewire×equals (R-equals output
+absorption) and rewire×multi-sink are NOT modeled here — per D42 SD-2 they gate
+R-rewire active and need the SetDeps action integrated into `wave_protocol.tla`
+(the downstream-emit dimension; design-notes deferred follow-up #1). "adding a
+non-resubscribable terminal dep is rejected" is guard-modeled (the SetDeps guard,
+not a standing invariant — a kept dep that terminates later is permitted).
 
 TLA+ provides **exhaustive model checking** over bounded instances: TLC
 enumerates every reachable state sequence of the protocol and verifies
