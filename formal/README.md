@@ -14,11 +14,12 @@ wave protocol. The CANONICAL normative source is [`spec/rules.jsonl`](../spec/ru
 | `wave_async_paused.tla` | async-result-at-paused-node — R-async-paused + R-pause-lockset | **C-2** |
 | `wave_reentrancy.tla` | synchronous feedback-cycle rejection — R-reentrancy (node-local in-wave reject; cyclic→ERROR at the cycle-closing compute node, acyclic→clean) | **C-6** |
 | `wave_up_source.tla` | upstream control at a depless source — R-up-at-source (INVALIDATE→honor: self-invalidate + down-cascade; DIRTY/TEARDOWN→drop) | **C-7** |
+| `wave_paused_invalidate.tla` | INVALIDATE arriving at a paused compute node — R-paused-invalidate (D50; INVALIDATE supersedes the buffered paused dep-wave, attributed cancellation; ChangedImpliesLive mutation-verified) | **C-13** |
 | `wave_rewire.tla` | intra-graph runtime rewire (dep side) — R-rewire (setDeps/addDep/removeDep; per-node Q1–Q7 + rewire×INVALIDATE drain + rewire×terminal reject) | **C-8** |
 | `wave_rewire_emit.tla` | rewire cross-axis (emit side) — R-rewire (rewire×multi-sink fanout + cache-integrity across rewire; the downstream-emit dimension wave_rewire.tla omits) | **C-8** |
 | `wave_rewire_deferred.tla` | wave-boundary deferred SELF-rewire — R-rewire-deferred (ctx.rewireNext add+remove, queued during a fn run, drained at the committed boundary: deferral / drain-exactly-once / removed-dep silencing / no-op termination) | **C-11** |
 
-The eight focused modules are single-wave-serialized models (status: draft); they
+The nine focused modules are single-wave-serialized models (status: draft); they
 flip active alongside the impl that exercises them (wire bridge → backlog B2;
 LocalAsync pool → CSP-1; re-entrancy reject + up-at-source → CSP-1/CSP-2; rewire →
 CSP-2.5; deferred self-rewire → CSP-2.7). See each module header for its invariant set + abstraction boundary. Run any module:
