@@ -18,8 +18,9 @@ wave protocol. The CANONICAL normative source is [`spec/rules.jsonl`](../spec/ru
 | `wave_rewire.tla` | intra-graph runtime rewire (dep side) — R-rewire (setDeps/addDep/removeDep; per-node Q1–Q7 + rewire×INVALIDATE drain + rewire×terminal reject) | **C-8** |
 | `wave_rewire_emit.tla` | rewire cross-axis (emit side) — R-rewire (rewire×multi-sink fanout + cache-integrity across rewire; the downstream-emit dimension wave_rewire.tla omits) | **C-8** |
 | `wave_rewire_deferred.tla` | wave-boundary deferred SELF-rewire — R-rewire-deferred (ctx.rewireNext add+remove, queued during a fn run, drained at the committed boundary: deferral / drain-exactly-once / removed-dep silencing / no-op termination) | **C-11** |
+| `wave_terminal_dirty.tla` | a dep's terminal (COMPLETE/ERROR) releases its in-wave DIRTY contribution — R-terminal-settles-dirty (B35; the exactly-one-settle invariant: PendingCountsDirty + NoWedge, terminal joins the settle-class like DATA/RESOLVED/INVALIDATE; mutation-verified — drop the release → PendingCountsDirty trips) | **C-15** |
 
-The nine focused modules are single-wave-serialized models (status: draft); they
+The ten focused modules are single-wave-serialized models (status: draft); they
 flip active alongside the impl that exercises them (wire bridge → backlog B2;
 LocalAsync pool → CSP-1; re-entrancy reject + up-at-source → CSP-1/CSP-2; rewire →
 CSP-2.5; deferred self-rewire → CSP-2.7). See each module header for its invariant set + abstraction boundary. Run any module:
