@@ -1,27 +1,27 @@
 -------------------------- MODULE wave_rewire_emit --------------------------
 (***************************************************************************
-GraphReFly — rewire × equals × multi-sink (conformance C-8, rule R-rewire,
+GraphReFly — rewire × multi-sink (conformance C-8, rule R-rewire,
 decision D42 SD-2 / backlog B14).
 
 The cross-axis companion to wave_rewire.tla. wave_rewire.tla models the per-node
 DEP side (Q1–Q7 + INVALIDATE-drain + terminal-reject) but deliberately OMITS C's
 downstream fn-fire-emit. This module supplies exactly that omitted DOWNSTREAM
-dimension and composes it with rewire, to discharge the two cross-axes D42 SD-2
+dimension and composes it with rewire, to discharge the cross-axis D42 SD-2
 requires before R-rewire flips active:
 
-  - rewire × equals    : C's output DATA→RESOLVED absorption (R-equals) stays
-                         FAITHFUL across a rewire, because rewire PRESERVES the
-                         cache the equals decision reads (Q7, proved in
-                         wave_rewire.tla). Witness: CacheMatchesLastData.
   - rewire × multi-sink: C fans every settle out to ALL downstream sinks
                          IDENTICALLY; a rewire (upstream-only) never desyncs the
                          sink streams. Witness: MultiSinkConsistent.
 
+Cache integrity across rewire is also witnessed: C's cache always equals the
+last DATA it emitted, and a rewire PRESERVES that cache (Q7, proved in
+wave_rewire.tla). Witnesses: CacheMatchesLastData, RewirePreservesCacheEmit.
+
 ABSTRACTION: rewire is modeled on the EMIT side only — it PRESERVES cache and
 never touches the sink streams (the dep-side mechanics are wave_rewire.tla's job).
-A post-rewire Emit may produce ANY output value (deps changed); the equals
-decision reads the preserved cache. Together with wave_rewire.tla's cache-
-preservation (Q7) this covers the cross-axes.
+A post-rewire Emit may produce ANY output value (deps changed). Per D49 every
+value-occurrence emits DATA — there is no value-equality substitution. Together
+with wave_rewire.tla's cache-preservation (Q7) this covers the cross-axis.
 
 Status: draft (with wave_rewire.tla, completes the D42 SD-2 formal gate).
  ***************************************************************************)
@@ -69,14 +69,14 @@ Init ==
     /\ ghostPreCache = SENTINEL
     /\ ghostJustRewired = FALSE
 
-\* C settles with output `out`; equals (R-equals) absorbs a repeat into RESOLVED.
-\* The settle fans out to EVERY sink IDENTICALLY (multi-sink atomic broadcast).
+\* C settles with output `out`. Per D49 every value-occurrence emits DATA —
+\* there is no value-equality substitution to RESOLVED. The settle fans out
+\* to EVERY sink IDENTICALLY (multi-sink atomic broadcast).
 Emit(out) ==
     /\ emitCount < MaxEmits
-    /\ LET absorbed == (cache # SENTINEL) /\ (out = cache)
-           msg == IF absorbed THEN ResolvedMsg ELSE DataMsg(out)
+    /\ LET msg == DataMsg(out)
        IN
-       /\ cache' = IF absorbed THEN cache ELSE out
+       /\ cache' = out
        /\ sinkQueue' = [k \in Sinks |-> Append(sinkQueue[k], msg)]
     /\ emitCount' = emitCount + 1
     /\ ghostJustRewired' = FALSE
@@ -93,8 +93,8 @@ DeliverToSink(k) ==
     /\ UNCHANGED <<cache, emitCount, rewireCount, ghostPreCache>>
 
 \* Rewire (upstream-only): PRESERVES cache, never touches the sink streams. The
-\* deps changed, so a later Emit may produce any value — but the equals decision
-\* reads this preserved cache (Q7). Load-bearing: corrupt cache here and
+\* deps changed, so a later Emit may produce any value, but cache stays intact
+\* across the rewire (Q7). Load-bearing: corrupt cache here and
 \* CacheMatchesLastData / RewirePreservesCacheEmit trip.
 Rewire ==
     /\ rewireCount < MaxRewires
@@ -119,13 +119,13 @@ Spec == Init /\ [][Next]_vars
 MultiSinkConsistent ==
     \A k1, k2 \in Sinks : observed[k1] \o sinkQueue[k1] = observed[k2] \o sinkQueue[k2]
 
-\* rewire × equals: cache always equals the last DATA in the emitted stream — a
-\* RESOLVED (absorbed) never advances it, and a rewire never corrupts it. Ties the
-\* equals decision to cache across rewire. Load-bearing: corrupt cache in Rewire.
+\* cache always equals the last DATA in the emitted stream, and a rewire never
+\* corrupts it. Ties cache integrity to the emit stream across rewire.
+\* Load-bearing: corrupt cache in Rewire.
 CacheMatchesLastData ==
     \A k \in Sinks : cache = LastDataVal(observed[k] \o sinkQueue[k])
 
-\* Q7 on the emit side: rewire preserves cache (the equals input).
+\* Q7 on the emit side: rewire preserves cache.
 RewirePreservesCacheEmit ==
     ghostJustRewired => cache = ghostPreCache
 =============================================================================

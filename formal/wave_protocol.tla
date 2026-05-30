@@ -20,7 +20,6 @@ pin most clean-slate rules. Invariant <-> rule map:
   NoDataWithoutDirty        -> R-dirty-before-data
   BalancedWaves             -> R-two-phase
   DiamondConvergence        -> R-diamond
-  EqualsFaithful            -> R-equals  (single-DATA substitution, D15)
   TerminalAbsorbing         -> R-terminal
   Start/MultiDepHandshake*  -> R-push-subscribe, R-first-run-gate
   Up*ControlPlane / UpPause -> R-ctx-up  (up carries control tier only, DR-5)
@@ -142,48 +141,6 @@ CONSTANTS
                           \*   appended by the `Emit` action (other emission
                           \*   actions deferred as Package 3 extension).
                           \*   Added 2026-04-23 batch 3 Package 3.
-    EqualsPairs,          \* NodeIds -> SUBSET (Values \X Values). Mirrors
-                          \*   spec §2.5 `equals`. Per-node absorption
-                          \*   relation over value pairs — generalization
-                          \*   of the batch-3-Package-3 `EqualsAbsorbs`
-                          \*   boolean (batch 9, 2026-04-24).
-                          \*
-                          \*   Semantics: `<<prev, next>> \in EqualsPairs[n]`
-                          \*   means "emitting `next` when cache is `prev` is
-                          \*   absorbed as RESOLVED (cache unchanged)." Three
-                          \*   canonical values:
-                          \*     * `{<<v, v>> : v \in Values}` (identity
-                          \*       diagonal) = default strict equality — the
-                          \*       legacy `EqualsAbsorbs[n] = TRUE` behavior.
-                          \*     * `{}` (empty) = `equals: () => false`; every
-                          \*       emit produces DATA regardless of value
-                          \*       sameness — the legacy
-                          \*       `EqualsAbsorbs[n] = FALSE` behavior.
-                          \*     * Any other subset = custom `equals` fn —
-                          \*       e.g. `{<<0,0>>,<<1,1>>,<<2,2>>,<<0,1>>,
-                          \*       <<1,0>>}` models "0 and 1 are
-                          \*       interchangeable; 2 is distinct."
-                          \*
-                          \*   Threaded through every emission site (Emit /
-                          \*   BatchEmitBegin+Step / SinkNestedEmit /
-                          \*   DeliverSettle / DeliverTerminal rescue) via
-                          \*   the `IsAbsorbed(n, prev, next)` helper.
-                          \*   Before batch 9, only `Emit` was gated — the
-                          \*   other sites used raw `=`; batch 9 closes that
-                          \*   modeling gap.
-                          \*
-                          \*   **Purity assumption (batch 11 QA, 2026-04-24):**
-                          \*   `EqualsPairs[n]` is a fixed set per MC run —
-                          \*   the model cannot express stateful `equals`
-                          \*   fns (e.g. one whose return depends on hidden
-                          \*   counter state) or non-deterministic ones.
-                          \*   Asymmetric / non-reflexive / non-transitive
-                          \*   relations ARE permitted — no ASSUME enforces
-                          \*   equivalence-relation laws. The runtime's
-                          \*   spec §2.5 `equals` fn is expected to be pure
-                          \*   and deterministic; stateful equals is a
-                          \*   user-facing footgun outside the model's
-                          \*   expressiveness.
     AutoCompleteOnDepsComplete, \* NodeIds -> BOOLEAN. Mirrors spec §2.5
                                  \*   `completeWhenDepsComplete`. When TRUE
                                  \*   (default), `DeliverTerminal` with a
@@ -265,7 +222,6 @@ ASSUME MaxInvalidates \in Nat
 ASSUME AutoCompleteOnDepsComplete \in [NodeIds -> BOOLEAN]
 ASSUME AutoErrorOnDepsError \in [NodeIds -> BOOLEAN]
 ASSUME ReplayBufferSize \in [NodeIds -> Nat]
-ASSUME EqualsPairs \in [NodeIds -> SUBSET (Values \X Values)]
 ASSUME MetaCompanions \in [NodeIds -> SUBSET NodeIds]
 ASSUME MaxTeardowns \in Nat
 \* Q14 (2026-05-07): `BatchInvSeqs` is a set of sequences. Each element is a
@@ -352,17 +308,6 @@ RecordAtSinkIfAny(t, n, msg) ==
 RecordSeqAtSinkIfAny(t, n, msgs) ==
     IF n \in SinkIds THEN [t EXCEPT ![n] = @ \o msgs] ELSE t
 
-(* --- §2.5 `equals` absorption helper (added 2026-04-24 batch 9, E) ---
-   `IsAbsorbed(n, prev, next)` returns TRUE when emitting `next` at node n
-   while cache[n] = prev should be treated as equivalent — i.e. the
-   emission produces RESOLVED (cache unchanged) rather than DATA (cache
-   advanced). Mirrors the runtime's `equals(prev, next)` call; the
-   generalization from the batch-3 boolean `EqualsAbsorbs[n]` to the
-   relation `EqualsPairs[n]` lets custom equality fns be modeled directly
-   instead of approximated as all-absorbs / never-absorbs binaries.
-*)
-IsAbsorbed(n, prev, next) == <<prev, next>> \in EqualsPairs[n]
-
 \* --- §2.4 multi-sink iteration helpers (added 2026-04-23) ---
 \*
 \* Each emission action that writes to `trace[n]` also enqueues the same
@@ -426,11 +371,11 @@ VARIABLES
     queues,           \* <<parent, child>> -> Seq of messages
     trace,            \* NodeId -> Seq of messages observed at sinks (protocol emissions only)
     emitCount,        \* Nat, bounds exploration (global across all sources)
-    \* Per-source emit counter (added 2026-04-23 as I4 fix). Generalizes
-    \* `EqualsFaithful` from single-source-implicit to multi-source-sound.
-    \* Incremented by `Emit(src, v)`, `BatchEmitMulti(src, vs)`,
+    \* Per-source emit counter (added 2026-04-23 as I4 fix). Incremented by
+    \* `Emit(src, v)`, `BatchEmitMulti(src, vs)`,
     \* `SinkNestedEmit(observer, target, v)` — always at the emitting source's
-    \* slot. Parallel to `emitCount` (which stays the global bound).
+    \* slot. Parallel to `emitCount` (which stays the global bound). Ghost
+    \* state retained for trace accounting (D49 removed its EqualsFaithful reader).
     perSourceEmitCount, \* NodeIds -> Nat
     activated,        \* NodeId -> BOOLEAN (has a subscriber attached to this sink?)
     handshake,        \* NodeId -> Seq of messages delivered during the subscribe handshake
@@ -694,19 +639,14 @@ Emit(src, v) ==
     \* `batch()` scope on the same source semantically can't interleave
     \* with the in-flight batch's step actions.
     /\ batchActive[src].status = "idle"
-    \* Package 3 / batch 9: equality is gated by `EqualsPairs[src]` via
-    \* the `IsAbsorbed` helper. Identity-diagonal (default) = strict
-    \* equality; empty = `equals: () => false`; arbitrary subset = custom
-    \* equals fn. See the constant docstring for the relation semantics.
-    /\ LET equalToCache == IsAbsorbed(src, cache[src], v)
-           settleMsg    == IF equalToCache THEN Msg(RESOLVED, NullPayload)
-                                           ELSE Msg(DATA, v)
+    \* D49 (R-equals removed): every value-occurrence emits DATA. A source
+    \* never substitutes DATA->RESOLVED based on value-equality with cache.
+    /\ LET settleMsg    == Msg(DATA, v)
            dirtyMsg     == Msg(DIRTY, NullPayload)
            pair         == <<dirtyMsg, settleMsg>>
            captured     == IsCapturedByBuffer(src)
        IN
-       /\ LET cacheAfter == IF equalToCache THEN cache
-                                              ELSE [cache EXCEPT ![src] = v]
+       /\ LET cacheAfter == [cache EXCEPT ![src] = v]
           IN
           /\ IF captured
                THEN
@@ -723,12 +663,9 @@ Emit(src, v) ==
                       EnqueuePendingExtraSeq(pendingExtraDelivery, src, pair, cacheAfter)
                  /\ pauseBuffer' = pauseBuffer
           /\ cache'   = cacheAfter
-          /\ version' = IF equalToCache THEN version
-                                        ELSE [version EXCEPT ![src] = @ + 1]
-          \* Package 3: append to ring on DATA emits (equalToCache = FALSE).
-          \* On RESOLVED emits (no cache change), ring is untouched.
-          /\ replayBuffer' = IF equalToCache THEN replayBuffer
-                                              ELSE AppendToReplayBuffer(replayBuffer, src, v)
+          /\ version' = [version EXCEPT ![src] = @ + 1]
+          \* Package 3: append to ring on every DATA emit.
+          /\ replayBuffer' = AppendToReplayBuffer(replayBuffer, src, v)
           /\ UNCHANGED <<status, dirtyMask, activated, handshake,
                          nestedEmitCount, emitWitness,
                          pauseLocks, resubscribeCount, pauseActionCount,
@@ -791,9 +728,9 @@ BatchEmitBegin(src, vs) ==
     \* un-fireable and `batchActive[src]` permanently running. Reserving
     \* at Begin matches the runtime semantic that `batch()` claims its
     \* full K-emit quota synchronously when it opens.
-    \* `perSourceEmitCount` stays in BatchEmitStep because `EqualsFaithful`
-    \* (#5) ties it to settlement delivery — settlements fire per-step,
-    \* so the counter must advance per-step too.
+    \* `perSourceEmitCount` advances per-step in BatchEmitStep, tied to
+    \* settlement delivery — settlements fire per-step, so the counter
+    \* advances per-step too.
     /\ emitCount + Len(vs) <= MaxEmits
     /\ LET dirtyPrefix == DirtySeqOf(Len(vs))
        IN
@@ -816,9 +753,9 @@ BatchEmitBegin(src, vs) ==
 
 (*****************************************************************************
   `BatchEmitStep(src)` — step N>=2 of the batch state machine. Consumes
-  the head value from `batchActive[src].pending`, routes through
-  `IsAbsorbed` to pick RESOLVED vs DATA, advances cache (on DATA),
-  enqueues one settle to primary + extras, and decrements pending.
+  the head value from `batchActive[src].pending`, emits DATA (D49: every
+  value-occurrence emits DATA — no value-equality substitution), advances
+  cache, enqueues one settle to primary + extras, and decrements pending.
   When pending reaches empty, transitions batchActive back to "idle".
   Gated on `AllExtraPendingEmpty` + `NoInvalidateAnywhere` so:
     (a) each settle's extra-sink delivery fully drains before the next
@@ -835,11 +772,8 @@ BatchEmitStep(src) ==
     \* Q14 (2026-05-07): NoInvalidateAnywhere removed (tier-3 emits no
     \* longer wait on tier-4 drain — see Emit's comment for full rationale).
     /\ LET v == Head(batchActive[src].pending)
-           isEq == IsAbsorbed(src, cache[src], v)
-           settleMsg == IF isEq THEN Msg(RESOLVED, NullPayload)
-                                 ELSE Msg(DATA, v)
-           cacheAfter == IF isEq THEN cache
-                                  ELSE [cache EXCEPT ![src] = v]
+           settleMsg == Msg(DATA, v)
+           cacheAfter == [cache EXCEPT ![src] = v]
            captured == IsCapturedByBuffer(src)
            newPending == Tail(batchActive[src].pending)
        IN
@@ -860,18 +794,16 @@ BatchEmitStep(src) ==
                    EnqueuePendingExtra(pendingExtraDelivery, src, settleMsg, cacheAfter)
               /\ pauseBuffer' = pauseBuffer
        /\ cache'   = cacheAfter
-       /\ version' = IF isEq THEN version
-                              ELSE [version EXCEPT ![src] = @ + 1]
-       /\ replayBuffer' = IF isEq THEN replayBuffer
-                                   ELSE AppendToReplayBuffer(replayBuffer, src, v)
+       /\ version' = [version EXCEPT ![src] = @ + 1]
+       /\ replayBuffer' = AppendToReplayBuffer(replayBuffer, src, v)
        /\ batchActive' = IF newPending = <<>>
                            THEN [batchActive EXCEPT ![src] =
                                     [status |-> "idle", pending |-> <<>>]]
                            ELSE [batchActive EXCEPT ![src].pending = newPending]
     \* Batch 11 QA (2026-04-24): `emitCount` is reserved atomically at
     \* `BatchEmitBegin` — don't double-count here. `perSourceEmitCount`
-    \* stays per-step because `EqualsFaithful` ties it to settlement
-    \* delivery at the trace / pauseBuffer boundary.
+    \* advances per-step, tied to settlement delivery at the trace /
+    \* pauseBuffer boundary.
     /\ perSourceEmitCount' = [perSourceEmitCount EXCEPT ![src] = @ + 1]
     /\ UNCHANGED <<status, dirtyMask, emitCount,
                    activated, handshake,
@@ -931,8 +863,8 @@ BatchEmitWithInv(src, items) ==
     \* `perSourceEmitCount += K` (consistent with Bug 2, but breaks Q1
     \* "DATA wins" semantic since each EMIT becomes its own outgoing
     \* settle), or (b) collapse to 1 trace entry with `perSourceEmitCount
-    \* += 1` (loses the per-emit-call accounting that EqualsFaithful relies
-    \* on). Rather than pick a side, scope this action to the strict Q14
+    \* += 1` (loses the per-emit-call accounting in trace). Rather than
+    \* pick a side, scope this action to the strict Q14
     \* concern: how INV interacts with one EMIT inside a batch. Composing
     \* with multi-EMIT goes through `BatchEmitMulti` followed by
     \* `Invalidate` as separate waves — tier ordering guarantees the DATA
@@ -956,22 +888,15 @@ BatchEmitWithInv(src, items) ==
                      IF hasEmit THEN items[lastEmitIdx].value
                                 ELSE DefaultInitial
                  dirtyMsg == Msg(DIRTY, NullPayload)
-                 emitAbsorbed ==
-                     IF hasEmit
-                       THEN IsAbsorbed(src, cache[src], vLast)
-                       ELSE FALSE
-                 emitSettle ==
-                     IF emitAbsorbed
-                       THEN Msg(RESOLVED, NullPayload)
-                       ELSE Msg(DATA, vLast)
+                 \* D49 (R-equals removed): an EMIT always settles DATA;
+                 \* no value-equality substitution to RESOLVED.
+                 emitSettle == Msg(DATA, vLast)
                  invSettle == Msg(INVALIDATE, NullPayload)
                  settleMsg == IF hasEmit THEN emitSettle ELSE invSettle
                  pair == <<dirtyMsg, settleMsg>>
                  cacheAfter ==
                      IF hasEmit
-                       THEN IF emitAbsorbed
-                              THEN cache
-                              ELSE [cache EXCEPT ![src] = vLast]
+                       THEN [cache EXCEPT ![src] = vLast]
                        ELSE [cache EXCEPT ![src] = DefaultInitial]
                  wasReset == cache[src] = DefaultInitial
                  \* Q9 collapse: at most one cleanup-witness append per
@@ -979,7 +904,7 @@ BatchEmitWithInv(src, items) ==
                  \* coalescing (one cleanup hook fires per source per batch
                  \* regardless of how many INVALIDATE calls coalesced).
                  recordWitness == ~hasEmit /\ ~wasReset
-                 versionBump == hasEmit /\ ~emitAbsorbed
+                 versionBump == hasEmit
              IN /\ queues' = EnqueueSeqOutFrom(queues, src, pair)
                 /\ trace' = RecordSeqAtSinkIfAny(trace, src, pair)
                 /\ pendingExtraDelivery' =
@@ -1184,23 +1109,18 @@ DeliverSettle(p, c) ==
                       terminatedBy, nonVacuousInvalidateCount,
                       batchActive>>
             ELSE LET newCache  == Compute(c, cache)
-                     \* Batch 9 (2026-04-24, E): derived-node absorption
-                     \* now also routes through `IsAbsorbed` so a custom
-                     \* `EqualsPairs[c]` applies uniformly across fn
-                     \* outputs too (not just source Emit).
-                     sameAsOld == IsAbsorbed(c, cache[c], newCache)
-                     settleMsg == IF sameAsOld THEN Msg(RESOLVED, NullPayload)
-                                               ELSE Msg(DATA, newCache)
+                     \* D49 (R-equals removed): a derived recompute always
+                     \* settles DATA — no value-equality substitution.
+                     settleMsg == Msg(DATA, newCache)
                      captured  == IsCapturedByBuffer(c)
-                     cacheAfter == IF sameAsOld THEN cache
-                                                 ELSE [cache EXCEPT ![c] = newCache]
+                     cacheAfter == [cache EXCEPT ![c] = newCache]
                      \* Record a ghost witness when a multi-parent derived emits DATA:
                      \* the value it chose, plus the parents' cache values at the
                      \* moment of recompute. Used by NestedDrainPeerConsistency.
                      witness == [value |-> newCache,
                                  parents |-> [pp \in Parents(c) |-> cache[pp]]]
                      isMultiParentDataEmit ==
-                         ~sameAsOld /\ Cardinality(Parents(c)) >= 2
+                         Cardinality(Parents(c)) >= 2
                  IN
                  /\ IF captured
                       THEN
@@ -1218,15 +1138,13 @@ DeliverSettle(p, c) ==
                              EnqueuePendingExtra(pendingExtraDelivery, c, settleMsg, cacheAfter)
                         /\ pauseBuffer' = pauseBuffer
                  /\ cache'  = cacheAfter
-                 /\ version' = IF sameAsOld THEN version
-                                             ELSE [version EXCEPT ![c] = @ + 1]
+                 /\ version' = [version EXCEPT ![c] = @ + 1]
                  /\ status' = [status EXCEPT ![c] = "settled"]
                  /\ emitWitness' = IF isMultiParentDataEmit
                                      THEN [emitWitness EXCEPT ![c] = Append(@, witness)]
                                      ELSE emitWitness
-                 \* Item 1 extension: append to ring on DATA emits at c.
-                 /\ replayBuffer' = IF sameAsOld THEN replayBuffer
-                                                  ELSE AppendToReplayBuffer(replayBuffer, c, newCache)
+                 \* Item 1 extension: append to ring on every DATA emit at c.
+                 /\ replayBuffer' = AppendToReplayBuffer(replayBuffer, c, newCache)
        /\ UNCHANGED <<emitCount, perSourceEmitCount, activated, handshake, nestedEmitCount,
                       pauseLocks, resubscribeCount, pauseActionCount,
                       upQueues, upActionCount, extraSinkTrace,
@@ -1269,17 +1187,12 @@ DeliverTerminal(p, c) ==
            \* terminal" semantic.
            rescueRecompute == ~gate /\ newMask = {} /\ status[c] = "dirty"
            rNewCache == Compute(c, cache)
-           \* Batch 9 (2026-04-24, E): rescue-recompute absorption uses
-           \* the same `IsAbsorbed` helper as DeliverSettle's main
-           \* settle path — same semantic: if the fn's new output is
-           \* absorbed against current cache under `EqualsPairs[c]`,
-           \* emit RESOLVED (cache unchanged). Previously used raw `=`.
-           rSameAsOld == IsAbsorbed(c, cache[c], rNewCache)
-           rSettleMsg == IF rSameAsOld THEN Msg(RESOLVED, NullPayload)
-                                       ELSE Msg(DATA, rNewCache)
+           \* D49 (R-equals removed): a rescue recompute that produces a
+           \* recovery value always settles DATA — no value-equality
+           \* substitution to RESOLVED.
+           rSettleMsg == Msg(DATA, rNewCache)
            rCaptured == IsCapturedByBuffer(c)
-           rCacheAfter == IF rSameAsOld THEN cache
-                                         ELSE [cache EXCEPT ![c] = rNewCache]
+           rCacheAfter == [cache EXCEPT ![c] = rNewCache]
        IN
        /\ IF gate
             THEN
@@ -1319,8 +1232,7 @@ DeliverTerminal(p, c) ==
                                                       rSettleMsg, rCacheAfter)
                             /\ pauseBuffer' = pauseBuffer
                      /\ cache' = rCacheAfter
-                     /\ version' = IF rSameAsOld THEN version
-                                                  ELSE [version EXCEPT ![c] = @ + 1]
+                     /\ version' = [version EXCEPT ![c] = @ + 1]
                      /\ status' = [status EXCEPT ![c] = "settled"]
                      /\ pauseLocks' = pauseLocks
                      /\ upQueues' = upQueues
@@ -1507,10 +1419,9 @@ SubscribeSink(sid) ==
 \*   message, the prior callback has returned."
 \* - ECH-9: for compound batches like `<<DIRTY, DATA, DIRTY, DATA>>` the
 \*   predicate is TRUE only at the state where the tail is DATA. A sink
-\*   receiving a two-DATA batch (rare: RESOLVED absorption usually
-\*   collapses the pair) would hit ObserverCallbackActive twice — once
-\*   after each DATA append — and SinkNestedEmit is correctly enabled in
-\*   both windows. The action-level interleaving model explores every
+\*   receiving a two-DATA batch would hit ObserverCallbackActive twice —
+\*   once after each DATA append — and SinkNestedEmit is correctly enabled
+\*   in both windows. The action-level interleaving model explores every
 \*   such window.
 ObserverCallbackActive(observer) ==
     /\ Len(trace[observer]) > 0
@@ -1528,18 +1439,13 @@ SinkNestedEmit(observer, target, v) ==
     \* Batch 11 (2026-04-24, I): nested emit on a target mid-batch on THAT
     \* target would interleave with the batch state machine. Require idle.
     /\ batchActive[target].status = "idle"
-    \* Batch 9 (2026-04-24, E): route absorption through `IsAbsorbed`
-    \* so `SinkNestedEmit` honors `EqualsPairs[target]` the same as
-    \* `Emit(target, v)` would. Pre-batch-9 this used raw `=` which
-    \* silently bypassed the axis.
-    /\ LET equalToCache == IsAbsorbed(target, cache[target], v)
-           settleMsg    == IF equalToCache THEN Msg(RESOLVED, NullPayload)
-                                           ELSE Msg(DATA, v)
+    \* D49 (R-equals removed): a nested emit on `target` always settles
+    \* DATA — same as `Emit(target, v)`. No value-equality substitution.
+    /\ LET settleMsg    == Msg(DATA, v)
            dirtyMsg     == Msg(DIRTY, NullPayload)
            pair         == <<dirtyMsg, settleMsg>>
            captured     == IsCapturedByBuffer(target)
-           cacheAfter   == IF equalToCache THEN cache
-                                            ELSE [cache EXCEPT ![target] = v]
+           cacheAfter   == [cache EXCEPT ![target] = v]
        IN
        /\ IF captured
             THEN
@@ -1555,11 +1461,9 @@ SinkNestedEmit(observer, target, v) ==
                    EnqueuePendingExtraSeq(pendingExtraDelivery, target, pair, cacheAfter)
               /\ pauseBuffer' = pauseBuffer
        /\ cache'   = cacheAfter
-       /\ version' = IF equalToCache THEN version
-                                     ELSE [version EXCEPT ![target] = @ + 1]
-       \* Item 1 extension (QA round 2): append to ring on DATA emits at target.
-       /\ replayBuffer' = IF equalToCache THEN replayBuffer
-                                           ELSE AppendToReplayBuffer(replayBuffer, target, v)
+       /\ version' = [version EXCEPT ![target] = @ + 1]
+       \* Item 1 extension (QA round 2): append to ring on every DATA emit at target.
+       /\ replayBuffer' = AppendToReplayBuffer(replayBuffer, target, v)
        /\ UNCHANGED <<status, dirtyMask, activated, handshake, emitWitness,
                       pauseLocks, resubscribeCount, pauseActionCount,
                       upQueues, upActionCount, extraSinkTrace,
@@ -2478,44 +2382,6 @@ DiamondConvergence ==
     \A n \in (FanInNodes \cap SinkIds) :
         SettlementCount(n) <= emitCount
 
-\* #5: Every source emit produces exactly one settlement observed at the
-\*     source itself (when the source is a sink). If the source is not a
-\*     sink the invariant is vacuous here; fast-check has the companion
-\*     sink-side coverage.
-\*
-\*     Settlements deferred by bufferAll mode count here too — they've
-\*     logically happened (cache advanced, version bumped) but are parked
-\*     in pauseBuffer until the final-lock RESUME drains them. Without this
-\*     term the invariant would trip mid-pause window.
-\*
-\*     I4 fix (2026-04-23): previously compared `trace[s]` against the global
-\*     `emitCount` — sound for single-source topologies but broken for multi-
-\*     source (the nested MC has two sources A and B; A's trace records only
-\*     A's emits while `emitCount` aggregates both). `perSourceEmitCount[s]`
-\*     — incremented by Emit/BatchEmitMulti/SinkNestedEmit at the emitting
-\*     source's slot — is the per-source counter this invariant needs.
-\*
-\*     Q14 / Q8 update (2026-05-07): INVALIDATE is excluded from both sides
-\*     of the equality. `Invalidate(s)` and `BatchEmitWithInv(s, items)`
-\*     (Q9 collapse path) do NOT increment `perSourceEmitCount[s]`; the
-\*     INVALIDATE messages they enqueue do NOT count on the LHS. This
-\*     reflects Q8: INVALIDATE is not a value emission and is never
-\*     substituted by `IsAbsorbed`. Any refactor that routes INVALIDATE
-\*     through the equals oracle would either count INV as a settle (LHS
-\*     mismatch) or drop a settle (RHS mismatch) — see also #31
-\*     `InvalidateNotInValueDomain` for the structural counterpart.
-EqualsFaithful ==
-    \A s \in (SourceIds \cap SinkIds) :
-        \* Terminated sources excluded: §2.6 "Teardown" discards pauseBuffer
-        \* without draining, so dropped settlements can't be accounted for in
-        \* either trace or buffer. Same reasoning as BalancedWaves.
-        status[s] # "terminated" =>
-            Cardinality({i \in 1..Len(trace[s]) :
-                           trace[s][i].type \in {DATA, RESOLVED}})
-          + Cardinality({i \in 1..Len(pauseBuffer[s]) :
-                           pauseBuffer[s][i].type \in {DATA, RESOLVED}})
-            = perSourceEmitCount[s]
-
 \* #7: START handshake well-formedness. For every activated sink,
 \* `handshake[sid]` matches one of the valid shapes per §2.2:
 \*   - source (no parents, not terminated): [[START], [DATA, cached]]
@@ -2636,7 +2502,7 @@ NestedDrainPeerConsistency ==
 \*     restricted to the source-observed form.
 VersionPerChange ==
     \A s \in (SourceIds \cap SinkIds) :
-        \* Terminated sources excluded for the same reason as EqualsFaithful:
+        \* Terminated sources excluded (same reason as BalancedWaves):
         \* buffer drop on terminal can strand value-changing emits (version
         \* bumped at Emit time, DATA discarded with the buffer).
         status[s] # "terminated" =>
@@ -3243,22 +3109,11 @@ MergeRulesRespected ==
     /\ NoAdjacentInvalidates
     /\ NoEmitToInvNoDirtySandwich
 
-\* #31 — InvalidateNotInValueDomain (Q14 / Q8 — DS-13.5.A 2026-05-07).
-\*
-\* Q8 lock: "INVALIDATE is not a value emission; equals never substitutes
-\* it. Always propagates." The structural form: every INVALIDATE message
-\* in the system carries `NullPayload`, never a `Value`-domain payload.
-\* This holds vacuously today because `Invalidate(n)` and `DeliverInvalidate`
-\* construct INVALIDATE via `Msg(INVALIDATE, NullPayload)` directly,
-\* bypassing `IsAbsorbed`. The invariant is a regression guard: any future
-\* refactor that routes INVALIDATE through the equals oracle (e.g.
-\* attempting to "absorb" an INV into a RESOLVED via custom equals) would
-\* either drop the type tag or carry a Value payload — both trip this
-\* invariant.
-\*
-\* Companion to `EqualsFaithful` (#5): the latter counts DATA + RESOLVED
-\* settlements at sources; this one structurally guards INVALIDATE from
-\* being silently rewritten as a tier-3 settlement.
+\* Structural guard, INDEPENDENT of equals-substitution (survives D49 — it has
+\* nothing to do with the retired DATA->RESOLVED absorption): INVALIDATE stays in
+\* the control domain and never carries a value-domain payload. A regression that
+\* drops the type tag or smuggles a Value payload through INVALIDATE -- across
+\* queues / pauseBuffer / sink trace / extra-sink surfaces -- trips this.
 InvalidateNotInValueDomain ==
     /\ \A e \in EdgePairs :
          \A i \in 1..Len(queues[e]) :
@@ -3269,15 +3124,8 @@ InvalidateNotInValueDomain ==
     /\ \A n \in SinkIds :
          \A i \in 1..Len(trace[n]) :
              trace[n][i].type = INVALIDATE => trace[n][i].value = NullPayload
-    \* QA P2 (2026-05-07): also cover extra-sink delivery surfaces. Both
-    \* `pendingExtraDelivery` (the iterator-style ping queue, populated by
-    \* `EnqueuePendingExtra` / `EnqueuePendingExtraSeq`) and `extraSinkTrace`
-    \* (per-extra-sink observation log, populated by `DeliverToExtraSink`)
-    \* receive INVALIDATE messages via the same code paths as `trace`. A
-    \* regression that smuggles a Value-domain payload through INVALIDATE
-    \* would otherwise be visible only on the primary `trace` and missed by
-    \* extra-sink consumers. Vacuous in MCs where ExtraSinks is 0 every-
-    \* where (existing baseline); active in any future multi-sink + INV MC.
+    \* also cover extra-sink delivery surfaces (pendingExtraDelivery + extraSinkTrace);
+    \* vacuous when ExtraSinks is 0 everywhere, active in any multi-sink + INV MC.
     /\ \A n \in NodeIds : \A i \in 1..ExtraSinks[n] :
          \A j \in 1..Len(pendingExtraDelivery[n][i]) :
              pendingExtraDelivery[n][i][j].msg.type = INVALIDATE

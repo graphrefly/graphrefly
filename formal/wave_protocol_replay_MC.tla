@@ -14,13 +14,6 @@ emits stress the drop-oldest-on-cap logic. After 3 DATA emits at A, the
 ring must still be bounded to 2. The invariant `ReplayBufferBounded`
 enforces it.
 
-Equality axis: `EqualsPairs[n]` kept at identity diagonal everywhere in
-this MC (the legacy `EqualsAbsorbs[n] = TRUE` behavior) so
-RESOLVED-absorbing semantics stay normal. The `equals` variance
-dimension is probed separately by `wave_protocol_equals_false_MC` (empty
-relation) and `wave_protocol_custom_equals_MC` (non-identity subset,
-batch 9 E) — cross-axis replay × equals is a follow-on if needed.
-
 State-space bounds: 2 nodes, 2 values, MaxEmits = 3. Kept tight.
 *****************************************************************************)
 
@@ -61,7 +54,6 @@ AutoErrorOnDepsErrorMC       == [n \in NodeIdsMC |-> TRUE]
 \* Package 3 axis ON: A carries a replay ring of size 2. Multiple Emit +
 \* BatchEmitMulti firings drive the ring through its drop-oldest logic.
 ReplayBufferSizeMC == [n \in NodeIdsMC |-> IF n = "A" THEN 2 ELSE 0]
-EqualsPairsMC    == [n \in NodeIdsMC |-> {<<v, v>> : v \in ValuesMC}]
 
 MetaCompanionsMC == [n \in NodeIdsMC |-> {}]
 MaxTeardownsMC   == 0

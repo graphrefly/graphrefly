@@ -31,16 +31,14 @@ Tier-4 INVALIDATE properties exercised:
   - `MergeRulesRespected` (#30): no two adjacent INVALIDATEs and no
     `<<DATA|RESOLVED, INVALIDATE>>` adjacent in any queue. The
     `BatchEmitWithInv` action is the substrate — it constructs a single
-    merged settle per Q1/Q3/Q9.
-  - `InvalidateNotInValueDomain` (#31): structural guard that all
-    INVALIDATE messages carry `NullPayload`. Catches future regressions
-    that route INV through equals.
+    merged settle per Q1/Q9.
   - Pre-existing INVALIDATE invariants (#19, #24, #26) hold under the new
     auto-DIRTY-prefix wave shape.
 
 `BatchInvSeqs` covers Q1 (EMIT before INV; INV before EMIT — DATA wins
-either way), Q3 (EMIT-absorb wins), Q9 (two INVs collapse). Five
-representative sequences keep the state space tractable.
+either way) and Q9 (two INVs collapse). Five representative sequences keep
+the state space tractable. (Per D49 there is no value-equality
+substitution: every EMIT settles DATA.)
 
 Bounds: 4 nodes, 2 values, MaxEmits = 2, MaxInvalidates = 4 (allows
 batch-coalesced firings to consume 2 INVs each), MaxBatchInvFires
@@ -80,7 +78,6 @@ AutoCompleteOnDepsCompleteMC == [n \in NodeIdsMC |-> TRUE]
 AutoErrorOnDepsErrorMC       == [n \in NodeIdsMC |-> TRUE]
 
 ReplayBufferSizeMC == [n \in NodeIdsMC |-> 0]
-EqualsPairsMC    == [n \in NodeIdsMC |-> {<<v, v>> : v \in ValuesMC}]
 
 MetaCompanionsMC == [n \in NodeIdsMC |-> {}]
 MaxTeardownsMC   == 0

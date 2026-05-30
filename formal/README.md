@@ -8,19 +8,20 @@ wave protocol. The CANONICAL normative source is [`spec/rules.jsonl`](../spec/ru
 
 | Module | Covers | Conformance |
 |---|---|---|
-| `wave_protocol.tla` (+ 18 MCs) | core wave protocol — R-dirty-before-data, R-two-phase, R-diamond, R-equals, R-terminal, R-ctx-up, R-pause-*, R-invalidate-*, R-cleanup-*, R-deps-terminal | C-3, C-5 |
+| `wave_protocol.tla` (+ 16 MCs) | core wave protocol — R-dirty-before-data, R-two-phase, R-diamond, R-terminal, R-ctx-up, R-pause-*, R-invalidate-*, R-cleanup-*, R-deps-terminal | C-3, C-5 |
 | `wave_xgraph.tla` | cross-graph diamond — R-diamond + R-graph-domain across a wire bridge (L2.F) | **C-1** |
 | `wave_async.tla` | mixed sync/async diamond — R-graph-domain + R-first-run-gate with a LocalAsync leg | **C-4** |
 | `wave_async_paused.tla` | async-result-at-paused-node — R-async-paused + R-pause-lockset | **C-2** |
 | `wave_reentrancy.tla` | synchronous feedback-cycle rejection — R-reentrancy (node-local in-wave reject; cyclic→ERROR at the cycle-closing compute node, acyclic→clean) | **C-6** |
 | `wave_up_source.tla` | upstream control at a depless source — R-up-at-source (INVALIDATE→honor: self-invalidate + down-cascade; DIRTY/TEARDOWN→drop) | **C-7** |
 | `wave_rewire.tla` | intra-graph runtime rewire (dep side) — R-rewire (setDeps/addDep/removeDep; per-node Q1–Q7 + rewire×INVALIDATE drain + rewire×terminal reject) | **C-8** |
-| `wave_rewire_emit.tla` | rewire cross-axis (emit side) — R-rewire (rewire×equals output-absorption + rewire×multi-sink fanout; the downstream-emit dimension wave_rewire.tla omits) | **C-8** |
+| `wave_rewire_emit.tla` | rewire cross-axis (emit side) — R-rewire (rewire×multi-sink fanout + cache-integrity across rewire; the downstream-emit dimension wave_rewire.tla omits) | **C-8** |
+| `wave_rewire_deferred.tla` | wave-boundary deferred SELF-rewire — R-rewire-deferred (ctx.rewireNext add+remove, queued during a fn run, drained at the committed boundary: deferral / drain-exactly-once / removed-dep silencing / no-op termination) | **C-11** |
 
-The seven focused modules are single-wave-serialized models (status: draft); they
+The eight focused modules are single-wave-serialized models (status: draft); they
 flip active alongside the impl that exercises them (wire bridge → backlog B2;
 LocalAsync pool → CSP-1; re-entrancy reject + up-at-source → CSP-1/CSP-2; rewire →
-CSP-2.5). See each module header for its invariant set + abstraction boundary. Run any module:
+CSP-2.5; deferred self-rewire → CSP-2.7). See each module header for its invariant set + abstraction boundary. Run any module:
 `java -cp <tla2tools.jar> tlc2.TLC -config <name>.cfg <name>`.
 
 `wave_up_source.tla` exercises all three upstream-allowed non-pause control kinds
@@ -45,23 +46,39 @@ messages, incl INVALIDATE, are drained) and rewire×terminal (`RewireOnlyOnLiveN
 disabling the removed-dep drain trips `NoStaleEdgeMessages` (33 states), and removing
 the terminal-this guard (with C terminable) trips `RewireOnlyOnLiveNode` (163 states).
 ABSTRACTION BOUNDARY: `wave_rewire.tla` has no downstream fn-fire-emit, so the
-rewire×equals and rewire×multi-sink cross-axes (D42 SD-2) live in the companion
+rewire×multi-sink cross-axis (D42 SD-2) lives in the companion
 `wave_rewire_emit.tla` (below), not here. "adding a non-resubscribable terminal dep
 is rejected" is guard-modeled (the SetDeps guard, not a standing invariant — a kept
 dep that terminates later is permitted).
 
 `wave_rewire_emit.tla` (D42 / C-8 / B14) supplies the downstream-emit dimension
-`wave_rewire.tla` omits and composes it with rewire — discharging the last two D42
-SD-2 cross-axes: rewire×equals (`CacheMatchesLastData` — cache equals the last
-emitted DATA; a RESOLVED absorption never advances it and a rewire never corrupts
-it, since rewire preserves cache per Q7) and rewire×multi-sink (`MultiSinkConsistent`
-— every sink observes the same drained++queued stream; rewire is upstream-only so it
-never desyncs them). 2 sinks; TLC-green at 3003 states / depth 10. Both invariants
-mutation-verified load-bearing: a single-sink Emit trips `MultiSinkConsistent`
-(2 states), a cache-corrupting Rewire trips `CacheMatchesLastData` (4 states). Rewire
-is abstracted to the emit side (preserves cache, doesn't touch sinks); the dep-side
-mechanics are `wave_rewire.tla`'s job — the two modules together cover all four
-cross-axes (INVALIDATE / terminal / equals / multi-sink).
+`wave_rewire.tla` omits and composes it with rewire — discharging the D42
+SD-2 rewire×multi-sink cross-axis (`MultiSinkConsistent` — every sink observes the
+same drained++queued stream; rewire is upstream-only so it never desyncs them) and
+witnessing cache integrity across rewire (`CacheMatchesLastData` — cache equals the
+last emitted DATA; per D49 every value-occurrence emits DATA, and a rewire never
+corrupts cache since it preserves it per Q7). 2 sinks; TLC-green at 3003 states /
+depth 10. Both invariants mutation-verified load-bearing: a single-sink Emit trips
+`MultiSinkConsistent` (2 states), a cache-corrupting Rewire trips
+`CacheMatchesLastData` (4 states). Rewire is abstracted to the emit side (preserves
+cache, doesn't touch sinks); the dep-side mechanics are `wave_rewire.tla`'s job —
+the two modules together cover all three cross-axes (INVALIDATE / terminal /
+multi-sink).
+
+`wave_rewire_deferred.tla` (D47 / C-11) models the NEW self-rewire path: a fn issues
+`ctx.rewireNext(add/remove)` DURING its run (`insideRunWave`), the requests are QUEUED,
+and the dispatcher drains them at the committed wave boundary (`insideRunWave` false) in
+per-node FIFO order — the only legal self-triggered rewire (an immediate in-fn self-rewire
+is the D37 reject, `wave_reentrancy.tla`). Single node over a 2-dep candidate set;
+TLC-green at 5056 states / depth 23. All four invariants are mutation-verified load-bearing:
+neutralizing the `~insideRunWave` drain guard trips `DeferredAppliedAtBoundary`; applying
+without dequeuing trips `DrainExactlyOnce`; dropping the removed-dep edge drain trips
+`RemovedDepSilenced` (the boundary analog of `wave_rewire.tla` `NoStaleEdgeMessages`); a
+non-dequeuing DrainOne trips `NoBoundaryDrainLoop`. The mutation pass also caught a real
+latent `=` vs `\/` precedence bug in the ghost assignments (RHS now parenthesized).
+ABSTRACTION: the fn body is a black box; the batch/pause-deferred-drain timing
+(committed-boundary gating under an open batch / held pause) is a follow-up axis
+(backlog B24, sharing committed-boundary semantics with the immediate rewire×batch axis B19).
 
 TLA+ provides **exhaustive model checking** over bounded instances: TLC
 enumerates every reachable state sequence of the protocol and verifies
@@ -84,8 +101,6 @@ so the regression is covered in both layers.
 | [`wave_protocol_up_MC.tla`](wave_protocol_up_MC.tla) + [`wave_protocol_up.cfg`](wave_protocol_up.cfg) | **§1.4 `up()` upstream-direction axis (added 2026-04-23).** 2-node chain `A → B`, `UpOriginators = {B}`, `MaxUpActions = 2`, `LockIds = {10}`, `Pausable = "on"` everywhere. Exercises `UpPause` / `UpResume` originators plus `DeliverUp(c, p)` integration with the existing `pauseLocks[p]` model. Verifies the two new up-axis structural invariants (`UpQueuesCarryControlPlane`, `UpPauseOriginatorBound`) plus the baseline 13 still hold when upstream and downstream PAUSE/RESUME compose. |
 | [`wave_protocol_multisink_MC.tla`](wave_protocol_multisink_MC.tla) + [`wave_protocol_multisink.cfg`](wave_protocol_multisink.cfg) | **§2.4 multi-sink iteration axis (added 2026-04-23).** 2-node chain `A → B`, `ExtraSinks[B] = 1` (one extra subscriber at B beyond the primary), `SinkNestedEmits = {<<A, A, 1>>}` to exercise mid-iteration nested emits. New `DeliverToExtraSink(n, i)` action drains `pendingExtraDelivery[n][i]`; `MultiSinkTracesConverge` structurally checks that primary and extra sinks observe the same message sequence at full drain. |
 | [`wave_protocol_invalidate_diamond_MC.tla`](wave_protocol_invalidate_diamond_MC.tla) + [`wave_protocol_invalidate_diamond.cfg`](wave_protocol_invalidate_diamond.cfg) | **§1.4 INVALIDATE diamond-fan-in axis (added 2026-04-23, batch 5 B).** 4-node diamond `A → {B, C} → D`, `InvalidateOriginators = {A}`, `MaxInvalidates = 1`. Exercises the fan-in where D receives INVALIDATE from both parents; the second delivery lands on an already-reset cache and must NOT append a spurious witness entry. `CleanupWitnessNotSentinel` is load-bearing here — reverting the batch-5 guard on `DeliverInvalidate` trips this invariant. 2555 distinct states, < 1s runtime. |
-| [`wave_protocol_equals_false_MC.tla`](wave_protocol_equals_false_MC.tla) + [`wave_protocol_equals_false.cfg`](wave_protocol_equals_false.cfg) | **§2.5 `equals: () => false` axis (added 2026-04-23, batch 6 F; generalized batch 9 E to `EqualsPairs[A] = {}`).** 2-node chain `A → B`, `EqualsPairs[A] = {}`. Every emit at A produces DATA (never RESOLVED), exercising the empty-relation branch in `Emit` / `BatchEmitMulti` / `SinkNestedEmit` / `DeliverSettle`. `EqualsFaithful` (#5) is load-bearing via the DATA path. 2391 distinct states, < 1s runtime. |
-| [`wave_protocol_custom_equals_MC.tla`](wave_protocol_custom_equals_MC.tla) + [`wave_protocol_custom_equals.cfg`](wave_protocol_custom_equals.cfg) | **§2.5 custom `equals` fn axis (added 2026-04-24, batch 9 E).** 2-node chain `A → B`, `Values = {0, 1, 2}`, `EqualsPairs[A] = identity ∪ {<<0,1>>, <<1,0>>}` — 0 and 1 absorb each other at A; 2 is strictly distinct. Exercises `IsAbsorbed` threading through Emit / BatchEmitMulti's recursive helpers / SinkNestedEmit / DeliverSettle. Complements `equals_false_MC` (empty relation) by asserting that arbitrary non-identity subsets — previously unexpressible under the boolean `EqualsAbsorbs` axis — behave correctly. 3409 distinct states, < 1s runtime. |
 | [`wave_protocol_replay_resubscribe_MC.tla`](wave_protocol_replay_resubscribe_MC.tla) + [`wave_protocol_replay_resubscribe.cfg`](wave_protocol_replay_resubscribe.cfg) | **§2.5 replay × §2.6 resubscribable cross-axis (added 2026-04-23, batch 6 G).** 2-node chain `A → B`, `ReplayBufferSize[B] = 1`, `ResubscribableNodes = {B}`. Makes the batch-6-G extension of `ResubscribeYieldsCleanState` (#13) — the `replaySnapshot[sid] = <<>>` post-resubscribe check — load-bearing: `DeliverSettle(A, B)` populates `replayBuffer[B]`, initial `SubscribeSink(B)` captures a non-empty snapshot, Resubscribe must clear it. Reverting the batch-5 `replaySnapshot' = <<>>` clear in `Resubscribe` trips `ResubscribeYieldsCleanState` here. 550 distinct states, < 1s runtime. |
 
 ## The 28 TLC invariants across 17 MCs — batch 11 QA (2026-04-24)
@@ -177,7 +192,6 @@ Invariants #1–#7 correspond 1-1 to [fast-check properties](../../graphrefly-ts
 | 2 | `BalancedWaves` | clean ✓ / gap ✓ / nested ✓ / pause ✓ / bufferall ✓ / resub ✓ | When all queues AND all pauseBuffers drain, DIRTY count = settlement count at every pre-terminal sink. **Weakened 2026-04-23**: precondition now `AllQueuesEmpty /\ AllBuffersEmpty` (upstream buffers can hold a downstream's owed settlement); terminated sinks are excluded because §2.6 hard-resets discard in-flight DATA. In legacy MCs (pause axis off) buffers are always empty, so the precondition reduces to the original. |
 | 3 | `TerminalAbsorbing` | clean ✓ / gap ✓ / nested ✓ / pause ✓ / bufferall ✓ / resub ✓ | After COMPLETE/ERROR, no further DIRTY/DATA/RESOLVED. |
 | 4 | `DiamondConvergence` | clean ✓ / gap ✓ / nested ✓ / pause ✓ / bufferall ✓ / resub ✓ | Fan-in settlements bounded by source emits — no 2× per dep edge. Now counts buffered settlements too (via the extended `SettlementCount` helper). |
-| 5 | `EqualsFaithful` | clean ✓ / gap ✓ / nested ✓ / pause ✓ / bufferall ✓ / resub ✓ / up ✓ / multisink ✓ | Every source emit yields exactly one settlement at THAT source (observed in trace OR parked in pauseBuffer). **Generalized 2026-04-23 (batch 3, I4 fix)** to use `perSourceEmitCount[s]` instead of the global `emitCount` — makes it sound on multi-source topologies and re-enabled in the nested MC. **Terminated sources excluded 2026-04-23** because §2.6 hard-resets discard buffered settlements. |
 | 6 | `VersionPerChange` | clean ✓ / gap ✓ / nested ✓ / pause ✓ / bufferall ✓ / resub ✓ | Source `version` = count of DATA in its trace + count of DATA in its pauseBuffer (pre-terminal only). |
 | 7 | `StartHandshakeValid` | clean ✓ / gap ✓ / nested ✓ / pause ✓ / bufferall ✓ / resub ✓ | `handshake[sid]` matches one of: source `<START,DATA>`, single-parent derived `<START,DIRTY,DATA>`, multi-parent derived (clean `<START,DIRTY,DATA>` OR gap-aware `<START,DIRTY,RESOLVED,DIRTY,DATA>`), terminated `<START,COMPLETE>`. **Loosened 2026-04-23** to accept the gap-aware shape, matching fast-check invariant #7. |
 | 8 | `MultiDepHandshakeClean` | clean ✓ / **gap ✗** / nested ✓ / pause ✓ / bufferall ✓ / resub ✓ | No RESOLVED between first DIRTY and DATA in a multi-parent derived's handshake. Fails under `GapAwareActivation = TRUE` — TLA+-side mirror of fast-check #10. Counter-example: any multi-parent derived subscribe in 2 steps. |
@@ -239,9 +253,7 @@ java -XX:+UseParallelGC -cp "$TLA_JAR" tlc2.TLC \
 java -XX:+UseParallelGC -cp "$TLA_JAR" tlc2.TLC \
     -config wave_protocol_invalidate_diamond.cfg wave_protocol_invalidate_diamond_MC
 
-# Batch 6 (added 2026-04-23) — §2.5 equals-variance + replay×resubscribe cross-axis.
-java -XX:+UseParallelGC -cp "$TLA_JAR" tlc2.TLC \
-    -config wave_protocol_equals_false.cfg wave_protocol_equals_false_MC
+# Batch 6 (added 2026-04-23) — §2.5 replay×resubscribe cross-axis.
 java -XX:+UseParallelGC -cp "$TLA_JAR" tlc2.TLC \
     -config wave_protocol_replay_resubscribe.cfg wave_protocol_replay_resubscribe_MC
 ```
@@ -270,7 +282,6 @@ Approximate state-space sizes (2026-04-23):
 | `wave_protocol_replay_MC` | ~2.3K (batch 5 grew from 1.9K via `replaySnapshot`) | <1s |
 | `wave_protocol_invalidate_MC` | ~1.7K | <1s |
 | `wave_protocol_invalidate_diamond_MC` | ~2.6K (batch 5) | <1s |
-| `wave_protocol_equals_false_MC` | ~2.4K (batch 6) | <1s |
 | `wave_protocol_replay_resubscribe_MC` | ~550 (batch 6) | <1s |
 
 The pause-axis MCs use smaller topologies (3-node chain, 2-node chain for resubscribe) because pause invariants are per-node, and combinatorial interleavings of Pause/Resume × emit × edges × multiple lockIds blow up the state space on the 4-node diamond (a probe with `MaxPauseActions = 4` on the diamond exceeded 8M distinct states in 10 minutes and still had 1M+ on queue). Topology coverage of the pause invariants is orthogonal to pause-axis coverage.
@@ -325,8 +336,9 @@ hold.
 **Batch coalescing is now modeled** via the `BatchEmitMulti(src, vs)`
 action (added 2026-04-17 alongside the Bug 2 fix in `graphrefly-ts`).
 A batch of K emits to the same source enqueues ONE coalesced bundle per
-child edge: `<<K DIRTYs, K DATA/RESOLVED>>` (tier-sorted, equals-checked
-per-emit against the running cache). `DeliverDirty` / `DeliverSettle`
+child edge: `<<K DIRTYs, K DATAs>>` (tier-sorted; per D49 every
+value-occurrence emits DATA — no value-equality substitution).
+`DeliverDirty` / `DeliverSettle`
 consume the same-tier prefix atomically, matching the runtime's
 "one sink() call per tier group, fn runs once" post-Bug-1-fix behaviour.
 TLC verifies the 7 invariants hold under this model at 3 batched emits

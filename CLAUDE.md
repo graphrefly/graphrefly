@@ -28,7 +28,7 @@ HTML view (progress / structure / gaps). Schema contract: `dashboard/README.md`.
 | **Sequencer (what next)** — single canonical | `plan/phases.jsonl` | `/dev-dispatch` |
 | **Backlog + deferred** | `plan/backlog.jsonl` | any |
 | **Anti-patterns (lessons)** | `plan/antipatterns.jsonl` | `/qa` |
-| **Protocol rules (宪法)** | `spec/rules.jsonl` (+ `PROTOCOL.md` prose intro, `protocol.proto` IDL — pending CSP-0) | `/spec-amend` |
+| **Protocol rules (the constitution)** | `spec/rules.jsonl` (+ `PROTOCOL.md` prose intro, `protocol.proto` IDL — pending CSP-0) | `/spec-amend` |
 | **Conformance (parity)** | `spec/conformance.jsonl` | `/conformance` |
 | **Flowcharts (teaching)** | `spec/flowcharts.jsonl` (structural ones auto-gen in dashboard) | `/spec-amend` |
 | **Design sessions** | `sessions/sessions.jsonl` + `sessions/active/*.md` → `sessions/archive/*.md` | any |

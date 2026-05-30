@@ -96,7 +96,7 @@ This is a **pure design artifact**. No code written. Next step after `/design-re
 
 | ID | Lock |
 |---|---|
-| L3-Q1 | pool 1.0 必备 = **LocalSync + LocalAsync**; dispatcher structure keeps a **pluggable pool trait** (WorkerPool/RemotePool added with L2.F wire bridge maturity). |
+| L3-Q1 | pool 1.0 essentials = **LocalSync + LocalAsync**; dispatcher structure keeps a **pluggable pool trait** (WorkerPool/RemotePool added with L2.F wire bridge maturity). |
 | L3-Q2 | dispatcher = explicit first-class; pool attached to dispatcher; graph bound to a dispatcher (default = process-global). |
 | L3-Q3 | Node self-contains wave state machine (handle_ref · deps · dep_records · dirty_mask · pending_count · cache · status · subscribers · _inside_run_wave · pause_lockset). "Thin" = no inspection cruft, NOT no wave state. |
 | **L3.C** | **graph = causal domain = concurrency domain = single thread.** Compute parallelism via pool callback (wave-state mutation always serializes back to graph's single thread); true parallelism via multi-graph + wire bridge. **Rust drops actor model (D221/D222) → `!Send` single-thread core; Py drops per-subgraph RLock → single-thread core + multi-instance.** rewire only intra-graph; inter-graph only wire bridge. Consequence 1 (accepted): disjoint waves in same graph don't parallelize (→ use separate graphs). Consequence 2 (accepted): rewire scope = single graph; `setDeps/addDep/removeDep` has no inter-graph form. |
@@ -120,7 +120,7 @@ This is a **pure design artifact**. No code written. Next step after `/design-re
 | L4-Q4 | `graph(opts?)` default global dispatcher, `{dispatcher, name}` optional; `g.mount(subgraph, {at})` (mount has no deps, exempt from deps-first). |
 | L4-Q5 | cleanup = `ctx.onDeactivation(fn)` (external resource release) + `ctx.onInvalidate(fn)` (INVALIDATE flush). **2 hooks** (cut onRerun [0 real callsites] + onResubscribableReset [1 callsite → absorbed by ctx.state]). return freed for sugar mapping. |
 | L4-Q6 | `ctx.state` default **fresh-lifecycle wipe**; `ctx.state.persist(boolean?)` to keep across lifecycle. (restore ≠ fresh-lifecycle — see Flag 1.) |
-| L4-Q7 | operator ship tiered: core set (map/filter/scan/merge/take/distinctUntilChanged) in main pkg; time-based + higher-order in `@graphrefly/<lang>-operators` subpackage. |
+| L4-Q7 | **SUPERSEDED by D48** — all operators ship in the main `@graphrefly/ts` package as free-standing tree-shakable factories (`sideEffects:false`); no `@graphrefly/<lang>-operators` subpackage (ESM tree-shaking obviates the split). *Original lock:* operator ship tiered: core set in main pkg; time-based + higher-order in `@graphrefly/<lang>-operators` subpackage. |
 | L4-Q8 | inspection = **describe (incl. explain mode) + observe + profile** (3 first-class); renderers (pretty/mermaid/d2) are pure functions over describe, not methods. |
 | L4-Q9 | dispatcher/handle power-user API: `d.register(fn,{tags,runtime,pool})→Handle`; `d.list({tag})` = catalog; `g.node(deps,h)`; `d.registerPool(kind,adapter)`. |
 | L4-Q10 | error: fn `throw` → graph-layer catch → `[["ERROR",e]]` down (node/producer ctx-level write ERROR directly; value-level throw caught by graph layer). cancellation: default no-cancel; `{switch:true}` opt-in switchMap semantics + AbortSignal via ctx. |
@@ -180,7 +180,7 @@ count.set(5)
 
 ---
 
-## Flag resolutions (found during汇总, pre-design-review)
+## Flag resolutions (found during the roll-up, pre-design-review)
 
 | Flag | Resolution |
 |---|---|
@@ -219,37 +219,37 @@ Trade-off accepted: cuts user-defined protocol stacks (onMessage/onSubscribe/reg
 | messageTier | runtime registry (registerMessageType, custom types) | compile-time const table; custom types cut |
 | onMessage/onSubscribe | replaceable singleton hooks | substrate-fixed, unreplaceable |
 | handle | napi tsfn handle (Rust-side) | first-class pure-data `(pool_id, handle_id)` + dispatcher table |
-| naming探索 | — | forward/backward considered then reverted to ctx.up/ctx.down |
+| naming exploration | — | forward/backward considered then reverted to ctx.up/ctx.down |
 
 ---
 
 ## Design-review results (2026-05-27, Q5–Q9 lens) — ALL DR RESOLVED
 
-design-review审了 5 个承重决策（L3.C / L3-Q7+L6-Q1 / L1.1+L4-Q2-Q3 / L2.A+L1.11 / config 消解）。地基判定为稳；6 个 residual 全部敲定（user: "都听推荐"）:
+design-review examined 5 load-bearing decisions (L3.C / L3-Q7+L6-Q1 / L1.1+L4-Q2-Q3 / L2.A+L1.11 / config dissolution). The foundation was judged sound; all 6 residuals settled (user: "go with the recommendations"):
 
 | ID | Decision (LOCKED) |
 |---|---|
-| **DR-1** | §5.11 **amend**（不给 ctx 包 emit/error 方法）：ctx-level (`node`/`producer`) 是 **protocol-facing power surface，有意暴露 tier**；value-level (`derived`/`effect`/operator) 是 §5.11-compliant primary。理由：`ctx.down([["DATA",v],["COMPLETE"]])` 的一-wave-多-tier 原子性（terminal-with-final-value）是 emit/error 方法表达不了的。§5.11 改为"protocol internals 不出现在 **value-level primary** API；ctx-level 是显式 power surface"。 |
-| **DR-2** | parity = **A+C**（behavioral conformance + 轻量 protocol IDL）。L6-Q3 的单一 `.proto` **兼做** wire format + protocol contract IDL；各语言 codegen 接口骨架（轻 structural 保证，单源非对照）+ behavioral conformance 验行为。买回"接口形状一致"零额外成本。 |
-| **DR-3** | async-result-arriving-at-paused-node = **进 pause buffer + RESUME replay**（与 PAUSE 缓冲 DATA 一致；lock_id 作用域 = node-level pause_lockset）。 |
-| **DR-4** | graph 职责过载（causal+concurrency+inspection+dispatcher 4 合 1）= **先不引入独立 `domain` 概念（narrow-waist 优先）；记逃生口**：若 inspection 边界 vs 并发边界冲突真实出现，引入 `domain`（一 domain 含多 graph，跨 graph 同 domain 仍单线程但可显式并行分组）。 |
-| **DR-5** | conformance 硬场景 + spec amendment 清单（下），实现前必须补。 |
-| **DR-6** | dispatcher opts bag **分组结构** `{ limits, observability, policy }`，实现时定。 |
+| **DR-1** | §5.11 **amend** (do NOT wrap ctx with emit/error methods): ctx-level (`node`/`producer`) is a **protocol-facing power surface that intentionally exposes tier**; value-level (`derived`/`effect`/operator) is the §5.11-compliant primary. Rationale: the one-wave-many-tier atomicity of `ctx.down([["DATA",v],["COMPLETE"]])` (terminal-with-final-value) cannot be expressed by emit/error methods. §5.11 is amended to "protocol internals never appear in the **value-level primary** API; ctx-level is an explicit power surface". |
+| **DR-2** | parity = **A+C** (behavioral conformance + a lightweight protocol IDL). L6-Q3's single `.proto` **doubles as** the wire format + the protocol-contract IDL; each language codegens the interface skeleton (a light structural guarantee, single-source not cross-diff) + behavioral conformance verifies behavior. Buys back "interface shape consistency" at zero extra cost. |
+| **DR-3** | async-result-arriving-at-paused-node = **enters the pause buffer + replays on RESUME** (consistent with how PAUSE buffers DATA; lock_id scope = the node-level pause_lockset). |
+| **DR-4** | graph responsibility overload (causal+concurrency+inspection+dispatcher, 4-in-1) = **do NOT introduce a separate `domain` concept yet (narrow-waist first); record the escape hatch**: if an inspection-boundary vs concurrency-boundary conflict genuinely arises, introduce `domain` (one domain holds multiple graphs; same-domain cross-graph is still single-thread but can be explicitly grouped for parallelism). |
+| **DR-5** | conformance hard scenarios + the spec-amendment list (below), which must be filled in before implementation. |
+| **DR-6** | dispatcher opts bag **grouped structure** `{ limits, observability, policy }`, finalized at implementation time. |
 
-### spec amendment 清单（clean-slate 偏离现有 spec，全部有意，必须显式 amend — F-NO-IMPL-DEFINED）
+### spec-amendment list (clean-slate deviations from the existing spec — all intentional, must be explicitly amended — F-NO-IMPL-DEFINED)
 
-- §5.10 → clock graph-local（偏离 central `clock.ts`）
-- §5.11 → ctx-level 有意暴露 tier（DR-1）
-- §6.1 → Py 废 per-subgraph locks
-- §7.1 → versioning 到 graph opts（config 消解）
-- §新增 → ctx.up **仅 control tier**（DIRTY/PAUSE/RESUME/INVALIDATE/TEARDOWN）；DATA/RESOLVED/COMPLETE/ERROR 是 down-only
-- §新增 → restore ≠ fresh-lifecycle wipe（Flag 1）
-- §新增 → async-result-at-paused-node（DR-3）
+- §5.10 → clock graph-local (deviates from the central `clock.ts`)
+- §5.11 → ctx-level intentionally exposes tier (DR-1)
+- §6.1 → Py drops per-subgraph locks
+- §7.1 → versioning moves to graph opts (config dissolution)
+- §new → ctx.up is **control-tier only** (DIRTY/PAUSE/RESUME/INVALIDATE/TEARDOWN); DATA/RESOLVED/COMPLETE/ERROR are down-only
+- §new → restore ≠ fresh-lifecycle wipe (Flag 1)
+- §new → async-result-at-paused-node (DR-3)
 
-### conformance suite 必含硬场景（否则 behavioral parity 是空头支票）
+### conformance suite must-include hard scenarios (otherwise behavioral parity is a blank check)
 
-跨 graph diamond（L2.F mixed-locality 存活证明）· async-result-at-paused-node（DR-3）· INVALIDATE×ctx.state×onInvalidate · mixed sync/async diamond（已有 PoC）· PAUSE lockset 多来源。
+cross-graph diamond (L2.F mixed-locality survival proof) · async-result-at-paused-node (DR-3) · INVALIDATE×ctx.state×onInvalidate · mixed sync/async diamond (PoC exists) · PAUSE lockset multi-source.
 
-**地基判定：稳。** L3.C / L3-Q7 / config 消解 / L6-Q1 都甩掉了真实历史包袱（actor model / D080-D206 / config freeze 时序）。可进 clean-slate 实现序列。
+**Foundation verdict: sound.** L3.C / L3-Q7 / config dissolution / L6-Q1 all shed real historical baggage (actor model / D080-D206 / config-freeze timing). Cleared to enter the clean-slate implementation sequence.
 
-Next step: 设计 clean-slate 文档体系（见下方 session 续录）→ 然后 `/dev-dispatch` clean-slate 实现。
+Next step: design the clean-slate documentation system (see the session continuation below) → then `/dev-dispatch` the clean-slate implementation.
