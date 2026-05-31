@@ -17,7 +17,7 @@ wave protocol. The CANONICAL normative source is [`spec/rules.jsonl`](../spec/ru
 | `wave_paused_invalidate.tla` | INVALIDATE arriving at a paused compute node — R-paused-invalidate (D50; INVALIDATE supersedes the buffered paused dep-wave, attributed cancellation; ChangedImpliesLive mutation-verified) | **C-13** |
 | `wave_rewire.tla` | intra-graph runtime rewire (dep side) — R-rewire (setDeps/addDep/removeDep; per-node Q1–Q7 + rewire×INVALIDATE drain + rewire×terminal reject) | **C-8** |
 | `wave_rewire_emit.tla` | rewire cross-axis (emit side) — R-rewire (rewire×multi-sink fanout + cache-integrity across rewire; the downstream-emit dimension wave_rewire.tla omits) | **C-8** |
-| `wave_rewire_deferred.tla` | wave-boundary deferred SELF-rewire — R-rewire-deferred (ctx.rewireNext add+remove, queued during a fn run, drained at the committed boundary: deferral / drain-exactly-once / removed-dep silencing / no-op termination) | **C-11** |
+| `wave_rewire_deferred.tla` | wave-boundary deferred SELF-rewire — R-rewire-deferred (ctx.rewireNext add+remove, queued during a fn run, drained at the committed boundary even if the owner goes terminal: deferral / drain-exactly-once / removed-dep silencing / no-op termination / terminal output guard) | **C-11** |
 | `wave_terminal_dirty.tla` | a dep's terminal (COMPLETE/ERROR) releases its in-wave DIRTY contribution — R-terminal-settles-dirty (B35; the exactly-one-settle invariant: PendingCountsDirty + NoWedge, terminal joins the settle-class like DATA/RESOLVED/INVALIDATE; mutation-verified — drop the release → PendingCountsDirty trips) | **C-15** |
 | `wave_deps_complete.tla` | completeWhenDepsComplete auto-COMPLETE counts an ABSORBED-ERROR dep as TERMINAL-done — R-deps-terminal (B42; AllDepsTerminalCompletes: once every dep is terminal (COMPLETE or absorbed-ERROR) the node auto-completes, order-independent across the COMPLETE/absorbed-ERROR arms; TLC-green 9 states; mutation-verified — count only "complete" (exclude "errored") in WouldComplete → AllDepsTerminalCompletes trips). The orthogonal DIRTY-release is `wave_terminal_dirty.tla`. | **C-17** |
 | `wave_pull.tla` (+ `wave_pull_resumeall.cfg`) | pull-mode node DELIVERY — R-pull (D55; quiet ABSORBS the upstream DIRTY without relaying it = the wedge fix, a RESUME-demand delivers ONCE then re-quiets 1:1, delivery-content = pausable mode: true→latest / resumeAll→backlog; NoWedgeWhileQuiet + OneDeliveryPerDemand + TrueModeOnePerDelivery + NoChangeLost, TLC-green true/resumeAll; NoWedgeWhileQuiet mutation-verified — relay-while-quiet → trips). Delivery unchanged by D59. The self-demand deferral rides `wave_rewire_deferred.tla` (DeferredAppliedAtBoundary). | **C-16** |
@@ -70,17 +70,21 @@ cache, doesn't touch sinks); the dep-side mechanics are `wave_rewire.tla`'s job 
 the two modules together cover all three cross-axes (INVALIDATE / terminal /
 multi-sink).
 
-`wave_rewire_deferred.tla` (D47 / C-11) models the NEW self-rewire path: a fn issues
+`wave_rewire_deferred.tla` (D47+D62 / C-11) models the self-rewire path: a fn issues
 `ctx.rewireNext(add/remove)` DURING its run (`insideRunWave`), the requests are QUEUED,
 and the dispatcher drains them at the committed wave boundary (`insideRunWave` false) in
 per-node FIFO order — the only legal self-triggered rewire (an immediate in-fn self-rewire
 is the D37 reject, `wave_reentrancy.tla`). Single node over a 2-dep candidate set;
-TLC-green at 5056 states / depth 23. All four invariants are mutation-verified load-bearing:
+TLC-green at 15367 distinct states / depth 24 after the D62 terminal-drains amendment. The prior
+four invariants remain the same load-bearing set, and D62 adds the fifth terminal-output guard:
 neutralizing the `~insideRunWave` drain guard trips `DeferredAppliedAtBoundary`; applying
 without dequeuing trips `DrainExactlyOnce`; dropping the removed-dep edge drain trips
 `RemovedDepSilenced` (the boundary analog of `wave_rewire.tla` `NoStaleEdgeMessages`); a
-non-dequeuing DrainOne trips `NoBoundaryDrainLoop`. The mutation pass also caught a real
-latent `=` vs `\/` precedence bug in the ghost assignments (RHS now parenthesized).
+non-dequeuing DrainOne trips `NoBoundaryDrainLoop`; `NoPostTerminalOutput` pins that a terminal
+owner absorbs later dep messages after the queued topology drains. D62 changed the terminal facet from
+"terminal discards pending queue" to "terminal seals output; queued topology still drains",
+which covers timer/interval helper cleanup without a special owned-dep API. The mutation pass
+also caught a real latent `=` vs `\/` precedence bug in the ghost assignments (RHS now parenthesized).
 ABSTRACTION: the fn body is a black box; the batch/pause-deferred-drain timing
 (committed-boundary gating under an open batch / held pause) is a follow-up axis
 (backlog B24, sharing committed-boundary semantics with the immediate rewire×batch axis B19).
