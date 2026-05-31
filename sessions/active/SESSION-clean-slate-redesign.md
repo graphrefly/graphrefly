@@ -1,6 +1,6 @@
 # SESSION — Clean-Slate Redesign (L0–L6 full-stack greenfield)
 
-**Status:** 🌱 DESIGN LOCKED (L0–L6) — awaiting `/design-review` (Q5–Q9 lens)
+**Status:** 🌱 DESIGN LOCKED (L0–L6) — implementation proceeds through the CSP sequencer
 **Opened:** 2026-05-27
 **Trigger:** User-initiated greenfield redesign on a NEW branch. Explicit terms: *no backward compat · no scope limit · all best practices · top-down design*. Follows the handle-dispatch substrate session (R1–R12) and the user's hypothesis that handle-dispatch can "resolve TS↔Rust parity altogether."
 **Method:** Top-down 6-layer design (L0 Identity → L6 Distribution). Each layer fully locked before descending; **lower layers may not overturn upper layers**. Each lock may carry ≤1 hard constraint downward (recorded as `F-*` forced constraints). Forcing-question Q&A driven; every answer reformulated into a locked statement and confirmed.
@@ -15,9 +15,9 @@
 
 ## How to read this doc
 
-Each layer has a lockdown table. `F-*` = forced constraint propagated downward. `🔴` = open risk flagged for `/design-review`. Strawman code is illustrative, not normative — the normative content is the lock tables.
+Each layer has a lockdown table. `F-*` = forced constraint propagated downward. `🔴` = open risk that was routed through `/design-review` or later backlog/design records. Strawman code is illustrative, not normative — the normative content is the lock tables plus the D# log.
 
-This is a **pure design artifact**. No code written. Next step after `/design-review`: map the deltas (last section) onto the existing TS/Rust codebases.
+This began as a pure design artifact, but the active implementation state now lives in the jsonl sources: `decisions/decisions.jsonl`, `plan/phases.jsonl`, `plan/backlog.jsonl`, `spec/rules.jsonl`, and `spec/conformance.jsonl`. Treat this markdown as narrative context; the structured records are the current sequencer.
 
 ---
 
