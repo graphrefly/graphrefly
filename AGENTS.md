@@ -17,7 +17,8 @@ Clean-slate (no backward compat). Big deltas locked in **DS-1** (`sessions/activ
 - **behavioral parity replaces structural `Impl`** (D24) — cross-track-ledger retires; parity = conformance scenarios + property mirror.
 - **per-language independent packages** (D32) — drops D080/D206 (substrate/presentation napi split).
 - **config singleton dissolved** (D26); clock graph-local; messageTier compile-time const.
-- **ctx.up/down(msgs)** fn surface (D8); handle = pure data (D7); 9 tiers + PAUSE/RESUME (D9).
+- **ctx.up/down(msgs)** fn surface (D8); handle = pure data (D7); D34 7-tier const table with
+  the D9/START 10-message closed set.
 - **docs = jsonl + generated dashboard** (decision 2/3) — see below.
 
 ## Documentation system (jsonl source of truth + generated dashboard)
