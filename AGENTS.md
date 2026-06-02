@@ -57,4 +57,14 @@ node dashboard/build.mjs           # build dashboard.html + consistency report
 node dashboard/build.mjs --check   # CI gate: broken links/orphans
 ```
 
+Formal/TLC note for agent shells:
+
+```
+# TLA+ Toolbox is installed via brew cask; use its bundled TLC jar directly.
+java -cp "/Applications/TLA+ Toolbox.app/Contents/Eclipse/tla2tools.jar" tlc2.TLC -config <model>.cfg <model>.tla
+
+# Rust sibling repos use mise-managed toolchains.
+mise exec -- cargo <cmd>
+```
+
 Canonical design record: `sessions/active/SESSION-clean-slate-redesign.md` (DS-1).

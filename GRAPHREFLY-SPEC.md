@@ -627,10 +627,10 @@ node(deps, fn, opts?)
     `Message | Messages` shape. Tier-3 (DATA/RESOLVED) and tier-4 (COMPLETE/ERROR)
     are downstream-only and throw — `up` is for DIRTY, INVALIDATE, PAUSE, RESUME,
     and TEARDOWN only.
-- **`ctx`** — `{ latestData: unknown[], terminalDeps: (true|unknown)[], store: object }`.
-  - `latestData[i]` — last-known DATA value from dep `i` (from any prior wave, not just this one). Use as fallback when `data[i]` is `undefined` or `[]`.
-  - `terminalDeps[i]` — `true` = COMPLETE, error payload = ERROR, `undefined` = live.
-  - `store` — mutable bag that persists across fn runs within one activation cycle.
+- **`ctx`** — `{ waveData, terminal, state, ... }`.
+  - `waveData[i]` — per-invocation dep wave projections: dep -> waves -> DATA/SENTINEL markers.
+  - `terminal[i]` — terminal metadata: `false` = none, `true` = COMPLETE, otherwise legal ERROR payload.
+  - `state` — mutable bag that persists across fn runs within one activation cycle.
     Wiped on deactivation and on resubscribable terminal reset.
 
 **fn return is cleanup only.** The return value is NEVER auto-framed as DATA or
