@@ -9,6 +9,10 @@
 ## What changed vs the old `main` (read first)
 
 Clean-slate (no backward compat). Big deltas locked in **DS-1** (`sessions/active/SESSION-clean-slate-redesign.md`):
+- **No backward compatibility across TS/Rust/Py clean-slate packages** — during B49/B53
+  and later migrations, delete retired shapes directly; do not add legacy shims,
+  compatibility aliases, or old field/method facades unless a new locked decision explicitly
+  re-opens that constraint.
 - **graph = single-thread causal domain** (D22) — Rust drops actor model, Py drops subgraph locks; rewire intra-graph only.
 - **behavioral parity replaces structural `Impl`** (D24) — cross-track-ledger retires; parity = conformance scenarios + property mirror.
 - **per-language independent packages** (D32) — drops D080/D206 (substrate/presentation napi split).
