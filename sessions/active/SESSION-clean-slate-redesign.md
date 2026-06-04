@@ -195,7 +195,7 @@ count.set(5)
 `GraphReFlyConfig` singleton + freeze-on-first-read mechanism **fully dissolved** into 4 destinations:
 - **A. compile-time const** — message type attrs (tier/wireCrossing/metaPassthrough), tier lookups; custom message type extension CUT.
 - **B. substrate-fixed (unreplaceable)** — onMessage (dispatch), onSubscribe (push-on-subscribe handshake).
-- **C. graph/dispatcher opts** — codec, defaultVersioning (mostly defer post-1.0), defaultHashFn, inspectorEnabled, globalInspector (→ dispatcher hook), rigorRecorder (→ dispatcher test-only hook), maxFnRerunDepth (100), maxBatchDrainIterations (1000), pauseBufferMax (10_000), equalsThrowPolicy.
+- **C. graph/dispatcher/constructor opts** — codec; node runtime versioning default/policy and hashFn via graph/constructor opts per D109 (V0 default, V1 cid/prev, V2/V3 still deferred); inspectorEnabled, globalInspector (→ dispatcher hook), rigorRecorder (→ dispatcher test-only hook), maxFnRerunDepth (100), maxBatchDrainIterations (1000), pauseBufferMax (10_000), equalsThrowPolicy.
 - **D. gone** — `_frozen` + freeze mechanism; isolated `new GraphReFlyConfig` for test (test isolation = `new graph()`).
 
 Trade-off accepted: cuts user-defined protocol stacks (onMessage/onSubscribe/registerMessageType custom). To observe → inspector (read-only); to inject logic → add a node; new tier → spec change.
@@ -241,7 +241,7 @@ design-review examined 5 load-bearing decisions (L3.C / L3-Q7+L6-Q1 / L1.1+L4-Q2
 - §5.10 → clock graph-local (deviates from the central `clock.ts`)
 - §5.11 → ctx-level intentionally exposes tier (DR-1)
 - §6.1 → Py drops per-subgraph locks
-- §7.1 → versioning moves to graph opts (config dissolution)
+- §7.1 → node runtime versioning moves to graph/constructor opts; no global config singleton (config dissolution, D109)
 - §new → ctx.up is **control-tier only** (DIRTY/PAUSE/RESUME/INVALIDATE/TEARDOWN); DATA/RESOLVED/COMPLETE/ERROR are down-only
 - §new → restore ≠ fresh-lifecycle wipe (Flag 1)
 - §new → async-result-at-paused-node (DR-3)
