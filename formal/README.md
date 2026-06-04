@@ -27,6 +27,7 @@ wave protocol. The CANONICAL normative source is [`spec/rules.jsonl`](../spec/ru
 | `wave_teardown_terminal.tla` | TEARDOWN relay through terminal intermediate — R-teardown-terminal-relay (D65/B33; terminal seals value output but relays TEARDOWN for bridge/resource unwire; already-terminal nodes do not re-COMPLETE). TerminalRelaysTeardown + AlreadyTerminalDoesNotRecomplete + NoResurrection, TLC-green. | **C-20** |
 | `wave_rewire_async_ctx.tla` | late async ctx after rewire — R-rewire-async-live-edge (D66/B17; an async callback's captured ctx routes through live deps at emission time, not an invocation-time hidden snapshot). LateAfterRewireUsesLiveDeps + NoHiddenSnapshotEdge, TLC-green. | **C-21** |
 | `wave_rewire_batch.tla` | rewire requested during open batch — R-rewire-batch-boundary (D67/B19; pending batch wave commits against old topology before queued rewire applies as a fresh boundary wave). NoRewireOnUncommittedView + CommitPrecedesRewire + OldPendingNeverCommitsAgainstNewShape, TLC-green. | **C-22** |
+| `wave_rewire_deferred_committed.tla` | deferred self-boundary task committed-view gating — R-rewire-deferred-committed-boundary (B24/D110; ctx.rewireNext/ctx.upNext tasks drain only after run-end + batch commit + final RESUME, and rollback drops uncommitted boundary tasks including cleanup-shaped removeDep). NoDrainDuringRun + NoDrainBeforeBatchCommit + NoDrainAfterRollback + NoDrainWhilePaused + AppliedOnlyOnCommittedView + DroppedTaskDoesNotMutate + OldShapeUntilReady, TLC-green. | **C-25** |
 | `wave_ctx_wave_data.tla` | raw ctx dep input view — R-fn-contract + R-ctx-wave-data (D77/D78; `ctx.waveData` is the sole two-dimensional dep-value input: dep -> waves -> per-wave projection, distinguishing no-wave `[]`, RESOLVED `[[]]`, DATA(null), DATA([]), and DATA+INVALIDATE `[[1,2,SENTINEL]]` without stored latest/prevData aliases; `ctx.terminal` is separate lightweight metadata using false/no-terminal, true/COMPLETE, and non-boolean ERROR payload). NoWaveIsEmptyOuter + ResolvedIsOneEmptyInnerWave + EmptyArrayDataIsNotResolved + DataInvalidateSameWaveKeepsOrder + TerminalErrorPayloadIsDistinctFromFalseTrueShorthand, TLC-green. | **C-23** |
 | `wave_snapshot_restore.tla` | snapshot / hydration / restore lifecycle — R-snapshot + R-restore (D83; async load/decode does not partially mutate the graph, restore commits once at a graph boundary, preserves checkpointed cache/ctx.state/topology, is not a fresh lifecycle wipe, and rejects local-only or missing factory refs). AsyncLoadDoesNotMutateGraph + RestorePreservesCheckpoint + RestoreIsNotFreshLifecycle + LocalOnlyOrMissingRejects, TLC-green. | **C-24** |
 
@@ -93,8 +94,21 @@ owner absorbs later dep messages after the queued topology drains. D62 changed t
 which covers timer/interval helper cleanup without a special owned-dep API. The mutation pass
 also caught a real latent `=` vs `\/` precedence bug in the ghost assignments (RHS now parenthesized).
 ABSTRACTION: the fn body is a black box; the batch/pause-deferred-drain timing
-(committed-boundary gating under an open batch / held pause) is a follow-up axis
-(backlog B24, sharing committed-boundary semantics with the immediate rewire×batch axis B19).
+(committed-boundary gating under an open batch / held pause) lives in
+`wave_rewire_deferred_committed.tla`.
+
+`wave_rewire_deferred_committed.tla` (B24+D110 / C-25) composes the focused
+deferred boundary with batch and pause gates. A task queued during a run cannot
+apply until the run has ended, any owning batch has committed, and final-lock
+RESUME has released the owner. The D110 rollback action closes the uncommitted
+batch view while discarding queued boundary tasks, including cleanup-shaped
+`removeDep`, so rollback cannot leave a hidden topology/demand side effect.
+TLC-green at 33 distinct states / depth 6 after the D110 rollback extension.
+The rollback guard is mutation-verified load-bearing: preserving a queued task
+through rollback and allowing it to drain trips the committed-view invariant
+(`AppliedOnlyOnCommittedView`). Other guards pin the run, commit, rollback, and
+pause readiness predicates (`NoDrainDuringRun`, `NoDrainBeforeBatchCommit`,
+`NoDrainAfterRollback`, `NoDrainWhilePaused`, `DroppedTaskDoesNotMutate`).
 
 TLA+ provides **exhaustive model checking** over bounded instances: TLC
 enumerates every reachable state sequence of the protocol and verifies
