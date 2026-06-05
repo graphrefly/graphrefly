@@ -15,9 +15,9 @@ wave protocol. The CANONICAL normative source is [`spec/rules.jsonl`](../spec/ru
 | `wave_reentrancy.tla` | synchronous feedback-cycle rejection — R-reentrancy (node-local in-wave reject; cyclic→ERROR at the cycle-closing compute node, acyclic→clean) | **C-6** |
 | `wave_up_source.tla` | upstream control at a depless source — R-up-at-source (INVALIDATE→honor: self-invalidate + down-cascade; DIRTY/TEARDOWN→drop) | **C-7** |
 | `wave_paused_invalidate.tla` | INVALIDATE arriving at a paused compute node — R-paused-invalidate (D50; INVALIDATE supersedes the buffered paused dep-wave, attributed cancellation; ChangedImpliesLive mutation-verified) | **C-13** |
-| `wave_rewire.tla` | intra-graph runtime rewire (dep side) — R-rewire (setDeps/addDep/removeDep; per-node Q1–Q7 + rewire×INVALIDATE drain + rewire×terminal reject) | **C-8** |
+| `wave_rewire.tla` | intra-graph runtime rewire (dep side) — R-rewire (replaceDeps/subscribeDep/unsubscribeDep; modeled by the internal SetDeps action for replace semantics plus subscribe/unsubscribe special cases; per-node Q1–Q7 + rewire×INVALIDATE drain + rewire×terminal reject) | **C-8** |
 | `wave_rewire_emit.tla` | rewire cross-axis (emit side) — R-rewire (rewire×multi-sink fanout + cache-integrity across rewire; the downstream-emit dimension wave_rewire.tla omits) | **C-8** |
-| `wave_rewire_deferred.tla` | wave-boundary deferred SELF-rewire — R-rewire-deferred (ctx.rewireNext add+remove, queued during a fn run, drained at the committed boundary even if the owner goes terminal: deferral / drain-exactly-once / removed-dep silencing / no-op termination / terminal output guard) | **C-11** |
+| `wave_rewire_deferred.tla` | wave-boundary deferred SELF-rewire — R-rewire-deferred (ctx.rewireNext.subscribeDep/unsubscribeDep, queued during a fn run, drained at the committed boundary even if the owner goes terminal: deferral / drain-exactly-once / removed-dep silencing / no-op termination / terminal output guard) | **C-11** |
 | `wave_terminal_dirty.tla` | a dep's terminal (COMPLETE/ERROR) releases its in-wave DIRTY contribution — R-terminal-settles-dirty (B35; the exactly-one-settle invariant: PendingCountsDirty + NoWedge, terminal joins the settle-class like DATA/RESOLVED/INVALIDATE; mutation-verified — drop the release → PendingCountsDirty trips) | **C-15** |
 | `wave_deps_complete.tla` | completeWhenDepsComplete auto-COMPLETE counts an ABSORBED-ERROR dep as TERMINAL-done — R-deps-terminal (B42; AllDepsTerminalCompletes: once every dep is terminal (COMPLETE or absorbed-ERROR) the node auto-completes, order-independent across the COMPLETE/absorbed-ERROR arms; TLC-green 9 states; mutation-verified — count only "complete" (exclude "errored") in WouldComplete → AllDepsTerminalCompletes trips). The orthogonal DIRTY-release is `wave_terminal_dirty.tla`. | **C-17** |
 | `wave_pull.tla` (+ `wave_pull_resumeall.cfg`) | pull-mode node DELIVERY — R-pull (D55; quiet ABSORBS the upstream DIRTY without relaying it = the wedge fix, a RESUME-demand delivers ONCE then re-quiets 1:1, delivery-content = pausable mode: true→latest / resumeAll→backlog; NoWedgeWhileQuiet + OneDeliveryPerDemand + TrueModeOnePerDelivery + NoChangeLost, TLC-green true/resumeAll; NoWedgeWhileQuiet mutation-verified — relay-while-quiet → trips). Delivery unchanged by D59. The self-demand deferral rides `wave_rewire_deferred.tla` (DeferredAppliedAtBoundary). | **C-16** |
@@ -27,7 +27,7 @@ wave protocol. The CANONICAL normative source is [`spec/rules.jsonl`](../spec/ru
 | `wave_teardown_terminal.tla` | TEARDOWN relay through terminal intermediate — R-teardown-terminal-relay (D65/B33; terminal seals value output but relays TEARDOWN for bridge/resource unwire; already-terminal nodes do not re-COMPLETE). TerminalRelaysTeardown + AlreadyTerminalDoesNotRecomplete + NoResurrection, TLC-green. | **C-20** |
 | `wave_rewire_async_ctx.tla` | late async ctx after rewire — R-rewire-async-live-edge (D66/B17; an async callback's captured ctx routes through live deps at emission time, not an invocation-time hidden snapshot). LateAfterRewireUsesLiveDeps + NoHiddenSnapshotEdge, TLC-green. | **C-21** |
 | `wave_rewire_batch.tla` | rewire requested during open batch — R-rewire-batch-boundary (D67/B19; pending batch wave commits against old topology before queued rewire applies as a fresh boundary wave). NoRewireOnUncommittedView + CommitPrecedesRewire + OldPendingNeverCommitsAgainstNewShape, TLC-green. | **C-22** |
-| `wave_rewire_deferred_committed.tla` | deferred self-boundary task committed-view gating — R-rewire-deferred-committed-boundary (B24/D110; ctx.rewireNext/ctx.upNext tasks drain only after run-end + batch commit + final RESUME, and rollback drops uncommitted boundary tasks including cleanup-shaped removeDep). NoDrainDuringRun + NoDrainBeforeBatchCommit + NoDrainAfterRollback + NoDrainWhilePaused + AppliedOnlyOnCommittedView + DroppedTaskDoesNotMutate + OldShapeUntilReady, TLC-green. | **C-25** |
+| `wave_rewire_deferred_committed.tla` | deferred self-boundary task committed-view gating — R-rewire-deferred-committed-boundary (B24/D110; ctx.rewireNext/ctx.upNext tasks drain only after run-end + batch commit + final RESUME, and rollback drops uncommitted boundary tasks including cleanup-shaped unsubscribeDep). NoDrainDuringRun + NoDrainBeforeBatchCommit + NoDrainAfterRollback + NoDrainWhilePaused + AppliedOnlyOnCommittedView + DroppedTaskDoesNotMutate + OldShapeUntilReady, TLC-green. | **C-25** |
 | `wave_ctx_wave_data.tla` | raw ctx dep input view — R-fn-contract + R-ctx-wave-data (D77/D78; `ctx.waveData` is the sole two-dimensional dep-value input: dep -> waves -> per-wave projection, distinguishing no-wave `[]`, RESOLVED `[[]]`, DATA(null), DATA([]), and DATA+INVALIDATE `[[1,2,SENTINEL]]` without stored latest/prevData aliases; `ctx.terminal` is separate lightweight metadata using false/no-terminal, true/COMPLETE, and non-boolean ERROR payload). NoWaveIsEmptyOuter + ResolvedIsOneEmptyInnerWave + EmptyArrayDataIsNotResolved + DataInvalidateSameWaveKeepsOrder + TerminalErrorPayloadIsDistinctFromFalseTrueShorthand, TLC-green. | **C-23** |
 | `wave_snapshot_restore.tla` | snapshot / hydration / restore lifecycle — R-snapshot + R-restore (D83; async load/decode does not partially mutate the graph, restore commits once at a graph boundary, preserves checkpointed cache/ctx.state/topology, is not a fresh lifecycle wipe, and rejects local-only or missing factory refs). AsyncLoadDoesNotMutateGraph + RestorePreservesCheckpoint + RestoreIsNotFreshLifecycle + LocalOnlyOrMissingRejects, TLC-green. | **C-24** |
 
@@ -54,14 +54,14 @@ reject lets a compute node re-enter and it trips immediately (verified by mutati
 (`graphrefly-ts/docs/research/wave_protocol_rewire.tla`, Q1–Q7) and EXTENDS it with
 two cross-axes: rewire×INVALIDATE (`NoStaleEdgeMessages` — a removed dep's queued
 messages, incl INVALIDATE, are drained) and rewire×terminal (`RewireOnlyOnLiveNode`
-— SetDeps is rejected on a terminal `this`). 3-node topology A,B→C; TLC-green at
+— internal SetDeps action is rejected on a terminal `this`). 3-node topology A,B→C; TLC-green at
 603k states / depth 11. Both new invariants are mutation-verified load-bearing:
 disabling the removed-dep drain trips `NoStaleEdgeMessages` (33 states), and removing
 the terminal-this guard (with C terminable) trips `RewireOnlyOnLiveNode` (163 states).
 ABSTRACTION BOUNDARY: `wave_rewire.tla` has no downstream fn-fire-emit, so the
 rewire×multi-sink cross-axis (D42 SD-2) lives in the companion
 `wave_rewire_emit.tla` (below), not here. "adding a non-resubscribable terminal dep
-is rejected" is guard-modeled (the SetDeps guard, not a standing invariant — a kept
+is rejected" is guard-modeled (the internal SetDeps guard, not a standing invariant — a kept
 dep that terminates later is permitted).
 
 `wave_rewire_emit.tla` (D42 / C-8 / B14) supplies the downstream-emit dimension
@@ -79,7 +79,7 @@ the two modules together cover all three cross-axes (INVALIDATE / terminal /
 multi-sink).
 
 `wave_rewire_deferred.tla` (D47+D62 / C-11) models the self-rewire path: a fn issues
-`ctx.rewireNext(add/remove)` DURING its run (`insideRunWave`), the requests are QUEUED,
+`ctx.rewireNext.subscribeDep/unsubscribeDep` DURING its run (`insideRunWave`), the requests are QUEUED,
 and the dispatcher drains them at the committed wave boundary (`insideRunWave` false) in
 per-node FIFO order — the only legal self-triggered rewire (an immediate in-fn self-rewire
 is the D37 reject, `wave_reentrancy.tla`). Single node over a 2-dep candidate set;
@@ -102,7 +102,7 @@ deferred boundary with batch and pause gates. A task queued during a run cannot
 apply until the run has ended, any owning batch has committed, and final-lock
 RESUME has released the owner. The D110 rollback action closes the uncommitted
 batch view while discarding queued boundary tasks, including cleanup-shaped
-`removeDep`, so rollback cannot leave a hidden topology/demand side effect.
+`unsubscribeDep`, so rollback cannot leave a hidden topology/demand side effect.
 TLC-green at 33 distinct states / depth 6 after the D110 rollback extension.
 The rollback guard is mutation-verified load-bearing: preserving a queued task
 through rollback and allowing it to drain trips the committed-view invariant

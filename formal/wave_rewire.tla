@@ -1,6 +1,6 @@
 -------------------------- MODULE wave_rewire --------------------------
 (***************************************************************************
-GraphReFly — intra-graph runtime rewire (setDeps / addDep / removeDep)
+GraphReFly — intra-graph runtime rewire (replaceDeps / subscribeDep / unsubscribeDep)
 (conformance C-8, rule R-rewire, decision D42 / phase CSP-2.5).
 
 Ports the TLA+-verified port-model rewire design (graphrefly-ts
@@ -10,8 +10,8 @@ design questions Q1–Q7) into the clean-slate formal dir, and EXTENDS it
 cleanly with the per-node queue/mask/status machinery:
 
   - rewire x INVALIDATE : a removed dep's queued messages (incl INVALIDATE) are
-                          DRAINED by SetDeps and never land (NoStaleEdgeMessages).
-  - rewire x terminal   : SetDeps is REJECTED on a terminal `this`
+                          DRAINED by the internal SetDeps action and never land (NoStaleEdgeMessages).
+  - rewire x terminal   : the internal SetDeps action is REJECTED on a terminal `this`
                           (RewireOnlyOnLiveNode); adding a non-resubscribable
                           terminal dep is rejected (guard-enforced).
 
@@ -29,7 +29,7 @@ ABSTRACTION BOUNDARY (NOT modeled here — see README + CSP-2.5 follow-up):
   No downstream fn-fire-emit. Therefore the rewire x equals (R-equals output
   DATA->RESOLVED absorption) and rewire x multi-sink (one node's >=2 downstream
   observers) cross-axes are NOT exercised in this focused model — they require
-  the SetDeps action integrated into wave_protocol.tla (the design-notes
+  the internal SetDeps action integrated into wave_protocol.tla (the design-notes
   deferred follow-up #1). Per D42 SD-2, R-rewire flips active only after that
   integration ALSO lands; this module covers the per-node + INVALIDATE-drain +
   terminal-reject subset.
@@ -42,7 +42,7 @@ CONSTANTS
     Values,         \* payload alphabet
     LockIds,        \* pause lockset domain
     MaxEmits,       \* bound: EmitFromSource + SourceInvalidate firings
-    MaxRewires,     \* bound: SetDeps firings
+    MaxRewires,     \* bound: internal SetDeps firings
     MaxPauses,      \* bound: Pause + Resume firings
     MaxDeliveries,  \* bound: DeliverDirty/Data/Invalidate firings
     MaxTerminals    \* bound: Terminate firings
@@ -277,7 +277,8 @@ Resume(n, l) ==
                    terminalCount, ghostPreFirstRun, ghostPrePauseLocks,
                    ghostPrePauseBuffer, ghostPreCache, ghostPreTerminal>>
 
-\* THE REWIRE ACTION (SetDeps; addDep/removeDep are special cases).
+\* THE REWIRE ACTION (replaceDeps; subscribeDep/unsubscribeDep are special cases).
+\* The TLA action name remains SetDeps for model continuity.
 \* Rejects (D42): terminal `this`; adding a non-resubscribable terminal dep.
 \* (self-dep / cycle are precluded by DepCandidates in this topology.)
 SetDeps(n, newDeps) ==
@@ -360,17 +361,17 @@ RewireDirtyConsistency ==
 DepRecordDomainConsistency ==
     \A n \in NodeIds : \A d \in deps[n] : prevData[n][d] \in ValueOrSentinel
 
-\* Q2 (relational): firstRunPassed unchanged by SetDeps.
+\* Q2 (relational): firstRunPassed unchanged by public replaceDeps semantics (internal SetDeps action).
 RewirePreservesFirstRun ==
     \A n \in NodeIds : ghostJustRewired[n] => firstRunPassed[n] = ghostPreFirstRun[n]
 
-\* Q3 (relational): pauseLocks / pauseBuffer unchanged by SetDeps.
+\* Q3 (relational): pauseLocks / pauseBuffer unchanged by public replaceDeps semantics (internal SetDeps action).
 RewirePreservesPauseLocks ==
     \A n \in NodeIds : ghostJustRewired[n] => pauseLocks[n] = ghostPrePauseLocks[n]
 RewirePreservesPauseBuffer ==
     \A n \in NodeIds : ghostJustRewired[n] => pauseBuffer[n] = ghostPrePauseBuffer[n]
 
-\* Q7 (relational): compute cache unchanged by SetDeps.
+\* Q7 (relational): compute cache unchanged by public replaceDeps semantics (internal SetDeps action).
 RewirePreservesCache ==
     \A n \in NodeIds : ghostJustRewired[n] => cache[n] = ghostPreCache[n]
 
@@ -380,23 +381,23 @@ WaveClosesWhenSoleDirtyDepRemoved ==
         ghostJustRewired[n] /\ dirtyMask[n] = {} => status[n] = "settled"
 
 \* rewire x INVALIDATE (NEW): a parent that is not a current dep has NO queued
-\* messages to the child — SetDeps drains removed-dep edges (incl INVALIDATE),
+\* messages to the child — the internal SetDeps action drains removed-dep edges (incl INVALIDATE),
 \* so nothing is stranded. Load-bearing: drop drainedQueues and this trips.
 NoStaleEdgeMessages ==
     \A e \in EdgeUniverse : (e[1] \notin deps[e[2]]) => queues[e] = <<>>
 
-\* rewire x terminal (NEW): SetDeps never fires on a terminal node. Load-bearing:
+\* rewire x terminal (NEW): the internal SetDeps action never fires on a terminal node. Load-bearing:
 \* drop the ~IsTerminal(n) guard and ghostPreTerminal[n] becomes non-"none".
 RewireOnlyOnLiveNode ==
     \A n \in NodeIds : ghostJustRewired[n] => ghostPreTerminal[n] = "none"
 
 \* NOTE: "adding a non-resubscribable terminal dep is rejected" is enforced by
-\* the SetDeps GUARD (\A d \in added : ~(terminal & ~resub)) — TLC never explores
+\* the internal SetDeps GUARD (\A d \in added : ~(terminal & ~resub)) — TLC never explores
 \* such a transition, so it is guard-modeled, not a standing invariant. A kept
 \* dep that terminates AFTER being wired is permitted, which is why a naive
 \* "no terminal-non-resub dep" invariant would false-positive.
 
-\* Coverage probe — TRUE at rewireCount=0; TLC tripping it confirms SetDeps is
+\* Coverage probe — TRUE at rewireCount=0; TLC tripping it confirms the internal SetDeps action is
 \* explored (model not vacuous). Comment back in only to re-verify coverage.
 \* NoRewireExecuted == rewireCount = 0
 =============================================================================

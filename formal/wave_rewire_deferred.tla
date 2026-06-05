@@ -6,7 +6,7 @@ R-rewire-deferred, decisions D47 + D62).
 The cross-axis companion to wave_rewire.tla. wave_rewire.tla models EXTERNAL,
 IMMEDIATE rewire applied BETWEEN waves (the caller is outside any fn). This
 module models the NEW path D47 adds: a node fn, DURING its own run
-(insideRunWave = TRUE), issues ctx.rewireNext(add/remove) requests that are
+(insideRunWave = TRUE), issues ctx.rewireNext.subscribeDep/unsubscribeDep requests that are
 QUEUED, then DRAINED and applied by the dispatcher at the COMMITTED wave
 boundary (insideRunWave = FALSE) as a fresh wave, in per-node FIFO order.
 
@@ -24,13 +24,13 @@ Discharges the invariants R-rewire-deferred / C-11 require:
                                 no duplicate): applied + Len(reqQueue) = reqCount.
                                 Load-bearing: Tail-without-apply (loss) or
                                 apply-without-Tail (duplicate) and it trips.
-  - RemovedDepSilenced        : once a deferred removeDep is applied, the removed
+  - RemovedDepSilenced        : once a deferred unsubscribeDep is applied, the removed
                                 dep's edge is DRAINED — a non-dep has no queued
                                 messages to OP. The boundary-applied analog of
                                 wave_rewire.tla NoStaleEdgeMessages. Load-bearing:
                                 drop the edge drain in DrainOne and it trips.
-  - NoBoundaryDrainLoop       : a no-net-change request (add-existing /
-                                remove-absent) is a no-op and NEVER re-queues, so
+  - NoBoundaryDrainLoop       : a no-net-change request (subscribe-existing /
+                                unsubscribe-absent) is a no-op and NEVER re-queues, so
                                 the drain strictly shrinks reqQueue and
                                 terminates. Load-bearing: re-append a no-op for
                                 retry and it trips.
@@ -221,7 +221,7 @@ DrainExactlyOnce ==
     applied + Len(reqQueue) = reqCount
 
 \* The boundary-applied analog of NoStaleEdgeMessages: a non-dep has no queued
-\* edge messages (a deferred removeDep drained them). Load-bearing: drop the
+\* edge messages (a deferred unsubscribeDep drained them). Load-bearing: drop the
 \* edge drain in DrainOne and this trips.
 RemovedDepSilenced ==
     \A d \in Deps : d \notin deps => edge[d] = 0

@@ -15,7 +15,7 @@ must not apply while either gate is still active. The task drains only after
 the current run has ended, any open batch has committed, and pause locks have
 fully released. D110 adds rollback fate: if the owning batch rolls back or
 fails before commit, queued boundary tasks from that uncommitted cause are
-discarded, including cleanup-shaped removeDep tasks. This model intentionally
+discarded, including cleanup-shaped unsubscribeDep tasks. This model intentionally
 does not add a new message/tier/API. It composes D47/R-rewire-deferred with
 D67/R-rewire-batch-boundary and D110 rollback fate.
  ***************************************************************************)
