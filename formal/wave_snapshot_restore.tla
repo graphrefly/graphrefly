@@ -9,6 +9,8 @@ binding-layer concerns; the protocol property here is the graph lifecycle:
   * async hydration does not partially mutate the graph or make it ready;
   * a successful named-factory restore commits the checkpointed cache, ctx.state,
     and topology together;
+  * a late subscriber after restore observes the restored cache directly, without
+    treating restored dependency activation as a fresh-lifecycle recompute;
   * restore is not a fresh lifecycle wipe;
   * local-only / missing factory refs fail honestly.
  ***************************************************************************)
@@ -24,9 +26,11 @@ SnapshotState == "SNAPSHOT_STATE"
 EmptyTopology == "EMPTY_TOPOLOGY"
 SnapshotTopology == "SNAPSHOT_TOPOLOGY"
 
-VARIABLES mode, stage, cache, ctxState, topology, ready, restored, failed, freshWipe, commitCount
+VARIABLES mode, stage, cache, ctxState, topology, ready, restored, failed, freshWipe,
+          commitCount, lateSubscribed, lateSubscribeValue, recomputedOnSubscribe
 
-vars == <<mode, stage, cache, ctxState, topology, ready, restored, failed, freshWipe, commitCount>>
+vars == <<mode, stage, cache, ctxState, topology, ready, restored, failed, freshWipe,
+          commitCount, lateSubscribed, lateSubscribeValue, recomputedOnSubscribe>>
 
 TypeOK ==
   /\ mode \in Cases \cup {"none"}
@@ -39,6 +43,9 @@ TypeOK ==
   /\ failed \in BOOLEAN
   /\ freshWipe \in BOOLEAN
   /\ commitCount \in 0..1
+  /\ lateSubscribed \in BOOLEAN
+  /\ lateSubscribeValue \in {EmptyCache, SnapshotCache}
+  /\ recomputedOnSubscribe \in BOOLEAN
 
 Init ==
   /\ mode = "none"
@@ -51,6 +58,9 @@ Init ==
   /\ failed = FALSE
   /\ freshWipe = FALSE
   /\ commitCount = 0
+  /\ lateSubscribed = FALSE
+  /\ lateSubscribeValue = EmptyCache
+  /\ recomputedOnSubscribe = FALSE
 
 BeginLoad(m) ==
   /\ stage = "idle"
@@ -61,6 +71,9 @@ BeginLoad(m) ==
   /\ restored' = FALSE
   /\ failed' = FALSE
   /\ freshWipe' = FALSE
+  /\ lateSubscribed' = FALSE
+  /\ lateSubscribeValue' = EmptyCache
+  /\ recomputedOnSubscribe' = FALSE
   /\ UNCHANGED <<cache, ctxState, topology, commitCount>>
 
 CommitNamedRestore ==
@@ -75,7 +88,7 @@ CommitNamedRestore ==
   /\ failed' = FALSE
   /\ freshWipe' = FALSE
   /\ commitCount' = commitCount + 1
-  /\ UNCHANGED mode
+  /\ UNCHANGED <<mode, lateSubscribed, lateSubscribeValue, recomputedOnSubscribe>>
 
 FailUnrestorable ==
   /\ stage = "loading"
@@ -85,12 +98,25 @@ FailUnrestorable ==
   /\ restored' = FALSE
   /\ failed' = TRUE
   /\ freshWipe' = FALSE
-  /\ UNCHANGED <<mode, cache, ctxState, topology, commitCount>>
+  /\ UNCHANGED <<mode, cache, ctxState, topology, commitCount, lateSubscribed,
+                lateSubscribeValue, recomputedOnSubscribe>>
+
+LateSubscribeRestored ==
+  /\ stage = "committed"
+  /\ ready
+  /\ restored
+  /\ ~lateSubscribed
+  /\ lateSubscribed' = TRUE
+  /\ lateSubscribeValue' = cache
+  /\ recomputedOnSubscribe' = FALSE
+  /\ UNCHANGED <<mode, stage, cache, ctxState, topology, ready, restored, failed,
+                freshWipe, commitCount>>
 
 Next ==
   \/ \E m \in Cases : BeginLoad(m)
   \/ CommitNamedRestore
   \/ FailUnrestorable
+  \/ LateSubscribeRestored
   \/ UNCHANGED vars
 
 Spec == Init /\ [][Next]_vars
@@ -114,6 +140,12 @@ RestorePreservesCheckpoint ==
 
 RestoreIsNotFreshLifecycle ==
   restored => ~freshWipe
+
+RestoredLateSubscribeUsesRestoredCache ==
+  lateSubscribed =>
+    /\ lateSubscribeValue = SnapshotCache
+    /\ ~recomputedOnSubscribe
+    /\ cache = SnapshotCache
 
 LocalOnlyOrMissingRejects ==
   /\ mode \in {"localOnly", "missingFactory"}
