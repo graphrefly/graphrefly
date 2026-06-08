@@ -304,6 +304,22 @@ Next step: design the clean-slate documentation system (see the session continua
   graph-visible hub error facts. No runtime topic node creation/removal, fake
   topology event, hidden EventEmitter island, protocol, tier, message,
   ctx.up/down, or conformance behavior changed.
+- 2026-06-08 TS B63 CQRS first slice: added `cqrs`,
+  `cqrsCommandHandler`, and `cqrsProjection` under `@graphrefly/ts/cqrs`
+  as a graph-visible CQRS foundation. The bundle exposes command, runtime,
+  events, status, errors, audit, and cursor nodes; command convenience
+  dispatch publishes command DATA facts only, and handlers run inside the
+  dispatched runtime node. Event append is ordered and validates the whole
+  handler result before commit, so command failures do not partially commit
+  events. Projection helpers derive from declared event deps and route reducer
+  throws to graph-visible projection error facts instead of protocol ERROR.
+  Runtime state is JSON-friendly `ctx.state.persist(true)` for checkpoint
+  capture. No `CqrsGraph` subclass, guard/policy/factoryTag/domainMeta public
+  semantics, hidden EventEmitter/subscribe island, process manager,
+  storage-owned restore, protocol, tier, message, ctx.up/down, or conformance
+  behavior changed. Rust close ledger: CQRS is Rust-relevant and not yet
+  present in `graphrefly-rs`; future CSP-10 should re-derive a Rust-native
+  facts-first CQRS surface without structural symbol parity.
 - 2026-06-08 TS B63 optional runtime-driver closeout: added `nodeProcessDriver` under
   `@graphrefly/ts/sources/node` as a Node-only `LocalProcessDriver` for
   `EnvironmentDrivers.withProcess(...)`. It backs driver-based `fromProcess`/`runProcess` and
@@ -367,9 +383,108 @@ Next step: design the clean-slate documentation system (see the session continua
   remote ERROR/COMPLETE remain bridge DATA facts, not local protocol terminals. No
   protocol, tier, message, ctx.up/down, WorkerPool, EnvironmentDrivers, transport,
   or conformance behavior changed.
+- 2026-06-08 Rust B77/D135 dynamic hub foundation: added `dynamic_hub` /
+  `dynamic_hub_with_options`, fixed command/events/status/errors/optional-dead-letter
+  bundle nodes, static `from_hub_topic` projections, and static `to_hub_topic`
+  command helpers under `graphrefly::messaging`. Topic create/delete/publish/subscribe/close
+  are DATA facts with seq/cursor/timestamp metadata; unknown-topic policy is explicit
+  (drop, default graph-visible error, dead-letter, create-as-fact); helper methods
+  publish command DATA facts only. Describe-visible tests cover fixed nodes and real
+  source->helper->command plus events->projection/status/error/dead-letter edges. No
+  runtime topic node creation/removal, hidden EventEmitter/process manager/GraphSpec owner,
+  protocol, tier, message, ctx.up/down, WorkerPool, EnvironmentDrivers, or conformance
+  behavior changed. QA fixed a retained-reducer edge case by adding crate-internal
+  graph-owned retain for the fixed events node, so helper commands published before
+  external observation are still reduced into hub facts rather than collapsing to
+  the command node's latest cache. QA also routes panicking metadata clocks to
+  graph-visible hub DATA error facts without committing create-as-fact topic
+  mutation, and fixes `to_hub_topic` command forwarding to close over the actual
+  rewired dep arity.
+- 2026-06-08 TS B63 CQRS QA: fixed the auto-applicable review findings without a
+  new D# or spec-amend. CQRS public fact nodes and projection nodes now use
+  graph-owned retain roots so command/event/status/error/audit/cursor/projection
+  facts remain graph-visible even when dispatch precedes external observation.
+  Projection reducers now commit and emit each successful event prefix before a
+  later event in the same batch can throw. Handler/reducer catches rethrow
+  GraphReFly protocol/runtime invariant errors such as R-reentrancy/R-rewire
+  instead of downgrading them into CQRS application DATA errors. Valid command ids
+  are consumed on first processing after parse, so retrying a failed valid command
+  id becomes duplicate-command rather than rerunning the handler. The long-lived
+  dedupe retention/index policy remains a future design-review/backlog question;
+  this QA did not lock public retention/window semantics.
+- 2026-06-08 TS/Rust D142 CQRS dedupe implementation: locked and landed static
+  bounded command/event id dedupe windows with exact/unbounded default. TS
+  `@graphrefly/ts/cqrs` now exposes `CqrsDedupePolicy` / `CqrsDedupeWindow`;
+  bounded cursor facts expose retained/evicted id counts and evicted ids are no
+  longer duplicate-recognized. Rust `graphrefly-rs` now has a Rust-native `cqrs`
+  module and crate exports for `cqrs`, `cqrs_with_options`,
+  `cqrs_command_handler`, `cqrs_projection`, graph-visible command/runtime/events/
+  status/errors/audit/cursor/projection nodes, and matching D142 dedupe policy.
+  Rust CQRS runtime state is stored as JSON `ctx.state` for checkpoint-friendly
+  dedupe counters/windows. Dynamic Node-valued policies and generic dedupe
+  engines remain deferred. No protocol, tier, message, ctx.up/down, terminal,
+  storage-owned restore, or conformance behavior changed.
+- 2026-06-08 TS/Rust CQRS QA hardening: timestamp provider failures now become
+  graph-visible CQRS `clock-threw`/`ClockThrew` error/status/audit facts without
+  committing events; Rust rejects empty command id/type as `MalformedCommand`
+  before dedupe insertion; TS and Rust CQRS catch boundaries rethrow D22 /
+  R-graph-domain violations instead of downgrading them into handler/projection
+  facts. No protocol, restore, storage, tier, message, or ctx.up/down semantics
+  changed.
+- 2026-06-08 D149/D150 CQRS design-review closeout: locked CQRS bundle/projection
+  lifecycle as retain-root release only, and locked CQRS checkpoint/export honesty.
+  CQRS release/dispose may only release helper-owned graph retain roots; it must
+  not delete topology, synthesize protocol terminal/control messages, clear
+  caches/state/facts, cancel external subscriptions, or become a permission
+  system. CQRS only promises its internal cursor/dedupe runtime state is
+  graph-owned and JSON/checkpoint-friendly; arbitrary command/event/projection
+  payloads remain ordinary graph values under the graph checkpoint contract.
+  Durable CQRS export remains a passive fact sink/projection or future reviewed
+  codec/helper, not CQRS-owned storage restore/hydration.
+- 2026-06-08 D151/B79 idempotency vocabulary closeout: approved the shared
+  vocabulary/contract option across CQRS dedupe and wireBridge idempotency.
+  No public generic dedupe/idempotency reducer engine is added. CQRS id windows
+  remain membership-based duplicate recognition; wireBridge receipt remains
+  ordered seq/cursor with ack/nack correlation by `ackForSeq`; `idempotencyKey`
+  is correlation/idempotency metadata unless a surface explicitly owns key-based
+  recognition. Future public reducer bundles, dynamic Node-valued policies, or
+  key-store/replay engines require another design review and must expose
+  accepted/duplicate/error/cursor/status as ordinary graph facts.
 
 ## Design Lock Log
 
+- 2026-06-08 D145-D148: locked the next topology/process/remote-worker
+  design gates without a spec-amend. D145 keeps topology events as read-only
+  graph lifecycle egress over the existing graph registry; optional
+  release/topology groups are labels/handles over already registered nodes, not
+  a second registry, and release remains quiescent-only. D146 makes process/saga
+  DSLs authoring layers that compile to D136 ProcessBundles, while effect
+  runners consume effect-request facts and publish visible result/failure facts
+  without owning state, timers, or restore. D147 makes remote dispatcher helpers
+  wire-bridge request/response facts with local/remote waves separated by the
+  bridge boundary. D148 keeps public WorkerPool customization helper-first via
+  graph/dispatcher-owned backend capabilities, not imperative submit APIs.
+- 2026-06-08 D142: locked CQRS command/event id dedupe as application-infra
+  policy shared by TS and Rust. Default is exact/unbounded. Static bounded
+  command/event windows may be configured independently; eviction is insertion
+  order, and evicted ids are no longer duplicate-recognized. Dedupe state remains
+  graph-owned, JSON/checkpoint friendly, and visible through CQRS cursor/status
+  facts where supported. Dynamic Node-valued policy and generic public dedupe
+  engines stay deferred.
+- 2026-06-08 D149: locked CQRS bundle/projection lifecycle as application-infra
+  retain-root release only. TS/Rust may expose runtime-idiomatic release/Drop
+  surfaces, but release does not own graph topology, protocol terminal/control
+  messages, cache/state clearing, external subscriptions, process cancellation,
+  or command/query permission.
+- 2026-06-08 D150: locked CQRS checkpoint/export honesty. CQRS internal
+  cursor/dedupe runtime state is graph-owned and JSON/checkpoint-friendly; CQRS
+  public payload facts remain ordinary graph values, and durable export stays
+  passive or separately reviewed.
+- 2026-06-08 D151: locked idempotency/dedupe sharing as vocabulary/contract
+  only, not a public generic engine. CQRS owns membership-window dedupe,
+  wireBridge owns ordered seq/cursor receipt and `ackForSeq` correlation, and
+  any future shared reducer/key-store must be separately reviewed with graph-
+  visible facts and declared deps.
 - 2026-06-08 D141: locked wire bridge envelope payload shape as a tagged
   payload sum type/union. Data, error/nack, status, and close payloads are
   explicit bridge fact variants; ack correlation stays metadata; no `AnyValue`,
