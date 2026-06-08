@@ -258,6 +258,18 @@ Next step: design the clean-slate documentation system (see the session continua
 
 ## Implementation Log
 
+- 2026-06-08 TS B63 D133 first slice: added `webSocketSession` under
+  `@graphrefly/ts/adapters` as a graph-visible SessionBundle with command, inbound,
+  lifecycle, status, errors, and attempts nodes. `start`/`send`/`close` convenience
+  helpers publish command facts only; session state is driven by the command node and
+  graph-local `EnvironmentDrivers` callbacks. QA hardened the slice by requiring the
+  live `LocalWebSocketDriver.connectSession` / `WebSocketSessionHandle` capability for
+  same-connection outbound sends while leaving one-shot `toWebSocket` on `send`,
+  suppressing late send callbacks after close, cleaning up remote closes, avoiding
+  duplicate manual starts during retry waits, and treating normal code `1000` close as
+  lifecycle rather than retry/error. Reconnect uses bounded `RetryPolicy` /
+  `BackoffPolicy` scheduling at the adapter boundary and surfaces attempts/status/errors.
+  No protocol, tier, message, ctx.up/down, or conformance behavior changed.
 - 2026-06-08 TS B63 optional runtime-driver closeout: added `nodeProcessDriver` under
   `@graphrefly/ts/sources/node` as a Node-only `LocalProcessDriver` for
   `EnvironmentDrivers.withProcess(...)`. It backs driver-based `fromProcess`/`runProcess` and
@@ -273,6 +285,20 @@ Next step: design the clean-slate documentation system (see the session continua
   stay dependency-light, async remains confined to driver callbacks, and the D132
   graph-visible adapter/message-bus/resilience API shape is unchanged. No protocol, tier,
   message, ctx.up/down, or conformance behavior changed.
+- 2026-06-08 Rust B72 WorkerPool v0 slice: added feature-gated `worker_derived`
+  behind `tokio-worker`. The helper runs kickoff on the graph thread, prepares an
+  owned `Send` input from normal ctx dep reads, runs only that input through Tokio
+  `spawn_blocking`, and returns DATA/ERROR through graph-local `DeferredCtx` as a
+  fresh later wave. `Ctx`, `Node`, `Rc` graph state, erased graph values, and live
+  topology do not cross the worker boundary; remote workers and broad scheduler
+  controls stay deferred. No protocol, tier, message, ctx.up/down, or conformance
+  behavior changed.
+- 2026-06-08 Rust B72 WorkerPool v0 QA: tightened `worker_derived` so completion
+  captures an explicit Tokio runtime handle, missing runtime emits graph-visible
+  ERROR, worker panic joins route to ERROR, superseded completions are dropped by
+  an invocation fence, and dep COMPLETE no longer terminal-seals an in-flight
+  worker result. Dispatcher-owned generic WorkerPool infrastructure remains a
+  B1 follow-up rather than a hidden API expansion in this slice.
 
 ## Design Lock Log
 
