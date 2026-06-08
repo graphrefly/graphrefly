@@ -270,6 +270,24 @@ Next step: design the clean-slate documentation system (see the session continua
   lifecycle rather than retry/error. Reconnect uses bounded `RetryPolicy` /
   `BackoffPolicy` scheduling at the adapter boundary and surfaces attempts/status/errors.
   No protocol, tier, message, ctx.up/down, or conformance behavior changed.
+- 2026-06-08 TS B63 D134 first slice: added `wireBridge` under
+  `@graphrefly/ts/adapters` as a transport-free, graph-visible bridge bundle with
+  command, outbound envelope, inbound envelope, events, ack, nack, status, errors,
+  cursor, and attempts nodes. Envelopes carry per-session monotonic seq/cursor,
+  idempotency key, attempt, and request metadata; bounded ack timeout/retry reuses
+  `RetryPolicy` / `BackoffPolicy` vocabulary and emits retry/exhaustion facts through
+  the bundle. `start`/`send`/`ack`/`nack`/`close` helpers publish command facts only.
+  `start`/`data`/`close` are ack-tracked; `ack`/`nack` are receipt envelopes and are
+  not recursively ack-tracked. Remote receipt is represented only by later inbound
+  envelope facts; remote failures remain DATA envelopes (`type: "error"`) on the
+  bridge error node, not local protocol ERROR. QA hardened the slice by enforcing
+  session-scoped inbound envelopes, finite default ack timeout, real backoff-delayed
+  retransmit, late/unknown ack/nack handling, required `ackForSeq`, malformed inbound
+  metadata rejection, monotonic safe seq/cursor metadata, close pending-status reset,
+  remote error status projection, malformed command-fact rejection, and guarded
+  inbound terminal misuse so raw protocol ERROR/COMPLETE cannot poison later inbound
+  facts. No protocol, tier, message, ctx.up/down, remote dispatcher, or conformance
+  behavior changed.
 - 2026-06-08 TS B63 optional runtime-driver closeout: added `nodeProcessDriver` under
   `@graphrefly/ts/sources/node` as a Node-only `LocalProcessDriver` for
   `EnvironmentDrivers.withProcess(...)`. It backs driver-based `fromProcess`/`runProcess` and
@@ -299,9 +317,30 @@ Next step: design the clean-slate documentation system (see the session continua
   an invocation fence, and dep COMPLETE no longer terminal-seals an in-flight
   worker result. Dispatcher-owned generic WorkerPool infrastructure remains a
   B1 follow-up rather than a hidden API expansion in this slice.
+- 2026-06-08 Rust B72 WorkerPool backend closeout: closed the B1/D138 follow-up by
+  moving owned compute submission behind a feature-gated dispatcher-owned internal
+  WorkerPool backend. `worker_derived` remains the only public helper; no
+  GraphOptions/DispatcherOptions scheduler shape, public worker trait, remote
+  worker, EnvironmentDrivers task mixing, protocol, or conformance change was
+  added. Missing backend/runtime, stale completion, panic/error, dep terminal with
+  pending result, and describe-visible topology are covered by focused tests.
+- 2026-06-08 Rust B72 WorkerPool backend QA: made worker submission cold until the
+  graph-local waiter starts, so compute cannot begin before the `DeferredCtx`
+  completion path/cancel hook exists; moved the invocation fence to the start of
+  every `worker_derived` invocation, so prepare-none or immediate ERROR waves
+  suppress older in-flight completions. Added regressions for local-waiter
+  scheduling failure and no-submit stale completion.
 
 ## Design Lock Log
 
+- 2026-06-08 D140: locked remote worker and cross-graph worker execution as a wire-bridge
+  request/response pattern, not a Dispatcher WorkerPool backend and not an ordinary remote dep.
+  Local requests and remote results are bridge facts; remote receipt starts a new graph wave, and
+  any local result projection returns only as a later fresh local wave.
+- 2026-06-08 D139: locked future public/custom WorkerPool scheduler API direction. The public
+  graph API remains helper-first; custom scheduling is an installed dispatcher/graph-owned backend
+  capability, cancellation correctness is stale-completion fencing with optional cooperative
+  runtime cancellation, and remote worker execution stays on the D134 wire-bridge line.
 - 2026-06-08 D138: locked WorkerPool v0 as graph-helper-first. The helper prepares
   owned worker input on the graph thread, submits only Send/static compute work to a
   dispatcher-owned WorkerPool, and returns completion through `DeferredCtx` as a later new
