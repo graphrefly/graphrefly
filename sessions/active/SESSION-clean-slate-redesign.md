@@ -253,3 +253,41 @@ cross-graph diamond (L2.F mixed-locality survival proof) · async-result-at-paus
 **Foundation verdict: sound.** L3.C / L3-Q7 / config dissolution / L6-Q1 all shed real historical baggage (actor model / D080-D206 / config-freeze timing). Cleared to enter the clean-slate implementation sequence.
 
 Next step: design the clean-slate documentation system (see the session continuation below) → then `/dev-dispatch` the clean-slate implementation.
+
+---
+
+## Implementation Log
+
+- 2026-06-08 TS B63 optional runtime-driver closeout: added `nodeProcessDriver` under
+  `@graphrefly/ts/sources/node` as a Node-only `LocalProcessDriver` for
+  `EnvironmentDrivers.withProcess(...)`. It backs driver-based `fromProcess`/`runProcess` and
+  graph-visible `toProcess` bundles through `child_process.spawn`, ignores stdin for the no-input
+  command shape, bounds stdout/stderr aggregation with `maxBufferBytes`, keeps process async work at
+  the driver boundary, and leaves the universal sources barrel browser-safe. No protocol, tier,
+  message, ctx.up/down, or conformance behavior changed.
+- 2026-06-08 Rust B72 optional runtime-driver closeout: added feature-gated concrete
+  `TokioHttpDriver` and `TokioWebSocketDriver` alongside the existing `TokioProcessDriver`.
+  The drivers implement the existing graph-owned `LocalHttpDriver`/`LocalWebSocketDriver`
+  capability traits for `EnvironmentDrivers`; HTTP uses `reqwest`, WebSocket uses
+  `tokio-tungstenite` for connect streams plus one-shot outbound send. Default crate features
+  stay dependency-light, async remains confined to driver callbacks, and the D132
+  graph-visible adapter/message-bus/resilience API shape is unchanged. No protocol, tier,
+  message, ctx.up/down, or conformance behavior changed.
+
+## Design Lock Log
+
+- 2026-06-08 D138: locked WorkerPool v0 as graph-helper-first. The helper prepares
+  owned worker input on the graph thread, submits only Send/static compute work to a
+  dispatcher-owned WorkerPool, and returns completion through `DeferredCtx` as a later new
+  wave. `Ctx`, `Node`, graph state, and original-wave pending accounting do not cross the
+  worker boundary.
+- 2026-06-08 D137: locked the worker/pool taxonomy. Environment task/runtime drivers stay in
+  graph-owned EnvironmentDrivers and return through visible adapter/session bundles; dispatcher
+  WorkerPool is the graph-internal compute lane for node functions while `dispatcher.invoke` stays
+  sync void; cross-graph remote deps/functions stay on the explicit wire-bridge line.
+- 2026-06-08 D133-D136: locked the next L6 application/adapter design gates without a
+  spec-amend. Bidirectional transports use SessionBundle command/inbound/lifecycle/status/error
+  ports; wire bridges are explicit bridge bundles with per-session ordered ack envelopes and remote
+  dispatcher calls deferred as request/response facts; dynamic hubs are facts-dynamic and
+  topology-static; process/saga orchestration starts from visible command/event/state/audit/effect
+  facts rather than an imperative workflow engine.
