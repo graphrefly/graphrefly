@@ -288,6 +288,22 @@ Next step: design the clean-slate documentation system (see the session continua
   inbound terminal misuse so raw protocol ERROR/COMPLETE cannot poison later inbound
   facts. No protocol, tier, message, ctx.up/down, remote dispatcher, or conformance
   behavior changed.
+- 2026-06-08 TS B63 D135 first slice: added `dynamicHub`, `fromHubTopic`, and
+  `toHubTopic` under `@graphrefly/ts/messaging` as a facts-dynamic,
+  topology-static hub bundle. The bundle exposes fixed command, events, status,
+  errors, and optional dead-letter nodes; topic keys remain DATA facts, static
+  projections/command helpers create visible graph edges only, and convenience
+  create/delete/publish/subscribe/close helpers publish command DATA facts
+  without mutating hidden hub state. Unknown-topic behavior is explicit and
+  defaults to graph-visible errors, with drop, dead-letter, and create-as-fact
+  policies covered by tests. QA hardened the slice by retaining the fixed events
+  reducer through graph-owned lifecycle so command facts do not collapse before
+  external subscription, persisting JSON-friendly hub runtime state across
+  deactivation/checkpoint, rolling back failed `toHubTopic` wiring, and adding
+  explicit `maxTopics` / `maxTopicLength` bounds whose violations become
+  graph-visible hub error facts. No runtime topic node creation/removal, fake
+  topology event, hidden EventEmitter island, protocol, tier, message,
+  ctx.up/down, or conformance behavior changed.
 - 2026-06-08 TS B63 optional runtime-driver closeout: added `nodeProcessDriver` under
   `@graphrefly/ts/sources/node` as a Node-only `LocalProcessDriver` for
   `EnvironmentDrivers.withProcess(...)`. It backs driver-based `fromProcess`/`runProcess` and
@@ -330,9 +346,34 @@ Next step: design the clean-slate documentation system (see the session continua
   every `worker_derived` invocation, so prepare-none or immediate ERROR waves
   suppress older in-flight completions. Added regressions for local-waiter
   scheduling failure and no-submit stale completion.
+- 2026-06-08 Rust B72/D140 wire bridge foundation: added `wire_bridge` under
+  `graphrefly::adapters::bridge` as a transport-free, graph-visible bridge bundle with
+  command, outbound, inbound, events, acks, nacks, status, errors, cursor, and attempts
+  nodes. Envelopes carry session id, ordered seq/cursor, idempotency key, attempt/max
+  attempts, ack-for-seq, timestamp, and request id metadata. Command helpers publish
+  command DATA facts only; outbound commands create ordered envelope facts. Inbound
+  receipt is guarded so raw local protocol ERROR/COMPLETE becomes a bridge error fact
+  and does not terminalize the inbound/events/status nodes; remote error/close are
+  inbound DATA envelope facts, not local pending/diamond terminal settlement. Optional
+  ack-timeout retry uses graph-owned `LocalAsyncDriver::sleep` and emits timeout,
+  retry, exhausted, attempt, status, and error facts. No protocol, tier, message,
+  ctx.up/down, remote ordinary deps, public scheduler controls, transport/auth/discovery,
+  remote execution bridge helper, or conformance behavior changed.
+- 2026-06-08 TS/Rust D141 wire bridge payload closeout: locked and implemented tagged
+  envelope payload variants for data, error/nack, status, and close facts. TS
+  `WireBridgePayload<T>` and Rust `WireBridgePayload<T>` now make control payloads
+  explicit instead of casting or dropping them through the data type parameter.
+  Envelope construction/inbound validation reject missing or mismatched payload kinds;
+  remote ERROR/COMPLETE remain bridge DATA facts, not local protocol terminals. No
+  protocol, tier, message, ctx.up/down, WorkerPool, EnvironmentDrivers, transport,
+  or conformance behavior changed.
 
 ## Design Lock Log
 
+- 2026-06-08 D141: locked wire bridge envelope payload shape as a tagged
+  payload sum type/union. Data, error/nack, status, and close payloads are
+  explicit bridge fact variants; ack correlation stays metadata; no `AnyValue`,
+  `Ctx`, `Node`, functions, live topology, or mutable graph state crosses the bridge.
 - 2026-06-08 D140: locked remote worker and cross-graph worker execution as a wire-bridge
   request/response pattern, not a Dispatcher WorkerPool backend and not an ordinary remote dep.
   Local requests and remote results are bridge facts; remote receipt starts a new graph wave, and
