@@ -258,6 +258,41 @@ Next step: design the clean-slate documentation system (see the session continua
 
 ## Implementation Log
 
+- 2026-06-09 TS/Rust D153 mount-changed topology-event slice: added
+  `mount-changed` / `MountChanged` to the existing read-only topology egress and
+  forwarded mounted child graph topology events through parent
+  `observeTopology` / `observe_topology` using mount-aware `::` path/deps
+  prefixes. The event is emitted only from the existing graph mount mutation
+  point (`path=<mount path>`, `factory=mount`, `deps=[]`), and forwarded child
+  events retain their kind/factory while using the parent graph topology clock.
+  Forwarders are installed only while the parent has topology observers and are
+  released when the last parent topology observer unsubscribes, preserving the
+  D145 zero-observer cost goal. This is still read-only inspection/lifecycle
+  egress: no graph node, DATA fact, protocol spec/tier/message/ctx semantic
+  change, second registry, hidden EventEmitter/process manager/GraphSpec owner,
+  dynamic topic node mutation, or structural parity requirement was added.
+- 2026-06-09 Rust D147 remote dispatcher helper slice: added
+  `remote_call` / `remote_call_with_options` and `remote_responder` /
+  `remote_responder_handler` in `graphrefly-rs` on top of the existing
+  D134/D140/D141 `wire_bridge` facts. `remote_call` sends
+  `RemoteCallRequest` DATA payloads through the bridge command path and exposes
+  graph-visible responses/results/status/errors/timeouts nodes; local timeout is
+  a local status/error fact. `remote_responder` consumes guarded inbound request
+  facts, invokes first-slice sync handlers, and routes `RemoteCallResponse`
+  DATA facts back through a declared `responseCommands -> bridge/command` edge.
+  Responders ignore non-owned operations by default so multiple responders can
+  share one bridge; full-owner responders can opt into unknown-operation DATA
+  error responses. Handler errors become graph-visible DATA error responses.
+  `request_id` remains logical call correlation while `seq`/`cursor`/
+  `ack_for_seq` remain transport metadata, and stale responses are ignored
+  unless their `request_id` is still pending. QA follow-up tightened call
+  projection so Status responses are non-terminal, same-batch request/response
+  ordering does not drop valid results, unknown timeouts do not consume
+  unrelated pending calls, and Nack/Exhausted bridge failures clear pending
+  state with request correlation where available. No protocol spec, tier/message/ctx
+  semantic change, conformance behavior, remote ordinary deps, distributed
+  same-wave semantics, public WorkerPool submit API, hidden EventEmitter/process
+  manager/GraphSpec owner, or structural parity requirement was added.
 - 2026-06-09 TS/Rust D152 explicit topology/release group surface: added
   `Graph.topologyGroup()` in `@graphrefly/ts` and
   `Graph::topology_group(_opts)` in `graphrefly-rs` as graph-owned handles over
