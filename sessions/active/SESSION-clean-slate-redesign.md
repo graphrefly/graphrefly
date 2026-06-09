@@ -258,6 +258,15 @@ Next step: design the clean-slate documentation system (see the session continua
 
 ## Implementation Log
 
+- 2026-06-09 D158 locked semantic memory layering without a spec-amend.
+  Passive storage memory remains under storage only. Reusable semantic memory
+  vocabulary, knowledge-graph reducers, vector/retrieval/ranking patterns, and
+  retention/consolidation command vocabulary may live under patterns when they
+  expose ordinary graph nodes, declared deps, and graph-visible facts. Agentic
+  memory, reflection loops, prompt assembly, LLM extraction/summarization, and
+  harness/data-agent integrations live under solutions or adapters. No semantic
+  memory surface owns storage restore/hydration, hidden schedulers,
+  GraphSpec/Actor/factoryTag runtime ownership, or protocol semantics.
 - 2026-06-09 D156/D157 locked the two B85/B86 closeouts without a
   spec-amend. D156 makes TS ProcessBundle effect runners visible
   outcome-command adapter bundles: they consume `process.effectRequests` plus
@@ -606,6 +615,24 @@ Next step: design the clean-slate documentation system (see the session continua
   `TopicGraph`/subscription/messagingHub class port, no old GraphSpec/factoryTag/
   Actor owner, no hidden EventEmitter, no topology lifecycle, no protocol or
   conformance change, and no `utils`/`base`/`compat`/`presets` barrel resurrection.
+- 2026-06-09 TS B64 examples migration batch 1: migrated
+  `examples/compat/{zustand,jotai,nanostores}` and
+  `examples/framework/{react,vue,solid,svelte}` to consume only `@graphrefly/ts`
+  and `@graphrefly/ts/adapters`. Compat examples now wrap caller-owned graph
+  nodes with `zustandStore`, `jotaiAtom`, and `nanoAtom`; framework examples use
+  tiny example-local React/Vue/Solid hook glue or the Svelte readable/writable
+  store adapters. No package API, `@graphrefly/ts/compat/*` subpath, framework
+  hook export, old Graph-owned Zustand `create`, Jotai `atom(read)`, Nanostores
+  `computed`, protocol, storage restore, or dynamic topology behavior was added.
+  Follow-up B64 slices can migrate spending-alerts and NestJS/order-flow against
+  existing public surfaces; AI/harness/refine-loop/inbox-reducer, memory
+  knowledgeGraph, and reactive-layout/fromRaf remain deferred/design-gated.
+- 2026-06-09 B64/B65 direction update: pause further examples migration until
+  retained functionality surfaces settle. Examples are later acceptance/cleanup,
+  not drivers for new public API or old-root preservation. Root
+  `@graphrefly/graphrefly` should be deprecated directly once retained surface
+  migration and the known memo:Re consumer path allow it; do not invest in a
+  long-lived transition shell just to preserve pre-1.0 compatibility.
 - 2026-06-09 Rust B84 D136 ProcessBundle first slice: added `graphrefly-rs`
   `process::ProcessBundle` as a Rust-native facts-plus-reducer bundle with
   graph-visible command, state, events, audit, effect_request, status, error,
@@ -617,10 +644,27 @@ Next step: design the clean-slate documentation system (see the session continua
   attempt closes, not a consumer/read cursor. No process/saga DSL, effect
   runner, hidden processManager/EventEmitter, private timers/maps, hidden
   subscriptions, storage restore/hydration, protocol change, remote ordinary
-  dep, or structural TS parity was added. B84 remains open for the later
-  D146/D156 Rust effect-runner adapter.
+  dep, or structural TS parity was added.
   QA hardening rejects malformed persisted runtime ledger fields rather than
   normalizing them into cursor/dedupe rewind.
+- 2026-06-09 Rust B84 D156 ProcessEffectRunner closeout: added
+  `graphrefly-rs` `process_effect_runner` / `ProcessEffectRunnerBundle` as a
+  Rust-native visible outcome-command adapter over `ProcessBundle`. The runner
+  mirrors `process.effect_request` into requests, consumes explicit outcome fact
+  nodes, projects `effect.result` / `effect.failure` / `effect.cancel` /
+  `effect.timeout` command facts, and wires `runner.commands` into
+  `process.command` through declared command-source fan-in. Release is
+  idempotent and rollback-safe: it preflights helper topology quiescence,
+  detaches before graph-owned release, releases the private runtime plus visible
+  helper nodes, and does not replay cached commands if release is retried after
+  a live-subscriber failure. Tests cover result reducer delivery, visible
+  edges, malformed/contradictory outcome DATA errors/status, counters, all four
+  command payloads, multiple runner fan-in, idempotent release, retry/no-replay,
+  and post-release topology cleanup. No process/saga DSL, async handler runtime,
+  private in-flight authority maps/timers, EnvironmentDriver/session/wireBridge
+  integration, hidden subscriptions/EventEmitter/processManager, storage
+  restore/hydration, protocol tier/message/ctx change, remote ordinary dep, or
+  structural TS parity was added. B84 is resolved.
 
 ## Design Lock Log
 
