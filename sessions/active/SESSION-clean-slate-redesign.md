@@ -258,6 +258,36 @@ Next step: design the clean-slate documentation system (see the session continua
 
 ## Implementation Log
 
+- 2026-06-08 TS/Rust D151 idempotency vocabulary closeout: implemented
+  B79 as contract/vocabulary alignment only across CQRS and wireBridge. CQRS
+  keeps its own command/event id membership windows and graph-visible dedupe
+  facts; wireBridge keeps its own ordered seq/cursor receipt state and
+  ack/nack correlation facts now use `ackForSeq` / `ack_for_seq`. The
+  `idempotencyKey` / `idempotency_key` bridge field remains metadata unless a
+  later reviewed surface explicitly owns key-based duplicate recognition.
+  Added TS/Rust tests for unchanged CQRS bounded/unbounded semantics, ordered
+  bridge duplicate/out-of-order/cursor behavior, ack/nack correlation, and
+  idempotencyKey not becoming an implicit key-store. No generic public
+  dedupe/idempotency reducer, dynamic Node-valued CQRS policy, key-store/replay
+  engine, storage-owned restore, hidden Map/EventEmitter source of truth,
+  protocol/tier/message/ctx semantics, conformance change, or structural parity
+  requirement was added.
+- 2026-06-08 TS/Rust D145 topology-events first slice: added read-only topology
+  lifecycle egress over the existing Graph registry in both `@graphrefly/ts` and
+  `graphrefly-rs`. TS exposes `Graph.observeTopology(path?)`; Rust exposes
+  `Graph::observe_topology()` / `observe_topology_path()`. This slice emits only
+  `node-registered` / `NodeRegistered` and `deps-changed` / `DepsChanged` events
+  from graph registration and successful rewire mutation points. Event deps match
+  describe-visible live deps/edges, topology observation does not activate cold
+  nodes, and protocol `observe()` remains separate. No spec/conformance change,
+  no new tier/message/ctx semantics, no second node registry, no hidden
+  EventEmitter/process manager/GraphSpec owner/factoryTag, no release groups, and
+  no dynamic topic node lifecycle were added. QA hardened the egress by making
+  nested topology events FIFO, isolating observer failures from committed graph
+  mutations, respecting same-delivery unsubscribe, keeping Rust zero-observer
+  checks O(1), and moving deps-changed emission until added-dep subscriptions are
+  restored. Parent-observer forwarding of already-mounted child graph topology
+  events stays deferred with the mount-changed lifecycle slice.
 - 2026-06-08 TS B63 D133 first slice: added `webSocketSession` under
   `@graphrefly/ts/adapters` as a graph-visible SessionBundle with command, inbound,
   lifecycle, status, errors, and attempts nodes. `start`/`send`/`close` convenience
@@ -450,9 +480,33 @@ Next step: design the clean-slate documentation system (see the session continua
   recognition. Future public reducer bundles, dynamic Node-valued policies, or
   key-store/replay engines require another design review and must expose
   accepted/duplicate/error/cursor/status as ordinary graph facts.
+- 2026-06-09 D152 dynamic topology node lifecycle: approved explicit
+  graph-owned topology/release groups as the only path for dynamic topic/view/
+  router surfaces to create or release real graph nodes. Unknown data keys,
+  publish commands, rule updates, and hub facts must not silently mutate graph
+  topology. Helper-local maps may memoize/look up child groups, but the existing
+  graph registry remains the sole source of truth. Release is D122/D124-style:
+  quiescent-only, atomic, ids retired, no protocol terminal/control synthesis.
+  D135 facts-dynamic/topology-static hubs remain the default dynamic messaging
+  shape; true node lifecycle is opt-in and layered on D145 topology events.
 
 ## Design Lock Log
 
+- 2026-06-09 D153: closed D145-D148 follow-up API polish without a
+  spec-amend. Mount/release topology lifecycle may add `node-released` and
+  `mount-changed` read-only topology events plus optional quiescent
+  release/topology group handles over already registered node ids; release
+  commits atomically before nodes disappear from describe/find/profile/checkpoint,
+  and mounted-child forwarding belongs to the mount-changed slice. Process
+  orchestration proceeds bundle-first: implement D136 ProcessBundle before DSLs,
+  then keep DSLs as compilers and effect runners as visible fact adapters.
+  Remote dispatcher helpers proceed as `remoteCall` + `remoteResponder` over
+  wireBridge facts: operation names are application facts, `requestId` is logical
+  call correlation, bridge `seq`/`cursor`/`ackForSeq` remain transport metadata,
+  timeout is local status/error unless explicit cancel is sent, and first-slice
+  handlers are sync graph-dispatched functions. WorkerPool customization remains
+  helper-first via graph/dispatcher-owned backend capabilities selected by helper
+  or construction options; no public imperative submit API is added.
 - 2026-06-08 D145-D148: locked the next topology/process/remote-worker
   design gates without a spec-amend. D145 keeps topology events as read-only
   graph lifecycle egress over the existing graph registry; optional
@@ -485,6 +539,11 @@ Next step: design the clean-slate documentation system (see the session continua
   wireBridge owns ordered seq/cursor receipt and `ackForSeq` correlation, and
   any future shared reducer/key-store must be separately reviewed with graph-
   visible facts and declared deps.
+- 2026-06-09 D152: locked true dynamic topic/view/router node lifecycle behind
+  explicit graph-owned topology/release groups. Unknown data keys or hub facts
+  cannot create/delete nodes; child node groups are ordinary graph-registered
+  topology, helper maps are non-authoritative memo indexes, and release keeps
+  D122/D124 quiescent-only atomic disappearance with no protocol message synthesis.
 - 2026-06-08 D141: locked wire bridge envelope payload shape as a tagged
   payload sum type/union. Data, error/nack, status, and close payloads are
   explicit bridge fact variants; ack correlation stays metadata; no `AnyValue`,
