@@ -258,6 +258,21 @@ Next step: design the clean-slate documentation system (see the session continua
 
 ## Implementation Log
 
+- 2026-06-09 D160 locked reactive data-structure persistence/checkpoint
+  contract without a spec-amend. Reactive collection backends remain the
+  single live materialized owner; full collection contents must not be
+  mirrored into `ctx.state`, which is limited to runtime bookkeeping such as
+  cursors/dedupe/progress/policy state. Graph checkpoint may capture
+  collection backend state only through an explicit collection-owned
+  checkpoint contributor/factory-owned backend-state hook that serializes at
+  checkpoint time and seeds the backend at restore time; snapshot node cache is
+  not authoritative. Durable persistence is a separate data-structure
+  adapter over collection delta/snapshot facts, typically snapshot plus
+  append-log/change-log, with ready/status/error/cursor DATA facts. Storage
+  remains passive and owns no graph restore/hydration/WAL replay-as-restore or
+  hidden graph mutation. KG/semantic-memory surfaces must build on this
+  data-structure-backed durability path rather than storing semantic state as a
+  large `ctx.state` blob.
 - 2026-06-09 D158 locked semantic memory layering without a spec-amend.
   Passive storage memory remains under storage only. Reusable semantic memory
   vocabulary, knowledge-graph reducers, vector/retrieval/ranking patterns, and
@@ -633,6 +648,17 @@ Next step: design the clean-slate documentation system (see the session continua
   `@graphrefly/graphrefly` should be deprecated directly once retained surface
   migration and the known memo:Re consumer path allow it; do not invest in a
   long-lived transition shell just to preserve pre-1.0 compatibility.
+- 2026-06-09 TS B63 D158 semantic-memory passive vocabulary slice: added
+  `@graphrefly/ts/patterns` vocabulary/types/validators/helpers for
+  `MemoryFragment`, `MemoryQuery`, collection/retrieval vocabulary,
+  admission scoring, cosine similarity, tenant sharding, and passive fragment
+  validation/query filtering. This is horizontal D158 pattern support only:
+  no knowledgeGraph/vector/retrieval graph bundle, retention/consolidation
+  command surface, agentic-memory solution, Graph subclass/factoryTag/domainMeta
+  owner, hidden keepalive/subscription/scheduler/EventEmitter, storage
+  restore/hydration/WAL replay-as-restore, examples migration, protocol change,
+  or conformance change was added. KG/retrieval/vector/retention/consolidation
+  graph patterns and agentic-memory solutions remain design-review gated.
 - 2026-06-09 Rust B84 D136 ProcessBundle first slice: added `graphrefly-rs`
   `process::ProcessBundle` as a Rust-native facts-plus-reducer bundle with
   graph-visible command, state, events, audit, effect_request, status, error,
