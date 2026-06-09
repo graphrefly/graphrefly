@@ -258,6 +258,51 @@ Next step: design the clean-slate documentation system (see the session continua
 
 ## Implementation Log
 
+- 2026-06-09 D156/D157 locked the two B85/B86 closeouts without a
+  spec-amend. D156 makes TS ProcessBundle effect runners visible
+  outcome-command adapter bundles: they consume `process.effectRequests` plus
+  explicit outcome fact nodes, project `effect.result` / `effect.failure` /
+  `effect.cancel` / `effect.timeout` command facts through a declared
+  `runner.commands` node, and wire that node back into `process.command` as a
+  real graph edge. They do not own process state, raw async handlers, private
+  retry timers/maps, hidden subscriptions, restore/hydration, or a workflow
+  engine; EnvironmentDrivers/session/wireBridge helpers may feed outcomes at
+  the boundary. D157 makes `remoteResponder.responseCommands -> bridge.command`
+  attachment graph-owned and releasable: responder release first detaches its
+  command source by rewiring `bridge.command` to the remaining attached sources,
+  then releases the responder topology group through the existing quiescent
+  graph-owned release path. Detach/release must be idempotent and rollback-safe
+  and must not emit protocol messages, add a second topology store, use a hidden
+  EventEmitter, or publish bridge commands imperatively.
+- 2026-06-09 D155 locked the narrow remoteResponder/workerDerived
+  implementation shape: responders consume inbound-only wireBridge request facts
+  and publish responses only through a declared `responseCommands ->
+  bridge/command` graph edge; remoteCall projections ignore stale/unknown
+  responses unless pending and do not buffer unknown responses for future calls.
+  Worker backend customization remains a graph/dispatcher-owned capability with
+  owned input plus static compute only; completion goes through a helper-owned
+  opaque one-shot settlement capability installed after graph-local fencing, not
+  public `job.complete`/`job.error` mutation methods or a scheduler submit API.
+- 2026-06-09 TS D154/D147/D148 retained product slice: locked ProcessBundle
+  cursor vocabulary as `D154` and added `@graphrefly/ts` coverage that
+  `process.cursor` is the process-owned command-attempt high-water position, not
+  a consumer/read pagination offset; embedded status/audit/error/event/effect
+  cursors remain provenance positions. Added TS `remoteCall` and
+  `remoteResponder` helpers over the existing D134/D140/D141 `wireBridge` facts:
+  calls send `RemoteCallRequest` DATA payloads through bridge command facts and
+  expose graph-visible responses/results/status/errors/timeouts; responders
+  consume guarded inbound request envelopes, invoke first-slice sync handlers,
+  and route `RemoteCallResponse` DATA facts through a declared
+  `responseCommands -> bridge/command` edge. Added TS `workerDerived` as the
+  D148 backend-required helper: graph-thread `prepare` reads deps and returns an
+  owned input, the backend receives a cold job only after completion fencing is
+  installed, and stale completions are ignored. No protocol tier/message/ctx
+  semantic change, conformance scenario, remote ordinary dep, same-wave RPC,
+  public WorkerPool submit API, fake worker backend, hidden process state,
+  storage restore/hydration, or structural parity requirement was added. The D146
+  effect-runner helper remains deferred because the exact TS result/failure/
+  cancel/timeout command-fact vocabulary is not yet locked beyond the broad D146
+  ownership rule.
 - 2026-06-09 TS/Rust D153 mount-changed topology-event slice: added
   `mount-changed` / `MountChanged` to the existing read-only topology egress and
   forwarded mounted child graph topology events through parent
