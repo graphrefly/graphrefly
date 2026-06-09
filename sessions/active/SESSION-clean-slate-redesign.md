@@ -258,6 +258,35 @@ Next step: design the clean-slate documentation system (see the session continua
 
 ## Implementation Log
 
+- 2026-06-09 TS/Rust D152 explicit topology/release group surface: added
+  `Graph.topologyGroup()` in `@graphrefly/ts` and
+  `Graph::topology_group(_opts)` in `graphrefly-rs` as graph-owned handles over
+  ordinary graph-registered child nodes. Groups can create/add graph nodes and
+  release them through the existing quiescent atomic graph release path; released
+  ids are retired and disappear from `find`/`describe`/`profile`/`checkpoint`
+  only after commit. The first concrete consumer is the graph-bound light
+  reactive view delta/snapshot pair in TS and Rust data structures. Helper-local
+  group membership is only a release memo; the graph registry remains the source
+  of truth. No hidden second registry/EventEmitter, public `Node.dispose`,
+  protocol terminal/control synthesis, dynamicHub topology mutation, unknown-key
+  auto-create/delete, tier/message/ctx semantic change, spec/conformance change,
+  or structural parity requirement was added.
+- 2026-06-09 TS/Rust D153 node-released topology lifecycle slice: added the
+  smallest D145 follow-up on top of the existing read-only topology egress in
+  both `@graphrefly/ts` and `graphrefly-rs`. Successful graph-owned quiescent
+  release now emits `node-released` / `NodeReleased` topology events carrying
+  final known path, factory, deps, and graph-local seq after the release commits;
+  released nodes disappear from `find`/`describe`/`checkpoint` only on success.
+  Failed non-quiescent/downstream-dependent release emits no topology event and
+  leaves the registry/checkpoint-visible topology intact for retry. Cleanup
+  failures after commit do not roll back topology: committed releases emit
+  `node-released` / `NodeReleased`, then rethrow/report the cleanup fault. This is still
+  inspection/lifecycle egress only: no DATA facts, protocol messages,
+  COMPLETE/ERROR/TEARDOWN synthesis, second node registry, hidden EventEmitter,
+  process manager, GraphSpec runtime owner, release-group registry,
+  `mount-changed`, mounted-child forwarding, dynamic topic topology mutation,
+  tier/message/ctx semantic change, conformance change, or structural parity
+  requirement was added.
 - 2026-06-08 TS/Rust D151 idempotency vocabulary closeout: implemented
   B79 as contract/vocabulary alignment only across CQRS and wireBridge. CQRS
   keeps its own command/event id membership windows and graph-visible dedupe
