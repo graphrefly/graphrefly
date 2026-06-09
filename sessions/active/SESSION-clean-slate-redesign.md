@@ -598,6 +598,29 @@ Next step: design the clean-slate documentation system (see the session continua
   quiescent-only, atomic, ids retired, no protocol terminal/control synthesis.
   D135 facts-dynamic/topology-static hubs remain the default dynamic messaging
   shape; true node lifecycle is opt-in and layered on D145 topology events.
+- 2026-06-09 TS B63 passive messaging vocabulary slice: rehomed the old root
+  `src/utils/messaging/message.ts` data-only contract into `@graphrefly/ts/messaging`.
+  The clean-slate subpath now exports `JsonSchema`, `TopicMessage`, the seven
+  well-known topic constants, `STANDARD_TOPICS`, and `StandardTopic`. This is
+  passive D125/D132 application-infrastructure vocabulary only: no
+  `TopicGraph`/subscription/messagingHub class port, no old GraphSpec/factoryTag/
+  Actor owner, no hidden EventEmitter, no topology lifecycle, no protocol or
+  conformance change, and no `utils`/`base`/`compat`/`presets` barrel resurrection.
+- 2026-06-09 Rust B84 D136 ProcessBundle first slice: added `graphrefly-rs`
+  `process::ProcessBundle` as a Rust-native facts-plus-reducer bundle with
+  graph-visible command, state, events, audit, effect_request, status, error,
+  and cursor nodes. Reducers run inside the graph-owned runtime node; state is
+  emitted as a visible fact; Rust `TState` is serde JSON-roundtripped for the
+  runtime ledger so reducer state is checkpoint-friendly and not shared by
+  shallow `Clone` aliasing. Convenience dispatch only publishes ordinary command
+  DATA facts. `process.cursor` is D154 process-owned high-water after a command
+  attempt closes, not a consumer/read cursor. No process/saga DSL, effect
+  runner, hidden processManager/EventEmitter, private timers/maps, hidden
+  subscriptions, storage restore/hydration, protocol change, remote ordinary
+  dep, or structural TS parity was added. B84 remains open for the later
+  D146/D156 Rust effect-runner adapter.
+  QA hardening rejects malformed persisted runtime ledger fields rather than
+  normalizing them into cursor/dedupe rewind.
 
 ## Design Lock Log
 
