@@ -258,6 +258,19 @@ Next step: design the clean-slate documentation system (see the session continua
 
 ## Implementation Log
 
+- 2026-06-10 D161 locked the unified reactive collection storage/restore API
+  layering for B87. The durable path is four explicit layers: passive
+  load/fold helpers read storage frames and return `CollectionRestoreState` or
+  an explicit empty state; synchronous `restoreReactive*` helpers seed
+  collection backends and may optionally register graph/name nodes;
+  graph-bound `persistReactiveCollection` sidecars observe existing
+  delta/snapshot facts and expose ready/status/error/`persistence.cursor` DATA
+  facts plus flush/dispose controls; `openPersistentReactive*` wrappers compose
+  those layers for auto load/save ergonomics. Snapshot storage is the required
+  durable baseline, change logs are optional, snapshot cadence is adapter
+  policy, frames are strict JSON v1 by default, corrupt data fails honestly,
+  v1 assumes one writer per storage prefix, and storage still never owns graph
+  restore, hydration, WAL replay-as-restore, or hidden graph mutation.
 - 2026-06-09 D160 locked reactive data-structure persistence/checkpoint
   contract without a spec-amend. Reactive collection backends remain the
   single live materialized owner; full collection contents must not be
