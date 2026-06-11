@@ -661,6 +661,17 @@ Next step: design the clean-slate documentation system (see the session continua
   `@graphrefly/graphrefly` should be deprecated directly once retained surface
   migration and the known memo:Re consumer path allow it; do not invest in a
   long-lived transition shell just to preserve pre-1.0 compatibility.
+- 2026-06-11 TS B65 root package retirement: removed active
+  `@graphrefly/graphrefly` implementation ownership from the TS repo. The
+  legacy root `src/` tree, root build/test configs, and old layer-boundary
+  ratchet are gone; root `package.json` is private/deprecated and no longer
+  builds, tests, exports, releases, or peers on `@graphrefly/pure-ts`. CI/docs
+  gates now target `@graphrefly/ts` directly. This is not a transition shell
+  and does not revive `base`/`utils`/`compat`/`presets`, Actor, guard,
+  factoryTag, GraphSpec, Impl/facade, or storage-owned restore surfaces. B66
+  remains blocked by live legacy consumers of `@graphrefly/pure-ts` or the
+  deleted root surface in CLI, parity-tests, RN/Hermes fixture, evals,
+  demos/examples/docs, and package-local pure-ts configs.
 - 2026-06-09 TS B63 D158 semantic-memory passive vocabulary slice: added
   `@graphrefly/ts/patterns` vocabulary/types/validators/helpers for
   `MemoryFragment`, `MemoryQuery`, collection/retrieval vocabulary,
