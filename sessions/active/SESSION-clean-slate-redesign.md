@@ -653,8 +653,10 @@ Next step: design the clean-slate documentation system (see the session continua
   hook export, old Graph-owned Zustand `create`, Jotai `atom(read)`, Nanostores
   `computed`, protocol, storage restore, or dynamic topology behavior was added.
   Follow-up B64 slices can migrate spending-alerts and NestJS/order-flow against
-  existing public surfaces; AI/harness/refine-loop/inbox-reducer, memory
-  knowledgeGraph, and reactive-layout/fromRaf remain deferred/design-gated.
+  existing public surfaces; AI/harness/refine-loop/inbox-reducer and memory
+  knowledgeGraph remain deferred/design-gated. Reactive-layout is now locked by
+  D181 as a `@graphrefly/ts/solutions/reactive-layout` rehome; fromRaf remains a
+  browser source, not reactive-layout ownership.
 - 2026-06-09 B64/B65 direction update: pause further examples migration until
   retained functionality surfaces settle. Examples are later acceptance/cleanup,
   not drivers for new public API or old-root preservation. Root
