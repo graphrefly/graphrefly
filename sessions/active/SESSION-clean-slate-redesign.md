@@ -398,6 +398,17 @@ This began as a pure design artifact, but the active implementation state now li
   correct, and cross-runtime checks use conformance scenarios rather than
   symbol-set parity.
 
+- 2026-06-15 D332: locked workQueue admission ack wiring. Durable admission
+  outcome records come first; a graph-visible `admissionAckCommands` node
+  derives messageBus `ack` command facts from accepted or deterministic
+  rejected admission records and attaches to the bound messageBus command stream
+  through package-internal command-source/sink wiring. Acyclic sources may attach
+  as internal command sources; the workQueue admission ack path uses a
+  boundary-deferred command sink when direct composition would feed back into the
+  same messageBus command stream. `submit` only publishes to the bound topic and
+  never acks, appends records, or moves cursors. messageBus keeps the D279 public
+  surface; no queue-aware public ack/admit API is added.
+
 ---
 
 ## L0 — Identity
