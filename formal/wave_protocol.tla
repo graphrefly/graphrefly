@@ -256,8 +256,10 @@ DATA     == "DATA"
 RESOLVED == "RESOLVED"
 COMPLETE == "COMPLETE"
 ERROR    == "ERROR"
-PAUSE    == "PAUSE"       \* tier-2, carries lockId payload (§2.6)
-RESUME   == "RESUME"      \* tier-2, carries lockId payload (§2.6)
+PAUSE    == "PAUSE"       \* tier-1, carries lockId payload (§2.6)
+RESUME   == "RESUME"      \* tier-1, carries lockId payload (§2.6)
+PULL     == "PULL"        \* tier-1 demand, carries pullId+params (D269);
+                           \* dedicated pull behavior lives in wave_pull*.tla.
 INVALIDATE == "INVALIDATE" \* tier-4 (§1.4 + DS-13.5.A 2026-05-02 lock —
                            \* cache-reset cleanup signal that settles the
                            \* wave like RESOLVED). Tier renumbered from
@@ -275,14 +277,16 @@ TEARDOWN == "TEARDOWN"     \* tier-5 (§2.3 — meta companion fan-out). Added
                            \* parent-side action with meta-TEARDOWN-witness
                            \* ghost — verifies meta children observe TEARDOWN
                            \* with parent's PRE-reset cache/status.
-MsgTypes == {START, DIRTY, DATA, RESOLVED, COMPLETE, ERROR, PAUSE, RESUME, INVALIDATE, TEARDOWN}
+MsgTypes == {START, DIRTY, DATA, RESOLVED, COMPLETE, ERROR, PAUSE, RESUME, PULL, INVALIDATE, TEARDOWN}
 
 \* A message: type + always-present payload. Tuples that have no
 \* semantic payload (DIRTY, RESOLVED, COMPLETE, ERROR, START) use the
 \* integer sentinel `NullPayload = -1`, which is outside `Values` so
-\* equality is homogeneous for TLC's hashing. Tier-2 PAUSE/RESUME carry
+\* equality is homogeneous for TLC's hashing. Tier-1 PAUSE/RESUME carry
 \* a `lockId \in LockIds` payload (§2.6 — "bare [[PAUSE]] is a protocol
-\* violation"); the payload domain is widened accordingly.
+\* violation"); PULL's richer pullId+params payload is modeled in the focused
+\* wave_pull*.tla modules and is not produced by these baseline MCs.
+\* The payload domain is widened accordingly for the lock-bearing messages here.
 NullPayload == -1
 PayloadDomain == Values \cup {NullPayload} \cup LockIds
 
@@ -2537,7 +2541,7 @@ BufferImpliesLockedAndResumeAll ==
 
 \* #12 — BufferHoldsOnlyDeferredTiers (§2.6 bufferAll).
 \* Only tier-3 (DATA, RESOLVED) payloads accumulate in pauseBuffer while a
-\* node is paused. Tier 0–2 (START, DIRTY, INVALIDATE, PAUSE, RESUME), tier
+\* node is paused. Tier 0–2 (START, DIRTY, INVALIDATE, PAUSE, RESUME, PULL), tier
 \* 4 (COMPLETE, ERROR), and tier 5 (TEARDOWN) dispatch synchronously even
 \* while paused — the spec carves them out so end-of-stream signals and
 \* control-plane messages cannot be stranded by a leaked pause lock.
@@ -2598,24 +2602,24 @@ ResubscribeYieldsCleanState ==
             /\ replaySnapshot[sid] = <<>>
 
 \* #14 — UpQueuesCarryControlPlane (§1.4 up() direction).
-\* Spec §1.4: `up()` carries tier-1 (DIRTY, INVALIDATE), tier-2 (PAUSE /
-\* RESUME), and tier-5 (TEARDOWN) only. Tier-3 (DATA / RESOLVED) and
+\* Spec §1.4: `up()` carries control/demand messages (DIRTY, PAUSE, RESUME,
+\* PULL, INVALIDATE, TEARDOWN) only. Tier-3 (DATA / RESOLVED) and
 \* tier-4 (COMPLETE / ERROR) are downstream-only; the runtime throws on
 \* `up()` of those tiers at `_validateUpTiers`. Structural invariant:
 \* `upQueues` never holds a tier-3/4 message.
 \*
 \* The allowed set is widened beyond what the current originators (only
-\* `UpPause` / `UpResume`) actually emit, so future `UpInvalidate` /
+\* `UpPause` / `UpResume`) actually emit, so future `UpPull` / `UpInvalidate` /
 \* `UpTeardown` additions (foreseen in the `MaxUpActions` docstring's
 \* roadmap) won't spuriously trip this invariant. Today trivially true
 \* by construction — no originator emits anything outside the set.
 UpQueuesCarryControlPlane ==
     \A e \in EdgePairs :
         \A i \in 1..Len(upQueues[e]) :
-            upQueues[e][i].type \in {DIRTY, PAUSE, RESUME}
+            upQueues[e][i].type \in {DIRTY, PAUSE, RESUME, PULL}
             \* Per §1.4 INVALIDATE is tier-1 and TEARDOWN is tier-5; both
             \* are up-carriable per the spec. We'd include them here as
-            \* `{DIRTY, PAUSE, RESUME, INVALIDATE, TEARDOWN}` except that
+            \* `{DIRTY, PAUSE, RESUME, PULL, INVALIDATE, TEARDOWN}` except that
             \* MsgTypes (line ~128) is a closed set and adding unmodeled
             \* message types just to satisfy a future check noises up the
             \* payload-domain type. When the Invalidate / Teardown originators

@@ -1,13 +1,15 @@
 ----------------------- MODULE wave_pull_routing -----------------------
 (***************************************************************************
-GraphReFly -- RESUME-routed pull DEMAND routing (R-up-routing, R-pull, D59).
+GraphReFly -- PULL-routed demand routing (R-up-routing, R-pull, D269).
 
-A DEMAND is a RESUME carrying a pullId, issued by a downstream node WITHOUT a
-reference to the target (a reference would be the .cache anti-pattern). _up
-routes it RELEASE-IF-HELD-ELSE-FORWARD-UP: a node HOLDING the pullId releases
-(FIRES) and does NOT forward further up; a non-holder FORWARDS the RESUME up its
-declared deps to find the holder; a depless source that does not hold it DROPS
-(terminus). The pullId disambiguates siblings (two pull sources up one branch).
+A DEMAND is a PULL carrying pullId plus optional params, issued by a downstream
+node WITHOUT a reference to the target (a reference would be the .cache
+anti-pattern). _up routes it DEMAND-IF-PULL-HOLDER-ELSE-FORWARD-UP: a node
+HOLDING the pullId fires and does NOT forward further up; a non-holder FORWARDS
+the PULL up its declared deps to find the holder; a depless source that does
+not hold it DROPS (terminus). The pullId disambiguates siblings (two pull
+sources up one branch). Params do not affect routing and are modeled in
+wave_pull.tla.
 
 Topology (fixed; the F/H sibling case from the design session):
     F(holds PF)   H(holds PH)     F,H = pull sources (depless leaves)
@@ -15,7 +17,7 @@ Topology (fixed; the F/H sibling case from the design session):
           \       /
             G                     G = non-pull intermediate; deps {F,H}
             |
-            D                     D = demander; deps {G}; injects RESUME(Target)
+            D                     D = demander; deps {G}; injects PULL(Target)
 
 Target = the demanded pullId (CONSTANT; "PF" -> holder F, "PH" -> holder H).
 
@@ -24,7 +26,7 @@ This module models the ROUTING (R-up-routing); the per-node DELIVERY semantics
 OneDeliveryPerDemand) stay in wave_pull.tla and are unchanged by D59.
 
 Status: active (C-16 routing facets ts:pass + D59 impl landed 2026-05-31; both invariants
-  mutation-verified). NOTE: this models a strict TREE; a broadcast routed RESUME over a DIAMOND
+  mutation-verified). NOTE: this models a strict TREE; a broadcast routed PULL over a DIAMOND
   (holder reachable via 2+ paths) invokes the holder once per path in the impl -- harmless today
   (the 2nd is silent → net 1 delivery) but unmodeled here; see backlog B47.
 Configs: wave_pull_routing.cfg (Target="PF"), wave_pull_routing_sib.cfg (Target="PH").
@@ -45,7 +47,7 @@ Holds == [ D |-> NONE, G |-> NONE, F |-> "PF", H |-> "PH" ]
 Holder == IF Target = "PF" THEN "F" ELSE "H"
 
 VARIABLES
-  inflight,   \* [Nodes -> SUBSET PullIds] : RESUME(pullId) pulses queued AT each node
+  inflight,   \* [Nodes -> SUBSET PullIds] : PULL(pullId) pulses queued AT each node
   fired,      \* SUBSET Nodes : nodes that released-and-fired for the demand
   dropped     \* Nat : forwarded RESUMEs that hit a depless terminus unheld
 
@@ -61,7 +63,7 @@ Init ==
   /\ fired = {}
   /\ dropped = 0
 
-\* Process one queued RESUME(t) at node n: RELEASE-IF-HELD-ELSE-FORWARD-UP.
+\* Process one queued PULL(t) at node n: DEMAND-IF-PULL-HOLDER-ELSE-FORWARD-UP.
 Step(n, t) ==
   /\ t \in inflight[n]
   /\ IF Holds[n] = t
@@ -95,9 +97,9 @@ Spec == Init /\ [][Next]_vars
 DisambiguatesSiblings == \A n \in fired : Holds[n] = Target
 \* OneDeliveryRouted: unique pullIds => at most one holder fires per demand.
 OneDeliveryRouted == Cardinality(fired) <= 1
-\* RoutedResumeReachesHolder: once routing settles (no RESUME in flight), the
-\* demanded pullId's HOLDER has fired -- the RESUME reached it up the declared cone
+\* RoutedPullReachesHolder: once routing settles (no PULL in flight), the
+\* demanded pullId's HOLDER has fired -- the PULL reached it up the declared cone
 \* WITHOUT a node reference. [Mutation: a holder that drops/forwards-without-firing,
 \* or an intermediate that fails to forward -> Holder never fires -> this trips.]
-RoutedResumeReachesHolder == Quiescent => (Holder \in fired)
+RoutedPullReachesHolder == Quiescent => (Holder \in fired)
 =============================================================================

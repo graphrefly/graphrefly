@@ -1,6 +1,6 @@
 ------------------- MODULE wave_pull_routing_diamond -------------------
 (***************************************************************************
-GraphReFly -- routed pull DEMAND over a diamond (D63 / B47).
+GraphReFly -- routed PULL demand over a diamond (D63 / B47, revised by D269).
 
 Topology:
 
@@ -10,7 +10,7 @@ Topology:
         \    /
           G2
 
-D broadcasts RESUME(P). Both G1 and G2 may forward the same demand to SNAP.
+D broadcasts PULL(P). Both G1 and G2 may forward the same demand to SNAP.
 The rule pinned here: a pullId-holder fires at most once per routed control wave.
 Duplicate same-wave arrivals are consumed silently.
  ***************************************************************************)

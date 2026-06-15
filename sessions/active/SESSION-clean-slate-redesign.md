@@ -19,6 +19,385 @@ Each layer has a lockdown table. `F-*` = forced constraint propagated downward. 
 
 This began as a pure design artifact, but the active implementation state now lives in the jsonl sources: `decisions/decisions.jsonl`, `plan/phases.jsonl`, `plan/backlog.jsonl`, `spec/rules.jsonl`, and `spec/conformance.jsonl`. Treat this markdown as narrative context; the structured records are the current sequencer.
 
+### Recent spec/design locks
+
+- 2026-06-14 D269: locked explicit `PULL({pullId, params?})` as the
+  protocol demand message. `RESUME` returns to pause-lock release only and must
+  not demand pull nodes or carry pull params. The closed message set is now 11
+  types with no new tier: `PULL` lives in tier 1 control/demand and remains
+  `ctx.up`-only. Pull params are holder-visible demand payload for pullable
+  snapshots, retained views, and messaging subscription/catalog pulls; they are
+  not DATA-up and not a second downstream snapshot channel. If a PULL is owed
+  while the holder is not settle-ready, later separate PULL params overwrite the
+  owed params (latest owed params wins); same-wave diamond duplicates remain
+  first-delivery/idempotent. `R-msg-closed-set`, `R-tier`, `R-ctx-up`, `R-pull`,
+  `R-up-routing`, diamond routing, deferred self-demand, and the
+  C-16/C-18/C-25/C-26 conformance line reset to draft/todo until TS/Rust/Py
+  implement the PULL-shaped protocol.
+
+- 2026-06-14 D272: locked the PULL holder implementation/API shape. PULL
+  params are exposed only to the pullId-holder execution as read-only holder
+  context (`ctx.pull` / equivalent `PullDemand` context), never as DATA-up and
+  never as a second snapshot channel. The pull quiet latch is semantically
+  separate from the external PAUSE/RESUME lockset: model it as
+  `pullQuiet`/`owedPull`/`activePull` plus external `pauseLockset`; `RESUME`
+  cannot release demand state or install pull context. No `ctx.pull()` command,
+  node-reference demand method, compatibility `RESUME` demand shim, or hidden
+  cache read is added.
+
+- 2026-06-15 D276: locked retained/pullable projection pull-id naming. Retained
+  is the semantic category; concrete output nodes keep concrete names such as
+  `snapshot` or `available`. Public pull ids are named after the output node
+  they drive: `snapshotPullId` for `snapshot`, `availablePullId` for
+  `available`, and similarly `rangePullId`/`pagePullId` if those become
+  pullable outputs. `messageBus.catalog()` and `deadLetter()` expose
+  `snapshot` + `snapshotPullId`; subscriptions expose `available` +
+  `availablePullId`. D121 collection view naming should migrate pre-1.0 from
+  bare `pullId` to `snapshotPullId` without changing delta/snapshot semantics.
+
+- 2026-06-15 D278: locked the PULL service split required by retained views.
+  PULL guarantees a serviceable holder invocation with `ctx.pull`/`PullDemand`,
+  even when retained state has not changed since the prior demand; downstream
+  DATA remains ordinary holder/helper policy. Plain snapshot helpers may stay
+  silent on no-change pulls, while parameterized retained views may emit pages
+  or snapshots from params plus retained state/cursor. This keeps params out of
+  DATA-up, preserves `RESUME` as pause-only, and lets messaging
+  `catalog()`/`deadLetter()` snapshots and subscription `available` answer
+  `limit`/cursor/filter pulls without imperative reads.
+
+- 2026-06-15 D279: locked the final messageBus v0 public API shape. The core
+  exposes `commands`, `messages`, `status`, and `issues`; `errors`, public
+  `runtime`, public `topicLog`, bus-level `cursor`, top-level `topics`,
+  `dynamicHub` aliases, and compatibility facades are retired. `catalog()`,
+  `deadLetter()`, `topic(topic)`, and `subscription(...)` are on-demand
+  projections. `topic(topic)` filters retained messages without creating a
+  topic or dynamic graph node. Subscription `available` uses
+  `availablePullId` with page-shaping params only; cursor movement remains
+  `ack` or `seek`. Job queue semantics stay above messaging in
+  orchestration/adapters.
+
+- 2026-06-15 D282: locked messageBus topicPolicy defaults. `publish` to an
+  unknown topic is strict by default and emits `DataIssue(code:"unknown-topic")`
+  without creating a topic or retained message; `publish` to a closed topic
+  emits `closed-topic` and does not reopen it. `ensure-topic`/`ensureTopic` is
+  the canonical graph-visible creation path. `topic(topic)` remains a projection
+  only. Explicit opt-in auto-create policy may exist, but it must emit the same
+  visible topic-created/catalog/status facts and obey validation/bounds; it is
+  not dynamic topology or a `dynamicHub` facade.
+
+- 2026-06-15 D284: locked messageBus retention/dedupe policy reuse. Retention
+  is a structure-owned adapter over the retained topic-log backend, reusing the
+  existing library policy model: static policy values become constant config,
+  Node-valued policy values become declared deps of the bus runtime/apply path,
+  and all visible mutations flow through messageBus status/issues/messages and
+  subscription cursor state. v0 supports count capacity and age expiry via the
+  shared capacity/deadline vocabulary; trims remove oldest topic messages,
+  advance `headSeq`, never rewrite/reuse `seq`, and put affected subscriptions
+  into D266 retention-gap until explicit `seek`. Byte-size retention is deferred
+  until a shared size-capacity policy exists. Dedupe is command-admission
+  policy over `commandId` and optionally `topic+key`, never payload equality.
+
+- 2026-06-15 D285: locked messageBus pullable projection params/page shapes.
+  Projection pulls use explicit replayable coordinates, not opaque page tokens:
+  shared params may carry `limit`; catalog snapshot params use `afterTopic` and
+  `includeClosed` over topic-string ordering; deadLetter snapshot params use
+  `afterEntrySeq` plus optional `topic`/`code`; subscription `available` params
+  use `afterSeq` only as page continuation. Omitted `available.afterSeq` starts
+  at `cursor.nextSeq`; provided `afterSeq` starts after that seq but never moves
+  the subscription cursor. Pages return `hasMore` plus the next coordinate
+  (`nextAfterTopic`/`nextAfterEntrySeq`/`nextAfterSeq`). Byte-budget page params
+  are deferred until a shared size-capacity policy exists.
+
+- 2026-06-15 D287: locked messageBus status fact taxonomy. `status` is a
+  DATA-level accepted-operation / observable-state stream, separate from
+  `issues`; malformed commands, unknown/closed topics, invalid cursors,
+  retention gaps, policy rejections, duplicate-command errors, and clock/policy
+  failures emit `DataIssue`, not status. v0 status kinds are closed:
+  `topic-created`, `topic-closed`, `published`, `subscription-opened`, `acked`,
+  `seeked`, `subscription-closed`, `retention-trimmed`, and `command-deduped`.
+  Status facts carry stable topic/subscription/seq/cursor coordinates and do not
+  authorize job queue or workflow behavior.
+
+- 2026-06-15 D290: locked jobQueue as a separate application-infrastructure
+  subpath between messaging and orchestration. `messageBus` remains the retained
+  topic-log plus independent subscription-cursor substrate and does not grow job
+  lifecycle, worker ownership, lease, retry, delay, schedule, heartbeat, or
+  completion semantics. `jobQueue` depends on messaging plus shared
+  DataIssue/status/policy/resilience helpers, owns job state/attempt/lease/retry
+  and worker facts, and may be consumed by orchestration. `messageBus ack`
+  means durable ingestion into jobQueue-visible facts, not job completion.
+
+- 2026-06-15 D294: renamed the standalone queue layer from `jobQueue` to
+  `workQueue`, superseding D290's public name while preserving its boundary.
+  `workQueue` is the generic application-infrastructure queue above
+  `messageBus`; it owns work records, claim/lease/visibility timeout,
+  retry/delay/schedule, heartbeat/renewal, complete/fail/cancel, dead-letter,
+  status, and issues. `workItemQueue` may exist only as an orchestration or
+  solution composition over `workQueue`; `jobDispatch` is rejected as executor
+  dispatch terminology, not durable queue lifecycle.
+
+- 2026-06-15 D299: locked workQueue public core and first command/record
+  vocabulary. The core exposes `commands`, `records`, `status`, and `issues`;
+  `records` is the append-only lifecycle ledger and source of truth for derived
+  state. `available()`, `work(workId)`, and `deadLetter()` are on-demand
+  projections with output-named pull ids and no mutation. Commands are `submit`,
+  `claim`, `renew-lease`, `release`, `complete`, `fail`, `cancel`, and
+  `schedule`; record families include admission, scheduling, claim/lease,
+  release, attempt outcome, retry, completion, cancellation, and dead-letter.
+  `submit` becomes accepted work only after bound messageBus ingestion emits a
+  `work-admitted` record; messageBus `ack` remains ingestion/cursor progress,
+  not work completion.
+
+- 2026-06-15 D301: locked workQueue derived state and transition semantics.
+  State is derived from `records` plus explicit policy and clock/deadline facts,
+  not a mutable authoritative map. Common derived states are `scheduled`,
+  `ready`, `leased`, `retry-wait`, `completed`, `canceled`, and `dead-lettered`;
+  only `ready` work is claimable. `claim` starts a monotonic attempt and creates
+  a lease; `renew-lease`/`release`/`complete`/`fail` require the current active
+  lease/attempt; stale lease commands emit `DataIssue`. Failure emits
+  `attempt-failed` then either `retry-scheduled` or `work-dead-lettered` via
+  shared retry policy. Visibility timeout is visible lease-expiration material
+  from graph-local clock/deadline inputs, never a hidden timer or wall-clock peek
+  inside `available()`.
+
+- 2026-06-15 D307: locked the workQueue admission boundary over messageBus.
+  Each consumed retained message must produce exactly one durable
+  workQueue-visible admission outcome before the messageBus subscription cursor
+  may advance: `work-admitted` for accepted work, or `work-rejected` /
+  `admission-rejected` plus `DataIssue` for deterministic non-admission such as
+  malformed payload, schema/policy rejection, duplicate rejection, or size
+  policy failure. Transient/retryable ingestion failures do not ack and leave the
+  cursor unchanged. `messageBus ack` for workQueue ingestion means durable
+  admission outcome only, never work completion.
+
+- 2026-06-15 D310: locked workQueue messageBus binding and submit shape.
+  `workQueue` requires an explicit binding with `bus`, `topic`, stable
+  `subscriptionId`, and optional `from`; `queueId` may derive deterministic
+  default names, but all derived names must be stable, describe-visible, and
+  user-overridable. Topic lifecycle remains messageBus-owned through
+  `ensure-topic`, `close-topic`, `topicPolicy`, catalog/status, and `DataIssue`.
+  `submit` helper sugar publishes to the bound messageBus topic only; it does not
+  append records, admit work, claim work, or advance cursors directly. Admission
+  policy emits only `work-admitted` or `work-rejected` / `admission-rejected`
+  outcomes and cannot smuggle claim/lease/worker/orchestration behavior.
+
+- 2026-06-15 D311: locked workQueue work identity, dedupe, and idempotency.
+  The default `workId` is replay-stable and derived from `queueId + topic + seq`,
+  while `workId`, `idempotencyKey`, or a domain work key in submit/admission
+  payloads participate in duplicate recognition only under explicit
+  `WorkQueueDedupePolicy`. Payload equality, random ids, wall-clock time,
+  subscription order, object identity, and process-local counters are rejected as
+  dedupe bases. `messageBus.commandId` dedupe remains publish-command dedupe and
+  does not replace workQueue admission dedupe. Duplicate admission never emits a
+  second `work-admitted`; it produces either `admission-deduped` status or
+  `work-rejected` / `admission-rejected` plus `DataIssue(code:"duplicate-work")`,
+  both durable enough to allow ingestion ack.
+
+- 2026-06-15 D312: locked workQueue `available()` and claim ordering.
+  `available()` is a read-only, possibly stale candidate projection and never
+  reserves, claims, mutates queue state, acks, seeks, completes, fails, or
+  cancels work. Reservation is created only by accepted `claim` commands that
+  emit `work-claimed` records. Claims may target explicit `workId`s or request
+  next/batch candidates under explicit claim policy; current derived state at
+  claim time decides success. Concurrent/stale losing claims emit visible
+  `DataIssue`/status such as `not-ready`, `already-leased`, `stale-candidate`,
+  or `policy-rejected`. v0 ordering defaults to FIFO by stable admission order;
+  priority/deadline/affinity/custom ordering require explicit records/policy
+  facts.
+
+- 2026-06-15 D313: locked replaceable claim policy and capacity fit. Claim
+  selection is a graph-visible policy/projector over ready candidates, worker
+  facts, active leases, size/capacity evidence, queue policy, and graph-local
+  clock/deadline facts. Core may define generic work metadata such as priority,
+  tags, requirements, cost/size evidence, `notBeforeMs`, and `deadlineMs`, plus
+  worker facts such as capabilities, current usage, active leases, and capacity
+  policy, but does not hardcode the matching matrix. D291 bounded-flow/rate-limit
+  and D293 size-capacity vocabulary may back reusable recipes, including
+  token-like units, but token bucket is optional recipe/helper material, not the
+  core claim model or a hidden scheduler.
+
+- 2026-06-15 D314: locked workQueue lease expiration materialization. Lease
+  expiration is a first-class visible `lease-expired` record derived only from
+  explicit graph-local clock/deadline facts such as `nowMs`, `clockRef`, and
+  `leaseExpiresAtMs`; it is never a hidden timer, wall-clock read, read-side
+  mutation, or projection-only ownership change. Pull/read projections may show
+  expired-eligible candidates and evidence but cannot append records. Expiration
+  records are materialized only by mutation-bearing inputs such as
+  `expire-leases`, `claim` reclaiming expired work, or stale lifecycle commands,
+  and are idempotent per active work/lease/attempt. Once materialized, the old
+  lease cannot complete/fail/renew/release; policy visibly moves the work to
+  ready, retry, or dead-letter state through records/status.
+
+- 2026-06-15 D315: locked workQueue retry and dead-letter disposition. `fail`
+  is a worker attempt outcome, not authority to choose retry or terminal queue
+  state. An accepted `fail` emits `attempt-failed` plus exactly one visible
+  disposition in the same mutation-bearing evaluation: `retry-scheduled` or
+  `work-dead-lettered`. `retry-scheduled` carries failed-attempt refs,
+  `retryAtMs`/`delayMs`, retry policy refs, and reason codes, but does not create
+  the next attempt; only a later accepted `claim` does. Retry/backoff reuse the
+  shared `RetryPolicy`/`BackoffPolicy`/retry-status vocabulary rather than a
+  queue-specific retry engine. If no durable disposition can be computed, `fail`
+  is rejected with visible issue/status instead of emitting a half-transition.
+  `deadLetter()` is a read-only workQueue projection and cannot republish,
+  recover, claim, ack, or mutate terminal work.
+
+- 2026-06-15 D316: locked workQueue completion evidence and terminal boundary.
+  `complete` is successful completion of the queue lease/attempt, not authority
+  to mutate domain state or publish execution results. An accepted `complete`
+  requires the current active lease/attempt and emits `attempt-completed` plus
+  `work-completed` in the same mutation-bearing evaluation. Completion evidence
+  may carry small inline values only under explicit size/redaction policy; large
+  or sensitive outputs use D270 artifact/ref/summary envelopes and D293
+  size-capacity evidence. `work-completed` is terminal for the queue item.
+  workQueue completion must not append `WorkItemEvent`s, apply domain actions,
+  emit `ExecutorOutcome`, ack messageBus cursors, publish to topics, or dispatch
+  follow-up workers; domain result handling is a separate projector/composition
+  over `work-completed` evidence.
+
+- 2026-06-15 D317: locked workQueue lease renewal and voluntary release.
+  `renew-lease` and `release` are explicit lifecycle commands over the current
+  active lease/attempt, not hidden heartbeats or worker-registry mutations.
+  Accepted renewal emits `lease-renewed` and may extend only the current
+  ownership window; it cannot change work identity, attempt, worker, payload,
+  claim policy, retry disposition, completion evidence, or domain state, and it
+  cannot resurrect expired/released/terminal work. If clock/deadline facts show
+  expiration, renewal may materialize `lease-expired` under D314 and emits
+  stale/expired issue/status. Accepted release emits `work-released`, ends worker
+  ownership without `attempt-completed`/`attempt-failed`/retry/terminal records,
+  and returns work to ready by default unless explicit release policy schedules
+  it later. Capacity and availability remain derived from visible records and
+  worker/capacity facts, never a private mutable worker registry.
+
+- 2026-06-15 D318: locked workQueue scheduling and delayed eligibility.
+  `schedule` records delayed eligibility for nonterminal work as visible
+  `work-scheduled` material, including fixed-time `scheduleAtMs`/`runAtMs`
+  intent, queue eligibility `notBeforeMs`, optional `deadlineMs`, reason,
+  policy refs, and source/audit refs. This supports BullMQ-style delayed jobs,
+  but no hidden timer heap or private delayed queue is authoritative. Scheduled
+  work becomes claim-eligible only when explicit graph-local clock/deadline
+  facts make `notBeforeMs` eligible and claim policy admits it; `available()`
+  may show scheduled/soon-eligible/overdue candidates but cannot mutate state.
+  Manual `work-scheduled` stays separate from D315 `retry-scheduled`; conflicts
+  use visible policy-defined effective time and issues/status. `scheduleAtMs` is
+  user-facing fixed-time meaning, while `notBeforeMs` is queue eligibility, so
+  delay, calendar, jitter, window, or timezone normalization can be explicit
+  policy translation instead of a hidden scheduler.
+
+- 2026-06-15 D319: locked workQueue cancellation terminal boundary. `cancel`
+  is a terminal queue lifecycle command for nonterminal work; accepted cancel
+  emits `work-canceled` with stable work/command/clock/reason/policy/source/audit
+  coordinates and optional active lease/attempt refs. If work is leased, cancel
+  invalidates that lease/attempt for queue purposes, so later renew/release/
+  complete/fail/lease-expire commands become stale/canceled issues. Cancel is
+  not success, failure, retry, release, or dead-letter; it does not emit
+  attempt outcome, retry, completion, release, or lease-expiration records. It
+  does not delete history, rewind/ack messageBus cursors, publish messages,
+  dispatch workers, mutate WorkItems, or pretend to abort external execution.
+  Cooperative/best-effort external cancellation remains a separate graph-visible
+  adapter/executor/domain flow under D275 and can be correlated back to
+  `work-canceled`.
+
+- 2026-06-15 D320: locked workQueue pull projections and page params.
+  `available()`, `work(workId)`, and `deadLetter()` are pull/read-only snapshots
+  with output-named pull ids such as `availablePullId`, `workSnapshotPullId`,
+  and `deadLetterSnapshotPullId`. `available()` returns claim candidates only by
+  default, never reserves or mutates, and list pages use explicit coordinates
+  such as `limit`, `afterWorkId`/`afterAdmissionSeq`, `workerId`, policy/capacity
+  refs, priority/tag filters, clock refs, and `includeIssues`. Pages return
+  items, `nextAfter*`, `hasMore`, `asOfRecordSeq`/high-water, policy refs, and
+  issues/status. Non-claimable scheduled/leased/terminal work appears only under
+  explicit inspection filters and must be labeled non-claimable. `work(workId)`
+  returns current derived state plus lifecycle refs and bounded history without
+  refreshing/renewing/expiring/recovering. `deadLetter()` pages over
+  `work-dead-lettered` records, not messageBus dead-letter entries. Projection
+  coordinates are explicit, not opaque page tokens; later commands re-evaluate
+  current state because snapshots are not reservations.
+
+- 2026-06-15 D321: locked `WorkQueueCommand` public union shape. Commands are
+  provider-neutral DATA facts: a discriminated union with shared envelope fields
+  (`kind`, `commandId`, inferred-or-explicit `queueId`, optional
+  `idempotencyKey`, correlation/causation refs, source/policy/actor/audit refs,
+  and clock material) plus kind-specific coordinates. v0 kinds are `submit`,
+  `claim`, `renew-lease`, `release`, `complete`, `fail`, `cancel`, `schedule`,
+  and `expire-leases`. `submit` is admission intent but helpers still publish to
+  messageBus; `claim` carries worker and selection/capacity/lease policy
+  material; lease lifecycle commands carry `workId`/`leaseId`/`attempt`/
+  `workerId`; `schedule` carries fixed-time and eligibility fields; and
+  `expire-leases` only materializes D314 `lease-expired` records. Commands never
+  carry live node/worker/executor/provider handles, callbacks, promises,
+  messageBus cursors, registries, or runtime-private objects; malformed/stale/
+  duplicate/terminal commands emit DataIssue/status, not protocol ERROR.
+
+- 2026-06-15 D322: locked `WorkQueueRecord` common envelope and record-family
+  fields. Records are append-only ordered DATA facts with shared envelope fields
+  such as `kind`, `recordSeq`, `queueId`, optional `workId`,
+  command/idempotency/correlation/causation refs, source/policy/actor/audit/
+  issue refs, and graph-local time material. `recordSeq` is queue-local
+  projection high-water/pagination coordinate, not messageBus seq/cursor,
+  attempt, or command id. Family fields cover admission/rejection, scheduling,
+  claim/lease, release/expiration, attempt completion/failure, retry,
+  completion, cancel, dead-letter, dedupe/status material. Records are facts,
+  never commands or projection cursor state; current maps/pages/capacity
+  summaries are derived from records plus explicit policy/clock facts.
+  Corrections/recovery are new records/status facts, never in-place edits or
+  deletion.
+
+- 2026-06-15 D323: locked workQueue status and `DataIssue` taxonomy. `status`
+  and `issues` are explanatory DATA facts over command/admission/projection/
+  maintenance outcomes; lifecycle truth remains in `WorkQueueRecord`.
+  `WorkQueueStatus` uses small outcome categories such as command accepted/
+  rejected, admission accepted/rejected/retryable, projection ready/partial/
+  stale, maintenance applied/noop, and policy warning. Status may reference
+  queue/work/command/record/source/policy/audit/clock material, but it never
+  authorizes mutation, reserves work, advances messageBus cursors, creates
+  leases, completes attempts, or replaces required records. workQueue extends
+  shared `DataIssue` with common queue codes such as malformed command, missing
+  coordinate, unknown/terminal work, stale candidate, not ready, already leased,
+  stale/expired lease, attempt/worker mismatch, duplicate command,
+  idempotency conflict, policy/capacity/capability rejection, clock issues,
+  schedule conflict, retry/disposition issues, admission rejection, transient
+  admission failure, projection stale, retention gap source, stale source
+  cursor, and unauthorized. Queue validation/stale/policy/projection problems
+  remain DATA-level issues/status, not protocol ERROR.
+
+- 2026-06-15 D324: locked workQueue public factory and TS/Rust implementation
+  target. `workQueue` is an independent application-infrastructure surface
+  layered above messageBus and below orchestration/patterns/solutions. TS uses
+  `@graphrefly/ts/work-queue`; Rust uses a corresponding self-contained
+  `work_queue` module. The public shape is a free graph-authoring helper such
+  as `workQueue<T>(graph, options)` returning `commands`, `records`, `status`,
+  `issues`, helper methods (`submit`, `claim`, `renewLease`, `release`,
+  `complete`, `fail`, `cancel`, `schedule`, `expireLeases`), and pull
+  projections (`available()`, `work(workId)`, `deadLetter()`). It is not a
+  `Graph` method, runtime object, reducer owner, worker registry, scheduler, or
+  compatibility facade. Helpers only publish graph-visible command facts or
+  messageBus publish facts; `submit` remains messageBus-backed and accepted
+  work appears only after D307 admission records. workQueue may reuse shared
+  retry/backoff/token-bucket/capacity/rate-limit/circuit-breaker/deadline/
+  artifact/audit policy vocabulary through explicit options/facts, but it must
+  not depend on orchestration-owned WorkItem/effectRun/AgentRequest/
+  ExecutorOutcome/ProcessBundle registries. Implementation order: messageBus
+  PULL/subscription/cursor first, workQueue facts/reducer/projections second,
+  orchestration/WorkItem recipes over workQueue third.
+
+- 2026-06-15 D325: locked messageBus-to-workQueue implementation handoff and
+  dependency-order gate. Stage 1 implements messageBus first: retire
+  `dynamicHub` public surface with no alias/facade, reshape messageBus to
+  D279/D282/D284/D285/D276, use explicit `PULL({pullId, params?})` instead of
+  overloaded `RESUME`, keep catalog/deadLetter/topic/subscription views
+  on-demand, and move subscription cursors only through explicit ack/seek/close
+  command facts. Stage 2 implements independent TS `@graphrefly/ts/work-queue`
+  and Rust `work_queue` over messageBus subscription admission, covering
+  D299-D323 command/record/status/issue facts, durable admission/ack boundary,
+  identity/dedupe, claim/lease lifecycle, retry/dead-letter, completion,
+  cancel, scheduling, projections, records, and status/issues. Stage 3 adds
+  orchestration/WorkItem/effectRun recipes over workQueue, with no workQueue
+  dependency on WorkItem/effectRun/AgentRequest/ExecutorOutcome/ProcessBundle
+  registries. TS/Rust acceptance is behavioral: dynamicHub absent, messageBus
+  PULL/cursor/projection behavior correct, workQueue lifecycle/projections
+  correct, and cross-runtime checks use conformance scenarios rather than
+  symbol-set parity.
+
 ---
 
 ## L0 — Identity
