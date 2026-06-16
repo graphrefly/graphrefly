@@ -21,6 +21,18 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-06-16 D354: locked WorkItemEffectPlan as the default WorkItem
+  execution-plan shape for LLM- or policy-proposed serial, parallel, and
+  fan-out/fan-in effect DAGs. Dynamic branch count is represented by bounded
+  graph-visible plan/member facts; fixed WorkItem topology validates proposals,
+  admits or rejects them, lowers eligible members to ordinary
+  WorkItemEffectRequested facts, and joins later evidence/results/status by
+  plan/member/effect/request ids. Human gates, repair, retry, stale-input
+  handling, and capacity constraints are orthogonal policies or facts over the
+  plan DAG, not topology modes. The plan layer must not claim queues, dispatch
+  executors, mutate WorkItems, own worker registries, create/delete graph nodes
+  per member, or treat queue/executor completion as domain truth.
+
 - 2026-06-16 D343: locked WorkItem authoring and verification validation
   status taxonomy. Authoring/AC/verification-plan/scheduling-policy/lowerer
   validation problems are graph-visible DataIssue/status/audit facts, not
