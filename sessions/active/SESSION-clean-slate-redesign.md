@@ -21,6 +21,141 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-06-16 D343: locked WorkItem authoring and verification validation
+  status taxonomy. Authoring/AC/verification-plan/scheduling-policy/lowerer
+  validation problems are graph-visible DataIssue/status/audit facts, not
+  protocol ERROR, hidden exceptions, silent no-ops, or best-effort execution.
+  v0 covers malformed draft, missing required fields, invalid patch, duplicate
+  ids, dangling refs, cyclic dependencies, unsupported modes/effect kinds,
+  oversized inline data, policy mismatch/missing policy, stale revision/input,
+  blocked prerequisites, verification unplanned, manual review required,
+  duplicate suppression, ambiguous/partial coverage, unverifiable output,
+  unauthorized author/target, and invalid schedule. Constructors throw only for
+  programmer-invalid static helper configuration; runtime data stays visible
+  and recoverable.
+
+- 2026-06-16 D342: locked AcceptanceCriteria and VerificationPlan v0 data
+  shapes. AcceptanceCriterion carries stable criterionId, statement, optional
+  required flag, source refs, and metadata. VerificationPlan carries plan
+  identity/revision material and VerificationStep values. VerificationStep
+  carries stable stepId, optional title/description, verifiesCriteriaIds, mode
+  (auto/manual/hybrid), optional effectKind/subkind, goal/input material for
+  WorkItemEffectRequested lowering, context refs, requirements/capacity hints,
+  dependsOnStepIds, policy/source refs, and metadata. These are authoring and
+  policy data, not callbacks, prompts, bindings, queue truth, or mutations.
+  Missing/duplicate/dangling/cyclic/unsupported/oversized/policy-incompatible
+  material emits visible issue/status/audit.
+
+- 2026-06-16 D341: locked verification evidence/result mapping.
+  Verification outcomes return evidence-first: EffectRunResult, executor
+  outcomes, or terminal workQueue records map first to WorkItemEvidenceRecorded
+  with verification step/AC/revision/source refs. A separate
+  verification-result mapper consumes evidence plus current WorkItem projection,
+  verification plan, AC, executionInputRevision, prior results, and explicit
+  mapping policy to emit VerificationResultRecorded, WorkItemDomainActionProposal
+  facts, status, issues, and audit. VerificationResultRecorded is interpreted
+  domain verification for AC/step/revision coordinates; it is not raw executor
+  output and does not mutate lifecycle unless later admitted/applied. Stale,
+  missing-policy, ambiguous, partial, failed, manual-review, duplicate,
+  malformed, mismatched, or unverifiable outcomes emit visible issue/status/audit.
+
+- 2026-06-16 D340: locked VerificationPlan-to-WorkItemEffectRequested
+  lowering. VerificationPlanChanged facts and initial verification plans in
+  WorkItemCreated are authoring data and do not execute by themselves. The
+  verification-request lowerer consumes current WorkItem projection, AC,
+  verification plan/steps, executionInputRevision, dependency state, policy,
+  prior evidence/results, and optional queue/executor availability, then emits
+  WorkItemEffectRequested facts with effectKind `"verification"` or narrower
+  subkind, stable ids/idempotency, revision/source refs, step/AC refs, policy
+  refs, limits, context refs, and audit refs. Missing/manual/blocked/duplicate/
+  stale cases emit visible status/issues/audit rather than silently running or
+  closing work. Spawned WorkItems use the same path after accepted child facts
+  create their own projection/revision.
+
+- 2026-06-16 D339: locked WorkItem authoring event vocabulary v0.
+  WorkItemCreated records accepted WorkItemDraft initial state; WorkItemPatched
+  records generic PatchSpec-style draft/projection changes; AcceptanceCriteriaChanged
+  and VerificationPlanChanged are first-class facts because they drive
+  verification and stale execution-input behavior. Helper request/proposal
+  facts may carry WorkItemDraft, but accepted domain state derives only from
+  recorded WorkItem facts emitted through apply policy. Revision advancement is
+  projection/status output, not a user-authored event. Product-specific fields
+  use WorkItemPatched/custom fields plus explicit execution-relevance policy
+  rather than public per-field event sprawl.
+
+- 2026-06-16 D338: locked WorkItem revision and execution-input identity.
+  WorkItem projections expose at least `authoringRevision` and
+  `executionInputRevision`, derived from append-only WorkItem facts. Revisions
+  are graph-visible projection data, not protocol versions, global clocks,
+  hidden counters, or executor/workQueue state. `authoringRevision` advances on
+  accepted authoring changes; `executionInputRevision` advances on
+  execution-relevant changes such as detail/detail refs, acceptance criteria,
+  verification steps/plans, and policy-declared execution-relevant dependency
+  or source facts. Product metadata/custom fields stale execution only when
+  explicit policy marks them execution-relevant. Execution-producing facts must
+  carry revision coordinates or source refs; lowerers compare against current
+  projections and emit visible stale issue/status/audit plus policy outcome.
+
+- 2026-06-16 D337: locked the WorkItem scheduling recipe package surface.
+  Scheduling vocabulary and recipes live under a solution-focused WorkItem
+  subpath such as `@graphrefly/ts/solutions/work-item/scheduling`, not in
+  workQueue core, executor core, messageBus, eventFlow, or the root export.
+  The surface may export WorkItemPriorityAssessment, WorkItemPlacementDecision,
+  WorkItemScheduleDecision, WorkItemDispatchIntent, lowerer bundles, status,
+  issues, audit, and optional default policy helpers. Power users may replace
+  helpers with their own policy/projector nodes emitting the same facts. The
+  recipe must not own queue admission/claim, executor dispatch, domain
+  mutation, WorkItem event application, private timers, worker registries, or
+  product-specific workflow engines.
+
+- 2026-06-16 D336: locked WorkItem scheduling lowerers and stale-input
+  policy. Lowerers are explicit graph-visible projector nodes consuming D335
+  policy facts plus current WorkItem projections, revision/source refs,
+  dependency state, queue/executor availability, and lowerer policies.
+  Priority assessments remain advisory; placement decisions lower to domain
+  action proposals; schedule decisions lower to WorkItemEffectRequested facts,
+  workQueue schedule/submit commands, or status/audit; dispatch intents lower
+  to WorkItemEffectRequested or executor/request proposals through existing
+  lowerers. Lowerers validate refs, policy, target kind, timing, requirements,
+  capacity, lifecycle, and dependencies. Stale execution inputs emit visible
+  issue/status/audit and follow explicit stale policy such as cancel,
+  reschedule, requeue, replacement intent, or review.
+
+- 2026-06-16 D335: locked the WorkItem scheduling policy output vocabulary.
+  Replaceable scheduling policies emit narrow policy facts such as
+  WorkItemPriorityAssessment, WorkItemPlacementDecision,
+  WorkItemScheduleDecision, and WorkItemDispatchIntent. These facts carry
+  workItem id, revision/source refs, policy/source refs, reason/audit,
+  priority/rank, placement/target, and scheduling material such as notBefore,
+  deadline, requirements, and capacity hints. They are not WorkItemEvents and
+  do not mutate WorkItems. Lowerers/recipes consume them plus current WorkItem
+  projections to emit domain action proposals, WorkItemEffectRequested facts,
+  workQueue submit commands, or executor/request proposals. Execution-producing
+  outputs must be revision/source-ref aware so pre-execution edits can stale,
+  cancel, reschedule, requeue, or require review visibly.
+
+- 2026-06-16 D334: locked WorkItem prioritization, next-work selection,
+  placement, dispatch preparation, and scheduling as replaceable graph-visible
+  policy/projector nodes over WorkItem projections, metadata/properties,
+  evidence, AC/verification plans, deadlines, placement lanes, dependency
+  state, queue/executor availability, capacity, and explicit policy facts.
+  These policies emit visible decisions/proposals/effect requests/queue
+  commands through existing lowerers and recipes. They must not mutate
+  WorkItems, bypass apply policy or workQueue admission, claim imperatively,
+  dispatch ExecutorBindings, fabricate ExecutorOutcome, or hide schedulers.
+
+- 2026-06-16 D333: locked the WorkItem authoring data surface. Human/API
+  creation, human edits, LLM spawn proposals, and LLM patch proposals share a
+  WorkItemDraft payload carrying summary, detail/detail refs, acceptance
+  criteria, verification steps/plans, and ordinary product fields as explicit
+  message/event data. LLM output remains proposal material. Human and LLM
+  authors may edit draft-owned fields for a WorkItem only while the relevant
+  revision has not yet been admitted/claimed/used as execution input; later
+  edits become new revisions or explicit patches that trigger visible
+  re-verification/reschedule/cancel/requeue/review policy. Verification steps
+  are authoring data that may derive WorkItemEffectRequested facts, not hidden
+  execution commands.
+
 - 2026-06-14 D269: locked explicit `PULL({pullId, params?})` as the
   protocol demand message. `RESUME` returns to pause-lock release only and must
   not demand pull nodes or carry pull params. The closed message set is now 11
