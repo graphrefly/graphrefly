@@ -21,6 +21,33 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-06-16 D356: locked VerificationPlan's Canvas/userland boundary.
+  VerificationPlan remains the minimal reusable WorkItem authoring and
+  verification contract; Canvas/product/user land owns authoring UX, templates,
+  LLM plan generation, checklist and scorecard catalogs, concrete
+  command/test/format/PR/GitHub/CI adapters, provider prompts, human-review
+  screens, and product-specific verification policies. Canvas may emit
+  graph-visible `VerificationPlanChanged` or `WorkItemEffectPlanProposed`
+  facts, but must not become hidden truth owner for WorkItem verification
+  state. Scorecard-style facts may start as Canvas/product recipes returning
+  ordinary DataIssue/DataResult, ExecutorOutcome, WorkItemEvidenceRecorded, or
+  EffectRunResult material; promotion into a reusable solution waits for a
+  concrete non-Canvas consumer.
+
+- 2026-06-16 D355: locked WorkItemEffectPlan v0 identity/fact/lowering
+  contract with a deliberately minimal plan-domain coordinate model:
+  `workItemId`, `planId`, `executionInputRevision`, and `memberId`. v0 does
+  not add separate `proposalId`, `admissionId`, or `planAdmissionId`; request
+  ids, effectRun ids, status/result ids, and `idempotencyKey` stay execution or
+  record identities, not plan join keys. `WorkItemEffectRequested` gains
+  optional top-level `executionInputRevision`, `planId`, and `planMemberId` so
+  plan-aware lowerers can join evidence/results without parsing metadata.
+  Admission emits an immutable normalized admitted plan snapshot; eligible
+  member lowering emits ordinary effect requests exactly once per
+  workItem/plan/revision/member coordinate. v0 join policy is intentionally
+  small: default all-required plus optional evidence-only; quorum/any/weighted
+  joins are deferred until a concrete consumer proves the need.
+
 - 2026-06-16 D354: locked WorkItemEffectPlan as the default WorkItem
   execution-plan shape for LLM- or policy-proposed serial, parallel, and
   fan-out/fan-in effect DAGs. Dynamic branch count is represented by bounded
