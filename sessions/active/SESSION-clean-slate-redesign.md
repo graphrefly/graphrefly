@@ -21,6 +21,30 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-06-17 D359: locked basic agent tools as optional Layer C executor/tool
+  providers, not WorkItem core or protocol primitives. Local builtin tools
+  (document/file read, file edit/apply-patch, bash, URL/date/weather/calculator)
+  plus MCP, CLI, and Composio providers execute only through accepted
+  AgentRequest facts and explicit ExecutorRoute/Profile selection, return
+  provider-neutral ExecutorOutcome, and keep clients/secrets/transports in
+  runtime-private bindings. Prompt/UI/diagnostic/audit views are derived by
+  explicit outcome-view projector nodes under D270/D293 size/redaction policy;
+  large logs, stacks, raw provider responses, diffs, and sensitive material use
+  summary/ref artifact envelopes and are not automatically inlined into LM
+  context.
+
+- 2026-06-16 D358: locked WorkItem failure-to-repair ticket policy as an
+  optional replaceable solution helper, not a generic core default.
+  Core WorkItemEffectPlan interpretation remains conservative: required
+  failure, blocked prerequisite, timeout, stale input, or unverifiable evidence
+  emits visible plan status/result, DataIssue, source refs, and audit only. A
+  solution/helper policy may consume those facts plus explicit retry/exhaustion
+  and policy facts to emit ordinary WorkItemDomainActionProposal facts such as
+  spawn-child, spawn-proposed, patch, or require-review, with dedupe, source
+  refs, priority/deadline/capacity hints, and bounded child creation. Those
+  proposals still pass through admission, capability guard, and apply policy;
+  any LLM replan remains an ordinary later EffectRun/executor path.
+
 - 2026-06-16 D356: locked VerificationPlan's Canvas/userland boundary.
   VerificationPlan remains the minimal reusable WorkItem authoring and
   verification contract; Canvas/product/user land owns authoring UX, templates,
