@@ -21,6 +21,13 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-06-17 D389: locked ToolProviderAdapterRuntime retention evidence horizon.
+  Runtime-private proof evidence such as adapter-input tombstones and
+  execution high-water records may be bounded by an explicit `retentionEvidence`
+  horizon using the same D80 policy vocabulary and graph-owned reader path.
+  Evidence trimming fails closed: later requests that cannot be proven fresh
+  emit visible retention-gap status/issues/audit and must not execute bindings.
+
 - 2026-06-17 D388: locked Canvas scope focused subpath public symbol list.
   First durable `@graphrefly/canvas/scope`-style surface exports the focused
   scope/navigation contract, snapshot/resolution data, pure acceptance helpers,
