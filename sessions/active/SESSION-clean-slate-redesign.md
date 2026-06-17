@@ -21,6 +21,18 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-06-17 D361: locked the tool provider adapter runtime boundary.
+  Ready `ToolProviderAdapterInput` facts remain graph-visible data-only
+  execution inputs; runtime-private `ToolProviderAdapterBinding` objects may
+  hold clients, credentials, subprocess access, MCP transports, Composio/OAuth
+  state, SDK objects, and environment handles, but those bindings are never
+  graph DATA, never serialized policy/input material, and never imported by
+  WorkItem core. Adapter runtimes subscribe to ready inputs, invoke exactly the
+  matching binding outside WorkItem and policy projectors, and publish only
+  provider-neutral `ExecutorOutcome` plus visible status, DataIssue, usage,
+  artifact/material refs, and audit facts. Hidden fallback or route/profile
+  selection remains forbidden; fallback requires a new visible `ExecutorRoute`.
+
 - 2026-06-17 D359: locked basic agent tools as optional Layer C executor/tool
   providers, not WorkItem core or protocol primitives. Local builtin tools
   (document/file read, file edit/apply-patch, bash, URL/date/weather/calculator)
