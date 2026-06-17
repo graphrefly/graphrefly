@@ -21,6 +21,169 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-06-17 D388: locked Canvas scope focused subpath public symbol list.
+  First durable `@graphrefly/canvas/scope`-style surface exports the focused
+  scope/navigation contract, snapshot/resolution data, pure acceptance helpers,
+  pure transition/reconcile helpers, and only a migrated durable bundle adapter.
+  Current root scaffold bundle and WorkspaceGraph/UI/React/storage/router/
+  mutation symbols remain private or non-durable until separately reviewed.
+
+- 2026-06-17 D386: locked Canvas scope bundle adapter input boundary.
+  Durable Canvas scope bundle adapters use distinct inputs for workspace
+  validation, immediate requested scope, and persistent snapshot candidates.
+  Mixed requested/snapshot paths require explicit precedence or mode, not
+  hidden last-writer wins.
+
+- 2026-06-17 D387: locked ToolProviderAdapterRuntime retention concrete API shape.
+  Runtime retention reuses D80 `CapacityPolicy` / `RetentionPolicy` vocabulary
+  over explicit runtime-private indexes (`adapterInputs`, `runRequests`,
+  `executions`, `runStatuses`, `runIssues`). Score callbacks see only bounded
+  public lifecycle entry shapes; Node-valued `maxSize` is graph-declared, and
+  execution retention-gap safety uses `adapterInputId` plus monotonic attempt.
+
+- 2026-06-17 D382: locked Canvas scope bundle adapter output contract.
+  Durable Canvas scope bundle adapters expose `CanvasScopeResolution` as the
+  canonical output and a separate accepted/current scope convenience node.
+  Pending/conflict do not accept a new scope, synthesize defaults, or silently
+  clear/replace prior accepted scope.
+
+- 2026-06-17 D381: locked Canvas scope snapshot conflict payload.
+  `CanvasScopeResolution` conflict payload is explanatory data over the
+  conflicting snapshot key with reason, candidate count, bounded candidate
+  summaries/refs, and optional status/issues. Complete snapshots remain source
+  facts; conflict material carries no callbacks, hidden winner, route, storage,
+  hydration, React/UI, or tie-breaker ownership.
+
+- 2026-06-17 D380: locked Canvas persistent scope snapshot revision semantics.
+  Snapshot revision v0 is `revision:{kind:'sequence', value:string}` where
+  value is a canonical non-negative decimal integer string comparable only
+  within the same normalized snapshot key. Actor/provenance explain authorship
+  but do not break ties or define ordering.
+
+- 2026-06-17 D379: locked Canvas persistent scope snapshot fields.
+  Persistent Canvas scope snapshot v0 is a graph-visible current-snapshot fact
+  with normalized `canvas-view`/`canvas-session` owner key, workspace validation
+  context, scope payload, revision material, optional actor attribution, and
+  optional provenance/source refs. It does not carry route, storage, history,
+  executor, React binding, viewport, or mutation ownership.
+
+- 2026-06-17 D378: locked Canvas scope resolution result shape.
+  `CanvasScopeResolution` is a mutually exclusive tagged union for pending,
+  resolved, unresolved, and conflict. Pending/conflict do not imply a default
+  scope, and accepted unresolved scopes carry primary unresolved plus optional
+  secondary status material.
+
+- 2026-06-17 D377: locked Canvas scope primary unresolved priority.
+  `CanvasScopeModel` primary unresolved is chosen by the stage that blocks
+  faithful scope/return restoration. Snapshot pending/conflict stay outside
+  the model; secondary diagnostics belong in `CanvasScopeResolution` or
+  adjacent status material.
+
+- 2026-06-17 D376: locked Canvas scope unresolved cardinality.
+  `CanvasScopeModel` carries at most one deterministic primary unresolved
+  reference. Multiple diagnostics, secondary missing refs, conflicts, pending
+  restore, and issue arrays belong in `CanvasScopeResolution` or adjacent
+  status nodes.
+
+- 2026-06-17 D375: locked Canvas scope serialized tag spelling.
+  Durable Canvas scope serialized tags use lowercase ASCII kebab-case strings.
+  TypeScript symbols may use PascalCase/camelCase, but persisted facts and
+  discriminants use kebab-case, with `workspace-mismatch` added when D374 lands
+  in the focused scope subpath.
+
+- 2026-06-17 D374: locked Canvas scope workspace mismatch semantics.
+  Canvas scope restore/return treats `workspaceId` mismatch as explicit
+  unresolved/status material, not automatic cross-workspace navigation. Route,
+  loading, access, and workspace ownership stay in caller-owned product command
+  paths.
+
+- 2026-06-17 D373: locked Canvas scope unresolved action intent boundary.
+  Canvas scope unresolved action intents are data-only affordances, not mutation
+  hooks or callbacks. Repair intents may map to caller-owned graph-visible
+  command/proposal facts, while relink/restore/remove/request-access execute
+  only through separate visible product/domain command paths.
+
+- 2026-06-17 D372: locked Canvas scope restore resolution status.
+  Durable Canvas scope restore exposes explicit resolution status for pending
+  restore, accepted resolved scope, accepted-but-unresolved references, and
+  snapshot conflict. Conflict blocks applying a new current scope; pending and
+  unresolved states never fallback to defaults.
+
+- 2026-06-17 D371: locked ToolProviderAdapterRuntime retention policy.
+  Tool-provider runtime retention reuses the D284 library retention model as an
+  explicit Layer C runtime-index policy. Default retention remains unbounded
+  until dispose; opt-in v0 bounds are count-capacity only, trim runtime-private
+  indexes without deleting graph facts, and surface trimming/retention gaps as
+  visible status/audit/DataIssue material rather than hidden re-execution.
+
+- 2026-06-17 D370: locked Canvas scope pure model and bundle adapter split.
+  The focused Canvas scope API splits durable pure model/transition functions
+  from a narrow GraphReFly bundle adapter. The adapter may wire state/derived
+  nodes and boundary setters, but must not own storage, executor routing,
+  WorkItem/WorkspaceGraph mutation, React bindings, or hidden runtime side
+  channels.
+
+- 2026-06-17 D369: locked Canvas scope tagged vocabulary.
+  Canvas scope durable API uses explicit tagged semantic vocabulary for scope,
+  selection, unresolved target, reason, action intent, and return-context
+  states. Exact string spellings get one final pre-subpath naming pass; after
+  export, renaming/removing tags requires migration/design review.
+
+- 2026-06-17 D368: locked Canvas scope/navigation public export surface.
+  Durable Canvas scope/navigation APIs live in a focused
+  `@graphrefly/canvas/scope`-style subpath. Root exports may remain private
+  scaffold until package-surface review; React/UI bindings, storage, executor
+  routing, WorkspaceGraph ownership, and WorkItem mutation stay outside the
+  scope subpath.
+
+- 2026-06-17 D367: locked Canvas persistent scope snapshot conflict policy.
+  Multiple persistent Canvas scope snapshots for the same view/session use
+  graph-visible revision/provenance. Comparable highest revision wins, exact
+  duplicates are idempotent, and missing/incomparable/tied-different revisions
+  emit explicit conflict material instead of hidden adapter-order selection.
+
+- 2026-06-17 D366: locked Canvas persistent scope selection fact shape.
+  Persistent Canvas scope selection v0 is a current snapshot fact keyed by
+  `canvasViewId`/`canvasSessionId`, not a required navigation event ledger.
+  Future navigation audit/history may be an explicit ledger that derives or
+  updates snapshots, but v0 does not require or hide one.
+
+- 2026-06-17 D365: locked Canvas return context depth.
+  Canvas return context v0 is a single immediate return frame, not a stack or
+  navigation ledger. Return restores that exact frame after reference
+  validation; missing or mismatched targets produce explicit unresolved state
+  and never skip to older frames or defaults.
+
+- 2026-06-17 D364: locked persistent Canvas scope selection identity.
+  Persistent WorkGraph/WorkspaceGraph toggle state is keyed by explicit
+  `canvasViewId`/`canvasSessionId`, with optional `actorId` attribution.
+  `workspaceId` is validation/domain context, not UI selection ownership, so
+  multiple Canvas views over the same workspace may hold different persistent
+  scopes.
+
+- 2026-06-17 D363: locked Canvas scope navigation API hardening.
+  Canvas scope navigation is a product-layer selection/navigation surface over
+  ordinary GraphReFly topology and WorkspaceGraph projections. Durable API
+  shape splits pure scope data/transitions from the GraphReFly bundle adapter.
+  Scope, selection, missing-target, workspace-mismatch, and return-context
+  states are explicit tagged data, never fake ids or silent first-target
+  fallback. Persistent WorkGraph/WorkspaceGraph toggle is graph-visible Canvas
+  product state over `CanvasScopeModel`; ephemeral viewport affordances may
+  stay local.
+
+- 2026-06-17 D362: locked the tool provider adapter runtime public text
+  and retry attempt boundary. Provider-returned text may become graph-visible
+  only as adapter-declared public material in bounded fields such as
+  `DataIssue.message`, `ExecutorOutcome` summaries, canceled reasons, small
+  metadata strings, or D270 artifact summaries. Raw stdout/stderr, stack
+  traces, provider raw responses, large diffs/file contents, binary/media, and
+  sensitive material use D270 summary/ref artifact envelopes with D293
+  size/redaction evidence. Runtime-thrown/rejected error messages remain
+  private and are normalized to issue codes/types. Retry attempt identity is
+  execution lifecycle material, not `ToolProviderAdapterInput` identity; real
+  retries or repeated unchanged-input executions require explicit graph-visible
+  run/attempt request facts.
+
 - 2026-06-17 D361: locked the tool provider adapter runtime boundary.
   Ready `ToolProviderAdapterInput` facts remain graph-visible data-only
   execution inputs; runtime-private `ToolProviderAdapterBinding` objects may
