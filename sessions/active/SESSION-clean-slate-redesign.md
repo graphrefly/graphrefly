@@ -21,6 +21,15 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-06-17 D390: locked Canvas WorkspaceGraph topology projection surface.
+  WorkspaceGraph topology projection is a pure Canvas product-layer selector
+  over WorkspaceGraph facts. Its durable surface may extend
+  `@graphrefly/canvas/workspace-graph` with renderer-independent
+  WorkspaceTopology node/edge/model types and `deriveWorkspaceTopology`.
+  These nodes/edges are issue/work-control projection data, not GraphReFly
+  runtime nodes, substrate edges, execution status, renderer layout, storage,
+  routing, executor behavior, or WorkItem mutation.
+
 - 2026-06-17 D389: locked ToolProviderAdapterRuntime retention evidence horizon.
   Runtime-private proof evidence such as adapter-input tombstones and
   execution high-water records may be bounded by an explicit `retentionEvidence`
