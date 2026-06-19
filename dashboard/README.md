@@ -9,7 +9,7 @@ pass — `build.mjs` only produces the data model + a placeholder shell.
 > docs (spec section intros / guide / session bodies) stay markdown but each has a jsonl **index row**
 > so the dashboard can index/search/link them. Eventually (CSP-8) the dashboard itself is
 > rebuilt *with GraphReFly* — jsonl as producer → reactive views → HTML effect (the
-> "messaging-hub reactive jira" dogfood).
+> "messaging-hub reactive jira" internal Workbench).
 
 ## jsonl schemas (source of truth — jsonl files carry NO comments)
 
@@ -67,21 +67,26 @@ pass — `build.mjs` only produces the data model + a placeholder shell.
 | **Structure** | phase deps DAG + rule→conformance coverage matrix + D#↔session↔phase chain + flowcharts.jsonl rendering | what the structure looks like |
 | **Search** | full-text index of all jsonl + markdown bodies | quick lookup |
 
-### CSP-8 Dogfood Tab
+### CSP-8 Workbench Tab
 
-The **Dogfood** view is generated dashboard-private fixture data, not a new jsonl
+The **Workbench** view is generated dashboard-private fixture data, not a new jsonl
 source of truth and not a public Canvas / WorkspaceGraph API contract. `build.mjs`
 owns the fixture fact ledger; `dashboard.js` progressively derives board, detail,
 issue, audit, action, and inspector projections from those facts; `dashboard.css`
 owns the presentation.
 
-Dogfood actions append visible command/request/action facts to the in-page ledger,
+Workbench actions append visible command/request/action facts to the in-page ledger,
 then the UI re-derives from the ledger. The fixture may use Layer C vocabulary
 such as WorkItem, AgentRequest, ExecutorRoute, ExecutorProfile,
 ToolProviderExecutionPolicy, ToolProviderAdapterInput, run request, outcome,
 evidence, DataIssue, and audit material, but runtime clients, subprocess handles,
 credentials, SDK objects, raw provider payloads, large stdout/stderr/diffs, and
 provider-private errors stay out of graph-visible DATA.
+
+WorkbenchCommand, CommandResult, ProjectorRun, ViewProjection, and provenance-edge
+facts are dashboard-private trace material. They explain how visible actions produce
+derived facts and UI projections; they are not public Canvas commands, provider
+runtime APIs, WorkspaceGraph ownership, or protocol behavior.
 
 ## Consistency checks (run on every build — fixes P4 stale-premise + P6 link-rot)
 

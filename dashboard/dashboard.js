@@ -139,9 +139,15 @@
   }
   function dogfoodFactId(fact) {
     if (!fact) return "";
-    return fact.workItemId || fact.planId || fact.requestId || fact.routeId || fact.profileId || fact.policyId ||
+    if (fact.kind === "workbench-scope") return fact.scope || "";
+    if (fact.kind === "workbench-lane-filter") return fact.lane || "";
+    if (fact.kind === "workbench-status-filter") return fact.status || "";
+    if (fact.kind === "workbench-filter-option") return fact.filterKind && fact.value ? fact.filterKind + ":" + fact.value : "";
+    if (fact.kind === "workbench-inspector-filter") return fact.filterKind && fact.value ? fact.filterKind + ":" + fact.value : "";
+    return fact.commandId || fact.projectorRunId || fact.projectionId || fact.edgeId ||
+      fact.workItemId || fact.planId || fact.requestId || fact.routeId || fact.profileId || fact.policyId ||
       fact.adapterInputId || fact.runId || fact.outcomeId || fact.resultId || fact.evidenceId ||
-      fact.materialId || fact.proposalId || fact.approvalId || fact.admissionId || fact.applicationId || fact.statusId || fact.id || "";
+      fact.materialId || fact.proposalId || fact.approvalId || fact.reviewId || fact.admissionId || fact.applicationId || fact.statusId || fact.id || "";
   }
   function dogfoodRefsText(refs) {
     return (refs || []).map(function (ref) { return ref.kind + ":" + ref.id; }).join("  ");
@@ -174,19 +180,234 @@
       return id && ids.some(function (needle) { return id === needle || String(id).indexOf(needle + ":") === 0; });
     }));
   }
+  function workbenchScopedLedgerFacts(scope, selected, bundle) {
+    if (scope === "global") return dogfoodFacts;
+    var controlKinds = [
+      "workbench-selection",
+      "workbench-lane-filter",
+      "workbench-status-filter",
+      "workbench-scope",
+      "workbench-filter-option",
+      "workbench-inspector-filter",
+    ];
+    if (!selected || !bundle) {
+      return dogfoodFacts.filter(function (fact) { return controlKinds.indexOf(fact.kind) >= 0; });
+    }
+    var ids = [
+      selected.id,
+      selected.id + ":tool-request",
+      bundle.request && bundle.request.requestId,
+      bundle.agentRequest && bundle.agentRequest.requestId,
+      bundle.adapterInput && bundle.adapterInput.adapterInputId,
+      bundle.outcome && bundle.outcome.outcomeId,
+      bundle.effectResult && bundle.effectResult.resultId,
+    ];
+    (bundle.runs || []).forEach(function (run) { ids.push(run.runId); });
+    (bundle.actions || []).forEach(function (action) { ids.push(action.proposalId, action.approvalId, action.admissionId, action.applicationId, action.reviewId); });
+    ids = ids.filter(Boolean);
+    var commandIds = {};
+    var scoped = dogfoodFacts.filter(function (fact) {
+      if (controlKinds.indexOf(fact.kind) >= 0) return true;
+      if (fact.kind === "workbench-command" && fact.workItemId === selected.id) return true;
+      return dogfoodFactTouches(fact, ids);
+    });
+    scoped.forEach(function (fact) {
+      var commandId = dogfoodCommandIdFrom(fact);
+      if (commandId) commandIds[commandId] = true;
+      if (fact.kind === "workbench-command" && fact.workItemId === selected.id) commandIds[fact.commandId] = true;
+    });
+    return dogfoodFacts.filter(function (fact) {
+      if (scoped.indexOf(fact) >= 0) return true;
+      var commandId = dogfoodCommandIdFrom(fact);
+      if (commandId && commandIds[commandId]) return true;
+      if (fact.kind === "workbench-provenance-edge" && commandIds[fact.commandId]) return true;
+      return false;
+    });
+  }
   function dogfoodSelectedId() {
-    var selections = dogfoodFactsByKind("dogfood-selection");
+    var selections = dogfoodFactsByKind("workbench-selection");
     return (selections[selections.length - 1] || {}).workItemId || payload.dogfood.selectedWorkItemId;
   }
   function dogfoodCurrentLaneFilter() {
-    var filters = dogfoodFactsByKind("dogfood-lane-filter");
+    var filters = dogfoodFactsByKind("workbench-lane-filter");
     var lane = (filters[filters.length - 1] || {}).lane || "all";
     return lane === "all" || lane === "queued" || lane === "running" || lane === "blocked" || lane === "complete" ? lane : "all";
   }
   function dogfoodCurrentStatusFilter() {
-    var filters = dogfoodFactsByKind("dogfood-status-filter");
+    var filters = dogfoodFactsByKind("workbench-status-filter");
     var status = (filters[filters.length - 1] || {}).status || "all";
     return DOGFOOD_STATUSES.indexOf(status) >= 0 ? status : "all";
+  }
+  function workbenchCurrentScope() {
+    var scopes = dogfoodFactsByKind("workbench-scope");
+    var scope = (scopes[scopes.length - 1] || {}).scope || "selected";
+    return scope === "global" ? "global" : "selected";
+  }
+  function workbenchInspectorFilters() {
+    var filters = {
+      kind: "all",
+      sourceRef: "all",
+      issueCode: "all",
+      coordinate: "all",
+    };
+    dogfoodFactsByKind("workbench-inspector-filter").forEach(function (fact) {
+      if (fact.filterKind && Object.prototype.hasOwnProperty.call(filters, fact.filterKind)) {
+        filters[fact.filterKind] = fact.value || "all";
+      }
+    });
+    return filters;
+  }
+  function workbenchFactRef(fact) {
+    var id = dogfoodFactId(fact);
+    return id ? { kind: fact.kind || fact.factKind || "unknown", id: id } : null;
+  }
+  function workbenchSourceRefKey(ref) {
+    return ref && ref.kind && ref.id ? ref.kind + ":" + ref.id : "";
+  }
+  function workbenchFactSourceKeys(fact) {
+    var keys = [];
+    ["sourceRefs", "evidenceRefs", "policyRefs", "materialRefs"].forEach(function (field) {
+      (fact[field] || []).forEach(function (ref) {
+        var key = workbenchSourceRefKey(ref);
+        if (key && keys.indexOf(key) < 0) keys.push(key);
+      });
+    });
+    return keys;
+  }
+  function workbenchCoordinateKeys(fact) {
+    var c = fact && fact.metadata && fact.metadata.coordinate;
+    return c && typeof c === "object" ? Object.keys(c).filter(function (key) { return c[key] != null; }) : [];
+  }
+  function workbenchCommandRef(commandId) {
+    return { kind: "workbench-command", id: commandId };
+  }
+  function workbenchCommand(commandKind, workItemId, targetRefs, params) {
+    var seq = dogfoodFactsByKind("workbench-command").length + 1;
+    var commandId = "workbench:" + commandKind + ":" + seq;
+    return {
+      kind: "workbench-command",
+      commandId: commandId,
+      commandKind: commandKind,
+      workItemId: workItemId,
+      targetRefs: targetRefs || [],
+      params: params || {},
+      issuedAtMs: 1_500 + seq,
+      sourceRefs: targetRefs || [],
+      metadata: {
+        commandId: commandId,
+        dashboardPrivate: true,
+        visibleUiFact: true,
+        bounded: true,
+        coordinate: { commandId: commandId, workItemId: workItemId },
+      },
+    };
+  }
+  function workbenchProvenanceEdges(command, generatedFacts, projectorRunId, projectionId) {
+    var commandRef = workbenchCommandRef(command.commandId);
+    var edges = generatedFacts.map(function (fact, index) {
+      var toRef = workbenchFactRef(fact);
+      return {
+        kind: "workbench-provenance-edge",
+        edgeId: command.commandId + ":edge:" + (index + 1),
+        fromRef: commandRef,
+        toRef: toRef || { kind: fact.kind || "unknown", id: "no-id" },
+        relation: "generated",
+        commandId: command.commandId,
+        issueCode: fact.issueCode || fact.code,
+        sourceRefs: [commandRef],
+        metadata: {
+          bounded: true,
+          coordinate: { commandId: command.commandId, relation: "generated", ordinal: index + 1 },
+        },
+      };
+    });
+    if (projectorRunId && projectionId) {
+      edges.push({
+        kind: "workbench-provenance-edge",
+        edgeId: command.commandId + ":edge:projector-run",
+        fromRef: commandRef,
+        toRef: { kind: "workbench-projector-run", id: projectorRunId },
+        relation: "projected",
+        commandId: command.commandId,
+        projectorRunId: projectorRunId,
+        sourceRefs: [commandRef],
+        metadata: { bounded: true, coordinate: { commandId: command.commandId, projectorRunId: projectorRunId } },
+      }, {
+        kind: "workbench-provenance-edge",
+        edgeId: command.commandId + ":edge:view-projection",
+        fromRef: { kind: "workbench-projector-run", id: projectorRunId },
+        toRef: { kind: "workbench-view-projection", id: projectionId },
+        relation: "updates-ui-projection",
+        commandId: command.commandId,
+        projectorRunId: projectorRunId,
+        sourceRefs: [{ kind: "workbench-projector-run", id: projectorRunId }],
+        metadata: { bounded: true, coordinate: { commandId: command.commandId, projectionId: projectionId } },
+      });
+    }
+    return edges;
+  }
+  function workbenchAppendCommand(command, generatedFacts, summary, projectorId) {
+    var generatedRefs = generatedFacts.map(workbenchFactRef).filter(Boolean);
+    var nextSelection = generatedFacts.filter(function (fact) { return fact.kind === "workbench-selection"; }).slice(-1)[0];
+    var nextScope = generatedFacts.filter(function (fact) { return fact.kind === "workbench-scope"; }).slice(-1)[0];
+    var nextLane = generatedFacts.filter(function (fact) { return fact.kind === "workbench-lane-filter"; }).slice(-1)[0];
+    var nextStatus = generatedFacts.filter(function (fact) { return fact.kind === "workbench-status-filter"; }).slice(-1)[0];
+    var resultId = command.commandId + ":result";
+    var projectorRunId = command.commandId + ":projector-run";
+    var projectionId = command.commandId + ":view-projection";
+    var commandResult = {
+      kind: "workbench-command-result",
+      resultId: resultId,
+      commandId: command.commandId,
+      status: generatedFacts.length ? "appended" : "blocked",
+      generatedRefs: generatedRefs,
+      summary: summary,
+      issueRefs: generatedRefs.filter(function (ref) { return ref.kind === "issue"; }),
+      materialRefs: generatedRefs.filter(function (ref) { return ref.kind === "tool-provider-material-ref"; }),
+      sourceRefs: [workbenchCommandRef(command.commandId)],
+      metadata: {
+        bounded: true,
+        coordinate: { commandId: command.commandId, generatedCount: generatedRefs.length },
+      },
+    };
+    var projectorRun = {
+      kind: "workbench-projector-run",
+      projectorRunId: projectorRunId,
+      projectorId: projectorId || "dashboard-private-workbench-projector",
+      commandId: command.commandId,
+      status: "completed",
+      inputRefs: [workbenchCommandRef(command.commandId), { kind: "workbench-command-result", id: resultId }],
+      outputRefs: [{ kind: "workbench-view-projection", id: projectionId }],
+      sourceRefs: [{ kind: "workbench-command-result", id: resultId }],
+      metadata: {
+        bounded: true,
+        visibleFactsOnly: true,
+        coordinate: { commandId: command.commandId, projectorId: projectorId || "dashboard-private-workbench-projector" },
+      },
+    };
+    var provenanceEdges = workbenchProvenanceEdges(command, generatedFacts, projectorRunId, projectionId);
+    var viewProjection = {
+      kind: "workbench-view-projection",
+      projectionId: projectionId,
+      projectionKind: "workbench-view",
+      selectedWorkItemId: nextSelection ? nextSelection.workItemId : dogfoodSelectedId(),
+      scope: nextScope ? nextScope.scope : workbenchCurrentScope(),
+      lane: nextLane ? nextLane.lane : dogfoodCurrentLaneFilter(),
+      status: nextStatus ? nextStatus.status : dogfoodCurrentStatusFilter(),
+      factsCount: dogfoodFacts.length + 1 + generatedFacts.length + 3 + provenanceEdges.length,
+      inputRefs: generatedRefs.slice(0, 16),
+      sourceRefs: [{ kind: "workbench-projector-run", id: projectorRunId }],
+      metadata: {
+        dashboardPrivate: true,
+        bounded: true,
+        coordinate: { commandId: command.commandId, projectionId: projectionId },
+      },
+    };
+    dogfoodAppend([command].concat(
+      generatedFacts,
+      [commandResult, projectorRun, viewProjection],
+      provenanceEdges,
+    ));
   }
   function dogfoodWorkItemFromRefs(refs) {
     for (var i = 0; i < (refs || []).length; i += 1) {
@@ -224,10 +445,10 @@
     var evidence = dogfoodFactsByKind("work-item-evidence-recorded");
     var issues = dogfoodFacts.filter(function (f) { return f.kind === "issue"; });
     var audit = dogfoodFactsByKind("agent-runtime-audit");
-    var actionApprovals = dogfoodFactsByKind("work-item-domain-action-approval");
     var actions = dogfoodFacts.filter(function (f) {
       return f.kind === "work-item-domain-action-proposal" || f.kind === "work-item-domain-action-approval" ||
-        f.kind === "work-item-domain-action-admission" || f.kind === "work-item-domain-action-application";
+        f.kind === "work-item-domain-action-admission" || f.kind === "work-item-domain-action-application" ||
+        f.kind === "work-item-domain-action-rejection" || f.kind === "work-item-domain-action-cancellation";
     });
     var evidenceByWorkItem = {};
     evidence.forEach(function (item) { (evidenceByWorkItem[item.workItemId] = evidenceByWorkItem[item.workItemId] || []).push(item); });
@@ -438,25 +659,67 @@
   function dogfoodAppendFilter(kind, value) {
     var current = kind === "lane" ? dogfoodCurrentLaneFilter() : dogfoodCurrentStatusFilter();
     if (current === value) return;
-    dogfoodAppend([{
-      kind: kind === "lane" ? "dogfood-lane-filter" : "dogfood-status-filter",
+    var command = workbenchCommand("set-" + kind + "-filter", dogfoodSelectedId(), [{ kind: "workbench-filter", id: kind }], { value: value });
+    workbenchAppendCommand(command, [{
+      kind: kind === "lane" ? "workbench-lane-filter" : "workbench-status-filter",
       lane: kind === "lane" ? value : undefined,
       status: kind === "status" ? value : undefined,
-      sourceRefs: [{ kind: "dashboard-command", id: "filter-" + kind + ":" + value }],
-      metadata: { visibleUiFact: true, bounded: true, coordinate: { filterKind: kind, value: value } },
-    }]);
+      sourceRefs: [workbenchCommandRef(command.commandId)],
+      metadata: { commandId: command.commandId, visibleUiFact: true, bounded: true, coordinate: { filterKind: kind, value: value } },
+    }], "Updated " + kind + " filter from a visible Workbench command.", "dashboard-private-filter-projector");
+  }
+  function workbenchAppendScope(value) {
+    var current = workbenchCurrentScope();
+    if (current === value) return;
+    var command = workbenchCommand("set-scope", dogfoodSelectedId(), [{ kind: "workbench-scope", id: value }], { scope: value });
+    workbenchAppendCommand(command, [{
+      kind: "workbench-scope",
+      scope: value,
+      sourceRefs: [workbenchCommandRef(command.commandId)],
+      metadata: { commandId: command.commandId, visibleUiFact: true, bounded: true, coordinate: { filterKind: "scope", value: value } },
+    }], "Updated Workbench scope from a visible command.", "dashboard-private-scope-projector");
+  }
+  function workbenchAppendInspectorFilter(filterKind, value) {
+    var filters = workbenchInspectorFilters();
+    if (filters[filterKind] === value) return;
+    var command = workbenchCommand("set-inspector-filter", dogfoodSelectedId(), [{ kind: "workbench-inspector-filter", id: filterKind }], { filterKind: filterKind, value: value });
+    workbenchAppendCommand(command, [{
+      kind: "workbench-inspector-filter",
+      filterKind: filterKind,
+      value: value,
+      sourceRefs: [workbenchCommandRef(command.commandId)],
+      metadata: { commandId: command.commandId, visibleUiFact: true, bounded: true, coordinate: { filterKind: filterKind, value: value } },
+    }], "Updated fact inspector filter from graph-visible options.", "dashboard-private-inspector-filter-projector");
   }
   function dogfoodActionState(view, bundle, selectionVisible) {
     if (!selectionVisible || !view.selected) {
-      return { canRun: false, canPropose: false, canApprove: false, runLabel: "Run fake effect", reason: "No visible WorkItem selected." };
+      return {
+        canRun: false,
+        canPropose: false,
+        canApprove: false,
+        canReject: false,
+        canCancel: false,
+        runLabel: "Run fake effect",
+        runReason: "No visible WorkItem selected.",
+        proposeReason: "No visible WorkItem selected.",
+        approveReason: "No proposal is selected.",
+        rejectReason: "No proposal is selected.",
+        cancelReason: "No proposal is selected.",
+      };
     }
     var input = bundle && bundle.adapterInput;
     var runCount = bundle && bundle.runs ? bundle.runs.length : 0;
     var latestProposal = (bundle && bundle.actions || []).filter(function (item) {
       return item.kind === "work-item-domain-action-proposal";
     }).slice(-1)[0];
-    var latestAdmission = latestProposal && (bundle.actions || []).some(function (item) {
-      return item.kind === "work-item-domain-action-admission" && item.proposalId === latestProposal.proposalId;
+    var proposalFacts = latestProposal ? (bundle.actions || []).filter(function (item) {
+      return item.proposalId === latestProposal.proposalId;
+    }) : [];
+    var approved = proposalFacts.some(function (item) { return item.kind === "work-item-domain-action-approval"; });
+    var rejected = proposalFacts.some(function (item) { return item.kind === "work-item-domain-action-rejection"; });
+    var canceled = proposalFacts.some(function (item) { return item.kind === "work-item-domain-action-cancellation"; });
+    var applied = proposalFacts.some(function (item) {
+      return item.kind === "work-item-domain-action-application" && item.state === "applied";
     });
     var admissionOk = !bundle.admission || bundle.admission.state === "admitted";
     var retentionGap = !!(bundle.runtimeStatus && bundle.runtimeStatus.status === "retention-gap") ||
@@ -466,13 +729,22 @@
       retentionGap ? "Retention-gap proof exists for this coordinate; fake runtime fails closed." :
         !admissionOk ? "Request admission is not admitted for this coordinate." :
           "No ready adapter input for the selected WorkItem.";
+    var actionableProposal = !!(latestProposal && !approved && !rejected && !canceled && !applied);
     return {
       canRun: canRun,
       canPropose: true,
-      canApprove: !!(latestProposal && !latestAdmission),
+      canApprove: actionableProposal,
+      canReject: actionableProposal,
+      canCancel: actionableProposal,
       runLabel: runCount > 0 ? "Retry visible run" : "Run fake effect",
-      reason: runReason,
-      approveReason: latestProposal ? (latestAdmission ? "Latest proposal is already admitted." : "Latest proposal can be approved.") : "No proposal is waiting for approval.",
+      runReason: runReason,
+      proposeReason: "Append a graph-visible WorkItemDomainActionProposal fact.",
+      approveReason: actionableProposal ? "Latest proposal can be approved and projected to application facts." :
+        latestProposal ? "Latest proposal already has a terminal review fact." : "No proposal is waiting for approval.",
+      rejectReason: actionableProposal ? "Latest proposal can be rejected by a visible review fact." :
+        latestProposal ? "Latest proposal already has a terminal review fact." : "No proposal is waiting for rejection.",
+      cancelReason: actionableProposal ? "Latest proposal can be canceled by a visible command fact." :
+        latestProposal ? "Latest proposal already has a terminal review fact." : "No proposal is waiting for cancellation.",
     };
   }
   function dogfoodProjectOutcomeFacts(selected, input, outcome, commandRef) {
@@ -525,27 +797,30 @@
       },
     ];
   }
-  function dogfoodProjectApprovalFacts(selected, proposal, approval, commandRef) {
-    return [
-      {
+  function dogfoodProjectApprovalFacts(selected, proposal, approval, commandRef, existingAdmission) {
+    var admissionId = (existingAdmission && existingAdmission.admissionId) || proposal.proposalId + ":admission";
+    var facts = [];
+    if (!existingAdmission) {
+      facts.push({
         kind: "work-item-domain-action-admission",
-        admissionId: proposal.proposalId + ":admission",
+        admissionId: admissionId,
         proposalId: proposal.proposalId,
         workItemId: selected.id,
         state: "admitted",
         sourceRefs: [commandRef, { kind: "work-item-domain-action-approval", id: approval.approvalId }, { kind: "work-item-domain-action-proposal", id: proposal.proposalId }],
         metadata: { commandId: commandRef.id, projectorId: "dashboard-private-domain-action-projector", bounded: true, coordinate: { workItemId: selected.id, proposalId: proposal.proposalId } },
-      },
-      {
+      });
+    }
+    facts.push({
         kind: "work-item-domain-action-application",
         applicationId: proposal.proposalId + ":application",
         proposalId: proposal.proposalId,
         workItemId: selected.id,
         state: "applied",
-        sourceRefs: [commandRef, { kind: "work-item-domain-action-admission", id: proposal.proposalId + ":admission" }],
+        sourceRefs: [commandRef, { kind: "work-item-domain-action-admission", id: admissionId }],
         metadata: { commandId: commandRef.id, projectorId: "dashboard-private-domain-action-projector", bounded: true, coordinate: { workItemId: selected.id, proposalId: proposal.proposalId } },
-      },
-    ];
+    });
+    return facts;
   }
   function dogfoodRunSelected(view) {
     var selected = view.selected;
@@ -564,23 +839,11 @@
       return (item.kind === "result" || item.kind === "failure" || item.kind === "blocked" || item.kind === "timeout" || item.kind === "canceled") &&
         item.requestId === input.requestId;
     }).slice(-1)[0];
-    var commandRef = { kind: "dashboard-command", id: "run-effect:" + selected.id + ":" + attempt };
-    var commandMeta = {
-      commandId: commandRef.id,
-      visibleUiFact: true,
-      command: "run-or-retry-visible-effect",
-      bounded: true,
-      coordinate: { workItemId: selected.id, adapterInputId: input.adapterInputId, attempt: attempt },
-    };
-    var command = {
-      kind: "dashboard-command/run-effect-requested",
-      commandId: commandRef.id,
-      workItemId: selected.id,
-      adapterInputId: input.adapterInputId,
-      attempt: attempt,
-      sourceRefs: [{ kind: "dogfood-selection", id: selected.id }],
-      metadata: commandMeta,
-    };
+    var command = workbenchCommand("run-visible-effect", selected.id, [
+      { kind: "workbench-selection", id: selected.id },
+      { kind: "tool-provider-adapter-input", id: input.adapterInputId },
+    ], { adapterInputId: input.adapterInputId, attempt: attempt, retry: attempt > 1 });
+    var commandRef = workbenchCommandRef(command.commandId);
     var runRequest = {
       kind: "tool-provider-adapter-run-requested",
       runId: runId,
@@ -671,15 +934,15 @@
         coordinate: { runId: runId, outcomeId: outcomeId },
       },
     };
-    dogfoodAppend([
-      command,
+    var generatedFacts = [
       runRequest,
       { kind: "agent-runtime-audit", id: runId + ":audit:requested", event: "tool-provider-adapter-runtime-run-requested", subjectId: input.requestId, sourceRefs: [commandRef, { kind: "tool-provider-adapter-run-requested", id: runId }], metadata: { commandId: commandRef.id, runId: runId, attempt: attempt, bounded: true, coordinate: { adapterInputId: input.adapterInputId, runId: runId, attempt: attempt } } },
       runStatus,
       outcome,
       materialRef,
       { kind: "agent-runtime-audit", id: runId + ":audit:finished", event: "tool-provider-adapter-runtime-finished", subjectId: input.requestId, sourceRefs: [commandRef, { kind: "executor-outcome", id: outcomeId }], metadata: { commandId: commandRef.id, runId: runId, outcomeId: outcomeId, bounded: true, coordinate: { runId: runId, outcomeId: outcomeId, attempt: attempt } } },
-    ].concat(dogfoodProjectOutcomeFacts(selected, input, outcome, commandRef)));
+    ].concat(dogfoodProjectOutcomeFacts(selected, input, outcome, commandRef));
+    workbenchAppendCommand(command, generatedFacts, "Appended fake bounded run attempt " + attempt + " and projected evidence.", "dashboard-private-run-projector");
   }
   function dogfoodProposeSelected(view) {
     var selected = view.selected;
@@ -688,14 +951,9 @@
       return item.kind === "work-item-domain-action-proposal" && item.workItemId === selected.id;
     }).length + 1;
     var proposalId = selected.id + ":dashboard-review-proposal:" + proposalSeq;
-    var commandRef = { kind: "dashboard-command", id: "propose-action:" + selected.id + ":" + proposalSeq };
-    dogfoodAppend([{
-      kind: "dashboard-command/propose-domain-action",
-      commandId: commandRef.id,
-      workItemId: selected.id,
-      sourceRefs: [{ kind: "dogfood-selection", id: selected.id }],
-      metadata: { commandId: commandRef.id, visibleUiFact: true, bounded: true, coordinate: { workItemId: selected.id, proposalSeq: proposalSeq } },
-    }, {
+    var command = workbenchCommand("propose-domain-action", selected.id, [{ kind: "work-item", id: selected.id }], { actionKind: "require-review", proposalSeq: proposalSeq });
+    var commandRef = workbenchCommandRef(command.commandId);
+    workbenchAppendCommand(command, [{
       kind: "work-item-domain-action-proposal",
       proposalId: proposalId,
       workItemId: selected.id,
@@ -704,7 +962,7 @@
       reason: "Dashboard user requested visible review action",
       sourceRefs: [commandRef],
       metadata: { commandId: commandRef.id, command: "propose-review", bounded: true, coordinate: { workItemId: selected.id, proposalId: proposalId } },
-    }]);
+    }], "Appended visible WorkItem domain action proposal.", "dashboard-private-domain-action-projector");
   }
   function dogfoodApproveSelected(view) {
     var selected = view.selected;
@@ -713,12 +971,19 @@
       return item.kind === "work-item-domain-action-proposal" && item.workItemId === selected.id;
     }).slice(-1)[0];
     if (!proposal) return;
+    var existingAdmission = dogfoodFacts.filter(function (item) {
+      return item.kind === "work-item-domain-action-admission" && item.proposalId === proposal.proposalId;
+    }).slice(-1)[0];
     var already = dogfoodFacts.some(function (item) {
-      return (item.kind === "work-item-domain-action-admission" || item.kind === "work-item-domain-action-approval") &&
+      return (item.kind === "work-item-domain-action-approval" ||
+        item.kind === "work-item-domain-action-rejection" ||
+        item.kind === "work-item-domain-action-cancellation" ||
+        item.kind === "work-item-domain-action-application") &&
         item.proposalId === proposal.proposalId;
     });
     if (already) return;
-    var commandRef = { kind: "dashboard-command", id: "approve-action:" + proposal.proposalId };
+    var command = workbenchCommand("approve-domain-action", selected.id, [{ kind: "work-item-domain-action-proposal", id: proposal.proposalId }], { proposalId: proposal.proposalId });
+    var commandRef = workbenchCommandRef(command.commandId);
     var approval = {
       kind: "work-item-domain-action-approval",
       approvalId: proposal.proposalId + ":approval",
@@ -728,18 +993,45 @@
       sourceRefs: [commandRef, { kind: "work-item-domain-action-proposal", id: proposal.proposalId }],
       metadata: { commandId: commandRef.id, bounded: true, coordinate: { workItemId: selected.id, proposalId: proposal.proposalId } },
     };
-    dogfoodAppend([
-      {
-        kind: "dashboard-command/approve-domain-action",
-        commandId: commandRef.id,
-        workItemId: selected.id,
-        proposalId: proposal.proposalId,
-        sourceRefs: [{ kind: "work-item-domain-action-proposal", id: proposal.proposalId }],
-        metadata: { commandId: commandRef.id, visibleUiFact: true, bounded: true, coordinate: { workItemId: selected.id, proposalId: proposal.proposalId } },
-      },
+    var generatedFacts = [
       approval,
       { kind: "agent-runtime-audit", id: proposal.proposalId + ":audit:approved", event: "work-item-domain-action-approved", subjectId: selected.id, sourceRefs: [commandRef], metadata: { commandId: commandRef.id, proposalId: proposal.proposalId, bounded: true, coordinate: { workItemId: selected.id, proposalId: proposal.proposalId } } },
-    ].concat(dogfoodProjectApprovalFacts(selected, proposal, approval, commandRef)));
+    ].concat(dogfoodProjectApprovalFacts(selected, proposal, approval, commandRef, existingAdmission));
+    workbenchAppendCommand(command, generatedFacts, "Approved proposal and projected domain action application.", "dashboard-private-domain-action-projector");
+  }
+  function dogfoodReviewSelected(view, reviewKind) {
+    var selected = view.selected;
+    if (!selected) return;
+    var proposal = dogfoodFacts.filter(function (item) {
+      return item.kind === "work-item-domain-action-proposal" && item.workItemId === selected.id;
+    }).slice(-1)[0];
+    if (!proposal) return;
+    var terminal = dogfoodFacts.some(function (item) {
+      return item.proposalId === proposal.proposalId && (
+        item.kind === "work-item-domain-action-approval" ||
+        item.kind === "work-item-domain-action-rejection" ||
+        item.kind === "work-item-domain-action-cancellation" ||
+        item.kind === "work-item-domain-action-application"
+      );
+    });
+    if (terminal) return;
+    var command = workbenchCommand(reviewKind + "-domain-action", selected.id, [{ kind: "work-item-domain-action-proposal", id: proposal.proposalId }], { proposalId: proposal.proposalId });
+    var commandRef = workbenchCommandRef(command.commandId);
+    var factKind = reviewKind === "reject" ? "work-item-domain-action-rejection" : "work-item-domain-action-cancellation";
+    var reviewFact = {
+      kind: factKind,
+      reviewId: proposal.proposalId + ":" + reviewKind,
+      proposalId: proposal.proposalId,
+      workItemId: selected.id,
+      state: reviewKind === "reject" ? "rejected" : "canceled",
+      reason: reviewKind === "reject" ? "Dashboard reviewer rejected the proposed action." : "Dashboard user canceled the pending action proposal.",
+      sourceRefs: [commandRef, { kind: "work-item-domain-action-proposal", id: proposal.proposalId }],
+      metadata: { commandId: command.commandId, bounded: true, coordinate: { workItemId: selected.id, proposalId: proposal.proposalId } },
+    };
+    workbenchAppendCommand(command, [
+      reviewFact,
+      { kind: "agent-runtime-audit", id: proposal.proposalId + ":audit:" + reviewKind, event: "work-item-domain-action-" + reviewFact.state, subjectId: selected.id, sourceRefs: [commandRef, { kind: factKind, id: reviewFact.reviewId }], metadata: { commandId: command.commandId, proposalId: proposal.proposalId, bounded: true, coordinate: { workItemId: selected.id, proposalId: proposal.proposalId } } },
+    ], reviewKind === "reject" ? "Rejected proposal by visible review fact." : "Canceled proposal by visible command fact.", "dashboard-private-domain-action-projector");
   }
   function dogfoodMetric(label, value) {
     return h("div", { class: "df-metric" }, [h("strong", {}, [String(value)]), h("span", {}, [label])]);
@@ -779,12 +1071,13 @@
     Array.prototype.forEach.call(board.querySelectorAll(".df-node"), function (node) {
       function selectNode() {
         var selectedId = node.getAttribute("data-id");
-        dogfoodAppend([{
-          kind: "dogfood-selection",
+        var command = workbenchCommand("select-work-item", selectedId, [{ kind: "work-item", id: selectedId }], {});
+        workbenchAppendCommand(command, [{
+          kind: "workbench-selection",
           workItemId: selectedId,
-          sourceRefs: [{ kind: "dashboard-command", id: "select-work-item:" + selectedId }],
-          metadata: { visibleUiFact: true, bounded: true, coordinate: { workItemId: selectedId } },
-        }]);
+          sourceRefs: [workbenchCommandRef(command.commandId)],
+          metadata: { commandId: command.commandId, visibleUiFact: true, bounded: true, coordinate: { workItemId: selectedId } },
+        }], "Selected WorkItem from the queue board.", "dashboard-private-selection-projector");
       }
       node.addEventListener("click", selectNode);
       node.addEventListener("keydown", function (event) { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); selectNode(); } });
@@ -797,6 +1090,14 @@
     rows.forEach(function (row) { section.appendChild(render(row)); });
     return section;
   }
+  function workbenchWorkspace(label, sub, body) {
+    return h("section", { class: "df-workspace" }, [
+      h("div", { class: "df-workspace-head" }, [
+        h("span", {}, [label]),
+        sub ? h("code", {}, [sub]) : null,
+      ]),
+    ].concat(body));
+  }
   function dogfoodMiniFact(label, fact) {
     var id = dogfoodFactId(fact);
     var refs = dogfoodRefsText(fact && (fact.sourceRefs || fact.evidenceRefs || fact.policyRefs));
@@ -807,7 +1108,7 @@
     ]);
   }
   function dogfoodJsonFact(title, fact, emptyText) {
-    return h("details", { class: "df-json", open: !!fact }, [
+    return h("details", { class: "df-json" }, [
       h("summary", {}, [title, fact ? h("code", {}, [dogfoodFactId(fact)]) : h("span", {}, ["missing"])]),
       fact ? h("pre", {}, [JSON.stringify(fact, null, 2)]) : h("p", { class: "df-empty" }, [emptyText || "No graph-visible fact is currently attached."]),
     ]);
@@ -830,12 +1131,12 @@
       ["Route", bundle.route && bundle.route.profileId, bundle.route && dogfoodRefsText(bundle.route.sourceRefs)],
       ["Profile", bundle.profile && (bundle.profile.capabilities && bundle.profile.capabilities.toolNames || []).join(", "), bundle.profile && dogfoodRefsText(bundle.profile.policyRefs)],
       ["Policy", policy.policyId, [
-        policy.size || policy.sizeCapacity ? "size" : "",
+        policy.sizeCapacity ? "size-capacity" : "",
         policy.timeout ? "timeout" : "",
         policy.redaction ? "redaction" : "",
-        policy.cwdPath || policy["cwd-path"] ? "cwd-path" : "",
+        policy.filesystem ? "filesystem" : "",
         policy.approval ? "approval" : "",
-        policy.artifact ? "artifact" : "",
+        policy.artifacts ? "artifacts" : "",
         policy.network ? "network" : "",
       ].filter(Boolean).join(" / ")],
       ["Input", bundle.adapterInput && bundle.adapterInput.adapterInputId, bundle.adapterInput && dogfoodRefsText(bundle.adapterInput.sourceRefs)],
@@ -856,10 +1157,32 @@
       return h("div", { class: "df-row" }, [h("div", {}, [h("strong", {}, [label]), h("span", {}, [body])]), dogfoodBadge(item.severity || item.status || "recorded", item.severity || item.status || "recorded")]);
     });
   }
-  function dogfoodInspector(view) {
-    var recent = dogfoodFacts.slice(-14).reverse();
+  function dogfoodInspector(view, ledgerFacts, scope) {
+    var filters = workbenchInspectorFilters();
+    var factsForInspector = ledgerFacts || dogfoodFacts;
+    var kinds = Array.from(new Set(factsForInspector.map(function (fact) { return fact.kind || fact.factKind || "unknown"; }))).sort();
+    var issueCodes = Array.from(new Set(factsForInspector.map(function (fact) { return fact.issueCode || fact.code; }).filter(Boolean))).sort();
+    var sourceRefs = Array.from(new Set(factsForInspector.flatMap(workbenchFactSourceKeys))).sort().slice(0, 80);
+    var coordinateKeys = Array.from(new Set(factsForInspector.flatMap(workbenchCoordinateKeys))).sort();
+    function optionList(values) {
+      return ["all"].concat(values);
+    }
+    function selector(label, filterKind, values) {
+      var sel = h("select", { onchange: function () { workbenchAppendInspectorFilter(filterKind, sel.value); }, "aria-label": label }, optionList(values).map(function (value) {
+        return h("option", { value: value, selected: filters[filterKind] === value }, [value]);
+      }));
+      return h("label", { class: "df-ledger-filter" }, [h("span", {}, [label]), sel]);
+    }
+    var filteredFacts = factsForInspector.filter(function (fact) {
+      if (filters.kind !== "all" && (fact.kind || fact.factKind || "unknown") !== filters.kind) return false;
+      if (filters.issueCode !== "all" && (fact.issueCode || fact.code || "") !== filters.issueCode) return false;
+      if (filters.sourceRef !== "all" && workbenchFactSourceKeys(fact).indexOf(filters.sourceRef) < 0) return false;
+      if (filters.coordinate !== "all" && workbenchCoordinateKeys(fact).indexOf(filters.coordinate) < 0) return false;
+      return true;
+    });
+    var recent = filteredFacts.slice(-24).reverse();
     var commandRefs = {};
-    dogfoodFacts.forEach(function (fact) {
+    factsForInspector.forEach(function (fact) {
       var commandId = dogfoodCommandIdFrom(fact);
       if (commandId) {
         commandRefs[commandId] = commandRefs[commandId] || {};
@@ -876,17 +1199,31 @@
         }
       });
     });
-    var diffs = Object.keys(commandRefs).slice(-5).reverse().map(function (key) {
+    factsForInspector.filter(function (fact) { return fact.kind === "workbench-command-result"; }).forEach(function (result) {
+      commandRefs[result.commandId] = commandRefs[result.commandId] || {};
+      (result.generatedRefs || []).forEach(function (ref) {
+        var kind = "generated:" + ref.kind;
+        commandRefs[result.commandId][kind] = (commandRefs[result.commandId][kind] || 0) + 1;
+      });
+    });
+    var diffs = Object.keys(commandRefs).slice(-8).reverse().map(function (key) {
       return h("div", { class: "df-row" }, [
         h("div", {}, [h("strong", {}, [key]), h("span", {}, [Object.keys(commandRefs[key]).map(function (kind) { return "+" + commandRefs[key][kind] + " " + kind; }).join("  ")])]),
       ]);
     });
+    var traceRows = factsForInspector.filter(function (fact) { return fact.kind === "workbench-provenance-edge"; }).slice(-8).reverse();
     return h("details", { class: "df-ledger", open: true }, [
-      h("summary", {}, ["Fact inspector / ledger diff (" + dogfoodFacts.length + " facts)"]),
+      h("summary", {}, ["Workbench Ledger · " + scope + " fact inspector / ledger diff (" + factsForInspector.length + " scoped / " + dogfoodFacts.length + " total)"]),
       h("div", { class: "df-inspector" }, [
         h("section", {}, [
           h("h3", {}, ["Recent facts"]),
-          h("div", { class: "df-ledger-list" }, recent.map(function (fact) {
+          h("div", { class: "df-ledger-filters" }, [
+            selector("kind", "kind", kinds),
+            selector("sourceRef", "sourceRef", sourceRefs),
+            selector("issueCode", "issueCode", issueCodes),
+            selector("coordinate", "coordinate", coordinateKeys),
+          ]),
+          recent.length ? h("div", { class: "df-ledger-list" }, recent.map(function (fact) {
             return h("div", { class: "df-ledger-item" }, [
               h("strong", {}, [fact.kind || fact.factKind || "unknown"]),
               h("code", {}, [dogfoodFactId(fact) || "no-id"]),
@@ -894,15 +1231,23 @@
               h("span", {}, [fact.issueCode || fact.code || "issueCode: none"]),
               h("code", {}, [fact.metadata && fact.metadata.coordinate ? JSON.stringify(fact.metadata.coordinate) : "coordinate: none"]),
             ]);
-          })),
+          })) : h("p", { class: "df-empty" }, ["No facts match the current inspector filters."]),
         ]),
         h("section", {}, [
           h("h3", {}, ["Command-derived diff"]),
           diffs.length ? h("div", { class: "df-section" }, diffs) : h("p", { class: "df-empty" }, ["No dashboard command has appended derived facts yet."]),
+          dogfoodRows("Provenance trace", traceRows, "No provenance edges have been appended yet.", function (edge) {
+            return h("div", { class: "df-row" }, [
+              h("div", {}, [h("strong", {}, [edge.relation]), h("span", {}, [workbenchSourceRefKey(edge.fromRef) + " → " + workbenchSourceRefKey(edge.toRef)])]),
+              dogfoodBadge(edge.issueCode || "trace", edge.issueCode || "trace"),
+            ]);
+          }),
           h("pre", {}, [JSON.stringify({
             selectedWorkItemId: view.selectedWorkItemId,
+            scope: workbenchCurrentScope(),
             laneFilter: dogfoodCurrentLaneFilter(),
             statusFilter: dogfoodCurrentStatusFilter(),
+            inspectorFilters: filters,
             sourceRefDiscipline: "recent facts expose sourceRefs; raw provider material is summary/ref only",
           }, null, 2)]),
         ]),
@@ -917,6 +1262,7 @@
     var bundle = view.selectedBundle;
     var laneFilter = dogfoodCurrentLaneFilter();
     var statusFilter = dogfoodCurrentStatusFilter();
+    var scope = workbenchCurrentScope();
     var selectionVisible = dogfoodNodeMatchesFilters(selected);
     if (!selectionVisible) {
       selected = null;
@@ -926,11 +1272,27 @@
     var selectedIssues = bundle ? bundle.issues : [];
     var selectedAudit = bundle ? bundle.audit : [];
     var selectedActions = bundle ? bundle.actions : [];
+    var selectedToolRuns = selected ? view.toolRuns.filter(function (run) { return run.workItemId === selected.id; }) : [];
+    var scopedIssues = scope === "selected" ? selectedIssues : view.issues;
+    var scopedAudit = scope === "selected" ? selectedAudit : view.audit;
+    var scopedRuns = scope === "selected" ? selectedToolRuns : view.toolRuns;
+    var actionReviews = selectedActions.filter(function (item) {
+      return item.kind === "work-item-domain-action-proposal";
+    }).map(function (proposal) {
+      var related = selectedActions.filter(function (item) { return item.proposalId === proposal.proposalId; });
+      var state = related.some(function (item) { return item.kind === "work-item-domain-action-application" && item.state === "applied"; }) ? "applied" :
+        related.some(function (item) { return item.kind === "work-item-domain-action-rejection"; }) ? "rejected" :
+          related.some(function (item) { return item.kind === "work-item-domain-action-cancellation"; }) ? "canceled" :
+            related.some(function (item) { return item.kind === "work-item-domain-action-approval"; }) ? "approved" :
+              related.some(function (item) { return item.kind === "work-item-domain-action-admission"; }) ? "pending" :
+                proposal.state || "proposed";
+      return { proposal: proposal, state: state, relatedCount: related.length };
+    });
     var actionState = dogfoodActionState(view, bundle, selectionVisible);
     var filters = h("div", { class: "df-filters" });
-    var laneOptions = dogfoodFactsByKind("dogfood-filter-option").filter(function (item) { return item.filterKind === "lane"; })
+    var laneOptions = dogfoodFactsByKind("workbench-filter-option").filter(function (item) { return item.filterKind === "lane"; })
       .sort(function (a, b) { return (a.order || 0) - (b.order || 0); });
-    var statusOptions = dogfoodFactsByKind("dogfood-filter-option").filter(function (item) { return item.filterKind === "status"; })
+    var statusOptions = dogfoodFactsByKind("workbench-filter-option").filter(function (item) { return item.filterKind === "status"; })
       .sort(function (a, b) { return (a.order || 0) - (b.order || 0); });
     if (!laneOptions.length) laneOptions = ["all", "queued", "running", "blocked", "complete"].map(function (lane, order) { return { value: lane, label: lane, order: order }; });
     if (!statusOptions.length) statusOptions = DOGFOOD_STATUSES.map(function (status, order) { return { value: status, label: status, order: order }; });
@@ -952,11 +1314,33 @@
         onclick: function () { dogfoodAppendFilter("status", status); },
       }, [option.label || status]));
     });
+    dogfoodFactsByKind("workbench-filter-option").filter(function (item) { return item.filterKind === "scope"; })
+      .sort(function (a, b) { return (a.order || 0) - (b.order || 0); })
+      .forEach(function (option) {
+        var value = option.value;
+        filters.appendChild(h("button", {
+          class: "df-filter scope" + (scope === value ? " active" : ""),
+          "aria-pressed": scope === value ? "true" : "false",
+          disabled: scope === value,
+          onclick: function () { workbenchAppendScope(value); },
+        }, ["scope: " + (option.label || value)]));
+      });
+    function actionHint(label, enabled, reason) {
+      return h("span", { class: enabled ? "ok" : "blocked" }, [label + ": " + reason]);
+    }
     var actions = h("div", { class: "df-actions", role: "group", "aria-label": "Graph-visible Workbench actions" }, [
-      h("button", { disabled: !actionState.canRun, title: actionState.reason, onclick: function () { if (actionState.canRun) dogfoodRunSelected({ selected: selected }); } }, [actionState.runLabel]),
-      h("button", { class: "secondary", disabled: !actionState.canPropose, title: actionState.reason, onclick: function () { if (actionState.canPropose) dogfoodProposeSelected({ selected: selected }); } }, ["Propose review"]),
-      h("button", { class: "secondary", disabled: !actionState.canApprove, title: actionState.approveReason, onclick: function () { if (actionState.canApprove) dogfoodApproveSelected({ selected: selected }); } }, ["Approve proposal"]),
-      h("span", { class: "df-action-hint" }, [actionState.canApprove ? actionState.approveReason : actionState.reason]),
+      h("button", { disabled: !actionState.canRun, title: actionState.runReason, onclick: function () { if (actionState.canRun) dogfoodRunSelected({ selected: selected }); } }, [actionState.runLabel]),
+      h("button", { class: "secondary", disabled: !actionState.canPropose, title: actionState.proposeReason, onclick: function () { if (actionState.canPropose) dogfoodProposeSelected({ selected: selected }); } }, ["Propose review"]),
+      h("button", { class: "secondary", disabled: !actionState.canApprove, title: actionState.approveReason, onclick: function () { if (actionState.canApprove) dogfoodApproveSelected({ selected: selected }); } }, ["Approve"]),
+      h("button", { class: "secondary", disabled: !actionState.canReject, title: actionState.rejectReason, onclick: function () { if (actionState.canReject) dogfoodReviewSelected({ selected: selected }, "reject"); } }, ["Reject"]),
+      h("button", { class: "secondary", disabled: !actionState.canCancel, title: actionState.cancelReason, onclick: function () { if (actionState.canCancel) dogfoodReviewSelected({ selected: selected }, "cancel"); } }, ["Cancel"]),
+      h("div", { class: "df-action-hint", "aria-live": "polite" }, [
+        actionHint("run", actionState.canRun, actionState.runReason),
+        actionHint("propose", actionState.canPropose, actionState.proposeReason),
+        actionHint("approve", actionState.canApprove, actionState.approveReason),
+        actionHint("reject", actionState.canReject, actionState.rejectReason),
+        actionHint("cancel", actionState.canCancel, actionState.cancelReason),
+      ]),
     ]);
     var metrics = h("div", { class: "df-metrics" }, [
       dogfoodMetric("WorkItems", view.counters.workItems),
@@ -969,13 +1353,13 @@
       dogfoodMetric("Facts", view.counters.facts),
     ]);
     var rail = h("aside", { class: "df-rail" }, [
-      dogfoodRows("Global Issues", view.issues.slice(-8).reverse(), "No global issues in the ledger.", function (issue) {
+      dogfoodRows((scope === "selected" ? "Selected" : "Global") + " Issues", scopedIssues.slice(-10).reverse(), "No issues in this scope.", function (issue) {
         return h("div", { class: "df-row issue" }, [h("div", {}, [h("strong", {}, [issue.code]), h("span", {}, [issue.message || issue.subjectId || dogfoodRefsText(issue.sourceRefs)])]), dogfoodBadge(issue.severity || "info", issue.severity || "info")]);
       }),
-      dogfoodRows("Global Audit", view.audit.slice(-8).reverse(), "No global audit entries.", function (audit) {
+      dogfoodRows((scope === "selected" ? "Selected" : "Global") + " Audit", scopedAudit.slice(-10).reverse(), "No audit entries in this scope.", function (audit) {
         return h("div", { class: "df-row" }, [h("div", {}, [h("strong", {}, [audit.event]), h("span", {}, [audit.subjectId || audit.id])])]);
       }),
-      dogfoodRows("Tool Runs", view.toolRuns.slice(-8).reverse(), "No adapter run status yet.", function (run) {
+      dogfoodRows((scope === "selected" ? "Selected" : "Global") + " Tool Runs", scopedRuns.slice(-10).reverse(), "No adapter run status in this scope.", function (run) {
         return h("div", { class: "df-row" }, [h("div", {}, [h("strong", {}, [run.workItemId || "unknown"]), h("span", {}, [run.runId])]), dogfoodBadge(run.status, run.status)]);
       }),
     ]);
@@ -984,6 +1368,10 @@
       h("p", { class: "df-summary" }, [selected.summary]),
       h("section", { class: "df-section" }, [h("h3", {}, ["Execution Chain"]), bundle ? dogfoodChain(bundle) : h("p", { class: "df-empty" }, ["No selected execution chain."])]),
       h("section", { class: "df-section" }, [h("h3", {}, ["Route / Policy / Evidence"]), dogfoodRoutePolicyCards(bundle)]),
+      dogfoodRows("Attempt History", bundle.runs || [], "No visible attempts yet.", function (run) {
+        var status = view.toolRuns.filter(function (item) { return item.runId === run.runId; }).slice(-1)[0];
+        return h("div", { class: "df-row" }, [h("div", {}, [h("strong", {}, ["attempt " + run.attempt]), h("span", {}, [run.runId])]), dogfoodBadge(status && status.status || "requested", status && status.status || "requested")]);
+      }),
       dogfoodJsonFact("WorkItem", bundle && bundle.item),
       dogfoodJsonFact("Effect Plan", bundle && bundle.plan, "This WorkItem has no effect plan fact."),
       dogfoodJsonFact("Effect Request", bundle && bundle.request, "No WorkItemEffectRequested fact for this selection."),
@@ -1011,12 +1399,19 @@
         return h("div", { class: "df-row" }, [h("div", {}, [h("strong", {}, [item.status]), h("span", {}, [item.summary || item.evidenceId])]), h("code", {}, [item.evidenceId])]);
       }),
       dogfoodRows("Domain Actions", selectedActions, "No graph-visible action proposal for this WorkItem.", function (item) {
-        return h("div", { class: "df-row" }, [h("div", {}, [h("strong", {}, [item.actionKind || item.kind]), h("span", {}, [item.proposalId || item.admissionId || item.applicationId])]), dogfoodBadge(item.state || "recorded", item.state || "recorded")]);
+        return h("div", { class: "df-row" }, [h("div", {}, [h("strong", {}, [item.actionKind || item.kind]), h("span", {}, [item.proposalId || item.admissionId || item.applicationId || item.reviewId])]), dogfoodBadge(item.state || "recorded", item.state || "recorded")]);
+      }),
+      dogfoodRows("Action Review", actionReviews, "No action review state has been derived for this WorkItem.", function (item) {
+        return h("div", { class: "df-row" }, [
+          h("div", {}, [h("strong", {}, [item.state]), h("span", {}, [item.proposal.proposalId + " · " + item.relatedCount + " visible fact(s)"])]),
+          dogfoodBadge(item.state, item.state),
+        ]);
       }),
       dogfoodScopedSummary("Selected Issues", selectedIssues, "No selected WorkItem issue."),
       dogfoodScopedSummary("Selected Audit", selectedAudit.slice(-8).reverse(), "No audit entries for this selection."),
     ] : [h("p", { class: "df-empty" }, ["No visible WorkItem is selected for the active lane/status filters. Select a visible node or clear the filters before running an action."])]);
-    var ledger = dogfoodInspector(view);
+    var ledgerFacts = workbenchScopedLedgerFacts(scope, selected, bundle);
+    var ledger = dogfoodInspector(view, ledgerFacts, scope);
     fill(v, [
       sectionH("CSP-8 Workbench", "reactive jira / messaging-hub · dashboard-private facts"),
       h("div", { class: "df-hero" }, [
@@ -1025,8 +1420,11 @@
       ]),
       metrics,
       filters,
-      h("div", { class: "df-grid" }, [dogfoodBoard(view), rail, detail]),
-      ledger,
+      h("div", { class: "df-grid" }, [
+        workbenchWorkspace("Queue", laneFilter + " / " + statusFilter, [dogfoodBoard(view)]),
+        workbenchWorkspace("Execution", selected ? selected.id : "hidden selection", [detail]),
+        workbenchWorkspace("Ledger", scope, [rail, ledger]),
+      ]),
     ]);
   }
   renderDogfood();

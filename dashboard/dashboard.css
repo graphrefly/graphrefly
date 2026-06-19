@@ -334,12 +334,17 @@ body[data-gate="fail"] .gate .dot { background: var(--red); box-shadow: 0 0 12px
 .df-actions { display: flex; gap: 0.45rem; flex-wrap: wrap; justify-content: flex-end; }
 .df-action-hint {
   flex: 1 1 100%;
-  text-align: right;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 0.2rem 0.55rem;
+  text-align: left;
   font-family: var(--mono);
   font-size: 0.58rem;
   color: var(--ink-faint);
   letter-spacing: 0.08em;
 }
+.df-action-hint .ok { color: var(--lime-deep); }
+.df-action-hint .blocked { color: var(--ink-faint); }
 .df-actions button, .df-filter {
   appearance: none; cursor: pointer; border: 1px solid var(--ink); background: var(--lime);
   color: var(--ink); font: 700 0.72rem var(--sans); padding: 0.5rem 0.7rem; min-height: 2.2rem;
@@ -362,10 +367,43 @@ body[data-gate="fail"] .gate .dot { background: var(--red); box-shadow: 0 0 12px
 .df-filters { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.85rem; }
 .df-filter { background: var(--paper); border-color: var(--rule-deep); font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase; }
 .df-filter.status { border-style: dashed; }
+.df-filter.scope { border-color: var(--lime-deep); }
 .df-filter.active { background: var(--navy); color: var(--lime); border-color: var(--navy); }
 .df-grid {
-  display: grid; grid-template-columns: minmax(520px, 1fr) minmax(260px, 330px) minmax(280px, 360px);
+  display: grid; grid-template-columns: minmax(520px, 1.35fr) minmax(300px, 0.9fr) minmax(300px, 0.95fr);
   gap: 0.85rem; align-items: stretch;
+}
+.df-workspace {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+.df-workspace-head {
+  min-height: 2.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+  padding: 0.55rem 0.7rem;
+  background: var(--navy);
+  color: var(--ice);
+  border-radius: 6px;
+  border-left: 3px solid var(--lime);
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.df-workspace-head code {
+  max-width: 12rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--lime);
+  font: 500 0.58rem var(--mono);
+  letter-spacing: 0.06em;
+  text-transform: none;
 }
 .df-board, .df-rail, .df-detail, .df-ledger {
   background: var(--paper); border: 1px solid var(--rule); border-radius: 6px;
@@ -435,9 +473,10 @@ body[data-gate="fail"] .gate .dot { background: var(--red); box-shadow: 0 0 12px
   flex: 0 0 auto; border: 1px solid var(--rule-deep); border-radius: 999px;
   padding: 0.1rem 0.45rem; font: 700 0.6rem var(--mono); color: var(--ink); background: var(--ice-warm);
 }
-.df-badge.completed, .df-badge.complete, .df-badge.result, .df-badge.applied, .df-badge.admitted { background: #eaffcf; border-color: var(--lime-deep); }
-.df-badge.ready, .df-badge.running, .df-badge.started, .df-badge.requested, .df-badge.proposed, .df-badge.recorded { background: #e8f3ff; border-color: #73a7d8; }
-.df-badge.failed, .df-badge.blocked, .df-badge.failure, .df-badge.error { background: #fff0f4; border-color: var(--magenta); }
+.df-badge.completed, .df-badge.complete, .df-badge.result, .df-badge.applied, .df-badge.approved, .df-badge.admitted { background: #eaffcf; border-color: var(--lime-deep); }
+.df-badge.ready, .df-badge.running, .df-badge.started, .df-badge.requested, .df-badge.proposed, .df-badge.pending, .df-badge.recorded { background: #e8f3ff; border-color: #73a7d8; }
+.df-badge.failed, .df-badge.blocked, .df-badge.failure, .df-badge.error, .df-badge.rejected { background: #fff0f4; border-color: var(--magenta); }
+.df-badge.canceled { background: var(--ice-warm); border-color: var(--rule-deep); }
 .df-detail-head { display: flex; align-items: center; gap: 0.7rem; margin-bottom: 0.75rem; }
 .df-detail h2 { font-family: var(--display); font-size: 1.35rem; line-height: 1.05; letter-spacing: 0; }
 .df-status-dot { width: 0.85rem; height: 0.85rem; border-radius: 50%; background: var(--ink-mute); flex: 0 0 auto; }
@@ -522,15 +561,43 @@ body[data-gate="fail"] .gate .dot { background: var(--red); box-shadow: 0 0 12px
 .df-ledger summary { cursor: pointer; font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; padding: 0.75rem 0.9rem; background: var(--ice-warm); }
 .df-ledger pre { max-height: 22rem; overflow: auto; padding: 0.9rem; font-family: var(--mono); font-size: 0.66rem; color: var(--ink-mute); background: var(--paper); }
 .df-inspector {
-  display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 0.7fr); gap: 0.85rem; padding: 0.8rem;
+  display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.85rem; padding: 0.8rem;
 }
 .df-inspector h3 {
   font-family: var(--display); font-size: 1rem; line-height: 1; margin-bottom: 0.5rem;
 }
 .df-ledger-list { display: grid; gap: 0.38rem; }
+.df-ledger-filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 0.45rem;
+  margin-bottom: 0.55rem;
+}
+.df-ledger-filter {
+  min-width: 0;
+  display: grid;
+  gap: 0.2rem;
+}
+.df-ledger-filter span {
+  font-family: var(--mono);
+  font-size: 0.55rem;
+  color: var(--ink-faint);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.df-ledger-filter select {
+  min-width: 0;
+  width: 100%;
+  border: 1px solid var(--rule-deep);
+  border-radius: 4px;
+  background: var(--paper);
+  color: var(--ink);
+  font: 600 0.62rem var(--mono);
+  padding: 0.4rem 0.45rem;
+}
 .df-ledger-item {
-  display: grid; grid-template-columns: minmax(7rem, 0.7fr) minmax(8rem, 0.9fr) minmax(0, 1.2fr) minmax(6rem, 0.6fr) minmax(8rem, 1fr);
-  align-items: center; gap: 0.45rem; border: 1px solid var(--rule); border-radius: 6px; padding: 0.45rem 0.55rem;
+  display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; gap: 0.25rem;
+  border: 1px solid var(--rule); border-radius: 6px; padding: 0.45rem 0.55rem;
 }
 .df-ledger-item strong {
   font-size: 0.68rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -583,6 +650,13 @@ footer b { color: var(--ink-mute); }
   .df-board { min-height: 24rem; }
   .df-board svg { min-height: 24rem; }
   .df-rail, .df-detail { max-height: none; }
+}
+
+@media (max-width: 900px) {
+  .df-board { overflow-x: auto; }
+  .df-board-note { display: block; }
+  .df-board-canvas { min-width: 620px; }
+  .df-board svg { min-width: 620px; }
 }
 
 @media (max-width: 720px) {

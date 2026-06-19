@@ -47,7 +47,7 @@ function createDogfoodPayload() {
   const now = 1_000;
   const providerId = "dashboard-fake-provider";
   const policyId = "dashboard-bounded-policy";
-  const effectKind = "dashboard-dogfood-tool";
+  const effectKind = "dashboard-workbench-tool";
   const selectedWorkItemId = "wi-board-query";
   const profileFor = (workItemId) => (workItemId === "wi-policy-failure" || workItemId === "wi-human-approval"
     ? "dashboard-local-builtin-patch-profile"
@@ -386,7 +386,7 @@ function createDogfoodPayload() {
         occurredAtMs: now + 6,
         error: {
           kind: "issue",
-          code: "fake-policy-denied",
+          code: "policy-denied",
           message: "Fake policy denied write expansion; bounded public issue only.",
           severity: "error",
           subjectId: workItemId,
@@ -570,7 +570,7 @@ function createDogfoodPayload() {
         bounded: true,
         gapKind: "retention-evidence-horizon-closed",
         coordinate: {
-          index: "retentionEvidence",
+          diagnosticKind: "retention-gap",
           adapterInputId: "wi-boundary-taxonomy:tool-request:adapter-input",
           attemptHighWater: 1,
         },
@@ -593,6 +593,20 @@ function createDogfoodPayload() {
     },
   }));
   const boundaryIssues = [
+    {
+      kind: "issue",
+      code: "approval-needed",
+      message: "Approval-required patch route is blocked until an explicit visible approval fact exists.",
+      severity: "warning",
+      subjectId: "wi-human-approval",
+      sourceRefs: [dogfoodRef("executor-outcome", "wi-human-approval:tool-request:seed-run:1:outcome")],
+      issueCode: "approval-needed",
+      metadata: {
+        taxonomy: "approval-needed",
+        bounded: true,
+        coordinate: { workItemId: "wi-human-approval", runId: "wi-human-approval:tool-request:seed-run:1" },
+      },
+    },
     {
       kind: "issue",
       code: "missing-input",
@@ -711,6 +725,113 @@ function createDogfoodPayload() {
     sourceRefs: [dogfoodRef("seed", "wi-domain-action:seed-review-proposal")],
     metadata: { bounded: true, coordinate: { workItemId: "wi-domain-action", proposalId: "wi-domain-action:seed-review-proposal" } },
   };
+  const initialWorkbenchCommandRef = dogfoodRef("workbench-command", "workbench:init");
+  const initialWorkbenchGeneratedFacts = [
+    {
+      kind: "workbench-selection",
+      workItemId: selectedWorkItemId,
+      sourceRefs: [initialWorkbenchCommandRef],
+      metadata: { commandId: "workbench:init", visibleUiFact: true, bounded: true, coordinate: { workItemId: selectedWorkItemId } },
+    },
+    {
+      kind: "workbench-lane-filter",
+      lane: "all",
+      sourceRefs: [initialWorkbenchCommandRef],
+      metadata: { commandId: "workbench:init", visibleUiFact: true, bounded: true, coordinate: { filterKind: "lane", value: "all" } },
+    },
+    {
+      kind: "workbench-status-filter",
+      status: "all",
+      sourceRefs: [initialWorkbenchCommandRef],
+      metadata: { commandId: "workbench:init", visibleUiFact: true, bounded: true, coordinate: { filterKind: "status", value: "all" } },
+    },
+    {
+      kind: "workbench-scope",
+      scope: "selected",
+      sourceRefs: [initialWorkbenchCommandRef],
+      metadata: { commandId: "workbench:init", visibleUiFact: true, bounded: true, coordinate: { filterKind: "scope", value: "selected" } },
+    },
+  ];
+  const initialWorkbenchGeneratedRefs = [
+    dogfoodRef("workbench-selection", selectedWorkItemId),
+    dogfoodRef("workbench-lane-filter", "all"),
+    dogfoodRef("workbench-status-filter", "all"),
+    dogfoodRef("workbench-scope", "selected"),
+  ];
+  const initialWorkbenchFacts = [
+    {
+      kind: "workbench-command",
+      commandId: "workbench:init",
+      commandKind: "initial-view-projection",
+      state: "applied",
+      workItemId: selectedWorkItemId,
+      sourceRefs: [dogfoodRef("dashboard-view", "initial-load")],
+      metadata: { visibleUiFact: true, bounded: true, coordinate: { workItemId: selectedWorkItemId } },
+    },
+    ...initialWorkbenchGeneratedFacts,
+    {
+      kind: "workbench-command-result",
+      resultId: "workbench:init:result",
+      commandId: "workbench:init",
+      status: "applied",
+      generatedRefs: initialWorkbenchGeneratedRefs,
+      sourceRefs: [initialWorkbenchCommandRef],
+      metadata: { bounded: true, coordinate: { commandId: "workbench:init", generatedCount: initialWorkbenchGeneratedRefs.length } },
+    },
+    {
+      kind: "workbench-projector-run",
+      projectorRunId: "workbench:init:projector-run",
+      projectorId: "dashboard-private-workbench-projector",
+      commandId: "workbench:init",
+      status: "completed",
+      inputRefs: [dogfoodRef("workbench-command-result", "workbench:init:result")],
+      outputRefs: [dogfoodRef("workbench-view-projection", "workbench:init:projection")],
+      sourceRefs: [dogfoodRef("workbench-command-result", "workbench:init:result")],
+      metadata: { bounded: true, coordinate: { commandId: "workbench:init", projectorId: "dashboard-private-workbench-projector" } },
+    },
+    {
+      kind: "workbench-view-projection",
+      projectionId: "workbench:init:projection",
+      projectionKind: "workbench-shell",
+      selectedWorkItemId,
+      scope: "selected",
+      factsCount: 1 + initialWorkbenchGeneratedRefs.length + 3 + initialWorkbenchGeneratedRefs.length + 2,
+      sourceRefs: [dogfoodRef("workbench-projector-run", "workbench:init:projector-run")],
+      metadata: { bounded: true, coordinate: { selectedWorkItemId, scope: "selected" } },
+    },
+    ...initialWorkbenchGeneratedRefs.map((ref, index) => ({
+      kind: "workbench-provenance-edge",
+      edgeId: `workbench:init:edge:${index + 1}`,
+      fromRef: initialWorkbenchCommandRef,
+      toRef: ref,
+      relation: "generated",
+      commandId: "workbench:init",
+      sourceRefs: [initialWorkbenchCommandRef],
+      metadata: { bounded: true, coordinate: { commandId: "workbench:init", relation: "generated", ordinal: index + 1 } },
+    })),
+    {
+      kind: "workbench-provenance-edge",
+      edgeId: "workbench:init:edge:projector-run",
+      fromRef: initialWorkbenchCommandRef,
+      toRef: dogfoodRef("workbench-projector-run", "workbench:init:projector-run"),
+      relation: "projected",
+      commandId: "workbench:init",
+      projectorRunId: "workbench:init:projector-run",
+      sourceRefs: [initialWorkbenchCommandRef],
+      metadata: { bounded: true, coordinate: { commandId: "workbench:init", projectorRunId: "workbench:init:projector-run" } },
+    },
+    {
+      kind: "workbench-provenance-edge",
+      edgeId: "workbench:init:edge:view-projection",
+      fromRef: dogfoodRef("workbench-projector-run", "workbench:init:projector-run"),
+      toRef: dogfoodRef("workbench-view-projection", "workbench:init:projection"),
+      relation: "updates-ui-projection",
+      commandId: "workbench:init",
+      projectorRunId: "workbench:init:projector-run",
+      sourceRefs: [dogfoodRef("workbench-projector-run", "workbench:init:projector-run")],
+      metadata: { bounded: true, coordinate: { commandId: "workbench:init", projectionId: "workbench:init:projection" } },
+    },
+  ];
   return {
     title: "CSP-8 GraphReFly internal Workbench",
     note: "dashboard-private fixture facts; no public Canvas API, durable WorkspaceGraph owner, or provider runtime",
@@ -719,26 +840,8 @@ function createDogfoodPayload() {
     facts: [
       ...workItems,
       ...dependencies,
-      {
-        kind: "dogfood-selection",
-        workItemId: selectedWorkItemId,
-        sourceRefs: [dogfoodRef("dashboard-view", "initial-selection")],
-        metadata: { visibleUiFact: true, bounded: true, coordinate: { workItemId: selectedWorkItemId } },
-      },
-      {
-        kind: "dogfood-lane-filter",
-        lane: "all",
-        sourceRefs: [dogfoodRef("dashboard-view", "initial-lane-filter")],
-        metadata: { visibleUiFact: true, bounded: true, coordinate: { filterKind: "lane", value: "all" } },
-      },
-      {
-        kind: "dogfood-status-filter",
-        status: "all",
-        sourceRefs: [dogfoodRef("dashboard-view", "initial-status-filter")],
-        metadata: { visibleUiFact: true, bounded: true, coordinate: { filterKind: "status", value: "all" } },
-      },
       ...["all", "queued", "running", "blocked", "complete"].map((lane, order) => ({
-        kind: "dogfood-filter-option",
+        kind: "workbench-filter-option",
         filterKind: "lane",
         value: lane,
         label: lane,
@@ -747,7 +850,7 @@ function createDogfoodPayload() {
         metadata: { graphVisibleOption: true, bounded: true },
       })),
       ...["all", "ready", "running", "completed", "failed", "blocked", "timeout", "canceled", "none"].map((status, order) => ({
-        kind: "dogfood-filter-option",
+        kind: "workbench-filter-option",
         filterKind: "status",
         value: status,
         label: status,
@@ -755,6 +858,16 @@ function createDogfoodPayload() {
         sourceRefs: [dogfoodRef("dashboard-private-view-model", "status-filter-options")],
         metadata: { graphVisibleOption: true, bounded: true },
       })),
+      ...["selected", "global"].map((scope, order) => ({
+        kind: "workbench-filter-option",
+        filterKind: "scope",
+        value: scope,
+        label: scope,
+        order,
+        sourceRefs: [dogfoodRef("dashboard-private-view-model", "scope-filter-options")],
+        metadata: { graphVisibleOption: true, bounded: true },
+      })),
+      ...initialWorkbenchFacts,
       {
         kind: "tool-provider-catalog",
         providerId,
@@ -772,15 +885,11 @@ function createDogfoodPayload() {
         toolNames: ["file.read", "file.edit/apply-patch"],
         operations: ["read", "apply-patch"],
         scope: { profileIds: executorProfiles.map((profile) => profile.profileId), toolNames: ["file.read", "file.edit/apply-patch"] },
-        size: { maxInlineChars: 220, maxMetadataStringChars: 80, overflow: "artifact-ref" },
         sizeCapacity: { maxInlineChars: 220, maxMetadataStringChars: 80, overflow: "artifact-ref" },
         timeout: { timeoutMs: 2_000 },
         redaction: { mode: "summary-ref", evidence: "D293-size-redaction" },
-        cwdPath: { cwd: "dashboard-fixture", pathPolicy: "fixture-relative-only", allowedPaths: ["bounded-fixture.md"] },
-        "cwd-path": { cwd: "dashboard-fixture", pathPolicy: "fixture-relative-only", allowedPaths: ["bounded-fixture.md"] },
         filesystem: { cwd: "dashboard-fixture", pathPolicy: "fixture-relative-only", allowedPaths: ["bounded-fixture.md"] },
         approval: { requiredFor: ["file.edit/apply-patch"], mode: "explicit-visible-policy" },
-        artifact: { mode: "D270-summary-ref", allowInlineBinary: false },
         artifacts: { mode: "D270-summary-ref", allowInlineBinary: false },
         network: { allowed: false },
         sourceRefs: [dogfoodRef("csp-8-decision", "D360"), dogfoodRef("csp-8-decision", "D293"), dogfoodRef("csp-8-decision", "D270")],
