@@ -9,6 +9,15 @@
   var $ = function (id) { return document.getElementById(id); };
   var dogfoodFacts = (payload.dogfood && payload.dogfood.facts ? payload.dogfood.facts : []).slice();
   var DOGFOOD_STATUSES = ["all", "ready", "running", "completed", "failed", "blocked", "timeout", "canceled", "none"];
+  var WORKBENCH_SNAPSHOT_KEY = "graphrefly.dashboard.workbench.session.v1";
+  var WORKBENCH_SESSION_FACT_KINDS = [
+    "workbench-selection",
+    "workbench-lane-filter",
+    "workbench-status-filter",
+    "workbench-scope",
+    "workbench-inspector-filter",
+    "workbench-active-projection-index",
+  ];
 
   // ---- tiny DOM helper ----
   function h(tag, attrs, kids) {
@@ -144,6 +153,16 @@
     if (fact.kind === "workbench-status-filter") return fact.status || "";
     if (fact.kind === "workbench-filter-option") return fact.filterKind && fact.value ? fact.filterKind + ":" + fact.value : "";
     if (fact.kind === "workbench-inspector-filter") return fact.filterKind && fact.value ? fact.filterKind + ":" + fact.value : "";
+    if (fact.kind === "workbench-operation-policy") return fact.policyId || fact.commandKind || "";
+    if (fact.kind === "workbench-triage-projection") return fact.projectionId || "";
+    if (fact.kind === "workbench-triage-item") return fact.triageItemId || "";
+    if (fact.kind === "workbench-active-projection-index") return fact.indexId || "";
+    if (fact.kind === "workbench-session-snapshot" || fact.kind === "workbench-session-restore") return fact.snapshotId || fact.restoreId || "";
+    if (fact.kind === "workbench-missing-input-request") return fact.requestId || "";
+    if (fact.kind === "workbench-corrected-input-request") return fact.requestId || "";
+    if (fact.kind === "workbench-request-superseded") return fact.supersededId || "";
+    if (fact.kind === "workbench-retention-gap-inspection") return fact.inspectionId || "";
+    if (fact.kind === "workbench-policy-denied-ack") return fact.ackId || "";
     return fact.commandId || fact.projectorRunId || fact.projectionId || fact.edgeId ||
       fact.workItemId || fact.planId || fact.requestId || fact.routeId || fact.profileId || fact.policyId ||
       fact.adapterInputId || fact.runId || fact.outcomeId || fact.resultId || fact.evidenceId ||
@@ -189,6 +208,17 @@
       "workbench-scope",
       "workbench-filter-option",
       "workbench-inspector-filter",
+      "workbench-operation-policy",
+      "workbench-triage-projection",
+      "workbench-triage-item",
+      "workbench-active-projection-index",
+      "workbench-session-snapshot",
+      "workbench-session-restore",
+      "workbench-missing-input-request",
+      "workbench-corrected-input-request",
+      "workbench-request-superseded",
+      "workbench-retention-gap-inspection",
+      "workbench-policy-denied-ack",
     ];
     if (!selected || !bundle) {
       return dogfoodFacts.filter(function (fact) { return controlKinds.indexOf(fact.kind) >= 0; });
@@ -281,20 +311,85 @@
   function workbenchCommandRef(commandId) {
     return { kind: "workbench-command", id: commandId };
   }
+  function workbenchPolicies() {
+    return dogfoodFactsByKind("workbench-operation-policy");
+  }
+  function workbenchPolicyFor(commandKind) {
+    return workbenchPolicies().filter(function (policy) { return policy.commandKind === commandKind; }).slice(-1)[0] || null;
+  }
+  function workbenchPolicyRef(commandKind) {
+    var policy = workbenchPolicyFor(commandKind);
+    return policy ? { kind: "workbench-operation-policy", id: policy.policyId } : null;
+  }
+  function workbenchPolicyReason(commandKind, fallback) {
+    var policy = workbenchPolicyFor(commandKind);
+    return policy && policy.disabledReasonTemplate || fallback;
+  }
+  function workbenchPolicyGeneratedKinds(commandKind) {
+    var policy = workbenchPolicyFor(commandKind);
+    return policy && Array.isArray(policy.generatedFactKinds) ? policy.generatedFactKinds : [];
+  }
+  function workbenchPolicyAllowsGeneratedKind(commandKind, factKind) {
+    var kinds = workbenchPolicyGeneratedKinds(commandKind);
+    return kinds.indexOf(factKind) >= 0 ||
+      (kinds.indexOf("executor-outcome") >= 0 && ["result", "failure", "blocked", "timeout", "canceled"].indexOf(factKind) >= 0);
+  }
+  function workbenchPolicyUnauthorizedGeneratedKinds(commandKind, facts) {
+    var policy = workbenchPolicyFor(commandKind);
+    if (!policy) return ["missing-policy"];
+    return Array.from(new Set((facts || []).map(function (fact) { return fact.kind || fact.factKind || "unknown"; }).filter(function (kind) {
+      return !workbenchPolicyAllowsGeneratedKind(commandKind, kind);
+    })));
+  }
+  function workbenchValidWorkItemId(candidate, fallback) {
+    var ids = dogfoodFactsByKind("work-item").map(function (item) { return item.workItemId; });
+    if (ids.indexOf(candidate) >= 0) return candidate;
+    if (ids.indexOf(fallback) >= 0) return fallback;
+    return ids[0] || "";
+  }
+  function workbenchIdempotencyKey(policy, commandKind, workItemId, params) {
+    var p = params || {};
+    var template = policy && policy.idempotencyKey || "commandKind+targetRef";
+    var fields = template.split("+").map(function (field) {
+      if (field === "commandKind") return commandKind;
+      if (field === "workItemId") return workItemId || "none";
+      if (field === "targetRef") return p.triageItemId || p.proposalId || p.adapterInputId || p.snapshotId || workItemId || "none";
+      if (field === "filterKind") return p.filterKind || (commandKind.indexOf("lane") >= 0 ? "lane" : commandKind.indexOf("status") >= 0 ? "status" : "filter");
+      if (field === "value") return p.value || "default";
+      if (field === "scope") return p.scope || "selected";
+      if (field === "proposalSeq") return p.proposalSeq || "default";
+      if (field === "actionKind") return p.actionKind || "default";
+      if (field === "proposalId") return p.proposalId || "none";
+      if (field === "adapterInputId") return p.adapterInputId || "none";
+      if (field === "attempt") return p.attempt || "none";
+      if (field === "issueId") return p.issueId || p.triageItemId || p.issueCode || "none";
+      if (field === "requestId") return p.requestId || p.triageItemId || "none";
+      if (field === "snapshotId") return p.snapshotId || "local";
+      if (p[field] != null) return p[field];
+      return field;
+    });
+    return fields.join("|");
+  }
   function workbenchCommand(commandKind, workItemId, targetRefs, params) {
     var seq = dogfoodFactsByKind("workbench-command").length + 1;
     var commandId = "workbench:" + commandKind + ":" + seq;
+    var policy = workbenchPolicyFor(commandKind);
+    var idempotencyKey = workbenchIdempotencyKey(policy, commandKind, workItemId, params);
     return {
       kind: "workbench-command",
       commandId: commandId,
       commandKind: commandKind,
+      policyId: policy && policy.policyId,
       workItemId: workItemId,
       targetRefs: targetRefs || [],
       params: params || {},
+      idempotencyKey: idempotencyKey,
       issuedAtMs: 1_500 + seq,
       sourceRefs: targetRefs || [],
       metadata: {
         commandId: commandId,
+        policyId: policy && policy.policyId,
+        idempotencyKey: idempotencyKey,
         dashboardPrivate: true,
         visibleUiFact: true,
         bounded: true,
@@ -346,8 +441,52 @@
     }
     return edges;
   }
-  function workbenchAppendCommand(command, generatedFacts, summary, projectorId) {
-    var generatedRefs = generatedFacts.map(workbenchFactRef).filter(Boolean);
+  function workbenchProjectedTriageFacts(command, pendingGeneratedFacts) {
+    var commandRef = workbenchCommandRef(command.commandId);
+    var view = deriveDogfoodView(dogfoodFacts.concat([command], pendingGeneratedFacts || []));
+    var projectionId = command.commandId + ":triage-projection";
+    var items = (view.triageItems || []).map(function (item, index) {
+      return {
+        kind: "workbench-triage-item",
+        triageItemId: command.commandId + ":triage-item:" + (index + 1),
+        workItemId: item.workItemId,
+        category: item.category,
+        severity: item.severity,
+        actionability: item.actionability,
+        recommendedCommandKinds: item.recommendedCommandKinds,
+        disabledReason: item.disabledReason,
+        sourceRefs: [commandRef].concat(item.sourceRefs || []).slice(0, 8),
+        policyRefs: item.policyRefs || [],
+        metadata: {
+          commandId: command.commandId,
+          projectorId: "dashboard-private-triage-projector",
+          dashboardPrivate: true,
+          visibleUiFact: true,
+          bounded: true,
+          coordinate: { workItemId: item.workItemId, category: item.category, ordinal: index + 1 },
+        },
+      };
+    });
+    return [{
+      kind: "workbench-triage-projection",
+      projectionId: projectionId,
+      projectionKind: "workbench-triage",
+      itemRefs: items.map(function (item) { return { kind: "workbench-triage-item", id: item.triageItemId }; }),
+      policyRefs: workbenchPolicies().map(function (policy) { return { kind: "workbench-operation-policy", id: policy.policyId }; }),
+      sourceRefs: [commandRef],
+      metadata: {
+        commandId: command.commandId,
+        projectorId: "dashboard-private-triage-projector",
+        dashboardPrivate: true,
+        visibleFactsOnly: true,
+        bounded: true,
+        coordinate: { commandId: command.commandId, itemCount: items.length },
+      },
+    }].concat(items);
+  }
+  function workbenchAppendCommand(command, generatedFacts, summary, projectorId, resultStatus) {
+    generatedFacts = generatedFacts || [];
+    generatedFacts = generatedFacts.concat(workbenchProjectedTriageFacts(command, generatedFacts));
     var nextSelection = generatedFacts.filter(function (fact) { return fact.kind === "workbench-selection"; }).slice(-1)[0];
     var nextScope = generatedFacts.filter(function (fact) { return fact.kind === "workbench-scope"; }).slice(-1)[0];
     var nextLane = generatedFacts.filter(function (fact) { return fact.kind === "workbench-lane-filter"; }).slice(-1)[0];
@@ -355,18 +494,40 @@
     var resultId = command.commandId + ":result";
     var projectorRunId = command.commandId + ":projector-run";
     var projectionId = command.commandId + ":view-projection";
+    var activeIndex = {
+      kind: "workbench-active-projection-index",
+      indexId: command.commandId + ":active-projection-index",
+      activeProjectionId: projectionId,
+      commandId: command.commandId,
+      selectedWorkItemId: nextSelection ? nextSelection.workItemId : dogfoodSelectedId(),
+      scope: nextScope ? nextScope.scope : workbenchCurrentScope(),
+      lane: nextLane ? nextLane.lane : dogfoodCurrentLaneFilter(),
+      status: nextStatus ? nextStatus.status : dogfoodCurrentStatusFilter(),
+      sourceRefs: [workbenchCommandRef(command.commandId)],
+      metadata: {
+        dashboardPrivate: true,
+        visibleUiFact: true,
+        bounded: true,
+        coordinate: { commandId: command.commandId, projectionId: projectionId },
+      },
+    };
+    var visibleGeneratedFacts = generatedFacts.concat(activeIndex);
+    var generatedRefs = visibleGeneratedFacts.map(workbenchFactRef).filter(Boolean);
     var commandResult = {
       kind: "workbench-command-result",
       resultId: resultId,
       commandId: command.commandId,
-      status: generatedFacts.length ? "appended" : "blocked",
+      status: resultStatus || (generatedFacts.length ? "appended" : "no-op"),
       generatedRefs: generatedRefs,
       summary: summary,
       issueRefs: generatedRefs.filter(function (ref) { return ref.kind === "issue"; }),
       materialRefs: generatedRefs.filter(function (ref) { return ref.kind === "tool-provider-material-ref"; }),
+      policyRefs: command.policyId ? [{ kind: "workbench-operation-policy", id: command.policyId }] : [],
       sourceRefs: [workbenchCommandRef(command.commandId)],
       metadata: {
         bounded: true,
+        policyId: command.policyId,
+        idempotencyKey: command.idempotencyKey,
         coordinate: { commandId: command.commandId, generatedCount: generatedRefs.length },
       },
     };
@@ -376,8 +537,8 @@
       projectorId: projectorId || "dashboard-private-workbench-projector",
       commandId: command.commandId,
       status: "completed",
-      inputRefs: [workbenchCommandRef(command.commandId), { kind: "workbench-command-result", id: resultId }],
-      outputRefs: [{ kind: "workbench-view-projection", id: projectionId }],
+      inputRefs: [workbenchCommandRef(command.commandId), { kind: "workbench-command-result", id: resultId }].concat(command.policyId ? [{ kind: "workbench-operation-policy", id: command.policyId }] : []),
+      outputRefs: [{ kind: "workbench-view-projection", id: projectionId }, { kind: "workbench-active-projection-index", id: activeIndex.indexId }],
       sourceRefs: [{ kind: "workbench-command-result", id: resultId }],
       metadata: {
         bounded: true,
@@ -385,7 +546,7 @@
         coordinate: { commandId: command.commandId, projectorId: projectorId || "dashboard-private-workbench-projector" },
       },
     };
-    var provenanceEdges = workbenchProvenanceEdges(command, generatedFacts, projectorRunId, projectionId);
+    var provenanceEdges = workbenchProvenanceEdges(command, visibleGeneratedFacts, projectorRunId, projectionId);
     var viewProjection = {
       kind: "workbench-view-projection",
       projectionId: projectionId,
@@ -394,7 +555,7 @@
       scope: nextScope ? nextScope.scope : workbenchCurrentScope(),
       lane: nextLane ? nextLane.lane : dogfoodCurrentLaneFilter(),
       status: nextStatus ? nextStatus.status : dogfoodCurrentStatusFilter(),
-      factsCount: dogfoodFacts.length + 1 + generatedFacts.length + 3 + provenanceEdges.length,
+      factsCount: dogfoodFacts.length + 1 + visibleGeneratedFacts.length + 3 + provenanceEdges.length,
       inputRefs: generatedRefs.slice(0, 16),
       sourceRefs: [{ kind: "workbench-projector-run", id: projectorRunId }],
       metadata: {
@@ -404,7 +565,7 @@
       },
     };
     dogfoodAppend([command].concat(
-      generatedFacts,
+      visibleGeneratedFacts,
       [commandResult, projectorRun, viewProjection],
       provenanceEdges,
     ));
@@ -424,28 +585,35 @@
     if (!bar) return;
     document.documentElement.style.setProperty("--topbar-h", Math.ceil(bar.getBoundingClientRect().height) + "px");
   }
-  function deriveDogfoodView() {
-    var workItems = dogfoodFactsByKind("work-item");
-    var deps = dogfoodFactsByKind("work-item-dependency");
-    var effectPlanFacts = dogfoodFactsByKind("work-item-effect-plan");
-    var effectRequests = dogfoodFactsByKind("work-item-effect-requested");
-    var agentRequests = dogfoodFactsByKind("issued");
-    var routes = dogfoodFactsByKind("executor-route");
-    var profiles = dogfoodRecords("executor-profile");
-    var policies = dogfoodFactsByKind("tool-provider-execution-policy");
-    var adapterInputs = dogfoodFactsByKind("tool-provider-adapter-input");
-    var requestAdmissions = dogfoodFactsByKind("tool-provider-request-admission");
-    var runRequests = dogfoodFactsByKind("tool-provider-adapter-run-requested");
-    var runStatuses = dogfoodFactsByKind("tool-provider-adapter-run-status");
-    var runtimeStatuses = dogfoodFactsByKind("tool-provider-adapter-runtime-status");
-    var retentionEvidence = dogfoodFactsByKind("tool-provider-retention-evidence");
-    var materialRefs = dogfoodFactsByKind("tool-provider-material-ref");
-    var outcomes = dogfoodFacts.filter(function (f) { return f.kind === "result" || f.kind === "failure" || f.kind === "blocked" || f.kind === "timeout" || f.kind === "canceled"; });
-    var effectResults = dogfoodFactsByKind("effect-run-result");
-    var evidence = dogfoodFactsByKind("work-item-evidence-recorded");
-    var issues = dogfoodFacts.filter(function (f) { return f.kind === "issue"; });
-    var audit = dogfoodFactsByKind("agent-runtime-audit");
-    var actions = dogfoodFacts.filter(function (f) {
+  function deriveDogfoodView(factsOverride) {
+    var viewFacts = factsOverride || dogfoodFacts;
+    function factsByKind(kind) {
+      return viewFacts.filter(function (fact) { return fact.kind === kind; });
+    }
+    function records(kind) {
+      return viewFacts.filter(function (fact) { return fact.kind === kind || fact.factKind === kind; });
+    }
+    var workItems = factsByKind("work-item");
+    var deps = factsByKind("work-item-dependency");
+    var effectPlanFacts = factsByKind("work-item-effect-plan");
+    var effectRequests = factsByKind("work-item-effect-requested");
+    var agentRequests = factsByKind("issued");
+    var routes = factsByKind("executor-route");
+    var profiles = records("executor-profile");
+    var policies = factsByKind("tool-provider-execution-policy");
+    var adapterInputs = factsByKind("tool-provider-adapter-input");
+    var requestAdmissions = factsByKind("tool-provider-request-admission");
+    var runRequests = factsByKind("tool-provider-adapter-run-requested");
+    var runStatuses = factsByKind("tool-provider-adapter-run-status");
+    var runtimeStatuses = factsByKind("tool-provider-adapter-runtime-status");
+    var retentionEvidence = factsByKind("tool-provider-retention-evidence");
+    var materialRefs = factsByKind("tool-provider-material-ref");
+    var outcomes = viewFacts.filter(function (f) { return f.kind === "result" || f.kind === "failure" || f.kind === "blocked" || f.kind === "timeout" || f.kind === "canceled"; });
+    var effectResults = factsByKind("effect-run-result");
+    var evidence = factsByKind("work-item-evidence-recorded");
+    var issues = viewFacts.filter(function (f) { return f.kind === "issue"; });
+    var audit = factsByKind("agent-runtime-audit");
+    var actions = viewFacts.filter(function (f) {
       return f.kind === "work-item-domain-action-proposal" || f.kind === "work-item-domain-action-approval" ||
         f.kind === "work-item-domain-action-admission" || f.kind === "work-item-domain-action-application" ||
         f.kind === "work-item-domain-action-rejection" || f.kind === "work-item-domain-action-cancellation";
@@ -459,7 +627,7 @@
     var outcomeByRun = {};
     outcomes.forEach(function (item) { if (item.metadata && item.metadata.runId) outcomeByRun[item.metadata.runId] = item; });
     var byId = {};
-    dogfoodFacts.forEach(function (fact) {
+    viewFacts.forEach(function (fact) {
       var id = dogfoodFactId(fact);
       if (id) byId[(fact.kind || fact.factKind) + ":" + id] = fact;
       if (fact.factKind && id) byId[fact.factKind + ":" + id] = fact;
@@ -624,6 +792,136 @@
         chain: chain,
       };
     }
+    function inferWorkItemId(fact) {
+      var c = fact && fact.metadata && fact.metadata.coordinate || {};
+      var ids = [fact && fact.workItemId, fact && fact.subjectId, c.workItemId, c.subjectId, c.requestId, c.adapterInputId, c.runId].filter(Boolean);
+      for (var i = 0; i < ids.length; i += 1) {
+        if (nodeById[ids[i]]) return ids[i];
+        var prefix = String(ids[i]).split(":").slice(0, 2).join(":");
+        if (nodeById[prefix]) return prefix;
+        for (var j = 0; j < nodes.length; j += 1) {
+          if (String(ids[i]).indexOf(nodes[j].id + ":") === 0) return nodes[j].id;
+        }
+      }
+      return selectedWorkItemId;
+    }
+    function hasIssue(workItemId, code) {
+      return issues.some(function (issue) {
+        return (issue.issueCode || issue.code) === code && dogfoodFactTouches(issue, [workItemId, workItemId + ":tool-request"]);
+      });
+    }
+    function readyInputFor(workItemId) {
+      var input = inputByWorkItem[workItemId];
+      if (!input || input.status !== "ready") return false;
+      return !hasIssue(workItemId, "retention-gap") && !hasIssue(workItemId, "policy-denied");
+    }
+    function triageCategory(code, fact) {
+      if (code === "policy-denied") return "policy-denied";
+      if (code === "approval-needed") return "approval-needed";
+      if (code === "retention-gap") return "retention-gap";
+      if (code === "missing-input") return "missing-input";
+      if (code === "stale-request") return "stale-request";
+      if (code === "mismatched-request") return "mismatched-request";
+      if (code === "failed" || code === "timeout" || code === "canceled") return code;
+      if (fact && (fact.kind === "failure" || fact.kind === "timeout" || fact.kind === "canceled")) return dogfoodResultStatus(fact.kind);
+      return "inspect";
+    }
+    function triageRecommendation(category, workItemId) {
+      function withPolicy(actionability, commands, fallbackReason) {
+        var policies = commands.map(workbenchPolicyFor).filter(Boolean);
+        return {
+          actionability: actionability,
+          commands: commands.filter(function (commandKind) { return !!workbenchPolicyFor(commandKind); }),
+          reason: policies[0] && policies[0].disabledReasonTemplate || fallbackReason,
+        };
+      }
+      if (category === "policy-denied") return withPolicy("acknowledge", ["acknowledge-policy-denied"], "Policy-denied is inspect/acknowledge only; approval cannot bypass policy.");
+      if (category === "approval-needed") return withPolicy("review", ["approve-domain-action", "reject-domain-action", "cancel-domain-action"], "A non-terminal proposal can be approved, rejected, or canceled.");
+      if (category === "retention-gap") return withPolicy("inspect-only", ["inspect-retention-gap"], "Retention-gap proof fails closed; retry repair is disabled.");
+      if (category === "missing-input") return withPolicy("request-input", ["request-missing-input"], "Request corrected input; do not substitute missing input for retention evidence.");
+      if (category === "stale-request") return withPolicy("mark-superseded", ["mark-stale-superseded"], "Stale admission can be marked superseded as dashboard-private session material.");
+      if (category === "mismatched-request") return withPolicy("request-corrected-input", ["request-corrected-input"], "Request corrected input and inspect the mismatch; do not treat it as retention evidence.");
+      if (category === "failed" || category === "timeout" || category === "canceled") {
+        return readyInputFor(workItemId)
+          ? withPolicy("retry-ready", ["run-visible-effect"], "Retry is bounded and visible because ready input exists and no retention-gap is present.")
+          : { actionability: "inspect-only", commands: [], reason: "Retry is disabled until ready input exists and retention-gap is absent." };
+      }
+      return { actionability: "inspect-only", commands: [], reason: "Inspect the visible fact chain." };
+    }
+    function severityFor(category, fact) {
+      if (category === "retention-gap" || category === "policy-denied" || category === "failed" || category === "timeout") return "error";
+      return fact && fact.severity || "warning";
+    }
+    var triageSourceFacts = [];
+    issues.forEach(function (issue) { triageSourceFacts.push({ code: issue.issueCode || issue.code, fact: issue }); });
+    requestAdmissions.forEach(function (admission) {
+      if (admission.state === "stale-request" || admission.state === "mismatched-request") {
+        triageSourceFacts.push({ code: admission.state, fact: admission });
+      }
+    });
+    var latestOutcomeByRequest = {};
+    outcomes.forEach(function (outcome) {
+      latestOutcomeByRequest[outcome.requestId || dogfoodFactId(outcome)] = outcome;
+    });
+    Object.keys(latestOutcomeByRequest).forEach(function (key) {
+      var outcome = latestOutcomeByRequest[key];
+      var status = dogfoodResultStatus(outcome.kind);
+      if (status === "failed" || status === "timeout" || status === "canceled") triageSourceFacts.push({ code: status, fact: outcome });
+    });
+    var triageItems = [];
+    var seenTriage = {};
+    triageSourceFacts.forEach(function (entry) {
+      var category = triageCategory(entry.code, entry.fact);
+      var workItemId = inferWorkItemId(entry.fact);
+      var factId = dogfoodFactId(entry.fact) || category;
+      var key = workItemId + "|" + category;
+      if (seenTriage[key]) {
+        seenTriage[key].sourceRefs = seenTriage[key].sourceRefs.concat([workbenchFactRef(entry.fact)].filter(Boolean));
+        return;
+      }
+      var rec = triageRecommendation(category, workItemId);
+      var policyRefs = rec.commands.map(workbenchPolicyRef).filter(Boolean);
+      triageItems.push({
+        kind: "workbench-triage-item",
+        triageItemId: "triage:" + workItemId + ":" + category + ":" + triageItems.length,
+        workItemId: workItemId,
+        category: category,
+        severity: severityFor(category, entry.fact),
+        actionability: rec.actionability,
+        recommendedCommandKinds: rec.commands,
+        disabledReason: rec.reason,
+        sourceRefs: [workbenchFactRef(entry.fact)].filter(Boolean),
+        policyRefs: policyRefs,
+        metadata: {
+          dashboardPrivate: true,
+          visibleUiFact: true,
+          bounded: true,
+          coordinate: { workItemId: workItemId, category: category, sourceFactId: factId },
+        },
+      });
+      seenTriage[key] = triageItems[triageItems.length - 1];
+    });
+    triageItems.sort(function (a, b) {
+      var severityRank = { error: 0, warning: 1, info: 2 };
+      var actionRank = { "retry-ready": 0, review: 1, "request-input": 2, "request-corrected-input": 3, "mark-superseded": 4, acknowledge: 5, "inspect-only": 6 };
+      return (severityRank[a.severity] || 3) - (severityRank[b.severity] || 3) ||
+        (actionRank[a.actionability] || 9) - (actionRank[b.actionability] || 9) ||
+        a.category.localeCompare(b.category);
+    });
+    var triageProjection = {
+      kind: "workbench-triage-projection",
+      projectionId: "workbench-triage:" + viewFacts.length,
+      projectionKind: "workbench-triage",
+      itemRefs: triageItems.map(function (item) { return { kind: "workbench-triage-item", id: item.triageItemId }; }),
+      policyRefs: workbenchPolicies().map(function (policy) { return { kind: "workbench-operation-policy", id: policy.policyId }; }),
+      sourceRefs: [{ kind: "dashboard-private-view-model", id: "triage-projection" }],
+      metadata: {
+        dashboardPrivate: true,
+        visibleFactsOnly: true,
+        bounded: true,
+        coordinate: { items: triageItems.length, facts: viewFacts.length },
+      },
+    };
     var selected = nodeById[selectedWorkItemId] || nodes[0];
     return {
       selectedWorkItemId: selectedWorkItemId,
@@ -635,6 +933,9 @@
       issues: issues,
       audit: audit,
       actions: actions,
+      operationPolicies: workbenchPolicies(),
+      triageProjection: triageProjection,
+      triageItems: triageItems,
       selected: selected,
       selectedBundle: selected ? selectedBundleFor(selected.id) : null,
       counters: {
@@ -648,7 +949,8 @@
         issues: issues.length,
         runtimeStatus: runtimeStatuses.length,
         retentionEvidence: retentionEvidence.length,
-        facts: dogfoodFacts.length,
+        triage: triageItems.length,
+        facts: viewFacts.length,
       },
     };
   }
@@ -658,40 +960,70 @@
   }
   function dogfoodAppendFilter(kind, value) {
     var current = kind === "lane" ? dogfoodCurrentLaneFilter() : dogfoodCurrentStatusFilter();
-    if (current === value) return;
     var command = workbenchCommand("set-" + kind + "-filter", dogfoodSelectedId(), [{ kind: "workbench-filter", id: kind }], { value: value });
-    workbenchAppendCommand(command, [{
+    if (current === value) {
+      workbenchAppendCommand(command, [], kind + " filter already equals " + value + ".", "dashboard-private-filter-projector", "no-op");
+      return;
+    }
+    var generatedFacts = [{
       kind: kind === "lane" ? "workbench-lane-filter" : "workbench-status-filter",
       lane: kind === "lane" ? value : undefined,
       status: kind === "status" ? value : undefined,
       sourceRefs: [workbenchCommandRef(command.commandId)],
       metadata: { commandId: command.commandId, visibleUiFact: true, bounded: true, coordinate: { filterKind: kind, value: value } },
-    }], "Updated " + kind + " filter from a visible Workbench command.", "dashboard-private-filter-projector");
+    }];
+    var unauthorized = workbenchPolicyUnauthorizedGeneratedKinds(command.commandKind, generatedFacts);
+    if (unauthorized.length) {
+      workbenchAppendCommand(command, [], "WorkbenchOperationPolicy does not authorize generated fact kinds: " + unauthorized.join(", ") + ".", "dashboard-private-filter-projector", "denied");
+      return;
+    }
+    workbenchAppendCommand(command, generatedFacts, "Updated " + kind + " filter from a visible Workbench command.", "dashboard-private-filter-projector");
   }
   function workbenchAppendScope(value) {
     var current = workbenchCurrentScope();
-    if (current === value) return;
     var command = workbenchCommand("set-scope", dogfoodSelectedId(), [{ kind: "workbench-scope", id: value }], { scope: value });
-    workbenchAppendCommand(command, [{
+    if (current === value) {
+      workbenchAppendCommand(command, [], "Scope already equals " + value + ".", "dashboard-private-scope-projector", "no-op");
+      return;
+    }
+    var generatedFacts = [{
       kind: "workbench-scope",
       scope: value,
       sourceRefs: [workbenchCommandRef(command.commandId)],
       metadata: { commandId: command.commandId, visibleUiFact: true, bounded: true, coordinate: { filterKind: "scope", value: value } },
-    }], "Updated Workbench scope from a visible command.", "dashboard-private-scope-projector");
+    }];
+    var unauthorized = workbenchPolicyUnauthorizedGeneratedKinds(command.commandKind, generatedFacts);
+    if (unauthorized.length) {
+      workbenchAppendCommand(command, [], "WorkbenchOperationPolicy does not authorize generated fact kinds: " + unauthorized.join(", ") + ".", "dashboard-private-scope-projector", "denied");
+      return;
+    }
+    workbenchAppendCommand(command, generatedFacts, "Updated Workbench scope from a visible command.", "dashboard-private-scope-projector");
   }
   function workbenchAppendInspectorFilter(filterKind, value) {
     var filters = workbenchInspectorFilters();
-    if (filters[filterKind] === value) return;
     var command = workbenchCommand("set-inspector-filter", dogfoodSelectedId(), [{ kind: "workbench-inspector-filter", id: filterKind }], { filterKind: filterKind, value: value });
-    workbenchAppendCommand(command, [{
+    if (filters[filterKind] === value) {
+      workbenchAppendCommand(command, [], "Inspector filter already equals " + value + ".", "dashboard-private-inspector-filter-projector", "no-op");
+      return;
+    }
+    var generatedFacts = [{
       kind: "workbench-inspector-filter",
       filterKind: filterKind,
       value: value,
       sourceRefs: [workbenchCommandRef(command.commandId)],
       metadata: { commandId: command.commandId, visibleUiFact: true, bounded: true, coordinate: { filterKind: filterKind, value: value } },
-    }], "Updated fact inspector filter from graph-visible options.", "dashboard-private-inspector-filter-projector");
+    }];
+    var unauthorized = workbenchPolicyUnauthorizedGeneratedKinds(command.commandKind, generatedFacts);
+    if (unauthorized.length) {
+      workbenchAppendCommand(command, [], "WorkbenchOperationPolicy does not authorize generated fact kinds: " + unauthorized.join(", ") + ".", "dashboard-private-inspector-filter-projector", "denied");
+      return;
+    }
+    workbenchAppendCommand(command, generatedFacts, "Updated fact inspector filter from graph-visible options.", "dashboard-private-inspector-filter-projector");
   }
   function dogfoodActionState(view, bundle, selectionVisible) {
+    var selectedId = view && view.selected && view.selected.id;
+    var selectedTriage = selectedId ? (view.triageItems || []).filter(function (item) { return item.workItemId === selectedId; }) : [];
+    var topTriage = selectedTriage[0];
     if (!selectionVisible || !view.selected) {
       return {
         canRun: false,
@@ -705,6 +1037,7 @@
         approveReason: "No proposal is selected.",
         rejectReason: "No proposal is selected.",
         cancelReason: "No proposal is selected.",
+        recommended: selectedTriage,
       };
     }
     var input = bundle && bundle.adapterInput;
@@ -724,27 +1057,46 @@
     var admissionOk = !bundle.admission || bundle.admission.state === "admitted";
     var retentionGap = !!(bundle.runtimeStatus && bundle.runtimeStatus.status === "retention-gap") ||
       (bundle.issues || []).some(function (issue) { return (issue.issueCode || issue.code) === "retention-gap"; });
-    var canRun = !!(input && input.status === "ready" && admissionOk && !retentionGap);
+    var policyDenied = selectedTriage.some(function (item) { return item.category === "policy-denied"; }) ||
+      (bundle.issues || []).some(function (issue) { return (issue.issueCode || issue.code) === "policy-denied"; });
+    var retryReady = selectedTriage.some(function (item) { return item.actionability === "retry-ready"; });
+    var hasRunPolicy = !!workbenchPolicyFor("run-visible-effect");
+    var hasProposePolicy = !!workbenchPolicyFor("propose-domain-action");
+    var hasApprovePolicy = !!workbenchPolicyFor("approve-domain-action");
+    var hasRejectPolicy = !!workbenchPolicyFor("reject-domain-action");
+    var hasCancelPolicy = !!workbenchPolicyFor("cancel-domain-action");
+    var canRun = !!(hasRunPolicy && input && input.status === "ready" && admissionOk && !retentionGap && !policyDenied && (retryReady || !selectedTriage.length || selectedTriage.every(function (item) {
+      return ["approval-needed", "missing-input", "stale-request", "mismatched-request", "policy-denied", "retention-gap"].indexOf(item.category) < 0;
+    })));
     var runReason = canRun ? "Actions append visible facts; projector facts re-derive from the ledger." :
-      retentionGap ? "Retention-gap proof exists for this coordinate; fake runtime fails closed." :
+      !hasRunPolicy ? "No dashboard-private operation policy is visible for run-visible-effect." :
+      retentionGap ? workbenchPolicyReason("run-visible-effect", "Retention-gap proof exists for this coordinate; fake runtime fails closed.") :
+        policyDenied ? "Policy-denied is inspect/acknowledge only; retry and approval bypass stay disabled." :
+          topTriage ? topTriage.disabledReason :
         !admissionOk ? "Request admission is not admitted for this coordinate." :
           "No ready adapter input for the selected WorkItem.";
     var actionableProposal = !!(latestProposal && !approved && !rejected && !canceled && !applied);
     return {
       canRun: canRun,
-      canPropose: true,
-      canApprove: actionableProposal,
-      canReject: actionableProposal,
-      canCancel: actionableProposal,
+      canPropose: hasProposePolicy && !policyDenied,
+      canApprove: hasApprovePolicy && actionableProposal && !policyDenied,
+      canReject: hasRejectPolicy && actionableProposal,
+      canCancel: hasCancelPolicy && actionableProposal,
       runLabel: runCount > 0 ? "Retry visible run" : "Run fake effect",
       runReason: runReason,
-      proposeReason: "Append a graph-visible WorkItemDomainActionProposal fact.",
-      approveReason: actionableProposal ? "Latest proposal can be approved and projected to application facts." :
-        latestProposal ? "Latest proposal already has a terminal review fact." : "No proposal is waiting for approval.",
-      rejectReason: actionableProposal ? "Latest proposal can be rejected by a visible review fact." :
+      proposeReason: !hasProposePolicy ? "No dashboard-private operation policy is visible for propose-domain-action." :
+        policyDenied ? workbenchPolicyReason("propose-domain-action", "Policy-denied is inspect/acknowledge only; proposing approval work would bypass policy.") : "Append a graph-visible WorkItemDomainActionProposal fact.",
+      approveReason: policyDenied ? "Policy-denied cannot be bypassed by UI approval." :
+        !hasApprovePolicy ? "No dashboard-private operation policy is visible for approve-domain-action." :
+        actionableProposal ? workbenchPolicyReason("approve-domain-action", "Latest proposal can be approved and projected to application facts.") :
+          latestProposal ? "Latest proposal already has a terminal review fact." : "No proposal is waiting for approval.",
+      rejectReason: !hasRejectPolicy ? "No dashboard-private operation policy is visible for reject-domain-action." :
+        actionableProposal ? workbenchPolicyReason("reject-domain-action", "Latest proposal can be rejected by a visible review fact.") :
         latestProposal ? "Latest proposal already has a terminal review fact." : "No proposal is waiting for rejection.",
-      cancelReason: actionableProposal ? "Latest proposal can be canceled by a visible command fact." :
+      cancelReason: !hasCancelPolicy ? "No dashboard-private operation policy is visible for cancel-domain-action." :
+        actionableProposal ? workbenchPolicyReason("cancel-domain-action", "Latest proposal can be canceled by a visible command fact.") :
         latestProposal ? "Latest proposal already has a terminal review fact." : "No proposal is waiting for cancellation.",
+      recommended: selectedTriage,
     };
   }
   function dogfoodProjectOutcomeFacts(selected, input, outcome, commandRef) {
@@ -824,11 +1176,22 @@
   }
   function dogfoodRunSelected(view) {
     var selected = view.selected;
-    if (!selected) return;
+    if (!selected) {
+      var missingCommand = workbenchCommand("approve-domain-action", dogfoodSelectedId(), [{ kind: "work-item-domain-action-proposal", id: "missing" }], {});
+      workbenchAppendCommand(missingCommand, [], "No visible WorkItem is selected for approval.", "dashboard-private-domain-action-projector", "no-op");
+      return;
+    }
+    var currentView = deriveDogfoodView();
+    var currentBundle = currentView.selectedBundle;
+    var actionState = dogfoodActionState(currentView, currentBundle, true);
     var input = dogfoodFactsByKind("tool-provider-adapter-input").filter(function (item) {
       return dogfoodWorkItemFromRefs(item.input && item.input.subjectRefs) === selected.id && item.status === "ready";
     }).slice(-1)[0];
-    if (!input) return;
+    if (!input || !actionState.canRun) {
+      var deniedCommand = workbenchCommand("run-visible-effect", selected.id, input ? [{ kind: "tool-provider-adapter-input", id: input.adapterInputId }] : [{ kind: "work-item", id: selected.id }], input ? { adapterInputId: input.adapterInputId } : {});
+      workbenchAppendCommand(deniedCommand, [], actionState.runReason || "No ready visible adapter input for this WorkItem.", "dashboard-private-operation-policy-projector", "denied");
+      return;
+    }
     var attempt = dogfoodFactsByKind("tool-provider-adapter-run-requested").filter(function (run) {
       return run.adapterInputId === input.adapterInputId;
     }).reduce(function (max, run) { return Math.max(max, Number(run.attempt) || 0); }, 0) + 1;
@@ -942,18 +1305,32 @@
       materialRef,
       { kind: "agent-runtime-audit", id: runId + ":audit:finished", event: "tool-provider-adapter-runtime-finished", subjectId: input.requestId, sourceRefs: [commandRef, { kind: "executor-outcome", id: outcomeId }], metadata: { commandId: commandRef.id, runId: runId, outcomeId: outcomeId, bounded: true, coordinate: { runId: runId, outcomeId: outcomeId, attempt: attempt } } },
     ].concat(dogfoodProjectOutcomeFacts(selected, input, outcome, commandRef));
+    var unauthorized = workbenchPolicyUnauthorizedGeneratedKinds(command.commandKind, generatedFacts);
+    if (unauthorized.length) {
+      workbenchAppendCommand(command, [], "WorkbenchOperationPolicy does not authorize generated fact kinds: " + unauthorized.join(", ") + ".", "dashboard-private-run-projector", "denied");
+      return;
+    }
     workbenchAppendCommand(command, generatedFacts, "Appended fake bounded run attempt " + attempt + " and projected evidence.", "dashboard-private-run-projector");
   }
   function dogfoodProposeSelected(view) {
     var selected = view.selected;
     if (!selected) return;
+    var currentView = deriveDogfoodView();
+    var currentBundle = selected && currentView.selected && currentView.selected.id === selected.id ? currentView.selectedBundle :
+      (selected ? currentView.nodes.filter(function (node) { return node.id === selected.id; }).slice(-1)[0] : null);
+    var actionState = dogfoodActionState({ selected: { id: selected.id }, triageItems: currentView.triageItems || [] }, currentBundle || { issues: [] }, true);
+    if (!actionState.canPropose) {
+      var deniedCommand = workbenchCommand("propose-domain-action", selected.id, [{ kind: "work-item", id: selected.id }], { actionKind: "require-review" });
+      workbenchAppendCommand(deniedCommand, [], actionState.proposeReason, "dashboard-private-domain-action-projector", "denied");
+      return;
+    }
     var proposalSeq = dogfoodFacts.filter(function (item) {
       return item.kind === "work-item-domain-action-proposal" && item.workItemId === selected.id;
     }).length + 1;
     var proposalId = selected.id + ":dashboard-review-proposal:" + proposalSeq;
     var command = workbenchCommand("propose-domain-action", selected.id, [{ kind: "work-item", id: selected.id }], { actionKind: "require-review", proposalSeq: proposalSeq });
     var commandRef = workbenchCommandRef(command.commandId);
-    workbenchAppendCommand(command, [{
+    var generatedFacts = [{
       kind: "work-item-domain-action-proposal",
       proposalId: proposalId,
       workItemId: selected.id,
@@ -962,15 +1339,33 @@
       reason: "Dashboard user requested visible review action",
       sourceRefs: [commandRef],
       metadata: { commandId: commandRef.id, command: "propose-review", bounded: true, coordinate: { workItemId: selected.id, proposalId: proposalId } },
-    }], "Appended visible WorkItem domain action proposal.", "dashboard-private-domain-action-projector");
+    }];
+    var unauthorized = workbenchPolicyUnauthorizedGeneratedKinds(command.commandKind, generatedFacts);
+    if (unauthorized.length) {
+      workbenchAppendCommand(command, [], "WorkbenchOperationPolicy does not authorize generated fact kinds: " + unauthorized.join(", ") + ".", "dashboard-private-domain-action-projector", "denied");
+      return;
+    }
+    workbenchAppendCommand(command, generatedFacts, "Appended visible WorkItem domain action proposal.", "dashboard-private-domain-action-projector");
   }
   function dogfoodApproveSelected(view) {
     var selected = view.selected;
     if (!selected) return;
+    var currentView = deriveDogfoodView();
+    var selectedBundle = currentView.selected && currentView.selected.id === selected.id ? currentView.selectedBundle : null;
+    var actionState = dogfoodActionState({ selected: { id: selected.id }, triageItems: currentView.triageItems || [] }, selectedBundle || { actions: [], issues: [] }, true);
+    if (!actionState.canApprove) {
+      var deniedCommand = workbenchCommand("approve-domain-action", selected.id, [{ kind: "work-item", id: selected.id }], {});
+      workbenchAppendCommand(deniedCommand, [], actionState.approveReason, "dashboard-private-domain-action-projector", actionState.approveReason.indexOf("No proposal") >= 0 ? "no-op" : "denied");
+      return;
+    }
     var proposal = dogfoodFacts.filter(function (item) {
       return item.kind === "work-item-domain-action-proposal" && item.workItemId === selected.id;
     }).slice(-1)[0];
-    if (!proposal) return;
+    if (!proposal) {
+      var noProposalCommand = workbenchCommand("approve-domain-action", selected.id, [{ kind: "work-item-domain-action-proposal", id: "missing" }], {});
+      workbenchAppendCommand(noProposalCommand, [], "No proposal is waiting for approval.", "dashboard-private-domain-action-projector", "no-op");
+      return;
+    }
     var existingAdmission = dogfoodFacts.filter(function (item) {
       return item.kind === "work-item-domain-action-admission" && item.proposalId === proposal.proposalId;
     }).slice(-1)[0];
@@ -981,7 +1376,11 @@
         item.kind === "work-item-domain-action-application") &&
         item.proposalId === proposal.proposalId;
     });
-    if (already) return;
+    if (already) {
+      var alreadyCommand = workbenchCommand("approve-domain-action", selected.id, [{ kind: "work-item-domain-action-proposal", id: proposal.proposalId }], { proposalId: proposal.proposalId });
+      workbenchAppendCommand(alreadyCommand, [], "Proposal already has a terminal review/application fact.", "dashboard-private-domain-action-projector", "no-op");
+      return;
+    }
     var command = workbenchCommand("approve-domain-action", selected.id, [{ kind: "work-item-domain-action-proposal", id: proposal.proposalId }], { proposalId: proposal.proposalId });
     var commandRef = workbenchCommandRef(command.commandId);
     var approval = {
@@ -997,15 +1396,28 @@
       approval,
       { kind: "agent-runtime-audit", id: proposal.proposalId + ":audit:approved", event: "work-item-domain-action-approved", subjectId: selected.id, sourceRefs: [commandRef], metadata: { commandId: commandRef.id, proposalId: proposal.proposalId, bounded: true, coordinate: { workItemId: selected.id, proposalId: proposal.proposalId } } },
     ].concat(dogfoodProjectApprovalFacts(selected, proposal, approval, commandRef, existingAdmission));
+    var unauthorized = workbenchPolicyUnauthorizedGeneratedKinds(command.commandKind, generatedFacts);
+    if (unauthorized.length) {
+      workbenchAppendCommand(command, [], "WorkbenchOperationPolicy does not authorize generated fact kinds: " + unauthorized.join(", ") + ".", "dashboard-private-domain-action-projector", "denied");
+      return;
+    }
     workbenchAppendCommand(command, generatedFacts, "Approved proposal and projected domain action application.", "dashboard-private-domain-action-projector");
   }
   function dogfoodReviewSelected(view, reviewKind) {
     var selected = view.selected;
-    if (!selected) return;
+    if (!selected) {
+      var missingCommand = workbenchCommand(reviewKind + "-domain-action", dogfoodSelectedId(), [{ kind: "work-item-domain-action-proposal", id: "missing" }], {});
+      workbenchAppendCommand(missingCommand, [], "No visible WorkItem is selected for " + reviewKind + ".", "dashboard-private-domain-action-projector", "no-op");
+      return;
+    }
     var proposal = dogfoodFacts.filter(function (item) {
       return item.kind === "work-item-domain-action-proposal" && item.workItemId === selected.id;
     }).slice(-1)[0];
-    if (!proposal) return;
+    if (!proposal) {
+      var noProposalCommand = workbenchCommand(reviewKind + "-domain-action", selected.id, [{ kind: "work-item-domain-action-proposal", id: "missing" }], {});
+      workbenchAppendCommand(noProposalCommand, [], "No proposal is waiting for " + reviewKind + ".", "dashboard-private-domain-action-projector", "no-op");
+      return;
+    }
     var terminal = dogfoodFacts.some(function (item) {
       return item.proposalId === proposal.proposalId && (
         item.kind === "work-item-domain-action-approval" ||
@@ -1014,7 +1426,11 @@
         item.kind === "work-item-domain-action-application"
       );
     });
-    if (terminal) return;
+    if (terminal) {
+      var terminalCommand = workbenchCommand(reviewKind + "-domain-action", selected.id, [{ kind: "work-item-domain-action-proposal", id: proposal.proposalId }], { proposalId: proposal.proposalId });
+      workbenchAppendCommand(terminalCommand, [], "Proposal already has a terminal review/application fact.", "dashboard-private-domain-action-projector", "no-op");
+      return;
+    }
     var command = workbenchCommand(reviewKind + "-domain-action", selected.id, [{ kind: "work-item-domain-action-proposal", id: proposal.proposalId }], { proposalId: proposal.proposalId });
     var commandRef = workbenchCommandRef(command.commandId);
     var factKind = reviewKind === "reject" ? "work-item-domain-action-rejection" : "work-item-domain-action-cancellation";
@@ -1028,16 +1444,312 @@
       sourceRefs: [commandRef, { kind: "work-item-domain-action-proposal", id: proposal.proposalId }],
       metadata: { commandId: command.commandId, bounded: true, coordinate: { workItemId: selected.id, proposalId: proposal.proposalId } },
     };
-    workbenchAppendCommand(command, [
+    var generatedFacts = [
       reviewFact,
       { kind: "agent-runtime-audit", id: proposal.proposalId + ":audit:" + reviewKind, event: "work-item-domain-action-" + reviewFact.state, subjectId: selected.id, sourceRefs: [commandRef, { kind: factKind, id: reviewFact.reviewId }], metadata: { commandId: command.commandId, proposalId: proposal.proposalId, bounded: true, coordinate: { workItemId: selected.id, proposalId: proposal.proposalId } } },
-    ], reviewKind === "reject" ? "Rejected proposal by visible review fact." : "Canceled proposal by visible command fact.", "dashboard-private-domain-action-projector");
+    ];
+    var unauthorized = workbenchPolicyUnauthorizedGeneratedKinds(command.commandKind, generatedFacts);
+    if (unauthorized.length) {
+      workbenchAppendCommand(command, [], "WorkbenchOperationPolicy does not authorize generated fact kinds: " + unauthorized.join(", ") + ".", "dashboard-private-domain-action-projector", "denied");
+      return;
+    }
+    workbenchAppendCommand(command, generatedFacts, reviewKind === "reject" ? "Rejected proposal by visible review fact." : "Canceled proposal by visible command fact.", "dashboard-private-domain-action-projector");
+  }
+  function workbenchSelectWorkItem(workItemId, sourceRef, summary) {
+    var current = dogfoodSelectedId();
+    var command = workbenchCommand("select-work-item", workItemId, [sourceRef || { kind: "work-item", id: workItemId }], {});
+    if (current === workItemId) {
+      workbenchAppendCommand(command, [], "Selection already points at " + workItemId + ".", "dashboard-private-selection-projector", "no-op");
+      return;
+    }
+    var generatedFacts = [{
+      kind: "workbench-selection",
+      workItemId: workItemId,
+      sourceRefs: [workbenchCommandRef(command.commandId), sourceRef || { kind: "work-item", id: workItemId }],
+      metadata: { commandId: command.commandId, visibleUiFact: true, bounded: true, coordinate: { workItemId: workItemId } },
+    }];
+    var unauthorized = workbenchPolicyUnauthorizedGeneratedKinds(command.commandKind, generatedFacts);
+    if (unauthorized.length) {
+      workbenchAppendCommand(command, [], "WorkbenchOperationPolicy does not authorize generated fact kinds: " + unauthorized.join(", ") + ".", "dashboard-private-selection-projector", "denied");
+      return;
+    }
+    workbenchAppendCommand(command, generatedFacts, summary || "Selected WorkItem from a visible Workbench command.", "dashboard-private-selection-projector");
+  }
+  function workbenchTriageAction(item, commandKind) {
+    if (!item) return;
+    var sourceRef = { kind: "workbench-triage-item", id: item.triageItemId };
+    var command = workbenchCommand(commandKind, item.workItemId, [sourceRef].concat(item.sourceRefs || []), {
+      triageItemId: item.triageItemId,
+      issueCode: item.category,
+      actionability: item.actionability,
+    });
+    var policy = workbenchPolicyFor(commandKind);
+    if (!policy || (item.recommendedCommandKinds || []).indexOf(commandKind) < 0) {
+      workbenchAppendCommand(command, [], "No visible WorkbenchOperationPolicy authorizes " + commandKind + " for " + item.category + ".", "dashboard-private-triage-projector", "denied");
+      return;
+    }
+    var commandRef = workbenchCommandRef(command.commandId);
+    var already = dogfoodFacts.some(function (fact) {
+      return fact.kind === "workbench-policy-denied-ack" && commandKind === "acknowledge-policy-denied" && fact.triageItemId === item.triageItemId ||
+        fact.kind === "workbench-retention-gap-inspection" && commandKind === "inspect-retention-gap" && fact.triageItemId === item.triageItemId ||
+        fact.kind === "workbench-missing-input-request" && commandKind === "request-missing-input" && fact.triageItemId === item.triageItemId ||
+        fact.kind === "workbench-corrected-input-request" && commandKind === "request-corrected-input" && fact.triageItemId === item.triageItemId ||
+        fact.kind === "workbench-request-superseded" && commandKind === "mark-stale-superseded" && fact.triageItemId === item.triageItemId;
+    });
+    if (already) {
+      workbenchAppendCommand(command, [], "Triage action already recorded for " + item.category + ".", "dashboard-private-triage-projector", "no-op");
+      return;
+    }
+    var fact;
+    var event;
+    if (commandKind === "acknowledge-policy-denied") {
+      fact = { kind: "workbench-policy-denied-ack", ackId: item.triageItemId + ":ack", triageItemId: item.triageItemId, workItemId: item.workItemId, issueCode: item.category, sourceRefs: [commandRef, sourceRef], metadata: { commandId: command.commandId, dashboardPrivate: true, bounded: true, coordinate: { workItemId: item.workItemId, triageItemId: item.triageItemId } } };
+      event = "workbench-policy-denied-acknowledged";
+    } else if (commandKind === "request-missing-input" || commandKind === "request-corrected-input") {
+      var corrected = commandKind === "request-corrected-input";
+      fact = { kind: corrected ? "workbench-corrected-input-request" : "workbench-missing-input-request", requestId: item.triageItemId + (corrected ? ":corrected-input-request" : ":input-request"), triageItemId: item.triageItemId, workItemId: item.workItemId, issueCode: item.category, mode: corrected ? "request-corrected-input" : "request-input", sourceRefs: [commandRef, sourceRef], metadata: { commandId: command.commandId, dashboardPrivate: true, bounded: true, coordinate: { workItemId: item.workItemId, triageItemId: item.triageItemId, issueCode: item.category } } };
+      event = corrected ? "workbench-corrected-input-requested" : "workbench-missing-input-requested";
+    } else if (commandKind === "mark-stale-superseded") {
+      fact = { kind: "workbench-request-superseded", supersededId: item.triageItemId + ":superseded", triageItemId: item.triageItemId, workItemId: item.workItemId, issueCode: item.category, state: "superseded", sourceRefs: [commandRef, sourceRef], metadata: { commandId: command.commandId, dashboardPrivate: true, bounded: true, coordinate: { workItemId: item.workItemId, triageItemId: item.triageItemId } } };
+      event = "workbench-request-marked-superseded";
+    } else {
+      fact = { kind: "workbench-retention-gap-inspection", inspectionId: item.triageItemId + ":inspection", triageItemId: item.triageItemId, workItemId: item.workItemId, issueCode: item.category, mode: "inspect-only-fail-closed", sourceRefs: [commandRef, sourceRef], metadata: { commandId: command.commandId, dashboardPrivate: true, bounded: true, coordinate: { workItemId: item.workItemId, triageItemId: item.triageItemId } } };
+      event = "workbench-retention-gap-inspected";
+    }
+    if (!workbenchPolicyAllowsGeneratedKind(commandKind, fact.kind) || !workbenchPolicyAllowsGeneratedKind(commandKind, "agent-runtime-audit")) {
+      workbenchAppendCommand(command, [], "WorkbenchOperationPolicy generatedFactKinds does not authorize " + fact.kind + ".", "dashboard-private-triage-projector", "denied");
+      return;
+    }
+    workbenchAppendCommand(command, [
+      fact,
+      { kind: "agent-runtime-audit", id: item.triageItemId + ":audit:" + commandKind, event: event, subjectId: item.workItemId, issueCode: item.category, sourceRefs: [commandRef, workbenchFactRef(fact)], metadata: { commandId: command.commandId, dashboardPrivate: true, bounded: true, coordinate: { workItemId: item.workItemId, triageItemId: item.triageItemId } } },
+    ], "Recorded bounded triage action: " + commandKind + ".", "dashboard-private-triage-projector");
+  }
+  function workbenchSaveSnapshot() {
+    var snapshotFacts = dogfoodFacts.filter(function (fact) { return WORKBENCH_SESSION_FACT_KINDS.indexOf(fact.kind) >= 0; }).slice(-60);
+    var snapshot = {
+      version: 1,
+      savedAt: new Date().toISOString(),
+      selectedWorkItemId: dogfoodSelectedId(),
+      scope: workbenchCurrentScope(),
+      lane: dogfoodCurrentLaneFilter(),
+      status: dogfoodCurrentStatusFilter(),
+      inspectorFilters: workbenchInspectorFilters(),
+      facts: snapshotFacts,
+      boundary: "dashboard-private-ui-session-only",
+    };
+    try {
+      localStorage.setItem(WORKBENCH_SNAPSHOT_KEY, JSON.stringify(snapshot));
+      var command = workbenchCommand("save-session-snapshot", dogfoodSelectedId(), [{ kind: "workbench-session-snapshot", id: "local" }], { snapshotId: "local" });
+      var commandRef = workbenchCommandRef(command.commandId);
+      var generatedFacts = [{
+        kind: "workbench-session-snapshot",
+        snapshotId: command.commandId + ":snapshot",
+        factCount: snapshotFacts.length,
+        boundary: snapshot.boundary,
+        sourceRefs: [commandRef],
+        metadata: { commandId: command.commandId, dashboardPrivate: true, bounded: true, coordinate: { factCount: snapshotFacts.length, boundary: snapshot.boundary } },
+      }];
+      var unauthorized = workbenchPolicyUnauthorizedGeneratedKinds(command.commandKind, generatedFacts);
+      if (unauthorized.length) {
+        workbenchAppendCommand(command, [], "WorkbenchOperationPolicy does not authorize generated fact kinds: " + unauthorized.join(", ") + ".", "dashboard-private-session-snapshot-projector", "denied");
+        return;
+      }
+      workbenchAppendCommand(command, generatedFacts, "Saved bounded dashboard-private UI/session snapshot; no provider, retry, or Graph restore.", "dashboard-private-session-snapshot-projector");
+    } catch (error) {
+      var failCommand = workbenchCommand("save-session-snapshot", dogfoodSelectedId(), [{ kind: "workbench-session-snapshot", id: "local" }], { snapshotId: "local" });
+      workbenchAppendCommand(failCommand, [], "Snapshot save failed in localStorage; no Graph/provider action was attempted.", "dashboard-private-session-snapshot-projector", "denied");
+    }
+  }
+  function workbenchScalarRestoreFacts(snapshot, commandRef, commandId) {
+    var inspector = snapshot.inspectorFilters && typeof snapshot.inspectorFilters === "object" ? snapshot.inspectorFilters : {};
+    var selectedId = workbenchValidWorkItemId(typeof snapshot.selectedWorkItemId === "string" ? snapshot.selectedWorkItemId.slice(0, 120) : "", dogfoodSelectedId());
+    var lane = ["all", "queued", "running", "blocked", "complete"].indexOf(snapshot.lane) >= 0 ? snapshot.lane : "all";
+    var status = DOGFOOD_STATUSES.indexOf(snapshot.status) >= 0 ? snapshot.status : "all";
+    var scope = snapshot.scope === "global" ? "global" : "selected";
+    var base = [
+      { kind: "workbench-selection", workItemId: selectedId, metadata: { coordinate: { workItemId: selectedId } } },
+      { kind: "workbench-lane-filter", lane: lane, metadata: { coordinate: { filterKind: "lane", value: lane } } },
+      { kind: "workbench-status-filter", status: status, metadata: { coordinate: { filterKind: "status", value: status } } },
+      { kind: "workbench-scope", scope: scope, metadata: { coordinate: { filterKind: "scope", value: scope } } },
+    ];
+    ["kind", "sourceRef", "issueCode", "coordinate"].forEach(function (filterKind) {
+      var value = typeof inspector[filterKind] === "string" ? inspector[filterKind].slice(0, 160) : "all";
+      base.push({ kind: "workbench-inspector-filter", filterKind: filterKind, value: value, metadata: { coordinate: { filterKind: filterKind, value: value } } });
+    });
+    return base.map(function (fact) {
+      fact.sourceRefs = [commandRef];
+      fact.metadata = Object.assign({}, fact.metadata, { commandId: commandId, restoredFromSnapshot: true, dashboardPrivate: true, bounded: true });
+      return fact;
+    });
+  }
+  function workbenchSanitizeSnapshotFact(fact, commandRef, commandId) {
+    if (!fact || typeof fact !== "object" || WORKBENCH_SESSION_FACT_KINDS.indexOf(fact.kind) < 0) return null;
+    var out = { kind: fact.kind, sourceRefs: [commandRef], metadata: { commandId: commandId, restoredFromSnapshot: true, dashboardPrivate: true, bounded: true } };
+    if (fact.kind === "workbench-selection") out.workItemId = workbenchValidWorkItemId(typeof fact.workItemId === "string" ? fact.workItemId.slice(0, 120) : "", dogfoodSelectedId());
+    else if (fact.kind === "workbench-lane-filter") out.lane = ["all", "queued", "running", "blocked", "complete"].indexOf(fact.lane) >= 0 ? fact.lane : "all";
+    else if (fact.kind === "workbench-status-filter") out.status = DOGFOOD_STATUSES.indexOf(fact.status) >= 0 ? fact.status : "all";
+    else if (fact.kind === "workbench-scope") out.scope = fact.scope === "global" ? "global" : "selected";
+    else if (fact.kind === "workbench-inspector-filter") {
+      out.filterKind = ["kind", "sourceRef", "issueCode", "coordinate"].indexOf(fact.filterKind) >= 0 ? fact.filterKind : "kind";
+      out.value = typeof fact.value === "string" ? fact.value.slice(0, 160) : "all";
+    } else if (fact.kind === "workbench-active-projection-index") {
+      out.indexId = commandId + ":restored-active-projection-index";
+      out.activeProjectionId = typeof fact.activeProjectionId === "string" ? fact.activeProjectionId.slice(0, 160) : commandId + ":view-projection";
+      out.selectedWorkItemId = workbenchValidWorkItemId(typeof fact.selectedWorkItemId === "string" ? fact.selectedWorkItemId.slice(0, 120) : "", dogfoodSelectedId());
+      out.scope = fact.scope === "global" ? "global" : "selected";
+    } else if (fact.kind === "workbench-session-snapshot") {
+      out.snapshotId = commandId + ":restored-snapshot-marker";
+      out.factCount = Math.max(0, Math.min(80, Number(fact.factCount) || 0));
+      out.boundary = "dashboard-private-ui-session-only";
+    } else if (fact.kind === "workbench-session-restore") {
+      out.restoreId = commandId + ":restored-restore-marker";
+      out.restoredFactCount = Math.max(0, Math.min(80, Number(fact.restoredFactCount) || 0));
+      out.boundary = "dashboard-private-ui-session-only";
+    } else if (fact.kind === "workbench-missing-input-request" || fact.kind === "workbench-corrected-input-request") {
+      out.requestId = commandId + ":" + fact.kind;
+      out.triageItemId = typeof fact.triageItemId === "string" ? fact.triageItemId.slice(0, 160) : "";
+      out.workItemId = typeof fact.workItemId === "string" ? fact.workItemId.slice(0, 120) : "";
+      out.issueCode = fact.kind === "workbench-corrected-input-request" ? "mismatched-request" : "missing-input";
+      out.mode = fact.kind === "workbench-corrected-input-request" ? "request-corrected-input" : "request-input";
+    } else if (fact.kind === "workbench-request-superseded") {
+      out.supersededId = commandId + ":request-superseded";
+      out.triageItemId = typeof fact.triageItemId === "string" ? fact.triageItemId.slice(0, 160) : "";
+      out.workItemId = typeof fact.workItemId === "string" ? fact.workItemId.slice(0, 120) : "";
+      out.issueCode = "stale-request";
+      out.state = "superseded";
+    } else if (fact.kind === "workbench-retention-gap-inspection") {
+      out.inspectionId = commandId + ":retention-gap-inspection";
+      out.triageItemId = typeof fact.triageItemId === "string" ? fact.triageItemId.slice(0, 160) : "";
+      out.workItemId = typeof fact.workItemId === "string" ? fact.workItemId.slice(0, 120) : "";
+      out.issueCode = "retention-gap";
+      out.mode = "inspect-only-fail-closed";
+    } else if (fact.kind === "workbench-policy-denied-ack") {
+      out.ackId = commandId + ":policy-denied-ack";
+      out.triageItemId = typeof fact.triageItemId === "string" ? fact.triageItemId.slice(0, 160) : "";
+      out.workItemId = typeof fact.workItemId === "string" ? fact.workItemId.slice(0, 120) : "";
+      out.issueCode = "policy-denied";
+    }
+    out.metadata.coordinate = Object.keys(out).filter(function (key) { return key !== "metadata" && key !== "sourceRefs" && key !== "kind"; }).reduce(function (coord, key) {
+      coord[key] = out[key];
+      return coord;
+    }, {});
+    return out;
+  }
+  function workbenchRestoreSnapshot() {
+    var raw;
+    try { raw = localStorage.getItem(WORKBENCH_SNAPSHOT_KEY); } catch (error) { raw = null; }
+    var command = workbenchCommand("restore-session-snapshot", dogfoodSelectedId(), [{ kind: "workbench-session-snapshot", id: "local" }], { snapshotId: "local" });
+    if (!raw) {
+      workbenchAppendCommand(command, [], "No bounded Workbench session snapshot is available.", "dashboard-private-session-snapshot-projector", "no-op");
+      return;
+    }
+    var snapshot;
+    try { snapshot = JSON.parse(raw); } catch (error) { snapshot = null; }
+    if (!snapshot || snapshot.boundary !== "dashboard-private-ui-session-only") {
+      workbenchAppendCommand(command, [], "Snapshot boundary marker missing; restore rejected without side effects.", "dashboard-private-session-snapshot-projector", "denied");
+      return;
+    }
+    if (!Array.isArray(snapshot.facts)) {
+      workbenchAppendCommand(command, [], "Snapshot fact list is malformed; restore rejected without side effects.", "dashboard-private-session-snapshot-projector", "denied");
+      return;
+    }
+    var commandRef = workbenchCommandRef(command.commandId);
+    var restoredFacts = workbenchScalarRestoreFacts(snapshot, commandRef, command.commandId).concat(
+      snapshot.facts.slice(-80).map(function (fact) {
+        return workbenchSanitizeSnapshotFact(fact, commandRef, command.commandId);
+      }).filter(Boolean),
+    ).slice(-96);
+    var generatedFacts = restoredFacts.concat({
+      kind: "workbench-session-restore",
+      restoreId: command.commandId + ":restore",
+      restoredFactCount: restoredFacts.length,
+      boundary: snapshot.boundary,
+      sourceRefs: [commandRef],
+      metadata: { commandId: command.commandId, dashboardPrivate: true, bounded: true, coordinate: { restoredFactCount: restoredFacts.length, boundary: snapshot.boundary } },
+    });
+    var unauthorized = workbenchPolicyUnauthorizedGeneratedKinds(command.commandKind, generatedFacts);
+    if (unauthorized.length) {
+      workbenchAppendCommand(command, [], "WorkbenchOperationPolicy does not authorize generated fact kinds: " + unauthorized.join(", ") + ".", "dashboard-private-session-snapshot-projector", "denied");
+      return;
+    }
+    workbenchAppendCommand(command, generatedFacts, "Restored only bounded dashboard-private UI/session facts; no provider, retry, retention repair, or Graph hydration.", "dashboard-private-session-snapshot-projector");
   }
   function dogfoodMetric(label, value) {
     return h("div", { class: "df-metric" }, [h("strong", {}, [String(value)]), h("span", {}, [label])]);
   }
   function dogfoodBadge(tone, label) {
     return h("span", { class: "df-badge " + tone }, [label]);
+  }
+  function workbenchTriageCounts(items) {
+    var counts = {};
+    (items || []).forEach(function (item) {
+      var key = item.category + " / " + item.severity + " / " + item.actionability;
+      counts[key] = (counts[key] || 0) + 1;
+    });
+    return Object.keys(counts).sort().map(function (key) { return { key: key, count: counts[key] }; });
+  }
+  function workbenchCommandLabel(commandKind) {
+    return {
+      "run-visible-effect": "retry",
+      "approve-domain-action": "approve",
+      "reject-domain-action": "reject",
+      "cancel-domain-action": "cancel",
+      "request-missing-input": "request input",
+      "request-corrected-input": "request corrected",
+      "mark-stale-superseded": "mark superseded",
+      "inspect-retention-gap": "inspect gap",
+      "acknowledge-policy-denied": "acknowledge",
+    }[commandKind] || commandKind;
+  }
+  function workbenchTriageInbox(items, title, emptyText) {
+    return dogfoodRows(title, items || [], emptyText, function (item) {
+      return h("button", {
+        class: "df-triage-item",
+        onclick: function () { workbenchSelectWorkItem(item.workItemId, { kind: "workbench-triage-item", id: item.triageItemId }, "Selected WorkItem from triage inbox."); },
+        title: item.disabledReason,
+      }, [
+        h("span", { class: "df-triage-main" }, [h("strong", {}, [item.category]), h("code", {}, [item.workItemId])]),
+        h("span", { class: "df-triage-meta" }, [item.severity + " · " + item.actionability]),
+        h("span", { class: "df-triage-reason" }, [item.disabledReason]),
+      ]);
+    });
+  }
+  function workbenchRecommendedActions(items, actionState) {
+    var rows = [];
+    (items || []).slice(0, 6).forEach(function (item) {
+      var commands = item.recommendedCommandKinds && item.recommendedCommandKinds.length ? item.recommendedCommandKinds : [];
+      rows.push(h("div", { class: "df-recommendation" }, [
+        h("div", {}, [h("strong", {}, [item.category]), h("span", {}, [item.disabledReason])]),
+        h("div", { class: "df-recommendation-actions" }, commands.length ? commands.map(function (commandKind) {
+          var enabled = commandKind === "run-visible-effect" ? actionState.canRun :
+            commandKind === "approve-domain-action" ? actionState.canApprove :
+              commandKind === "reject-domain-action" ? actionState.canReject :
+                commandKind === "cancel-domain-action" ? actionState.canCancel : true;
+          var reason = commandKind === "run-visible-effect" ? actionState.runReason :
+            commandKind === "approve-domain-action" ? actionState.approveReason :
+              commandKind === "reject-domain-action" ? actionState.rejectReason :
+                commandKind === "cancel-domain-action" ? actionState.cancelReason : item.disabledReason;
+          return h("button", {
+            disabled: !enabled,
+            title: enabled ? item.disabledReason : reason,
+            onclick: function () {
+              if (commandKind === "run-visible-effect" && actionState.canRun) dogfoodRunSelected({ selected: { id: item.workItemId } });
+              else if (commandKind === "approve-domain-action" && actionState.canApprove) dogfoodApproveSelected({ selected: { id: item.workItemId } });
+              else if (commandKind === "reject-domain-action" && actionState.canReject) dogfoodReviewSelected({ selected: { id: item.workItemId } }, "reject");
+              else if (commandKind === "cancel-domain-action" && actionState.canCancel) dogfoodReviewSelected({ selected: { id: item.workItemId } }, "cancel");
+              else if (commandKind === "acknowledge-policy-denied") workbenchTriageAction(item, commandKind);
+              else if (commandKind === "request-missing-input") workbenchTriageAction(item, commandKind);
+              else if (commandKind === "request-corrected-input") workbenchTriageAction(item, commandKind);
+              else if (commandKind === "mark-stale-superseded") workbenchTriageAction(item, commandKind);
+              else if (commandKind === "inspect-retention-gap") workbenchTriageAction(item, commandKind);
+            },
+          }, [workbenchCommandLabel(commandKind)]);
+        }) : [h("span", { class: "df-empty-inline" }, ["inspect only"])]),
+      ]));
+    });
+    if (!rows.length) rows.push(h("p", { class: "df-empty" }, ["No triage recommendation touches this WorkItem."]));
+    return h("section", { class: "df-section" }, [h("h3", {}, ["Recommended Bounded Actions"])].concat(rows));
   }
   function dogfoodNodeMatchesFilters(node) {
     var laneFilter = dogfoodCurrentLaneFilter();
@@ -1051,7 +1763,20 @@
     var laneFilter = dogfoodCurrentLaneFilter();
     var statusFilter = dogfoodCurrentStatusFilter();
     var shown = view.nodes.filter(dogfoodNodeMatchesFilters);
+    var groups = workbenchTriageCounts(view.triageItems);
+    var groupStrip = h("div", { class: "df-triage-groups" }, groups.length ? groups.map(function (group) {
+      return h("button", {
+        class: "df-triage-chip",
+        onclick: function () {
+          var first = (view.triageItems || []).filter(function (item) {
+            return [item.category, item.severity, item.actionability].join(" / ") === group.key;
+          })[0];
+          if (first) workbenchSelectWorkItem(first.workItemId, { kind: "workbench-triage-item", id: first.triageItemId }, "Selected first WorkItem in triage group.");
+        },
+      }, [h("strong", {}, [String(group.count)]), h("span", {}, [group.key])]);
+    }) : [h("span", { class: "df-empty-inline" }, ["No triage items in the current projection."])]);
     if (!shown.length) return h("div", { class: "df-board df-board-empty" }, [
+      groupStrip,
       h("p", {}, ["No WorkItems match lane ", h("strong", {}, [laneFilter]), " and status ", h("strong", {}, [statusFilter]), "."]),
     ]);
     var shownIds = new Set(shown.map(function (node) { return node.id; }));
@@ -1065,19 +1790,14 @@
       return '<g class="df-node ' + safeLane(node.lane) + (view.selectedWorkItemId === node.id ? " selected" : "") + '" data-id="' + escAttr(node.id) + '" transform="translate(' + node.x + " " + node.y + ')" tabindex="0" role="button" aria-label="Select ' + escAttr(node.label) + '"><rect x="-74" y="-39" width="148" height="78" rx="8"></rect><text class="df-node-label" x="0" y="-11">' + esc(node.label) + '</text><text class="df-node-status" x="0" y="12">' + esc(node.effectStatus) + " / " + node.progress + '%</text><circle cx="58" cy="-25" r="8"></circle><text class="df-node-count" x="58" y="-21">' + node.evidenceCount + "</text></g>";
     }).join("");
     var board = h("div", { class: "df-board" }, [
+      groupStrip,
       h("div", { class: "df-board-note" }, ["Scroll horizontally on narrow screens to inspect the full dependency board."]),
       h("div", { class: "df-board-canvas", html: '<svg viewBox="0 0 760 420" role="img" aria-label="CSP-8 WorkItem dependency board"><defs><marker id="df-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z"></path></marker></defs><g class="df-edges">' + edgeSvg + '</g><g class="df-nodes">' + nodeSvg + "</g></svg>" }),
     ]);
     Array.prototype.forEach.call(board.querySelectorAll(".df-node"), function (node) {
       function selectNode() {
         var selectedId = node.getAttribute("data-id");
-        var command = workbenchCommand("select-work-item", selectedId, [{ kind: "work-item", id: selectedId }], {});
-        workbenchAppendCommand(command, [{
-          kind: "workbench-selection",
-          workItemId: selectedId,
-          sourceRefs: [workbenchCommandRef(command.commandId)],
-          metadata: { commandId: command.commandId, visibleUiFact: true, bounded: true, coordinate: { workItemId: selectedId } },
-        }], "Selected WorkItem from the queue board.", "dashboard-private-selection-projector");
+        workbenchSelectWorkItem(selectedId, { kind: "work-item", id: selectedId }, "Selected WorkItem from the queue board.");
       }
       node.addEventListener("click", selectNode);
       node.addEventListener("keydown", function (event) { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); selectNode(); } });
@@ -1228,7 +1948,7 @@
               h("strong", {}, [fact.kind || fact.factKind || "unknown"]),
               h("code", {}, [dogfoodFactId(fact) || "no-id"]),
               h("span", {}, [dogfoodRefsText(fact.sourceRefs) || "sourceRefs: none"]),
-              h("span", {}, [fact.issueCode || fact.code || "issueCode: none"]),
+              h("span", {}, [fact.summary || fact.status || fact.issueCode || fact.code || "status: none"]),
               h("code", {}, [fact.metadata && fact.metadata.coordinate ? JSON.stringify(fact.metadata.coordinate) : "coordinate: none"]),
             ]);
           })) : h("p", { class: "df-empty" }, ["No facts match the current inspector filters."]),
@@ -1273,9 +1993,11 @@
     var selectedAudit = bundle ? bundle.audit : [];
     var selectedActions = bundle ? bundle.actions : [];
     var selectedToolRuns = selected ? view.toolRuns.filter(function (run) { return run.workItemId === selected.id; }) : [];
+    var selectedTriage = selected ? view.triageItems.filter(function (item) { return item.workItemId === selected.id; }) : [];
     var scopedIssues = scope === "selected" ? selectedIssues : view.issues;
     var scopedAudit = scope === "selected" ? selectedAudit : view.audit;
     var scopedRuns = scope === "selected" ? selectedToolRuns : view.toolRuns;
+    var scopedTriage = scope === "selected" ? selectedTriage : view.triageItems;
     var actionReviews = selectedActions.filter(function (item) {
       return item.kind === "work-item-domain-action-proposal";
     }).map(function (proposal) {
@@ -1334,6 +2056,8 @@
       h("button", { class: "secondary", disabled: !actionState.canApprove, title: actionState.approveReason, onclick: function () { if (actionState.canApprove) dogfoodApproveSelected({ selected: selected }); } }, ["Approve"]),
       h("button", { class: "secondary", disabled: !actionState.canReject, title: actionState.rejectReason, onclick: function () { if (actionState.canReject) dogfoodReviewSelected({ selected: selected }, "reject"); } }, ["Reject"]),
       h("button", { class: "secondary", disabled: !actionState.canCancel, title: actionState.cancelReason, onclick: function () { if (actionState.canCancel) dogfoodReviewSelected({ selected: selected }, "cancel"); } }, ["Cancel"]),
+      h("button", { class: "secondary", title: "Save bounded dashboard-private UI/session facts only.", onclick: workbenchSaveSnapshot }, ["Save snapshot"]),
+      h("button", { class: "secondary", title: "Restore only bounded dashboard-private UI/session facts; no provider or Graph restore.", onclick: workbenchRestoreSnapshot }, ["Restore snapshot"]),
       h("div", { class: "df-action-hint", "aria-live": "polite" }, [
         actionHint("run", actionState.canRun, actionState.runReason),
         actionHint("propose", actionState.canPropose, actionState.proposeReason),
@@ -1350,22 +2074,25 @@
       dogfoodMetric("Evidence", view.counters.evidence),
       dogfoodMetric("Issues", view.counters.issues),
       dogfoodMetric("Retention", view.counters.retentionEvidence),
+      dogfoodMetric("Triage", view.counters.triage),
       dogfoodMetric("Facts", view.counters.facts),
     ]);
     var rail = h("aside", { class: "df-rail" }, [
-      dogfoodRows((scope === "selected" ? "Selected" : "Global") + " Issues", scopedIssues.slice(-10).reverse(), "No issues in this scope.", function (issue) {
+      workbenchTriageInbox((scopedTriage || []).slice(0, 12), (scope === "selected" ? "Selected" : "Global") + " Triage Inbox", "No triage items in this scope."),
+      dogfoodRows((scope === "selected" ? "Selected" : "Global") + " Issues", scopedIssues.slice(-8).reverse(), "No issues in this scope.", function (issue) {
         return h("div", { class: "df-row issue" }, [h("div", {}, [h("strong", {}, [issue.code]), h("span", {}, [issue.message || issue.subjectId || dogfoodRefsText(issue.sourceRefs)])]), dogfoodBadge(issue.severity || "info", issue.severity || "info")]);
       }),
-      dogfoodRows((scope === "selected" ? "Selected" : "Global") + " Audit", scopedAudit.slice(-10).reverse(), "No audit entries in this scope.", function (audit) {
+      dogfoodRows((scope === "selected" ? "Selected" : "Global") + " Audit", scopedAudit.slice(-8).reverse(), "No audit entries in this scope.", function (audit) {
         return h("div", { class: "df-row" }, [h("div", {}, [h("strong", {}, [audit.event]), h("span", {}, [audit.subjectId || audit.id])])]);
       }),
-      dogfoodRows((scope === "selected" ? "Selected" : "Global") + " Tool Runs", scopedRuns.slice(-10).reverse(), "No adapter run status in this scope.", function (run) {
+      dogfoodRows((scope === "selected" ? "Selected" : "Global") + " Tool Runs", scopedRuns.slice(-8).reverse(), "No adapter run status in this scope.", function (run) {
         return h("div", { class: "df-row" }, [h("div", {}, [h("strong", {}, [run.workItemId || "unknown"]), h("span", {}, [run.runId])]), dogfoodBadge(run.status, run.status)]);
       }),
     ]);
     var detail = h("aside", { class: "df-detail" }, selected ? [
       h("div", { class: "df-detail-head" }, [h("span", { class: "df-status-dot " + safeLane(selected.lane) }), h("div", {}, [h("p", { class: "df-eyebrow" }, [selected.lane]), h("h2", {}, [selected.label])])]),
       h("p", { class: "df-summary" }, [selected.summary]),
+      workbenchRecommendedActions(selectedTriage, actionState),
       h("section", { class: "df-section" }, [h("h3", {}, ["Execution Chain"]), bundle ? dogfoodChain(bundle) : h("p", { class: "df-empty" }, ["No selected execution chain."])]),
       h("section", { class: "df-section" }, [h("h3", {}, ["Route / Policy / Evidence"]), dogfoodRoutePolicyCards(bundle)]),
       dogfoodRows("Attempt History", bundle.runs || [], "No visible attempts yet.", function (run) {
@@ -1410,7 +2137,7 @@
       dogfoodScopedSummary("Selected Issues", selectedIssues, "No selected WorkItem issue."),
       dogfoodScopedSummary("Selected Audit", selectedAudit.slice(-8).reverse(), "No audit entries for this selection."),
     ] : [h("p", { class: "df-empty" }, ["No visible WorkItem is selected for the active lane/status filters. Select a visible node or clear the filters before running an action."])]);
-    var ledgerFacts = workbenchScopedLedgerFacts(scope, selected, bundle);
+    var ledgerFacts = workbenchScopedLedgerFacts(scope, selected, bundle).concat([view.triageProjection], scopedTriage);
     var ledger = dogfoodInspector(view, ledgerFacts, scope);
     fill(v, [
       sectionH("CSP-8 Workbench", "reactive jira / messaging-hub · dashboard-private facts"),

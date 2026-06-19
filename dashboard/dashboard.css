@@ -321,17 +321,17 @@ body[data-gate="fail"] .gate .dot { background: var(--red); box-shadow: 0 0 12px
 
 /* CSP-8 Workbench board */
 .df-hero {
-  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1rem; align-items: center;
+  display: grid; grid-template-columns: minmax(18rem, 0.38fr) minmax(0, 1fr); gap: 1rem; align-items: start;
   background: var(--paper); border: 1px solid var(--rule); border-top: 2px solid var(--lime-deep);
   padding: 1rem 1.2rem; margin-bottom: 0.9rem;
 }
 .df-hero h2 { font-family: var(--display); font-size: 1.65rem; line-height: 1; letter-spacing: 0; color: var(--ink); }
-.df-hero p { color: var(--ink-mute); font-size: 0.82rem; margin-top: 0.35rem; }
+.df-hero p { color: var(--ink-mute); font-size: 0.82rem; margin-top: 0.35rem; max-width: 28rem; }
 .df-eyebrow {
   font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.16em; text-transform: uppercase;
   color: var(--ink-faint);
 }
-.df-actions { display: flex; gap: 0.45rem; flex-wrap: wrap; justify-content: flex-end; }
+.df-actions { display: flex; gap: 0.45rem; flex-wrap: wrap; justify-content: flex-start; align-content: start; }
 .df-action-hint {
   flex: 1 1 100%;
   display: grid;
@@ -409,6 +409,32 @@ body[data-gate="fail"] .gate .dot { background: var(--red); box-shadow: 0 0 12px
   background: var(--paper); border: 1px solid var(--rule); border-radius: 6px;
 }
 .df-board { min-height: 31rem; overflow: hidden; }
+.df-triage-groups {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  padding: 0.45rem 0.55rem;
+  border-bottom: 1px solid var(--rule);
+  background: var(--ice-warm);
+}
+.df-triage-chip {
+  appearance: none;
+  cursor: pointer;
+  border: 1px solid var(--rule-deep);
+  border-radius: 5px;
+  background: var(--paper);
+  color: var(--ink);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 1.8rem;
+  max-width: 100%;
+  padding: 0.25rem 0.45rem;
+  font: 600 0.58rem var(--mono);
+}
+.df-triage-chip strong { color: var(--magenta); font-size: 0.68rem; }
+.df-triage-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.df-triage-chip:hover, .df-triage-chip:focus-visible { outline: 2px solid var(--magenta); outline-offset: 2px; }
 .df-board-empty { display: grid; place-items: center; padding: 1rem; }
 .df-board-empty p { color: var(--ink-mute); font-family: var(--mono); font-size: 0.76rem; letter-spacing: 0.08em; text-align: center; }
 .df-board-empty strong { color: var(--ink); }
@@ -477,6 +503,95 @@ body[data-gate="fail"] .gate .dot { background: var(--red); box-shadow: 0 0 12px
 .df-badge.ready, .df-badge.running, .df-badge.started, .df-badge.requested, .df-badge.proposed, .df-badge.pending, .df-badge.recorded { background: #e8f3ff; border-color: #73a7d8; }
 .df-badge.failed, .df-badge.blocked, .df-badge.failure, .df-badge.error, .df-badge.rejected { background: #fff0f4; border-color: var(--magenta); }
 .df-badge.canceled { background: var(--ice-warm); border-color: var(--rule-deep); }
+.df-triage-item {
+  appearance: none;
+  cursor: pointer;
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.25rem 0.55rem;
+  text-align: left;
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--magenta);
+  border-radius: 6px;
+  background: var(--paper);
+  color: var(--ink);
+  padding: 0.52rem 0.6rem;
+}
+.df-triage-item:hover, .df-triage-item:focus-visible { outline: 2px solid var(--magenta); outline-offset: 2px; }
+.df-triage-main, .df-triage-meta, .df-triage-reason { min-width: 0; }
+.df-triage-main strong {
+  display: block;
+  font-size: 0.74rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.df-triage-main code {
+  display: block;
+  color: var(--ink-mute);
+  font: 500 0.58rem var(--mono);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.df-triage-meta {
+  justify-self: end;
+  color: var(--ink-mute);
+  font: 700 0.56rem var(--mono);
+  white-space: nowrap;
+}
+.df-triage-reason {
+  grid-column: 1 / -1;
+  color: var(--ink-mute);
+  font-size: 0.66rem;
+  line-height: 1.25;
+}
+.df-recommendation {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.45rem;
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--lime-deep);
+  border-radius: 6px;
+  padding: 0.55rem 0.6rem;
+  background: var(--ice-warm);
+}
+.df-recommendation strong {
+  display: block;
+  font-size: 0.74rem;
+}
+.df-recommendation span {
+  display: block;
+  color: var(--ink-mute);
+  font-size: 0.66rem;
+  line-height: 1.25;
+}
+.df-recommendation-actions {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+.df-recommendation-actions button {
+  appearance: none;
+  cursor: pointer;
+  border: 1px solid var(--rule-deep);
+  background: var(--paper);
+  color: var(--ink);
+  border-radius: 5px;
+  min-height: 1.9rem;
+  padding: 0.3rem 0.5rem;
+  font: 700 0.6rem var(--mono);
+}
+.df-recommendation-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  background: var(--ice-warm);
+}
+.df-empty-inline {
+  color: var(--ink-faint);
+  font: 600 0.6rem var(--mono);
+}
 .df-detail-head { display: flex; align-items: center; gap: 0.7rem; margin-bottom: 0.75rem; }
 .df-detail h2 { font-family: var(--display); font-size: 1.35rem; line-height: 1.05; letter-spacing: 0; }
 .df-status-dot { width: 0.85rem; height: 0.85rem; border-radius: 50%; background: var(--ink-mute); flex: 0 0 auto; }
@@ -670,4 +785,6 @@ footer b { color: var(--ink-mute); }
   .df-board svg { min-width: 620px; min-height: 20rem; }
   .df-inspector { grid-template-columns: 1fr; }
   .df-ledger-item { grid-template-columns: 1fr; }
+  .df-triage-item { grid-template-columns: minmax(0, 1fr); }
+  .df-triage-meta { justify-self: start; }
 }

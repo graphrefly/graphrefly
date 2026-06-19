@@ -725,6 +725,42 @@ function createDogfoodPayload() {
     sourceRefs: [dogfoodRef("seed", "wi-domain-action:seed-review-proposal")],
     metadata: { bounded: true, coordinate: { workItemId: "wi-domain-action", proposalId: "wi-domain-action:seed-review-proposal" } },
   };
+  const operationPolicies = [
+    ["select-work-item", ["work-item", "workbench-triage-item"], ["work-item"], ["workbench-selection", "workbench-active-projection-index"], "commandKind+targetRef", ["selected-same-work-item"], ["already-selected"], ["target-work-item-missing"], "Select a visible WorkItem or triage item.", "select"],
+    ["set-lane-filter", ["workbench-filter"], ["workbench-filter-option"], ["workbench-lane-filter", "workbench-active-projection-index"], "commandKind+filterKind+value", ["same-filter-active"], ["already-active"], ["filter-option-missing"], "Lane filter is already active or unavailable.", "filter"],
+    ["set-status-filter", ["workbench-filter"], ["workbench-filter-option"], ["workbench-status-filter", "workbench-active-projection-index"], "commandKind+filterKind+value", ["same-filter-active"], ["already-active"], ["filter-option-missing"], "Status filter is already active or unavailable.", "filter"],
+    ["set-scope", ["workbench-scope"], ["workbench-filter-option"], ["workbench-scope", "workbench-active-projection-index"], "commandKind+scope", ["same-scope-active"], ["already-active"], ["scope-option-missing"], "Scope is already active or unavailable.", "filter"],
+    ["set-inspector-filter", ["workbench-inspector-filter"], ["workbench-scoped-ledger-facts"], ["workbench-inspector-filter", "workbench-active-projection-index"], "commandKind+filterKind+value", ["same-inspector-filter-active"], ["already-active"], ["filter-value-missing"], "Inspector filter is already active or no matching facts exist.", "inspect"],
+    ["run-visible-effect", ["tool-provider-adapter-input", "work-item"], ["tool-provider-adapter-input:ready", "tool-provider-request-admission:admitted", "no-retention-gap"], ["tool-provider-adapter-run-requested", "tool-provider-adapter-run-status", "executor-outcome", "tool-provider-material-ref", "effect-run-result", "work-item-evidence-recorded", "agent-runtime-audit"], "adapterInputId+attempt", ["retention-gap", "missing-input", "request-not-admitted"], ["no-ready-input"], ["retention-gap", "missing-input", "stale-request", "mismatched-request", "policy-denied"], "Retry is available only for ready input with no retention gap.", "retry"],
+    ["propose-domain-action", ["work-item"], ["work-item"], ["work-item-domain-action-proposal"], "workItemId+actionKind+proposalSeq", ["work-item-hidden"], ["selection-hidden"], ["target-work-item-missing"], "A visible WorkItem is required before proposing an action.", "propose"],
+    ["approve-domain-action", ["work-item-domain-action-proposal"], ["work-item-domain-action-proposal:non-terminal"], ["work-item-domain-action-approval", "work-item-domain-action-admission", "work-item-domain-action-application", "agent-runtime-audit"], "proposalId+approve", ["approved", "applied", "rejected", "canceled"], ["proposal-terminal"], ["proposal-missing", "policy-denied"], "Only a non-terminal proposal can be approved; policy-denied cannot be bypassed.", "approve"],
+    ["reject-domain-action", ["work-item-domain-action-proposal"], ["work-item-domain-action-proposal:non-terminal"], ["work-item-domain-action-rejection", "agent-runtime-audit"], "proposalId+reject", ["approved", "applied", "rejected", "canceled"], ["proposal-terminal"], ["proposal-missing"], "Only a non-terminal proposal can be rejected.", "reject"],
+    ["cancel-domain-action", ["work-item-domain-action-proposal"], ["work-item-domain-action-proposal:non-terminal"], ["work-item-domain-action-cancellation", "agent-runtime-audit"], "proposalId+cancel", ["approved", "applied", "rejected", "canceled"], ["proposal-terminal"], ["proposal-missing"], "Only a non-terminal proposal can be canceled.", "cancel"],
+    ["request-missing-input", ["issue", "workbench-triage-item"], ["issue:missing-input"], ["workbench-missing-input-request", "agent-runtime-audit"], "issueId+request-missing-input", ["input-requested"], ["already-requested"], ["retention-gap"], "Missing input can request input; it cannot repair retention evidence.", "request-input"],
+    ["request-corrected-input", ["issue", "workbench-triage-item"], ["issue:mismatched-request"], ["workbench-corrected-input-request", "agent-runtime-audit"], "issueId+request-corrected-input", ["input-requested"], ["already-requested"], ["retention-gap"], "Mismatched request can request corrected input; it remains distinct from missing input and retention evidence.", "request-corrected-input"],
+    ["mark-stale-superseded", ["tool-provider-request-admission", "workbench-triage-item"], ["issue:stale-request"], ["workbench-request-superseded", "agent-runtime-audit"], "requestId+mark-stale-superseded", ["superseded"], ["already-superseded"], ["request-coordinate-missing"], "Only stale request admission material can be marked superseded.", "mark-superseded"],
+    ["inspect-retention-gap", ["issue", "tool-provider-retention-evidence", "workbench-triage-item"], ["issue:retention-gap"], ["workbench-retention-gap-inspection", "agent-runtime-audit"], "issueId+inspect-retention-gap", ["inspected"], ["already-inspected"], [], "Retention gaps are inspect-only and fail closed; retry repair stays disabled.", "inspect-only"],
+    ["acknowledge-policy-denied", ["issue", "workbench-triage-item"], ["issue:policy-denied"], ["workbench-policy-denied-ack", "agent-runtime-audit"], "issueId+acknowledge-policy-denied", ["acknowledged"], ["already-acknowledged"], [], "Policy-denied can be acknowledged or inspected; UI approval cannot bypass it.", "acknowledge"],
+    ["save-session-snapshot", ["workbench-session-snapshot"], ["workbench-session-facts"], ["workbench-session-snapshot", "workbench-active-projection-index"], "snapshotId+save", ["saved"], ["storage-unavailable"], ["local-storage-denied"], "Snapshot save is dashboard-private UI/session continuity only.", "snapshot-save"],
+    ["restore-session-snapshot", ["workbench-session-snapshot"], ["workbench-session-snapshot"], ["workbench-session-restore", "workbench-selection", "workbench-lane-filter", "workbench-status-filter", "workbench-scope", "workbench-inspector-filter", "workbench-active-projection-index"], "snapshotId+restore", ["restored"], ["snapshot-missing"], ["snapshot-invalid"], "Snapshot restore imports only bounded dashboard-private UI/session facts.", "snapshot-restore"],
+  ].map(([commandKind, targetKinds, requiredVisibleInputFacts, generatedFactKinds, idempotencyKey, terminalStates, noOpStates, blockedConditions, disabledReasonTemplate, remediationMode], order) => ({
+    kind: "workbench-operation-policy",
+    policyId: `workbench-operation-policy:${commandKind}`,
+    order,
+    commandKind,
+    targetKinds,
+    allowedTargetRefs: targetKinds.map((kind) => ({ kind, id: "*" })),
+    requiredVisibleInputFacts,
+    generatedFactKinds,
+    idempotencyKey,
+    terminalStates,
+    noOpStates,
+    blockedConditions,
+    disabledReasonTemplate,
+    remediationMode,
+    sourceRefs: [dogfoodRef("csp-8-decision", "D396")],
+    metadata: { dashboardPrivate: true, visibleUiFact: true, bounded: true, coordinate: { commandKind, policyId: `workbench-operation-policy:${commandKind}` } },
+  }));
   const initialWorkbenchCommandRef = dogfoodRef("workbench-command", "workbench:init");
   const initialWorkbenchGeneratedFacts = [
     {
@@ -751,12 +787,28 @@ function createDogfoodPayload() {
       sourceRefs: [initialWorkbenchCommandRef],
       metadata: { commandId: "workbench:init", visibleUiFact: true, bounded: true, coordinate: { filterKind: "scope", value: "selected" } },
     },
+    {
+      kind: "workbench-active-projection-index",
+      indexId: "workbench:init:active-projection-index",
+      activeProjectionId: "workbench:init:projection",
+      selectedWorkItemId,
+      scope: "selected",
+      sourceRefs: [initialWorkbenchCommandRef],
+      metadata: {
+        commandId: "workbench:init",
+        dashboardPrivate: true,
+        visibleUiFact: true,
+        bounded: true,
+        coordinate: { selectedWorkItemId, activeProjectionId: "workbench:init:projection" },
+      },
+    },
   ];
   const initialWorkbenchGeneratedRefs = [
     dogfoodRef("workbench-selection", selectedWorkItemId),
     dogfoodRef("workbench-lane-filter", "all"),
     dogfoodRef("workbench-status-filter", "all"),
     dogfoodRef("workbench-scope", "selected"),
+    dogfoodRef("workbench-active-projection-index", "workbench:init:active-projection-index"),
   ];
   const initialWorkbenchFacts = [
     {
@@ -868,6 +920,7 @@ function createDogfoodPayload() {
         metadata: { graphVisibleOption: true, bounded: true },
       })),
       ...initialWorkbenchFacts,
+      ...operationPolicies,
       {
         kind: "tool-provider-catalog",
         providerId,
