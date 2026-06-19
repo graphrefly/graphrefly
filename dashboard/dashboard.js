@@ -8,6 +8,7 @@
   var gapTotal = Object.keys(G).reduce(function (n, k) { return n + G[k].length; }, 0);
   var $ = function (id) { return document.getElementById(id); };
   var dogfoodFacts = (payload.dogfood && payload.dogfood.facts ? payload.dogfood.facts : []).slice();
+  var DOGFOOD_STATUSES = ["all", "ready", "running", "completed", "failed", "blocked", "timeout", "canceled", "none"];
 
   // ---- tiny DOM helper ----
   function h(tag, attrs, kids) {
@@ -46,6 +47,10 @@
       h("div", { class: "gate" }, [h("span", { class: "dot" }), payload.gateOk ? "gate · pass" : "gate · " + payload.broken.length + " broken"]),
       h("div", { class: "built", html: "built<b>" + new Date(payload.builtAt).toISOString().replace("T", " ").slice(0, 19) + "Z</b>" }),
     ]);
+    updateStickyTopbarHeight();
+    window.addEventListener("resize", updateStickyTopbarHeight);
+    if (window.ResizeObserver) new ResizeObserver(updateStickyTopbarHeight).observe(bar);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(updateStickyTopbarHeight);
   })();
 
   // ===== GAUGES =====
@@ -77,7 +82,7 @@
   // ===== TABS =====
   var TABS = [
     { id: "dashboard", label: "Dashboard" },
-    { id: "dogfood", label: "Dogfood" },
+    { id: "dogfood", label: "Workbench" },
     { id: "gaps", label: "Gaps", cnt: gapTotal },
     { id: "structure", label: "Structure" },
     { id: "search", label: "Search" },
@@ -136,10 +141,38 @@
     if (!fact) return "";
     return fact.workItemId || fact.planId || fact.requestId || fact.routeId || fact.profileId || fact.policyId ||
       fact.adapterInputId || fact.runId || fact.outcomeId || fact.resultId || fact.evidenceId ||
-      fact.proposalId || fact.admissionId || fact.applicationId || fact.statusId || fact.id || "";
+      fact.materialId || fact.proposalId || fact.approvalId || fact.admissionId || fact.applicationId || fact.statusId || fact.id || "";
   }
   function dogfoodRefsText(refs) {
     return (refs || []).map(function (ref) { return ref.kind + ":" + ref.id; }).join("  ");
+  }
+  function dogfoodCommandIdFrom(fact) {
+    if (!fact) return "";
+    if (fact.commandId) return fact.commandId;
+    if (fact.metadata && fact.metadata.commandId) return fact.metadata.commandId;
+    for (var i = 0; i < (fact.sourceRefs || []).length; i += 1) {
+      if (fact.sourceRefs[i].kind === "dashboard-command") return fact.sourceRefs[i].id;
+    }
+    return "";
+  }
+  function dogfoodRefMatches(ref, ids, kinds) {
+    if (!ref || !ids || !ids.length) return false;
+    var idMatch = ids.some(function (id) { return ref.id === id || String(ref.id || "").indexOf(id + ":") === 0; });
+    var kindMatch = !kinds || !kinds.length || kinds.indexOf(ref.kind) >= 0;
+    return idMatch && kindMatch;
+  }
+  function dogfoodFactTouches(fact, ids, kinds) {
+    if (!fact) return false;
+    if (dogfoodRefMatches({ kind: "subject", id: fact.subjectId }, ids, kinds)) return true;
+    if (dogfoodRefMatches({ kind: "work-item", id: fact.workItemId }, ids, kinds)) return true;
+    if (dogfoodRefMatches({ kind: "request", id: fact.requestId }, ids, kinds)) return true;
+    if (dogfoodRefMatches({ kind: "run", id: fact.runId }, ids, kinds)) return true;
+    if ((fact.sourceRefs || []).some(function (ref) { return dogfoodRefMatches(ref, ids, kinds); })) return true;
+    if ((fact.evidenceRefs || []).some(function (ref) { return dogfoodRefMatches(ref, ids, kinds); })) return true;
+    var c = fact.metadata && fact.metadata.coordinate;
+    return !!(c && [c.workItemId, c.requestId, c.adapterInputId, c.runId, c.outcomeId, c.subjectId].some(function (id) {
+      return id && ids.some(function (needle) { return id === needle || String(id).indexOf(needle + ":") === 0; });
+    }));
   }
   function dogfoodSelectedId() {
     var selections = dogfoodFactsByKind("dogfood-selection");
@@ -153,7 +186,7 @@
   function dogfoodCurrentStatusFilter() {
     var filters = dogfoodFactsByKind("dogfood-status-filter");
     var status = (filters[filters.length - 1] || {}).status || "all";
-    return ["all", "ready", "running", "completed", "failed", "blocked", "none"].indexOf(status) >= 0 ? status : "all";
+    return DOGFOOD_STATUSES.indexOf(status) >= 0 ? status : "all";
   }
   function dogfoodWorkItemFromRefs(refs) {
     for (var i = 0; i < (refs || []).length; i += 1) {
@@ -164,6 +197,11 @@
     if (kind === "result") return "completed";
     if (kind === "failure") return "failed";
     return kind || "pending";
+  }
+  function updateStickyTopbarHeight() {
+    var bar = $("topbar");
+    if (!bar) return;
+    document.documentElement.style.setProperty("--topbar-h", Math.ceil(bar.getBoundingClientRect().height) + "px");
   }
   function deriveDogfoodView() {
     var workItems = dogfoodFactsByKind("work-item");
@@ -178,12 +216,19 @@
     var requestAdmissions = dogfoodFactsByKind("tool-provider-request-admission");
     var runRequests = dogfoodFactsByKind("tool-provider-adapter-run-requested");
     var runStatuses = dogfoodFactsByKind("tool-provider-adapter-run-status");
+    var runtimeStatuses = dogfoodFactsByKind("tool-provider-adapter-runtime-status");
+    var retentionEvidence = dogfoodFactsByKind("tool-provider-retention-evidence");
+    var materialRefs = dogfoodFactsByKind("tool-provider-material-ref");
     var outcomes = dogfoodFacts.filter(function (f) { return f.kind === "result" || f.kind === "failure" || f.kind === "blocked" || f.kind === "timeout" || f.kind === "canceled"; });
     var effectResults = dogfoodFactsByKind("effect-run-result");
     var evidence = dogfoodFactsByKind("work-item-evidence-recorded");
     var issues = dogfoodFacts.filter(function (f) { return f.kind === "issue"; });
     var audit = dogfoodFactsByKind("agent-runtime-audit");
-    var actions = dogfoodFacts.filter(function (f) { return f.kind === "work-item-domain-action-proposal" || f.kind === "work-item-domain-action-admission" || f.kind === "work-item-domain-action-application"; });
+    var actionApprovals = dogfoodFactsByKind("work-item-domain-action-approval");
+    var actions = dogfoodFacts.filter(function (f) {
+      return f.kind === "work-item-domain-action-proposal" || f.kind === "work-item-domain-action-approval" ||
+        f.kind === "work-item-domain-action-admission" || f.kind === "work-item-domain-action-application";
+    });
     var evidenceByWorkItem = {};
     evidence.forEach(function (item) { (evidenceByWorkItem[item.workItemId] = evidenceByWorkItem[item.workItemId] || []).push(item); });
     var issueBySubject = {};
@@ -270,7 +315,7 @@
         runId: request.runId,
         workItemId: input && dogfoodWorkItemFromRefs(input.input && input.input.subjectRefs),
         requestId: request.requestId,
-        status: outcome ? outcome.kind : "requested",
+        status: outcome ? dogfoodResultStatus(outcome.kind) : "requested",
         attempt: request.attempt,
         outcomeId: outcome && outcome.outcomeId,
         issueCount: outcome && outcome.error ? 1 : 0,
@@ -287,19 +332,30 @@
       var policy = route && route.policyRefs && route.policyRefs.length ? policies.filter(function (fact) { return fact.policyId === route.policyRefs[0].id; }).slice(-1)[0] : null;
       var adapterInput = inputByWorkItem[id];
       var admission = agentRequest ? requestAdmissions.filter(function (fact) { return fact.requestId === agentRequest.requestId; }).slice(-1)[0] : null;
+      var selectedAdmissions = requestAdmissions.filter(function (fact) {
+        return dogfoodFactTouches(fact, [id, id + ":tool-request", adapterInput && adapterInput.adapterInputId].filter(Boolean));
+      });
       var runs = adapterInput ? runRequests.filter(function (fact) { return fact.adapterInputId === adapterInput.adapterInputId; }) : [];
       var latestRun = runs.slice(-1)[0];
       var runStatus = latestRun ? runStatuses.filter(function (fact) { return fact.runId === latestRun.runId; }).slice(-1)[0] : null;
+      var runtimeStatus = latestRun ? runtimeStatuses.filter(function (fact) {
+        return dogfoodFactTouches(fact, [id, latestRun.runId, adapterInput && adapterInput.adapterInputId].filter(Boolean));
+      }).slice(-1)[0] : null;
       var outcome = latestRun ? outcomeByRun[latestRun.runId] : null;
       var effectResult = outcome ? effectResults.filter(function (fact) { return fact.metadata && fact.metadata.outcomeId === outcome.outcomeId; }).slice(-1)[0] : null;
       var selectedEvidence = evidence.filter(function (fact) { return fact.workItemId === id; });
       var selectedIssues = issues.filter(function (fact) {
-        return fact.subjectId === id || fact.subjectId === (id + ":tool-request") ||
-          dogfoodRefsText(fact.sourceRefs).indexOf(id) >= 0;
+        return dogfoodFactTouches(fact, [id, id + ":tool-request", adapterInput && adapterInput.adapterInputId, latestRun && latestRun.runId].filter(Boolean));
       });
       var selectedAudit = audit.filter(function (fact) {
-        return fact.subjectId === id || fact.subjectId === (id + ":tool-request") ||
-          dogfoodRefsText(fact.sourceRefs).indexOf(id) >= 0 || (fact.metadata && fact.metadata.runId && latestRun && fact.metadata.runId === latestRun.runId);
+        return dogfoodFactTouches(fact, [id, id + ":tool-request", adapterInput && adapterInput.adapterInputId, latestRun && latestRun.runId].filter(Boolean)) ||
+          (fact.metadata && fact.metadata.runId && latestRun && fact.metadata.runId === latestRun.runId);
+      });
+      var selectedRetentionEvidence = retentionEvidence.filter(function (fact) {
+        return dogfoodFactTouches(fact, [id, adapterInput && adapterInput.adapterInputId, latestRun && latestRun.runId].filter(Boolean));
+      });
+      var selectedMaterialRefs = materialRefs.filter(function (fact) {
+        return dogfoodFactTouches(fact, [id, outcome && outcome.outcomeId, latestRun && latestRun.runId].filter(Boolean));
       });
       var selectedActions = actions.filter(function (fact) { return fact.workItemId === id; });
       var chain = [
@@ -313,7 +369,10 @@
         ["Adapter input", adapterInput],
         ["Run request", latestRun],
         ["Run status", runStatus],
+        ["Runtime status", runtimeStatus],
+        ["Retention evidence", selectedRetentionEvidence.slice(-1)[0]],
         ["Outcome", outcome],
+        ["Material ref", selectedMaterialRefs.slice(-1)[0]],
         ["Effect result", effectResult],
         ["Evidence", selectedEvidence.slice(-1)[0]],
         ["Action", selectedActions.slice(-1)[0]],
@@ -328,12 +387,16 @@
         policy: policy,
         adapterInput: adapterInput,
         admission: admission,
+        admissions: selectedAdmissions,
         runs: runs,
         latestRun: latestRun,
         runStatus: runStatus,
+        runtimeStatus: runtimeStatus,
         outcome: outcome,
         effectResult: effectResult,
         evidence: selectedEvidence,
+        retentionEvidence: selectedRetentionEvidence,
+        materialRefs: selectedMaterialRefs,
         issues: selectedIssues,
         audit: selectedAudit,
         actions: selectedActions,
@@ -362,6 +425,8 @@
         outcomes: outcomes.length,
         evidence: evidence.length,
         issues: issues.length,
+        runtimeStatus: runtimeStatuses.length,
+        retentionEvidence: retentionEvidence.length,
         facts: dogfoodFacts.length,
       },
     };
@@ -369,6 +434,118 @@
   function dogfoodAppend(facts) {
     dogfoodFacts = dogfoodFacts.concat(facts);
     renderDogfood();
+  }
+  function dogfoodAppendFilter(kind, value) {
+    var current = kind === "lane" ? dogfoodCurrentLaneFilter() : dogfoodCurrentStatusFilter();
+    if (current === value) return;
+    dogfoodAppend([{
+      kind: kind === "lane" ? "dogfood-lane-filter" : "dogfood-status-filter",
+      lane: kind === "lane" ? value : undefined,
+      status: kind === "status" ? value : undefined,
+      sourceRefs: [{ kind: "dashboard-command", id: "filter-" + kind + ":" + value }],
+      metadata: { visibleUiFact: true, bounded: true, coordinate: { filterKind: kind, value: value } },
+    }]);
+  }
+  function dogfoodActionState(view, bundle, selectionVisible) {
+    if (!selectionVisible || !view.selected) {
+      return { canRun: false, canPropose: false, canApprove: false, runLabel: "Run fake effect", reason: "No visible WorkItem selected." };
+    }
+    var input = bundle && bundle.adapterInput;
+    var runCount = bundle && bundle.runs ? bundle.runs.length : 0;
+    var latestProposal = (bundle && bundle.actions || []).filter(function (item) {
+      return item.kind === "work-item-domain-action-proposal";
+    }).slice(-1)[0];
+    var latestAdmission = latestProposal && (bundle.actions || []).some(function (item) {
+      return item.kind === "work-item-domain-action-admission" && item.proposalId === latestProposal.proposalId;
+    });
+    var admissionOk = !bundle.admission || bundle.admission.state === "admitted";
+    var retentionGap = !!(bundle.runtimeStatus && bundle.runtimeStatus.status === "retention-gap") ||
+      (bundle.issues || []).some(function (issue) { return (issue.issueCode || issue.code) === "retention-gap"; });
+    var canRun = !!(input && input.status === "ready" && admissionOk && !retentionGap);
+    var runReason = canRun ? "Actions append visible facts; projector facts re-derive from the ledger." :
+      retentionGap ? "Retention-gap proof exists for this coordinate; fake runtime fails closed." :
+        !admissionOk ? "Request admission is not admitted for this coordinate." :
+          "No ready adapter input for the selected WorkItem.";
+    return {
+      canRun: canRun,
+      canPropose: true,
+      canApprove: !!(latestProposal && !latestAdmission),
+      runLabel: runCount > 0 ? "Retry visible run" : "Run fake effect",
+      reason: runReason,
+      approveReason: latestProposal ? (latestAdmission ? "Latest proposal is already admitted." : "Latest proposal can be approved.") : "No proposal is waiting for approval.",
+    };
+  }
+  function dogfoodProjectOutcomeFacts(selected, input, outcome, commandRef) {
+    var resultStatus = dogfoodResultStatus(outcome.kind);
+    var runId = outcome.metadata && outcome.metadata.runId;
+    var resultId = selected.id + ":effect-run:" + outcome.outcomeId + ":manual-projector-result";
+    var effectResult = {
+      kind: "effect-run-result",
+      resultId: resultId,
+      effectRunId: selected.id + ":effect-run",
+      status: resultStatus,
+      operationId: input.operationId,
+      subjectRefs: [{ kind: "work-item", id: selected.id }],
+      sourceRefs: [commandRef, { kind: "executor-outcome", id: outcome.outcomeId }, { kind: "agent-request", id: input.requestId }, { kind: "tool-provider-adapter-run", id: runId }],
+      auditRefs: [runId + ":audit:finished"],
+      completedAtMs: outcome.occurredAtMs,
+      metadata: {
+        commandId: commandRef.id,
+        projectorId: "dashboard-private-effect-result-projector",
+        outcomeId: outcome.outcomeId,
+        requestStatus: resultStatus,
+        bounded: true,
+        coordinate: { workItemId: selected.id, runId: runId, outcomeId: outcome.outcomeId, attempt: outcome.attempt },
+      },
+      output: outcome.result,
+      error: outcome.error,
+      needs: outcome.needs,
+    };
+    return [
+      effectResult,
+      {
+        kind: "work-item-evidence-recorded",
+        evidenceId: selected.id + ":manual-evidence:" + outcome.attempt,
+        workItemId: selected.id,
+        effectRunId: effectResult.effectRunId,
+        status: resultStatus,
+        output: outcome.result,
+        error: outcome.error,
+        needs: outcome.needs,
+        sourceRefs: effectResult.sourceRefs,
+        summary: (outcome.result && outcome.result.summary) || (outcome.error && outcome.error.message) || (outcome.needs && outcome.needs[0] && outcome.needs[0].message),
+        metadata: {
+          commandId: commandRef.id,
+          projectorId: "dashboard-private-work-item-evidence-projector",
+          bounded: true,
+          evidenceKind: "manual-dashboard-run",
+          resultId: resultId,
+          coordinate: { workItemId: selected.id, effectRunId: effectResult.effectRunId, resultId: resultId },
+        },
+      },
+    ];
+  }
+  function dogfoodProjectApprovalFacts(selected, proposal, approval, commandRef) {
+    return [
+      {
+        kind: "work-item-domain-action-admission",
+        admissionId: proposal.proposalId + ":admission",
+        proposalId: proposal.proposalId,
+        workItemId: selected.id,
+        state: "admitted",
+        sourceRefs: [commandRef, { kind: "work-item-domain-action-approval", id: approval.approvalId }, { kind: "work-item-domain-action-proposal", id: proposal.proposalId }],
+        metadata: { commandId: commandRef.id, projectorId: "dashboard-private-domain-action-projector", bounded: true, coordinate: { workItemId: selected.id, proposalId: proposal.proposalId } },
+      },
+      {
+        kind: "work-item-domain-action-application",
+        applicationId: proposal.proposalId + ":application",
+        proposalId: proposal.proposalId,
+        workItemId: selected.id,
+        state: "applied",
+        sourceRefs: [commandRef, { kind: "work-item-domain-action-admission", id: proposal.proposalId + ":admission" }],
+        metadata: { commandId: commandRef.id, projectorId: "dashboard-private-domain-action-projector", bounded: true, coordinate: { workItemId: selected.id, proposalId: proposal.proposalId } },
+      },
+    ];
   }
   function dogfoodRunSelected(view) {
     var selected = view.selected;
@@ -388,6 +565,13 @@
         item.requestId === input.requestId;
     }).slice(-1)[0];
     var commandRef = { kind: "dashboard-command", id: "run-effect:" + selected.id + ":" + attempt };
+    var commandMeta = {
+      commandId: commandRef.id,
+      visibleUiFact: true,
+      command: "run-or-retry-visible-effect",
+      bounded: true,
+      coordinate: { workItemId: selected.id, adapterInputId: input.adapterInputId, attempt: attempt },
+    };
     var command = {
       kind: "dashboard-command/run-effect-requested",
       commandId: commandRef.id,
@@ -395,7 +579,7 @@
       adapterInputId: input.adapterInputId,
       attempt: attempt,
       sourceRefs: [{ kind: "dogfood-selection", id: selected.id }],
-      metadata: { visibleUiFact: true, command: "run-or-retry-visible-effect", bounded: true },
+      metadata: commandMeta,
     };
     var runRequest = {
       kind: "tool-provider-adapter-run-requested",
@@ -413,7 +597,14 @@
       policyRefs: input.policyRefs,
       requestedAtMs: 1_200 + attempt,
       sourceRefs: [commandRef, { kind: "tool-provider-adapter-input", id: input.adapterInputId }],
-      metadata: { command: "run-selected-effect", workItemId: selected.id, attemptCoordinate: input.adapterInputId + "#" + attempt, bounded: true },
+      metadata: {
+        commandId: commandRef.id,
+        command: "run-selected-effect",
+        workItemId: selected.id,
+        attemptCoordinate: input.adapterInputId + "#" + attempt,
+        bounded: true,
+        coordinate: { adapterInputId: input.adapterInputId, runId: runId, attempt: attempt },
+      },
     };
     var outcome = {
       kind: "result",
@@ -434,10 +625,16 @@
         refs: [{ kind: "artifact", id: input.requestId + ":bounded-summary" }],
         metadata: { resultKind: "bounded-dashboard-action" },
       },
-      sourceRefs: [{ kind: "tool-provider-adapter-run-requested", id: runId }],
+      sourceRefs: [commandRef, { kind: "tool-provider-adapter-run-requested", id: runId }],
       evidenceRefs: [{ kind: "work-item", id: selected.id }, { kind: "tool-provider-adapter-run", id: runId }],
       usage: { latencyMs: 7 },
-      metadata: { runId: runId, publicSummary: "success", bounded: true },
+      metadata: {
+        commandId: commandRef.id,
+        runId: runId,
+        publicSummary: "success",
+        bounded: true,
+        coordinate: { adapterInputId: input.adapterInputId, runId: runId, attempt: attempt },
+      },
     };
     var runStatus = {
       kind: "tool-provider-adapter-run-status",
@@ -446,45 +643,43 @@
       adapterInputId: input.adapterInputId,
       requestId: input.requestId,
       operationId: input.operationId,
-      status: "result",
+      status: "completed",
       attempt: attempt,
       outcomeId: outcomeId,
       sourceRefs: [{ kind: "tool-provider-adapter-run-requested", id: runId }, { kind: "executor-outcome", id: outcomeId }],
-      metadata: { bounded: true, runId: runId, attempt: attempt },
+      metadata: {
+        commandId: commandRef.id,
+        bounded: true,
+        runId: runId,
+        attempt: attempt,
+        coordinate: { adapterInputId: input.adapterInputId, runId: runId, attempt: attempt },
+      },
     };
-    var effectResult = {
-      kind: "effect-run-result",
-      resultId: selected.id + ":effect-run:" + outcomeId + ":result",
-      effectRunId: selected.id + ":effect-run",
-      status: "completed",
-      operationId: input.operationId,
-      subjectRefs: [{ kind: "work-item", id: selected.id }],
-      sourceRefs: [{ kind: "executor-outcome", id: outcomeId }, { kind: "agent-request", id: input.requestId }, { kind: "tool-provider-adapter-run", id: runId }],
-      auditRefs: [runId + ":audit:finished"],
-      completedAtMs: outcome.occurredAtMs,
-      metadata: { outcomeId: outcomeId, requestStatus: "completed" },
-      output: outcome.result,
+    var materialRef = {
+      kind: "tool-provider-material-ref",
+      materialId: input.requestId + ":manual-bounded-summary:" + attempt,
+      requestId: input.requestId,
+      outcomeId: outcomeId,
+      materialKind: "D270-summary-ref",
+      inlineState: "summary-only",
+      sourceRefs: [{ kind: "executor-outcome", id: outcomeId }],
+      metadata: {
+        commandId: commandRef.id,
+        bounded: true,
+        maxInlineChars: 220,
+        redaction: "D293-size-redaction",
+        coordinate: { runId: runId, outcomeId: outcomeId },
+      },
     };
     dogfoodAppend([
       command,
       runRequest,
-      { kind: "agent-runtime-audit", id: runId + ":audit:requested", event: "tool-provider-adapter-runtime-run-requested", subjectId: input.requestId, sourceRefs: [commandRef, { kind: "tool-provider-adapter-run-requested", id: runId }], metadata: { runId: runId, attempt: attempt, bounded: true } },
+      { kind: "agent-runtime-audit", id: runId + ":audit:requested", event: "tool-provider-adapter-runtime-run-requested", subjectId: input.requestId, sourceRefs: [commandRef, { kind: "tool-provider-adapter-run-requested", id: runId }], metadata: { commandId: commandRef.id, runId: runId, attempt: attempt, bounded: true, coordinate: { adapterInputId: input.adapterInputId, runId: runId, attempt: attempt } } },
       runStatus,
       outcome,
-      { kind: "agent-runtime-audit", id: runId + ":audit:finished", event: "tool-provider-adapter-runtime-finished", subjectId: input.requestId, sourceRefs: [{ kind: "executor-outcome", id: outcomeId }], metadata: { runId: runId, outcomeId: outcomeId, bounded: true } },
-      effectResult,
-      {
-        kind: "work-item-evidence-recorded",
-        evidenceId: selected.id + ":manual-evidence:" + attempt,
-        workItemId: selected.id,
-        effectRunId: effectResult.effectRunId,
-        status: "completed",
-        output: outcome.result,
-        sourceRefs: effectResult.sourceRefs,
-        summary: outcome.result.summary,
-        metadata: { bounded: true, evidenceKind: "manual-dashboard-run" },
-      },
-    ]);
+      materialRef,
+      { kind: "agent-runtime-audit", id: runId + ":audit:finished", event: "tool-provider-adapter-runtime-finished", subjectId: input.requestId, sourceRefs: [commandRef, { kind: "executor-outcome", id: outcomeId }], metadata: { commandId: commandRef.id, runId: runId, outcomeId: outcomeId, bounded: true, coordinate: { runId: runId, outcomeId: outcomeId, attempt: attempt } } },
+    ].concat(dogfoodProjectOutcomeFacts(selected, input, outcome, commandRef)));
   }
   function dogfoodProposeSelected(view) {
     var selected = view.selected;
@@ -499,7 +694,7 @@
       commandId: commandRef.id,
       workItemId: selected.id,
       sourceRefs: [{ kind: "dogfood-selection", id: selected.id }],
-      metadata: { visibleUiFact: true, bounded: true },
+      metadata: { commandId: commandRef.id, visibleUiFact: true, bounded: true, coordinate: { workItemId: selected.id, proposalSeq: proposalSeq } },
     }, {
       kind: "work-item-domain-action-proposal",
       proposalId: proposalId,
@@ -508,7 +703,7 @@
       state: "proposed",
       reason: "Dashboard user requested visible review action",
       sourceRefs: [commandRef],
-      metadata: { command: "propose-review", bounded: true },
+      metadata: { commandId: commandRef.id, command: "propose-review", bounded: true, coordinate: { workItemId: selected.id, proposalId: proposalId } },
     }]);
   }
   function dogfoodApproveSelected(view) {
@@ -519,10 +714,20 @@
     }).slice(-1)[0];
     if (!proposal) return;
     var already = dogfoodFacts.some(function (item) {
-      return item.kind === "work-item-domain-action-admission" && item.proposalId === proposal.proposalId;
+      return (item.kind === "work-item-domain-action-admission" || item.kind === "work-item-domain-action-approval") &&
+        item.proposalId === proposal.proposalId;
     });
     if (already) return;
     var commandRef = { kind: "dashboard-command", id: "approve-action:" + proposal.proposalId };
+    var approval = {
+      kind: "work-item-domain-action-approval",
+      approvalId: proposal.proposalId + ":approval",
+      proposalId: proposal.proposalId,
+      workItemId: selected.id,
+      state: "approved",
+      sourceRefs: [commandRef, { kind: "work-item-domain-action-proposal", id: proposal.proposalId }],
+      metadata: { commandId: commandRef.id, bounded: true, coordinate: { workItemId: selected.id, proposalId: proposal.proposalId } },
+    };
     dogfoodAppend([
       {
         kind: "dashboard-command/approve-domain-action",
@@ -530,26 +735,11 @@
         workItemId: selected.id,
         proposalId: proposal.proposalId,
         sourceRefs: [{ kind: "work-item-domain-action-proposal", id: proposal.proposalId }],
-        metadata: { visibleUiFact: true, bounded: true },
+        metadata: { commandId: commandRef.id, visibleUiFact: true, bounded: true, coordinate: { workItemId: selected.id, proposalId: proposal.proposalId } },
       },
-      {
-        kind: "work-item-domain-action-admission",
-        admissionId: proposal.proposalId + ":admission",
-        proposalId: proposal.proposalId,
-        workItemId: selected.id,
-        state: "admitted",
-        sourceRefs: [commandRef, { kind: "work-item-domain-action-proposal", id: proposal.proposalId }],
-      },
-      {
-        kind: "work-item-domain-action-application",
-        applicationId: proposal.proposalId + ":application",
-        proposalId: proposal.proposalId,
-        workItemId: selected.id,
-        state: "applied",
-        sourceRefs: [{ kind: "work-item-domain-action-admission", id: proposal.proposalId + ":admission" }],
-      },
-      { kind: "agent-runtime-audit", id: proposal.proposalId + ":audit:approved", event: "work-item-domain-action-approved", subjectId: selected.id, sourceRefs: [commandRef], metadata: { proposalId: proposal.proposalId, bounded: true } },
-    ]);
+      approval,
+      { kind: "agent-runtime-audit", id: proposal.proposalId + ":audit:approved", event: "work-item-domain-action-approved", subjectId: selected.id, sourceRefs: [commandRef], metadata: { commandId: commandRef.id, proposalId: proposal.proposalId, bounded: true, coordinate: { workItemId: selected.id, proposalId: proposal.proposalId } } },
+    ].concat(dogfoodProjectApprovalFacts(selected, proposal, approval, commandRef)));
   }
   function dogfoodMetric(label, value) {
     return h("div", { class: "df-metric" }, [h("strong", {}, [String(value)]), h("span", {}, [label])]);
@@ -582,9 +772,20 @@
     var nodeSvg = shown.map(function (node) {
       return '<g class="df-node ' + safeLane(node.lane) + (view.selectedWorkItemId === node.id ? " selected" : "") + '" data-id="' + escAttr(node.id) + '" transform="translate(' + node.x + " " + node.y + ')" tabindex="0" role="button" aria-label="Select ' + escAttr(node.label) + '"><rect x="-74" y="-39" width="148" height="78" rx="8"></rect><text class="df-node-label" x="0" y="-11">' + esc(node.label) + '</text><text class="df-node-status" x="0" y="12">' + esc(node.effectStatus) + " / " + node.progress + '%</text><circle cx="58" cy="-25" r="8"></circle><text class="df-node-count" x="58" y="-21">' + node.evidenceCount + "</text></g>";
     }).join("");
-    var board = h("div", { class: "df-board", html: '<svg viewBox="0 0 760 420" role="img" aria-label="CSP-8 WorkItem dependency board"><defs><marker id="df-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z"></path></marker></defs><g class="df-edges">' + edgeSvg + '</g><g class="df-nodes">' + nodeSvg + "</g></svg>" });
+    var board = h("div", { class: "df-board" }, [
+      h("div", { class: "df-board-note" }, ["Scroll horizontally on narrow screens to inspect the full dependency board."]),
+      h("div", { class: "df-board-canvas", html: '<svg viewBox="0 0 760 420" role="img" aria-label="CSP-8 WorkItem dependency board"><defs><marker id="df-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z"></path></marker></defs><g class="df-edges">' + edgeSvg + '</g><g class="df-nodes">' + nodeSvg + "</g></svg>" }),
+    ]);
     Array.prototype.forEach.call(board.querySelectorAll(".df-node"), function (node) {
-      function selectNode() { dogfoodAppend([{ kind: "dogfood-selection", workItemId: node.getAttribute("data-id"), sourceRefs: [{ kind: "dashboard-command", id: "select-work-item:" + node.getAttribute("data-id") }], metadata: { visibleUiFact: true } }]); }
+      function selectNode() {
+        var selectedId = node.getAttribute("data-id");
+        dogfoodAppend([{
+          kind: "dogfood-selection",
+          workItemId: selectedId,
+          sourceRefs: [{ kind: "dashboard-command", id: "select-work-item:" + selectedId }],
+          metadata: { visibleUiFact: true, bounded: true, coordinate: { workItemId: selectedId } },
+        }]);
+      }
       node.addEventListener("click", selectNode);
       node.addEventListener("keydown", function (event) { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); selectNode(); } });
     });
@@ -622,6 +823,32 @@
     });
     return chain;
   }
+  function dogfoodRoutePolicyCards(bundle) {
+    if (!bundle) return h("p", { class: "df-empty" }, ["No route/profile/policy chain selected."]);
+    var policy = bundle.policy || {};
+    var cards = [
+      ["Route", bundle.route && bundle.route.profileId, bundle.route && dogfoodRefsText(bundle.route.sourceRefs)],
+      ["Profile", bundle.profile && (bundle.profile.capabilities && bundle.profile.capabilities.toolNames || []).join(", "), bundle.profile && dogfoodRefsText(bundle.profile.policyRefs)],
+      ["Policy", policy.policyId, [
+        policy.size || policy.sizeCapacity ? "size" : "",
+        policy.timeout ? "timeout" : "",
+        policy.redaction ? "redaction" : "",
+        policy.cwdPath || policy["cwd-path"] ? "cwd-path" : "",
+        policy.approval ? "approval" : "",
+        policy.artifact ? "artifact" : "",
+        policy.network ? "network" : "",
+      ].filter(Boolean).join(" / ")],
+      ["Input", bundle.adapterInput && bundle.adapterInput.adapterInputId, bundle.adapterInput && dogfoodRefsText(bundle.adapterInput.sourceRefs)],
+      ["Evidence", bundle.evidence && bundle.evidence.length ? bundle.evidence.length + " item(s)" : "none", bundle.evidence && bundle.evidence.slice(-1)[0] && dogfoodRefsText(bundle.evidence.slice(-1)[0].sourceRefs)],
+    ];
+    return h("div", { class: "df-policy-chain" }, cards.map(function (card) {
+      return h("div", { class: "df-policy-card" }, [
+        h("span", {}, [card[0]]),
+        h("strong", { title: card[1] || "missing" }, [card[1] || "missing"]),
+        h("code", { title: card[2] || "" }, [card[2] || "sourceRefs: none"]),
+      ]);
+    }));
+  }
   function dogfoodScopedSummary(title, rows, emptyText) {
     return dogfoodRows(title, rows, emptyText, function (item) {
       var label = item.code || item.event || item.status || item.kind;
@@ -633,6 +860,13 @@
     var recent = dogfoodFacts.slice(-14).reverse();
     var commandRefs = {};
     dogfoodFacts.forEach(function (fact) {
+      var commandId = dogfoodCommandIdFrom(fact);
+      if (commandId) {
+        commandRefs[commandId] = commandRefs[commandId] || {};
+        var commandKind = fact.kind || fact.factKind || "unknown";
+        commandRefs[commandId][commandKind] = (commandRefs[commandId][commandKind] || 0) + 1;
+        return;
+      }
       (fact.sourceRefs || []).forEach(function (ref) {
         if (ref.kind === "dashboard-command") {
           var key = ref.id;
@@ -657,6 +891,8 @@
               h("strong", {}, [fact.kind || fact.factKind || "unknown"]),
               h("code", {}, [dogfoodFactId(fact) || "no-id"]),
               h("span", {}, [dogfoodRefsText(fact.sourceRefs) || "sourceRefs: none"]),
+              h("span", {}, [fact.issueCode || fact.code || "issueCode: none"]),
+              h("code", {}, [fact.metadata && fact.metadata.coordinate ? JSON.stringify(fact.metadata.coordinate) : "coordinate: none"]),
             ]);
           })),
         ]),
@@ -690,17 +926,37 @@
     var selectedIssues = bundle ? bundle.issues : [];
     var selectedAudit = bundle ? bundle.audit : [];
     var selectedActions = bundle ? bundle.actions : [];
+    var actionState = dogfoodActionState(view, bundle, selectionVisible);
     var filters = h("div", { class: "df-filters" });
-    ["all", "queued", "running", "blocked", "complete"].forEach(function (lane) {
-      filters.appendChild(h("button", { class: "df-filter" + (laneFilter === lane ? " active" : ""), onclick: function () { dogfoodAppend([{ kind: "dogfood-lane-filter", lane: lane, sourceRefs: [{ kind: "dashboard-command", id: "filter-lane:" + lane }], metadata: { visibleUiFact: true } }]); } }, [lane]));
+    var laneOptions = dogfoodFactsByKind("dogfood-filter-option").filter(function (item) { return item.filterKind === "lane"; })
+      .sort(function (a, b) { return (a.order || 0) - (b.order || 0); });
+    var statusOptions = dogfoodFactsByKind("dogfood-filter-option").filter(function (item) { return item.filterKind === "status"; })
+      .sort(function (a, b) { return (a.order || 0) - (b.order || 0); });
+    if (!laneOptions.length) laneOptions = ["all", "queued", "running", "blocked", "complete"].map(function (lane, order) { return { value: lane, label: lane, order: order }; });
+    if (!statusOptions.length) statusOptions = DOGFOOD_STATUSES.map(function (status, order) { return { value: status, label: status, order: order }; });
+    laneOptions.forEach(function (option) {
+      var lane = option.value;
+      filters.appendChild(h("button", {
+        class: "df-filter" + (laneFilter === lane ? " active" : ""),
+        "aria-pressed": laneFilter === lane ? "true" : "false",
+        disabled: laneFilter === lane,
+        onclick: function () { dogfoodAppendFilter("lane", lane); },
+      }, [option.label || lane]));
     });
-    ["all", "ready", "running", "completed", "failed", "blocked", "none"].forEach(function (status) {
-      filters.appendChild(h("button", { class: "df-filter status" + (statusFilter === status ? " active" : ""), onclick: function () { dogfoodAppend([{ kind: "dogfood-status-filter", status: status, sourceRefs: [{ kind: "dashboard-command", id: "filter-status:" + status }], metadata: { visibleUiFact: true } }]); } }, [status]));
+    statusOptions.forEach(function (option) {
+      var status = option.value;
+      filters.appendChild(h("button", {
+        class: "df-filter status" + (statusFilter === status ? " active" : ""),
+        "aria-pressed": statusFilter === status ? "true" : "false",
+        disabled: statusFilter === status,
+        onclick: function () { dogfoodAppendFilter("status", status); },
+      }, [option.label || status]));
     });
-    var actions = h("div", { class: "df-actions", role: "group", "aria-label": "Graph-visible dogfood actions" }, [
-      h("button", { disabled: !selectionVisible, onclick: function () { if (selectionVisible) dogfoodRunSelected({ selected: selected }); } }, ["Run fake effect"]),
-      h("button", { class: "secondary", disabled: !selectionVisible, onclick: function () { if (selectionVisible) dogfoodProposeSelected({ selected: selected }); } }, ["Propose review"]),
-      h("button", { class: "secondary", disabled: !selectionVisible, onclick: function () { if (selectionVisible) dogfoodApproveSelected({ selected: selected }); } }, ["Approve proposal"]),
+    var actions = h("div", { class: "df-actions", role: "group", "aria-label": "Graph-visible Workbench actions" }, [
+      h("button", { disabled: !actionState.canRun, title: actionState.reason, onclick: function () { if (actionState.canRun) dogfoodRunSelected({ selected: selected }); } }, [actionState.runLabel]),
+      h("button", { class: "secondary", disabled: !actionState.canPropose, title: actionState.reason, onclick: function () { if (actionState.canPropose) dogfoodProposeSelected({ selected: selected }); } }, ["Propose review"]),
+      h("button", { class: "secondary", disabled: !actionState.canApprove, title: actionState.approveReason, onclick: function () { if (actionState.canApprove) dogfoodApproveSelected({ selected: selected }); } }, ["Approve proposal"]),
+      h("span", { class: "df-action-hint" }, [actionState.canApprove ? actionState.approveReason : actionState.reason]),
     ]);
     var metrics = h("div", { class: "df-metrics" }, [
       dogfoodMetric("WorkItems", view.counters.workItems),
@@ -709,6 +965,7 @@
       dogfoodMetric("Outcomes", view.counters.outcomes),
       dogfoodMetric("Evidence", view.counters.evidence),
       dogfoodMetric("Issues", view.counters.issues),
+      dogfoodMetric("Retention", view.counters.retentionEvidence),
       dogfoodMetric("Facts", view.counters.facts),
     ]);
     var rail = h("aside", { class: "df-rail" }, [
@@ -726,6 +983,7 @@
       h("div", { class: "df-detail-head" }, [h("span", { class: "df-status-dot " + safeLane(selected.lane) }), h("div", {}, [h("p", { class: "df-eyebrow" }, [selected.lane]), h("h2", {}, [selected.label])])]),
       h("p", { class: "df-summary" }, [selected.summary]),
       h("section", { class: "df-section" }, [h("h3", {}, ["Execution Chain"]), bundle ? dogfoodChain(bundle) : h("p", { class: "df-empty" }, ["No selected execution chain."])]),
+      h("section", { class: "df-section" }, [h("h3", {}, ["Route / Policy / Evidence"]), dogfoodRoutePolicyCards(bundle)]),
       dogfoodJsonFact("WorkItem", bundle && bundle.item),
       dogfoodJsonFact("Effect Plan", bundle && bundle.plan, "This WorkItem has no effect plan fact."),
       dogfoodJsonFact("Effect Request", bundle && bundle.request, "No WorkItemEffectRequested fact for this selection."),
@@ -735,9 +993,19 @@
       dogfoodJsonFact("Tool Provider Policy", bundle && bundle.policy, "No ToolProviderExecutionPolicy fact selected by the route."),
       dogfoodJsonFact("Adapter Input", bundle && bundle.adapterInput, "No ready ToolProviderAdapterInput fact."),
       dogfoodJsonFact("Request Admission", bundle && bundle.admission, "No request admission fact for this selection."),
+      dogfoodRows("Request Admission Taxonomy", bundle.admissions || [], "No request admission taxonomy facts touch this selection.", function (item) {
+        return h("div", { class: "df-row" }, [h("div", {}, [h("strong", {}, [item.state || "unknown"]), h("span", {}, [item.issueCode || item.requestId])]), dogfoodBadge(item.state || "recorded", item.state || "recorded")]);
+      }),
       dogfoodJsonFact("Run Request", bundle && bundle.latestRun, "No run request yet; click Run fake effect to append one."),
       dogfoodJsonFact("Run Status", bundle && bundle.runStatus, "No run-scoped status fact yet."),
+      dogfoodJsonFact("Runtime Status", bundle && bundle.runtimeStatus, "No runtime-maintenance status fact touches this selection."),
       dogfoodJsonFact("Outcome", bundle && bundle.outcome, "No ExecutorOutcome fact yet."),
+      dogfoodRows("Retention Evidence", bundle.retentionEvidence || [], "No bounded retention evidence touches this selection.", function (item) {
+        return h("div", { class: "df-row" }, [h("div", {}, [h("strong", {}, [item.evidenceKind]), h("span", {}, [item.adapterInputId])]), dogfoodBadge(item.issueCode || "recorded", item.issueCode || "recorded")]);
+      }),
+      dogfoodRows("Material Refs", bundle.materialRefs || [], "No D270 material ref touches this selection.", function (item) {
+        return h("div", { class: "df-row" }, [h("div", {}, [h("strong", {}, [item.materialKind]), h("span", {}, [item.materialId])]), dogfoodBadge(item.inlineState || "ref", item.inlineState || "ref")]);
+      }),
       dogfoodJsonFact("Effect Result", bundle && bundle.effectResult, "No EffectRunResult projection yet."),
       dogfoodRows("Evidence", selectedEvidence, "No evidence recorded yet.", function (item) {
         return h("div", { class: "df-row" }, [h("div", {}, [h("strong", {}, [item.status]), h("span", {}, [item.summary || item.evidenceId])]), h("code", {}, [item.evidenceId])]);
@@ -750,7 +1018,7 @@
     ] : [h("p", { class: "df-empty" }, ["No visible WorkItem is selected for the active lane/status filters. Select a visible node or clear the filters before running an action."])]);
     var ledger = dogfoodInspector(view);
     fill(v, [
-      sectionH("CSP-8 dogfood", "reactive jira / messaging-hub · dashboard-private facts"),
+      sectionH("CSP-8 Workbench", "reactive jira / messaging-hub · dashboard-private facts"),
       h("div", { class: "df-hero" }, [
         h("div", {}, [h("p", { class: "df-eyebrow" }, ["canonical target"]), h("h2", {}, [payload.dogfood.title]), h("p", {}, [payload.dogfood.note])]),
         actions,

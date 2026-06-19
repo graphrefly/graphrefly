@@ -215,8 +215,8 @@ function createDogfoodPayload() {
   }));
   const executorProfiles = [
     {
-      kind: "tool",
-      factKind: "executor-profile",
+      kind: "executor-profile",
+      profileKind: "tool-provider",
       executorId: providerId,
       profileId: "dashboard-local-builtin-read-profile",
       providerId,
@@ -224,10 +224,11 @@ function createDogfoodPayload() {
       capabilities: { toolNames: ["file.read"], operations: ["read"] },
       policyRefs: [dogfoodRef("tool-provider-execution-policy", policyId)],
       sourceRefs: [dogfoodRef("tool-provider-catalog", "dashboard-local-builtin")],
+      metadata: { bounded: true, coordinate: { providerId, profileId: "dashboard-local-builtin-read-profile" } },
     },
     {
-      kind: "tool",
-      factKind: "executor-profile",
+      kind: "executor-profile",
+      profileKind: "tool-provider",
       executorId: providerId,
       profileId: "dashboard-local-builtin-patch-profile",
       providerId,
@@ -235,6 +236,7 @@ function createDogfoodPayload() {
       capabilities: { toolNames: ["file.edit/apply-patch"], operations: ["apply-patch"], approvalRequired: true },
       policyRefs: [dogfoodRef("tool-provider-execution-policy", policyId)],
       sourceRefs: [dogfoodRef("tool-provider-catalog", "dashboard-local-builtin")],
+      metadata: { bounded: true, coordinate: { providerId, profileId: "dashboard-local-builtin-patch-profile" } },
     },
   ];
   const executorRoutes = agentRequests.map((request) => ({
@@ -250,7 +252,16 @@ function createDogfoodPayload() {
     sourceRefs: [
       dogfoodRef("agent-request", request.requestId),
       dogfoodRef("executor-profile", profileFor(request.workItemId)),
+      dogfoodRef("tool-provider-execution-policy", policyId),
     ],
+    metadata: {
+      bounded: true,
+      coordinate: {
+        requestId: request.requestId,
+        routeId: `${request.requestId}:route`,
+        profileId: profileFor(request.workItemId),
+      },
+    },
   }));
   const adapterInputs = agentRequests.map((request) => ({
     kind: "tool-provider-adapter-input",
@@ -261,7 +272,9 @@ function createDogfoodPayload() {
     status: "ready",
     input: request.input,
     routeId: `${request.requestId}:route`,
+    routeRef: dogfoodRef("executor-route", `${request.requestId}:route`),
     profileId: profileFor(request.workItemId),
+    profileRef: dogfoodRef("executor-profile", profileFor(request.workItemId)),
     policyRefs: [dogfoodRef("tool-provider-execution-policy", policyId)],
     sourceRefs: [
       dogfoodRef("agent-request", request.requestId),
@@ -269,16 +282,70 @@ function createDogfoodPayload() {
       dogfoodRef("executor-profile", profileFor(request.workItemId)),
       dogfoodRef("tool-provider-execution-policy", policyId),
     ],
+    metadata: {
+      bounded: true,
+      coordinate: {
+        adapterInputId: `${request.requestId}:adapter-input`,
+        routeId: `${request.requestId}:route`,
+        profileId: profileFor(request.workItemId),
+      },
+    },
   }));
   const requestAdmissions = agentRequests.map((request) => ({
     kind: "tool-provider-request-admission",
     admissionId: `${request.requestId}:admission`,
     requestId: request.requestId,
     adapterInputId: `${request.requestId}:adapter-input`,
-    state: request.workItemId === "wi-boundary-taxonomy" ? "stale-request" : "admitted",
+    state: "admitted",
     sourceRefs: [dogfoodRef("agent-request", request.requestId), dogfoodRef("executor-route", `${request.requestId}:route`)],
-    metadata: { requestAdmission: true, bounded: true },
+    metadata: {
+      requestAdmission: true,
+      bounded: true,
+      coordinate: {
+        requestId: request.requestId,
+        adapterInputId: `${request.requestId}:adapter-input`,
+        admissionState: "admitted",
+      },
+    },
   }));
+  const taxonomyAdmissions = [
+    {
+      kind: "tool-provider-request-admission",
+      admissionId: "wi-boundary-taxonomy:stale-demo-request:admission",
+      requestId: "wi-boundary-taxonomy:stale-demo-request",
+      adapterInputId: "wi-boundary-taxonomy:stale-demo-adapter-input",
+      state: "stale-request",
+      issueCode: "stale-request",
+      sourceRefs: [dogfoodRef("dashboard-taxonomy-scenario", "stale-request")],
+      metadata: {
+        requestAdmission: true,
+        bounded: true,
+        coordinate: {
+          requestId: "wi-boundary-taxonomy:stale-demo-request",
+          adapterInputId: "wi-boundary-taxonomy:stale-demo-adapter-input",
+          admissionState: "stale-request",
+        },
+      },
+    },
+    {
+      kind: "tool-provider-request-admission",
+      admissionId: "wi-boundary-taxonomy:mismatched-demo-request:admission",
+      requestId: "wi-boundary-taxonomy:mismatched-demo-request",
+      adapterInputId: "wi-boundary-taxonomy:mismatched-demo-adapter-input",
+      state: "mismatched-request",
+      issueCode: "mismatched-request",
+      sourceRefs: [dogfoodRef("dashboard-taxonomy-scenario", "mismatched-request")],
+      metadata: {
+        requestAdmission: true,
+        bounded: true,
+        coordinate: {
+          requestId: "wi-boundary-taxonomy:mismatched-demo-request",
+          adapterInputId: "wi-boundary-taxonomy:mismatched-demo-adapter-input",
+          admissionState: "mismatched-request",
+        },
+      },
+    },
+  ];
   const seededRunInputs = adapterInputs.filter((input) => !input.requestId.includes("wi-board-query"));
   const runRequests = seededRunInputs.map((input) => ({
     kind: "tool-provider-adapter-run-requested",
@@ -291,7 +358,11 @@ function createDogfoodPayload() {
     requestedAtMs: now + 5,
     sourceRefs: [dogfoodRef("tool-provider-adapter-input", input.adapterInputId)],
     policyRefs: input.policyRefs,
-    metadata: { attemptCoordinate: `${input.adapterInputId}#1`, bounded: true },
+    metadata: {
+      attemptCoordinate: `${input.adapterInputId}#1`,
+      bounded: true,
+      coordinate: { adapterInputId: input.adapterInputId, runId: `${input.requestId}:seed-run:1`, attempt: 1 },
+    },
   }));
   const outcomes = runRequests.map((request) => {
     const workItemId = request.requestId.replace(":tool-request", "");
@@ -323,7 +394,12 @@ function createDogfoodPayload() {
         retryable: false,
         sourceRefs: [dogfoodRef("tool-provider-adapter-run-requested", request.runId)],
         evidenceRefs: [dogfoodRef("work-item", workItemId), dogfoodRef("tool-provider-adapter-run", request.runId)],
-        metadata: { runId: request.runId, publicSummary: "policy-denied", bounded: true },
+        metadata: {
+          runId: request.runId,
+          publicSummary: "policy-denied",
+          bounded: true,
+          coordinate: { adapterInputId: request.adapterInputId, runId: request.runId, attempt: request.attempt },
+        },
       };
     }
     if (workItemId === "wi-human-approval") {
@@ -337,7 +413,12 @@ function createDogfoodPayload() {
         needs: [{ kind: "approval", message: "Human approval required before patch." }],
         sourceRefs: [dogfoodRef("tool-provider-adapter-run-requested", request.runId)],
         evidenceRefs: [dogfoodRef("work-item", workItemId), dogfoodRef("tool-provider-adapter-run", request.runId)],
-        metadata: { runId: request.runId, publicSummary: "approval-needed", bounded: true },
+        metadata: {
+          runId: request.runId,
+          publicSummary: "approval-needed",
+          bounded: true,
+          coordinate: { adapterInputId: request.adapterInputId, runId: request.runId, attempt: request.attempt },
+        },
       };
     }
     if (workItemId === "wi-boundary-taxonomy") {
@@ -351,7 +432,13 @@ function createDogfoodPayload() {
         needs: [{ kind: "retention-gap", message: "Execution proof horizon closed; fail closed instead of hidden replay." }],
         sourceRefs: [dogfoodRef("tool-provider-adapter-run-requested", request.runId)],
         evidenceRefs: [dogfoodRef("work-item", workItemId), dogfoodRef("tool-provider-adapter-run", request.runId)],
-        metadata: { runId: request.runId, publicSummary: "retention-gap", gapKind: "retention-evidence-horizon-closed", bounded: true },
+        metadata: {
+          runId: request.runId,
+          publicSummary: "retention-gap",
+          gapKind: "retention-evidence-horizon-closed",
+          bounded: true,
+          coordinate: { adapterInputId: request.adapterInputId, runId: request.runId, attempt: request.attempt },
+        },
       };
     }
     return {
@@ -371,7 +458,12 @@ function createDogfoodPayload() {
       usage: { latencyMs: 7 },
       sourceRefs: [dogfoodRef("tool-provider-adapter-run-requested", request.runId)],
       evidenceRefs: [dogfoodRef("work-item", workItemId), dogfoodRef("tool-provider-adapter-run", request.runId)],
-      metadata: { runId: request.runId, publicSummary: "success", bounded: true },
+      metadata: {
+        runId: request.runId,
+        publicSummary: "success",
+        bounded: true,
+        coordinate: { adapterInputId: request.adapterInputId, runId: request.runId, attempt: request.attempt },
+      },
     };
   });
   const resultStatus = (kind) => (kind === "result" ? "completed" : kind === "failure" ? "failed" : kind);
@@ -392,7 +484,12 @@ function createDogfoodPayload() {
       issues: outcome.error ? [outcome.error] : undefined,
       auditRefs: [`${outcome.metadata.runId}:audit:finished`],
       completedAtMs: outcome.occurredAtMs,
-      metadata: { outcomeId: outcome.outcomeId, requestStatus: resultStatus(outcome.kind) },
+      metadata: {
+        outcomeId: outcome.outcomeId,
+        requestStatus: resultStatus(outcome.kind),
+        bounded: true,
+        coordinate: { runId: outcome.metadata.runId, attempt: outcome.attempt, outcomeId: outcome.outcomeId },
+      },
       output: outcome.result,
       error: outcome.error,
       needs: outcome.needs,
@@ -409,7 +506,11 @@ function createDogfoodPayload() {
     needs: result.needs,
     sourceRefs: result.sourceRefs,
     summary: result.output?.summary ?? result.error?.message ?? result.needs?.[0]?.message,
-    metadata: { bounded: true, evidenceKind: "work-item-effect-result" },
+    metadata: {
+      bounded: true,
+      evidenceKind: "work-item-effect-result",
+      coordinate: { workItemId: result.subjectRefs[0].id, effectRunId: result.effectRunId, resultId: result.resultId },
+    },
   }));
   const runStatuses = runRequests.map((request) => {
     const outcome = outcomes.find((item) => item.metadata.runId === request.runId);
@@ -422,9 +523,75 @@ function createDogfoodPayload() {
       status: outcome ? resultStatus(outcome.kind) : "requested",
       issueCode: outcome?.error?.code,
       sourceRefs: [dogfoodRef("tool-provider-adapter-run-requested", request.runId), dogfoodRef("executor-outcome", outcome?.outcomeId ?? "pending")],
-      metadata: { bounded: true, runId: request.runId, attempt: request.attempt },
+      metadata: {
+        bounded: true,
+        runId: request.runId,
+        attempt: request.attempt,
+        coordinate: { adapterInputId: request.adapterInputId, runId: request.runId, attempt: request.attempt },
+      },
     };
   });
+  const retentionEvidence = seededRunInputs.map((input, index) => {
+    const run = runRequests.find((request) => request.adapterInputId === input.adapterInputId);
+    return {
+      kind: "tool-provider-retention-evidence",
+      evidenceId: `${input.adapterInputId}:retention-proof`,
+      adapterInputId: input.adapterInputId,
+      sequence: index + 1,
+      occurredAtMs: now + 7 + index,
+      evidenceKind: input.requestId.includes("wi-boundary-taxonomy") ? "retention-evidence-horizon-closed" : "execution-high-water",
+      attemptHighWater: run?.attempt ?? 0,
+      sourceRefs: run ? [dogfoodRef("tool-provider-adapter-run-requested", run.runId)] : [dogfoodRef("tool-provider-adapter-input", input.adapterInputId)],
+      issueCode: input.requestId.includes("wi-boundary-taxonomy") ? "retention-gap" : undefined,
+      metadata: {
+        bounded: true,
+        coordinate: {
+          adapterInputId: input.adapterInputId,
+          runId: run?.runId,
+          attemptHighWater: run?.attempt ?? 0,
+          evidenceKind: input.requestId.includes("wi-boundary-taxonomy") ? "retention-evidence-horizon-closed" : "execution-high-water",
+        },
+      },
+    };
+  });
+  const retentionGapEvidenceId = "wi-boundary-taxonomy:tool-request:adapter-input:retention-proof";
+  const runtimeStatuses = [
+    {
+      kind: "tool-provider-adapter-runtime-status",
+      statusId: "dashboard-runtime:retention-evidence-horizon",
+      providerId,
+      status: "retention-gap",
+      issueCode: "retention-gap",
+      sourceRefs: [
+        dogfoodRef("tool-provider-retention-evidence", retentionGapEvidenceId),
+        dogfoodRef("tool-provider-adapter-run-status", "wi-boundary-taxonomy:tool-request:seed-run:1:status"),
+      ],
+      metadata: {
+        bounded: true,
+        gapKind: "retention-evidence-horizon-closed",
+        coordinate: {
+          index: "retentionEvidence",
+          adapterInputId: "wi-boundary-taxonomy:tool-request:adapter-input",
+          attemptHighWater: 1,
+        },
+      },
+    },
+  ];
+  const materialRefs = outcomes.map((outcome) => ({
+    kind: "tool-provider-material-ref",
+    materialId: `${outcome.requestId}:bounded-summary`,
+    requestId: outcome.requestId,
+    outcomeId: outcome.outcomeId,
+    materialKind: "D270-summary-ref",
+    inlineState: "summary-only",
+    sourceRefs: [dogfoodRef("executor-outcome", outcome.outcomeId)],
+    metadata: {
+      bounded: true,
+      maxInlineChars: 220,
+      redaction: "D293-size-redaction",
+      coordinate: { runId: outcome.metadata.runId, outcomeId: outcome.outcomeId },
+    },
+  }));
   const boundaryIssues = [
     {
       kind: "issue",
@@ -433,7 +600,8 @@ function createDogfoodPayload() {
       severity: "warning",
       subjectId: "wi-boundary-taxonomy:missing-input-demo",
       sourceRefs: [dogfoodRef("dashboard-taxonomy-scenario", "missing-input")],
-      metadata: { taxonomy: "missing-input", gapKind: null, bounded: true },
+      issueCode: "missing-input",
+      metadata: { taxonomy: "missing-input", gapKind: null, bounded: true, coordinate: { subjectId: "wi-boundary-taxonomy:missing-input-demo" } },
     },
     {
       kind: "issue",
@@ -441,8 +609,9 @@ function createDogfoodPayload() {
       message: "Stale request stays request admission material; it is not retention evidence.",
       severity: "warning",
       subjectId: "wi-boundary-taxonomy",
-      sourceRefs: [dogfoodRef("tool-provider-request-admission", "wi-boundary-taxonomy:tool-request:admission")],
-      metadata: { taxonomy: "request-admission", admissionState: "stale-request", bounded: true },
+      sourceRefs: [dogfoodRef("tool-provider-request-admission", "wi-boundary-taxonomy:stale-demo-request:admission")],
+      issueCode: "stale-request",
+      metadata: { taxonomy: "request-admission", admissionState: "stale-request", bounded: true, coordinate: { requestId: "wi-boundary-taxonomy:stale-demo-request" } },
     },
     {
       kind: "issue",
@@ -450,8 +619,9 @@ function createDogfoodPayload() {
       message: "Request identity mismatch is a separate admission-shape issue, not a retention-gap substitute.",
       severity: "warning",
       subjectId: "wi-boundary-taxonomy:mismatched-request-demo",
-      sourceRefs: [dogfoodRef("dashboard-taxonomy-scenario", "mismatched-request")],
-      metadata: { taxonomy: "request-admission", admissionState: "mismatched-request", bounded: true },
+      sourceRefs: [dogfoodRef("tool-provider-request-admission", "wi-boundary-taxonomy:mismatched-demo-request:admission")],
+      issueCode: "mismatched-request",
+      metadata: { taxonomy: "request-admission", admissionState: "mismatched-request", bounded: true, coordinate: { subjectId: "wi-boundary-taxonomy:mismatched-request-demo" } },
     },
     {
       kind: "issue",
@@ -459,13 +629,35 @@ function createDogfoodPayload() {
       message: "Retention evidence horizon closed; provider execution fails closed.",
       severity: "error",
       subjectId: "wi-boundary-taxonomy",
-      sourceRefs: [dogfoodRef("tool-provider-adapter-run-status", "wi-boundary-taxonomy:tool-request:seed-run:1:status")],
-      metadata: { taxonomy: "retention-gap", gapKind: "retention-evidence-horizon-closed", bounded: true },
+      sourceRefs: [
+        dogfoodRef("tool-provider-retention-evidence", retentionGapEvidenceId),
+        dogfoodRef("tool-provider-adapter-run-status", "wi-boundary-taxonomy:tool-request:seed-run:1:status"),
+      ],
+      issueCode: "retention-gap",
+      metadata: {
+        taxonomy: "retention-gap",
+        gapKind: "retention-evidence-horizon-closed",
+        bounded: true,
+        coordinate: { adapterInputId: "wi-boundary-taxonomy:tool-request:adapter-input", attemptHighWater: 1 },
+      },
     },
   ];
   const issues = outcomes
     .filter((outcome) => outcome.error)
-    .map((outcome) => ({ ...outcome.error, sourceRefs: [dogfoodRef("executor-outcome", outcome.outcomeId)], metadata: { bounded: true } }))
+    .map((outcome) => ({
+      ...outcome.error,
+      issueCode: outcome.error.code,
+      sourceRefs: [dogfoodRef("executor-outcome", outcome.outcomeId)],
+      metadata: {
+        bounded: true,
+        coordinate: {
+          subjectId: outcome.error.subjectId,
+          runId: outcome.metadata.runId,
+          outcomeId: outcome.outcomeId,
+          issueCode: outcome.error.code,
+        },
+      },
+    }))
     .concat(boundaryIssues);
   const audit = [
     ...runRequests.map((request) => ({
@@ -474,7 +666,12 @@ function createDogfoodPayload() {
       event: "tool-provider-adapter-runtime-run-requested",
       subjectId: request.requestId,
       sourceRefs: [dogfoodRef("tool-provider-adapter-run", request.runId)],
-      metadata: { runId: request.runId, attempt: request.attempt, bounded: true },
+      metadata: {
+        runId: request.runId,
+        attempt: request.attempt,
+        bounded: true,
+        coordinate: { adapterInputId: request.adapterInputId, runId: request.runId, attempt: request.attempt },
+      },
     })),
     ...outcomes.map((outcome) => ({
       kind: "agent-runtime-audit",
@@ -483,7 +680,12 @@ function createDogfoodPayload() {
       subjectId: outcome.requestId,
       issueCode: outcome.error?.code,
       sourceRefs: [dogfoodRef("executor-outcome", outcome.outcomeId)],
-      metadata: { runId: outcome.metadata.runId, outcomeId: outcome.outcomeId, bounded: true },
+      metadata: {
+        runId: outcome.metadata.runId,
+        outcomeId: outcome.outcomeId,
+        bounded: true,
+        coordinate: { runId: outcome.metadata.runId, outcomeId: outcome.outcomeId, attempt: outcome.attempt },
+      },
     })),
     {
       kind: "agent-runtime-audit",
@@ -491,8 +693,12 @@ function createDogfoodPayload() {
       event: "tool-provider-adapter-runtime-retention-gap",
       subjectId: "wi-boundary-taxonomy",
       issueCode: "retention-gap",
-      sourceRefs: [dogfoodRef("issue", "retention-gap")],
-      metadata: { gapKind: "retention-evidence-horizon-closed", bounded: true },
+      sourceRefs: [dogfoodRef("tool-provider-retention-evidence", retentionGapEvidenceId), dogfoodRef("issue", "retention-gap")],
+      metadata: {
+        gapKind: "retention-evidence-horizon-closed",
+        bounded: true,
+        coordinate: { adapterInputId: "wi-boundary-taxonomy:tool-request:adapter-input", attemptHighWater: 1 },
+      },
     },
   ];
   const actionProposal = {
@@ -503,10 +709,10 @@ function createDogfoodPayload() {
     state: "admitted",
     reason: "Seeded graph-visible dashboard review action",
     sourceRefs: [dogfoodRef("seed", "wi-domain-action:seed-review-proposal")],
-    metadata: { bounded: true },
+    metadata: { bounded: true, coordinate: { workItemId: "wi-domain-action", proposalId: "wi-domain-action:seed-review-proposal" } },
   };
   return {
-    title: "CSP-8 GraphReFly internal dashboard dogfood",
+    title: "CSP-8 GraphReFly internal Workbench",
     note: "dashboard-private fixture facts; no public Canvas API, durable WorkspaceGraph owner, or provider runtime",
     providerId,
     selectedWorkItemId,
@@ -517,20 +723,38 @@ function createDogfoodPayload() {
         kind: "dogfood-selection",
         workItemId: selectedWorkItemId,
         sourceRefs: [dogfoodRef("dashboard-view", "initial-selection")],
-        metadata: { visibleUiFact: true },
+        metadata: { visibleUiFact: true, bounded: true, coordinate: { workItemId: selectedWorkItemId } },
       },
       {
         kind: "dogfood-lane-filter",
         lane: "all",
         sourceRefs: [dogfoodRef("dashboard-view", "initial-lane-filter")],
-        metadata: { visibleUiFact: true },
+        metadata: { visibleUiFact: true, bounded: true, coordinate: { filterKind: "lane", value: "all" } },
       },
       {
         kind: "dogfood-status-filter",
         status: "all",
         sourceRefs: [dogfoodRef("dashboard-view", "initial-status-filter")],
-        metadata: { visibleUiFact: true },
+        metadata: { visibleUiFact: true, bounded: true, coordinate: { filterKind: "status", value: "all" } },
       },
+      ...["all", "queued", "running", "blocked", "complete"].map((lane, order) => ({
+        kind: "dogfood-filter-option",
+        filterKind: "lane",
+        value: lane,
+        label: lane,
+        order,
+        sourceRefs: [dogfoodRef("dashboard-private-view-model", "lane-filter-options")],
+        metadata: { graphVisibleOption: true, bounded: true },
+      })),
+      ...["all", "ready", "running", "completed", "failed", "blocked", "timeout", "canceled", "none"].map((status, order) => ({
+        kind: "dogfood-filter-option",
+        filterKind: "status",
+        value: status,
+        label: status,
+        order,
+        sourceRefs: [dogfoodRef("dashboard-private-view-model", "status-filter-options")],
+        metadata: { graphVisibleOption: true, bounded: true },
+      })),
       {
         kind: "tool-provider-catalog",
         providerId,
@@ -553,12 +777,14 @@ function createDogfoodPayload() {
         timeout: { timeoutMs: 2_000 },
         redaction: { mode: "summary-ref", evidence: "D293-size-redaction" },
         cwdPath: { cwd: "dashboard-fixture", pathPolicy: "fixture-relative-only", allowedPaths: ["bounded-fixture.md"] },
+        "cwd-path": { cwd: "dashboard-fixture", pathPolicy: "fixture-relative-only", allowedPaths: ["bounded-fixture.md"] },
         filesystem: { cwd: "dashboard-fixture", pathPolicy: "fixture-relative-only", allowedPaths: ["bounded-fixture.md"] },
         approval: { requiredFor: ["file.edit/apply-patch"], mode: "explicit-visible-policy" },
         artifact: { mode: "D270-summary-ref", allowInlineBinary: false },
         artifacts: { mode: "D270-summary-ref", allowInlineBinary: false },
         network: { allowed: false },
         sourceRefs: [dogfoodRef("csp-8-decision", "D360"), dogfoodRef("csp-8-decision", "D293"), dogfoodRef("csp-8-decision", "D270")],
+        metadata: { bounded: true, coordinate: { providerId, policyId } },
       },
       { kind: "work-item-effect-mapping-policy", policyId: "dashboard-evidence-policy", effectKinds: [effectKind], evidence: { behavior: "record" } },
       ...effectPlans,
@@ -568,9 +794,13 @@ function createDogfoodPayload() {
       ...executorRoutes,
       ...adapterInputs,
       ...requestAdmissions,
+      ...taxonomyAdmissions,
       ...runRequests,
       ...runStatuses,
+      ...runtimeStatuses,
+      ...retentionEvidence,
       ...outcomes,
+      ...materialRefs,
       ...effectResults,
       ...evidence,
       ...issues,
@@ -583,6 +813,7 @@ function createDogfoodPayload() {
         workItemId: actionProposal.workItemId,
         state: "admitted",
         sourceRefs: [dogfoodRef("work-item-domain-action-proposal", actionProposal.proposalId)],
+        metadata: { bounded: true, coordinate: { workItemId: actionProposal.workItemId, proposalId: actionProposal.proposalId } },
       },
     ],
   };
@@ -674,6 +905,7 @@ const head = [
   '<meta charset="utf-8">',
   '<meta name="viewport" content="width=device-width, initial-scale=1">',
   "<title>GraphReFly · Control</title>",
+  '<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27%3E%3Crect width=%2716%27 height=%2716%27 rx=%272%27 fill=%27%23050e1a%27/%3E%3Cpath d=%27M3 8h10M8 3v10%27 stroke=%27%23c8ff00%27 stroke-width=%272%27/%3E%3C/svg%3E">',
   `<link rel="stylesheet" href="./dashboard.css?v=${stamp}">`,
 ].join("\n  ");
 
