@@ -21,6 +21,95 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-06-20 D409: locked Canvas Side Panel Why/Evidence vs Debug boundary.
+  Why/Evidence is user-facing, bounded, and action-oriented; Debug is
+  deliberate-open diagnostic material. All displayed material must stay
+  bounded/ref/redacted/public, while runtime-private provider/client/SDK/
+  subprocess/transport/credentials/raw logs/retention internals never enter
+  graph DATA or Canvas display.
+
+- 2026-06-20 D408: locked Canvas fixture/demo/Workbench isolation. Main Canvas
+  Workspace must never silently consume fake, demo, fixture, mockup, Workbench,
+  or dry-run data as production facts. Fixtures live only behind explicit
+  labeled test/demo/dev-harness boundaries; empty production data shows
+  empty/setup/unresolved state instead of fixture fallback.
+
+- 2026-06-20 D407: locked Canvas Recommended Actions as projection views.
+  Side Panel clicks/forms produce action intents that lower into explicit
+  proposal/admission/application paths; UI navigation may remain local. Existing
+  `WorkspaceActionId` and Workbench policy may seed labels or disabled-reason
+  language, but are not durable closed enums or command APIs.
+
+- 2026-06-20 D406: locked Required Input as a graph-visible Workspace/WorkItem
+  input gate with request, response proposal, admission/application, and
+  satisfied or rejected status facts. Missing-input gates may be satisfied by
+  admitted responses, while retention-gap, stale, mismatched, and request
+  admission failures remain distinct and cannot be repaired by ordinary input
+  responses.
+
+- 2026-06-20 D405: locked Canvas Side Panel as a user-facing input/console
+  surface whose drafts and action intents lower into graph-visible
+  proposal/admission/application paths. LLM helpers may classify or fill drafts
+  but cannot create, mutate, admit, apply, bypass policy, connect runtime
+  providers, or select fake fixtures for the main workspace.
+
+- 2026-06-20 D404: locked Canvas Side Panel information priority as a sticky
+  Selection Card plus one WorkItem Details Card with policy-ordered/collapsed
+  sections. Required input, primary action, blockers, duplicate/merge
+  confirmation, relationship conflicts, and blocking policy/admission reasons
+  may auto-expand; Why/Evidence, links, artifacts, recent activity,
+  policy/admission, and Debug default collapsed unless needed or deliberately
+  opened.
+
+- 2026-06-20 D403: locked Workspace link type catalog/policy as the layer that
+  maps open `WorkItemLink.linkKind` strings to display, direction, constraints,
+  collapse defaults, and projection effects. Only blocker/waiting, duplicate or
+  merge confirmation, relationship review, dangling refs, conflicts, or
+  unauthorized/unsupported links affect attention by default; navigation,
+  context, and provenance links stay in Side Panel or Topology Lens context.
+
+- 2026-06-20 D402: locked durable WorkItem relationship truth as explicit
+  WorkItem link facts plus a derived `WorkItemLink` projection. Parent-child,
+  blocks, related, duplicate, and spawned-from are distinct semantics governed
+  by a workspace link type catalog/policy, not metadata-only fields or Canvas
+  topology edges. Canvas Side Panel, Attention Dashboard, All WorkItems, and
+  Topology Lens consume link projections but do not own link mutation.
+
+- 2026-06-20 D401: locked Canvas Workspace WorkItem creation as
+  `WorkItemSpawnProposed` followed by explicit spawn admission/application
+  before `WorkItemCreated`. Manual Side Panel intake, LLM-assisted
+  classification, policy/helper follow-up, and linked/child creation may
+  propose, but must not directly create or mutate WorkItems. Top-level create
+  uses no fake parent WorkItem; relationship truth waits for an explicit
+  reviewed link vocabulary.
+
+- 2026-06-20 D400: locked Canvas Workspace's default surface as a configurable
+  Attention Dashboard projection. `Needs me`, `Review`, `Waiting`, and `Recent`
+  are default groups, not lifecycle states, queue truth, fixed board lanes, or
+  a closed enum. `All WorkItems` remains secondary, and Topology Lens remains an
+  overlay rather than a default page.
+
+- 2026-06-19 D399: locked Canvas Workspace Side Panel as a sticky Selection
+  Card plus one consolidated WorkItem Details Card with collapsible sections.
+  Section kinds are rendering slots, not fixed panel positions; required input
+  and blockers may auto-expand, evidence/context/policy/recent/debug default
+  collapsed unless preference or attention policy expands them. Debug remains
+  deliberate and isolated.
+
+- 2026-06-19 D398: locked Canvas Workspace WorkItem type customization as a
+  workspace-level type catalog and policy profile over `WorkItemDraft.kind` and
+  `customFields`. `Task`, `Spike`, and `Review` are default seeds, not a closed
+  enum; runtime/status taxonomies such as missing-input, retention-gap, stale,
+  mismatched, and policy-denied remain attention/actionability reasons rather
+  than default user-facing WorkItem types.
+
+- 2026-06-19 D397: locked WorkItem spawn proposal as canonical create proposal.
+  `WorkItemSpawnProposed` covers top-level manual creation, LLM-assisted intake,
+  linked/child creation, and policy/helper-generated follow-up work. Existing
+  `WorkItemDomainActionProposal` spawn actions remain actions over an existing
+  WorkItem and may lower into spawn proposals after admission; Canvas must not
+  introduce a private create proposal API or mutate WorkItems directly.
+
 - 2026-06-17 D390: locked Canvas WorkspaceGraph topology projection surface.
   WorkspaceGraph topology projection is a pure Canvas product-layer selector
   over WorkspaceGraph facts. Its durable surface may extend
