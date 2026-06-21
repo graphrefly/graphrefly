@@ -21,6 +21,78 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-06-21 D421: locked Canvas SidePanelActionIntent envelope validation
+  status. Malformed or non-data intent envelope material such as metadata fails
+  closed as `invalid-intent` with reason material such as `malformed-metadata`.
+  Draft-specific malformed material remains `draft-required` /
+  `malformed-draft`, target failures remain `invalid-target`, and unsupported
+  lowering kinds remain `unsupported-lowering`; invalid envelope material never
+  lowers to proposal-ready, admission, application, runtime execution, or
+  durable graph truth.
+
+- 2026-06-21 D420: locked Canvas generated component renderer admission
+  boundary. Canvas renders generated components through a renderer manifest and
+  host-owned renderer registry, not raw pasted/generated source execution in
+  the main Canvas package. A render request consumes D417 binding preview
+  material and produces render-ready or blocked preview data with serializable
+  props, rendererRef, event port declarations, diagnostics, and capability
+  policy status. First supported renderer kind is host-registered; iframe,
+  worker, dynamic-source, dependency, origin, and postMessage sandboxing remain
+  a separate future runtime decision.
+
+- 2026-06-21 D419: locked tool-provider run admission and approval path.
+  Tool-provider approval is a graph-visible run-admission gate before adapter
+  runtime execution. Candidate ToolProviderAdapterRunRequested facts are
+  consumed with ToolProviderAdapterInput and ToolProviderExecutionPolicy
+  approval material, and policy-required candidates are not executable until
+  admitted. Approval-required work produces a later visible run request with
+  sourceRefs to the admission decision; it must not resume a private callback or
+  mutate an existing run request. Adapter runtimes may still fail closed if
+  approval evidence is absent, but they do not own approval lifecycle, human UI,
+  or policy decision state.
+
+- 2026-06-21 D418: locked Workspace proposal intake boundary from
+  Canvas previews. Canvas may emit SidePanelActionIntent and pure lowering
+  preview material, but canonical proposal facts are created only by a
+  Workspace-owned intake boundary consuming a proposal-ready preview plus
+  Workspace-supplied ids, actor/capability context, idempotency material,
+  visible projection bundle, and policy. Admission and application remain
+  separate append-only Workspace stages; Canvas must not generate canonical
+  proposal/admission/application ids, mutate WorkItems, satisfy input gates, or
+  execute runtime/provider actions.
+
+- 2026-06-21 D417: locked Canvas generated component binding contract.
+  Component binding is a slot-addressed render contract over supplied
+  projection snapshots. Components read only reviewed slots such as WorkItem
+  projection, attention item, projection bundle, recommended action, required
+  input, material section, graph-node output projection, and boundary-input
+  draft descriptors. Events emit typed data-only intents for UI navigation,
+  SidePanelActionIntent, proposal drafts, or boundary-input preview. The
+  binding layer may preview props, diagnostics, and lowering status, but must
+  not execute code/providers/runtimes, mutate WorkItems, satisfy input gates,
+  write graph state, admit, apply, or emit truth facts.
+
+- 2026-06-21 D416: locked async tool-provider adapter runtime boundary.
+  Synchronous ToolProviderAdapterBinding remains sync-only. Async providers such
+  as HTTP execute through separate Layer C runtime helpers that consume
+  graph-visible ToolProviderAdapterInput plus ToolProviderAdapterRunRequested
+  facts and publish provider-neutral ExecutorOutcome/status/issues/audit
+  material. Runtime-private drivers, AbortControllers, clients, transports,
+  credentials, response streams, and cancellation state stay out of graph DATA.
+  Retry/repeated execution and approval resume are new visible run requests, not
+  hidden adapter loops or callbacks. Large/raw/sensitive response material uses
+  D270/D293 summary/ref artifact material.
+
+- 2026-06-21 D415: locked Rust native host binding boundary. TypeScript
+  remains a self-contained complete package; Rust is the native shared engine
+  and reusable graph-infrastructure library for Python and future non-TS host
+  packages; Python owns idiomatic API, typing/decorators/context managers,
+  value registry and host-object lifetime, exception mapping, async/runtime
+  integration, ecosystem adapters, and vertical recipes. PyO3/native bindings
+  may expose opaque graph/node/subscription handles and stable sync graph
+  surfaces, but must not revive Impl/facade/port models, copy TS structure, let
+  host callbacks bypass the dispatcher, or change protocol semantics.
+
 - 2026-06-21 D414: locked Canvas Trusted Data Query pack boundary. The pack
   provides templates, catalog seeds, required-input seeds, acceptance criteria,
   verification recipes, bounded evidence/material projections, and recommended
@@ -49,7 +121,7 @@ This began as a pure design artifact, but the active implementation state now li
 
 - 2026-06-21 D411: locked Canvas SidePanelActionIntent lowering preview as the
   concrete boundary between UI intents and Workspace proposal/admission facts.
-  The preview boundary may produce UI-local navigation, draft-needed,
+  The preview boundary may produce UI-local navigation, draft-required,
   confirmation-required, unsupported-lowering, invalid-target, or
   proposal-ready material, and may perform shallow client validation. It must
   not admit, apply, mutate WorkItems, satisfy Required Input, create durable
