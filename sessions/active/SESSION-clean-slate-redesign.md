@@ -21,6 +21,81 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-06-21 D427: locked Workspace proposal durable spine concrete
+  application boundary.
+  Workspace proposal hardening uses durable vocabulary centered on
+  WorkspaceProposalRecorded, WorkspaceProposalAdmissionDecision, and
+  WorkspaceProposalApplicationStatus/ApplicationRecorded status material while
+  all mutation remains family-specific. Admission consumes Workspace-supplied
+  decision identity, actor/capability refs, policy refs, idempotency/duplicate
+  evidence, target/projection freshness evidence, sourceRefs, and audit.
+  Malformed, missing-context, unsupported, unknown/stale target, duplicate, or
+  missing-policy/capability material fails closed as blocked/rejected/needs-review,
+  and no matching policy defaults to needs-review. Application consumes only
+  admitted, issue-free envelope matches, may record status plus refs to
+  family-specific facts, and is not an arbitrary fact emitter. Raw ready request
+  material remains Workspace-owned. The focused Canvas workspace-graph surface
+  may expose pure proposal/admission/application DTOs and helpers; workspace
+  intents stay intent/preview-only and root Canvas must not become a broad
+  mutation/admission API.
+
+- 2026-06-21 D426: locked Canvas host renderer event lowering preview.
+  Host renderer events lower through a pure data-only preview boundary that
+  consumes a typed renderer event envelope plus optional visible context such
+  as projection bundle/refs, target freshness, actor/capability refs, policy
+  refs, Workspace-supplied ids, requestedBy, workspaceId, and idempotency
+  material.
+  Canvas may emit UI navigation, SidePanelActionIntent/lowering, proposal-intake
+  preview, blocked, invalid, or unsupported-event status material only. Event
+  ports remain the routing authority; payloads are bounded draft/data material
+  and cannot override routing, name callbacks, request commands, or carry
+  runtime handles. Missing/malformed/non-ready/stale/unsupported/missing-policy
+  cases fail closed; registries and UI wiring stay host-owned/runtime-private,
+  while proposal admission/application stays Workspace-owned.
+
+- 2026-06-21 D425: locked Workspace proposal spine durable fact boundary.
+  Workspace proposal/admission/application uses a generic append-only proposal
+  spine plus family-specific application. Proposal recording, admission
+  decisions, and application status carry Workspace-supplied identity,
+  sourceRefs/audit/idempotency/policy/actor/capability/projection material.
+  Missing or unmatched policy defaults to needs-review, and malformed,
+  unsupported, stale, unknown, duplicate, or missing-capability material fails
+  closed as rejected/blocked/needs-review status material. Application consumes
+  only admitted, issue-free envelope matches and lowers through family-specific
+  paths such as required-input response, WorkItem spawn/link, or domain action;
+  the generic stage is not an arbitrary apply blob. Canvas remains limited to
+  focused pure preview/intake helpers and does not generate canonical ids,
+  admit, apply, mutate WorkItems, satisfy gates, execute runtimes, or promote UI
+  intents into durable truth.
+
+- 2026-06-21 D424: locked graph-visible scheduled readiness.
+  Delayed graph-visible work becomes ready through a provider/domain-neutral
+  projector over explicit schedule facts and explicit graph-local
+  clock/readiness facts. The projector may emit pending, ready, overdue,
+  status, issues, audit, and views, but never executes providers, claims work,
+  mutates WorkItems, admits proposals, satisfies input gates, or appends domain
+  truth. Timer/sleep drivers may only publish visible clock or wake facts and
+  are not readiness or execution authority.
+
+- 2026-06-21 D423: locked Canvas host-registered renderer runtime bridge.
+  Host-registered renderer runtime binding is caller-owned and runtime-private.
+  Canvas may publish renderer manifest/ref DTOs, render-admission previews,
+  serializable props, event port declarations, diagnostics, preview-only
+  capability status, and typed event envelopes, but not registry
+  implementations, renderer objects, lifecycle/teardown handles, callbacks,
+  command buses, runtime permission enforcement, Workspace mutation,
+  proposal admission/application, provider/runtime execution, credentials, or
+  iframe/worker/postMessage/dynamic-source sandboxing. Generated source
+  execution remains a separate future decision.
+
+- 2026-06-21 D422: locked tool-provider graph-visible retry orchestration.
+  Retry is a provider-neutral projector over visible input, outcome, policy,
+  and clock/readiness facts. Delayed/backoff retry is scheduled/pending
+  graph-visible material, and executable retry requests still become ordinary
+  ToolProviderAdapterRunRequested facts that pass through D419 admission before
+  runtime. Hidden adapter/runtime retry loops and hidden timers remain
+  forbidden.
+
 - 2026-06-21 D421: locked Canvas SidePanelActionIntent envelope validation
   status. Malformed or non-data intent envelope material such as metadata fails
   closed as `invalid-intent` with reason material such as `malformed-metadata`.
