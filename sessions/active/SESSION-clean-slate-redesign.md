@@ -21,6 +21,43 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-06-21 D413: locked Canvas Workspace focused package surfaces.
+  Workspace APIs use focused subpaths instead of a broad durable root. Pure
+  data/projection contracts live separately from React UI surfaces, and root
+  remains private scaffold until public hardening. Workbench, fixtures, demo
+  harnesses, IssueBoard scaffolds, dashboard-private policy, fake runtimes,
+  storage/router/executor bindings, and mutation/application helpers are not
+  public default exports or production fallbacks.
+
+- 2026-06-21 D412: locked Canvas WorkItem projection and Attention policy
+  interface. Canvas consumes Workspace logic projection bundles centered on
+  WorkItem projection plus optional required-input gates, recommended actions,
+  link projections, bounded material sections, and attention reasons. Attention
+  groups are configurable projection policy over those reasons and
+  actor/workspace preferences; default groups remain seed policies, not closed
+  enums, lifecycle states, queue truth, or board lanes. Canvas may render, sort,
+  dedupe, and preserve UI preferences, while Workspace logic owns reason
+  derivation and durable WorkItem/link/evidence truth.
+
+- 2026-06-21 D411: locked Canvas SidePanelActionIntent lowering preview as the
+  concrete boundary between UI intents and Workspace proposal/admission facts.
+  The preview boundary may produce UI-local navigation, draft-needed,
+  confirmation-required, unsupported-lowering, invalid-target, or
+  proposal-ready material, and may perform shallow client validation. It must
+  not admit, apply, mutate WorkItems, satisfy Required Input, create durable
+  relationship truth, execute providers, or invent canonical proposal/admission
+  ids when Workspace logic has not supplied them.
+
+- 2026-06-21 D410: locked Canvas SidePanelActionIntent lowering as an open,
+  data-only UI intent envelope. Canvas may render forms and produce shallow
+  intent/proposal previews, but Workspace logic owns schema semantics,
+  actor/capability policy, idempotency, stale refs, duplicate/merge decisions,
+  admission, and application. Unknown lowering kinds produce unsupported
+  preview/status material and never execute. Attention Dashboard groups remain
+  policy-driven projections, while hidden/snoozed/dismissed entries are
+  actor/workspace projection preferences unless future Workspace logic locks
+  explicit projection facts.
+
 - 2026-06-20 D409: locked Canvas Side Panel Why/Evidence vs Debug boundary.
   Why/Evidence is user-facing, bounded, and action-oriented; Debug is
   deliberate-open diagnostic material. All displayed material must stay
