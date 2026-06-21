@@ -21,6 +21,14 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-06-21 D414: locked Canvas Trusted Data Query pack boundary. The pack
+  provides templates, catalog seeds, required-input seeds, acceptance criteria,
+  verification recipes, bounded evidence/material projections, and recommended
+  action seeds over existing Workspace/WorkItem/evidence/verification surfaces.
+  It must not execute SQL, semantic queries, warehouses, provider/MCP/CLI/bash/
+  file-edit/URL runtimes, LLM/tool adapters, or create Canvas-private WorkItem,
+  verification, relationship, runtime, or fixture truth.
+
 - 2026-06-21 D413: locked Canvas Workspace focused package surfaces.
   Workspace APIs use focused subpaths instead of a broad durable root. Pure
   data/projection contracts live separately from React UI surfaces, and root
