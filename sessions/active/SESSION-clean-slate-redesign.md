@@ -21,6 +21,44 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-06-22 D437: locked Workspace proposal family outcome concrete
+  API shape.
+  Workspace family application outcomes use four family-owned pure record
+  helpers for required-input response, WorkItem spawn, WorkItem link, and
+  WorkItem domain action. Each helper consumes a generic
+  WorkspaceProposalApplicationStatusRecord plus Workspace/family-supplied
+  outcome id, sourceRefs, audit, and family-specific result refs, and returns
+  recorded/not-recorded preview material with issues; no public generic
+  family-outcome recorder is added. Default completion policy is data-only:
+  required-input response requires one recorded outcome with
+  requiredInputRequestId and responseRef, WorkItem spawn requires one recorded
+  outcome with workItemRef, WorkItem link requires one recorded outcome with
+  linkRef, and domain action requires one recorded outcome with actionRef
+  unless an explicit policy enables multi-step partial completion. Evidence
+  horizon is structured Workspace/family-owned material with sourceRefs/audit;
+  generic projection cannot close it by query timeout. repair-needed lowers
+  only to human-visible repair review/request material, never automatic
+  remutation. Family outcome indexing is a pure projected thin-ref index over
+  family facts keyed by application/idempotency coordinates, not storage and
+  not full fact denormalization.
+
+- 2026-06-22 D434: locked Workspace proposal family outcome owner and
+  repair boundary.
+  Family application outcomes are recorded only by family-owned
+  helpers/projectors for required-input response, WorkItem spawn, WorkItem
+  link, and WorkItem domain action. Generic application status records and
+  indexes carry only Workspace-supplied application/proposal/admission/
+  idempotency coordinates, source/audit/policy/target refs, handoff status,
+  and thin family outcome refs. Completion is evaluated by a data-only family
+  completion policy over visible family outcome facts. Evidence horizon is
+  explicit data that can remain open or close with sourceRefs/audit; a closed
+  horizon with missing or unverifiable family facts projects repair-needed
+  rather than retrying. Replay re-references exact matches and reports
+  idempotency-conflict for same application/idempotency with divergent
+  envelope/outcome. Repair-needed may lower to human-visible repair
+  proposal/review material, but it never authorizes automatic remutation or
+  family fact creation.
+
 - 2026-06-22 D430: locked Workspace proposal family application
   handoff.
   Workspace application uses a generic application attempt/status index plus
