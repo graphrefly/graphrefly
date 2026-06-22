@@ -21,6 +21,75 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-06-22 D452: locked Workspace proposal family outcome detail
+  fact supply boundary.
+  Outcome detail fact supply is a separate read-only Workspace/family-owned
+  boundary before the existing detail read-model projector. It may validate and
+  filter explicit supplied facts for requested thin refs, but never records
+  facts, creates canonical ids, mutates domain/application/family truth, calls
+  storage/query/runtime/provider/file/network APIs, or denormalizes full facts
+  into the thin outcome index.
+
+- 2026-06-22 D451: locked Canvas proposal family host display
+  slot contract.
+  Host display remains a host-owned rendering convention over data-only
+  descriptor/read-model DTOs. Canvas may expose descriptor bundles, diagnostic
+  descriptors, outcome detail read-models, event envelopes, and previews, but
+  must not expose or own a public component registry, React component map,
+  callback/action handler, renderer lifecycle, permission handle,
+  provider/runtime/client/credential/file/network handle, or mutation command
+  API.
+
+- 2026-06-22 D450: locked Workspace proposal repair-review
+  decision intake concrete shape.
+  Repair-review human decisions are recorded through a Workspace-owned pure
+  helper over an existing repair-review request plus explicit reviewDecisionId,
+  intent, reviewer/actor refs, policy/source/audit material, and optional
+  resolves/supersedes refs. Coordinates are copied from the request, current
+  status is optional guard context only, and recording decisions never mutates
+  requests, application/family truth, WorkItems, RequiredInput gates, links, or
+  runtime state.
+
+- 2026-06-22 D449: locked Workspace proposal repair action descriptor
+  and successor handoff.
+  Repair-review lifecycle status remains read-only current-status material and
+  never emits retry commands, family facts, application status, successor ids,
+  callbacks, provider/runtime actions, or mutation intents. UI may consume
+  read-only repair action affordance descriptors, but review-only actions enter
+  through Workspace-owned repair-review decision intake, and actual repair,
+  retry, replacement, or follow-up work enters the ordinary Workspace
+  proposal/admission/application path with Workspace-supplied ids, policy,
+  source refs, and family-owned application/outcome handling.
+
+- 2026-06-22 D448: locked Canvas proposal family drilldown query
+  descriptor.
+  Canvas proposal family drilldown uses graph-visible read-only query
+  descriptor material carrying query/view id, complete proposal/application
+  coordinates, and bounded page/filter options. Workspace-owned read-model
+  projection may consume those descriptors with projected diagnostics,
+  repair-review statuses, thin outcome indexes, outcome statuses, and explicit
+  outcome facts to emit read-model pages. Query descriptors are not storage,
+  mutation, repair, admission, application, command, callback, or generic fact
+  reader authority.
+
+- 2026-06-22 D447: locked Python private conformance harness boundary.
+  Python may provide a private conformance harness module for fixed
+  scenario-specific protocol stimuli over Rust/PyO3 internals. The harness is
+  not documented public facade, not exported from `graphrefly.__all__`, and
+  must not expose generic raw message construction/sending or public
+  `Node.up(msgs)` / `Node.down(msgs)`. Public Python ergonomics such as PULL,
+  pause modes, state-empty helpers, decorators, context managers, and
+  operators remain separately design-gated.
+
+- 2026-06-22 D446: locked Canvas proposal family host display,
+  repair decision intake, and outcome detail supply boundary.
+  Host React/runtime descriptor consumption is host-owned and runtime-private.
+  Repair-review human decisions are created only through a Workspace-owned
+  review-decision intake/recording path with explicit ids, actor/policy/audit
+  material, and optional resolves/supersedes refs. Outcome detail fact supply
+  stays separate from thin indexes as read-only selector or explicit supplied
+  facts, never a generic fact reader or index denormalization path.
+
 - 2026-06-22 D445: locked Canvas proposal family read-model composition
   handoff.
   Canvas consumes Workspace-owned proposal family application read-model and
