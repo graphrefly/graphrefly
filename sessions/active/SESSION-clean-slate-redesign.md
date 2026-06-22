@@ -21,6 +21,115 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-06-22 D464: locked Host-private outcome detail selector
+  adapter convention.
+  Real outcome detail selector adapters remain host-owned and
+  runtime-private. Hosts may privately read storage/query/provider/domain-cache
+  material, but the only graph-visible handoff is bounded data-only supplied
+  facts or D452/D462-compatible supply-result material. Adapters must preserve
+  refs, pagination, missing/divergent/mismatched diagnostics, sourceRefs, and
+  audit, and must not expose runtime handles, opaque cursors, registries,
+  callbacks, ids, mutations, index denormalization, or generic family readers.
+
+- 2026-06-22 D463: locked Workspace repair action policy
+  material placement.
+  Repair action descriptors stay lifecycle/display affordances with only
+  obvious lifecycle disabled states. Actor, capability, Workspace policy,
+  stale-state, and permission gating belongs to Workspace-owned
+  intent/intake validation, which emits blocked/status/issues/audit material.
+
+- 2026-06-22 D462: locked Workspace proposal family outcome detail
+  supply concrete shape.
+  Outcome detail supply uses request/result DTOs with supplyRequestId,
+  optional viewId, full coordinates, requested thin outcome refs, bounded
+  page/filter options, supplied facts, missing/mismatched refs, diagnostics,
+  sourceRefs, and audit. Pure supply must not call storage/query/runtime APIs,
+  store cursors, record facts, create ids, mutate truth, denormalize indexes,
+  or become a generic family fact reader.
+
+- 2026-06-22 D461: locked Canvas proposal family read-model query
+  concrete presentation options.
+  D455 sort/group/search options use closed display fields, deterministic
+  normalization, and identity/dedupe inclusion. Search is bounded display
+  matching only; grouping may add display grouping material while preserving
+  flat read-model material and must not classify raw issues, synthesize
+  statuses, introduce cursors, or call storage/query/runtime APIs.
+
+- 2026-06-22 D460: locked Workspace repair successor proposal
+  intake preview.
+  `open-successor-proposal-flow` lowers to a Workspace-owned preview that may
+  produce bounded proposal-ready context and suggested draft patch material,
+  but must not record proposal truth, generate canonical proposal/admission/
+  application ids, choose final idempotency keys, execute repair work, or
+  mutate family/application/WorkItem truth.
+
+- 2026-06-22 D459: locked Workspace repair action intent
+  concrete shape.
+  Repair action selections use data-only intent material carrying intent,
+  descriptor, request, action, full coordinates, actor/reviewer refs,
+  sourceRefs, audit, and bounded metadata. Validation must match descriptor,
+  request, action, and coordinates; malformed or mismatched material fails
+  closed and review-only actions lower only to D450 input preparation.
+
+- 2026-06-22 D458: locked Canvas proposal descriptor host-owned
+  rendering convention.
+  DescriptorKind-to-component mapping for proposal family application display
+  is host-owned and runtime-private. Canvas may expose only data-only
+  descriptor, read-model, and host-slot DTOs through focused surfaces; it must
+  not expose a public component registry, React map, callback/action handler,
+  renderer lifecycle, permission object, runtime handle, or mutation command
+  API.
+
+- 2026-06-22 D457: locked Workspace proposal outcome detail
+  read-only selector adapter boundary.
+  Real outcome detail selection lives outside the thin outcome index and
+  outside the D452 pure supply helper as a separately reviewed read-only
+  Workspace/family-owned selector adapter. Graph-visible material may contain
+  only bounded data-only supplied facts or supply-result DTOs, with
+  missing/divergent/mismatched refs preserved as diagnostics and no cursors,
+  full facts, storage/query/provider/runtime handles, ids, recording, mutation,
+  or generic family fact reader authority.
+
+- 2026-06-22 D456: locked Workspace proposal repair-review
+  decision recording projector.
+  Workspace may add a graph-visible projector that consumes repair-review
+  requests, explicit Workspace/caller-supplied decision-recording input facts,
+  and optional matching stale-guard status material. It calls the D450 pure
+  helper, emits recording results/issues and valid review decision DATA, and
+  must not emit or mutate application status, family facts, WorkItem/input/link
+  truth, outcome facts, commands, runtime/provider/client/credential/file or
+  network material, or repair execution.
+
+- 2026-06-22 D455: locked Canvas proposal family read-model query
+  extension discipline.
+  D448 read-model query descriptors may grow closed presentation-level
+  sort/group/search options over already-projected or explicitly supplied
+  material. Those options are normalized into identity/dedupe, fail closed as
+  display diagnostics when malformed or unsupported, and must not introduce
+  storage cursors, opaque continuation tokens, storage/query/runtime calls,
+  generic fact reader semantics, raw issue classification, family/application
+  truth synthesis, commands, callbacks, mutation intents, or Canvas authority.
+
+- 2026-06-22 D454: locked Python public PULL and pause-mode
+  facade.
+  Python may extend public `Graph.node` keyword-only advanced options with
+  `pausable` and `pull_id`, expose read-only `Ctx.pull` / `PullContext` and
+  `Ctx.pull_params()`, and expose narrow `Ctx.request_pull(...)` /
+  `Ctx.request_pull_next(...)` helpers. These helpers construct only PULL
+  demand over declared dep edges and must not expose raw `ctx.up(msgs)`,
+  public `Node.up(msgs)`, arbitrary message construction, or public
+  `ctx.rewire_next`; full self-rewire remains separately design-gated.
+
+- 2026-06-22 D453: locked Workspace repair action intake
+  handoff.
+  UI selections of repair action descriptor material become data-only
+  intent/intake material. Review-only actions lower through the D450
+  repair-review decision recording path with Workspace/caller-supplied ids,
+  policy, audit, and source refs. Successor or follow-up actions enter a
+  separate successor proposal intake/preview path, while actual repair, retry,
+  replacement, or follow-up work remains ordinary Workspace
+  proposal/admission/application flow.
+
 - 2026-06-22 D452: locked Workspace proposal family outcome detail
   fact supply boundary.
   Outcome detail fact supply is a separate read-only Workspace/family-owned
