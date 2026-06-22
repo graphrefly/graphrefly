@@ -21,6 +21,88 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-06-22 D445: locked Canvas proposal family read-model composition
+  handoff.
+  Canvas consumes Workspace-owned proposal family application read-model and
+  descriptor material, not raw issue/audit/status streams for its own
+  classification. The read-model projector may compose family diagnostics,
+  repair-review lifecycle statuses, thin outcome indexes, and explicitly
+  supplied outcome facts into bounded display records. It must validate
+  coordinates, preserve thin refs, support bounded drilldown, and remain free
+  of application status synthesis, family facts, repair requests/decisions,
+  proposal/admission/application ids, runtime actions, callbacks, commands,
+  and mutation intents.
+
+- 2026-06-22 D444: locked Workspace proposal repair-review lifecycle
+  concrete shape.
+  Repair-review lifecycle uses separate decision and status material while
+  requests remain immutable handoff facts. Status projection consumes requests,
+  review decisions, application statuses, application-recorded material,
+  family outcome statuses, and family outcome indexes. Inputs must match full
+  request coordinates. Precedence is explicit human terminal decision, explicit
+  durable resolved/superseded proof, acknowledged, then open; incomparable
+  human decision conflicts fail closed. Absence of diagnostics or repair-needed
+  material never resolves a request.
+
+- 2026-06-22 D443: locked Python advanced `Graph.node` option flags.
+  Python may expose keyword-only advanced `Graph.node` options that map
+  directly to Rust native `NodeOpts` for ctx-level authoring: `partial`,
+  `complete_when_deps_complete`, `error_when_deps_error`, and
+  `terminal_as_real_input`. These are public advanced authoring controls,
+  not raw protocol message APIs, and they must not expose raw
+  `Node.up(msgs)`, arbitrary message construction/sending, or Python-only
+  protocol aliases. This preserves C-23/C-15/C-17 expressibility while
+  respecting D415 and D435.
+
+- 2026-06-22 D442: locked Workspace diagnostic projection pattern.
+  Workspace diagnostics remain domain-owned projections for now. Family
+  application diagnostics keep their own classification, eligibility,
+  coordinate validation, and repair-review lowering boundaries. Shared reuse
+  may extract only internal mechanical helpers after repeated domains prove
+  identical needs. No public root WorkspaceDiagnostic primitive, Canvas
+  diagnostic authority, workspace-intents diagnostic bus, generic
+  issue-to-repair lowerer, or root export is added in this slice.
+
+- 2026-06-22 D441: locked Workspace proposal repair-review lifecycle.
+  WorkspaceProposalRepairReviewRequest remains immutable human-visible handoff
+  material. Current repair-review lifecycle is projected by separate
+  Workspace-owned status/view material over repair review requests, durable
+  application/outcome/index material, and explicit human review decision
+  material. Lifecycle states such as open, acknowledged, resolved, withdrawn,
+  and superseded are read-model/status facts only. Resolution or supersession
+  requires explicit durable successor material with matching coordinates or
+  explicit human review decision material, never absence of diagnostics.
+
+- 2026-06-22 D440: locked Canvas proposal family diagnostic display
+  and outcome drilldown boundary.
+  Canvas proposal family application display uses pure read-model and
+  component descriptor data only. Diagnostic-only read-models from D438/D439
+  are valid Canvas display material but must not synthesize application,
+  family handoff/completion/evidence/repair shells, family facts, repair
+  review requests, or outcome refs. Renderer descriptor projection must
+  distinguish malformed/non-data input from valid diagnostic-only display
+  via an explicit diagnostic descriptor or mode. Host React/runtime bridges
+  may consume descriptors through host-owned components, but descriptors
+  remain free of callbacks, commands, runtime/provider/client/credential
+  handles, file/network operations, owner APIs, and mutation material.
+  Outcome indexes stay thin refs; drilldown uses a separate read-only detail
+  projector over explicit supplied facts plus thin refs with bounded
+  pagination/filtering and coordinate validation.
+
+- 2026-06-22 D439: locked Workspace proposal family diagnostic
+  projection and repair-review handoff.
+  Workspace proposal family diagnostics use a Workspace-owned read-only
+  projection over existing issue, audit, application status, recorded
+  application, family outcome status, and family outcome index material.
+  Missing durable proposal/admission diagnostics from D438 stay diagnostic-only
+  and cannot produce application status, repair review requests, family outcome,
+  or remutation. Repair review requests lower only from durable
+  idempotency-conflict or missing-family-material/repair-needed status, outcome,
+  or index material with durable proposal/admission/application coordinates.
+  Malformed family material remains diagnostic-only unless a later decision
+  widens repair-review eligibility. Canvas, root exports, and workspace-intents
+  remain preview/navigation surfaces, not diagnostic or repair authority.
+
 - 2026-06-22 D437: locked Workspace proposal family outcome concrete
   API shape.
   Workspace family application outcomes use four family-owned pure record
