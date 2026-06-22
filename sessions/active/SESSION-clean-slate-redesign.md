@@ -21,6 +21,74 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-06-22 D470: locked Outcome detail richer fact supply and
+  pagination discipline.
+  Outcome detail drilldown may grow closed, bounded, data-only supplied fact
+  facets attached to explicit thin outcome refs, with size caps, coordinate
+  validation, malformed diagnostics, and forbidden-runtime-material
+  diagnostics. Pagination remains a deterministic window over requested thin
+  outcome refs using `afterOutcomeRef` and `nextAfterOutcomeRef`; graph-visible
+  supply requests/results must not carry opaque provider cursors, storage/query
+  handles, full-fact index denormalization, generic fact-reader authority,
+  generated ids, recorded truth, or mutation material.
+
+- 2026-06-22 D469: locked Host-private outcome detail selector adapter
+  concrete convention.
+  Real selector adapters are host-local functions, sources, or bridges that may
+  privately use storage/query/provider/domain-cache/runtime material, but their
+  only graph-visible handoff is bounded data-only supplied outcome facts or
+  D452/D462-compatible supply results. Canvas continues to expose only DTOs and
+  pure supply/read-model helpers, with no public selector adapter registry,
+  callback API, component map, runtime handle, opaque cursor, permission object,
+  or generic family fact reader.
+
+- 2026-06-22 D468: locked Workspace repair action display-only
+  policy advisory.
+  Repair action policy preview material must be separate display-only advisory
+  material keyed by descriptor/request/action/full coordinates, not descriptor
+  permission truth. Its vocabulary uses `authority: "display-only-advisory"`
+  and `displayAssessment` values such as `not-evaluated`,
+  `no-known-blocker`, `known-blocker`, `needs-review`, and `unknown`; it must
+  avoid permission-proof names like allowed, permitted, authorized, or
+  canSubmit. Intent/intake validation remains the only policy/capability/stale
+  authority.
+
+- 2026-06-22 D467: locked Workspace repair successor preview-to-proposal
+  handoff.
+  Repair successor previews may enter the ordinary Workspace proposal path only
+  through a Workspace-owned ready-request preparation helper that consumes the
+  preview plus explicit Workspace/caller-supplied successor proposalId,
+  intakeRequestId, final idempotencyKey, workspaceId, actor/capability refs,
+  policy refs, projection refs, sourceRefs, audit, target refs, successor
+  family/lowering kind, and final draft material or draft refs. The helper may
+  return ordinary WorkspaceProposalReadyRequest material but must not record,
+  admit, apply, mutate truth, generate canonical ids, choose final idempotency,
+  execute runtime/provider/storage/file/network work, or treat suggested draft
+  patch material as final unless the caller explicitly supplies it as final.
+
+- 2026-06-22 D466: locked Python C-25 full-pass coverage
+  strategy.
+  Python should finish C-25 through the existing public D454/D465 facade
+  first: public `ctx.request_pull_next(...)` for the PULL self-demand
+  committed-boundary matrix and public `ctx.rewire_next` for the remaining
+  topology ordering facets. The final-RESUME-inside-open-batch case should
+  be expressed by pre-pausing the owner, resuming the final lock inside an
+  open batch, and proving the queued task waits for batch commit. D447
+  private harness additions remain fallback only for scenario-specific
+  orderings that cannot be honestly expressed publicly; no new public API or
+  protocol behavior change is approved.
+
+- 2026-06-22 D465: locked Python public deferred rewire
+  facade.
+  Python may expose callback-scoped `Ctx.rewire_next` with exactly
+  `subscribe_dep(dep, callback)`, `unsubscribe_dep(dep, callback)`, and
+  `replace_deps(deps, callback)`. The methods accept same-graph public
+  `Node` facades and a required `Ctx` callback that re-declares the fn/deps
+  pairing, lower to existing Rust native `R-rewire-deferred` behavior, and
+  must not expose raw `ctx.up`, `Node.up/down`, arbitrary messages, generic
+  op objects, Python-only protocol aliases, cross-graph rewire, or immediate
+  in-fn topology mutation.
+
 - 2026-06-22 D464: locked Host-private outcome detail selector
   adapter convention.
   Real outcome detail selector adapters remain host-owned and
