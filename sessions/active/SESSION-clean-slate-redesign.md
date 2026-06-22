@@ -21,6 +21,43 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-06-22 D430: locked Workspace proposal family application
+  handoff.
+  Workspace application uses a generic application attempt/status index plus
+  family-owned application facts. Generic application status records carry only
+  Workspace-supplied application/proposal/admission/idempotency coordinates,
+  target/source/audit/policy refs, and family application refs. Family-specific
+  projectors own required-input response, WorkItem spawn/link, and domain-action
+  facts, and each family fact must reference the generic applicationId,
+  admitted decision, proposal, idempotency material, sourceRefs, and audit.
+  Generic projectors may index terminal family outcome refs/statuses such as
+  recorded, rejected, blocked, partial, repair-needed, or idempotency-conflict,
+  but they never create family facts, mutate WorkItems, satisfy inputs, emit
+  link truth, execute runtimes, or act as arbitrary fact emitters. Replays
+  re-reference matching prior family facts, surface conflicts as status/issues,
+  and leave missing family facts pending or repair-needed rather than
+  re-mutating by default. Durable admission material should be recorded before
+  family application consumes it.
+
+- 2026-06-21 D429: locked Workspace proposal spine concrete implementation
+  shape.
+  Workspace proposal implementation uses a generic append-only proposal spine
+  plus family-specific application projectors. Durable generic facts are
+  WorkspaceProposalRecorded, WorkspaceProposalAdmissionDecision, and
+  WorkspaceProposalApplicationStatus, with optional terminal audit material that
+  references emitted family-specific facts. Records carry Workspace-supplied
+  proposal/intake/idempotency/workspace identity, family/lowering, bounded draft
+  material or refs, target refs, actor/capability refs, policy refs,
+  projection/source refs, and audit. Admission consumes visible policy,
+  capability, duplicate/idempotency, and freshness evidence; malformed,
+  unsupported, stale, unknown, duplicate, missing-context, or human-review cases
+  fail closed. Application consumes only admitted, issue-free envelope matches;
+  generic application records status/refs only, while required-input response,
+  WorkItem spawn/link, and domain action truth is emitted only by
+  family-specific projectors. Canvas may expose preview DTOs/helpers but does
+  not record, admit, apply, mutate WorkItems, satisfy gates, execute runtimes,
+  or emit truth facts.
+
 - 2026-06-21 D427: locked Workspace proposal durable spine concrete
   application boundary.
   Workspace proposal hardening uses durable vocabulary centered on
@@ -76,6 +113,21 @@ This began as a pure design artifact, but the active implementation state now li
   mutates WorkItems, admits proposals, satisfies input gates, or appends domain
   truth. Timer/sleep drivers may only publish visible clock or wake facts and
   are not readiness or execution authority.
+
+- 2026-06-22 D432: refined scheduled readiness v1 public coordinates.
+  Schedule facts carry `subjectRefs` only and `readyAtMs` only; `subjectRef`
+  and `notBeforeMs` are stale aliases that fail closed as malformed schedule
+  material. Domain vocabulary such as retryAtMs or workQueue notBeforeMs may be
+  translated at the boundary, but the shared readiness projector has one
+  canonical subject and eligibility shape.
+
+- 2026-06-22 D433: locked scheduled readiness v1 domain handoff/negative
+  space. Shared readiness emits immutable eligibility/deadline visibility only;
+  consumed/materialized/canceled/superseded semantics remain domain-owned facts
+  with provenance to schedule/ready material. Overdue does not mean unconsumed
+  and does not cancel ready. Shared sanitizer reuse may be internal or
+  orchestration-local only; no public root sanitizer or scheduler authority is
+  added.
 
 - 2026-06-21 D423: locked Canvas host-registered renderer runtime bridge.
   Host-registered renderer runtime binding is caller-owned and runtime-private.
@@ -167,6 +219,14 @@ This began as a pure design artifact, but the active implementation state now li
   may expose opaque graph/node/subscription handles and stable sync graph
   surfaces, but must not revive Impl/facade/port models, copy TS structure, let
   host callbacks bypass the dispatcher, or change protocol semantics.
+
+- 2026-06-22 D431: locked Python host fatal boundary over Rust batch. A
+  Python fatal BaseException in a native callback is a host-boundary abort, not
+  graph ERROR or SubscriberCallbackError. Rust bindings may tunnel it with a
+  core-recognized HostBoundaryAbort escape marker; wave-owner handling resets
+  transient wave state and rethrows without emitting protocol messages. Batch
+  body rollback remains normal, but once batch commit has begun there is no
+  claim of full transactional rollback for already-committed graph effects.
 
 - 2026-06-21 D414: locked Canvas Trusted Data Query pack boundary. The pack
   provides templates, catalog seeds, required-input seeds, acceptance criteria,
