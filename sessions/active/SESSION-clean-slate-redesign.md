@@ -21,6 +21,64 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-06-23 D477: locked Python framework-neutral async runner public
+  API.
+  Python async integration uses an explicit host-owned `AsyncRunner` argument
+  for `from_awaitable(graph, runner, factory, ...)`,
+  `from_async_iter(graph, runner, factory, ...)`, and
+  `async_node(graph, deps, runner, callback, ...)`. The core API is not
+  asyncio-only: optional `asyncio_runner`, `trio_runner`, or `anyio_runner`
+  adapters may exist, but they remain convenience adapters over the neutral
+  runner protocol. Awaitable and async-iterable inputs are factory-shaped;
+  async task handles stay host-private and never enter graph DATA, describe, or
+  checkpoints. `async_node` is value-level async compute over declared deps,
+  uses a generation fence for stale completions, and does not expose async
+  `Ctx` authoring or implicit switchMap/cancel-on-new-input semantics. Ordinary
+  graph callbacks remain synchronous.
+
+- 2026-06-23 D476: locked Canvas Workspace projection lifecycle release
+  policy.
+  Canvas may lower explicit product UI lifecycle transitions into
+  `WorkspaceProposalProjectionRelease` facts only from graph-visible Canvas
+  projection slot/current-view material. Release remains Workspace projection
+  lifecycle material, not a Canvas private dispose callback, UI action intent,
+  proposal/application truth, storage eviction, or revocation. `canvasViewId`/
+  `canvasSessionId` are owner/provenance context, while `viewId` is a projection
+  slot identity. Release observability may report malformed release material and
+  Canvas-side emission/validation/skipped-slot status, but release-consuming
+  projectors must not emit authoritative pruned/not-retained/missed facts.
+  Repair action lifecycle releases follow the current-view chain without
+  revoking prepared readyRequests or mutating repair/proposal/WorkItem truth.
+
+- 2026-06-23 D475: locked Python conformance expressibility and async
+  runner boundary.
+  Python conformance must use approved public facade first when a scenario is
+  honestly expressible through documented graph-owned APIs. D447 private helpers
+  remain allowed only for fixed scenario-specific stimuli that would otherwise
+  pressure the public API into raw protocol escape hatches. Python async runtime
+  integration remains a separate public API design: ordinary graph callbacks
+  stay synchronous until an explicit async runner API is approved.
+
+- 2026-06-23 D474: locked TypeScript NestJS adapter boundary nodes.
+  The public `@graphrefly/ts/adapters/nestjs` surface uses keyed ingress/egress
+  boundary nodes plus Nest decorator/provider binding helpers over ordinary
+  graph nodes. The adapter owns only host-private binding/pending-handle maps
+  and request/message/connection ids; graph-visible material is the bounded
+  `{requestId,bindingId,version,payload}` envelope, while user graph composition
+  owns admission, lifecycle policy, CQRS, queues, retries, audit, and domain
+  semantics.
+
+- 2026-06-23 D473: locked Workspace projection release diagnostic
+  observability.
+  Malformed or unsafe projection release material remains fail-closed for D472
+  release-consuming projectors: invalid release facts do not throw, do not
+  prune, do not mutate truth, and do not emit protocol ERROR. Hosts that need
+  observability may wire a separate diagnostic surface that emits closed,
+  data-only display diagnostics/status over the release fact itself. These
+  diagnostics are not policy/capability proof, release admission, storage/cache
+  eviction, revocation, or evidence that any retained target existed or was
+  pruned.
+
 - 2026-06-23 D472: locked Workspace projection current-view release
   and retention discipline.
   Workspace projection retention is controlled by explicit graph-visible release
