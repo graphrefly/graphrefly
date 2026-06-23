@@ -21,6 +21,32 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-06-23 D480: locked Python owner-thread async re-entry queue.
+  Python may expose a per-Graph `GraphReentryQueue` bound to the graph
+  facade lifetime and owner thread. Runner adapters may wrap an `AsyncRunner`
+  so background completions enqueue GraphReFly-owned private completion thunks;
+  the queue must not expose arbitrary public graph mutation, raw protocol
+  handles, PyO3 handles, or generic callable enqueue. The owner thread
+  explicitly drains the queue, and drain revalidates graph lifetime, node
+  liveness, and generation fences before re-entering the synchronous native
+  boundary. Close, deactivation, or fatal poison drops pending completions and
+  performs cleanup/cancellation without graph `ERROR`. Different Python graphs
+  may bind to different owner threads, but one graph cannot be directly mutated
+  from a non-owner thread.
+
+- 2026-06-23 D479: locked Canvas Workspace projection lifecycle vocabulary
+  and retention pressure.
+  Canvas Workspace projection lifecycle keeps one semantic transition,
+  `release-current-view-slot`; concrete causes such as selection change,
+  slot replacement, tab close, workspace unload, scope reset, and repair-flow
+  reset are closed reason vocabulary, not separate release semantics. Bulk
+  lifecycle operations are represented as concrete per-slot lifecycle facts
+  with optional grouping/sequence, never wildcard workspace-wide release.
+  Bounded projection retention pressure is diagnostic/status-only in v0 and
+  must not directly prune, leak pruned/missed/not-retained state, delete DATA
+  history, revoke handoffs, mutate repair/proposal/WorkItem truth, or act as
+  hidden TTL/LRU/cache/storage policy.
+
 - 2026-06-23 D477: locked Python framework-neutral async runner public
   API.
   Python async integration uses an explicit host-owned `AsyncRunner` argument
@@ -2286,6 +2312,21 @@ Next step: design the clean-slate documentation system (see the session continua
 
 ## Design Lock Log
 
+- 2026-06-23 D478: locked NestJS decorator/provider ergonomics as concrete
+  bindings over existing graph boundary primitives and reply nodes, not a
+  shadow router or graph factory. Route decorators such as GraphReq and
+  GraphHttpReply attach bindingId at the Nest binding layer; the graph nodes
+  remain ordinary inspectable graph topology. The base NestBoundaryEnvelope is
+  `{bindingId,version,payload,requestId?}` so lifecycle/cron/non-request ingress
+  do not fake request ids, while reply egress requires requestId to match a
+  host-private pending handle. Binding registries are app/module scoped only;
+  per-request state is a request context/pending handle, never a request-scoped
+  binding registry or default request-scoped graph. Stable adapter diagnostic
+  callbacks are not part of the public high-level design; graph-visible
+  audit/status/issues are user graph composition and inspection stays through
+  graph.describe/graph.observe or explicit effect/log sink nodes. Envelope v1
+  means the NestBoundaryEnvelope schema only; v1 is the only accepted default
+  until a later explicit version/migration decision.
 - 2026-06-09 D153: closed D145-D148 follow-up API polish without a
   spec-amend. Mount/release topology lifecycle may add `node-released` and
   `mount-changed` read-only topology events plus optional quiescent
