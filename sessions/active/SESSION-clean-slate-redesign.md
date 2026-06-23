@@ -21,6 +21,13 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-06-23 D481: locked Python async convenience adapter boundaries.
+  Python may add caller-owned Trio/AnyIO runner adapters and explicit
+  host-scheduled `GraphReentryQueue.drain` recipes/adapters, but must not
+  create hidden loops, portals, background threads, nurseries, task groups,
+  core auto-drain, blocking pump-until-idle semantics, or implicit
+  cancel-on-new-input for ordinary `async_node`. Cancel-on-new-input remains
+  a separately named future factory such as `switch_async_node`.
 - 2026-06-23 D480: locked Python owner-thread async re-entry queue.
   Python may expose a per-Graph `GraphReentryQueue` bound to the graph
   facade lifetime and owner thread. Runner adapters may wrap an `AsyncRunner`
