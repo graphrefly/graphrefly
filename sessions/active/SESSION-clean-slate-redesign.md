@@ -21,6 +21,28 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-06-23 D472: locked Workspace projection current-view release
+  and retention discipline.
+  Workspace projection retention is controlled by explicit graph-visible release
+  material, not hidden TTL/LRU/cache/storage ownership. Release may prune
+  projector-local current-view/request/input/emitted-signature material, but
+  does not delete historical DATA, revoke proposal handoffs, mutate proposal/
+  admission/application/family/WorkItem truth, or satisfy policy/capability
+  validation. For D467/D471 successor preparation, release may compact bulky
+  retained ready-request material only to an immutable signature/tombstone; the
+  same `preparationId` still cannot prepare a different ready request later.
+
+- 2026-06-23 D471: locked Workspace repair successor ready-request
+  projector immutability.
+  A graph-visible repair successor ready-request preparation projector treats
+  the first successfully prepared `WorkspaceProposalReadyRequest` for a
+  `preparationId` as an immutable handoff. Later identical replay may dedupe,
+  but later blocked, mismatched, or different ready-request material for the
+  same `preparationId` emits blocked preparation/issues material and must not
+  withdraw, replace, or re-emit a different ready request. The readyRequests
+  stream is an append-only ordinary proposal handoff convenience, not a
+  revocation/current-view channel.
+
 - 2026-06-22 D470: locked Outcome detail richer fact supply and
   pagination discipline.
   Outcome detail drilldown may grow closed, bounded, data-only supplied fact
