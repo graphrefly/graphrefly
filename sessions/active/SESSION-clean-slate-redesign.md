@@ -21,6 +21,19 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-06-23 D483: locked Canvas Workspace current-view store
+  implementation discipline. The next slice keeps the store host-private,
+  uses `currentViewEvents` / `projectionCurrentViewEvents`, reduces existing
+  currentViews before ordered events, exposes only reducer `currentViews` and
+  `statuses`, keeps DTO production per concrete projector/adapter, and does
+  not add preparation summary/ref material yet.
+- 2026-06-23 D482: locked Canvas Workspace current-view store and replay
+  discipline. Canvas integration uses a host-private current-view store over
+  explicit data-only current-view DTO events and projection release facts;
+  fresh DATA rebuilds a view only by producing a fresh DTO event, and bulky
+  preparation bounding remains exact signature/tombstone or future bounded
+  public summary/ref plus canonical signature, never storage/query/runtime
+  handles or projector-local retained/missed/pruned authority.
 - 2026-06-23 D481: locked Python async convenience adapter boundaries.
   Python may add caller-owned Trio/AnyIO runner adapters and explicit
   host-scheduled `GraphReentryQueue.drain` recipes/adapters, but must not
@@ -2319,6 +2332,28 @@ Next step: design the clean-slate documentation system (see the session continua
 
 ## Design Lock Log
 
+- 2026-06-23 D484: locked TypeScript NestJS native provider bridge and
+  timezone-aware cron semantics. Every public high-level Nest binding
+  decorator must have an official GraphReFly consumer, grouped by Nest phase
+  rather than one provider per decorator: boundary interceptor, guard bridge,
+  exception/filter bridge, cron scheduler bridge, and lifecycle bridge. These
+  providers live only in the focused NestJS adapter/native surface, read method
+  binding metadata for the current class/handler, and must not scan the
+  container by default, create graphs, rewrite routes, create a shadow router,
+  hide an event bus, or resurrect compat/nestjs. Boundary factories define
+  graph-visible envelope nodes and payload types; binding decorators own
+  bindingId, host-to-payload transformers, requestId overrides, ordering, mode,
+  and reply/error lowering. GraphFilter is generic filter binding metadata,
+  GraphError is exception-oriented sugar, default filter handling is handle with
+  observe opt-in, and HTTP business failures lower from DATA payloads such as
+  `{status,body}` or `HttpDataIssue` extending shared DataIssue. Protocol ERROR
+  from a reply node is graph/reply pipeline failure and lowers through
+  binding-over-provider `protocolError(errorPayload, host)` transformers with a
+  safe 500 fallback. GraphCron may use a GraphReFly Nest scheduler provider
+  instead of `@nestjs/schedule`; fromCron/GraphCron support IANA timezone
+  strings via runtime Intl support, require no Node 26 floor or bundled tz
+  database, and default DST semantics are skip nonexistent wall-clock minutes
+  and fire repeated wall-clock minutes at most once.
 - 2026-06-23 D478: locked NestJS decorator/provider ergonomics as concrete
   bindings over existing graph boundary primitives and reply nodes, not a
   shadow router or graph factory. Route decorators such as GraphReq and
