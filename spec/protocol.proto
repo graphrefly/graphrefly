@@ -15,21 +15,22 @@ syntax = "proto3";
 
 package graphrefly.protocol.v1;
 
-// ── Message types — CLOSED set (R-msg-closed-set / D9) ──
-// 10 types: START handshake + 9 protocol types. No open set, no custom types.
+// ── Message types — CLOSED set (R-msg-closed-set / D9 / D269) ──
+// 11 types: START handshake + 10 protocol types. No open set, no custom types.
 // Adding a type is a constitutional spec change, not a wire-compatible extension.
 enum MessageType {
   MESSAGE_TYPE_UNSPECIFIED = 0;  // proto3 zero guard — never a valid wire type
   MSG_START = 1;                 // subscribe handshake (R-push-subscribe)
   MSG_DIRTY = 2;                 // phase-1 notification (R-two-phase)
   MSG_DATA = 3;                  // value delivery (payload required, non-SENTINEL)
-  MSG_RESOLVED = 4;              // phase-2: settled, value unchanged (R-equals)
+  MSG_RESOLVED = 4;              // undirty/no-occurrence settle (R-resolved-undirty)
   MSG_INVALIDATE = 5;            // clear cached state, no auto-emit (R-invalidate-idempotent)
   MSG_COMPLETE = 6;              // clean terminal (R-terminal)
   MSG_ERROR = 7;                 // error terminal (payload required, non-SENTINEL)
   MSG_TEARDOWN = 8;              // lifecycle destruction (R-teardown-complete)
   MSG_PAUSE = 9;                 // flow control, lock_id required (R-pause-lockset)
   MSG_RESUME = 10;               // flow control, lock_id required (R-pause-lockset)
+  MSG_PULL = 11;                 // explicit demand, pull_id required (R-pull)
 }
 
 // ── Tier const table (R-tier / D34) — batch-ordering ranks, distinct from the
@@ -37,7 +38,7 @@ enum MessageType {
 // are batch-deferred. This is a compile-time const table (D18), not runtime config.
 enum Tier {
   TIER_START = 0;     // START — handshake, immediate
-  TIER_CONTROL = 1;   // PAUSE/RESUME — immediate
+  TIER_CONTROL = 1;   // PAUSE/RESUME/PULL — immediate
   TIER_NOTIFY = 2;    // DIRTY — immediate
   TIER_VALUE = 3;     // DATA/RESOLVED — deferred in batch (settle slice)
   TIER_SETTLE = 4;    // INVALIDATE — deferred alongside the settle slice
@@ -46,8 +47,8 @@ enum Tier {
 }
 
 // Direction of a wave (R-ctx-up / DR-5). DOWN = toward sinks (all tiers).
-// UP = toward deps — restricted to control tiers (DIRTY/PAUSE/RESUME/INVALIDATE/
-// TEARDOWN); DATA/RESOLVED/COMPLETE/ERROR are down-only.
+// UP = toward deps — restricted to control/demand tiers (DIRTY/PAUSE/RESUME/PULL/
+// INVALIDATE/TEARDOWN); DATA/RESOLVED/COMPLETE/ERROR are down-only.
 enum Direction {
   DIRECTION_DOWN = 0;
   DIRECTION_UP = 1;
@@ -62,6 +63,11 @@ message Message {
   optional bytes data = 2;
   // Present only for PAUSE / RESUME. Caller-generated, opaque (R-pause-lockset).
   optional string lock_id = 3;
+  // Present only for PULL. Caller-generated holder id (R-pull / D269).
+  optional string pull_id = 4;
+  // Present only for PULL when demand params exist. Opaque codec-encoded bytes;
+  // params remain demand context and are never DATA-up.
+  optional bytes params = 5;
 }
 
 // One array of messages delivered in one call = one Wave (R-wave-boundary).
@@ -78,12 +84,85 @@ message Handle {
   uint64 handle_id = 2;
 }
 
-// Cross-runtime wire-bridge frame (D13 / D33). Each runtime owns a local dispatcher;
-// the bridge delivers a Wave to a target node in a target graph (causal domain).
-// DIRTY crosses the wire at the same priority as DATA (R12 / conformance C-1), so a
-// diamond split across runtimes stays glitch-free.
-message WireFrame {
-  string graph_id = 1;    // target causal domain (D22: graph = single thread)
-  string node_path = 2;   // :: delimited node path within the target graph
-  Wave wave = 3;
+// ── Wire bridge envelope (D134 / D140 / D141) ──
+// A bridge envelope is graph/application adapter data, not a protocol message and
+// not a remote ordinary dependency. The local wave ends at the bridge boundary;
+// remote receipt starts a later local wave in the owning graph.
+message WireBridgeMetadata {
+  uint64 seq = 1;
+  uint64 cursor = 2;
+  string idempotency_key = 3;
+  uint32 attempt = 4;
+  uint32 max_attempts = 5;
+  optional uint64 timestamp_ms = 6;
+  optional uint64 ack_for_seq = 7;
+  optional string request_id = 8;
+}
+
+message WireBridgeStartPayload {}
+
+message WireBridgeDataPayload {
+  oneof body {
+    // Opaque codec-encoded bridge DATA fact bytes. Runtime adapters validate that
+    // raw Node/Ctx handles, live topology, functions, and mutable graph-owned state
+    // do not cross this boundary (D141 / D496).
+    bytes value = 1;
+    // C-1 wire-edge facts are DATA-envelope payloads, not a new protocol
+    // message, remote ordinary dep, or distributed same-wave handle.
+    WireEdgeFrame wire_edge = 2;
+  }
+}
+
+message WireBridgeErrorPayload {
+  // Bridge error fact bytes. This is not a local protocol ERROR terminal.
+  bytes error = 1;
+}
+
+message WireBridgeAckPayload {}
+
+message WireBridgeNackPayload {
+  // Nack/error fact bytes. Correlation stays in metadata.ack_for_seq.
+  optional bytes error = 1;
+}
+
+message WireBridgeStatusPayload {
+  bytes status = 1;
+}
+
+message WireBridgeClosePayload {
+  optional bytes reason = 1;
+}
+
+message WireBridgeEnvelope {
+  string session_id = 1;
+  WireBridgeMetadata metadata = 2;
+
+  // This oneof is the envelope tag. It intentionally avoids a second envelope
+  // type enum that can disagree with the payload case.
+  oneof payload {
+    WireBridgeStartPayload start = 3;
+    WireBridgeDataPayload data = 4;
+    WireBridgeAckPayload ack = 5;
+    WireBridgeNackPayload nack = 6;
+    WireBridgeStatusPayload status = 7;
+    WireBridgeErrorPayload error = 8;
+    WireBridgeClosePayload close = 9;
+  }
+}
+
+// ── Wire-edge adapter payload (D496 / C-1) ──
+// WireEdgeFrame is the minimal cross-graph reactive edge fact carried over the
+// bridge envelope. It has no graph wave id: cause_id is bridge-local.
+enum WireEdgeKind {
+  WIRE_EDGE_KIND_UNSPECIFIED = 0;
+  WIRE_EDGE_KIND_DIRTY = 1;
+  WIRE_EDGE_KIND_DATA = 2;
+}
+
+message WireEdgeFrame {
+  WireEdgeKind kind = 1;
+  string edge_id = 2;
+  string cause_id = 3;
+  // Present only when kind == WIRE_EDGE_KIND_DATA.
+  optional bytes value = 4;
 }

@@ -21,6 +21,22 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-06-24 D496: locked C-1 wire-edge bridge semantics and protobuf
+  canonical bytes. C-1 uses a static v1 `WireEdgeGroup` adapter over the
+  existing D134/D140 `wireBridge` envelope; envelope metadata owns session
+  ordering, sequence, cursor, idempotency, ack/nack, attempts, and request
+  correlation. Wire-edge frames add only `dirty(edgeId,causeId)` and
+  `data(edgeId,causeId,value)`, with `causeId` as a bridge-local causal emission
+  id rather than a graph `waveId`. v1 allows one in-flight cause at a time and
+  gates DATA release until all expected DIRTY frames for that cause have
+  arrived. Inbound adapters inject ordinary local DIRTY/DATA through the owning
+  graph boundary; remote ordinary deps, distributed same-wave semantics, raw
+  Node/Ctx handles, live topology, function bodies, local pending/diamond
+  accounting, and remote COMPLETE/ERROR terminals do not cross. TS and Rust own
+  self-contained idiomatic APIs over the shared semantic frame contract; Python
+  exposes only a facade over native/Rust-owned bridge semantics. B2 canonical
+  bytes are protobuf for bridge envelopes and wire-edge frames; Avro is not in
+  C-1 v1.
 - 2026-06-24 D495: locked TypeScript NestJS focused transport
   ergonomics as a D494 follow-up. WebSocket and microservice/message subpaths
   may add focused provider-bundle helpers such as `provideGraphWsProviders(...)`
