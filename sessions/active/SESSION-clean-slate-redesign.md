@@ -21,6 +21,40 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-06-24 D487: locked Canvas Workspace current-view owner wiring
+  and consumer discipline. Canvas current-view owner wiring remains a pure
+  host/session transition over caller-owned state, not a class singleton,
+  Workbench-private controller, public store, registry, or selector API. A
+  host/session step may batch mixed concrete current-view DTO events and
+  release facts in caller order; the two-array helper preserves
+  `currentViewEvents` before `projectionCurrentViewEvents`, and finer
+  interleaving requires one ordered event list or explicit split batches.
+  Internal consumer reads must be concrete per known target kind, never a
+  generic selector/fact reader, and Workbench remains a data-only consumer, not
+  lifecycle authority. Repair successor preparation stays exact
+  signature/tombstone; bounded summary/ref/content-ref material requires a
+  separate reviewed decision.
+- 2026-06-24 D486: locked TypeScript NestJS native hardening and
+  future phase bridge boundaries. `GraphGuardDecision` denial headers require
+  a narrow GraphReFly-owned targeted guard-denial filter/helper that writes
+  status/body/headers for GraphReFly's own denial exception, not a catch-all
+  `APP_FILTER` or generic Nest exception owner. Future WebSocket and
+  microservice/message native consumers must live in focused optional-peer
+  subpaths such as `@graphrefly/ts/adapters/nestjs/websockets` and
+  `@graphrefly/ts/adapters/nestjs/microservices`. Cron misfire/catch-up is
+  not added now: missed ticks are skipped, recovery resumes from current time,
+  no missed-status/catch-up DATA is synthesized, and future replay/reporting
+  semantics require a separate reviewed decision.
+- 2026-06-24 D485: locked Canvas Workspace current-view owner integration.
+  Canvas current-view ownership lives in a host/session-level internal
+  `graphrefly-canvas` module, not a Workbench-private controller and not a
+  public focused surface. The owner accepts only previous data-only
+  `currentViews` plus ordered `currentViewEvents` /
+  `projectionCurrentViewEvents` from concrete DTO producers and Canvas slot
+  lifecycle release lowering, exposes only reducer `currentViews` and
+  `statuses` to internal renderer/detail/advisory/repair consumers, and keeps
+  preparation material exact signature/tombstone until a separate
+  summary/ref/content-ref design is reviewed.
 - 2026-06-23 D483: locked Canvas Workspace current-view store
   implementation discipline. The next slice keeps the store host-private,
   uses `currentViewEvents` / `projectionCurrentViewEvents`, reduces existing
