@@ -21,6 +21,70 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-06-24 D492: locked Python C-24 snapshot/restore
+  implementation discipline as a D490 follow-up. The slice should split into
+  public facade (`Graph.checkpoint()`, `restore_graph`, `restore_registry`,
+  `restore_ref`, descriptor/context/checkpoint typing and errors), explicit
+  descriptor protocol (`ref`, optional `validate_config`, `create(ctx)`),
+  Rust/PyO3-owned checkpoint extraction, restore construction, and runtime
+  state seeding, strict-JSON value rules with explicit DATA-vs-SENTINEL
+  discriminants, local-only-by-default function-backed nodes unless
+  `restore=restore_ref(...)` opts in, and scenario-split C-24 tests. Python
+  must not replay topology or seed cache/state as a second wave core. Storage
+  hydration, incremental diff replay, same-process host-value checkpoint,
+  Python value-codec registry, arbitrary object/pickle serialization, and hot
+  restore into an existing graph remain separate future designs.
+- 2026-06-24 D491: locked Canvas Workspace current-view display
+  surface and bounded material follow-up. Canvas may add a focused
+  `@graphrefly/canvas/workspace-current-view` surface only for data-only
+  current-view display DTO types/builders and related display composition
+  helpers. That surface must not export the host/session owner, store reducer,
+  owner state, intent release barriers, event append helpers, selectors,
+  registries, providers, query/storage handles, callbacks, opaque cursors, or
+  Workbench lifecycle authority. Workbench remains a consumer of already-derived
+  display DTOs/statuses. Host-private repair intent release barriers must not be
+  silently evicted; future bounded policy should preserve stale-preview blocking
+  through compact data-only barrier signatures and/or diagnostics. Repair
+  successor preparation remains exact signature/tombstone in the current slice;
+  future bounded summary/ref/content-ref material is preferred when material
+  pressure appears, but requires a separate reviewed envelope design.
+- 2026-06-24 D490: locked Python public snapshot/restore facade
+  for C-24. Python may expose `Graph.checkpoint()`,
+  `restore_graph(checkpoint, *, registry)`,
+  `restore_registry(entries, *, include_builtins=True)`, `restore_ref(...)`,
+  and `RestoreDescriptor` / `RestoreContext` typing. User-defined restorable
+  nodes opt in via keyword-only `restore=restore_ref(...)`; inline or opt-out
+  function-backed nodes checkpoint as local-only and fail restore honestly.
+  The first checkpoint value surface is strict-JSON-compatible data for cache,
+  `ctx.state`, terminal diagnostics, factory config, and metadata, preserving
+  DATA `None` separately from SENTINEL absence. `restore_graph` performs no
+  storage I/O, owns no async runtime, exposes no raw Node/Ctx/PyO3 handles, and
+  commits a fresh restored graph through the Rust-native restore foundation.
+  Python value-codec registry, storage-backed hydration, incremental diff
+  replay, and arbitrary object serialization remain separate future designs.
+- 2026-06-24 D489: locked TypeScript cron misfire and catch-up
+  policy. `fromCron` and `GraphCron` remain skip-by-default,
+  minute-granularity, five-field cron surfaces: they match the current
+  wall-clock minute, dedupe repeated checks for the same matched minute, and
+  resume after host/provider/event-loop downtime from current time only. They
+  do not synthesize missed tick DATA, catch-up replay DATA, missed-status DATA,
+  `scheduledAt` / `actualAt` / `missedCount` payload fields, or seconds-field
+  grammar in this slice. Future missed reporting should be reviewed as a
+  separate diagnostic/status surface that does not change tick DATA occurrence
+  count; replay or seconds grammar requires a separate reviewed decision.
+- 2026-06-24 D488: locked TypeScript NestJS WebSocket and
+  microservice/message native consumers. Native consumers must live in focused
+  optional-peer subpaths,
+  `@graphrefly/ts/adapters/nestjs/websockets` and
+  `@graphrefly/ts/adapters/nestjs/microservices`, with phase-specific
+  providers/decorators over existing boundary nodes. Correlation is by
+  graph-visible `requestId` plus `bindingId`, while socket/client/message
+  context/ack/reply handles and timeout state remain host-private. Wrong
+  binding, stale request ids, malformed egress, terminal egress, timeout, and
+  handler cleanup are host-side diagnostics/cleanup, not hidden graph mutation
+  or protocol ERROR; no HTTP native entry, catch-all router, container scan,
+  hidden event bus, graph creation, retry policy, or graph-visible socket handle
+  is added.
 - 2026-06-24 D487: locked Canvas Workspace current-view owner wiring
   and consumer discipline. Canvas current-view owner wiring remains a pure
   host/session transition over caller-owned state, not a class singleton,
