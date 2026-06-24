@@ -21,6 +21,21 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-06-24 D494: locked TypeScript NestJS v1.1 ergonomics,
+  diagnostics, and cron testability as a D488/D489 follow-up. NestJS may add
+  explicit provider-bundle helpers and explicit target helpers, but no
+  container scanning, hidden route registry, hidden graph creation,
+  module-owned business graph, hidden event bus, live transport e2e
+  requirement, or optional-peer leakage. Diagnostics remain host-side snapshots
+  by default; graph-visible diagnostics require an explicitly wired diagnostic
+  ingress boundary that emits sanitized data-only payloads and no raw
+  sockets/clients/contexts/callbacks/transport handles/Promises/Observables or
+  raw Error objects. Cron ergonomics may add a deterministic manual controller
+  and explicit target helpers reused by the Nest scheduler provider, while
+  keeping five-field minute grammar, skip/current-time behavior only, per-minute
+  dedupe, no seconds grammar, no missed-status or catch-up DATA, no
+  scheduledAt/actualAt/missedCount payload semantics, and no graph-core
+  scheduler.
 - 2026-06-24 D493: locked Canvas Workspace bounded current-view
   material and Workbench display consumption. Workbench and public focused
   surfaces consume already-derived display DTOs/statuses only; no owner/store,
