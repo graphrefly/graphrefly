@@ -21,6 +21,20 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-06-24 D493: locked Canvas Workspace bounded current-view
+  material and Workbench display consumption. Workbench and public focused
+  surfaces consume already-derived display DTOs/statuses only; no owner/store,
+  event appender, selector, registry, handle, cursor, callback, or lifecycle
+  authority may leak. Host-private repair action intent release barriers may be
+  retained as compact data-only barrier signatures carrying only releaseId,
+  target kind/id, viewId, intentId, optional actionKind, and durable proposal/
+  application coordinates; they must not be silently evicted and clear only on
+  matching fresh intent DATA or owner disposal. Repair successor preparation may
+  use bounded summary/ref/content-ref envelope material plus an immutable
+  canonical handoff signature/tombstone. Refs/contentRefs are provenance or
+  material-address hints only, not storage/query/provider/runtime handles or
+  hydration authority; hash-only identity, readyRequest revocation, truth
+  deletion, public selector/store authority, and callbacks remain forbidden.
 - 2026-06-24 D492: locked Python C-24 snapshot/restore
   implementation discipline as a D490 follow-up. The slice should split into
   public facade (`Graph.checkpoint()`, `restore_graph`, `restore_registry`,
