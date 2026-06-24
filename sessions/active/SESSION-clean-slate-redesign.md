@@ -21,6 +21,19 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-06-24 D495: locked TypeScript NestJS focused transport
+  ergonomics as a D494 follow-up. WebSocket and microservice/message subpaths
+  may add focused provider-bundle helpers such as `provideGraphWsProviders(...)`
+  and `provideGraphMessageProviders(...)`, returning ordinary explicit provider
+  arrays over existing bridge options. These helpers must stay only in their
+  focused optional-peer subpaths and must not add cross-transport/native
+  bundles, root/native optional-peer imports, container scanning, graph
+  creation, route registries, event buses, retry/session ownership, or hidden
+  transport lifecycle policy. Diagnostics remain recipe/composition-first over
+  the explicit sanitized diagnostics ingress boundary; no `onDiagnostic`
+  callback/logging API is added. Cron remains D489 skip/current-time/five-field
+  behavior. Live WebSocket/TCP tests may be added only as test-only acceptance
+  over existing APIs and must not imply new public transport policy.
 - 2026-06-24 D494: locked TypeScript NestJS v1.1 ergonomics,
   diagnostics, and cron testability as a D488/D489 follow-up. NestJS may add
   explicit provider-bundle helpers and explicit target helpers, but no
