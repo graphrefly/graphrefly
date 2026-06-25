@@ -21,6 +21,19 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-06-25 D498: locked the B2/C-1 bridge adapter implementation
+  surfaces. B2 byte integration lands as focused `wireBridgeProtobuf` helpers
+  over existing D134/D140/D141 semantic `wireBridge` bundles, not core
+  `wireBridge` options or a new protocol surface. Decode/encode failures become
+  graph-visible bridge invalid/issue facts, never local protocol terminals.
+  Python first consumes D497 golden vectors through a private/native validator
+  gate over Rust-owned canonical protobuf validation, not a public raw wire
+  facade. C-1 `WireEdgeGroup` is a static graph/application adapter over
+  `wireBridge` that owns bridge-local cause ids, allows one in-flight cause,
+  gates inbound DATA until all expected DIRTY frames for that cause arrive, and
+  returns local inbound edge source nodes plus status/issues; no remote ordinary
+  deps, raw Node/Ctx handles, live topology, distributed same-wave state, or
+  remote COMPLETE/ERROR terminals cross.
 - 2026-06-24 D497: locked the B2 canonical protobuf wire profile for
   bridge envelopes and wire-edge frames. Canonical bytes are defined as
   decode → semantic validation → deterministic re-encode → byte-equal input.
