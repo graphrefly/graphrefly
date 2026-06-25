@@ -21,6 +21,35 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-06-25 D502: locked the TypeScript `wireBridge` ack-driver exact
+  API shape. Hidden `setTimeout`/captured-ctx ack scheduling is replaced by
+  a graph-visible `ack-timeout` command ingress and a focused
+  `wireBridgeAckDriver(graph, bridge, { clock, timeoutMs, name? })` helper.
+  The command variant carries `{ kind: "ack-timeout", seq, attempt,
+  observedAtMs? }`; malformed commands become invalid/issue facts, while
+  well-formed stale or mismatched commands are fail-closed no-ops. `wireBridge`
+  remains the owner of pending state, retry/exhausted/outbound/status/error
+  facts, and retry policy. The driver only derives timeout commands from
+  graph-visible clock and declared bridge facts, attaches through the existing
+  command-source release discipline, and returns commands/status/issues/release.
+  No EnvironmentDrivers expansion, hidden timer fallback, protocol
+  message/tier, core scheduler behavior, or `WireEdgeGroup` runtime lands in
+  this lock.
+- 2026-06-25 D501: locked the concrete C-1 `WireEdgeGroup` adapter
+  shape and ack-driver ingress. `WireEdgeGroup` v1 is byte-valued and static
+  over `wireBridge`, returns inbound edge nodes keyed by `edgeId` plus
+  status/issues/release, and declares outbound edge sources in options rather
+  than hidden remote deps. Each cause uses the static expected edge set and must
+  carry both DIRTY and DATA for every expected edge; DIRTY gates release and
+  DATA settles the local inbound edge node. Missing snapshots, unknown edges,
+  duplicate frames, competing causes, malformed frames, and incomplete causes
+  fail closed as issue/status facts, never protocol terminals. Internal
+  event/gate/projector lanes derive public nodes through declared deps so
+  `describe()` can show causality. Ack timeout/retry uses passive math plus
+  explicit graph-visible driver timeout ingress; timer/sleep/retry/wake drivers
+  remain only adapter/driver/source helpers. Rust `wireBridgeProtobuf` remains a
+  byte-specific semantic DTO helper, not a raw wire facade, value codec
+  registry, storage hydration, checkpoint replay, or Python public raw surface.
 - 2026-06-25 D500: narrowed the D498 follow-up boundary. Rust
   `wireBridgeProtobuf` byte helpers are byte-specific DTO/helpers over existing
   semantic bridge envelopes and wire-edge frames, not core `wireBridge` options,
