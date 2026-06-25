@@ -21,6 +21,19 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-06-24 D497: locked the B2 canonical protobuf wire profile for
+  bridge envelopes and wire-edge frames. Canonical bytes are defined as
+  decode → semantic validation → deterministic re-encode → byte-equal input.
+  Unknown fields, duplicate singular fields, non-canonical ordering/default
+  emission, missing required semantic fields, invalid oneof combinations, and
+  invalid wire-edge kind/value combinations are rejected. Runtime validators
+  are part of B2 because proto3 cannot express all GraphReFly semantic
+  constraints. Golden vectors live in the language-neutral authority repo and
+  are consumed by TS, Rust, and Python/native gates. C-1 fixture values use a
+  strict canonical JSON v1 bytes profile only for tests/golden vectors; this is
+  not a production value registry, storage codec, or analytics/export format.
+  `WireEdgeGroup` remains the D496 graph/application adapter and does not add a
+  protocol tier/message or distributed same-wave semantics.
 - 2026-06-24 D496: locked C-1 wire-edge bridge semantics and protobuf
   canonical bytes. C-1 uses a static v1 `WireEdgeGroup` adapter over the
   existing D134/D140 `wireBridge` envelope; envelope metadata owns session
