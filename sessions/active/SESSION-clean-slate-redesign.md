@@ -21,6 +21,579 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-06-25 D530: locked the Canvas human review note and evidence
+  annotation boundary. Canvas may define data-only human review note and
+  annotation display/draft DTOs for artifact, evidence, result, runner,
+  sandbox, source, promotion, permission, credential, and component-review
+  surfaces. Workbench may display host-derived notes/annotations and may emit
+  D519 typed note or annotation draft intents carrying bounded text or body
+  summary, topic kind, target refs, evidence refs, artifact refs, result refs,
+  author refs, policy refs, visibility posture, audit context, and idempotency
+  material. Review notes are user-authored context and evidence annotations by
+  default; they are not approval, rejection, verification authority, policy
+  mutation, audit records, graph truth, WorkItem truth, promotion trust changes,
+  permission grants, sandbox lifecycle changes, runner retry commands, repair
+  triggers, proposal admission/application, provider execution, or generated
+  truth facts. Workbench must not persist notes, moderate notes, write audit,
+  approve/reject, mutate policy, mutate graph truth, mutate WorkItems, grant
+  permissions, install/promote components, change sandbox trust posture,
+  advance sandbox lifecycle, retry runners, trigger repair, admit/apply
+  proposals, mark evidence verified as authority, or own review workflow state.
+  Hosts own recording, moderation, retention, deletion, visibility, audit,
+  reviewer identity verification, review workflow linkage, and decision
+  semantics.
+- 2026-06-25 D529: locked the C-1 focused conformance record shape.
+  `C-1a`, `C-1b`, and `C-1c` are independent sibling conformance scenario
+  records, not nested fields inside `C-1`. The original `C-1` cross-graph
+  diamond coalesce scenario remains required and stays todo until the full
+  mixed-locality bridge diamond is implemented and tested end-to-end. `C-1a`
+  covers canonical protobuf bridge envelope and wire-edge frame
+  byte/golden-vector behavior. `C-1b` covers public high-level single-direction
+  `WireEdgeGroup` behavior: bytes-only edges, DIRTY-before-DATA gating,
+  fail-closed issue/status facts, describe-visible topology, release, and
+  bounded recent replay guard. `C-1c` covers explicit graph-visible
+  ack-timeout ingress, stale/malformed no-op or issue behavior,
+  retry/exhausted facts, and absence of hidden core timer pumps. The focused
+  records do not overclaim protocol-rule coverage; `C-1` remains the
+  rule-covering mixed-locality scenario for R-diamond/R-tier/R-two-phase/
+  R-dirty-before-data/R-graph-domain. Any `conformance.jsonl` edit requires the
+  dashboard check.
+- 2026-06-25 D528: locked the Canvas artifact ref and evidence link display
+  boundary. Canvas may define data-only artifact/evidence link display DTOs
+  containing refs, labels, kinds, bounded summaries, source capability refs,
+  target refs, availability, redaction/truncation metadata, access posture
+  summaries, audit refs, and supported open/preview/download/request-detail
+  intent kinds. Workbench may display these links, show unavailable/expired/
+  oversize/redacted/authorization-required status, and emit D519 typed user
+  intents to open, preview, download, refresh, or request detail for an
+  artifact/evidence ref. Workbench must not carry signed URLs, bearer links,
+  raw filesystem paths, real local/user paths, file handles, storage handles,
+  artifact bytes, preview blobs, download streams, browser File/Blob handles,
+  clients, callbacks, opaque cursors, credentials, tokens, cookies, permission
+  objects, or artifact-store handles. Hosts own artifact storage,
+  authorization, signed URL generation, link refresh, file reading, preview
+  rendering, download streaming, retention, revocation, and audit. Artifact/
+  evidence refs are display and correlation material only, not permission
+  grants, storage locators, hydrate authority, execution inputs, proposal
+  admission/application, graph truth, WorkItem mutation, promotion approval,
+  sandbox trust changes, runner retry triggers, or generated truth facts.
+- 2026-06-25 D527: locked the Python C-1 facade release and lifetime
+  semantics. Python C-1 bridge facade bundles are graph-lifetime-owned
+  releasable resources. `wire_bridge`, `wire_edge_group`,
+  `wire_bridge_protobuf`, and `wire_bridge_ack_driver` bundles expose
+  idempotent `release()` as the canonical lifecycle API; they may support
+  context-manager `__enter__`/`__exit__`, but must not add a separate `close`
+  alias in v1. Construction requires all graph, bridge, clock, and edge Node
+  inputs to share the same Python Graph lifetime and owner thread. `release()`
+  from a non-owner thread raises `GraphReflyRuntimeError`, and `Graph.close()`
+  releases still-live C-1 bundles in reverse creation/attachment order. Child
+  release detaches only that bundle's native command or inbound sources and
+  owned topology/nodes; bridge release cascades to still-live children before
+  releasing bridge-owned native resources. Release is lifecycle cleanup only,
+  not protocol TEARDOWN/COMPLETE/ERROR or graph truth synthesis. Native detach
+  happens before owned topology release and failed release must restore source
+  attachment when possible. No finalizer, hidden timer, background cleanup task,
+  raw PyO3 handle, command-source method, or Python wave-core hook owns release.
+- 2026-06-25 D526: locked the Python C-1 status and issue facade
+  vocabulary. Python C-1 bridge facades expose graph-visible status, issue,
+  and timeout values as frozen slots dataclasses with Pythonic snake_case
+  fields and closed string `Literal` value vocabularies. Public values include
+  `WireBridgeStatus`, `WireBridgeIssue`, `WireEdgeGroupStatus`,
+  `WireEdgeGroupIssue`, `WireBridgeProtobufStatus`,
+  `WireBridgeProtobufIssue`, `WireBridgeAckTimeout`,
+  `WireBridgeAckDriverStatus`, and `WireBridgeAckDriverIssue`. They must not
+  be raw dicts, Rust/PyO3 enum objects, raw bridge/protocol DTOs, arbitrary
+  `DataIssue.details` bags, callbacks, Node/Ctx handles, protocol messages,
+  or native handles. `WireBridgeStatus` uses bounded state strings and integer
+  counters/coordinates; WireEdgeGroup and protobuf status/issues preserve the
+  D501/D506/D523 semantic vocabulary with snake_case fields; ack driver status
+  exposes `last_timeout` rather than `last_command`. This is semantic parity,
+  not structural TS/Rust API parity.
+- 2026-06-25 D525: locked the Canvas extension result and artifact evidence
+  intake boundary. Canvas may define data-only result/evidence intake DTOs for
+  external runner, sandbox, Docker/CI, Playwright, fixture-pack,
+  code-definition test, credential validation, source review, component review,
+  and promotion review systems. These DTOs may carry bounded redacted summaries,
+  statuses, diagnostics, issue summaries, artifact refs, evidence refs,
+  redaction/truncation metadata, source capability refs, target refs,
+  intent/idempotency correlation, compatibility/version summaries, and audit
+  refs. Raw stdout/stderr, full logs, full stacks, raw Error objects,
+  screenshots, videos, coverage blobs, large diffs, source excerpts, source
+  maps, package archives, dependency trees, database dumps, container logs,
+  browser traces, clients, handles, callbacks, opaque cursors, credentials,
+  tokens, env vars, connection strings, permission objects, executable modules,
+  and executable result material remain host-private or artifact-store-private.
+  Results are evidence/display material only: they may update host-derived
+  Canvas status views, support review/promotion/source/permission/runner
+  panels, and provide evidence refs to later proposal, review, approval, or
+  promotion flows, but must not directly mutate graph truth, mutate WorkItems,
+  grant permissions, approve promotion, install components, change sandbox trust
+  posture, advance sandbox lifecycle, retry runners, trigger repair, admit/apply
+  proposals, execute providers/runners, lower component events, or create
+  generated truth facts.
+- 2026-06-25 D524: locked the Python C-1 ack-timeout driver
+  facade. Python may add a public high-level
+  `wire_bridge_ack_driver(graph, bridge, *, clock, timeout_ms, name=None)`
+  facade over Rust/native-owned bridge semantics. The helper consumes
+  graph-visible monotonic clock facts and the opaque Python `WireBridge`
+  facade, derives ack-timeout facts for pending bridge attempts, and returns
+  `timeouts`, status, issues, and release material. `timeouts` is a Python
+  facade Node of `WireBridgeAckTimeout` dataclass facts for inspection, not a
+  raw `WireBridgeCommand` node or command constructor. Native-private
+  implementation may attach derived timeout facts to the bridge's private
+  ack-timeout command ingress and detach them on release. Invalid
+  `timeout_ms` is a construction error; invalid or regressing clock facts
+  become graph-visible driver issues/status. Stale or mismatched timeout facts
+  remain bridge-owned fail-closed no-ops, and malformed ingress remains
+  issue/status, not a protocol terminal. The facade must not expose raw bridge
+  commands, generic command sources, imperative `bridge.ack_timeout` methods,
+  PyO3 handles, raw protocol DTO construction, timers, sleeps, hidden retry
+  pumps, missed/catch-up policies, or Python wave-core duplication.
+- 2026-06-25 D523: locked the Python C-1 protobuf byte transport
+  facade. Python may add a public high-level
+  `wire_bridge_protobuf(graph, bridge, *, name=None)` facade over
+  Rust/native-owned canonical protobuf bridge helpers. The facade returns
+  `inbound_bytes`, `outbound_bytes`, status, issues, and release material.
+  `inbound_bytes` accepts only bytes through ordinary Python Node facade
+  ingress; `outbound_bytes` emits canonical protobuf bytes for host transport
+  subscribers. Malformed inbound bytes, outbound encode failures, non-bytes
+  ingress, and canonical validation failures become graph-visible protobuf
+  issue/status facts, not local protocol terminals. The facade must not expose
+  public CanonicalWireBridgeEnvelope, CanonicalWireEdgeFrame,
+  WireBridgeEnvelope, WireBridgeCommand, or field-level protobuf builders;
+  must not add a production value codec registry; and must not make strict
+  JSON fixture bytes a production value encoding contract. Native
+  implementation details remain private under D521.
+- 2026-06-25 D522: locked the Canvas extension capability descriptor
+  boundary. Canvas may define data-only extension capability descriptors for
+  host-derived capabilities such as sandbox runners, Docker or CI harnesses,
+  Playwright suites, code-definition test systems, fixture packs, credential
+  providers, component reviewers, source scanners, and promotion pipelines.
+  Descriptors may include display labels, capability kind, supported typed
+  intent kinds, supported artifact/evidence kinds, compatibility summaries,
+  version summaries, permission posture summaries, status/audit refs, disabled
+  or blocked reasons, and redacted host posture. Workbench may display these
+  descriptors, use them to enable or disable bounded affordances, and emit D519
+  typed intents that name the selected capability or capability kind, but must
+  not install, discover, load, invoke, configure, permission, version-manage,
+  update, uninstall, retain handles to, or execute extensions. Hosts own
+  extension discovery, installation, configuration, permissioning, version
+  compatibility, lifecycle, execution, audit, result reporting, and mapping
+  Canvas intents to concrete extension implementations. Capability descriptors
+  are display/routing hints only, not plugin registry entries, executable
+  modules, callback hooks, provider adapters, command refs, permission grants,
+  credential refs, runtime handles, package manifests as authority, or
+  marketplace records.
+- 2026-06-25 D521: locked the Python C-1 private native binding
+  boundary. Python C-1 implementation uses private PyO3 foundation
+  classes/functions for wireBridge and WireEdgeGroup, wrapped by public Python
+  facade objects. Native private classes may own Rust wireBridge/WireEdgeGroup
+  bundles, graph-local command-source attachment, native release, and
+  status/issue node handles, but remain implementation details outside
+  `graphrefly.__all__` and outside documented public API. Public Python
+  facade objects expose only the D516 high-level `wire_bridge` and
+  `wire_edge_group` shape, Python Node facade instances, frozen
+  dataclass/enum status and issue values, and idempotent `release()`. Native
+  classes stay unsendable and graph-owned. The implementation must not expose
+  raw Core handles, PyO3 object handles, raw WireBridgeEnvelope/
+  WireBridgeCommand/WireEdgeFrame construction, raw protocol ingress/down/up
+  methods, bridge command mutation methods, Python-only protocol aliases, or
+  a Python wave-core reimplementation.
+- 2026-06-25 D520: locked the Canvas fixture and test material extension
+  boundary. Canvas fixtures, tests, snapshots, mockups, dashboard examples, and
+  optional fixture packs are reusable data material, not execution plugins.
+  Canvas may publish or consume bounded redacted fixture material, DTO examples,
+  expected diagnostics, expected status/audit/approval views, event-envelope
+  examples, sandbox posture examples, runner/credential posture examples,
+  source/promotion evidence examples, redaction/truncation evidence, and pure
+  validators/builders for those shapes. External hosts, runners, sandbox
+  extensions, Docker/CI harnesses, Playwright suites, local test tools, or
+  code-definition test systems may consume that material and execute tests
+  however they choose, but execution remains outside Canvas. Canvas must not own
+  the test runner, sandbox/container/VM lifecycle, code-definition runner,
+  dependency installer, filesystem/network permission enforcement, credential
+  lookup, source hydration, runtime message transport, result persistence,
+  artifact store, retry policy, or test admission workflow. Runnable work enters
+  Canvas only as typed runner/sandbox/source/promotion/status intents under the
+  governing handoff boundaries, and results return only as host-derived redacted
+  status, diagnostics, evidence refs, artifact refs, and bounded display DTOs.
+  Fixture material and snapshots must not contain raw secrets, tokens,
+  passwords, env vars, connection strings, raw shell, raw filesystem paths, real
+  local/user paths, raw component source bodies, executable modules as
+  authority, package archives, raw logs, full stack traces, source-map-expanded
+  frames, raw Error objects, clients, handles, callbacks, registry objects,
+  opaque cursors, permission objects, or credential material.
+- 2026-06-25 D519: locked the Canvas Workbench intent handoff and
+  idempotency boundary. Workbench intent handoff is data-only, typed,
+  caller-owned, and idempotency-aware. Workbench may construct, display, and
+  surface bounded user intent DTOs for reviewed Canvas affordances such as
+  setting changes, runner commands, credential setup, sandbox permission
+  requests, component promotion review, component source review, sandbox
+  lifecycle requests, sandbox log/error follow-up, UI navigation, and
+  cross-capability status follow-up. Each intent should name an explicit intent
+  kind, target refs, actor refs, policy refs, evidence/audit refs when
+  applicable, caller-supplied intent id or idempotency key, and bounded data
+  parameters. Workbench must not own a durable outbox, retry queue, callback
+  registry, action dispatcher, command bus, admission lifecycle, approval
+  lifecycle, audit writer, persistence owner, workflow state machine, transport
+  channel, or runtime executor. Hosts/callers own receiving intents, validating
+  and deduplicating idempotency material, admitting/rejecting, persisting,
+  auditing, executing, retrying, cancelling, and reporting host-derived status
+  back to Canvas display DTOs. Intent DTOs must not carry callbacks, promises,
+  raw shell, raw paths, secrets, credentials, tokens, env vars, clients,
+  provider/query/storage/runner handles, iframe/window/MessagePort handles,
+  runtime handles, registry objects, executable component maps, opaque cursors,
+  raw source/log/error material, or permission objects.
+- 2026-06-25 D518: locked the C-1 conformance scenario split.
+  C-1 remains the required umbrella end-to-end cross-graph diamond coalesce
+  scenario and must not be marked pass until the full mixed-locality diamond
+  is implemented and tested through the bridge. Focused scenarios should be
+  added before honest pass flips: C-1a covers canonical protobuf bridge
+  envelope and wire-edge frame bytes/golden vectors; C-1b covers public
+  high-level single-direction WireEdgeGroup behavior including bytes-only
+  edges, DIRTY-before-DATA gating, fail-closed issues/status,
+  describe-visible event/gate/projector topology, release, and bounded recent
+  replay guard without making the numeric tombstone limit public; C-1c covers
+  explicit graph-visible ack-timeout command ingress, stale/malformed no-op
+  or issue behavior, retry/exhausted facts, and absence of hidden core timer
+  pumps. Runtime arms may pass each focused scenario only when that runtime
+  exposes and tests the corresponding behavior; public ack-driver helper names
+  are not conformance requirements.
+- 2026-06-25 D517: locked the Canvas cross-capability status, audit, and
+  approval display boundary. Canvas may define a focused data-only
+  cross-capability status/audit/approval display vocabulary for Workbench
+  surfaces. The vocabulary may normalize host-derived status summaries,
+  approval posture, audit refs, evidence refs, issue summaries, blocked/denied/
+  retryable reasons, last host decision summaries, and next-intent affordances
+  across runner commands, credential setup, sandbox permission requests,
+  component promotion review, component source review, sandbox lifecycle
+  restart/suspend/teardown, sandbox log/error follow-up, and other reviewed
+  Canvas host-capability surfaces. Workbench may display this already-derived
+  material and may emit data-only user intents with requested follow-up,
+  actor/policy/target/evidence refs, idempotency material, and audit context,
+  but must not own approval lifecycle state, write audit records, mutate policy,
+  grant permissions, validate credentials, execute retries, run commands,
+  advance sandbox lifecycle, install or promote components, admit/apply
+  proposals, lower component events, write graph truth, mutate WorkItems, or
+  become the source of capability truth. The shared vocabulary is not a generic
+  workflow registry, state-machine engine, approval engine, policy engine,
+  action dispatcher, or provider/runtime adapter. Missing/stale/contradictory/
+  unauthorized/unsupported/unverifiable material fails closed as visible
+  diagnostics and disabled/blocked affordances.
+- 2026-06-25 D516: locked the Python C-1 bridge and WireEdgeGroup
+  facade exact shape. Python adds high-level public `wire_bridge(...)` and
+  `wire_edge_group(...)` facades over Rust/native-owned bridge semantics.
+  `wire_bridge(graph, *, session_id, name=None)` returns an opaque Python
+  WireBridge facade bundle sufficient for WireEdgeGroup composition and
+  graph-visible status/issues/release, but does not expose raw
+  WireBridgeEnvelope, WireBridgeCommand, WireEdgeFrame construction, PyO3
+  handles, or raw protocol ingress. `wire_edge_group(graph, bridge, *,
+  name=None, inbound_edges=None, outbound_edges=None)` requires exactly one
+  of `inbound_edges` or `outbound_edges`; inbound edges are non-empty edge id
+  iterables and outbound edges are non-empty edge id -> bytes-valued Node
+  mappings. Returned material is a Python WireEdgeGroup bundle with inbound
+  edge nodes, status, issues, and idempotent `release()`. Status/issues are
+  Python facade dataclasses/enums mapped from native facts. Outbound
+  non-bytes values, malformed remote frames, unknown edges, duplicate frames,
+  competing causes, incomplete causes, and replay-window violations become
+  graph-visible issue/status facts, not local protocol terminals.
+- 2026-06-25 D515: locked the Canvas sandbox and component focused public
+  surface boundary. Canvas sandbox/component-admission public API remains
+  focused-subpath-only and data-only. The package root must not grow with
+  sandbox runtime, lifecycle, permission, source intake, promotion, log/error,
+  message bridge, registry, or generated-component admission symbols. Focused
+  subpaths such as the existing workspace-component-renderer surface may expose
+  only data-only DTOs, builders, validators, preview helpers, status helpers,
+  and manifest/descriptor summary helpers for generated, pasted, marketplace,
+  sandboxed, and host-registered components. If the sandbox/admission surface
+  outgrows the renderer-focused boundary, Canvas may add a separately reviewed
+  focused workspace-component-sandbox subpath under the same data-only and
+  no-runtime-authority constraints. Workbench UI components, host registries,
+  runtime drivers, iframe/window/worker/postMessage/MessagePort transports,
+  React component maps, executable renderer maps, host adapters, source stores,
+  package installers, permission enforcers, credential/network/storage/runner/
+  provider brokers, callbacks, raw source/log/error captures, filesystem paths,
+  opaque cursors, and runtime handles remain private/internal. Focused public
+  helpers may describe already-derived material and validate bounded DTO shapes,
+  but must not allocate sessions, install renderers, load source, execute code,
+  mutate registries, enforce permissions, persist settings, dispatch actions,
+  lower events, write graph truth, mutate WorkItems, or become generic selector/
+  provider/registry APIs.
+- 2026-06-25 D514: locked the Canvas sandbox message protocol and
+  event-port bridge boundary. Canvas may define data-only sandbox message
+  envelope views, event-port bridge previews, validation diagnostics, and typed
+  event-envelope preview material that connects host-normalized sandbox
+  messages to the existing D417/D426 event-envelope/lowering path. Workbench may
+  display message validation and bridge status, but must not listen to iframe
+  messages, parse raw postMessage payloads, mutate routing, dispatch actions,
+  call callbacks, or own message transport. Host-private runtime owns raw
+  postMessage listeners, origin checks, MessagePort handles, session/generation
+  validation, raw payload capture, transport ordering, and private runtime
+  correlation. Messages enter Canvas only after host normalization and current
+  session/generation validation. Event ports remain the only routing authority;
+  payload may supply bounded draft/data only after clone/data/schema validation
+  and must not override actionId, loweringKind, targetRefs, policyRefs,
+  actorRefs, rendererRef, componentId, contractId, sandboxSessionRef,
+  generation, permission posture, lifecycle state, or host admission context.
+  Unknown/non-ready/malformed/unauthorized/stale/post-teardown/revoked/
+  unsupported messages fail closed as diagnostics/status and do not lower into
+  events, proposal intake, dispatch, repair, promotion, graph truth, WorkItem
+  mutation, provider/runner execution, permission changes, or generated truth
+  facts.
+- 2026-06-25 D513: locked the Canvas sandbox session lifecycle and
+  teardown boundary. Canvas may define data-only sandbox session descriptors,
+  lifecycle status views, lifecycle diagnostics, restart/suspend/teardown
+  request intents, stale-message summaries, crash summaries, audit refs, and
+  evidence refs. Workbench may display sandbox lifecycle state and emit
+  data-only lifecycle request intents, but must not own the sandbox session
+  map, create or dispose iframes/workers, hold iframe/window/MessagePort/
+  timer/heartbeat handles, send runtime teardown commands directly, restart
+  runtimes directly, retry crashes, or subscribe to post-teardown events.
+  Host-private sandbox/runtime infrastructure owns `sandboxSessionId`
+  allocation, generation fencing, iframe/worker/window/MessagePort handles,
+  heartbeat and timeout policy, resource cleanup, actual start/suspend/
+  restart/teardown, crash handling, stale message rejection, runtime maps, and
+  retention of private lifecycle evidence. Canvas session refs are display/
+  correlation material only, not runtime handles or permission to address a
+  running iframe. Lifecycle DTOs may carry bounded session/component/source/
+  generation/state/reason/status/evidence material, but must not carry runtime
+  handles, ports, window references, callbacks, timers, origin/CSP enforcement
+  objects, permission objects, clients, credentials, storage/query/provider
+  handles, opaque cursors, raw logs, raw errors, or raw source material.
+  Sandbox messages are valid only when session ref and generation match an
+  active admitted session; stale, unknown, post-teardown, post-crash, revoked,
+  or old-generation messages fail closed as diagnostics/status and do not lower
+  into component events, proposal intake, repair actions, promotion decisions,
+  graph truth, WorkItem mutation, provider/runner execution, or generated
+  truth facts.
+- 2026-06-25 D512: locked the Canvas sandbox network and storage
+  permission boundary. Untrusted generated, pasted, or marketplace sandbox UI
+  has no network access, persistent storage, credential access, host storage
+  API, cookie access, or direct browser storage authority by default. Canvas
+  may define data-only sandbox permission posture views, permission request
+  intents, admission status views, allowed-capability summaries, quota
+  summaries, redacted origin summaries, and blocked/denied reason material.
+  Workbench may display permission posture and emit user or component
+  permission request intents, but must not enforce permissions, grant
+  permissions, mutate sandbox policy, write allowlists, broker credentials,
+  create storage namespaces, pass network/storage handles, or treat
+  component-declared manifests as executable authority. Host-private sandbox/
+  runtime infrastructure owns origin policy, CSP, iframe sandbox flags,
+  network proxying, URL/origin allowlists, storage namespace allocation,
+  quota, cookie isolation, credential mediation, permission admission,
+  enforcement, revocation, and audit persistence. Canvas permission DTOs must
+  not carry raw URL allowlists, credential material, cookies, tokens,
+  connection strings, env vars, storage handles, browser storage handles,
+  filesystem paths, clients, provider/query/storage handles, runtime handles,
+  iframe/window references, permission objects, opaque cursors, or callback
+  maps. Component manifests or source intake records may request or summarize
+  desired capabilities, but access becomes effective only after host-owned
+  admission and host-owned enforcement; summaries are display material, not
+  permission proof.
+- 2026-06-25 D511: locked the C-1 cross-runtime WireEdgeGroup
+  facade and conformance split. C-1 uses public high-level WireEdgeGroup
+  facades in participating runtimes. TypeScript and Rust expose their
+  high-level `wireEdgeGroup` / `wire_edge_group` adapter surfaces; Python may
+  add an idiomatic public `wire_edge_group` facade only as a wrapper over
+  Rust/native-owned bridge and WireEdgeGroup semantics. Edge values remain
+  bytes, groups remain inbound-only or outbound-only per D506, returned
+  material is facade-level inbound nodes plus status/issues/release wrappers,
+  and release follows native source/topology release discipline. Python must
+  not duplicate the wave core, construct protocol messages directly, expose
+  raw WireBridge/WireEdgeFrame DTO construction, expose PyO3 handles, expose
+  raw `Node.up/down` or `ctx.up/down`, add Python-only protocol aliases, add
+  a production value codec registry, or widen storage/checkpoint hydration.
+  C-1 conformance should split before any honest pass flip into focused
+  protobuf canonical byte helper, WireEdgeGroup single-direction behavior,
+  and explicit ack-timeout command-ingress scenarios or arms. Public Rust/TS
+  ack-driver helpers remain optional ergonomics; conformance requires
+  explicit graph-visible timeout ingress, not helper names or hidden timers.
+- 2026-06-25 D510: locked the Canvas sandbox log and error capture
+  boundary. Canvas may define data-only sandbox log display records, sandbox
+  error display records, diagnostic status views, redaction evidence
+  summaries, artifact/log refs, and Side Panel console/debug display sections.
+  Workbench may display host-produced bounded/redacted log and error records
+  for selected sandboxed or generated components, but must not subscribe
+  directly to iframe console streams, read runtime error objects, inspect
+  iframe handles, expand source maps, parse raw stacks, read raw source
+  excerpts, store full log buffers, or perform redaction itself as runtime
+  authority. Host-private sandbox/runtime infrastructure owns raw console
+  capture, raw error capture, stack collection, source-map expansion, source
+  excerpt handling, log buffering, redaction, truncation, retention, artifact
+  storage, and correlation to private sandbox runtime handles. Canvas DTOs
+  contain only bounded fields such as sandbox session refs, component ids,
+  source kind, level, error kind, message summary, optional source label,
+  optional occurredAtMs, redaction status, truncation/size evidence, issue
+  summaries, and artifact/log refs. They must not carry raw console streams,
+  full stack traces, raw Error objects, source-map-expanded frames, raw source
+  excerpts, filesystem paths, tokens, secrets, env vars, credentials,
+  connection strings, clients, provider/storage/query handles, runtime handles,
+  iframe/window references, callback maps, opaque cursors, or permission
+  objects. Component crashes and sandbox runtime failures are sandbox/component
+  status and diagnostics, not protocol terminals, graph node ERROR facts,
+  WorkItem lifecycle failures, proposal admission/application, repair triggers,
+  promotion approval, provider/runner execution, or generated truth facts by
+  default.
+- 2026-06-25 D509: locked the Canvas component source intake material
+  boundary. Canvas may define data-only source intake views and review
+  intents that expose only bounded source posture: component id, source kind,
+  display name, source availability, source/artifact refs, source fingerprint
+  or content hash, declared binding manifest snapshots, event-port summaries,
+  sandbox posture, sandbox evidence refs, review status, and issue summaries.
+  Workbench may display source posture and review readiness and emit data-only
+  source review or intake intents with component ids, source refs, requested
+  review kinds, actor refs, policy refs, evidence refs, and audit context, but
+  must not store raw component source, parse source, load dependencies, build
+  modules, hydrate refs, execute code, infer trust, install renderers, or
+  derive binding/event manifests from raw source. Raw generated or pasted
+  source code, uploaded files, package archives, dependency graphs or
+  lockfiles, build outputs, executable modules, source maps, scanner raw logs,
+  signing keys, registry objects, runtime handles, filesystem paths, clients,
+  credentials, provider/storage/query handles, opaque cursors, and permission
+  objects remain host-private or artifact-store-private material. Source refs,
+  artifact refs, and fingerprints are evidence/address material only; they are
+  not authority to hydrate, execute, install, promote, or bypass sandbox/
+  admission. Missing, restricted, stale, mismatched, unavailable, oversize,
+  malformed, or unverifiable source material fails closed as visible source
+  status/issues/audit refs and must not fall back to inline source DTOs, direct
+  execution, host preview, proposal admission/application, WorkItem mutation,
+  or generated truth facts.
+- 2026-06-25 D508: locked the Canvas generated component promotion
+  boundary. Canvas may define data-only promotion candidate views, review
+  checklist views, promotion request intents, promotion status views, and
+  installed renderer-manifest preview material for generated, pasted,
+  marketplace, sandboxed, and host-registered component sources. Workbench
+  may display eligibility and emit data-only promotion request intents with
+  candidate ids, target trust posture, actor refs, policy refs, evidence refs,
+  and audit context, but must not install component packs, assign renderer ids,
+  write host registries, execute generated or pasted source, load dependencies,
+  build packages, sign artifacts, mutate trust policy, or mark a component
+  trusted by UI toggle. Host-private review/runtime infrastructure owns source
+  storage and retrieval, dependency audit, code/security review, build,
+  signing, packaging, registry installation, rendererId assignment,
+  trust-policy enforcement, rollback, uninstall, and runtime binding. Canvas
+  promotion DTOs use bounded summaries, manifest snapshots, source/artifact
+  refs, fingerprints, sandbox evidence refs, review statuses, issues, and
+  installed renderer manifest previews; they must not carry raw source code,
+  package archives, dependency trees, build outputs, executable modules,
+  registry objects, callback maps, clients, credentials, filesystem paths,
+  provider/runtime handles, opaque cursors, or permission objects. Promotion is
+  a reviewed trust transition for future rendering posture only and does not
+  retroactively trust old sandbox sessions, change graph truth, expand event
+  ports, bypass typed event envelopes, auto-admit/apply proposals, mutate
+  WorkItems, satisfy input gates, execute providers/runners, or alter
+  proposal/application authority.
+- 2026-06-25 D507: locked the Canvas topology behavior persistence
+  split. Workbench may own ephemeral session-only topology UI state such as
+  overlay open/closed, hovered topology node, selected topology node,
+  temporary tracking override, minimap expanded/collapsed, debug panel
+  open/closed, and pan/zoom viewport. These values are local presentation
+  state and must not become project truth, graph truth, WorkItem truth,
+  proposal/admission/application material, or durable audit by default.
+  Caller-owned project settings may provide typed effective defaults under
+  D503, including default lens mode, default tracking mode, minimap default
+  visibility, whether selection may follow pinned widgets, and whether
+  inferred input UI is enabled. Persistence, admission, and audit remain
+  host/project-owned; Workbench may consume an already-derived effective
+  topology behavior view and emit data-only topology setting-change intents,
+  but must not persist settings directly or append setting events as lifecycle
+  owner. Conservative defaults remain locked: topology overlay starts
+  closed/off; when opened the lens mode defaults to focused-path, hover
+  tracking defaults to none, pinned-node hover shows pinned state only,
+  unpinned-node hover shows a ghost frame only, canvas pan on hover is
+  disabled, minimap defaults hidden/collapsed unless enabled by an effective
+  setting, and debug-protocol is session/dev-only rather than a project
+  default. Topology behavior changes are presentation preferences by default
+  and do not synthesize graph-visible policy, mutate WorkItems, alter graph
+  topology, execute runtime/provider work, or change proposal/application
+  authority.
+- 2026-06-25 D506: locked the C-1 WireEdgeGroup residual
+  directionality and tombstone-retention choices. WireEdgeGroup v1
+  declarations are single-direction bundles: an instance may be inbound-only
+  or outbound-only, but must not mix inbound-only and outbound edges. Callers
+  needing bidirectional bridge composition create separate inbound and
+  outbound WireEdgeGroup bundles over the same wireBridge, preserving D501's
+  static expected edge set and per-cause DIRTY+DATA-for-every-edge rule.
+  Ack-timeout command ingress keeps D502 parity: a missing
+  `observedAtMs`/`observed_at_ms` means the explicit driver command asserts
+  the timeout is due now; delayed retry suppression applies only when a
+  timestamp is present and earlier than the stored retry due time.
+  WireEdgeGroup failed and released cause tombstones are bounded
+  recent-memory guards, not unbounded replay logs; recent replays fail
+  closed, while evicted very old cause ids are outside v1 exact
+  replay-detection guarantees. This adds no protocol messages, tiers, raw
+  wire facades, production codec registries, storage/checkpoint replay,
+  scheduler policy, or missed/catch-up timer semantics.
+- 2026-06-25 D505: locked the Canvas runner and credentials boundary.
+  Canvas may define data-only runner capability views, credential posture
+  views, credential setup intents, typed runner command intents, run status
+  views, approval display material, audit display material, bounded log
+  summaries, and artifact/evidence refs. Workbench may display runner and
+  credential readiness and may emit user intents to start a caller-owned
+  credential setup flow or request a typed runner command, but it must not
+  collect secrets, tokens, passwords, OAuth codes, env vars, connection
+  strings, private keys, filesystem paths, raw shell strings, raw SQL
+  connection material, runner handles, clients, storage/query/provider
+  handles, callbacks, registries, or opaque runtime cursors. Credential setup
+  forms in Canvas accept only redacted metadata and setup intent coordinates;
+  secret entry, OAuth exchange, vault writes, token refresh, and credential
+  validation remain host/private-runner responsibilities. Runner launch
+  intents must name typed command kinds over runner-scoped refs and bounded
+  parameters, such as tests over repo refs, dbt over project refs and model
+  selectors, SQL over warehouse profile refs and query-plan refs, or
+  verification over issue/work graph refs. They must not carry raw shell, raw
+  path, raw token, raw environment, arbitrary command argv, or direct
+  filesystem/credential handles from the browser. The runner or host admission
+  path owns workspace/repo authorization, filesystem and command allowlists,
+  credential lookup, approval gates, runtime limits, execution, cancellation,
+  artifact/log/evidence collection, and audit persistence. Workbench is not
+  the approval lifecycle owner or audit writer; approval, status, issues,
+  audit, logs, and evidence appear in Canvas only as already-derived data-only
+  views or refs.
+- 2026-06-25 D504: locked the Canvas sandbox runtime boundary. Canvas
+  may define data-only sandbox request intents, admission/session
+  descriptors, runtime status views, typed event-envelope material,
+  bounded log displays, and bounded component error displays for generated,
+  pasted, marketplace, host-registered, and trusted-built-in component
+  sources. Workbench may emit sandbox request intents and display
+  host-produced lifecycle/status/diagnostic material, but it must not create
+  isolation hosts, wire `postMessage`, load assets, register renderers,
+  enforce origin/sandbox/CSP/permission policy, own teardown, or hold runtime
+  handles. Actual iframe, worker, dynamic-source, `postMessage`, origin,
+  asset, lifecycle, and permission enforcement remain host-private runtime
+  responsibilities. Hosts may privately map `sandboxSessionId` values to
+  iframe/runtime instances, but those handles must not enter graph truth,
+  display DTOs, tests, snapshots, generated proposals, or public Canvas
+  surfaces. Sandbox props are serializable data derived from the admitted
+  render preview and declared input schema only; sandbox messages lower only
+  into validated typed event envelopes and existing event-lowering preview
+  paths. Malformed, unknown, stale, or unauthorized messages fail closed as
+  data-only status/diagnostic material, not protocol terminals, graph truth,
+  Workspace mutation, proposal admission/application, provider execution, or
+  raw command dispatch. Logs/errors are bounded and redacted display records;
+  promotion to a trusted component pack is a separate reviewed host workflow
+  and never changes graph semantics or automatic proposal/application
+  authority.
+- 2026-06-25 D503: locked the Canvas project settings authority
+  model. Canvas may define a focused data-only project settings
+  surface for known setting domains, effective display views, redacted
+  runtime posture, and user setting-change intent DTOs. A typed settings
+  catalog is allowed only as definition/view material, not an executable
+  registry or persistence owner. Workbench may own ephemeral session UI
+  state such as open panels, temporary toggles, collapsed sections, and
+  hover/follow display state, but it must not become project settings
+  authority, append setting events as lifecycle owner, or persist settings
+  directly. Project-persistent settings remain caller/project-owned; hosts
+  may pass already-derived effective settings views into Workbench and
+  receive data-only setting-change intents, then decide admission,
+  persistence, and audit outside Workbench. Secrets, provider tokens, env
+  vars, runner bindings, storage/query handles, callbacks, registries,
+  clients, opaque cursors, and runtime handles remain outside setting
+  values and graph/display/test/snapshot/generated material except as
+  explicitly redacted posture metadata. Future settings domains such as
+  topology behavior, sandbox policy, runner posture, credential posture,
+  and display preferences should be typed known domains in a focused
+  subpath, not open arbitrary setting plugins or casual root exports.
 - 2026-06-25 D502: locked the TypeScript `wireBridge` ack-driver exact
   API shape. Hidden `setTimeout`/captured-ctx ack scheduling is replaced by
   a graph-visible `ack-timeout` command ingress and a focused
