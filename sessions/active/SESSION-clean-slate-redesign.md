@@ -21,6 +21,23 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-06-25 D500: narrowed the D498 follow-up boundary. Rust
+  `wireBridgeProtobuf` byte helpers are byte-specific DTO/helpers over existing
+  semantic bridge envelopes and wire-edge frames, not core `wireBridge` options,
+  protocol, value codecs, storage hydration, checkpoint replay, or Python public
+  raw wire facade. C-1 `WireEdgeGroup` v1 returns local inbound source nodes plus
+  status/issues/release, uses a static expected DIRTY set, allows one in-flight
+  bridge-local cause id, and fails closed on competing/malformed causes. Ack
+  timeout/retry is a cross-runtime adapter-driver semantic contract; timer/retry
+  pumps live only at adapter/driver/source boundaries and surface graph-visible
+  status/issues.
+- 2026-06-25 D499: locked the TS adapter side-fact projector discipline for the
+  D498 `wireBridgeProtobuf` follow-up. Public side facts such as
+  protobuf `issues` and `status` must derive from declared internal
+  event/result lanes rather than hidden sibling `.down()` writes. The helper
+  keeps malformed bytes as bridge invalid/issue facts, keeps status in
+  `ctx.state`, preserves the public bundle shape, and does not change protocol,
+  tier, message, or ctx semantics.
 - 2026-06-25 D498: locked the B2/C-1 bridge adapter implementation
   surfaces. B2 byte integration lands as focused `wireBridgeProtobuf` helpers
   over existing D134/D140/D141 semantic `wireBridge` bundles, not core
