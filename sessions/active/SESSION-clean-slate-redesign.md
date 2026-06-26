@@ -21,6 +21,286 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-06-26 D555: locked the Canvas host-derived display DTO and typed
+  follow-up intent consolidation boundary.
+  D543-D554 are superseded by D555 in the canonical decision log; their
+  detailed historical records remain in decisions.jsonl, but this active view
+  treats them as one consolidated host-derived DTO plus typed-follow-up-intent
+  pattern. For remaining Workspace surfaces that
+  merely display host-derived state, explain status, summarize activity/audit/
+  history, show diagnostics, expose non-authoritative recommendations, or offer
+  follow-up affordances over already-admitted refs, Canvas may use a single
+  consolidated pattern: data-only host-derived display DTOs plus D519 typed
+  follow-up intents. Such DTOs may include bounded ids, kinds, actor refs,
+  target refs, source refs, summaries, timestamps/freshness, status/result/
+  evidence refs, visibility/redaction posture, reason/diagnostic summaries,
+  capability/policy refs, idempotency material when the DTO is an affordance,
+  and audit/status refs. Workbench may display, filter, group, sort, navigate,
+  preview, explain, dismiss, snooze, request details, and emit typed follow-up
+  intents such as retry, refresh, restore, request access, request detail,
+  create follow-up, link, annotate, export, import, or otherwise ask the host to
+  act. Workbench must not replay activity, reconstruct truth from history, own
+  audit logs, infer hidden state from summaries, persist authoritative state
+  directly, mutate WorkItems, mutate graph truth, change policy, grant
+  permissions, approve reviews, alter queue/promotion/verification state, access
+  providers/storage/artifacts/runners/sandboxes, execute runtimes, install/
+  promote components, or treat display DTOs as command/callback/runtime handles.
+  Hosts own admission, authorization, derivation, ordering, retention, redaction
+  /privacy filtering, persistence, idempotency/deduplication, audit integrity,
+  detail access, execution, mutation, notification, and downstream effects. A
+  new D# is required only when a future Canvas surface introduces a new
+  authority boundary, persistence/truth class, runtime/provider/credential
+  access path, component/sandbox lifecycle, review/permission/policy semantics,
+  graph/WorkItem mutation route, or generic registry/DSL/execution mechanism.
+- 2026-06-26 D541: locked the Canvas widget draft and local state boundary.
+  Canvas may define widget draft and local-state DTOs for transient or
+  host-admitted persisted UI interaction state on pinned widgets and Workspace
+  surfaces. Such DTOs may describe widget id, slot id, draft kind, bounded draft
+  value summary, validation display, dirty-since summary, actor ref, session or
+  persistence scope, target refs, status summary, conflict/freshness summary,
+  selection/focus/expansion/filter/sort/pagination posture, wizard/confirmation
+  posture, and audit/status refs when host-admitted persistence is involved.
+  Workbench may own session-local draft, focus, selection, expansion, temporary
+  filter/sort, unsaved form, inline-edit, confirmation, and optimistic visual
+  state, and may render host-admitted project-persistent or shared draft DTOs.
+  Draft/local state is not substrate DATA, graph truth, WorkItem/WorkGraph
+  truth, workflow/policy rule, review/promotion decision, permission grant,
+  credential ref, runtime state, provider/storage state, generated truth, widget
+  action execution, or project setting unless and until a host admits and
+  persists an explicit project-scoped DTO. Save, submit, apply, clear, restore,
+  share, discard, conflict-resolve, or convert-to-project-state operations must
+  be expressed as D519 typed intents and admitted by the host. Hosts own
+  project/shared draft admission, authorization, authoritative validation,
+  conflict detection/resolution, persistence, audit, idempotency/deduplication,
+  status reporting, and downstream effects.
+- 2026-06-25 D540: locked the Canvas widget action and control intent
+  boundary. Canvas may define data-only widget action and control descriptors
+  for host-admitted controls on pinned widgets and Workspace surfaces. An action
+  descriptor may include action id, action kind, label/icon summary, widget id,
+  slot id, target refs, capability ref, input summary, precondition/status
+  summary, confirmation posture, approval/audit/status refs, and idempotency
+  material. Widget action descriptors are affordance and intent material only,
+  not callback/function props, raw command strings, shell/path/token material,
+  provider/storage queries, runtime handles, workflow/policy rules, permission
+  grants, credential refs, review/promotion decisions, graph mutation authority,
+  WorkItem mutation authority, generated truth, or component registry authority.
+  Workbench may render admitted actions, display enabled/disabled/pending/
+  needs-approval/result status, keep session-local focus/draft/confirmation UI
+  state, and emit D519 typed intents when the user triggers an action. Hosts own
+  action admission, authorization, validation, approval gates, execution,
+  batching/retry/cancellation semantics, audit, idempotency/deduplication,
+  status/result/evidence production, and all downstream effects.
+  Generated/sandboxed/custom widgets may consume only admitted action
+  descriptors and emit only typed intents; malformed, missing, stale,
+  unauthorized, unsupported, over-cap, or precondition-failed actions fail
+  closed as diagnostics and disabled affordances.
+- 2026-06-25 D539: locked the Canvas widget input/output binding boundary.
+  Canvas may define data-only widget input/output binding descriptors that map
+  widget slots to admitted refs and host-derived display material. A binding
+  descriptor may include widget id, slot id, slot kind, binding kind, source
+  ref, target ref, display role, schema/shape summary, required/optional
+  posture, freshness/status summary, capability ref, bounded validation
+  summary, and audit/status refs. Widget bindings are presentation and
+  interaction descriptors only, not GraphReFly substrate edges, WorkItem truth,
+  WorkGraph truth, workflow/policy rules, arbitrary selector/query expressions,
+  provider/storage cursors, runtime subscriptions, command channels, permission
+  grants, credential refs, execution permission, review/promotion decisions, or
+  generated truth. Workbench may display binding state, render host-admitted
+  input/output material, keep session-local editing focus/draft UI state, and
+  emit D519 typed intents such as edit draft, submit input, request data,
+  refresh, rebind, clear binding, or act through an admitted capability. Hosts
+  own binding admission, authorization, data derivation, hydration,
+  authoritative validation, persistence, execution effects, status reporting,
+  audit, and idempotency/deduplication. Generated/sandboxed/custom widgets may
+  consume only admitted binding/display/input DTOs and emit only typed intents;
+  malformed, missing, stale, unauthorized, unsupported, or schema-mismatched
+  bindings fail closed as diagnostics and disabled affordances.
+- 2026-06-25 D538: locked the Canvas widget composition and pinned surface
+  boundary. Canvas may define data-only widget composition and pinned-surface
+  DTOs that let users pin, create, duplicate, arrange, resize, configure, and
+  remove widgets over WorkItemRef, WorkGraphRef, EvidenceRef, ResultRef,
+  ArtifactRef, CapabilityRef, review/decision refs, queue/timeline/notification
+  refs, and input/output refs. Widget configuration may include widget id/kind,
+  surface kind, target/input/output refs, capability refs, display config,
+  bounded filter/sort/group summaries, layout frame, title/label, visibility
+  posture, pinned-by summary, and status/audit refs. Widget composition is
+  presentation intent only, not workflow/policy/query/queue truth, graph truth,
+  WorkItem truth, provider/storage access, runtime execution, permission grant,
+  review/promotion decision, sandbox lifecycle, generated truth, or component
+  registry authority. Workbench may own session-local layout/selection state and
+  may display host/project-derived pinned widgets; it may emit D519 typed widget
+  configuration/action intents. Hosts own project persistence, admission,
+  authorization, audit, data derivation, runtime execution, component/sandbox
+  hosting, and downstream effects. Generated/sandboxed/custom widgets may
+  consume only admitted DTOs and emit typed intents; missing, stale,
+  unauthorized, or malformed widget refs/config fail closed as diagnostics and
+  disabled affordances.
+- 2026-06-25 D537: locked the Canvas Workspace WorkItem and WorkGraph data
+  reference boundary. Workspace WorkItems are product DATA records, not
+  GraphReFly substrate nodes, live graph nodes, runtime handles, queue items, or
+  widget instances. WorkGraphs inside Workspace are represented as bounded data
+  descriptors and WorkGraphRef-style address/evidence/correlation material that
+  WorkItems, widgets, evidence, review decisions, freshness views, queues,
+  timelines, and verification/testing intents may reference. A WorkGraphRef may
+  summarize identity, label, topology/input/output contract posture,
+  source/evidence/artifact refs, freshness, and capability compatibility, but it
+  is not hydrate authority, provider or storage cursor, live graph handle,
+  sandbox handle, Docker/container handle, runner handle, executable graph,
+  permission grant, policy object, credential ref, or execution permission. A
+  WorkItem may reference one or more WorkGraphRefs as subject/context, including
+  verification/testing/review/promotion/repair/data-question work, but WorkItem
+  status, ownership, evidence links, policy refs, and review posture remain
+  data-only product material. When a WorkItem requests verification, testing,
+  review, or execution over a WorkGraphRef, Workbench may emit D519 typed
+  intents carrying WorkItem ref, WorkGraphRef, capability ref/kind, policy refs,
+  evidence refs, actor/audit refs, and idempotency material. Hosts own resolving
+  WorkGraphRefs, authorization, permitted source/spec/topology hydration,
+  injection into sandbox/Docker/runner/CI/code-definition runtimes, execution,
+  isolation, artifact/evidence collection, audit, status reporting, and all
+  downstream effects. Canvas may display WorkItems, WorkGraphRefs, linked
+  evidence, and verification status, and may let users pin widgets over these
+  refs, but must not resolve refs, hydrate work graphs, execute/inject runtimes,
+  mutate WorkItems, mutate graph truth, synthesize WorkGraph truth, grant
+  permissions, approve review/promotion, apply proposals, or create generated
+  truth facts.
+- 2026-06-25 D536: locked the Canvas bulk action and multi-select intent
+  boundary. Canvas may define data-only bulk action and multi-select intent
+  DTOs for host-derived queue, review, evidence, artifact, result, runner,
+  sandbox, permission, promotion, source review, notification, timeline,
+  component review, and proposal-follow-up surfaces. Workbench may own
+  session-only selection state, display selected counts and host-derived bulk
+  affordance availability, and emit D519 typed bulk intents carrying bulk intent
+  kind, selected item refs, target refs, actor refs, policy refs, evidence/audit
+  refs when applicable, idempotency material, bounded operation summaries,
+  client-side selection summaries, and optional validation/dry-run request
+  coordinates. Workbench must not execute bulk actions, split a bulk intent into
+  per-item effects, loop single-item intents as hidden batching, order per-item
+  execution, guarantee all-or-nothing semantics, retry failures, cancel
+  in-flight host work, write partial results, mutate queue membership,
+  assignments, priority/SLA/completion, record audit, approve reviews, grant
+  permissions, approve promotion, install components, apply proposals, mutate
+  graph truth, mutate WorkItems, change sandbox trust/lifecycle, execute
+  providers/runners, or create generated truth facts. Hosts own validation,
+  admission, authorization, per-item expansion, batching semantics, ordering,
+  partial success/failure, retries, cancellation, audit, idempotency/
+  deduplication, status reporting, and all downstream effects. Bulk
+  result/status material returned to Canvas is host-derived display evidence
+  only and must follow the result/evidence, notification, queue, and timeline
+  boundaries.
+- 2026-06-25 D535: locked the Canvas queue and review inbox display boundary.
+  Canvas may define data-only queue/review-inbox display DTOs for host-derived
+  work summaries across review decisions, evidence freshness, artifacts/results,
+  runner and sandbox status, permissions, promotion, source review, capability
+  availability, component review, timeline drilldowns, notification drilldowns,
+  and proposal-follow-up surfaces. Queue items may carry refs, queue kinds,
+  target refs, status, severity, bounded summaries, source capability refs,
+  related evidence/artifact/result/note/decision refs, assigned actor summaries,
+  priority summaries, dueAt/SLA summaries, available action intent kinds, audit
+  refs, freshness/status summaries, and redaction/truncation metadata.
+  Workbench may display, sort, filter, group, collapse, paginate, visually
+  prioritize, session-dismiss, and open queue items through D519 typed intents,
+  and may emit typed follow-up intents such as request re-review, open artifact,
+  rerun check, submit decision, open stale evidence, or open capability status.
+  Workbench must not own durable tasks, queue membership, assignment, priority,
+  SLA, completion state, workflow state, audit persistence, graph truth,
+  WorkItem mutation, review approval, runner execution, proposal application,
+  permission grant, promotion, sandbox lifecycle effects, provider execution,
+  component installation, or generated truth facts. Local sort/filter/group/
+  collapse choices are presentation preferences only and must not become
+  authoritative priority, assignment, completion, queue membership, audit,
+  project truth, or graph-visible policy unless a host explicitly records them.
+  Queue items are display projections only, not WorkItems, tasks, review
+  requests, approvals, runner commands, permission grants, promotion decisions,
+  proposal applications, or sandbox lifecycle facts.
+- 2026-06-25 D534: locked the Canvas cross-surface notification and badge
+  display boundary. Canvas may define data-only notification/badge display DTOs
+  for host-derived summaries across runner, sandbox, artifact/evidence, note,
+  decision, freshness, permission, promotion, source review, capability,
+  timeline, component review, and proposal-follow-up surfaces. DTOs may carry
+  refs, kinds, severity, counts, labels, bounded summaries, target refs, source
+  capability refs, related evidence/artifact/result/note/decision refs, display
+  state, dismiss posture, open/filter/follow-up intent kinds, audit refs, and
+  redaction/truncation metadata. Workbench may display, group, filter, collapse,
+  visually prioritize, and session-dismiss these summaries, and may emit D519
+  typed open/filter/follow-up intents such as open review queue, filter
+  timeline, open stale evidence, open capability status, or request re-review.
+  Workbench must not own durable notification persistence, unread/read
+  authority, reminder scheduling, email/webhook/system notification delivery,
+  browser notification permissions, audit persistence, workflow state, event
+  ordering, graph truth, WorkItem mutation, runner execution, review approval,
+  proposal application, permission grant, promotion, sandbox lifecycle effects,
+  provider execution, or generated truth facts. Session-only dismiss/collapse
+  state is local presentation state and must not become project truth, audit,
+  workflow truth, or graph-visible policy unless a host explicitly records it.
+  Counts are display summaries only, not authoritative event counts, review
+  queues, WorkItem truth, proposal truth, permission state, promotion state,
+  sandbox state, or runner state.
+- 2026-06-25 D533: locked the Canvas capability and evidence timeline display
+  boundary. Canvas may define data-only timeline display DTOs for host-derived
+  activity across runner, sandbox, artifact, evidence, result, note, decision,
+  freshness, permission, promotion, source review, capability descriptor,
+  component review, and proposal-follow-up surfaces. Timeline items may carry
+  display ids, timeline kinds, host-provided ordering summaries, occurredAt or
+  display-time summaries, source capability refs, target refs, actor refs,
+  status, bounded summaries, refs to results/artifacts/evidence/notes/
+  decisions/review requests, audit refs, redaction/truncation metadata, and
+  partial/unavailable/out-of-order display diagnostics. Workbench may display,
+  group, filter, collapse, paginate, and open referenced material through D519
+  typed intents, but must not write timeline events, own audit/event
+  persistence, infer authoritative causality, create ordering authority, repair
+  gaps, merge conflicting histories, synthesize missing events, mutate graph
+  truth, mutate WorkItems, trigger retries, approve decisions, apply proposals,
+  change permissions, approve promotion, change sandbox trust/lifecycle,
+  execute providers/runners, lower component events, or create generated truth
+  facts. Timeline items are display projections only, not authoritative audit
+  events, workflow state, proposal/admission/application material, graph truth,
+  WorkItem truth, permission grants, promotion decisions, sandbox lifecycle
+  facts, runner execution commands, or storage cursors.
+- 2026-06-25 D532: locked the Canvas review evidence freshness and stale
+  decision boundary. Canvas may define data-only freshness/stale-decision
+  display DTOs for review requests, decisions, artifacts, evidence refs, result
+  refs, source refs/fingerprints, sandbox sessions/generations, permission
+  posture summaries, capability descriptors, promotion/proposal targets, and
+  policy refs. Workbench may display host-derived freshness status such as
+  current, stale, expired, superseded, mismatched, missing, unauthorized,
+  unverifiable, needs re-review, or blocked, and may emit D519 typed intents to
+  refresh evidence, request re-review, rerun checks, open current evidence, or
+  request a new decision. Workbench must not compute authoritative freshness,
+  compare fingerprints/generations as admission authority, revoke decisions,
+  extend decisions, approve based on freshness, mutate policy, mutate graph
+  truth, mutate WorkItems, apply proposals, approve promotion, grant
+  permissions, retry runners, change sandbox trust/lifecycle, execute
+  providers/runners, lower component events, or create generated truth facts.
+  Freshness DTOs may carry bounded correlation material such as source/fingerprint
+  summaries, refs, sandbox session/generation, capability version summary,
+  permission posture summary, target refs, review request refs,
+  decidedAt/observedAt/expiresAt summaries, stale reasons, audit refs, and
+  diagnostics, but must not carry raw source/artifacts/logs, signed URLs,
+  runtime handles, clients, callbacks, credentials, permission objects,
+  provider/storage/query/runner handles, or opaque cursors. Stale/expired/
+  mismatched/superseded/missing/unauthorized/unsupported/malformed/
+  unverifiable evidence fails closed unless a host-owned review/admission path
+  explicitly accepts it.
+- 2026-06-25 D531: locked the Canvas review decision and approval intake
+  boundary. Canvas may define data-only review decision/approval display and
+  draft DTOs for promotion, permission, source review, sandbox, runner,
+  credential, component-review, artifact/evidence, and proposal-follow-up
+  surfaces. Workbench may display host-derived review request and decision
+  state such as pending review, approved, rejected, request changes, accept
+  risk, waived, needs second reviewer, expired, stale, or blocked. Workbench
+  may emit D519 typed decision intents carrying decision kind, review request
+  refs, target refs, reviewer refs, policy refs, evidence refs, artifact refs,
+  note refs, bounded rationale, audit context, visibility posture, and
+  idempotency material. Workbench must not record decisions, write audit, verify
+  reviewer authority, mutate policy, grant permissions, approve promotion,
+  install components, apply proposals, mutate graph truth, mutate WorkItems,
+  execute providers/runners, change sandbox trust or lifecycle, retry runners,
+  trigger repair, lower component events, create generated truth facts, or own
+  approval workflow state. Notes may be cited as evidence refs, but note text
+  must not automatically become approval/rejection/waiver/risk acceptance.
+  Hosts own reviewer authorization, identity verification, recording, audit,
+  decision persistence, workflow linkage, idempotency handling, stale evidence
+  checks, and all downstream effects.
 - 2026-06-25 D530: locked the Canvas human review note and evidence
   annotation boundary. Canvas may define data-only human review note and
   annotation display/draft DTOs for artifact, evidence, result, runner,
@@ -3249,3 +3529,10 @@ Next step: design the clean-slate documentation system (see the session continua
   dispatcher calls deferred as request/response facts; dynamic hubs are facts-dynamic and
   topology-static; process/saga orchestration starts from visible command/event/state/audit/effect
   facts rather than an imperative workflow engine.
+- 2026-06-26 D542: locked Python C-1 bridge child adapter attachment and
+  deterministic diamond harness shape. Python protobuf inbound decoded material
+  and ack-timeout facts attach privately through native declared bridge sources,
+  public Python remains bytes/status/issues/timeouts/release only, release uses
+  child ownership with cascade and rollback, and the future full C-1 diamond
+  harness uses explicit deterministic host transport pump steps over canonical
+  protobuf bytes rather than hidden schedulers or in-process shortcuts.
