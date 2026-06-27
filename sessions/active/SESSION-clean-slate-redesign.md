@@ -21,6 +21,20 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-06-27 D559: locked the B98/C-1 implementation contract details under
+  D558. Wire-admissible bridge DATA is limited to copied canonical bytes,
+  canonical WireEdgeFrame material, or strict JSON-like material; undefined,
+  NaN/infinities, -0, subnormal/unsafe integers, bigint, symbols, functions,
+  accessors, class instances, non-plain prototypes, Date/Map/Set/Error/Promise
+  or thenables, sparse arrays, symbol keys, cycles, Node/Ctx handles, live
+  topology, mutable graph-owned state, raw command sources, host runtime objects,
+  and pending/diamond accounting are rejected as status/issues. Remote-call
+  orphans emit issue/status and are never buffered for future calls; only
+  matching terminal result/error consumes pending, while matching status is
+  non-terminal. TS keeps the focused `wireBridgeAckDriver(graph, bridge,
+  {clock, timeoutMs, name?})` shape with private ack-timeout command projection.
+  The Python C-1 replay probe is decode-only FIFO-pump diagnostics carrying
+  session/seq/attempt/edge/cause/kind fields and must not filter transport.
 - 2026-06-27 D558: locked the B98/C-1 bridge boundary discipline. B98
   closes through adapter/application boundaries, not wave-protocol changes:
   wire bridge payloads must be approved semantic DATA material and fail closed
