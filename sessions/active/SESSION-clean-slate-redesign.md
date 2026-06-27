@@ -21,6 +21,16 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-06-27 D558: locked the B98/C-1 bridge boundary discipline. B98
+  closes through adapter/application boundaries, not wave-protocol changes:
+  wire bridge payloads must be approved semantic DATA material and fail closed
+  as status/issues when invalid; remote-call responses may satisfy only a
+  currently pending request correlation and unknown early responses are never
+  buffered for future requests; ack timeout/retry ingress is driven by explicit
+  graph-visible clock/readiness/timeout facts through adapter-owned drivers; and
+  old-cause DATA replay is blocked at the WireEdgeGroup cause lifecycle gate,
+  not by host pump filtering. C-1 remains todo until the full two-graph
+  mixed-locality diamond proves exactly-one join end to end.
 - 2026-06-26 D555: locked the Canvas host-derived display DTO and typed
   follow-up intent consolidation boundary.
   D543-D554 are superseded by D555 in the canonical decision log; their
