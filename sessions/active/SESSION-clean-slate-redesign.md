@@ -21,6 +21,16 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-06-28 D561: locked outbound WireEdgeGroup fresh-source
+  admission. Fresh-cohort admission is event-origin based: one initial
+  lifecycle bootstrap cohort may be admitted from the first complete edge DATA
+  set, but after a cause has emitted, new causes require dependency DATA
+  occurrences produced by fresh graph events since the previous cause.
+  Activation/current snapshot replay, late-subscriber drain, retained values,
+  and status/diagnostic replay cannot by themselves admit a new cause.
+  Freshness is not payload equality, so a fresh occurrence with the same bytes
+  remains eligible. Inbound WireEdgeGroup stays a structural cause lifecycle
+  gate only, and host pumps remain deterministic FIFO byte transport.
 - 2026-06-27 D560: locked outbound WireEdgeGroup fresh-cohort cause
   formation. A new outbound wire-edge cause is emitted only after every
   expected outbound edge has produced fresh DATA since the previous cause;
