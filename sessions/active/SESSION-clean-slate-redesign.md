@@ -21,6 +21,16 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-06-27 D560: locked outbound WireEdgeGroup fresh-cohort cause
+  formation. A new outbound wire-edge cause is emitted only after every
+  expected outbound edge has produced fresh DATA since the previous cause;
+  retained snapshots are diagnostics/status material only and cannot fill a
+  missing edge. Partial cohorts stay adapter-local as nonterminal status/issues,
+  do not emit protocol terminals, and do not ask the host pump to filter,
+  dedupe, repair, schedule, or sleep. Duplicate same-edge DATA before cohort
+  completion keeps the latest fresh value, completion emits DIRTY for all
+  expected edges followed by DATA for all expected edges, and SENTINEL or
+  invalidation clears pending/retained material without producing a wire cause.
 - 2026-06-27 D559: locked the B98/C-1 implementation contract details under
   D558. Wire-admissible bridge DATA is limited to copied canonical bytes,
   canonical WireEdgeFrame material, or strict JSON-like material; undefined,
