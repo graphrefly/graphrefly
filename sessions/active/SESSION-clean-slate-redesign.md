@@ -21,6 +21,29 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-06-29 C-1 Rust arm accepted after the full mixed-locality bridge
+  diamond proof. `graphrefly-rs`
+  `crates/graphrefly/tests/c1_mixed_locality_harness.rs` proves the equivalent
+  Rust shape with `A,D` in `g1`, `B,C` in `g2`, public `wire_bridge` plus
+  `WireEdgeGroup` adapters, canonical protobuf bytes at the host transport
+  boundary, deterministic FIFO byte pumps, fresh stimulus cause material,
+  diagnostic-only partial inbound progress, one coherent return-leg cohort
+  release, and exactly one `D` join on the stimulus. This flips only
+  `C-1.runtimes.rust` to pass; `C-1.runtimes.ts` remains todo and B98 remains
+  deferred until the TS umbrella arm has equivalent evidence.
+- 2026-06-29 C-1 Python arm accepted after the B98/D562 proof review.
+  D562 was treated as a D496/D558-D561 adapter-local implementation slice,
+  not a new architectural decision: inbound WireEdgeGroup progress, issues,
+  and status remain diagnostic lanes, while inbound edge projectors now observe
+  one private cohort-valued release lane for a completed remote cause. The
+  Python full mixed-locality harness proves the public facade shape with `A,D`
+  in `g1`, `B,C` in `g2`, deterministic FIFO protobuf byte pumps, fresh
+  outbound causes, diagnostic-only partial inbound progress, one coherent
+  return-leg cohort release, and exactly one `D` join on the stimulus. This
+  originally flipped only `C-1.runtimes.py` to pass; the Rust acceptance is
+  tracked in the 2026-06-29 Rust line above, `C-1.runtimes.ts` remains todo
+  pending equivalent full mixed-locality bridge diamond evidence, and B98
+  remains deferred until that remaining arm closes.
 - 2026-06-28 D561: locked outbound WireEdgeGroup fresh-source
   admission. Fresh-cohort admission is event-origin based: one initial
   lifecycle bootstrap cohort may be admitted from the first complete edge DATA
