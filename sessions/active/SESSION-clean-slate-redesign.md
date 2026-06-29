@@ -21,6 +21,28 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-06-29 B98 closeout accepted after explicit audit. C-1 runtime arms are
+  all pass (TS/Rust/Python), D558/D559 bridge boundary discipline and
+  D560/D561/D562 WireEdgeGroup behavior have runtime evidence, and TS
+  tests/lint/build plus dashboard check passed. B98 is resolved only for the
+  accepted admission/enqueue-before-tombstone timing; stronger release-drain
+  before tombstone remains a separate future design/spec question.
+- 2026-06-29 C-1 TS arm accepted after the D560/D561/D562 equivalence
+  and mixed-locality umbrella proof. `graphrefly-ts`
+  `packages/ts/src/__tests__/wire-bridge.protobuf-d497.test.ts` proves the
+  equivalent TS shape with `A,D` in `g1`, `B,C` in `g2`, public `wireBridge`
+  plus `wireBridgeProtobuf` plus `WireEdgeGroup` adapters, canonical protobuf
+  bytes at the host transport boundary, deterministic FIFO byte pumps, fresh
+  stimulus cause material, diagnostic-only partial inbound progress, one
+  coherent return-leg cohort release, and exactly one `D` join on the stimulus.
+  Focused TS tests cover D560/D561/D562 fresh outbound admission and inbound
+  release-lane isolation. This flips `C-1.runtimes.ts` to pass; py/rust remain
+  pass. B98 closed only after the later explicit closeout audit above.
+  D562 TS release-lane timing is interpreted as successful graph message-flow
+  admission/enqueue before tombstone/reset, not a stronger drain-barrier
+  guarantee that downstream projectors have already run under every batch/pause
+  interleaving. A future drain-before-tombstone semantic would need explicit
+  design/spec authority and is not part of the accepted C-1 proof.
 - 2026-06-29 C-1 Rust arm accepted after the full mixed-locality bridge
   diamond proof. `graphrefly-rs`
   `crates/graphrefly/tests/c1_mixed_locality_harness.rs` proves the equivalent
@@ -42,8 +64,8 @@ This began as a pure design artifact, but the active implementation state now li
   return-leg cohort release, and exactly one `D` join on the stimulus. This
   originally flipped only `C-1.runtimes.py` to pass; the Rust acceptance is
   tracked in the 2026-06-29 Rust line above, `C-1.runtimes.ts` remains todo
-  pending equivalent full mixed-locality bridge diamond evidence, and B98
-  remains deferred until that remaining arm closes.
+  in this historical line because equivalent full mixed-locality bridge diamond
+  evidence had not yet landed at that point.
 - 2026-06-28 D561: locked outbound WireEdgeGroup fresh-source
   admission. Fresh-cohort admission is event-origin based: one initial
   lifecycle bootstrap cohort may be admitted from the first complete edge DATA
