@@ -21,6 +21,21 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-06-29 D562: locked B101 inbound WireEdgeGroup
+  adapter-projector drain-before-tombstone/reset. After B98/C-1 closeout,
+  inbound WireEdgeGroup strengthens the timing target from private release
+  cohort admission/enqueue-before-tombstone to adapter-local projector drain:
+  the adapter-owned inbound edge projectors must consume the complete private
+  release cohort before the cause is marked released, its released-cause
+  tombstone is added, or active cause state is reset. This is not arbitrary
+  downstream graph drain; application downstream nodes, external subscribers,
+  pause/resumeAll replay, batch/boundary-task consequences, downstream throws,
+  and cross-graph effects are outside the adapter-local guarantee. Full graph
+  downstream drain remains spec-amend-only (rules + formal + conformance before
+  code). Host pumps remain FIFO byte transport only: no ACK/filter/dedupe/repair
+  timers/schedulers, payload-equality stale dedupe, WireEdgeFrame lineage,
+  protocol tier/message/verb/ctx expansion, raw command/native handles,
+  Node.up/down, or ctx.up/down exposure.
 - 2026-06-29 B98 closeout accepted after explicit audit. C-1 runtime arms are
   all pass (TS/Rust/Python), D558/D559 bridge boundary discipline and
   D560/D561/D562 WireEdgeGroup behavior have runtime evidence, and TS
