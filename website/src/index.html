@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>GraphReFly</title>
+    <meta name="description" content="GraphReFly developer docs for reactive graph concepts, composition patterns, examples, packages, and curated protocol guarantees." />
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="styles/site.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="./"><span class="brand-word">Graph<span>ReFly</span></span><span class="brand-sub">developer docs</span></a>
+      <nav class="nav" aria-label="Primary">
+        <a href="learn/index.html">Learn</a><a href="concepts/index.html">Concepts</a><a href="composition/index.html">Composition</a><a href="examples/index.html">Examples</a><a href="packages/index.html">Packages</a><a href="reference/index.html">Reference</a>
+      </nav>
+    </header>
+    <main>
+      <section class="hero public-hero">
+        <div class="hero-copy">
+          <p class="eyebrow">Reactive reduction layer</p>
+          <h1>GraphReFly</h1>
+          <p>Build inspectable reactive graphs that reduce many changing inputs into smaller, explicit outputs across TypeScript, Python, and Rust.</p>
+          <div class="hero-actions">
+            <a class="button" href="learn/index.html">Start learning</a>
+            <a class="button secondary" href="composition/index.html">Composition guide</a>
+          </div>
+        </div>
+        <div class="graph-board" aria-label="Reactive graph composition illustration">
+          <div class="graph-node source-node">input A</div>
+          <div class="graph-node source-node second">input B</div>
+          <div class="graph-node derive-node">derive</div>
+          <div class="graph-node effect-node">effect</div>
+          <div class="graph-edge edge-a"></div>
+          <div class="graph-edge edge-b"></div>
+          <div class="graph-edge edge-c"></div>
+          <div class="wave-line wave-one"></div>
+          <div class="wave-line wave-two"></div>
+        </div>
+      </section>
+      <section class="route-strip" aria-label="Documentation routes">
+        <div class="route-strip-inner public-routes">
+          <a href="learn/index.html">Learn<small>Getting started and tiny graph mental model</small></a>
+          <a href="concepts/index.html">Concepts<small>Nodes, waves, dispatchers, pools, bridges</small></a>
+          <a href="composition/index.html">Composition<small>JSONL-backed guide records</small></a>
+          <a href="examples/index.html">Examples<small>Recipes that delegate to package code</small></a>
+          <a href="packages/index.html">Packages<small>TS, Python, Rust docs entry points</small></a>
+          <a href="reference/index.html">Reference<small>Curated public guarantees</small></a>
+        </div>
+      </section>
+      <section class="band split-band">
+        <div>
+          <h2>Public docs are for building with GraphReFly.</h2>
+          <p class="band-intro">The shared site teaches concepts, composition, examples, package entry points, and selected guarantees. It does not ask ordinary developers to browse raw decision logs before they can write a graph.</p>
+        </div>
+        <div class="docs-table">
+          <div class="link-row"><span class="label">Learn</span><span class="detail">A small path from inputs to derived values to effects.</span></div>
+          <div class="link-row"><span class="label">Compose</span><span class="detail">Guide records rendered from `guide/composition.jsonl`.</span></div>
+          <div class="link-row"><span class="label">Delegate</span><span class="detail">API docs, demos, examples, and releases stay in language repos.</span></div>
+        </div>
+      </section>
+      <section class="band">
+        <h2>One shared mental model. Language-local APIs.</h2>
+        <p class="band-intro">GraphReFly has one public docs shell and three self-contained implementation packages. The shared site links to package-owned docs instead of copying generated references.</p>
+        <div class="ownership-grid">
+          <article class="lane">
+            <h3>Shared site</h3>
+            <ul>
+              <li><span class="label">Concepts</span><span class="detail">Graph, wave, dispatcher, pool, and bridge vocabulary.</span></li>
+              <li><span class="label">Guides</span><span class="detail">Composition records with public copy and provenance-only refs.</span></li>
+              <li><span class="label">Guarantees</span><span class="detail">Curated active behavior explained for developers.</span></li>
+            </ul>
+          </article>
+          <article class="lane">
+            <h3>Language repos</h3>
+            <ul>
+              <li><span class="label">TypeScript</span><span class="detail">Generated API docs, examples, demos, package scripts.</span></li>
+              <li><span class="label">Python</span><span class="detail">MkDocs, mkdocstrings, install and release docs.</span></li>
+              <li><span class="label">Rust</span><span class="detail">Rustdoc, examples, crate-specific development notes.</span></li>
+            </ul>
+          </article>
+        </div>
+      </section>
+    </main>
+    <footer class="site-footer"><span>GraphReFly developer docs</span><a href="status/dashboard.html">Maintainer dashboard</a></footer>
+    <script src="scripts/site.js"></script>
+  </body>
+</html>

@@ -21,6 +21,19 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-06-30 D563: locked the public website and docs migration
+  architecture. `graphrefly.dev` is the curated external developer docs site,
+  not the full internal authority dashboard. Public pages render user-facing
+  views from selected structured records: learn/getting-started, concepts,
+  composition patterns, examples, package entry points, and curated reference
+  guarantees. The full decisions/rules/backlog/sessions/gaps/conformance
+  control surface remains in the generated dashboard and raw repo records for
+  maintainers. New shared docs content defaults to structured guide-local JSONL
+  records with audience/publicness metadata; legacy `GRAPHREFLY-SPEC.md` and
+  `COMPOSITION-GUIDE*.md` remain migration/reference material until extracted,
+  then archived or removed. Language API docs, examples, demos, generated refs,
+  and release/install docs remain package-local in TS/Python/Rust repos.
+
 - 2026-06-29 D562: locked B101 inbound WireEdgeGroup
   adapter-projector drain-before-tombstone/reset. After B98/C-1 closeout,
   inbound WireEdgeGroup strengthens the timing target from private release

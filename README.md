@@ -1,40 +1,42 @@
 # GraphReFly
 
-> The reactive harness layer for agent workflows. Reactive graph protocol for human + LLM co-operation.
+> The reactive graph protocol authority for clean-slate GraphReFly.
 
-This repo is the **canonical home** for the GraphReFly protocol specification. Language-specific implementations live in their own repos:
+This repo is the **language-neutral authority** for GraphReFly: protocol rules, decisions, conformance scenarios, formal models, guides, and the generated dashboard. Language-specific implementations live in their own repos:
 
 | Repo | Language | Package |
 |------|----------|---------|
-| [graphrefly-ts](https://github.com/graphrefly/graphrefly-ts) | TypeScript | `@graphrefly/graphrefly-ts` |
+| [graphrefly-ts](https://github.com/graphrefly/graphrefly-ts) | TypeScript | `@graphrefly/ts` |
 | [graphrefly-py](https://github.com/graphrefly/graphrefly-py) | Python | `graphrefly` |
+| [graphrefly-rs](https://github.com/graphrefly/graphrefly-rs) | Rust | `graphrefly` crates |
 
-## Specification
+## Authority
 
-- **[`GRAPHREFLY-SPEC.md`](./GRAPHREFLY-SPEC.md)** — Full behavior spec: messages, `node`, `Graph`, invariants, design principles.
+- **[`spec/rules.jsonl`](./spec/rules.jsonl)** — protocol rules.
+- **[`spec/conformance.jsonl`](./spec/conformance.jsonl)** — behavioral parity scenarios.
+- **[`formal/`](./formal/)** — TLA+ models.
+- **[`decisions/decisions.jsonl`](./decisions/decisions.jsonl)** — D-numbered decision log.
+- **[`guide/guide.jsonl`](./guide/guide.jsonl)** — guide index.
+- **[`dashboard/`](./dashboard/)** — generated searchable view over the authority records.
 
-The spec defines **behavior** — what implementations must do. Language-specific ergonomics (syntax, concurrency model, type encoding) are implementation choices.
+Legacy prose docs such as `GRAPHREFLY-SPEC.md` and `COMPOSITION-GUIDE*.md` are retained as migration material. Treat the structured records above as canonical.
 
-### Key design principles (§5)
+## Website
 
-- Control flows through the graph, not around it
-- No polling — reactive propagation only
-- No imperative triggers — all coordination via reactive signals
-- No raw async primitives in the reactive layer
-- Central timer and messageTier utilities
-- Phase 4+ APIs speak developer language, not protocol internals
+The shared website shell lives in [`website/`](./website/). `graphrefly.dev` is the curated external developer docs site: learn, concepts, composition, examples, package entry points, and selected public reference/guarantees.
 
-## For implementers
+The generated dashboard remains the internal authority/control view over decisions, full rules, conformance, backlog, phases, sessions, and gaps.
 
-Implementation repos pull the spec via their `sync-docs` scripts:
+Package API docs, examples, demos, and release material remain owned by the language repos and are linked or delegated under `/ts/`, `/py/`, and `/rust/`.
 
 ```bash
-# In graphrefly-ts/website or graphrefly-py/website:
-pnpm sync-docs          # copies spec + local docs into Astro site
-pnpm sync-docs --check  # CI dry-run — exit 1 if stale
+npm run website:build
+npm run dashboard:check
 ```
 
-When updating the spec, coordinate changes across implementations:
-1. Update `GRAPHREFLY-SPEC.md` here (with a version note per §8).
-2. Open PRs in both `graphrefly-ts` and `graphrefly-py` to implement any behavioral changes.
-3. Run `sync-docs` in each repo to pick up the new spec text.
+## Dashboard
+
+```bash
+node dashboard/build.mjs
+node dashboard/build.mjs --check
+```
