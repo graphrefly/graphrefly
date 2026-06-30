@@ -463,6 +463,18 @@ h1 {
   text-transform: uppercase;
 }
 
+.record-meta details {
+  color: var(--quiet);
+}
+
+.record-meta summary {
+  cursor: pointer;
+}
+
+.record-meta summary:hover {
+  color: var(--ink);
+}
+
 .dashboard-preview {
   position: relative;
   display: block;

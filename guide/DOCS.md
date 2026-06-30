@@ -84,6 +84,20 @@ Public guide records use this shape:
 
 `publicness` is an enum: `public`, `maintainer-link`, `internal`, or `archive-source`. Primary public routes render only `public` records. `refs` are provenance and may be shown as compact source anchors; public pages must not render raw decision, rule, conformance, backlog, session, or dashboard text as their main content. `package_refs` may link to language-local docs or runnable examples but must not copy generated API references, package release material, or demo bodies into this repo.
 
+### Public Reference Records
+
+`guide/reference.jsonl` is the curated public guarantee layer for `/reference`. It is for terse developer-facing commitments such as predictable joins, honest missing input, package-local API ownership, and behavior-level cross-language consistency. It is not a public dashboard, a raw protocol browser, a conformance matrix, or a generated package API mirror.
+
+Reference records use the public guide shape with these stricter constraints:
+
+- `area` is `reference`, `kind` is `guarantee`, and `route` is `/reference`.
+- `audience` includes `developer`; `publicness` is `public`; `status` is `active`.
+- `owner` and `canonical_repo` are `graphrefly`.
+- `render_policy.primary` is `true`, `render_policy.render_refs` is `provenance-only`, and `render_policy.api_docs` is `delegate`.
+- `package_refs` delegate only to `/ts/`, `/py/`, and `/rust/`.
+- `refs` may cite decisions, rules, and conformance scenarios only as provenance anchors. Do not paste raw rule, decision, conformance, backlog, session, dashboard, or legacy markdown text into public fields.
+- Public prose should lead with developer outcomes. Internal protocol terms may appear in provenance or package-local docs, not as public headlines.
+
 ## Migration Rules
 
 - Re-home only clean authority content into the shared site.

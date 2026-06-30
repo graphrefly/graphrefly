@@ -21,6 +21,21 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-06-30 D564: locked the Canvas graph-first Topology Lens and
+  WorkGraph construction correction. Canvas Topology Lens primary topology
+  truth is the live `@graphrefly/ts` inspection surface:
+  `graph.topology()`, `graph.describe()`, boundary inspection, or a
+  host-admitted snapshot derived from those surfaces. Canvas feature logic
+  should prefer named graph bundles and graph-visible projection facts so the
+  lens reveals the real construction graph. The D390 `deriveWorkspaceTopology`
+  path is superseded as the default lens source and may remain only as product
+  semantic overlay, compatibility/fallback material, or annotation over real
+  graph nodes/edges. WorkItem, WorkGraphRef, widget, review, evidence, and host
+  feedback records remain data/ref material under D537-D539/D555, not live
+  runtime handles or mutation authority. Any future durable WorkGraph,
+  topology, scope, or control-panel slice must state whether its topology source
+  is real graph inspection, product overlay, or fallback semantic projection.
+
 - 2026-06-30 D563: locked the public website and docs migration
   architecture. `graphrefly.dev` is the curated external developer docs site,
   not the full internal authority dashboard. Public pages render user-facing

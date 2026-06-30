@@ -13,6 +13,7 @@ const dashboardOut = join(distDir, "status");
 const learnRecordsPath = join(repoRoot, "guide", "learn.jsonl");
 const compositionRecordsPath = join(repoRoot, "guide", "composition.jsonl");
 const examplesRecordsPath = join(repoRoot, "guide", "examples.jsonl");
+const referenceRecordsPath = join(repoRoot, "guide", "reference.jsonl");
 const guideRegistryPath = join(repoRoot, "guide", "guide.jsonl");
 const publicRoutes = new Set([
   "/learn",
@@ -25,6 +26,7 @@ const publicRoutes = new Set([
   "/py",
   "/rust",
 ]);
+const packageRoutes = new Set(["/ts", "/py", "/rust"]);
 
 const banned = [
   "GraphSpec",
@@ -137,7 +139,7 @@ function assertPublicGuideRecords(records, fileLabel) {
       });
       for (const pattern of publicRecordBanned) {
         if (pattern.test(publicText)) {
-          throw new Error(`public composition record ${record.id} contains rejected stale term matching ${pattern}`);
+          throw new Error(`public guide record ${record.id} contains rejected stale term matching ${pattern}`);
         }
       }
       if (typeof record.public_summary !== "string" || record.public_summary.length === 0) {
@@ -180,6 +182,166 @@ function assertPublicGuideRecords(records, fileLabel) {
             throw new Error(`${record.id} topology[${index}] must provide role and label strings`);
           }
         }
+      }
+    }
+  }
+}
+
+const referenceAllowedKeys = new Set([
+  "id",
+  "title",
+  "area",
+  "kind",
+  "audience",
+  "publicness",
+  "status",
+  "owner",
+  "canonical_repo",
+  "route",
+  "public_summary",
+  "public_sections",
+  "learn_more",
+  "refs",
+  "package_refs",
+  "render_policy",
+]);
+
+const referenceRawAuthorityKeys = new Set([
+  "rules",
+  "decisions",
+  "conformance",
+  "raw",
+  "content",
+  "markdown",
+  "body_md",
+  "rules_text",
+  "decisions_text",
+  "conformance_text",
+  "backlog_text",
+  "sessions_text",
+  "dashboard_text",
+]);
+
+const referenceAllowedRefKeys = new Set(["decisions", "rules", "conformance", "sources"]);
+
+const referenceTextBanned = [
+  /"id"\s*:\s*"(R-|D\d+|C-\d+|B\d+|DS-)/,
+  /"(statement|decision|rationale|covers_by|runtimes|blocked|harness|supersedes)"\s*:/,
+  /\bfull protocol rules?\b/i,
+  /\bfull decisions?\b/i,
+  /\bfull conformance\b/i,
+  /\braw conformance\b/i,
+  /\braw decisions?\b/i,
+  /\braw rules?\b/i,
+  /\bdashboard search\b/i,
+  /\bproject-control state\b/i,
+  /\bSENTINEL\b/,
+  /\bDIRTY\b/,
+  /\bDATA\b/,
+  /\bRESOLVED\b/,
+  /\bmessageTier\b/,
+  /\bctx\.up\b/,
+  /\bctx\.down\b/,
+  /\bD\d+\b/,
+  /\bDR-\d+\b/,
+  /\bR-[a-z0-9-]+\b/,
+  /\bC-\d+[a-z]?\b/,
+  /\bGraphSpec\b/i,
+  /\bImpl\b/,
+  /\bfacade\b/i,
+  /\bstructural parity\b/i,
+  /\bsymbol parity\b/i,
+  /\bport model\b/i,
+  /\bport-model\b/i,
+  /\bport ledger\b/i,
+];
+
+function assertStringArray(value, label) {
+  if (!Array.isArray(value) || value.some((item) => typeof item !== "string")) {
+    throw new Error(`${label} must be an array of strings`);
+  }
+}
+
+function assertRefAnchors(values, label, pattern) {
+  assertStringArray(values, label);
+  for (const value of values) {
+    if (!pattern.test(value)) {
+      throw new Error(`${label} must contain compact provenance anchors only, got ${value}`);
+    }
+  }
+}
+
+function collectPublicReferenceText(record) {
+  const sectionText = (record.public_sections ?? []).flatMap((section) => [
+    section.heading,
+    ...(section.body ?? []),
+    ...(section.bullets ?? []),
+  ]);
+  const learnMoreText = (record.learn_more ?? []).flatMap((link) => [link.label, link.href]);
+  const packageRefText = (record.package_refs ?? []).flatMap((pkg) => [pkg.label, pkg.href]);
+  return [record.title, record.public_summary, ...sectionText, ...learnMoreText, ...packageRefText]
+    .filter((value) => value != null)
+    .join("\n");
+}
+
+function assertPublicReferenceRecords(records) {
+  for (const record of records) {
+    for (const key of Object.keys(record)) {
+      if (!referenceAllowedKeys.has(key)) {
+        throw new Error(`reference record ${record.id ?? "(unknown)"} contains unsupported top-level key ${key}`);
+      }
+      if (referenceRawAuthorityKeys.has(key)) {
+        throw new Error(`reference record ${record.id ?? "(unknown)"} contains raw authority key ${key}`);
+      }
+    }
+    if (record.area !== "reference" || record.kind !== "guarantee" || record.route !== "/reference") {
+      throw new Error(`${record.id} must be a reference guarantee routed to /reference`);
+    }
+    if (record.publicness !== "public" || record.status !== "active") {
+      throw new Error(`${record.id} reference records must be public and active`);
+    }
+    if (record.owner !== "graphrefly" || record.canonical_repo !== "graphrefly") {
+      throw new Error(`${record.id} reference records must be owned by graphrefly`);
+    }
+    if (!Array.isArray(record.audience) || !record.audience.includes("developer")) {
+      throw new Error(`${record.id} reference records must include developer audience`);
+    }
+    if (record.render_policy?.primary !== true) {
+      throw new Error(`${record.id} reference records must set render_policy.primary=true`);
+    }
+    const refs = record.refs ?? {};
+    for (const key of Object.keys(refs)) {
+      if (!referenceAllowedRefKeys.has(key)) {
+        throw new Error(`${record.id} refs contains unsupported authority key ${key}`);
+      }
+    }
+    assertRefAnchors(refs.decisions ?? [], `${record.id} refs.decisions`, /^(D\d+|DR-\d+)$/);
+    assertRefAnchors(refs.rules ?? [], `${record.id} refs.rules`, /^R-[a-z0-9-]+$/);
+    assertRefAnchors(refs.conformance ?? [], `${record.id} refs.conformance`, /^C-\d+[a-z]?$/);
+    assertStringArray(refs.sources ?? [], `${record.id} refs.sources`);
+    for (const pkg of record.package_refs ?? []) {
+      const href = typeof pkg.href === "string" ? pkg.href.replace(/\/$/, "") : "";
+      if (!packageRoutes.has(href)) {
+        throw new Error(`${record.id} package refs must delegate only to /ts/, /py/, or /rust/, got ${pkg.href}`);
+      }
+    }
+    if (record.learn_more != null) {
+      if (!Array.isArray(record.learn_more)) {
+        throw new Error(`${record.id} learn_more must be an array`);
+      }
+      for (const [index, link] of record.learn_more.entries()) {
+        if (typeof link.label !== "string" || typeof link.href !== "string") {
+          throw new Error(`${record.id} learn_more[${index}] must provide label and href strings`);
+        }
+        if (!publicRoutes.has(link.href.replace(/\/$/, ""))) {
+          throw new Error(`${record.id} learn_more[${index}] must point to a public route, got ${link.href}`);
+        }
+      }
+    }
+    const publicText = collectPublicReferenceText(record);
+    for (const pattern of referenceTextBanned) {
+      if (pattern.test(publicText)) {
+        throw new Error(`reference record ${record.id} contains raw/internal public text matching ${pattern}`);
       }
     }
   }
@@ -238,6 +400,36 @@ function renderRecordCards(records, fromRoute) {
     .join("");
 }
 
+function renderReferenceCards(records, fromRoute) {
+  return records
+    .filter((record) => record.publicness === "public" && record.status === "active")
+    .map((record) => {
+      const refs = record.refs ?? {};
+      const provenance = [
+        ...(refs.decisions ?? []),
+        ...(refs.rules ?? []),
+        ...(refs.conformance ?? []),
+      ];
+      const packageLinks = (record.package_refs ?? [])
+        .map((pkg) => `<a href="${escapeHtml(routeHref(pkg.href, fromRoute))}">${escapeHtml(pkg.label)}</a>`)
+        .join(" · ");
+      const learnMore = (record.learn_more ?? [])
+        .map((link) => `<a href="${escapeHtml(routeHref(link.href, fromRoute))}">${escapeHtml(link.label)}</a>`)
+        .join(" · ");
+      const sections = record.public_sections
+        .map((section) => {
+          const body = section.body.map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`).join("");
+          return `<section class="composition-section"><h3>${escapeHtml(section.heading)}</h3><div>${body}${renderList(section.bullets)}</div></section>`;
+        })
+        .join("");
+      const learnMoreSection = learnMore
+        ? `<section class="composition-section"><h3>Learn More</h3><div>${learnMore}</div></section>`
+        : "";
+      return `<article class="composition-record reference-record"><h2>${escapeHtml(record.title)}</h2><section class="composition-section"><h3>Public Guarantee</h3><div><p>${escapeHtml(record.public_summary)}</p></div></section>${sections}${learnMoreSection}<div class="record-meta"><details><summary>Provenance anchors</summary><span>${escapeHtml(provenance.join(", ") || "guide record")}</span></details><span>Package docs: ${packageLinks}</span></div></article>`;
+    })
+    .join("");
+}
+
 function pageShell({ title, eyebrow, heading, intro, routeName, cards, footerSource }) {
   return `<!doctype html>
 <html lang="en">
@@ -262,6 +454,20 @@ function renderGuidePage(records, routeName, page) {
     ...page,
     routeName,
     cards: renderRecordCards(records, routeName),
+  }));
+}
+
+function renderReference(records) {
+  const outDir = join(distDir, "reference");
+  mkdirSync(outDir, { recursive: true });
+  writeFileSync(join(outDir, "index.html"), pageShell({
+    title: "GraphReFly Reference",
+    eyebrow: "Reference",
+    heading: "Public guarantees for building with GraphReFly.",
+    intro: "These records summarize what developers can rely on. Maintainer authority details stay in dashboard and repository surfaces, while this page keeps the public guarantees concise.",
+    footerSource: "guide/reference.jsonl",
+    routeName: "reference",
+    cards: renderReferenceCards(records, "reference"),
   }));
 }
 
@@ -298,11 +504,14 @@ assertCleanSource();
 const learnRecords = parseJsonl(learnRecordsPath);
 const compositionRecords = parseJsonl(compositionRecordsPath);
 const examplesRecords = parseJsonl(examplesRecordsPath);
+const referenceRecords = parseJsonl(referenceRecordsPath);
 const guideRegistryRecords = parseJsonl(guideRegistryPath);
 assertGuideRegistry(guideRegistryRecords);
 assertPublicGuideRecords(learnRecords, "guide/learn.jsonl");
 assertPublicGuideRecords(compositionRecords, "guide/composition.jsonl");
 assertPublicGuideRecords(examplesRecords, "guide/examples.jsonl");
+assertPublicGuideRecords(referenceRecords, "guide/reference.jsonl");
+assertPublicReferenceRecords(referenceRecords);
 execFileSync(process.execPath, [join(dashboardDir, "build.mjs")], { cwd: repoRoot, stdio: "inherit" });
 rmSync(distDir, { recursive: true, force: true });
 mkdirSync(distDir, { recursive: true });
@@ -330,6 +539,7 @@ renderGuidePage(examplesRecords, "examples", {
   intro: "These examples describe intent and topology. Runnable examples, generated API docs, demos, install commands, and release material stay package-local.",
   footerSource: "guide/examples.jsonl",
 });
+renderReference(referenceRecords);
 
 mkdirSync(dashboardOut, { recursive: true });
 for (const name of ["dashboard.html", "dashboard.css", "dashboard.js"]) {
