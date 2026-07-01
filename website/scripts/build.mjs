@@ -11,6 +11,8 @@ const distDir = join(root, "dist");
 const dashboardDir = join(repoRoot, "dashboard");
 const publicMetaDir = join(distDir, "_meta");
 const publicContentReportOut = join(publicMetaDir, "public-content-report.json");
+const publicCnamePath = join(publicDir, "CNAME");
+const distCnamePath = join(distDir, "CNAME");
 const learnRecordsPath = join(repoRoot, "guide", "learn.jsonl");
 const conceptsRecordsPath = join(repoRoot, "guide", "concepts.jsonl");
 const compositionRecordsPath = join(repoRoot, "guide", "composition.jsonl");
@@ -91,6 +93,7 @@ const internalSurfaceText = [
   /\bdecisions\.jsonl\b/i,
   /\brules\.jsonl\b/i,
 ];
+const textSourceExtensions = new Set([".html", ".css", ".js", ".json", ".jsonl", ".md", ".svg", ".txt", ".yml", ".yaml"]);
 
 const banned = [
   "GraphSpec",
@@ -176,14 +179,21 @@ function packageRepoPathMatches(pathname, expectedRepo) {
   return pathname === expected || pathname.startsWith(`${expected}/`);
 }
 
+function isTextSourceFile(file) {
+  return textSourceExtensions.has(file.slice(file.lastIndexOf(".")).toLowerCase()) || file.endsWith("CNAME");
+}
+
 function assertCleanSource() {
-  for (const file of walk(srcDir)) {
-    if (!/\.(html|css|js)$/.test(file)) continue;
-    const text = readFileSync(file, "utf8");
-    for (const term of banned) {
-      if (text.includes(term)) {
-        const rel = relative(repoRoot, file);
-        throw new Error(`website source contains rejected stale term "${term}" in ${rel}`);
+  for (const baseDir of [srcDir, publicDir]) {
+    if (!existsSync(baseDir)) continue;
+    for (const file of walk(baseDir)) {
+      if (!isTextSourceFile(file)) continue;
+      const text = readFileSync(file, "utf8");
+      for (const term of banned) {
+        if (text.includes(term)) {
+          const rel = relative(repoRoot, file);
+          throw new Error(`website source contains rejected stale term "${term}" in ${rel}`);
+        }
       }
     }
   }
@@ -700,12 +710,26 @@ function renderedPageSummary(htmlFile) {
     route: normalizeRenderedRoute(htmlFile),
     file: relative(distDir, htmlFile),
     title: textFromHtml(html, /<title>([\s\S]*?)<\/title>/),
-    h1: textFromHtml(html, /<h1>([\s\S]*?)<\/h1>/),
+    h1: textFromHtml(html, /<h1\b[^>]*>([\s\S]*?)<\/h1>/),
     source_label: footerSourceLabel(html),
     dashboard_link: dashboardLinks.length === 0 ? "none" : "public-link",
     package_route_links: [...new Set(packageRouteLinks)].sort(),
     outbound_package_links: [...new Set(outboundPackageLinks)].sort(),
   };
+}
+
+function assertCnameArtifact() {
+  if (!existsSync(publicCnamePath)) {
+    throw new Error("website/public/CNAME is missing");
+  }
+  if (!existsSync(distCnamePath)) {
+    throw new Error("website dist is missing CNAME");
+  }
+  const sourceValue = readFileSync(publicCnamePath, "utf8").trim();
+  const distValue = readFileSync(distCnamePath, "utf8").trim();
+  if (sourceValue !== "graphrefly.dev" || distValue !== "graphrefly.dev") {
+    throw new Error("CNAME must contain exactly graphrefly.dev after trimming whitespace");
+  }
 }
 
 function refsForRecord(record) {
@@ -1154,6 +1178,7 @@ mkdirSync(distDir, { recursive: true });
 copyIfPresent(srcDir, distDir);
 copyIfPresent(publicDir, distDir);
 copyPublicRoutes();
+assertCnameArtifact();
 
 renderGuidePage(learnRecords, "learn", {
   title: "Learn GraphReFly",

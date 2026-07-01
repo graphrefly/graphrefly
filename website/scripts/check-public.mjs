@@ -8,6 +8,7 @@ const repoRoot = dirname(root);
 const distDir = join(root, "dist");
 const statusDir = join(distDir, "status");
 const reportPath = join(distDir, "_meta", "public-content-report.json");
+const cnamePath = join(distDir, "CNAME");
 
 const expectedRoutes = new Set([
   "/",
@@ -74,6 +75,12 @@ function assertNoStatusArtifacts() {
   if (existsSync(statusDir)) fail("public website dist must not expose internal status/dashboard artifacts");
 }
 
+function assertCnameArtifact() {
+  if (!existsSync(cnamePath)) fail("public website dist must include CNAME");
+  const value = readFileSync(cnamePath, "utf8").trim();
+  if (value !== "graphrefly.dev") fail("public website dist CNAME must be graphrefly.dev");
+}
+
 function assertRenderedHtmlLinks() {
   for (const file of walk(distDir).filter((item) => item.endsWith(".html"))) {
     const rel = relative(distDir, file);
@@ -106,6 +113,12 @@ function assertReport() {
     if (!expectedRoutes.has(route)) fail(`public content report contains unexpected route ${route}`);
   }
   for (const page of report.pages ?? []) {
+    if (typeof page.title !== "string" || page.title.trim().length === 0) {
+      fail(`${page.route} is missing a rendered title in the public content report`);
+    }
+    if (typeof page.h1 !== "string" || page.h1.trim().length === 0) {
+      fail(`${page.route} is missing a rendered h1 in the public content report`);
+    }
     if (page.dashboard_link !== "none") fail(`${page.route} links to the internal dashboard`);
     if (page.source_kind === "jsonl" && (!page.source_jsonl || !page.record_ids?.length)) {
       fail(`${page.route} must include source_jsonl and record_ids`);
@@ -130,6 +143,7 @@ function assertReport() {
 run("build website", ["website/scripts/build.mjs"]);
 run("check internal dashboard", ["dashboard/build.mjs", "--check"]);
 assertNoStatusArtifacts();
+assertCnameArtifact();
 assertRenderedHtmlLinks();
 assertReport();
 console.log("[public-docs gate] ok");
