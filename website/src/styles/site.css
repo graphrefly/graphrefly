@@ -475,6 +475,20 @@ h1 {
   color: var(--ink);
 }
 
+.entry-link-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.entry-link-list a {
+  border-bottom: 1px solid var(--green-ink);
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
 .dashboard-preview {
   position: relative;
   display: block;

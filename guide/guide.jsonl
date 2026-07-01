@@ -1,6 +1,8 @@
 {"id":"G-learn","title":"Learn/getting-started records (language-neutral spine with package-local runnable links)","path":"guide/learn.jsonl","lang":"all","area":"learn","status":"active","record_shape":"jsonl"}
+{"id":"G-concepts","title":"Core concept records (graph domain, wave, and boundary model)","path":"guide/concepts.jsonl","lang":"all","area":"concepts","status":"active","record_shape":"jsonl"}
 {"id":"G-composition","title":"Composition pattern records (lazy activation, subscription order, null guards, feedback cycles)","path":"guide/composition.jsonl","lang":"all","area":"composition","status":"active","migrate_from":"COMPOSITION-GUIDE*.md","record_shape":"jsonl"}
 {"id":"G-examples","title":"Example and recipe records (intent, topology, package-local runnable links)","path":"guide/examples.jsonl","lang":"all","area":"examples","status":"active","record_shape":"jsonl"}
+{"id":"G-packages","title":"Language package entry records (delegated package-local docs and ownership links)","path":"guide/packages.jsonl","lang":"all","area":"packages","status":"active","record_shape":"jsonl"}
 {"id":"G-reference","title":"Curated public reference guarantees (developer-facing, provenance-only authority anchors)","path":"guide/reference.jsonl","lang":"all","area":"reference","status":"active","record_shape":"jsonl"}
 {"id":"G-docs","title":"Docs guidance (jsonl data layer + dashboard conventions; website/docs ownership)","path":"guide/DOCS.md","lang":"all","area":"meta","status":"active"}
 {"id":"G-test","title":"Test guidance records (unit/property/conformance scenario layering)","path":"guide/testing.jsonl","lang":"all","area":"test","status":"stub","record_shape":"jsonl"}

@@ -12,9 +12,12 @@ This is the shared public shell for GraphReFly developer docs.
 
 ```bash
 npm run website:build
+npm run docs:public:check
 ```
 
 The build is dependency-free. It copies `website/src`, `website/public`, and the generated dashboard artifacts into `website/dist`.
+
+`npm run docs:public:check` runs the website build, dashboard consistency gate, rendered public-link scan, and public content report validation.
 
 Run the internal dashboard gate after changing jsonl or guide records:
 

@@ -32,6 +32,7 @@ Package API docs, examples, demos, and release material remain owned by the lang
 ```bash
 npm run website:build
 npm run dashboard:check
+npm run docs:public:check
 ```
 
 ## Dashboard

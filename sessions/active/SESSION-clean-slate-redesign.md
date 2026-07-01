@@ -21,6 +21,23 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-06-30 D565: locked Canvas graph-built implementation and
+  `dev-dispatch` topology delta reporting. Canvas implementation should
+  default to named `@graphrefly/ts` graph bundles for nontrivial Workbench or
+  product behavior whose state, dependency, execution-visibility, or review
+  shape is graph-like. Durable graph-built slices should expose stable graph
+  names, topology group names, node names, and `graph.topology()` /
+  `graph.describe()` snapshots or fixtures so implementation progress can be
+  reviewed as real added, removed, or changed nodes and edges. `dev-dispatch`
+  rounds touching graph-built surfaces must report a real topology delta when a
+  before/after inspection source is available, and must separately label
+  product overlay deltas. Docs-only, pure DTO/schema/type, static copy,
+  CSS/layout, React-only, or fallback semantic projection work must say that no
+  real graph delta is available and why. This does not force every UI or data
+  record into a graph node, and it does not allow Canvas-owned API, provider,
+  storage, credential, runtime, WorkItem mutation, or graph-truth mutation
+  authority to move into `@graphrefly/ts` or Canvas UI.
+
 - 2026-06-30 D564: locked the Canvas graph-first Topology Lens and
   WorkGraph construction correction. Canvas Topology Lens primary topology
   truth is the live `@graphrefly/ts` inspection surface:

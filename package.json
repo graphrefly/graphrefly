@@ -5,6 +5,7 @@
   "scripts": {
     "dashboard": "node dashboard/build.mjs",
     "dashboard:check": "node dashboard/build.mjs --check",
-    "website:build": "node website/scripts/build.mjs"
+    "website:build": "node website/scripts/build.mjs",
+    "docs:public:check": "node website/scripts/check-public.mjs"
   }
 }

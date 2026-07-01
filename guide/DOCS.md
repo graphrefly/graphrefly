@@ -39,11 +39,17 @@ Language package docs remain package-local:
 
 Do not copy generated TypeScript, Python, or Rust API docs into this repo. Do not hand-maintain mirrors of language package APIs in the shared site. Link or delegate instead.
 
+### Public Build Report
+
+The website build writes `website/dist/status/public-content-report.json` as a deploy-inspection artifact. It summarizes rendered public pages, their source JSONL when applicable, package-owned outbound links, provenance anchors, and footer-only dashboard status. It is generated metadata, not a new authority source or primary public route.
+
+Run `npm run docs:public:check` before publishing public docs changes. It builds the website, runs the dashboard consistency gate, scans rendered public links, and validates the public build report.
+
 ## JSONL Docs
 
 New shared docs content should default to JSONL records with stable ids, audience/publicness metadata, summaries, body fields, source refs, and links to governing rules, decisions, conformance scenarios, or examples when applicable.
 
-Use `guide/guide.jsonl` as the registry. Use guide-local record sets such as `guide/learn.jsonl`, `guide/composition.jsonl`, `guide/examples.jsonl`, `guide/testing.jsonl`, and `guide/contribute.jsonl` for the content the website renders. Long-form markdown is migration/reference material unless a future decision explicitly makes it canonical for a concern.
+Use `guide/guide.jsonl` as the registry. Use guide-local record sets such as `guide/learn.jsonl`, `guide/concepts.jsonl`, `guide/composition.jsonl`, `guide/examples.jsonl`, `guide/testing.jsonl`, and `guide/contribute.jsonl` for the content the website renders. Long-form markdown is migration/reference material unless a future decision explicitly makes it canonical for a concern.
 
 ### Public Guide Record Shape
 
@@ -97,6 +103,19 @@ Reference records use the public guide shape with these stricter constraints:
 - `package_refs` delegate only to `/ts/`, `/py/`, and `/rust/`.
 - `refs` may cite decisions, rules, and conformance scenarios only as provenance anchors. Do not paste raw rule, decision, conformance, backlog, session, dashboard, or legacy markdown text into public fields.
 - Public prose should lead with developer outcomes. Internal protocol terms may appear in provenance or package-local docs, not as public headlines.
+
+### Public Package Entry Records
+
+`guide/packages.jsonl` is the shared site package directory for `/packages`, `/ts`, `/py`, and `/rust`. It records where package-owned docs live and what each package owns. It is not a generated API reference, package demo mirror, release-note mirror, or install/reference body.
+
+Package entry records use this stricter shape:
+
+- `area` is `packages`, `kind` is `package-entry`, and `package` is `ts`, `py`, or `rust`.
+- `route` is the matching public package route: `/ts`, `/py`, or `/rust`.
+- `canonical_repo` is the language package repo (`graphrefly-ts`, `graphrefly-py`, or `graphrefly-rs`).
+- `entry_links` point to package-owned docs/repo surfaces. They may be shown as outbound links, not copied into the shared site.
+- `render_policy.api_docs` and `render_policy.package_docs` are both `delegate`.
+- Public prose should describe ownership and next-step links only. Do not include code snippets, generated API bodies, symbol tables, demos, release notes, or package-local examples.
 
 ## Migration Rules
 
