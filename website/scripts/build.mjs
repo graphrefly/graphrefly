@@ -9,8 +9,8 @@ const srcDir = join(root, "src");
 const publicDir = join(root, "public");
 const distDir = join(root, "dist");
 const dashboardDir = join(repoRoot, "dashboard");
-const dashboardOut = join(distDir, "status");
-const publicContentReportOut = join(dashboardOut, "public-content-report.json");
+const publicMetaDir = join(distDir, "_meta");
+const publicContentReportOut = join(publicMetaDir, "public-content-report.json");
 const learnRecordsPath = join(repoRoot, "guide", "learn.jsonl");
 const conceptsRecordsPath = join(repoRoot, "guide", "concepts.jsonl");
 const compositionRecordsPath = join(repoRoot, "guide", "composition.jsonl");
@@ -30,6 +30,17 @@ const publicRoutes = new Set([
   "/rust",
 ]);
 const packageRoutes = new Set(["/ts", "/py", "/rust"]);
+const expectedSourceJsonlByRoute = new Map([
+  ["/learn/", "guide/learn.jsonl"],
+  ["/concepts/", "guide/concepts.jsonl"],
+  ["/composition/", "guide/composition.jsonl"],
+  ["/examples/", "guide/examples.jsonl"],
+  ["/packages/", "guide/packages.jsonl"],
+  ["/reference/", "guide/reference.jsonl"],
+  ["/ts/", "guide/packages.jsonl"],
+  ["/py/", "guide/packages.jsonl"],
+  ["/rust/", "guide/packages.jsonl"],
+]);
 const packageRouteById = new Map([
   ["ts", "/ts"],
   ["py", "/py"],
@@ -52,9 +63,9 @@ const publicTopLevelEntries = new Set([
   "reference",
   "rust",
   "scripts",
-  "status",
   "styles",
   "ts",
+  "_meta",
 ]);
 const primaryNav = [
   ["Learn", "/learn"],
@@ -64,7 +75,7 @@ const primaryNav = [
   ["Packages", "/packages"],
   ["Reference", "/reference"],
 ];
-const internalRouteNames = new Set(["decisions", "guide", "maintainers", "spec"]);
+const internalRouteNames = new Set(["decisions", "guide", "maintainers", "spec", "status"]);
 
 const banned = [
   "GraphSpec",
@@ -176,7 +187,7 @@ function assertPackageRefs(record) {
   }
 }
 
-function assertPublicGuideRecords(records, fileLabel) {
+function assertPublicGuideRecords(records, fileLabel, expected = {}) {
   const allowedPublicness = new Set(["public", "maintainer-link", "internal", "archive-source"]);
   const ids = new Set();
   for (const record of records) {
@@ -191,6 +202,12 @@ function assertPublicGuideRecords(records, fileLabel) {
       throw new Error(`${record.id} must declare owner and canonical_repo`);
     }
     if (record.publicness === "public") {
+      if (expected.area && record.area !== expected.area) {
+        throw new Error(`${record.id} must have area ${expected.area}, got ${record.area}`);
+      }
+      if (expected.route && record.route !== expected.route) {
+        throw new Error(`${record.id} must route to ${expected.route}, got ${record.route}`);
+      }
       if (!Array.isArray(record.public_sections) || record.public_sections.length === 0) {
         throw new Error(`${record.id} must provide public_sections`);
       }
@@ -228,6 +245,7 @@ function assertPublicGuideRecords(records, fileLabel) {
       if (!publicRoutes.has(record.route)) {
         throw new Error(`${record.id} route must be one of the public routes, got ${record.route}`);
       }
+      assertRecordRefs(record);
       assertPackageRefs(record);
       if (record.area === "examples") {
         if (typeof record.intent !== "string" || record.intent.length === 0) {
@@ -262,6 +280,7 @@ const packageAllowedKeys = new Set([
   "public_summary",
   "public_sections",
   "entry_links",
+  "refs",
   "render_policy",
 ]);
 
@@ -370,6 +389,11 @@ function assertPackageEntryRecords(records) {
     if (record.render_policy?.primary !== true || record.render_policy?.api_docs !== "delegate" || record.render_policy?.package_docs !== "delegate") {
       throw new Error(`${record.id} must delegate package docs and API docs`);
     }
+    assertRecordRefs(record);
+    const refs = record.refs ?? {};
+    if (!refs.decisions?.includes("D32") || !refs.decisions?.includes("D563")) {
+      throw new Error(`${record.id} package records must cite D32 and D563`);
+    }
     const publicText = collectPackageText(record);
     for (const pattern of packageTextBanned) {
       if (pattern.test(publicText)) {
@@ -468,6 +492,21 @@ function assertRefAnchors(values, label, pattern) {
   }
 }
 
+function assertRecordRefs(record) {
+  if (record.refs == null || typeof record.refs !== "object" || Array.isArray(record.refs)) {
+    throw new Error(`${record.id} must provide refs provenance anchors`);
+  }
+  for (const key of Object.keys(record.refs)) {
+    if (!referenceAllowedRefKeys.has(key)) {
+      throw new Error(`${record.id} refs contains unsupported authority key ${key}`);
+    }
+  }
+  assertRefAnchors(record.refs.decisions ?? [], `${record.id} refs.decisions`, /^(D\d+|DR-\d+)$/);
+  assertRefAnchors(record.refs.rules ?? [], `${record.id} refs.rules`, /^R-[a-z0-9-]+$/);
+  assertRefAnchors(record.refs.conformance ?? [], `${record.id} refs.conformance`, /^C-\d+[a-z]?$/);
+  assertStringArray(record.refs.sources ?? [], `${record.id} refs.sources`);
+}
+
 function collectPublicReferenceText(record) {
   const sectionText = (record.public_sections ?? []).flatMap((section) => [
     section.heading,
@@ -506,16 +545,7 @@ function assertPublicReferenceRecords(records) {
     if (record.render_policy?.primary !== true) {
       throw new Error(`${record.id} reference records must set render_policy.primary=true`);
     }
-    const refs = record.refs ?? {};
-    for (const key of Object.keys(refs)) {
-      if (!referenceAllowedRefKeys.has(key)) {
-        throw new Error(`${record.id} refs contains unsupported authority key ${key}`);
-      }
-    }
-    assertRefAnchors(refs.decisions ?? [], `${record.id} refs.decisions`, /^(D\d+|DR-\d+)$/);
-    assertRefAnchors(refs.rules ?? [], `${record.id} refs.rules`, /^R-[a-z0-9-]+$/);
-    assertRefAnchors(refs.conformance ?? [], `${record.id} refs.conformance`, /^C-\d+[a-z]?$/);
-    assertStringArray(refs.sources ?? [], `${record.id} refs.sources`);
+    assertRecordRefs(record);
     assertPackageRefs(record);
     if (record.learn_more != null) {
       if (!Array.isArray(record.learn_more)) {
@@ -556,8 +586,8 @@ function assertGuideRegistry(records) {
 
 function attrsFrom(fragment) {
   const attrs = [];
-  for (const match of fragment.matchAll(/\s(href|src)="([^"]+)"/g)) {
-    attrs.push({ name: match[1], value: match[2] });
+  for (const match of fragment.matchAll(/\s(href|src)=(["'])(.*?)\2/g)) {
+    attrs.push({ name: match[1], value: match[3] });
   }
   return attrs;
 }
@@ -594,9 +624,6 @@ function assertNoInternalRouteLinks(htmlFile, html) {
     if (internalRouteNames.has(topLevel)) {
       throw new Error(`${relative(repoRoot, htmlFile)} links to internal route ${attr.value}`);
     }
-    if (topLevel === "status" && rel !== "status/dashboard.html") {
-      throw new Error(`${relative(repoRoot, htmlFile)} may link only to status/dashboard.html, got ${attr.value}`);
-    }
   }
 }
 
@@ -624,7 +651,7 @@ function assertPrimaryNav(htmlFile, html) {
   if (!navMatch) {
     throw new Error(`${relative(repoRoot, htmlFile)} is missing primary nav`);
   }
-  const links = [...navMatch[1].matchAll(/<a href="([^"]+)">([^<]+)<\/a>/g)].map((match) => {
+  const links = [...navMatch[1].matchAll(/<a\b[^>]*\shref="([^"]+)"[^>]*>([^<]+)<\/a>/g)].map((match) => {
     const target = resolveLocalRef(htmlFile, match[1]);
     const rel = target ? relative(distDir, target).replace(/\/index\.html$/, "") : match[1];
     return [match[2], `/${rel}`];
@@ -652,7 +679,7 @@ function renderedPageSummary(htmlFile) {
     title: textFromHtml(html, /<title>([\s\S]*?)<\/title>/),
     h1: textFromHtml(html, /<h1>([\s\S]*?)<\/h1>/),
     source_label: textFromHtml(html, /<footer[\s\S]*?<span>([\s\S]*?)<\/span>/),
-    dashboard_link: dashboardLinks.length === 1 ? "footer-only" : "none",
+    dashboard_link: dashboardLinks.length === 0 ? "none" : "public-link",
     package_route_links: [...new Set(packageRouteLinks)].sort(),
     outbound_package_links: [...new Set(outboundPackageLinks)].sort(),
   };
@@ -697,6 +724,7 @@ function packageEntrySummary(record) {
     route: record.route,
     source_jsonl: "guide/packages.jsonl",
     canonical_repo: record.canonical_repo,
+    provenance: refsForRecord(record),
     entry_links: record.entry_links,
     render_policy: record.render_policy,
   };
@@ -719,14 +747,22 @@ function assertPublicContentReport(report) {
     }
   }
   for (const page of report.pages) {
-    if (page.dashboard_link !== "footer-only") {
-      throw new Error(`public content report page ${page.route} lost footer-only dashboard status`);
+    if (page.dashboard_link !== "none") {
+      throw new Error(`public content report page ${page.route} links to the internal dashboard`);
     }
     if (page.source_kind === "jsonl" && (!page.source_jsonl || page.record_ids.length === 0)) {
       throw new Error(`public content report page ${page.route} must include source_jsonl and records`);
     }
     if (page.source_jsonl && !page.source_label.includes(page.source_jsonl)) {
       throw new Error(`public content report page ${page.route} source label must mention ${page.source_jsonl}`);
+    }
+    const expectedSource = expectedSourceJsonlByRoute.get(page.route);
+    if (expectedSource) {
+      if (page.source_kind !== "jsonl" || page.source_jsonl !== expectedSource || page.record_ids.length === 0) {
+        throw new Error(`public content report page ${page.route} must source ${expectedSource}`);
+      }
+    } else if (page.route !== "/" && page.source_kind !== "jsonl") {
+      throw new Error(`public content report page ${page.route} must be sourced from guide JSONL`);
     }
   }
   const packagePages = report.pages.filter((page) => ["/packages/", "/ts/", "/py/", "/rust/"].includes(page.route));
@@ -795,7 +831,7 @@ function writePublicContentReport({ learnRecords, conceptsRecords, compositionRe
       public_routes: [...publicRoutes].sort(),
       package_routes: [...packageRoutes].sort(),
       internal_routes_blocked: [...internalRouteNames].sort(),
-      dashboard_link_policy: "footer-only status/dashboard.html",
+      dashboard_link_policy: "isolated: no public dashboard links",
       package_api_policy: "delegate",
     },
     pages,
@@ -815,16 +851,9 @@ function writePublicContentReport({ learnRecords, conceptsRecords, compositionRe
   writeFileSync(publicContentReportOut, `${JSON.stringify(report, null, 2)}\n`);
 }
 
-function assertDashboardFooterOnly(htmlFile, html) {
-  const header = html.match(/<header[\s\S]*?<\/header>/)?.[0] ?? "";
-  const main = html.match(/<main[\s\S]*?<\/main>/)?.[0] ?? "";
-  if (/status\/dashboard\.html/.test(`${header}\n${main}`)) {
-    throw new Error(`${relative(repoRoot, htmlFile)} exposes dashboard outside the footer`);
-  }
-  const footer = html.match(/<footer[\s\S]*?<\/footer>/)?.[0] ?? "";
-  const dashboardLinks = [...html.matchAll(/status\/dashboard\.html/g)].length;
-  if (dashboardLinks > 1 || (dashboardLinks === 1 && !/status\/dashboard\.html/.test(footer))) {
-    throw new Error(`${relative(repoRoot, htmlFile)} must keep the dashboard link footer-only`);
+function assertNoPublicDashboardLinks(htmlFile, html) {
+  if (/status\/dashboard\.html/.test(html)) {
+    throw new Error(`${relative(repoRoot, htmlFile)} links to the internal dashboard`);
   }
 }
 
@@ -835,13 +864,6 @@ function assertRenderedPublicSurface() {
     }
   }
 
-  const statusFiles = new Set(readdirSync(dashboardOut));
-  for (const name of statusFiles) {
-    if (!["dashboard.html", "dashboard.css", "dashboard.js", "public-content-report.json"].includes(name)) {
-      throw new Error(`status route exposes unexpected dashboard artifact ${name}`);
-    }
-  }
-
   for (const file of walk(distDir).filter((item) => item.endsWith(".html"))) {
     const rel = relative(distDir, file);
     if (rel.startsWith("status/")) continue;
@@ -849,13 +871,36 @@ function assertRenderedPublicSurface() {
     assertLocalRefsExist(file, html);
     assertNoInternalRouteLinks(file, html);
     assertPrimaryNav(file, html);
-    assertDashboardFooterOnly(file, html);
+    assertNoPublicDashboardLinks(file, html);
   }
 }
 
 function renderList(items = []) {
   if (!items.length) return "";
   return `<ul>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`;
+}
+
+function renderPrimaryNav(routeName) {
+  const activeRoute = packageRoutes.has(`/${routeName}`) ? "/packages" : `/${routeName}`;
+  return primaryNav
+    .map(([label, route]) => {
+      const href = `../${route.replace(/^\/+/, "")}/index.html`;
+      const current = route === activeRoute ? ' aria-current="page"' : "";
+      return `<a href="${escapeHtml(href)}"${current}>${escapeHtml(label)}</a>`;
+    })
+    .join("");
+}
+
+function renderHeader(routeName) {
+  return `<header class="site-header"><a class="brand" href="../index.html"><span class="brand-word">Graph<span>ReFly</span></span><span class="brand-sub">developer docs</span></a><nav class="nav" aria-label="Primary">${renderPrimaryNav(routeName)}</nav></header>`;
+}
+
+function renderFooter(footerSource) {
+  return `<footer class="site-footer"><span>Source: ${escapeHtml(footerSource)}</span><span>Public developer docs</span></footer>`;
+}
+
+function renderProvenanceDetails(provenance) {
+  return `<details><summary>Provenance anchors</summary><span>${escapeHtml(provenance.join(", ") || "guide record")}</span></details>`;
 }
 
 function renderRecordCards(records, fromRoute) {
@@ -886,7 +931,7 @@ function renderRecordCards(records, fromRoute) {
           return `<section class="composition-section"><h3>${escapeHtml(section.heading)}</h3><div>${body}${renderList(section.bullets)}</div></section>`;
         })
         .join("");
-      return `<article class="composition-record"><h2>${escapeHtml(record.title)}</h2><section class="composition-section"><h3>Summary</h3><div><p>${escapeHtml(record.public_summary)}</p></div></section>${intent}${topology}${learns}${sections}<div class="record-meta"><span>Provenance: ${escapeHtml(provenance.join(", ") || "guide record")}</span><span>Package docs: ${packageLinks}</span></div></article>`;
+      return `<article class="composition-record"><h2>${escapeHtml(record.title)}</h2><section class="composition-section"><h3>Summary</h3><div><p>${escapeHtml(record.public_summary)}</p></div></section>${intent}${topology}${learns}${sections}<div class="record-meta">${renderProvenanceDetails(provenance)}<span>Package docs: ${packageLinks}</span></div></article>`;
     })
     .join("");
 }
@@ -916,7 +961,7 @@ function renderReferenceCards(records, fromRoute) {
       const learnMoreSection = learnMore
         ? `<section class="composition-section"><h3>Learn More</h3><div>${learnMore}</div></section>`
         : "";
-      return `<article class="composition-record reference-record"><h2>${escapeHtml(record.title)}</h2><section class="composition-section"><h3>Public Guarantee</h3><div><p>${escapeHtml(record.public_summary)}</p></div></section>${sections}${learnMoreSection}<div class="record-meta"><details><summary>Provenance anchors</summary><span>${escapeHtml(provenance.join(", ") || "guide record")}</span></details><span>Package docs: ${packageLinks}</span></div></article>`;
+      return `<article class="composition-record reference-record"><h2>${escapeHtml(record.title)}</h2><section class="composition-section"><h3>Public Guarantee</h3><div><p>${escapeHtml(record.public_summary)}</p></div></section>${sections}${learnMoreSection}<div class="record-meta">${renderProvenanceDetails(provenance)}<span>Package docs: ${packageLinks}</span></div></article>`;
     })
     .join("");
 }
@@ -932,7 +977,7 @@ function renderPackageCards(records) {
     .map((record) => {
       const route = routeHref(`${record.route}/`, "packages");
       const links = renderEntryLinks(record.entry_links);
-      return `<article class="composition-record package-record"><h2>${escapeHtml(record.title)}</h2><section class="composition-section"><h3>Package</h3><div><p>${escapeHtml(record.package_name)}</p></div></section><section class="composition-section"><h3>Ownership</h3><div><p>${escapeHtml(record.public_summary)}</p></div></section><section class="composition-section"><h3>Open</h3><div><a href="${escapeHtml(route)}">Package route</a></div></section><section class="composition-section"><h3>Package Links</h3><div>${links}</div></section></article>`;
+      return `<article class="composition-record package-record"><h2>${escapeHtml(record.title)}</h2><section class="composition-section"><h3>Package</h3><div><p>${escapeHtml(record.package_name)}</p></div></section><section class="composition-section"><h3>Go There</h3><div>${links}</div></section><section class="composition-section"><h3>Delegation Page</h3><div><a href="${escapeHtml(route)}">Open ${escapeHtml(record.title)} route</a></div></section><section class="composition-section"><h3>Boundary</h3><div><p>${escapeHtml(record.public_summary)}</p></div></section></article>`;
     })
     .join("");
 }
@@ -945,7 +990,7 @@ function renderPackageDetail(record) {
     })
     .join("");
   const links = renderEntryLinks(record.entry_links);
-  return `<article class="composition-record package-record"><h2>${escapeHtml(record.package_name)}</h2><section class="composition-section"><h3>Delegated Docs</h3><div><p>${escapeHtml(record.public_summary)}</p></div></section>${sections}<section class="composition-section"><h3>Package-Owned Links</h3><div>${links}</div></section></article>`;
+  return `<article class="composition-record package-record"><h2>${escapeHtml(record.package_name)}</h2><section class="composition-section"><h3>Package-Owned Links</h3><div>${links}</div></section><section class="composition-section"><h3>Delegated Docs</h3><div><p>${escapeHtml(record.public_summary)}</p></div></section>${sections}</article>`;
 }
 
 function pageShell({ title, eyebrow, heading, intro, routeName, cards, footerSource }) {
@@ -953,14 +998,14 @@ function pageShell({ title, eyebrow, heading, intro, routeName, cards, footerSou
 <html lang="en">
   <head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>${escapeHtml(title)}</title><link rel="icon" href="../assets/favicon.svg" type="image/svg+xml" /><link rel="stylesheet" href="../styles/site.css" /></head>
   <body>
-    <header class="site-header"><a class="brand" href="../index.html"><span class="brand-word">Graph<span>ReFly</span></span><span class="brand-sub">developer docs</span></a><nav class="nav" aria-label="Primary"><a href="../learn/index.html">Learn</a><a href="../concepts/index.html">Concepts</a><a href="../composition/index.html">Composition</a><a href="../examples/index.html">Examples</a><a href="../packages/index.html">Packages</a><a href="../reference/index.html">Reference</a></nav></header>
+    ${renderHeader(routeName)}
     <main class="route-page composition-page">
       <p class="eyebrow">${escapeHtml(eyebrow)}</p>
       <h1>${escapeHtml(heading)}</h1>
       <p>${escapeHtml(intro)}</p>
       <section class="composition-list">${cards}</section>
     </main>
-    <footer class="site-footer"><span>Source: ${escapeHtml(footerSource)}</span><a href="../status/dashboard.html">Maintainer dashboard</a></footer><script src="../scripts/site.js"></script>
+    ${renderFooter(footerSource)}<script src="../scripts/site.js"></script>
   </body>
 </html>`;
 }
@@ -981,8 +1026,8 @@ function renderReference(records) {
   writeFileSync(join(outDir, "index.html"), pageShell({
     title: "GraphReFly Reference",
     eyebrow: "Reference",
-    heading: "Public guarantees for building with GraphReFly.",
-    intro: "These records summarize what developers can rely on. Maintainer authority details stay in dashboard and repository surfaces, while this page keeps the public guarantees concise.",
+    heading: "What developers can rely on.",
+    intro: "These records summarize the stable behavior promises behind GraphReFly. Use them as a public map, then follow package docs for exact syntax.",
     footerSource: "guide/reference.jsonl",
     routeName: "reference",
     cards: renderReferenceCards(records, "reference"),
@@ -995,8 +1040,8 @@ function renderPackages(records) {
   writeFileSync(join(outDir, "index.html"), pageShell({
     title: "GraphReFly Packages",
     eyebrow: "Packages",
-    heading: "Language docs are delegated, not mirrored.",
-    intro: "Each implementation owns generated API reference, examples, demos, package release notes, and install flow. This shared site records the entry points and keeps cross-language concepts here.",
+    heading: "Choose the package for your runtime.",
+    intro: "TypeScript, Python, and Rust each own their exact docs. This shared page keeps the entry points together without copying package APIs.",
     footerSource: "guide/packages.jsonl",
     routeName: "packages",
     cards: renderPackageCards(records),
@@ -1010,7 +1055,7 @@ function renderPackages(records) {
       title: `GraphReFly ${record.title} Docs`,
       eyebrow: "Package",
       heading: record.title,
-      intro: `${record.package_name} docs stay package-local. This route is a delegation page with package-owned links, not a generated API mirror.`,
+      intro: `${record.package_name} docs stay package-local. Use these package-owned links for exact APIs, examples, and setup material.`,
       footerSource: "guide/packages.jsonl",
       routeName,
       cards: renderPackageDetail(record),
@@ -1026,14 +1071,14 @@ function renderComposition(records) {
 <html lang="en">
   <head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>GraphReFly Composition</title><link rel="icon" href="../assets/favicon.svg" type="image/svg+xml" /><link rel="stylesheet" href="../styles/site.css" /></head>
   <body>
-    <header class="site-header"><a class="brand" href="../index.html"><span class="brand-word">Graph<span>ReFly</span></span><span class="brand-sub">developer docs</span></a><nav class="nav" aria-label="Primary"><a href="../learn/index.html">Learn</a><a href="../concepts/index.html">Concepts</a><a href="../composition/index.html">Composition</a><a href="../examples/index.html">Examples</a><a href="../packages/index.html">Packages</a><a href="../reference/index.html">Reference</a></nav></header>
+    ${renderHeader("composition")}
     <main class="route-page composition-page">
       <p class="eyebrow">Composition</p>
-      <h1>Patterns rendered from guide records.</h1>
-      <p>These records are public summaries with compact provenance anchors. Raw decisions, rules, conformance, backlog, sessions, and dashboard state stay in maintainer surfaces.</p>
+      <h1>Patterns for declared reactive graphs.</h1>
+      <p>Use these public patterns to shape inputs, reductions, joins, lifecycle, and effects before jumping to package-specific syntax.</p>
       <section class="composition-list">${cards}</section>
     </main>
-    <footer class="site-footer"><span>Source: guide/composition.jsonl</span><a href="../status/dashboard.html">Maintainer dashboard</a></footer><script src="../scripts/site.js"></script>
+    ${renderFooter("guide/composition.jsonl")}<script src="../scripts/site.js"></script>
   </body>
 </html>`;
   const outDir = join(distDir, "composition");
@@ -1067,12 +1112,12 @@ const packageRecords = parseJsonl(packageRecordsPath);
 const referenceRecords = parseJsonl(referenceRecordsPath);
 const guideRegistryRecords = parseJsonl(guideRegistryPath);
 assertGuideRegistry(guideRegistryRecords);
-assertPublicGuideRecords(learnRecords, "guide/learn.jsonl");
-assertPublicGuideRecords(conceptsRecords, "guide/concepts.jsonl");
-assertPublicGuideRecords(compositionRecords, "guide/composition.jsonl");
-assertPublicGuideRecords(examplesRecords, "guide/examples.jsonl");
+assertPublicGuideRecords(learnRecords, "guide/learn.jsonl", { area: "learn", route: "/learn" });
+assertPublicGuideRecords(conceptsRecords, "guide/concepts.jsonl", { area: "concepts", route: "/concepts" });
+assertPublicGuideRecords(compositionRecords, "guide/composition.jsonl", { area: "composition", route: "/composition" });
+assertPublicGuideRecords(examplesRecords, "guide/examples.jsonl", { area: "examples", route: "/examples" });
 assertPackageEntryRecords(packageRecords);
-assertPublicGuideRecords(referenceRecords, "guide/reference.jsonl");
+assertPublicGuideRecords(referenceRecords, "guide/reference.jsonl", { area: "reference", route: "/reference" });
 assertPublicReferenceRecords(referenceRecords);
 execFileSync(process.execPath, [join(dashboardDir, "build.mjs")], { cwd: repoRoot, stdio: "inherit" });
 rmSync(distDir, { recursive: true, force: true });
@@ -1106,15 +1151,7 @@ renderGuidePage(examplesRecords, "examples", {
 renderPackages(packageRecords);
 renderReference(referenceRecords);
 
-mkdirSync(dashboardOut, { recursive: true });
-for (const name of ["dashboard.html", "dashboard.css", "dashboard.js"]) {
-  const from = join(dashboardDir, name);
-  if (!existsSync(from)) {
-    throw new Error(`missing dashboard artifact: ${relative(repoRoot, from)}`);
-  }
-  cpSync(from, join(dashboardOut, name));
-}
-
+mkdirSync(publicMetaDir, { recursive: true });
 writePublicContentReport({ learnRecords, conceptsRecords, compositionRecords, examplesRecords, packageRecords, referenceRecords });
 assertRenderedPublicSurface();
 

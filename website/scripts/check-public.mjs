@@ -7,7 +7,7 @@ const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const repoRoot = dirname(root);
 const distDir = join(root, "dist");
 const statusDir = join(distDir, "status");
-const reportPath = join(statusDir, "public-content-report.json");
+const reportPath = join(distDir, "_meta", "public-content-report.json");
 
 const expectedRoutes = new Set([
   "/",
@@ -22,8 +22,18 @@ const expectedRoutes = new Set([
   "/rust/",
 ]);
 const packagePageRoutes = new Set(["/packages/", "/ts/", "/py/", "/rust/"]);
-const internalRouteNames = new Set(["decisions", "guide", "maintainers", "spec"]);
-const allowedStatusFiles = new Set(["dashboard.css", "dashboard.html", "dashboard.js", "public-content-report.json"]);
+const expectedSourceJsonlByRoute = new Map([
+  ["/learn/", "guide/learn.jsonl"],
+  ["/concepts/", "guide/concepts.jsonl"],
+  ["/composition/", "guide/composition.jsonl"],
+  ["/examples/", "guide/examples.jsonl"],
+  ["/packages/", "guide/packages.jsonl"],
+  ["/reference/", "guide/reference.jsonl"],
+  ["/ts/", "guide/packages.jsonl"],
+  ["/py/", "guide/packages.jsonl"],
+  ["/rust/", "guide/packages.jsonl"],
+]);
+const internalRouteNames = new Set(["decisions", "guide", "maintainers", "spec", "status"]);
 
 function fail(message) {
   throw new Error(`[public-docs gate] ${message}`);
@@ -46,7 +56,7 @@ function walk(dir) {
 }
 
 function attrsFrom(html) {
-  return [...html.matchAll(/\s(href|src)="([^"]+)"/g)].map((match) => ({ name: match[1], value: match[2] }));
+  return [...html.matchAll(/\s(href|src)=(["'])(.*?)\2/g)].map((match) => ({ name: match[1], value: match[3] }));
 }
 
 function localTarget(htmlFile, href) {
@@ -60,10 +70,8 @@ function localTarget(htmlFile, href) {
   return resolved;
 }
 
-function assertStatusArtifacts() {
-  for (const name of readdirSync(statusDir)) {
-    if (!allowedStatusFiles.has(name)) fail(`unexpected status artifact ${name}`);
-  }
+function assertNoStatusArtifacts() {
+  if (existsSync(statusDir)) fail("public website dist must not expose internal status/dashboard artifacts");
 }
 
 function assertRenderedHtmlLinks() {
@@ -78,20 +86,16 @@ function assertRenderedHtmlLinks() {
       const targetRel = relative(distDir, target);
       const [topLevel] = targetRel.split("/");
       if (internalRouteNames.has(topLevel)) fail(`${relative(repoRoot, file)} links to internal route ${attr.value}`);
-      if (topLevel === "status" && targetRel !== "status/dashboard.html") {
-        fail(`${relative(repoRoot, file)} may link only to status/dashboard.html, got ${attr.value}`);
-      }
     }
     const dashboardLinks = [...html.matchAll(/status\/dashboard\.html/g)].length;
-    const footer = html.match(/<footer[\s\S]*?<\/footer>/)?.[0] ?? "";
-    if (dashboardLinks !== 1 || !footer.includes("status/dashboard.html")) {
-      fail(`${relative(repoRoot, file)} must link to dashboard exactly once from the footer`);
+    if (dashboardLinks !== 0) {
+      fail(`${relative(repoRoot, file)} links to the internal dashboard`);
     }
   }
 }
 
 function assertReport() {
-  if (!existsSync(reportPath)) fail("missing website/dist/status/public-content-report.json");
+  if (!existsSync(reportPath)) fail("missing website/dist/_meta/public-content-report.json");
   const report = JSON.parse(readFileSync(reportPath, "utf8"));
   if (report.kind !== "graphrefly-public-content-corpus") fail("public content report has wrong kind");
   const routes = new Set((report.pages ?? []).map((page) => page.route));
@@ -102,9 +106,17 @@ function assertReport() {
     if (!expectedRoutes.has(route)) fail(`public content report contains unexpected route ${route}`);
   }
   for (const page of report.pages ?? []) {
-    if (page.dashboard_link !== "footer-only") fail(`${page.route} lost footer-only dashboard status`);
+    if (page.dashboard_link !== "none") fail(`${page.route} links to the internal dashboard`);
     if (page.source_kind === "jsonl" && (!page.source_jsonl || !page.record_ids?.length)) {
       fail(`${page.route} must include source_jsonl and record_ids`);
+    }
+    const expectedSource = expectedSourceJsonlByRoute.get(page.route);
+    if (expectedSource) {
+      if (page.source_kind !== "jsonl" || page.source_jsonl !== expectedSource || !page.record_ids?.length) {
+        fail(`${page.route} must source ${expectedSource}`);
+      }
+    } else if (page.route !== "/" && page.source_kind !== "jsonl") {
+      fail(`${page.route} must be sourced from guide JSONL`);
     }
     if (packagePageRoutes.has(page.route)) {
       if (page.source_jsonl !== "guide/packages.jsonl") fail(`${page.route} must source guide/packages.jsonl`);
@@ -116,8 +128,8 @@ function assertReport() {
 }
 
 run("build website", ["website/scripts/build.mjs"]);
-run("check dashboard links", ["dashboard/build.mjs", "--check"]);
-assertStatusArtifacts();
+run("check internal dashboard", ["dashboard/build.mjs", "--check"]);
+assertNoStatusArtifacts();
 assertRenderedHtmlLinks();
 assertReport();
 console.log("[public-docs gate] ok");

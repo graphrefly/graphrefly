@@ -18,15 +18,21 @@
     <main>
       <section class="hero public-hero">
         <div class="hero-copy">
-          <p class="eyebrow">Reactive reduction layer</p>
-          <h1>GraphReFly</h1>
-          <p>Build inspectable reactive graphs that reduce many changing inputs into smaller, explicit outputs across TypeScript, Python, and Rust.</p>
+          <p class="hero-badge"><span></span> Reactive Graph Protocol · Causal Tracing</p>
+          <h1 class="hero-equation"><span>Graph</span><b>+</b><span>Re<i>[active]</i></span><b>=</b><em>Fly</em></h1>
+          <p><strong>GraphReFly</strong> is a reactive graph protocol for declared, inspectable reduction. Humans, tools, and AI systems can compose work as topology: changes propagate through explicit edges, outputs update only when their inputs demand it, and every flow stays observable.</p>
+          <div class="lang-row" aria-label="Package routes">
+            <a href="ts/index.html">TypeScript</a>
+            <a href="py/index.html">Python</a>
+            <a href="rust/index.html">Rust</a>
+          </div>
           <div class="hero-actions">
-            <a class="button" href="learn/index.html">Start learning</a>
-            <a class="button secondary" href="composition/index.html">Composition guide</a>
+            <a class="button" href="packages/index.html">Choose a package <span aria-hidden="true">-></span></a>
+            <a class="button secondary" href="concepts/index.html">Read concepts</a>
           </div>
         </div>
-        <div class="graph-board" aria-label="Reactive graph composition illustration">
+        <div class="graph-board hero-showcase" aria-label="Reactive graph composition illustration">
+          <span class="showcase-tagline">GRAPHREFLY · REACTIVE GRAPH PROTOCOL · CAUSAL TRACING</span>
           <div class="graph-node source-node">input A</div>
           <div class="graph-node source-node second">input B</div>
           <div class="graph-node derive-node">derive</div>
@@ -82,7 +88,7 @@
         </div>
       </section>
     </main>
-    <footer class="site-footer"><span>GraphReFly developer docs</span><a href="status/dashboard.html">Maintainer dashboard</a></footer>
+    <footer class="site-footer"><span>GraphReFly developer docs</span><span>Public site</span></footer>
     <script src="scripts/site.js"></script>
   </body>
 </html>

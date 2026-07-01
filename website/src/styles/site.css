@@ -1,20 +1,4 @@
-:root {
-  color-scheme: light;
-  --ink: #08111b;
-  --muted: #5f6973;
-  --quiet: #8a949e;
-  --paper: #f7f9f8;
-  --surface: #ffffff;
-  --line: #dbe3e0;
-  --strong-line: #9aa9a2;
-  --green: #b7ff00;
-  --green-ink: #476900;
-  --copper: #b85f32;
-  --teal: #047a79;
-  --shadow: 0 22px 70px rgba(8, 17, 27, 0.12);
-  --mono: "SFMono-Regular", "Roboto Mono", "Cascadia Mono", Menlo, Consolas, monospace;
-  --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-}
+@import "./tokens.css";
 
 * {
   box-sizing: border-box;
@@ -35,6 +19,7 @@ body {
 a {
   color: inherit;
   text-decoration: none;
+  overflow-wrap: anywhere;
 }
 
 a:hover {
@@ -92,13 +77,17 @@ a:hover {
 .nav {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 6px;
   font-size: 12px;
+  min-width: 0;
 }
 
 .nav a {
   padding: 10px 12px;
   border-bottom: 2px solid transparent;
+  white-space: nowrap;
 }
 
 .nav a[aria-current="page"],
@@ -131,9 +120,10 @@ a:hover {
 
 h1 {
   margin: 0;
+  font-family: var(--display);
   font-size: 92px;
   line-height: 0.86;
-  font-weight: 950;
+  font-weight: 900;
   letter-spacing: 0;
 }
 
@@ -147,6 +137,83 @@ h1 {
 .hero p {
   max-width: 610px;
   margin: 28px 0 0;
+}
+
+.hero p strong {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0 0 18px;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.hero-badge span {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--green);
+  box-shadow: 0 0 0 6px rgba(200, 255, 0, 0.2);
+}
+
+.hero-equation {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 0.08em;
+  max-width: 720px;
+  font-size: 108px;
+  line-height: 0.84;
+}
+
+.hero-equation b,
+.hero-equation em {
+  font-style: normal;
+  color: var(--green-ink);
+}
+
+.hero-equation i {
+  display: inline-block;
+  margin-left: 0.04em;
+  color: var(--quiet);
+  font-family: var(--mono);
+  font-size: 0.18em;
+  font-style: normal;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+.lang-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 28px;
+}
+
+.lang-row a {
+  min-height: 34px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.lang-row a:hover {
+  border-color: var(--green-ink);
+  background: var(--green);
+  color: var(--ink);
 }
 
 .hero-actions,
@@ -170,6 +237,11 @@ h1 {
   font-size: 12px;
   font-weight: 900;
   text-transform: uppercase;
+  text-align: center;
+}
+
+.button span {
+  margin-left: 8px;
 }
 
 .button.secondary {
@@ -188,12 +260,25 @@ h1 {
   min-height: 480px;
   border: 1px solid var(--strong-line);
   background:
-    linear-gradient(90deg, rgba(8, 17, 27, 0.045) 1px, transparent 1px),
-    linear-gradient(180deg, rgba(8, 17, 27, 0.045) 1px, transparent 1px),
-    var(--surface);
+    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.08), transparent 36%),
+    linear-gradient(90deg, rgba(244, 247, 249, 0.08) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(244, 247, 249, 0.08) 1px, transparent 1px),
+    var(--gr-navy-deep);
   background-size: 32px 32px;
   box-shadow: var(--shadow);
   overflow: hidden;
+}
+
+.showcase-tagline {
+  position: absolute;
+  top: 16px;
+  left: 18px;
+  right: 18px;
+  color: rgba(244, 247, 249, 0.56);
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
 }
 
 .graph-node {
@@ -204,7 +289,7 @@ h1 {
   width: 132px;
   height: 58px;
   border: 2px solid var(--ink);
-  background: var(--paper);
+  background: rgba(244, 247, 249, 0.9);
   font-family: var(--mono);
   font-size: 12px;
   font-weight: 900;
@@ -223,22 +308,23 @@ h1 {
 .derive-node {
   left: 42%;
   top: 43%;
-  background: #ecf9ef;
-  border-color: var(--teal);
+  background: rgba(200, 255, 0, 0.9);
+  border-color: var(--green);
 }
 
 .effect-node {
   right: 9%;
   top: 43%;
-  background: #fff6ef;
-  border-color: var(--copper);
+  background: rgba(255, 45, 117, 0.82);
+  border-color: var(--gr-magenta);
+  color: white;
 }
 
 .graph-edge,
 .wave-line {
   position: absolute;
   height: 2px;
-  background: var(--ink);
+  background: rgba(244, 247, 249, 0.78);
   transform-origin: left center;
 }
 
@@ -393,6 +479,7 @@ h1 {
 
 .label {
   font-size: 12px;
+  overflow-wrap: anywhere;
 }
 
 .detail,
@@ -401,6 +488,7 @@ h1 {
 .record-meta {
   color: var(--muted);
   line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 
 .docs-table {
@@ -445,6 +533,7 @@ h1 {
   font-family: var(--mono);
   font-size: 12px;
   text-transform: uppercase;
+  overflow-wrap: anywhere;
 }
 
 .composition-section p {
@@ -469,6 +558,7 @@ h1 {
 
 .record-meta summary {
   cursor: pointer;
+  width: fit-content;
 }
 
 .record-meta summary:hover {
@@ -479,6 +569,7 @@ h1 {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+  min-width: 0;
 }
 
 .entry-link-list a {
@@ -487,33 +578,7 @@ h1 {
   font-size: 12px;
   font-weight: 900;
   text-transform: uppercase;
-}
-
-.dashboard-preview {
-  position: relative;
-  display: block;
-  min-height: 460px;
-  overflow: hidden;
-  border: 1px solid var(--strong-line);
-  background: white;
-  box-shadow: var(--shadow);
-}
-
-.dashboard-preview img {
-  display: block;
-  width: 100%;
-  height: 560px;
-  object-fit: cover;
-  object-position: top center;
-}
-
-.compact-preview {
-  margin-top: 42px;
-  min-height: 280px;
-}
-
-.compact-preview img {
-  height: 360px;
+  max-width: 100%;
 }
 
 .site-footer {
@@ -526,11 +591,21 @@ h1 {
   font-size: 11px;
 }
 
+.site-footer a {
+  border-bottom: 1px solid var(--strong-line);
+}
+
+.site-footer a:hover {
+  color: var(--ink);
+  border-bottom-color: var(--green-ink);
+}
+
 @media (max-width: 980px) {
   .site-header {
     position: static;
     grid-template-columns: 1fr;
     padding: 18px;
+    gap: 16px;
   }
 
   .brand {
@@ -540,6 +615,7 @@ h1 {
   .nav {
     flex-wrap: wrap;
     overflow-x: visible;
+    justify-content: flex-start;
   }
 
   .nav a {
@@ -555,7 +631,7 @@ h1 {
   }
 
   .graph-board {
-    min-height: 430px;
+    min-height: 390px;
   }
 
   .graph-node {
@@ -607,7 +683,12 @@ h1 {
 
   h1,
   .route-page h1 {
-    font-size: 52px;
+    font-size: 48px;
+    line-height: 0.95;
+  }
+
+  .hero-equation {
+    font-size: 64px;
   }
 
   .band h2 {
@@ -624,5 +705,59 @@ h1 {
   .site-footer {
     flex-direction: column;
     padding: 24px 18px;
+  }
+}
+
+@media (max-width: 520px) {
+  .brand-word {
+    font-size: 20px;
+  }
+
+  .brand-sub {
+    font-size: 10px;
+  }
+
+  .hero p,
+  .route-page p {
+    font-size: 20px;
+  }
+
+  h1,
+  .route-page h1 {
+    font-size: 46px;
+  }
+
+  .hero-equation {
+    font-size: 54px;
+  }
+
+  .hero-actions,
+  .route-actions {
+    gap: 10px;
+  }
+
+  .button {
+    flex: 1 1 150px;
+    padding: 0 14px;
+  }
+
+  .graph-node {
+    width: 116px;
+    font-size: 11px;
+  }
+
+  .derive-node,
+  .effect-node {
+    right: 8%;
+  }
+
+  .composition-record h2,
+  .lane h3 {
+    padding: 18px 20px;
+  }
+
+  .composition-section,
+  .record-meta {
+    padding: 16px 20px;
   }
 }

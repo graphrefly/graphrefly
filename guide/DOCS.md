@@ -41,9 +41,9 @@ Do not copy generated TypeScript, Python, or Rust API docs into this repo. Do no
 
 ### Public Build Report
 
-The website build writes `website/dist/status/public-content-report.json` as a deploy-inspection artifact. It summarizes rendered public pages, their source JSONL when applicable, package-owned outbound links, provenance anchors, and footer-only dashboard status. It is generated metadata, not a new authority source or primary public route.
+The website build writes `website/dist/_meta/public-content-report.json` as a deploy-inspection artifact. It summarizes rendered public pages, their source JSONL when applicable, package-owned outbound links, provenance anchors, and the no-public-dashboard-link policy. It is generated metadata, not a new authority source or primary public route.
 
-Run `npm run docs:public:check` before publishing public docs changes. It builds the website, runs the dashboard consistency gate, scans rendered public links, and validates the public build report.
+Run `npm run docs:public:check` before publishing public docs changes. It builds the website, runs the internal dashboard consistency gate separately, scans rendered public links, rejects public dashboard/status links, and validates the public build report.
 
 ## JSONL Docs
 
@@ -114,6 +114,7 @@ Package entry records use this stricter shape:
 - `route` is the matching public package route: `/ts`, `/py`, or `/rust`.
 - `canonical_repo` is the language package repo (`graphrefly-ts`, `graphrefly-py`, or `graphrefly-rs`).
 - `entry_links` point to package-owned docs/repo surfaces. They may be shown as outbound links, not copied into the shared site.
+- `refs.decisions` cites `D32` and `D563`; refs remain compact provenance anchors only.
 - `render_policy.api_docs` and `render_policy.package_docs` are both `delegate`.
 - Public prose should describe ownership and next-step links only. Do not include code snippets, generated API bodies, symbol tables, demos, release notes, or package-local examples.
 
