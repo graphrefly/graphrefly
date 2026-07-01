@@ -20,7 +20,7 @@
         <div class="hero-copy">
           <p class="hero-badge"><span></span> Reactive Graph Protocol · Causal Tracing</p>
           <h1 class="hero-equation"><span>Graph</span><b>+</b><span>Re<i>[active]</i></span><b>=</b><em>Fly</em></h1>
-          <p><strong>GraphReFly</strong> is a reactive graph protocol for declared, inspectable reduction. Humans, tools, and AI systems can compose work as topology: changes propagate through explicit edges, outputs update only when their inputs demand it, and every flow stays observable.</p>
+          <p><strong>GraphReFly</strong> is a reactive graph protocol for declared, inspectable reduction. Compose work as topology: facts enter through explicit inputs, reducers publish smaller outputs, and boundary effects keep the outside world visible.</p>
           <div class="lang-row" aria-label="Package routes">
             <a href="ts/index.html">TypeScript</a>
             <a href="py/index.html">Python</a>
@@ -33,6 +33,9 @@
         </div>
         <div class="graph-board hero-showcase" aria-label="Reactive graph composition illustration">
           <span class="showcase-tagline">GRAPHREFLY · REACTIVE GRAPH PROTOCOL · CAUSAL TRACING</span>
+          <div class="showcase-rail" aria-label="Wave message rail">
+            <span>START</span><span>DIRTY</span><span>DATA</span><span>COMPLETE</span>
+          </div>
           <div class="graph-node source-node">input A</div>
           <div class="graph-node source-node second">input B</div>
           <div class="graph-node derive-node">derive</div>
@@ -42,53 +45,55 @@
           <div class="graph-edge edge-c"></div>
           <div class="wave-line wave-one"></div>
           <div class="wave-line wave-two"></div>
+          <div class="showcase-chips">
+            <span>describe()</span><span>observe()</span><span>batch()</span>
+          </div>
         </div>
       </section>
       <section class="route-strip" aria-label="Documentation routes">
         <div class="route-strip-inner public-routes">
           <a href="learn/index.html">Learn<small>Getting started and tiny graph mental model</small></a>
           <a href="concepts/index.html">Concepts<small>Nodes, waves, dispatchers, pools, bridges</small></a>
-          <a href="composition/index.html">Composition<small>JSONL-backed guide records</small></a>
+          <a href="composition/index.html">Composition<small>Guide patterns for declared reactive graphs</small></a>
           <a href="examples/index.html">Examples<small>Recipes that delegate to package code</small></a>
           <a href="packages/index.html">Packages<small>TS, Python, Rust docs entry points</small></a>
           <a href="reference/index.html">Reference<small>Curated public guarantees</small></a>
         </div>
       </section>
+      <section class="band stats-band" aria-label="Public guarantee map">
+        <div>
+          <p class="eyebrow">Public guarantee map</p>
+          <h2>Developer-facing promises, not maintainer control state.</h2>
+        </div>
+        <div class="stat-grid">
+          <a class="stat-card" href="reference/index.html"><span>Topology</span><strong>Explainable</strong><small>Named nodes and declared edges carry the story.</small></a>
+          <a class="stat-card" href="composition/index.html"><span>Joins</span><strong>Predictable</strong><small>Fan-out can rejoin without half-old mixes.</small></a>
+          <a class="stat-card" href="examples/index.html"><span>Boundaries</span><strong>Explicit</strong><small>Async, workers, and remote systems re-enter as facts.</small></a>
+          <a class="stat-card" href="packages/index.html"><span>Packages</span><strong>Delegated</strong><small>Exact APIs stay with TypeScript, Python, and Rust.</small></a>
+        </div>
+      </section>
       <section class="band split-band">
         <div>
           <h2>Public docs are for building with GraphReFly.</h2>
-          <p class="band-intro">The shared site teaches concepts, composition, examples, package entry points, and selected guarantees. It does not ask ordinary developers to browse raw decision logs before they can write a graph.</p>
+          <p class="band-intro">The shared site teaches concepts, composition, examples, package entry points, and selected guarantees. It gives ordinary developers the working model first, with maintainer-only material kept out of the public path.</p>
         </div>
         <div class="docs-table">
           <div class="link-row"><span class="label">Learn</span><span class="detail">A small path from inputs to derived values to effects.</span></div>
-          <div class="link-row"><span class="label">Compose</span><span class="detail">Guide records rendered from `guide/composition.jsonl`.</span></div>
+          <div class="link-row"><span class="label">Compose</span><span class="detail">Reusable patterns for inputs, joins, lifecycle, and effects.</span></div>
           <div class="link-row"><span class="label">Delegate</span><span class="detail">API docs, demos, examples, and releases stay in language repos.</span></div>
         </div>
       </section>
       <section class="band">
         <h2>One shared mental model. Language-local APIs.</h2>
         <p class="band-intro">GraphReFly has one public docs shell and three self-contained implementation packages. The shared site links to package-owned docs instead of copying generated references.</p>
-        <div class="ownership-grid">
-          <article class="lane">
-            <h3>Shared site</h3>
-            <ul>
-              <li><span class="label">Concepts</span><span class="detail">Graph, wave, dispatcher, pool, and bridge vocabulary.</span></li>
-              <li><span class="label">Guides</span><span class="detail">Composition records with public copy and provenance-only refs.</span></li>
-              <li><span class="label">Guarantees</span><span class="detail">Curated active behavior explained for developers.</span></li>
-            </ul>
-          </article>
-          <article class="lane">
-            <h3>Language repos</h3>
-            <ul>
-              <li><span class="label">TypeScript</span><span class="detail">Generated API docs, examples, demos, package scripts.</span></li>
-              <li><span class="label">Python</span><span class="detail">MkDocs, mkdocstrings, install and release docs.</span></li>
-              <li><span class="label">Rust</span><span class="detail">Rustdoc, examples, crate-specific development notes.</span></li>
-            </ul>
-          </article>
+        <div class="package-cta-grid">
+          <a class="package-cta" href="ts/index.html"><span>TypeScript</span><strong>@graphrefly/ts</strong><small>Generated API docs, examples, demos, package scripts.</small></a>
+          <a class="package-cta" href="py/index.html"><span>Python</span><strong>graphrefly</strong><small>MkDocs, mkdocstrings, install and release docs.</small></a>
+          <a class="package-cta" href="rust/index.html"><span>Rust</span><strong>graphrefly-rs</strong><small>Rustdoc, examples, crate-specific development notes.</small></a>
         </div>
       </section>
     </main>
-    <footer class="site-footer"><span>GraphReFly developer docs</span><span>Public site</span></footer>
+    <footer class="site-footer rich-footer"><span>GraphReFly developer docs</span><span>Curated public site. Package APIs stay package-local.</span></footer>
     <script src="scripts/site.js"></script>
   </body>
 </html>

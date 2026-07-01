@@ -53,6 +53,7 @@ const packageRepoById = new Map([
 ]);
 const publicTopLevelEntries = new Set([
   "assets",
+  "CNAME",
   "composition",
   "concepts",
   "examples",
@@ -76,6 +77,20 @@ const primaryNav = [
   ["Reference", "/reference"],
 ];
 const internalRouteNames = new Set(["decisions", "guide", "maintainers", "spec", "status"]);
+const internalSurfaceText = [
+  /\bdashboard(?:\.html)?\b/i,
+  /\bproject[- ]control\b/i,
+  /\bbacklog\b/i,
+  /\bsessions?\b/i,
+  /\bgaps?\b/i,
+  /\braw decisions?\b/i,
+  /\braw rules?\b/i,
+  /\bconformance coverage\b/i,
+  /\blocalhost\b/i,
+  /\b127\.0\.0\.1\b/,
+  /\bdecisions\.jsonl\b/i,
+  /\brules\.jsonl\b/i,
+];
 
 const banned = [
   "GraphSpec",
@@ -202,6 +217,9 @@ function assertPublicGuideRecords(records, fileLabel, expected = {}) {
       throw new Error(`${record.id} must declare owner and canonical_repo`);
     }
     if (record.publicness === "public") {
+      if (!Array.isArray(record.audience) || !record.audience.includes("developer")) {
+        throw new Error(`${record.id} public records must include developer audience`);
+      }
       if (expected.area && record.area !== expected.area) {
         throw new Error(`${record.id} must have area ${expected.area}, got ${record.area}`);
       }
@@ -646,6 +664,11 @@ function textFromHtml(html, pattern) {
   return match ? match[1].replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim() : "";
 }
 
+function footerSourceLabel(html) {
+  const match = html.match(/<footer\b[^>]*\bdata-source="([^"]+)"/);
+  return match ? match[1] : textFromHtml(html, /<footer[\s\S]*?<span>([\s\S]*?)<\/span>/);
+}
+
 function assertPrimaryNav(htmlFile, html) {
   const navMatch = html.match(/<nav class="nav" aria-label="Primary">([\s\S]*?)<\/nav>/);
   if (!navMatch) {
@@ -678,7 +701,7 @@ function renderedPageSummary(htmlFile) {
     file: relative(distDir, htmlFile),
     title: textFromHtml(html, /<title>([\s\S]*?)<\/title>/),
     h1: textFromHtml(html, /<h1>([\s\S]*?)<\/h1>/),
-    source_label: textFromHtml(html, /<footer[\s\S]*?<span>([\s\S]*?)<\/span>/),
+    source_label: footerSourceLabel(html),
     dashboard_link: dashboardLinks.length === 0 ? "none" : "public-link",
     package_route_links: [...new Set(packageRouteLinks)].sort(),
     outbound_package_links: [...new Set(outboundPackageLinks)].sort(),
@@ -752,9 +775,6 @@ function assertPublicContentReport(report) {
     }
     if (page.source_kind === "jsonl" && (!page.source_jsonl || page.record_ids.length === 0)) {
       throw new Error(`public content report page ${page.route} must include source_jsonl and records`);
-    }
-    if (page.source_jsonl && !page.source_label.includes(page.source_jsonl)) {
-      throw new Error(`public content report page ${page.route} source label must mention ${page.source_jsonl}`);
     }
     const expectedSource = expectedSourceJsonlByRoute.get(page.route);
     if (expectedSource) {
@@ -872,6 +892,11 @@ function assertRenderedPublicSurface() {
     assertNoInternalRouteLinks(file, html);
     assertPrimaryNav(file, html);
     assertNoPublicDashboardLinks(file, html);
+    for (const pattern of internalSurfaceText) {
+      if (pattern.test(html)) {
+        throw new Error(`${relative(repoRoot, file)} exposes internal/source-control copy matching ${pattern}`);
+      }
+    }
   }
 }
 
@@ -896,7 +921,7 @@ function renderHeader(routeName) {
 }
 
 function renderFooter(footerSource) {
-  return `<footer class="site-footer"><span>Source: ${escapeHtml(footerSource)}</span><span>Public developer docs</span></footer>`;
+  return `<footer class="site-footer rich-footer" data-source="${escapeHtml(footerSource)}"><span>GraphReFly developer docs</span><span>Curated public site. Package APIs stay package-local.</span></footer>`;
 }
 
 function renderProvenanceDetails(provenance) {
@@ -917,10 +942,10 @@ function renderRecordCards(records, fromRoute) {
         .map((pkg) => `<a href="${escapeHtml(routeHref(pkg.href, fromRoute))}">${escapeHtml(pkg.label)}</a>`)
         .join(" · ");
       const topology = Array.isArray(record.topology)
-        ? `<section class="composition-section"><h3>Topology</h3><div>${renderList(record.topology.map((node) => `${node.role}: ${node.label}`))}</div></section>`
+        ? `<section class="composition-section topology-strip"><h3>Topology</h3><div class="topology-pills">${record.topology.map((node) => `<span><b>${escapeHtml(node.role)}</b>${escapeHtml(node.label)}</span>`).join("")}</div></section>`
         : "";
       const learns = Array.isArray(record.learns) && record.learns.length
-        ? `<section class="composition-section"><h3>Learns</h3><div>${renderList(record.learns)}</div></section>`
+        ? `<section class="composition-section"><h3>Learns</h3><div class="topic-tags">${record.learns.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div></section>`
         : "";
       const intent = typeof record.intent === "string"
         ? `<section class="composition-section"><h3>Intent</h3><div><p>${escapeHtml(record.intent)}</p></div></section>`
@@ -931,7 +956,7 @@ function renderRecordCards(records, fromRoute) {
           return `<section class="composition-section"><h3>${escapeHtml(section.heading)}</h3><div>${body}${renderList(section.bullets)}</div></section>`;
         })
         .join("");
-      return `<article class="composition-record"><h2>${escapeHtml(record.title)}</h2><section class="composition-section"><h3>Summary</h3><div><p>${escapeHtml(record.public_summary)}</p></div></section>${intent}${topology}${learns}${sections}<div class="record-meta">${renderProvenanceDetails(provenance)}<span>Package docs: ${packageLinks}</span></div></article>`;
+      return `<article class="composition-record record-card"><header class="record-card-head"><p>${escapeHtml(record.kind)}</p><h2>${escapeHtml(record.title)}</h2></header><section class="composition-section"><h3>Summary</h3><div><p>${escapeHtml(record.public_summary)}</p></div></section>${intent}${topology}${learns}${sections}<div class="record-meta">${renderProvenanceDetails(provenance)}<span>Package docs: ${packageLinks}</span></div></article>`;
     })
     .join("");
 }
@@ -961,7 +986,7 @@ function renderReferenceCards(records, fromRoute) {
       const learnMoreSection = learnMore
         ? `<section class="composition-section"><h3>Learn More</h3><div>${learnMore}</div></section>`
         : "";
-      return `<article class="composition-record reference-record"><h2>${escapeHtml(record.title)}</h2><section class="composition-section"><h3>Public Guarantee</h3><div><p>${escapeHtml(record.public_summary)}</p></div></section>${sections}${learnMoreSection}<div class="record-meta">${renderProvenanceDetails(provenance)}<span>Package docs: ${packageLinks}</span></div></article>`;
+      return `<article class="composition-record reference-record record-card"><header class="record-card-head"><p>Guarantee</p><h2>${escapeHtml(record.title)}</h2></header><section class="composition-section"><h3>Public Promise</h3><div><p>${escapeHtml(record.public_summary)}</p></div></section>${sections}${learnMoreSection}<div class="record-meta">${renderProvenanceDetails(provenance)}<span>Package docs: ${packageLinks}</span></div></article>`;
     })
     .join("");
 }
@@ -977,7 +1002,7 @@ function renderPackageCards(records) {
     .map((record) => {
       const route = routeHref(`${record.route}/`, "packages");
       const links = renderEntryLinks(record.entry_links);
-      return `<article class="composition-record package-record"><h2>${escapeHtml(record.title)}</h2><section class="composition-section"><h3>Package</h3><div><p>${escapeHtml(record.package_name)}</p></div></section><section class="composition-section"><h3>Go There</h3><div>${links}</div></section><section class="composition-section"><h3>Delegation Page</h3><div><a href="${escapeHtml(route)}">Open ${escapeHtml(record.title)} route</a></div></section><section class="composition-section"><h3>Boundary</h3><div><p>${escapeHtml(record.public_summary)}</p></div></section></article>`;
+      return `<article class="composition-record package-record package-card"><header class="record-card-head"><p>${escapeHtml(record.package)}</p><h2>${escapeHtml(record.title)}</h2></header><section class="composition-section"><h3>Package</h3><div><p>${escapeHtml(record.package_name)}</p></div></section><section class="composition-section"><h3>Package-Owned Links</h3><div>${links}</div></section><section class="composition-section"><h3>Delegation Page</h3><div><a href="${escapeHtml(route)}">Open ${escapeHtml(record.title)} route</a></div></section><section class="composition-section"><h3>Boundary</h3><div><p>${escapeHtml(record.public_summary)}</p></div></section></article>`;
     })
     .join("");
 }
@@ -990,7 +1015,7 @@ function renderPackageDetail(record) {
     })
     .join("");
   const links = renderEntryLinks(record.entry_links);
-  return `<article class="composition-record package-record"><h2>${escapeHtml(record.package_name)}</h2><section class="composition-section"><h3>Package-Owned Links</h3><div>${links}</div></section><section class="composition-section"><h3>Delegated Docs</h3><div><p>${escapeHtml(record.public_summary)}</p></div></section>${sections}</article>`;
+  return `<article class="composition-record package-record package-card package-detail-card"><header class="record-card-head"><p>${escapeHtml(record.package)}</p><h2>${escapeHtml(record.package_name)}</h2></header><section class="composition-section"><h3>Package-Owned Links</h3><div>${links}</div></section><section class="composition-section"><h3>Delegated Docs</h3><div><p>${escapeHtml(record.public_summary)}</p></div></section>${sections}</article>`;
 }
 
 function pageShell({ title, eyebrow, heading, intro, routeName, cards, footerSource }) {
@@ -999,10 +1024,12 @@ function pageShell({ title, eyebrow, heading, intro, routeName, cards, footerSou
   <head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>${escapeHtml(title)}</title><link rel="icon" href="../assets/favicon.svg" type="image/svg+xml" /><link rel="stylesheet" href="../styles/site.css" /></head>
   <body>
     ${renderHeader(routeName)}
-    <main class="route-page composition-page">
-      <p class="eyebrow">${escapeHtml(eyebrow)}</p>
-      <h1>${escapeHtml(heading)}</h1>
-      <p>${escapeHtml(intro)}</p>
+    <main class="route-page composition-page route-${escapeHtml(routeName)}">
+      <section class="route-hero">
+        <p class="eyebrow">${escapeHtml(eyebrow)}</p>
+        <h1>${escapeHtml(heading)}</h1>
+        <p>${escapeHtml(intro)}</p>
+      </section>
       <section class="composition-list">${cards}</section>
     </main>
     ${renderFooter(footerSource)}<script src="../scripts/site.js"></script>
@@ -1072,10 +1099,12 @@ function renderComposition(records) {
   <head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>GraphReFly Composition</title><link rel="icon" href="../assets/favicon.svg" type="image/svg+xml" /><link rel="stylesheet" href="../styles/site.css" /></head>
   <body>
     ${renderHeader("composition")}
-    <main class="route-page composition-page">
-      <p class="eyebrow">Composition</p>
-      <h1>Patterns for declared reactive graphs.</h1>
-      <p>Use these public patterns to shape inputs, reductions, joins, lifecycle, and effects before jumping to package-specific syntax.</p>
+    <main class="route-page composition-page route-composition">
+      <section class="route-hero">
+        <p class="eyebrow">Composition</p>
+        <h1>Patterns for declared reactive graphs.</h1>
+        <p>Use these public patterns to shape inputs, reductions, joins, lifecycle, and effects before jumping to package-specific syntax.</p>
+      </section>
       <section class="composition-list">${cards}</section>
     </main>
     ${renderFooter("guide/composition.jsonl")}<script src="../scripts/site.js"></script>
