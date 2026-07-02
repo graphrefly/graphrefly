@@ -735,7 +735,6 @@ function assertCnameArtifact() {
 function refsForRecord(record) {
   const refs = record.refs ?? {};
   return {
-    decisions: refs.decisions ?? [],
     rules: refs.rules ?? [],
     conformance: refs.conformance ?? [],
     sources: refs.sources ?? [],
@@ -829,7 +828,7 @@ function assertPublicContentReport(report) {
 }
 
 function mergeRefs(records) {
-  const merged = { decisions: new Set(), rules: new Set(), conformance: new Set(), sources: new Set() };
+  const merged = { rules: new Set(), conformance: new Set(), sources: new Set() };
   for (const record of records) {
     const refs = refsForRecord(record);
     for (const key of Object.keys(merged)) {
@@ -863,7 +862,7 @@ function writePublicContentReport({ learnRecords, conceptsRecords, compositionRe
       source_jsonl: source?.sourceJsonl ?? null,
       source_kind: source ? "jsonl" : "static",
       record_ids: source?.records.map((record) => record.id) ?? [],
-      provenance: source ? mergeRefs(source.records) : { decisions: [], rules: [], conformance: [], sources: [] },
+      provenance: source ? mergeRefs(source.records) : { rules: [], conformance: [], sources: [] },
     };
   });
 
@@ -874,7 +873,6 @@ function writePublicContentReport({ learnRecords, conceptsRecords, compositionRe
       primary_nav: primaryNav.map(([label, route]) => ({ label, route })),
       public_routes: [...publicRoutes].sort(),
       package_routes: [...packageRoutes].sort(),
-      internal_routes_blocked: [...internalRouteNames].sort(),
       dashboard_link_policy: "isolated: no public dashboard links",
       package_api_policy: "delegate",
     },
@@ -948,20 +946,10 @@ function renderFooter(footerSource) {
   return `<footer class="site-footer rich-footer" data-source="${escapeHtml(footerSource)}"><span>GraphReFly developer docs</span><span>Curated public site. Package APIs stay package-local.</span></footer>`;
 }
 
-function renderProvenanceDetails(provenance) {
-  return `<details><summary>Provenance anchors</summary><span>${escapeHtml(provenance.join(", ") || "guide record")}</span></details>`;
-}
-
 function renderRecordCards(records, fromRoute) {
   return records
     .filter((record) => record.publicness === "public" && record.status === "active")
     .map((record) => {
-      const refs = record.refs ?? {};
-      const provenance = [
-        ...(refs.decisions ?? []),
-        ...(refs.rules ?? []),
-        ...(refs.conformance ?? []),
-      ];
       const packageLinks = (record.package_refs ?? [])
         .map((pkg) => `<a href="${escapeHtml(routeHref(pkg.href, fromRoute))}">${escapeHtml(pkg.label)}</a>`)
         .join(" · ");
@@ -980,7 +968,7 @@ function renderRecordCards(records, fromRoute) {
           return `<section class="composition-section"><h3>${escapeHtml(section.heading)}</h3><div>${body}${renderList(section.bullets)}</div></section>`;
         })
         .join("");
-      return `<article class="composition-record record-card"><header class="record-card-head"><p>${escapeHtml(record.kind)}</p><h2>${escapeHtml(record.title)}</h2></header><section class="composition-section"><h3>Summary</h3><div><p>${escapeHtml(record.public_summary)}</p></div></section>${intent}${topology}${learns}${sections}<div class="record-meta">${renderProvenanceDetails(provenance)}<span>Package docs: ${packageLinks}</span></div></article>`;
+      return `<article class="composition-record record-card"><header class="record-card-head"><p>${escapeHtml(record.kind)}</p><h2>${escapeHtml(record.title)}</h2></header><section class="composition-section"><h3>Summary</h3><div><p>${escapeHtml(record.public_summary)}</p></div></section>${intent}${topology}${learns}${sections}<div class="record-meta"><span>Package docs: ${packageLinks}</span></div></article>`;
     })
     .join("");
 }
@@ -989,12 +977,6 @@ function renderReferenceCards(records, fromRoute) {
   return records
     .filter((record) => record.publicness === "public" && record.status === "active")
     .map((record) => {
-      const refs = record.refs ?? {};
-      const provenance = [
-        ...(refs.decisions ?? []),
-        ...(refs.rules ?? []),
-        ...(refs.conformance ?? []),
-      ];
       const packageLinks = (record.package_refs ?? [])
         .map((pkg) => `<a href="${escapeHtml(routeHref(pkg.href, fromRoute))}">${escapeHtml(pkg.label)}</a>`)
         .join(" · ");
@@ -1010,7 +992,7 @@ function renderReferenceCards(records, fromRoute) {
       const learnMoreSection = learnMore
         ? `<section class="composition-section"><h3>Learn More</h3><div>${learnMore}</div></section>`
         : "";
-      return `<article class="composition-record reference-record record-card"><header class="record-card-head"><p>Guarantee</p><h2>${escapeHtml(record.title)}</h2></header><section class="composition-section"><h3>Public Promise</h3><div><p>${escapeHtml(record.public_summary)}</p></div></section>${sections}${learnMoreSection}<div class="record-meta">${renderProvenanceDetails(provenance)}<span>Package docs: ${packageLinks}</span></div></article>`;
+      return `<article class="composition-record reference-record record-card"><header class="record-card-head"><p>Guarantee</p><h2>${escapeHtml(record.title)}</h2></header><section class="composition-section"><h3>Public Promise</h3><div><p>${escapeHtml(record.public_summary)}</p></div></section>${sections}${learnMoreSection}<div class="record-meta"><span>Package docs: ${packageLinks}</span></div></article>`;
     })
     .join("");
 }

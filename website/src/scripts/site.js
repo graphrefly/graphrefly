@@ -13,6 +13,7 @@ const showcase = document.querySelector("[data-protocol-showcase]");
 if (showcase) {
   const buttons = [...showcase.querySelectorAll("[data-stage]")];
   const panels = [...showcase.querySelectorAll("[data-stage-panel]")];
+  const stageViews = [...showcase.querySelectorAll("[data-stage-view]")];
   let activeStage = 0;
   let timer = null;
 
@@ -25,11 +26,14 @@ if (showcase) {
     for (const panel of panels) {
       panel.classList.toggle("is-active", Number(panel.dataset.stagePanel) === activeStage);
     }
+    for (const view of stageViews) {
+      view.dataset.stageView = String(activeStage);
+    }
   };
 
   const startTimer = () => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    timer = window.setInterval(() => setStage(activeStage + 1), 6500);
+    timer = window.setInterval(() => setStage(activeStage + 1), 5800);
   };
 
   const resetTimer = () => {
@@ -47,6 +51,26 @@ if (showcase) {
 
   setStage(0);
   startTimer();
+}
+
+const diagnosisRows = [...document.querySelectorAll(".diagnosis-row")];
+if (diagnosisRows.length > 0) {
+  const revealRow = (row) => row.classList.add("is-visible");
+  revealRow(diagnosisRows[0]);
+
+  if ("IntersectionObserver" in window) {
+    const rowObserver = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) revealRow(entry.target);
+        }
+      },
+      { threshold: 0.38 },
+    );
+    for (const row of diagnosisRows) rowObserver.observe(row);
+  } else {
+    for (const row of diagnosisRows) revealRow(row);
+  }
 }
 
 const requirementPanel = document.querySelector("[data-requirement-panel]");
@@ -69,8 +93,8 @@ if (requirementPanel) {
     },
     delegate: {
       label: "Delegate",
-      title: "Exact syntax belongs with the package.",
-      body: "The shared site gives the cross-language model. TypeScript, Python, and Rust routes point to package-owned references, demos, and release material.",
+      title: "Package docs own exact APIs.",
+      body: "The shared site gives the cross-language model. TypeScript, Python, and Rust routes point to package-owned references, demos, examples, and release material.",
     },
   };
   const buttons = [...requirementPanel.querySelectorAll("[data-requirement]")];

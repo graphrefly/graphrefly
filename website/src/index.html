@@ -18,222 +18,304 @@
     <main>
       <section class="hero public-hero">
         <div class="hero-copy">
-          <p class="hero-badge"><span></span> Reactive Graph Protocol · Causal Tracing</p>
           <h1 class="hero-equation"><span>Graph</span><b>+</b><span>Re<i>[active]</i></span><b>=</b><em>Fly</em></h1>
-          <p><strong>GraphReFly</strong> is a reactive graph protocol for declared, inspectable reduction. Compose work as topology: facts enter through explicit inputs, waves carry change through reducers, and boundary effects keep the outside world visible.</p>
-          <div class="lang-row" aria-label="Package routes">
-            <a href="ts/index.html">TypeScript</a>
-            <a href="py/index.html">Python</a>
-            <a href="rust/index.html">Rust</a>
-          </div>
+          <p class="hero-meta">Reactive Graph Protocol</p>
+          <p class="hero-lede"><strong>GraphReFly</strong> is a public protocol for declared, inspectable reduction. Facts enter through explicit inputs, waves carry change through reducers, and boundary effects keep outside work visible.</p>
           <div class="hero-actions">
             <a class="button" href="packages/index.html">Choose a package <span aria-hidden="true">-></span></a>
             <a class="button secondary" href="concepts/index.html">Read concepts</a>
           </div>
         </div>
-        <div class="protocol-showcase" data-protocol-showcase aria-label="GraphReFly protocol concept animation">
-          <div class="protocol-topline">
-            <span>GRAPHREFLY · REACTIVE GRAPH PROTOCOL · CAUSAL TRACING</span>
-            <div class="protocol-scrubber" role="tablist" aria-label="Jump to concept stage">
-              <button type="button" data-stage="0" aria-label="Connection lifecycle" aria-selected="true">1</button>
-              <button type="button" data-stage="1" aria-label="Diamond resolution">2</button>
-              <button type="button" data-stage="2" aria-label="Node anatomy">3</button>
-              <button type="button" data-stage="3" aria-label="Graph sugars">4</button>
-              <button type="button" data-stage="4" aria-label="Graph inspection">5</button>
-              <button type="button" data-stage="5" aria-label="Boundary flow">6</button>
-              <button type="button" data-stage="6" aria-label="Language packages">7</button>
+
+        <div class="protocol-console" data-protocol-showcase aria-label="GraphReFly subscription activation animation">
+          <div class="console-head">
+            <span>Live activation instrument · START is per edge</span>
+            <div class="protocol-scrubber" aria-label="Jump to activation stage">
+              <button type="button" data-stage="0" aria-label="Edges open" aria-selected="true">1</button>
+              <button type="button" data-stage="1" aria-label="START handshakes">2</button>
+              <button type="button" data-stage="2" aria-label="First values push">3</button>
+              <button type="button" data-stage="3" aria-label="Graph ready">4</button>
             </div>
           </div>
-          <div class="protocol-stage-wrap">
-            <article class="protocol-stage is-active" data-stage-panel="0">
-              <svg viewBox="0 0 720 360" role="img" aria-labelledby="stage-one-title">
-                <title id="stage-one-title">A wave moves from upstream to downstream</title>
-                <defs><marker id="arrow-lime" viewBox="0 0 8 8" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 8 4 0 8Z" /></marker></defs>
-                <line class="stage-edge live-edge" x1="168" y1="180" x2="552" y2="180" marker-end="url(#arrow-lime)" />
-                <g class="stage-node rect-node" transform="translate(120 180)"><rect x="-54" y="-30" width="108" height="60" rx="10" /><text y="5">upstream</text></g>
-                <g class="stage-node rect-node" transform="translate(600 180)"><rect x="-58" y="-30" width="116" height="60" rx="10" /><text y="5">downstream</text></g>
-                <g class="wave-token token-start"><circle r="6" /><text y="-18">START</text></g>
-                <g class="wave-token token-dirty"><path d="M0 8V-14l18 6-18 6" /><text y="-24">DIRTY</text></g>
-                <g class="wave-token token-data"><circle r="9" /><text y="-22">DATA</text></g>
-                <g class="wave-token token-complete"><circle r="6" /><text y="-18">COMPLETE</text></g>
-              </svg>
-              <div class="stage-caption"><span>stage 1 · connection lifecycle</span><strong>START -> DIRTY -> DATA -> COMPLETE</strong></div>
-            </article>
-            <article class="protocol-stage" data-stage-panel="1">
-              <svg viewBox="0 0 720 360" role="img" aria-labelledby="stage-two-title">
-                <title id="stage-two-title">Diamond resolution propagates dirty before data</title>
-                <defs><marker id="arrow-ice" viewBox="0 0 8 8" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 8 4 0 8Z" /></marker></defs>
-                <line class="stage-edge" x1="360" y1="82" x2="218" y2="154" marker-end="url(#arrow-ice)" />
-                <line class="stage-edge" x1="360" y1="82" x2="502" y2="154" marker-end="url(#arrow-ice)" />
-                <line class="stage-edge" x1="218" y1="206" x2="334" y2="278" marker-end="url(#arrow-ice)" />
-                <line class="stage-edge" x1="502" y1="206" x2="386" y2="278" marker-end="url(#arrow-ice)" />
-                <g class="stage-node hex-node" transform="translate(360 70)"><polygon points="34,0 17,29 -17,29 -34,0 -17,-29 17,-29" /><text y="5">A</text></g>
-                <g class="stage-node diamond-node" transform="translate(190 180)"><polygon points="0,-38 38,0 0,38 -38,0" /><text y="5">B</text></g>
-                <g class="stage-node diamond-node" transform="translate(530 180)"><polygon points="0,-38 38,0 0,38 -38,0" /><text y="5">C</text></g>
-                <g class="stage-node diamond-node join-node" transform="translate(360 300)"><polygon points="0,-42 42,0 0,42 -42,0" /><text y="5">D</text></g>
-                <path class="dirty-sweep" d="M360 70 190 180 360 300 530 180 360 70" />
-              </svg>
-              <div class="stage-caption"><span>stage 2 · diamond resolution</span><strong>DIRTY converges first; DATA settles once</strong></div>
-            </article>
-            <article class="protocol-stage" data-stage-panel="2">
-              <svg viewBox="0 0 720 360" role="img" aria-labelledby="stage-three-title">
-                <title id="stage-three-title">A node has cache, status, function, and directional ports</title>
-                <rect class="anatomy-node" x="210" y="92" width="300" height="176" rx="16" />
-                <circle class="anatomy-ring ring-a" cx="360" cy="180" r="62" />
-                <circle class="anatomy-ring ring-b" cx="360" cy="180" r="42" />
-                <text class="center-label" x="360" y="186">fn(...)</text>
-                <g class="anatomy-tag" transform="translate(360 112)"><rect x="-46" y="-16" width="92" height="32" rx="16" /><text y="5">cache</text></g>
-                <g class="anatomy-tag" transform="translate(274 240)"><rect x="-48" y="-16" width="96" height="32" rx="16" /><text y="5">status</text></g>
-                <g class="anatomy-tag" transform="translate(446 240)"><rect x="-44" y="-16" width="88" height="32" rx="16" /><text y="5">guard</text></g>
-                <line class="port-line" x1="120" y1="180" x2="204" y2="180" />
-                <line class="port-line" x1="516" y1="180" x2="600" y2="180" />
-                <text class="port-label" x="118" y="156">UP [control]</text>
-                <text class="port-label" x="602" y="156">DOWN [values]</text>
-              </svg>
-              <div class="stage-caption"><span>stage 3 · node anatomy</span><strong>cache · status · fn · up / down</strong></div>
-            </article>
-            <article class="protocol-stage" data-stage-panel="3">
-              <svg viewBox="0 0 720 360" role="img" aria-labelledby="stage-four-title">
-                <title id="stage-four-title">Graph sugars compose into one declared flow</title>
-                <defs><marker id="arrow-ice-s4" viewBox="0 0 8 8" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 8 4 0 8Z" /></marker></defs>
-                <line class="stage-edge" x1="180" y1="116" x2="330" y2="178" marker-end="url(#arrow-ice-s4)" />
-                <line class="stage-edge" x1="180" y1="244" x2="330" y2="182" marker-end="url(#arrow-ice-s4)" />
-                <line class="stage-edge" x1="390" y1="180" x2="540" y2="180" marker-end="url(#arrow-ice-s4)" />
-                <g class="stage-node square-node" transform="translate(150 100)"><rect x="-34" y="-34" width="68" height="68" /><text y="5">state</text></g>
-                <g class="stage-node hex-node" transform="translate(150 260)"><polygon points="34,0 17,29 -17,29 -34,0 -17,-29 17,-29" /><text y="5">producer</text></g>
-                <g class="stage-node diamond-node join-node" transform="translate(360 180)"><polygon points="0,-48 48,0 0,48 -48,0" /><text y="5">derived</text></g>
-                <g class="stage-node effect-shape" transform="translate(580 180)"><polygon points="-44,-26 50,-26 38,26 -56,26" /><text y="5">effect</text></g>
-              </svg>
-              <div class="stage-caption"><span>stage 4 · graph sugars</span><strong>state · producer · derived · effect</strong></div>
-            </article>
-            <article class="protocol-stage" data-stage-panel="4">
-              <svg viewBox="0 0 720 360" role="img" aria-labelledby="stage-five-title">
-                <title id="stage-five-title">Graph inspection reveals topology and waves</title>
-                <g class="mesh">
-                  <line x1="100" y1="90" x2="230" y2="130" /><line x1="100" y1="90" x2="170" y2="250" /><line x1="230" y1="130" x2="350" y2="90" /><line x1="230" y1="130" x2="330" y2="250" /><line x1="350" y1="90" x2="510" y2="130" /><line x1="330" y1="250" x2="510" y2="130" /><line x1="330" y1="250" x2="600" y2="260" />
-                  <circle cx="100" cy="90" r="12" /><circle cx="230" cy="130" r="12" /><circle cx="170" cy="250" r="12" /><circle cx="350" cy="90" r="12" /><circle cx="330" cy="250" r="12" /><circle cx="510" cy="130" r="12" /><circle cx="600" cy="260" r="12" />
+
+          <div class="console-body" data-stage-view="0">
+            <ol class="stage-rail" aria-label="Activation stages">
+              <li data-rail-stage="0"><b>EDGE</b><span>Subscriptions open declared paths.</span></li>
+              <li data-rail-stage="1"><b>START</b><span>Each new edge handshakes once.</span></li>
+              <li data-rail-stage="2"><b>DATA</b><span>Cached or first values push.</span></li>
+              <li data-rail-stage="3"><b>READY</b><span>The graph is ready for update waves.</span></li>
+            </ol>
+
+            <svg class="protocol-graph" viewBox="0 0 680 430" role="img" aria-labelledby="protocol-title protocol-desc">
+              <title id="protocol-title">Subscriptions activate a declared graph</title>
+              <desc id="protocol-desc">Declared edges open between profile, reducers, a search document join, and an index effect. Each edge sends its own START handshake before first values push through the graph.</desc>
+              <defs>
+                <marker id="arrow-line" viewBox="0 0 10 10" markerWidth="9" markerHeight="9" refX="8" refY="5" orient="auto">
+                  <path d="M1 1 9 5 1 9Z" />
+                </marker>
+                <filter id="soft-shadow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feDropShadow dx="0" dy="12" stdDeviation="12" flood-color="#07121e" flood-opacity="0.14" />
+                </filter>
+              </defs>
+              <g class="graph-grid">
+                <path d="M36 70H644M36 150H644M36 230H644M36 310H644M120 36V392M250 36V392M380 36V392M510 36V392" />
+              </g>
+              <g class="graph-lines">
+                <path id="edge-profile-normalize" class="edge edge-a" d="M126 214 280 138" marker-end="url(#arrow-line)" />
+                <path id="edge-profile-permissions" class="edge edge-b" d="M126 214 280 290" marker-end="url(#arrow-line)" />
+                <path id="edge-normalize-join" class="edge edge-c" d="M314 138 510 210" marker-end="url(#arrow-line)" />
+                <path id="edge-permissions-join" class="edge edge-d" d="M314 290 510 210" marker-end="url(#arrow-line)" />
+                <path id="edge-join-index" class="edge edge-e" d="M548 210 620 210" marker-end="url(#arrow-line)" />
+              </g>
+              <g class="activation-signal signal-edge" aria-hidden="true">
+                <path d="M126 214 280 138" />
+                <path d="M126 214 280 290" />
+                <path d="M314 138 510 210" />
+                <path d="M314 290 510 210" />
+                <path d="M548 210 620 210" />
+              </g>
+              <g class="activation-signal signal-ready" aria-hidden="true">
+                <circle cx="126" cy="214" r="6" />
+                <circle cx="280" cy="138" r="6" />
+                <circle cx="280" cy="290" r="6" />
+                <circle cx="510" cy="210" r="6" />
+                <circle cx="620" cy="210" r="6" />
+              </g>
+              <g class="message-layer" aria-hidden="true">
+                <g class="edge-message start-message start-a">
+                  <circle r="8" />
+                  <text x="14" y="4">START</text>
+                  <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.72;1" dur="5.8s" begin="0.2s" repeatCount="indefinite" />
+                  <animateMotion dur="5.8s" begin="0.2s" repeatCount="indefinite" path="M126 214 280 138" />
                 </g>
-                <circle class="lens" cx="384" cy="176" r="86" />
-                <line class="lens-handle" x1="448" y1="238" x2="504" y2="294" />
-                <text class="wide-label" x="360" y="50">topology maps structure</text>
-                <text class="wide-label" x="360" y="330">wave traces follow change</text>
-              </svg>
-              <div class="stage-caption"><span>stage 5 · graph inspection</span><strong>topology · traces · batch</strong></div>
-            </article>
-            <article class="protocol-stage" data-stage-panel="5">
-              <svg viewBox="0 0 720 360" role="img" aria-labelledby="stage-six-title">
-                <title id="stage-six-title">Boundary work re-enters through explicit facts</title>
-                <defs><marker id="arrow-lime-s6" viewBox="0 0 8 8" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 8 4 0 8Z" /></marker></defs>
-                <rect class="boundary-box" x="80" y="98" width="220" height="164" rx="18" />
-                <rect class="boundary-box second-box" x="420" y="98" width="220" height="164" rx="18" />
-                <line class="stage-edge live-edge" x1="306" y1="180" x2="414" y2="180" marker-end="url(#arrow-lime-s6)" />
-                <g class="mini-pipe" transform="translate(126 180)"><rect x="-24" y="-16" width="48" height="32" rx="8" /><text y="-30">input</text></g>
-                <g class="mini-pipe" transform="translate(210 180)"><rect x="-24" y="-16" width="48" height="32" rx="8" /><text y="-30">pool</text></g>
-                <g class="mini-pipe" transform="translate(294 180)"><rect x="-24" y="-16" width="48" height="32" rx="8" /><text y="-30">fact</text></g>
-                <g class="mini-pipe" transform="translate(470 180)"><rect x="-24" y="-16" width="48" height="32" rx="8" /><text y="-30">bridge</text></g>
-                <g class="mini-pipe" transform="translate(554 180)"><rect x="-24" y="-16" width="48" height="32" rx="8" /><text y="-30">effect</text></g>
-                <text class="wide-label" x="360" y="54">async lives at boundaries</text>
-                <text class="wide-label" x="360" y="316">the graph stays inspectable</text>
-              </svg>
-              <div class="stage-caption"><span>stage 6 · boundary flow</span><strong>outside work returns as declared facts</strong></div>
-            </article>
-            <article class="protocol-stage" data-stage-panel="6">
-              <svg viewBox="0 0 720 360" role="img" aria-labelledby="stage-seven-title">
-                <title id="stage-seven-title">Shared concept model with language-local APIs</title>
-                <circle class="package-orbit" cx="360" cy="180" r="104" />
-                <g class="package-node" transform="translate(360 76)"><rect x="-56" y="-26" width="112" height="52" rx="10" /><text y="5">concepts</text></g>
-                <g class="package-node" transform="translate(470 208)"><rect x="-50" y="-24" width="100" height="48" rx="10" /><text y="5">TypeScript</text></g>
-                <g class="package-node" transform="translate(250 208)"><rect x="-48" y="-24" width="96" height="48" rx="10" /><text y="5">Python</text></g>
-                <g class="package-node" transform="translate(360 292)"><rect x="-42" y="-22" width="84" height="44" rx="10" /><text y="5">Rust</text></g>
-                <text class="wide-label" x="360" y="44">one public mental model</text>
-                <text class="wide-label" x="360" y="334">exact APIs stay package-local</text>
-              </svg>
-              <div class="stage-caption"><span>stage 7 · language packages</span><strong>shared docs shell; delegated APIs</strong></div>
-            </article>
+                <g class="edge-message start-message start-b">
+                  <circle r="8" />
+                  <text x="14" y="4">START</text>
+                  <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.72;1" dur="5.8s" begin="0.42s" repeatCount="indefinite" />
+                  <animateMotion dur="5.8s" begin="0.42s" repeatCount="indefinite" path="M126 214 280 290" />
+                </g>
+                <g class="edge-message start-message start-c">
+                  <circle r="8" />
+                  <text x="14" y="4">START</text>
+                  <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.72;1" dur="5.8s" begin="0.72s" repeatCount="indefinite" />
+                  <animateMotion dur="5.8s" begin="0.72s" repeatCount="indefinite" path="M314 138 510 210" />
+                </g>
+                <g class="edge-message start-message start-d">
+                  <circle r="8" />
+                  <text x="14" y="4">START</text>
+                  <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.72;1" dur="5.8s" begin="0.94s" repeatCount="indefinite" />
+                  <animateMotion dur="5.8s" begin="0.94s" repeatCount="indefinite" path="M314 290 510 210" />
+                </g>
+                <g class="edge-message start-message start-e">
+                  <circle r="8" />
+                  <text x="14" y="4">START</text>
+                  <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.72;1" dur="5.8s" begin="1.22s" repeatCount="indefinite" />
+                  <animateMotion dur="5.8s" begin="1.22s" repeatCount="indefinite" path="M548 210 620 210" />
+                </g>
+                <g class="edge-message data-message activation-data-a">
+                  <circle r="9" />
+                  <text x="15" y="4">DATA</text>
+                  <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.08;0.74;1" dur="5.8s" begin="2.65s" repeatCount="indefinite" />
+                  <animateMotion dur="5.8s" begin="2.65s" repeatCount="indefinite" path="M126 214 280 138 510 210" />
+                </g>
+                <g class="edge-message data-message activation-data-b">
+                  <circle r="9" />
+                  <text x="15" y="4">DATA</text>
+                  <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.08;0.74;1" dur="5.8s" begin="2.82s" repeatCount="indefinite" />
+                  <animateMotion dur="5.8s" begin="2.82s" repeatCount="indefinite" path="M126 214 280 290 510 210" />
+                </g>
+                <g class="edge-message ready-message">
+                  <circle r="8" />
+                  <path d="m-5 0 3 4 8-9" />
+                  <text x="14" y="4">READY</text>
+                  <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.7;1" dur="5.8s" begin="4.25s" repeatCount="indefinite" />
+                  <animateMotion dur="5.8s" begin="4.25s" repeatCount="indefinite" path="M510 210 620 210" />
+                </g>
+              </g>
+              <g class="node node-source" transform="translate(100 214)">
+                <circle r="38" />
+                <path d="M-12 -10h24v20h-24zM-12 -10c0 5 24 5 24 0M-12 10c0 5 24 5 24 0" />
+                <text y="68">PROFILE</text>
+              </g>
+              <g class="node node-branch branch-a" transform="translate(280 138)">
+                <circle r="34" />
+                <path d="M0 -14v28M-13 8 0 0l13 8" />
+                <text y="-52">NORMALIZE</text>
+              </g>
+              <g class="node node-branch branch-b" transform="translate(280 290)">
+                <circle r="34" />
+                <path d="M0 -14v28M-13 8 0 0l13 8" />
+                <text y="60">PERMISSIONS</text>
+              </g>
+              <g class="node node-join" transform="translate(510 210)">
+                <circle r="38" />
+                <path d="M-13 -7h26M-13 7h26M0 -20v40" />
+                <text y="-58">SEARCH DOC</text>
+              </g>
+              <g class="node node-effect" transform="translate(620 210)">
+                <circle r="34" />
+                <path d="M4 -18-10 4h15l-8 20 17-27h-15z" />
+                <text y="58">INDEX</text>
+              </g>
+            </svg>
           </div>
-          <div class="showcase-chips">
-            <span>START</span><span>DIRTY</span><span>DATA</span><span>COMPLETE</span>
+          <div class="stage-caption">
+            <article class="is-active" data-stage-panel="0"><span>stage 1</span><strong>Declared edges open without hiding topology.</strong></article>
+            <article data-stage-panel="1"><span>stage 2</span><strong>START handshakes happen on each new edge.</strong></article>
+            <article data-stage-panel="2"><span>stage 3</span><strong>Cached or first DATA may push after activation.</strong></article>
+            <article data-stage-panel="3"><span>stage 4</span><strong>The activated graph is ready for update waves.</strong></article>
           </div>
         </div>
+
+        <div class="lang-row" aria-label="Package routes">
+          <span>Docs in your language:</span>
+          <a href="ts/index.html">TypeScript</a>
+          <a href="py/index.html">Python</a>
+          <a href="rust/index.html">Rust</a>
+        </div>
       </section>
+
       <section class="route-strip" aria-label="Documentation routes">
         <div class="route-strip-inner public-routes">
-          <a href="learn/index.html">Learn<small>Getting started and tiny graph mental model</small></a>
-          <a href="concepts/index.html">Concepts<small>Nodes, waves, dispatchers, pools, bridges</small></a>
-          <a href="composition/index.html">Composition<small>Guide patterns for declared reactive graphs</small></a>
-          <a href="examples/index.html">Examples<small>Recipes that delegate to package code</small></a>
-          <a href="packages/index.html">Packages<small>TS, Python, Rust docs entry points</small></a>
-          <a href="reference/index.html">Reference<small>Curated public guarantees</small></a>
+          <a href="learn/index.html"><span>Learn</span><small>Start with the smallest declared graph.</small></a>
+          <a href="concepts/index.html"><span>Concepts</span><small>Nodes, waves, dispatchers, pools, bridges.</small></a>
+          <a href="composition/index.html"><span>Composition</span><small>Patterns for inputs, joins, and effects.</small></a>
+          <a href="examples/index.html"><span>Examples</span><small>Recipes that point to package code.</small></a>
+          <a href="packages/index.html"><span>Packages</span><small>TS, Python, and Rust entry points.</small></a>
+          <a href="reference/index.html"><span>Reference</span><small>Curated public guarantees.</small></a>
         </div>
       </section>
-      <section class="band stats-band guarantee-sheet" aria-label="Public guarantee map">
-        <div>
-          <p class="eyebrow">Public guarantee map</p>
-          <h2>Curated protocol promises for people building with the graph.</h2>
-        </div>
-        <div class="stat-grid">
-          <a class="stat-card spec-card" href="concepts/index.html"><span>Verbs</span><strong>8</strong><small>The public shape is closed: node, graph, batch, state, producer, derived, effect, mount.</small></a>
-          <a class="stat-card spec-card" href="reference/index.html"><span>Messages</span><strong>Closed</strong><small>Waves use a public message vocabulary instead of ad hoc event names.</small></a>
-          <a class="stat-card spec-card" href="composition/index.html"><span>Waves</span><strong>Glitch-free</strong><small>DIRTY travels before values so fan-out can rejoin without half-old mixes.</small></a>
-          <a class="stat-card spec-card" href="packages/index.html"><span>Packages</span><strong>Local</strong><small>TypeScript, Python, and Rust keep exact API docs in their own packages.</small></a>
-        </div>
-      </section>
-      <section class="band migration-rows" aria-label="Problem and solution rows">
+
+      <section class="band wave-field" aria-label="Protocol wave frame">
         <div class="section-lede">
-          <p class="eyebrow">Why the graph exists</p>
-          <h2>Three ordinary docs problems become topology problems.</h2>
+          <p class="eyebrow">Wave-based propagation</p>
+          <h2>After activation, updates move in two phases.</h2>
+          <p class="band-intro">START belongs to subscription. Once edges exist, an update wave dirties the reachable downstream cone first, then lets values settle through the graph.</p>
         </div>
-        <div class="row-stack">
-          <div class="problem-row">
-            <div class="problem-cell">
-              <span>01</span>
-              <h3>Hidden coordination.</h3>
-              <p>When updates are spread across callbacks, logs, queues, and hand-written glue, the structure is hard to inspect and harder to explain.</p>
-            </div>
-            <div class="solution-cell">
-              <span>GraphReFly</span>
-              <h3>Declared topology.</h3>
-              <p>Inputs, reductions, and effects are named graph nodes with explicit edges. The shape is readable before a single value moves.</p>
-            </div>
-          </div>
-          <div class="problem-row">
-            <div class="problem-cell">
-              <span>02</span>
-              <h3>Stale joins.</h3>
-              <p>Fan-out and fan-in are easy to describe and surprisingly easy to get wrong when each branch reports at a different time.</p>
-            </div>
-            <div class="solution-cell">
-              <span>GraphReFly</span>
-              <h3>Wave semantics.</h3>
-              <p>DIRTY marks the reachable graph before DATA settles. A joining node sees the changed inputs together, then computes once.</p>
-            </div>
-          </div>
-          <div class="problem-row">
-            <div class="problem-cell">
-              <span>03</span>
-              <h3>Package drift.</h3>
-              <p>Shared concepts rot when every language page tries to copy API details from every other implementation.</p>
-            </div>
-            <div class="solution-cell">
-              <span>GraphReFly</span>
-              <h3>Curated shell, delegated APIs.</h3>
-              <p>This site teaches the shared model and routes to package-owned TypeScript, Python, and Rust references for exact syntax.</p>
-            </div>
-          </div>
+        <div class="wave-frame">
+          <div class="wave-step is-hot"><span>1</span><b>DIRTY flood</b><small>Reachable downstream edges are marked before values move.</small></div>
+          <div class="wave-step"><span>2</span><b>DATA phase</b><small>Values travel only after the dirty phase closes.</small></div>
+          <div class="wave-step"><span>3</span><b>Join settle</b><small>The diamond recomputes once from settled inputs.</small></div>
+          <div class="wave-step"><span>4</span><b>Terminal down</b><small>COMPLETE is down-only; sealed nodes send no later DATA.</small></div>
+          <svg class="wave-frame-svg" viewBox="0 0 1040 360" role="img" aria-labelledby="wave-frame-title">
+            <title id="wave-frame-title">DIRTY travels before DATA through a diamond graph; COMPLETE travels downstream only</title>
+            <defs>
+              <marker id="frame-arrow" viewBox="0 0 10 10" markerWidth="8" markerHeight="8" refX="8" refY="5" orient="auto"><path d="M1 1 9 5 1 9Z" /></marker>
+            </defs>
+            <g class="frame-edges">
+              <path d="M90 180H210L320 100H450L580 180H725H835" marker-end="url(#frame-arrow)" />
+              <path d="M90 180H210L320 260H450L580 180" marker-end="url(#frame-arrow)" />
+            </g>
+            <g class="frame-wave dirty">
+              <path d="M90 180H210L320 100H450L580 180H725H835" />
+              <path d="M90 180H210L320 260H450L580 180" />
+            </g>
+            <g class="frame-wave data">
+              <path d="M320 100H450L580 180H725" />
+              <path d="M320 260H450L580 180" />
+            </g>
+            <g class="frame-callouts" aria-hidden="true">
+              <text x="108" y="44">DIRTY first</text>
+              <text x="440" y="44">DATA after</text>
+              <text x="724" y="44">COMPLETE down-only</text>
+            </g>
+            <g class="frame-node source" transform="translate(90 180)"><circle r="34" /><text y="58">SOURCE</text></g>
+            <g class="frame-node branch" transform="translate(320 100)"><circle r="30" /><text y="-48">A</text></g>
+            <g class="frame-node branch" transform="translate(320 260)"><circle r="30" /><text y="56">B</text></g>
+            <g class="frame-node join" transform="translate(580 180)"><circle r="38" /><text y="-58">JOIN</text></g>
+            <g class="frame-node effect" transform="translate(835 180)"><circle r="34" /><text y="58">EFFECT</text></g>
+            <g class="frame-message dirty-msg">
+              <path d="M0 -9v18M0 -9l14 5-14 5" />
+              <text x="18" y="4">DIRTY floods first</text>
+              <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.08;0.74;1" dur="6s" repeatCount="indefinite" />
+              <animateMotion dur="6s" repeatCount="indefinite" path="M90 180H210L320 100H450L580 180H725H835" />
+            </g>
+            <g class="frame-message data-msg">
+              <circle r="8" />
+              <text x="16" y="4">DATA after dirty</text>
+              <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.08;0.74;1" dur="6s" begin="2s" repeatCount="indefinite" />
+              <animateMotion dur="6s" begin="2s" repeatCount="indefinite" path="M320 100H450L580 180H725" />
+            </g>
+            <g class="frame-message join-msg">
+              <circle r="9" />
+              <path d="m-5 0 3 4 8-9" />
+              <text x="16" y="4">JOIN settles once</text>
+              <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.74;1" dur="6s" begin="3.1s" repeatCount="indefinite" />
+              <animateMotion dur="6s" begin="3.1s" repeatCount="indefinite" path="M580 180H725" />
+            </g>
+            <g class="frame-message complete-msg">
+              <circle r="8" />
+              <text x="16" y="4">COMPLETE down-only</text>
+              <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.72;1" dur="6s" begin="4s" repeatCount="indefinite" />
+              <animateMotion dur="6s" begin="4s" repeatCount="indefinite" path="M580 180H835" />
+            </g>
+          </svg>
         </div>
       </section>
-      <section class="band split-band">
+
+      <section class="band guarantee-sheet" aria-label="Public guarantee map">
+        <div class="sheet-copy">
+          <p class="eyebrow">Guarantee sheet</p>
+          <h2>Curated guarantees, not internal control state.</h2>
+          <p class="band-intro">This site teaches the stable vocabulary developers need to reason about a graph. Exact syntax and package-specific detail live with the package docs.</p>
+        </div>
+        <div class="guarantee-table">
+          <div class="table-head"><span>#</span><span>Guarantee</span><span>What it means</span><span>Public terms</span></div>
+          <a href="concepts/index.html" class="table-row">
+            <span>01</span><b>Closed verbs</b><p>The public shape is finite: node, graph, batch, state, producer, derived, effect, mount.</p><small>node · graph · effect</small>
+          </a>
+          <a href="reference/index.html" class="table-row">
+            <span>02</span><b>Core wave stages</b><p>The homepage shows the lifecycle words most readers need first; the reference route covers the curated vocabulary.</p><small>START · DIRTY · DATA · COMPLETE</small>
+          </a>
+          <a href="composition/index.html" class="table-row">
+            <span>03</span><b>Glitch-free waves</b><p>DIRTY travels before DATA so fan-out can rejoin without half-old mixes.</p><small>wave · join · batch</small>
+          </a>
+          <a href="packages/index.html" class="table-row">
+            <span>04</span><b>Package-local APIs</b><p>Exact language APIs, demos, release notes, and examples stay with each package.</p><small>TypeScript · Python · Rust</small>
+          </a>
+        </div>
+      </section>
+
+      <section class="band problem-system" aria-label="Problem and solution rows">
+        <div class="section-lede wide">
+          <p class="eyebrow">Problems -> solutions</p>
+          <h2>Why graph projects slow down, and how GraphReFly names the fix.</h2>
+          <p class="band-intro">The homepage is not a package manual. It shows the shared model developers need before they pick syntax.</p>
+        </div>
+        <div class="diagnosis-rows">
+          <article class="diagnosis-row">
+            <span class="row-number">01</span>
+            <div class="problem-card"><b>Hidden coordination</b><p>Callbacks, logs, queues, and glue code spread structure across places readers cannot inspect together.</p></div>
+            <div class="row-diagram tangled" aria-hidden="true"></div>
+            <div class="solution-card"><b>Declared topology</b><p>Inputs, reductions, joins, and effects become named graph nodes with explicit edges.</p></div>
+          </article>
+          <article class="diagnosis-row">
+            <span class="row-number">02</span>
+            <div class="problem-card"><b>Stale joins</b><p>Fan-out is easy to sketch and easy to get wrong when each branch reports on its own time.</p></div>
+            <div class="row-diagram wave" aria-hidden="true"></div>
+            <div class="solution-card"><b>Wave semantics</b><p>DIRTY prepares the reachable graph before DATA settles the join once.</p></div>
+          </article>
+          <article class="diagnosis-row">
+            <span class="row-number">03</span>
+            <div class="problem-card"><b>Package drift</b><p>Shared concepts rot when every language page tries to copy exact details from the others.</p></div>
+            <div class="row-diagram packages" aria-hidden="true"></div>
+            <div class="solution-card"><b>Curated shell, delegated APIs</b><p>This site teaches the common model and routes exact API references to package-owned docs.</p></div>
+          </article>
+        </div>
+      </section>
+
+      <section class="band split-band requirement-band">
         <div>
-          <p class="eyebrow">Requirement panel</p>
-          <h2>A public docs layer has to stay useful without becoming the control surface.</h2>
-          <p class="band-intro">The shared site borrows the old homepage's visual rhythm, but the copy now follows the public-docs boundary: teach the model, route to packages, and keep implementation governance out of the developer path.</p>
+          <p class="eyebrow">Public docs requirements</p>
+          <h2>Useful docs without mixing ownership.</h2>
+          <p class="band-intro">Learn the shared model here, then use the TypeScript, Python, or Rust package docs for exact APIs, examples, demos, and release notes.</p>
         </div>
         <div class="requirement-panel" data-requirement-panel>
           <div class="requirement-grid" aria-label="Public docs requirements">
             <button type="button" class="requirement-block is-active" data-requirement="declare">Declare<span>Topology first</span></button>
             <button type="button" class="requirement-block" data-requirement="push">Push<span>Waves, not polling</span></button>
             <button type="button" class="requirement-block" data-requirement="inspect">Inspect<span>Readable graph shape</span></button>
-            <button type="button" class="requirement-block" data-requirement="delegate">Delegate<span>Package-local APIs</span></button>
+            <button type="button" class="requirement-block" data-requirement="delegate">Delegate<span>Package docs own APIs</span></button>
           </div>
           <div class="requirement-detail" aria-live="polite">
             <span id="requirement-label">Declare</span>
@@ -242,22 +324,26 @@
           </div>
         </div>
       </section>
-      <section class="band">
-        <h2>One shared mental model. Language-local APIs.</h2>
-        <p class="band-intro">GraphReFly has one public docs shell and three self-contained implementation packages. The shared site links to package-owned docs instead of copying generated references.</p>
-        <div class="package-cta-grid">
-          <a class="package-cta" href="ts/index.html"><span>TypeScript</span><strong>@graphrefly/ts</strong><small>Generated API docs, examples, demos, package scripts.</small></a>
-          <a class="package-cta" href="py/index.html"><span>Python</span><strong>graphrefly</strong><small>MkDocs, mkdocstrings, install and release docs.</small></a>
-          <a class="package-cta" href="rust/index.html"><span>Rust</span><strong>graphrefly-rs</strong><small>Rustdoc, examples, crate-specific development notes.</small></a>
+
+      <section class="band package-section">
+        <div class="section-lede center">
+          <p class="eyebrow">Package routes</p>
+          <h2>One shared mental model. Language-local APIs.</h2>
+          <p class="band-intro">The shared site links and delegates. TypeScript, Python, and Rust keep exact API references, demos, examples, and release material in their own package docs.</p>
+        </div>
+        <div class="package-lanes">
+          <a class="package-lane" href="ts/index.html"><span>@graphrefly/ts</span><b>TypeScript</b><small>Enter TypeScript docs</small></a>
+          <a class="package-lane" href="py/index.html"><span>graphrefly</span><b>Python</b><small>Enter Python docs</small></a>
+          <a class="package-lane" href="rust/index.html"><span>graphrefly-rs</span><b>Rust</b><small>Enter Rust docs</small></a>
         </div>
       </section>
     </main>
     <footer class="site-footer rich-footer">
-      <div class="footer-brand">GraphReFly<small>Reactive Graph Protocol · Causal Tracing</small></div>
+      <div class="footer-brand">GraphReFly<small>Reactive Graph Protocol</small></div>
       <div class="footer-links" aria-label="Footer links">
         <div><b>Docs</b><a href="learn/index.html">Learn</a><a href="concepts/index.html">Concepts</a><a href="composition/index.html">Composition</a><a href="reference/index.html">Reference</a></div>
         <div><b>Packages</b><a href="ts/index.html">TypeScript</a><a href="py/index.html">Python</a><a href="rust/index.html">Rust</a></div>
-        <div><b>Boundary</b><span>Curated public docs</span><span>Package APIs delegated</span><span>Artifact-ready for Pages</span></div>
+        <div><b>Boundary</b><span>Curated public docs</span><span>Package APIs delegated</span></div>
       </div>
     </footer>
     <script src="scripts/site.js"></script>
