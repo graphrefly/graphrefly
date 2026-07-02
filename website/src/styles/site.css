@@ -320,6 +320,7 @@ h1 {
 }
 
 .console-body {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(155px, 0.32fr) minmax(0, 1fr);
   gap: 8px;
@@ -390,6 +391,68 @@ h1 {
 .protocol-graph {
   width: 100%;
   min-height: 390px;
+}
+
+.message-key {
+  position: absolute;
+  z-index: 3;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  align-items: center;
+  color: rgba(7, 18, 30, 0.7);
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.message-key span {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.message-key i {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+}
+
+.activation-key {
+  right: 24px;
+  bottom: 18px;
+}
+
+.wave-key {
+  right: 24px;
+  bottom: 18px;
+}
+
+.key-start {
+  border: 3px solid var(--green-ink);
+  border-radius: 999px;
+  background: white;
+}
+
+.key-data {
+  border: 2px solid #1e66a8;
+  border-radius: 999px;
+  background: #69b7ff;
+}
+
+.key-ready,
+.key-complete {
+  border: 2px solid var(--green);
+  border-radius: 3px;
+  background: var(--ink);
+}
+
+.key-dirty {
+  width: 16px;
+  height: 12px;
+  border-left: 3px solid var(--copper);
+  border-top: 3px solid var(--copper);
+  transform: skewX(-22deg);
 }
 
 .graph-grid path {
@@ -492,6 +555,28 @@ h1 {
   fill: var(--green);
   stroke: var(--green-ink);
   stroke-width: 2.5;
+}
+
+.protocol-graph .start-message circle {
+  fill: #ffffff;
+  stroke: var(--green-ink);
+  stroke-width: 3;
+}
+
+.protocol-graph .data-message circle {
+  fill: #69b7ff;
+  stroke: #1e66a8;
+  stroke-width: 2.5;
+}
+
+.protocol-graph .ready-message circle {
+  fill: var(--ink);
+  stroke: var(--green);
+  stroke-width: 2.5;
+}
+
+.protocol-graph .ready-message path {
+  stroke: #ffffff;
 }
 
 .dirty-message path,
@@ -751,7 +836,15 @@ h1 {
 }
 
 .frame-wave {
-  opacity: 0.75;
+  opacity: 0;
+}
+
+.frame-wave.dirty {
+  animation: dirtyPhase 9s linear infinite;
+}
+
+.frame-wave.data {
+  animation: dataPhase 9s linear infinite;
 }
 
 .frame-wave path {
@@ -828,12 +921,34 @@ h1 {
   stroke-width: 2;
 }
 
+.frame-message.data-msg circle {
+  fill: #69b7ff;
+  stroke: #1e66a8;
+  stroke-width: 2.5;
+}
+
+.frame-message.join-msg circle {
+  fill: #ffffff;
+  stroke: var(--green-ink);
+  stroke-width: 3;
+}
+
+.frame-message.complete-msg rect {
+  fill: var(--ink);
+  stroke: var(--green);
+  stroke-width: 2.5;
+}
+
 .frame-message path {
   fill: none;
   stroke: var(--copper);
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 3;
+}
+
+.frame-message.complete-msg path {
+  stroke: #ffffff;
 }
 
 @keyframes wavePulse {
@@ -852,6 +967,32 @@ h1 {
 @keyframes waveDash {
   to {
     stroke-dashoffset: -72;
+  }
+}
+
+@keyframes dirtyPhase {
+  0%,
+  45% {
+    opacity: 0.72;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes dataPhase {
+  0%,
+  49% {
+    opacity: 0;
+  }
+  52%,
+  84% {
+    opacity: 0.68;
+  }
+  89%,
+  100% {
+    opacity: 0;
   }
 }
 

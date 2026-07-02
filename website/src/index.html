@@ -45,10 +45,15 @@
               <li data-rail-stage="2"><b>DATA</b><span>Cached or first values push.</span></li>
               <li data-rail-stage="3"><b>READY</b><span>The graph is ready for update waves.</span></li>
             </ol>
+            <div class="message-key activation-key" aria-label="Activation message key">
+              <span><i class="key-start"></i>START</span>
+              <span><i class="key-data"></i>DATA</span>
+              <span><i class="key-ready"></i>READY</span>
+            </div>
 
             <svg class="protocol-graph" viewBox="0 0 680 430" role="img" aria-labelledby="protocol-title protocol-desc">
               <title id="protocol-title">Subscriptions activate a declared graph</title>
-              <desc id="protocol-desc">Declared edges open between profile, reducers, a search document join, and an index effect. Each edge sends its own START handshake before first values push through the graph.</desc>
+              <desc id="protocol-desc">Declared edges open between a source, two reducers, a join, and an effect. Each edge sends its own START handshake before first values push through the graph.</desc>
               <defs>
                 <marker id="arrow-line" viewBox="0 0 10 10" markerWidth="9" markerHeight="9" refX="8" refY="5" orient="auto">
                   <path d="M1 1 9 5 1 9Z" />
@@ -135,27 +140,27 @@
               <g class="node node-source" transform="translate(100 214)">
                 <circle r="38" />
                 <path d="M-12 -10h24v20h-24zM-12 -10c0 5 24 5 24 0M-12 10c0 5 24 5 24 0" />
-                <text y="68">PROFILE</text>
+                <text y="68">SOURCE</text>
               </g>
               <g class="node node-branch branch-a" transform="translate(280 138)">
                 <circle r="34" />
                 <path d="M0 -14v28M-13 8 0 0l13 8" />
-                <text y="-52">NORMALIZE</text>
+                <text y="-52">REDUCE A</text>
               </g>
               <g class="node node-branch branch-b" transform="translate(280 290)">
                 <circle r="34" />
                 <path d="M0 -14v28M-13 8 0 0l13 8" />
-                <text y="60">PERMISSIONS</text>
+                <text y="60">REDUCE B</text>
               </g>
               <g class="node node-join" transform="translate(510 210)">
                 <circle r="38" />
                 <path d="M-13 -7h26M-13 7h26M0 -20v40" />
-                <text y="-58">SEARCH DOC</text>
+                <text y="-58">JOIN</text>
               </g>
               <g class="node node-effect" transform="translate(620 210)">
                 <circle r="34" />
                 <path d="M4 -18-10 4h15l-8 20 17-27h-15z" />
-                <text y="58">INDEX</text>
+                <text y="58">EFFECT</text>
               </g>
             </svg>
           </div>
@@ -197,6 +202,11 @@
           <div class="wave-step"><span>2</span><b>DATA phase</b><small>Values travel only after the dirty phase closes.</small></div>
           <div class="wave-step"><span>3</span><b>Join settle</b><small>The diamond recomputes once from settled inputs.</small></div>
           <div class="wave-step"><span>4</span><b>Terminal down</b><small>COMPLETE is down-only; sealed nodes send no later DATA.</small></div>
+          <div class="message-key wave-key" aria-label="Wave message key">
+            <span><i class="key-dirty"></i>DIRTY</span>
+            <span><i class="key-data"></i>DATA</span>
+            <span><i class="key-complete"></i>COMPLETE</span>
+          </div>
           <svg class="wave-frame-svg" viewBox="0 0 1040 360" role="img" aria-labelledby="wave-frame-title">
             <title id="wave-frame-title">DIRTY travels before DATA through a diamond graph; COMPLETE travels downstream only</title>
             <defs>
@@ -224,30 +234,61 @@
             <g class="frame-node branch" transform="translate(320 260)"><circle r="30" /><text y="56">B</text></g>
             <g class="frame-node join" transform="translate(580 180)"><circle r="38" /><text y="-58">JOIN</text></g>
             <g class="frame-node effect" transform="translate(835 180)"><circle r="34" /><text y="58">EFFECT</text></g>
-            <g class="frame-message dirty-msg">
+            <g class="frame-message dirty-msg dirty-source-a">
               <path d="M0 -9v18M0 -9l14 5-14 5" />
-              <text x="18" y="4">DIRTY floods first</text>
-              <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.08;0.74;1" dur="6s" repeatCount="indefinite" />
-              <animateMotion dur="6s" repeatCount="indefinite" path="M90 180H210L320 100H450L580 180H725H835" />
+              <animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.01;0.11;0.13;1" dur="9s" repeatCount="indefinite" />
+              <animateMotion dur="9s" repeatCount="indefinite" path="M90 180H210L320 100" keyPoints="0;0;1;1" keyTimes="0;0.01;0.13;1" calcMode="linear" />
             </g>
-            <g class="frame-message data-msg">
+            <g class="frame-message dirty-msg dirty-source-b">
+              <path d="M0 -9v18M0 -9l14 5-14 5" />
+              <animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.01;0.11;0.13;1" dur="9s" repeatCount="indefinite" />
+              <animateMotion dur="9s" repeatCount="indefinite" path="M90 180H210L320 260" keyPoints="0;0;1;1" keyTimes="0;0.01;0.13;1" calcMode="linear" />
+            </g>
+            <g class="frame-message dirty-msg dirty-a-join">
+              <path d="M0 -9v18M0 -9l14 5-14 5" />
+              <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.15;0.16;0.29;0.31;1" dur="9s" repeatCount="indefinite" />
+              <animateMotion dur="9s" repeatCount="indefinite" path="M320 100H450L580 180" keyPoints="0;0;1;1" keyTimes="0;0.16;0.31;1" calcMode="linear" />
+            </g>
+            <g class="frame-message dirty-msg dirty-b-join">
+              <path d="M0 -9v18M0 -9l14 5-14 5" />
+              <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.15;0.16;0.29;0.31;1" dur="9s" repeatCount="indefinite" />
+              <animateMotion dur="9s" repeatCount="indefinite" path="M320 260H450L580 180" keyPoints="0;0;1;1" keyTimes="0;0.16;0.31;1" calcMode="linear" />
+            </g>
+            <g class="frame-message dirty-msg dirty-join-effect">
+              <path d="M0 -9v18M0 -9l14 5-14 5" />
+              <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.33;0.34;0.43;0.45;1" dur="9s" repeatCount="indefinite" />
+              <animateMotion dur="9s" repeatCount="indefinite" path="M580 180H835" keyPoints="0;0;1;1" keyTimes="0;0.34;0.45;1" calcMode="linear" />
+            </g>
+            <g class="frame-message data-msg data-source-a">
               <circle r="8" />
-              <text x="16" y="4">DATA after dirty</text>
-              <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.08;0.74;1" dur="6s" begin="2s" repeatCount="indefinite" />
-              <animateMotion dur="6s" begin="2s" repeatCount="indefinite" path="M320 100H450L580 180H725" />
+              <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.49;0.5;0.61;0.63;1" dur="9s" repeatCount="indefinite" />
+              <animateMotion dur="9s" repeatCount="indefinite" path="M90 180H210L320 100" keyPoints="0;0;1;1" keyTimes="0;0.5;0.63;1" calcMode="linear" />
             </g>
-            <g class="frame-message join-msg">
+            <g class="frame-message data-msg data-source-b">
+              <circle r="8" />
+              <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.49;0.5;0.61;0.63;1" dur="9s" repeatCount="indefinite" />
+              <animateMotion dur="9s" repeatCount="indefinite" path="M90 180H210L320 260" keyPoints="0;0;1;1" keyTimes="0;0.5;0.63;1" calcMode="linear" />
+            </g>
+            <g class="frame-message data-msg data-a-join">
+              <circle r="8" />
+              <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.64;0.65;0.76;0.78;1" dur="9s" repeatCount="indefinite" />
+              <animateMotion dur="9s" repeatCount="indefinite" path="M320 100H450L580 180" keyPoints="0;0;1;1" keyTimes="0;0.65;0.78;1" calcMode="linear" />
+            </g>
+            <g class="frame-message data-msg data-b-join">
+              <circle r="8" />
+              <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.64;0.65;0.76;0.78;1" dur="9s" repeatCount="indefinite" />
+              <animateMotion dur="9s" repeatCount="indefinite" path="M320 260H450L580 180" keyPoints="0;0;1;1" keyTimes="0;0.65;0.78;1" calcMode="linear" />
+            </g>
+            <g class="frame-message join-msg" transform="translate(580 180)">
               <circle r="9" />
               <path d="m-5 0 3 4 8-9" />
-              <text x="16" y="4">JOIN settles once</text>
-              <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.74;1" dur="6s" begin="3.1s" repeatCount="indefinite" />
-              <animateMotion dur="6s" begin="3.1s" repeatCount="indefinite" path="M580 180H725" />
+              <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.78;0.79;0.84;0.87;1" dur="9s" repeatCount="indefinite" />
             </g>
             <g class="frame-message complete-msg">
-              <circle r="8" />
-              <text x="16" y="4">COMPLETE down-only</text>
-              <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.72;1" dur="6s" begin="4s" repeatCount="indefinite" />
-              <animateMotion dur="6s" begin="4s" repeatCount="indefinite" path="M580 180H835" />
+              <rect x="-7" y="-7" width="14" height="14" rx="2" />
+              <path d="m-4 0 3 4 7-8" />
+              <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.86;0.87;0.96;0.99;1" dur="9s" repeatCount="indefinite" />
+              <animateMotion dur="9s" repeatCount="indefinite" path="M580 180H835" keyPoints="0;0;1;1" keyTimes="0;0.87;0.99;1" calcMode="linear" />
             </g>
           </svg>
         </div>
