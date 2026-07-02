@@ -9,16 +9,41 @@ for (const link of links) {
   }
 }
 
+const legacyShowcase = document.querySelector("[data-legacy-showcase]");
+if (legacyShowcase) {
+  const seekButtons = [...legacyShowcase.querySelectorAll("[data-ms]")];
+  const seekShowcase = (ms) => {
+    const animations = legacyShowcase.getAnimations
+      ? legacyShowcase.getAnimations({ subtree: true })
+      : document.getAnimations();
+    for (const animation of animations) {
+      try {
+        animation.currentTime = ms;
+      } catch {
+        // Some browser-created animations may be read-only while initializing.
+      }
+    }
+  };
+
+  for (const button of seekButtons) {
+    button.addEventListener("click", () => {
+      const ms = Number.parseInt(button.dataset.ms, 10);
+      if (Number.isFinite(ms)) seekShowcase(ms);
+    });
+  }
+}
+
 const showcase = document.querySelector("[data-protocol-showcase]");
 if (showcase) {
   const buttons = [...showcase.querySelectorAll("[data-stage]")];
   const panels = [...showcase.querySelectorAll("[data-stage-panel]")];
   const stageViews = [...showcase.querySelectorAll("[data-stage-view]")];
+  const stageCount = Math.max(buttons.length, panels.length, 1);
   let activeStage = 0;
   let timer = null;
 
   const setStage = (nextStage) => {
-    activeStage = (nextStage + panels.length) % panels.length;
+    activeStage = (nextStage + stageCount) % stageCount;
     for (const button of buttons) {
       const selected = Number(button.dataset.stage) === activeStage;
       button.setAttribute("aria-selected", selected ? "true" : "false");
@@ -33,7 +58,7 @@ if (showcase) {
 
   const startTimer = () => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    timer = window.setInterval(() => setStage(activeStage + 1), 5800);
+    timer = window.setInterval(() => setStage(activeStage + 1), 6800);
   };
 
   const resetTimer = () => {

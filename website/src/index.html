@@ -20,156 +20,459 @@
         <div class="hero-copy">
           <h1 class="hero-equation"><span>Graph</span><b>+</b><span>Re<i>[active]</i></span><b>=</b><em>Fly</em></h1>
           <p class="hero-meta">Reactive Graph Protocol</p>
-          <p class="hero-lede"><strong>GraphReFly</strong> is a public protocol for declared, inspectable reduction. Facts enter through explicit inputs, waves carry change through reducers, and boundary effects keep outside work visible.</p>
+          <p class="hero-lede"><strong>GraphReFly</strong> makes the future of human-AI collaboration real. <strong>One reactive graph</strong> where humans and AI work as peers — <strong>composing, reviewing, and modifying together</strong>. Changes <strong>propagate</strong> automatically; the model reruns only when it must. A thin harness layer lets you turn each black-box step into a verified outcome. Every flow <strong>observable</strong>, every change <strong>auditable</strong>. Step by step, <strong>probability becomes predictability</strong>.</p>
           <div class="hero-actions">
             <a class="button" href="packages/index.html">Choose a package <span aria-hidden="true">-></span></a>
             <a class="button secondary" href="concepts/index.html">Read concepts</a>
           </div>
         </div>
 
-        <div class="protocol-console" data-protocol-showcase aria-label="GraphReFly subscription activation animation">
-          <div class="console-head">
-            <span>Live activation instrument · START is per edge</span>
-            <div class="protocol-scrubber" aria-label="Jump to activation stage">
-              <button type="button" data-stage="0" aria-label="Edges open" aria-selected="true">1</button>
-              <button type="button" data-stage="1" aria-label="START handshakes">2</button>
-              <button type="button" data-stage="2" aria-label="First values push">3</button>
-              <button type="button" data-stage="3" aria-label="Graph ready">4</button>
-            </div>
-          </div>
+        <div class="protocol-console legacy-showcase" data-legacy-showcase aria-label="GraphReFly seven-scene reactive graph protocol animation">
+          <div class="gr-showcase-frame">
+              <span class="gr-showcase-tagline">Core concept · graph waves</span>
+              <div class="gr-scrubber" role="tablist" aria-label="Jump to stage">
+                <button type="button" class="gr-seg gr-seg-1" data-ms="0"     title="Stage 1 · Connection lifecycle" aria-label="Stage 1 — Connection lifecycle">1</button>
+                <button type="button" class="gr-seg gr-seg-2" data-ms="14000" title="Stage 2 · Diamond resolution"   aria-label="Stage 2 — Diamond resolution">2</button>
+                <button type="button" class="gr-seg gr-seg-3" data-ms="19000" title="Stage 3 · Node anatomy"         aria-label="Stage 3 — Node anatomy">3</button>
+                <button type="button" class="gr-seg gr-seg-4" data-ms="24500" title="Stage 4 · Node roles"           aria-label="Stage 4 — Node roles">4</button>
+                <button type="button" class="gr-seg gr-seg-5" data-ms="30500" title="Stage 5 · Graph level"          aria-label="Stage 5 — Graph level">5</button>
+                <button type="button" class="gr-seg gr-seg-6" data-ms="38000" title="Stage 6 · Orchestrate"          aria-label="Stage 6 — Orchestrate">6</button>
+                <button type="button" class="gr-seg gr-seg-7" data-ms="43000" title="Stage 7 · Agent loop"           aria-label="Stage 7 — Agent loop">7</button>
+              </div>
 
-          <div class="console-body" data-stage-view="0">
-            <ol class="stage-rail" aria-label="Activation stages">
-              <li data-rail-stage="0"><b>EDGE</b><span>Subscriptions open declared paths.</span></li>
-              <li data-rail-stage="1"><b>START</b><span>Each new edge handshakes once.</span></li>
-              <li data-rail-stage="2"><b>DATA</b><span>Cached or first values push.</span></li>
-              <li data-rail-stage="3"><b>READY</b><span>The graph is ready for update waves.</span></li>
-            </ol>
-            <div class="message-key activation-key" aria-label="Activation message key">
-              <span><i class="key-start"></i>START</span>
-              <span><i class="key-data"></i>DATA</span>
-              <span><i class="key-ready"></i>READY</span>
-            </div>
+              <div class="gr-showcase-stage">
+                <svg viewBox="-450 -218 900 436" preserveAspectRatio="xMidYMid meet" class="gr-stage-svg" role="img" aria-labelledby="gr-stage-title gr-stage-desc">
+                  <title id="gr-stage-title">Core GraphReFly concept: graph waves moving through a declared topology</title>
+                  <desc id="gr-stage-desc">Seven scenes show subscription lifecycle, dirty and data waves, node anatomy, graph roles, graph-level views, orchestration, and an agent loop.</desc>
+                  <defs>
+                    <radialGradient id="gr-lensGrad" cx="50%" cy="50%" r="50%">
+                      <stop offset="0%" stop-color="rgba(7,18,30,0.08)" />
+                      <stop offset="70%" stop-color="rgba(7,18,30,0.03)" />
+                      <stop offset="100%" stop-color="rgba(7,18,30,0)" />
+                    </radialGradient>
+                    <!-- Generic arrowhead for directed edges; userSpaceOnUse keeps size independent of stroke-width -->
+                    <marker id="gr-arr" viewBox="0 0 8 8" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse">
+                      <polygon points="0 0, 8 4, 0 8" fill="rgba(7,18,30,0.62)"></polygon>
+                    </marker>
+                    <!-- Stage 1 edge arrowhead; semantic color stays on the travelling messages, not the structural line. -->
+                    <marker id="gr-arr-lime" viewBox="0 0 8 8" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse">
+                      <polygon points="0 0, 8 4, 0 8" fill="rgba(7,18,30,0.62)"></polygon>
+                    </marker>
+                    <!-- Larger arrowhead for Stage 3 ports — emphasis on the up/down direction labels -->
+                    <marker id="gr-arr-port" viewBox="0 0 14 14" markerWidth="14" markerHeight="14" refX="12" refY="7" orient="auto" markerUnits="userSpaceOnUse">
+                      <polygon points="0 0, 14 7, 0 14" fill="rgba(7,18,30,0.85)"></polygon>
+                    </marker>
+                    <!-- DIRTY pattern: magenta dots over translucent base. Applied via fill="url(#gr-dirty)" on nodes in the DIRTY state. -->
+                    <pattern id="gr-dirty" patternUnits="userSpaceOnUse" width="7" height="7">
+                      <rect width="7" height="7" fill="rgba(255,45,117,0.12)"></rect>
+                      <circle cx="3.5" cy="3.5" r="1.4" fill="rgba(255,45,117,0.82)"></circle>
+                    </pattern>
+                  </defs>
+                  <g class="gr-cam">
 
-            <svg class="protocol-graph" viewBox="0 0 680 430" role="img" aria-labelledby="protocol-title protocol-desc">
-              <title id="protocol-title">Subscriptions activate a declared graph</title>
-              <desc id="protocol-desc">Declared edges open between a source, two reducers, a join, and an effect. Each edge sends its own START handshake before first values push through the graph.</desc>
-              <defs>
-                <marker id="arrow-line" viewBox="0 0 10 10" markerWidth="9" markerHeight="9" refX="8" refY="5" orient="auto">
-                  <path d="M1 1 9 5 1 9Z" />
-                </marker>
-                <filter id="soft-shadow" x="-20%" y="-20%" width="140%" height="140%">
-                  <feDropShadow dx="0" dy="12" stdDeviation="12" flood-color="#07121e" flood-opacity="0.14" />
-                </filter>
-              </defs>
-              <g class="graph-grid">
-                <path d="M36 70H644M36 150H644M36 230H644M36 310H644M120 36V392M250 36V392M380 36V392M510 36V392" />
-              </g>
-              <g class="graph-lines">
-                <path id="edge-profile-normalize" class="edge edge-a" d="M126 214 280 138" marker-end="url(#arrow-line)" />
-                <path id="edge-profile-permissions" class="edge edge-b" d="M126 214 280 290" marker-end="url(#arrow-line)" />
-                <path id="edge-normalize-join" class="edge edge-c" d="M314 138 510 210" marker-end="url(#arrow-line)" />
-                <path id="edge-permissions-join" class="edge edge-d" d="M314 290 510 210" marker-end="url(#arrow-line)" />
-                <path id="edge-join-index" class="edge edge-e" d="M548 210 620 210" marker-end="url(#arrow-line)" />
-              </g>
-              <g class="activation-signal signal-edge" aria-hidden="true">
-                <path d="M126 214 280 138" />
-                <path d="M126 214 280 290" />
-                <path d="M314 138 510 210" />
-                <path d="M314 290 510 210" />
-                <path d="M548 210 620 210" />
-              </g>
-              <g class="activation-signal signal-ready" aria-hidden="true">
-                <circle cx="126" cy="214" r="6" />
-                <circle cx="280" cy="138" r="6" />
-                <circle cx="280" cy="290" r="6" />
-                <circle cx="510" cy="210" r="6" />
-                <circle cx="620" cy="210" r="6" />
-              </g>
-              <g class="message-layer" aria-hidden="true">
-                <g class="edge-message start-message start-a">
-                  <circle r="8" />
-                  <text x="14" y="4">START</text>
-                  <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.72;1" dur="5.8s" begin="0.2s" repeatCount="indefinite" />
-                  <animateMotion dur="5.8s" begin="0.2s" repeatCount="indefinite" path="M126 214 280 138" />
-                </g>
-                <g class="edge-message start-message start-b">
-                  <circle r="8" />
-                  <text x="14" y="4">START</text>
-                  <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.72;1" dur="5.8s" begin="0.42s" repeatCount="indefinite" />
-                  <animateMotion dur="5.8s" begin="0.42s" repeatCount="indefinite" path="M126 214 280 290" />
-                </g>
-                <g class="edge-message start-message start-c">
-                  <circle r="8" />
-                  <text x="14" y="4">START</text>
-                  <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.72;1" dur="5.8s" begin="0.72s" repeatCount="indefinite" />
-                  <animateMotion dur="5.8s" begin="0.72s" repeatCount="indefinite" path="M314 138 510 210" />
-                </g>
-                <g class="edge-message start-message start-d">
-                  <circle r="8" />
-                  <text x="14" y="4">START</text>
-                  <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.72;1" dur="5.8s" begin="0.94s" repeatCount="indefinite" />
-                  <animateMotion dur="5.8s" begin="0.94s" repeatCount="indefinite" path="M314 290 510 210" />
-                </g>
-                <g class="edge-message start-message start-e">
-                  <circle r="8" />
-                  <text x="14" y="4">START</text>
-                  <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.72;1" dur="5.8s" begin="1.22s" repeatCount="indefinite" />
-                  <animateMotion dur="5.8s" begin="1.22s" repeatCount="indefinite" path="M548 210 620 210" />
-                </g>
-                <g class="edge-message data-message activation-data-a">
-                  <circle r="9" />
-                  <text x="15" y="4">DATA</text>
-                  <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.08;0.74;1" dur="5.8s" begin="2.65s" repeatCount="indefinite" />
-                  <animateMotion dur="5.8s" begin="2.65s" repeatCount="indefinite" path="M126 214 280 138 510 210" />
-                </g>
-                <g class="edge-message data-message activation-data-b">
-                  <circle r="9" />
-                  <text x="15" y="4">DATA</text>
-                  <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.08;0.74;1" dur="5.8s" begin="2.82s" repeatCount="indefinite" />
-                  <animateMotion dur="5.8s" begin="2.82s" repeatCount="indefinite" path="M126 214 280 290 510 210" />
-                </g>
-                <g class="edge-message ready-message">
-                  <circle r="8" />
-                  <path d="m-5 0 3 4 8-9" />
-                  <text x="14" y="4">READY</text>
-                  <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.7;1" dur="5.8s" begin="4.25s" repeatCount="indefinite" />
-                  <animateMotion dur="5.8s" begin="4.25s" repeatCount="indefinite" path="M510 210 620 210" />
-                </g>
-              </g>
-              <g class="node node-source" transform="translate(100 214)">
-                <circle r="38" />
-                <path d="M-12 -10h24v20h-24zM-12 -10c0 5 24 5 24 0M-12 10c0 5 24 5 24 0" />
-                <text y="68">SOURCE</text>
-              </g>
-              <g class="node node-branch branch-a" transform="translate(280 138)">
-                <circle r="34" />
-                <path d="M0 -14v28M-13 8 0 0l13 8" />
-                <text y="-52">REDUCE A</text>
-              </g>
-              <g class="node node-branch branch-b" transform="translate(280 290)">
-                <circle r="34" />
-                <path d="M0 -14v28M-13 8 0 0l13 8" />
-                <text y="60">REDUCE B</text>
-              </g>
-              <g class="node node-join" transform="translate(510 210)">
-                <circle r="38" />
-                <path d="M-13 -7h26M-13 7h26M0 -20v40" />
-                <text y="-58">JOIN</text>
-              </g>
-              <g class="node node-effect" transform="translate(620 210)">
-                <circle r="34" />
-                <path d="M4 -18-10 4h15l-8 20 17-27h-15z" />
-                <text y="58">EFFECT</text>
-              </g>
-            </svg>
-          </div>
-          <div class="stage-caption">
-            <article class="is-active" data-stage-panel="0"><span>stage 1</span><strong>Declared edges open without hiding topology.</strong></article>
-            <article data-stage-panel="1"><span>stage 2</span><strong>START handshakes happen on each new edge.</strong></article>
-            <article data-stage-panel="2"><span>stage 3</span><strong>Cached or first DATA may push after activation.</strong></article>
-            <article data-stage-panel="3"><span>stage 4</span><strong>The activated graph is ready for update waves.</strong></article>
-          </div>
+                    <!-- ═════ STAGE 1 — connection lifecycle (12s, full START→COMPLETE with DIRTY state) ═════ -->
+                    <g class="gr-st gr-st-1">
+                      <!-- Edge wrapped in opacity-animated group; arrow stays lime, group dims for gray-out -->
+                      <g class="gr-s1-edge-grp">
+                        <line class="gr-s1-edge" x1="-162" y1="0" x2="156" y2="0" marker-end="url(#gr-arr-lime)"></line>
+                      </g>
+
+                      <!-- Upstream general node (rounded rect close-up) at 25% width -->
+                      <g class="gr-s1-up" transform="translate(-200 0)">
+                        <rect class="gr-s1-up-shape" x="-38" y="-22" width="76" height="44" rx="10"></rect>
+                        <text class="gr-nl gr-s1-up-label" y="-32">upstream</text>
+                      </g>
+
+                      <!-- Downstream general node (rounded rect close-up) at 75% width -->
+                      <g class="gr-s1-dn" transform="translate(200 0)">
+                        <rect class="gr-s1-dn-shape" x="-38" y="-22" width="76" height="44" rx="10"></rect>
+                        <text class="gr-nl gr-s1-dn-label" y="-32">downstream</text>
+                        <text class="gr-s1-fn" y="5">fn(…)</text>
+                      </g>
+
+                      <!-- Six labeled messages, each travels left → right along the edge -->
+                      <g class="gr-s1-msg gr-s1-msg-start">
+                        <text y="-13" class="gr-s1-msg-lbl gr-s1-lbl-start">START</text>
+                        <circle cy="0" r="4" class="gr-s1-dot-slate"></circle>
+                      </g>
+
+                      <g class="gr-s1-msg gr-s1-msg-dirty1">
+                        <text y="-16" class="gr-s1-msg-lbl gr-s1-lbl-dirty">DIRTY</text>
+                        <line x1="0" y1="-9" x2="0" y2="7" class="gr-s1-flag-pole"></line>
+                        <polygon points="0,-9 10,-5 0,-1" class="gr-s1-flag-fabric"></polygon>
+                      </g>
+
+                      <g class="gr-s1-msg gr-s1-msg-data1">
+                        <text y="-15" class="gr-s1-msg-lbl gr-s1-lbl-data">DATA</text>
+                        <circle cy="0" r="6" class="gr-s1-dot-data"></circle>
+                      </g>
+
+                      <g class="gr-s1-msg gr-s1-msg-dirty2">
+                        <text y="-16" class="gr-s1-msg-lbl gr-s1-lbl-dirty">DIRTY</text>
+                        <line x1="0" y1="-9" x2="0" y2="7" class="gr-s1-flag-pole"></line>
+                        <polygon points="0,-9 10,-5 0,-1" class="gr-s1-flag-fabric"></polygon>
+                      </g>
+
+                      <g class="gr-s1-msg gr-s1-msg-data2">
+                        <text y="-15" class="gr-s1-msg-lbl gr-s1-lbl-data">DATA</text>
+                        <circle cy="0" r="6" class="gr-s1-dot-data"></circle>
+                      </g>
+
+                      <g class="gr-s1-msg gr-s1-msg-complete">
+                        <text y="-13" class="gr-s1-msg-lbl gr-s1-lbl-complete">COMPLETE</text>
+                        <circle cy="0" r="4" class="gr-s1-dot-slate"></circle>
+                      </g>
+                    </g>
+
+                    <!-- ═════ STAGE 2 — diamond with full DIRTY/DATA lifecycle (12–17s, 25–35.42%) ═════ -->
+                    <g class="gr-st gr-st-2">
+                      <line class="gr-edge gr-s2-edge" x1="0" y1="-120" x2="-158" y2="-14" marker-end="url(#gr-arr)"></line>
+                      <line class="gr-edge gr-s2-edge" x1="0" y1="-120" x2="158" y2="-14" marker-end="url(#gr-arr)"></line>
+                      <line class="gr-edge gr-s2-edge" x1="-180" y1="0" x2="-25" y2="103" marker-end="url(#gr-arr)"></line>
+                      <line class="gr-edge gr-s2-edge" x1="180" y1="0" x2="25" y2="103" marker-end="url(#gr-arr)"></line>
+                      <!-- A producer → hexagon -->
+                      <g transform="translate(0 -120)">
+                        <polygon class="gr-s2-A-shape" points="13,-22 -13,-22 -26,0 -13,22 13,22 26,0"></polygon>
+                        <text class="gr-nl" y="-38">A</text>
+                      </g>
+                      <!-- B / C / D derived → diamonds. B has slow fn, C fast, D joins both. -->
+                      <g transform="translate(-180 0)">
+                        <polygon class="gr-s2-B-shape" points="0,-26 26,0 0,26 -26,0"></polygon>
+                        <text class="gr-nl" y="-38">B · slow fn</text>
+                      </g>
+                      <g transform="translate(180 0)">
+                        <polygon class="gr-s2-C-shape" points="0,-26 26,0 0,26 -26,0"></polygon>
+                        <text class="gr-nl" y="-38">C · fast fn</text>
+                      </g>
+                      <g transform="translate(0 120)">
+                        <polygon class="gr-s2-D-shape" points="0,-30 30,0 0,30 -30,0"></polygon>
+                        <text class="gr-nl" y="-46">D · joins B + C</text>
+                        <text class="gr-s2-fn" y="5">fn(…)</text>
+                      </g>
+
+                      <!-- DIRTY messages (4) — yellow flag glyph with DIRTY label above -->
+                      <g class="gr-s2-msg gr-s2-d-AB">
+                        <text y="-15" class="gr-s2-msg-lbl gr-s2-lbl-dirty">DIRTY</text>
+                        <line x1="0" y1="-9" x2="0" y2="7" class="gr-s2-flag-pole"></line>
+                        <polygon points="0,-9 10,-5 0,-1" class="gr-s2-flag-fabric"></polygon>
+                      </g>
+                      <g class="gr-s2-msg gr-s2-d-AC">
+                        <text y="-15" class="gr-s2-msg-lbl gr-s2-lbl-dirty">DIRTY</text>
+                        <line x1="0" y1="-9" x2="0" y2="7" class="gr-s2-flag-pole"></line>
+                        <polygon points="0,-9 10,-5 0,-1" class="gr-s2-flag-fabric"></polygon>
+                      </g>
+                      <g class="gr-s2-msg gr-s2-d-BD">
+                        <text y="-15" class="gr-s2-msg-lbl gr-s2-lbl-dirty">DIRTY</text>
+                        <line x1="0" y1="-9" x2="0" y2="7" class="gr-s2-flag-pole"></line>
+                        <polygon points="0,-9 10,-5 0,-1" class="gr-s2-flag-fabric"></polygon>
+                      </g>
+                      <g class="gr-s2-msg gr-s2-d-CD">
+                        <text y="-15" class="gr-s2-msg-lbl gr-s2-lbl-dirty">DIRTY</text>
+                        <line x1="0" y1="-9" x2="0" y2="7" class="gr-s2-flag-pole"></line>
+                        <polygon points="0,-9 10,-5 0,-1" class="gr-s2-flag-fabric"></polygon>
+                      </g>
+
+                      <!-- DATA messages (4) — green dot with DATA label above -->
+                      <g class="gr-s2-msg gr-s2-D-AB">
+                        <text y="-15" class="gr-s2-msg-lbl gr-s2-lbl-data">DATA</text>
+                        <circle cy="0" r="6" class="gr-s2-dot-data"></circle>
+                      </g>
+                      <g class="gr-s2-msg gr-s2-D-AC">
+                        <text y="-15" class="gr-s2-msg-lbl gr-s2-lbl-data">DATA</text>
+                        <circle cy="0" r="6" class="gr-s2-dot-data"></circle>
+                      </g>
+                      <g class="gr-s2-msg gr-s2-D-BD">
+                        <text y="-15" class="gr-s2-msg-lbl gr-s2-lbl-data">DATA</text>
+                        <circle cy="0" r="6" class="gr-s2-dot-data"></circle>
+                      </g>
+                      <g class="gr-s2-msg gr-s2-D-CD">
+                        <text y="-15" class="gr-s2-msg-lbl gr-s2-lbl-data">DATA</text>
+                        <circle cy="0" r="6" class="gr-s2-dot-data"></circle>
+                      </g>
+                    </g>
+
+                    <!-- ═════ STAGE 3 — node anatomy: smaller rect, larger ports for balance ═════ -->
+                    <g class="gr-st gr-st-3">
+                      <!-- The node itself: smaller rounded rect, zooms in -->
+                      <g class="gr-s3-node-wrap">
+                        <rect class="gr-s3-node" x="-160" y="-80" width="320" height="160" rx="16"></rect>
+
+                        <!-- Concentric rings = fn primitive at the heart (padded so fn(…) text isn't crammed) -->
+                        <g class="gr-s3-fn-anatomy">
+                          <circle r="60" class="gr-s3-fn-ring gr-s3-fn-ring-3"></circle>
+                          <circle r="44" class="gr-s3-fn-ring gr-s3-fn-ring-2"></circle>
+                          <circle r="28" class="gr-s3-fn-ring gr-s3-fn-ring-1"></circle>
+                          <text y="5" class="gr-s3-fn-center">fn(…)</text>
+                        </g>
+
+                        <!-- cache (top-center): cylinder icon; inner group shifts so icon+text are visually centered -->
+                        <g class="gr-s3-tag gr-s3-tag-cache" transform="translate(0 -56)">
+                          <g transform="translate(-18 0)">
+                            <g class="gr-s3-icon">
+                              <ellipse cx="0" cy="-4" rx="6" ry="2.2"></ellipse>
+                              <path d="M -6 -4 L -6 4 Q 0 6.5 6 4 L 6 -4"></path>
+                            </g>
+                            <text x="14" y="4" class="gr-s3-tag-text" text-anchor="start">cache</text>
+                          </g>
+                        </g>
+
+                        <!-- guard (bottom-left): shield icon -->
+                        <g class="gr-s3-tag gr-s3-tag-guard" transform="translate(-118 58)">
+                          <g class="gr-s3-icon">
+                            <path d="M -7 -6 L 0 -8.5 L 7 -6 Q 7 5 0 8.5 Q -7 5 -7 -6 Z"></path>
+                            <path d="M -3 0 L -1 2 L 4 -3" stroke-linecap="round"></path>
+                          </g>
+                          <text x="12" y="4" class="gr-s3-tag-text" text-anchor="start">guard</text>
+                        </g>
+
+                        <!-- version (bottom-right): tag icon -->
+                        <g class="gr-s3-tag gr-s3-tag-ver" transform="translate(78 58)">
+                          <g class="gr-s3-icon">
+                            <path d="M -10 -5 L 2 -5 L 8 0 L 2 5 L -10 5 Z"></path>
+                            <circle cx="-6" cy="0" r="1.5" class="gr-s3-icon-dot"></circle>
+                          </g>
+                          <text x="18" y="4" class="gr-s3-tag-text" text-anchor="start">version</text>
+                        </g>
+                      </g>
+
+                      <!-- "↑ UP [deps]" port on the left — linear icon + display word + bracketed annotation -->
+                      <g class="gr-s3-port gr-s3-port-up" transform="translate(-260 0)">
+                        <g class="gr-s3-port-head" transform="translate(0 -22)">
+                          <polyline class="gr-s3-port-icon" points="-44,4 -38,-4 -32,4"></polyline>
+                          <text x="-24" y="5" class="gr-s3-port-primary">UP</text>
+                          <text x="6" y="4" class="gr-s3-port-secondary">[deps]</text>
+                        </g>
+                        <line x1="80" y1="0" x2="-12" y2="0" class="gr-s3-port-line" marker-end="url(#gr-arr-port)"></line>
+                      </g>
+
+                      <!-- "↓ DOWN [subs]" port on the right -->
+                      <g class="gr-s3-port gr-s3-port-down" transform="translate(260 0)">
+                        <g class="gr-s3-port-head" transform="translate(0 -22)">
+                          <polyline class="gr-s3-port-icon" points="-54,-4 -48,4 -42,-4"></polyline>
+                          <text x="-34" y="5" class="gr-s3-port-primary">DOWN</text>
+                          <text x="12" y="4" class="gr-s3-port-secondary">[subs]</text>
+                        </g>
+                        <line x1="-80" y1="0" x2="12" y2="0" class="gr-s3-port-line" marker-end="url(#gr-arr-port)"></line>
+                      </g>
+                    </g>
+
+                    <!-- ═════ STAGE 4 — node roles (Y-shape) ═════ -->
+                    <g class="gr-st gr-st-4">
+                      <g class="gr-s4-morph">
+                        <!-- state → square -->
+                        <rect class="gr-s4-m gr-s4-m-state" x="-40" y="-40" width="80" height="80" rx="2"></rect>
+                        <!-- producer → hexagon -->
+                        <polygon class="gr-s4-m gr-s4-m-producer" points="20,-35 -20,-35 -40,0 -20,35 20,35 40,0"></polygon>
+                        <!-- derived → diamond -->
+                        <polygon class="gr-s4-m gr-s4-m-derived" points="0,-40 40,0 0,40 -40,0"></polygon>
+                        <!-- effect → parallelogram -->
+                        <polygon class="gr-s4-m gr-s4-m-effect" points="-22,-24 50,-24 36,24 -36,24"></polygon>
+                        <text class="gr-s4-mlabel gr-s4-ml-state" y="6">state</text>
+                        <text class="gr-s4-mlabel gr-s4-ml-producer" y="6">producer</text>
+                        <text class="gr-s4-mlabel gr-s4-ml-derived" y="6">derived</text>
+                        <text class="gr-s4-mlabel gr-s4-ml-effect" y="6">effect</text>
+                      </g>
+                      <g class="gr-s4-y">
+                        <line class="gr-edge gr-s4-eSD" x1="-220" y1="-80" x2="-32" y2="-12" marker-end="url(#gr-arr)"></line>
+                        <line class="gr-edge gr-s4-ePD" x1="-220" y1="80" x2="-32" y2="12" marker-end="url(#gr-arr)"></line>
+                        <line class="gr-edge gr-s4-eDE" x1="40" y1="0" x2="188" y2="0" marker-end="url(#gr-arr)"></line>
+                        <!-- state → square -->
+                        <g transform="translate(-220 -80)">
+                          <rect class="gr-s4-n-state" x="-22" y="-22" width="44" height="44" rx="2"></rect>
+                          <text class="gr-nl" y="-32">state</text>
+                        </g>
+                        <!-- producer → hexagon -->
+                        <g transform="translate(-220 80)">
+                          <polygon class="gr-s4-n-producer" points="11,-19 -11,-19 -22,0 -11,19 11,19 22,0"></polygon>
+                          <text class="gr-nl" y="-34">producer</text>
+                        </g>
+                        <!-- derived → diamond -->
+                        <g transform="translate(0 0)">
+                          <polygon class="gr-s4-n-derived" points="0,-32 32,0 0,32 -32,0"></polygon>
+                          <text class="gr-nl" y="-44">derived</text>
+                          <text class="gr-s4-y-fn" y="5">fn(…)</text>
+                        </g>
+                        <!-- effect → parallelogram -->
+                        <g transform="translate(220 0)">
+                          <polygon class="gr-s4-n-effect" points="-18,-18 38,-18 28,18 -28,18"></polygon>
+                          <text class="gr-nl" y="-30">effect</text>
+                        </g>
+                        <circle class="gr-s4-msg gr-s4-d-SD" r="5"></circle>
+                        <circle class="gr-s4-msg gr-s4-d-PD" r="5"></circle>
+                        <circle class="gr-s4-msg gr-s4-D-SD" r="6"></circle>
+                        <circle class="gr-s4-msg gr-s4-D-PD" r="6"></circle>
+                        <circle class="gr-s4-msg gr-s4-D-DE" r="6"></circle>
+                      </g>
+                    </g>
+
+                    <!-- ═════ STAGE 5 — graph level (mesh · blueprint+lens · batch · capsules) ═════ -->
+                    <g class="gr-st gr-st-5">
+                      <g class="gr-s5-mesh">
+                        <line class="gr-edge gr-s5-edge" x1="-280" y1="-110" x2="-130" y2="-60"></line>
+                        <line class="gr-edge gr-s5-edge" x1="-280" y1="-110" x2="-200" y2="40"></line>
+                        <line class="gr-edge gr-s5-edge" x1="-130" y1="-60" x2="0" y2="-110"></line>
+                        <line class="gr-edge gr-s5-edge" x1="-130" y1="-60" x2="-50" y2="60"></line>
+                        <line class="gr-edge gr-s5-edge" x1="-200" y1="40" x2="-50" y2="60"></line>
+                        <line class="gr-edge gr-s5-edge" x1="-50" y1="60" x2="80" y2="110"></line>
+                        <line class="gr-edge gr-s5-edge" x1="0" y1="-110" x2="160" y2="-70"></line>
+                        <line class="gr-edge gr-s5-edge" x1="160" y1="-70" x2="280" y2="-10"></line>
+                        <line class="gr-edge gr-s5-edge" x1="80" y1="110" x2="240" y2="90"></line>
+                        <line class="gr-edge gr-s5-edge" x1="280" y1="-10" x2="240" y2="90"></line>
+                        <line class="gr-edge gr-s5-edge" x1="0" y1="-110" x2="80" y2="110"></line>
+                        <line class="gr-edge gr-s5-edge" x1="-50" y1="60" x2="160" y2="-70"></line>
+
+                        <circle class="gr-s5-n" cx="-280" cy="-110" r="11"></circle>
+                        <circle class="gr-s5-n" cx="-130" cy="-60" r="11"></circle>
+                        <circle class="gr-s5-n" cx="-200" cy="40" r="11"></circle>
+                        <circle class="gr-s5-n" cx="0" cy="-110" r="11"></circle>
+                        <circle class="gr-s5-n" cx="-50" cy="60" r="11"></circle>
+                        <circle class="gr-s5-n" cx="160" cy="-70" r="11"></circle>
+                        <circle class="gr-s5-n" cx="80" cy="110" r="11"></circle>
+                        <circle class="gr-s5-n" cx="280" cy="-10" r="11"></circle>
+                        <circle class="gr-s5-n" cx="240" cy="90" r="11"></circle>
+                      </g>
+
+                      <g class="gr-s5-lens">
+                        <circle class="gr-s5-lens-glass" r="76" fill="url(#gr-lensGrad)"></circle>
+                        <circle class="gr-s5-lens-ring" r="76"></circle>
+                        <line class="gr-s5-lens-stem" x1="54" y1="54" x2="80" y2="80"></line>
+                      </g>
+
+                      <path class="gr-s5-bracket gr-s5-bracket-l" d="M -360 -150 L -390 -150 L -390 150 L -360 150"></path>
+                      <path class="gr-s5-bracket gr-s5-bracket-r" d="M 360 -150 L 390 -150 L 390 150 L 360 150"></path>
+
+                      <ellipse class="gr-s5-cap gr-s5-cap-a" cx="-150" cy="-30" rx="200" ry="120"></ellipse>
+                      <ellipse class="gr-s5-cap gr-s5-cap-b" cx="180" cy="30" rx="180" ry="110"></ellipse>
+
+                      <text class="gr-s5-lbl gr-s5-lbl-describe" x="0" y="-138">describe — the map</text>
+                      <text class="gr-s5-lbl gr-s5-lbl-observe" x="0" y="148">observe — the magnifier</text>
+                      <text class="gr-s5-lbl gr-s5-lbl-batch" x="0" y="-138">batch — defers DATA, not DIRTY</text>
+                      <text class="gr-s5-lbl gr-s5-lbl-cap" x="0" y="148">subgraphs · multi-agent ownership</text>
+                    </g>
+
+                    <!-- ═════ STAGE 6 — orchestrate + messaging ═════ -->
+                    <g class="gr-st gr-st-6">
+                      <ellipse class="gr-s6-cap gr-s6-cap-l" cx="-220" cy="0" rx="180" ry="80"></ellipse>
+                      <!-- Pipeline edges between rounded-rect nodes (rect half-width = 22) -->
+                      <line class="gr-edge gr-s6-pipe-edge" x1="-318" y1="0" x2="-282" y2="0" marker-end="url(#gr-arr)"></line>
+                      <line class="gr-edge gr-s6-pipe-edge" x1="-238" y1="0" x2="-202" y2="0" marker-end="url(#gr-arr)"></line>
+                      <line class="gr-edge gr-s6-pipe-edge" x1="-158" y1="0" x2="-122" y2="0" marker-end="url(#gr-arr)"></line>
+                      <!-- Pipeline nodes = general close-up → rounded rects -->
+                      <g transform="translate(-340 0)" class="gr-s6-pn gr-s6-p1"><rect x="-22" y="-14" width="44" height="28" rx="6"></rect><text class="gr-nl" y="-26">gate</text></g>
+                      <g transform="translate(-260 0)" class="gr-s6-pn gr-s6-p2"><rect x="-22" y="-14" width="44" height="28" rx="6"></rect><text class="gr-nl" y="-26">action</text></g>
+                      <g transform="translate(-180 0)" class="gr-s6-pn gr-s6-p3"><rect x="-22" y="-14" width="44" height="28" rx="6"></rect><text class="gr-nl" y="-26">check</text></g>
+                      <g transform="translate(-100 0)" class="gr-s6-pn gr-s6-p4"><rect x="-22" y="-14" width="44" height="28" rx="6"></rect><text class="gr-nl" y="-26">action</text></g>
+                      <text class="gr-s6-lbl gr-s6-l-pipe" x="-220" y="-92">pipeline</text>
+
+                      <g class="gr-s6-hub" transform="translate(60 0)">
+                        <rect class="gr-s6-hub-pill" x="-22" y="-130" width="44" height="260" rx="22"></rect>
+                        <rect class="gr-s6-tok gr-s6-tok-1" x="-14" y="-115" width="28" height="8" rx="2"></rect>
+                        <rect class="gr-s6-tok gr-s6-tok-2" x="-14" y="-95" width="28" height="8" rx="2"></rect>
+                        <rect class="gr-s6-tok gr-s6-tok-3" x="-14" y="-75" width="28" height="8" rx="2"></rect>
+                        <rect class="gr-s6-tok gr-s6-tok-4" x="-14" y="-55" width="28" height="8" rx="2"></rect>
+                        <rect class="gr-s6-tok gr-s6-tok-5" x="-14" y="-35" width="28" height="8" rx="2"></rect>
+                        <rect class="gr-s6-tok gr-s6-tok-6" x="-14" y="-15" width="28" height="8" rx="2"></rect>
+                        <rect class="gr-s6-tok gr-s6-tok-7" x="-14" y="5" width="28" height="8" rx="2"></rect>
+                        <text class="gr-nl" y="-138">hub</text>
+                        <text class="gr-s6-cursor gr-s6-cursor-a" x="-32" y="0">▌</text>
+                        <text class="gr-s6-cursor gr-s6-cursor-b" x="32" y="0">▌</text>
+                      </g>
+
+                      <ellipse class="gr-s6-cap gr-s6-cap-r" cx="240" cy="0" rx="120" ry="100"></ellipse>
+                      <!-- Consumers = effect → parallelograms -->
+                      <g transform="translate(190 -50)"><polygon class="gr-s6-cn" points="-14,-14 30,-14 22,14 -22,14"></polygon></g>
+                      <g transform="translate(290 0)"><polygon class="gr-s6-cn" points="-14,-14 30,-14 22,14 -22,14"></polygon></g>
+                      <g transform="translate(210 60)"><polygon class="gr-s6-cn" points="-14,-14 30,-14 22,14 -22,14"></polygon></g>
+
+                      <text class="gr-s6-lbl gr-s6-l-hub" x="60" y="148">static graph · dynamic data</text>
+                    </g>
+
+                    <!-- ═════ STAGE 7 — agent loop + memory + ? ═════ -->
+                    <g class="gr-st gr-st-7">
+                      <g class="gr-s7-loop-wrap" transform="translate(-110 0)">
+                        <circle class="gr-s7-loop-ring" r="100"></circle>
+                        <!-- 4 clockwise chevrons on the ring (agent → tool → result → judge → agent) -->
+                        <g class="gr-s7-chev" transform="translate(70.7 -70.7) rotate(45)"><polygon points="-5,-5 6,0 -5,5"></polygon></g>
+                        <g class="gr-s7-chev" transform="translate(70.7 70.7) rotate(135)"><polygon points="-5,-5 6,0 -5,5"></polygon></g>
+                        <g class="gr-s7-chev" transform="translate(-70.7 70.7) rotate(225)"><polygon points="-5,-5 6,0 -5,5"></polygon></g>
+                        <g class="gr-s7-chev" transform="translate(-70.7 -70.7) rotate(315)"><polygon points="-5,-5 6,0 -5,5"></polygon></g>
+                        <!-- Loop nodes = general close-up → rounded rects -->
+                        <g transform="translate(0 -100)"><rect class="gr-s7-ln gr-s7-l1" x="-26" y="-16" width="52" height="32" rx="6"></rect><text class="gr-nl" y="-28">agent</text></g>
+                        <g transform="translate(100 0)"><rect class="gr-s7-ln gr-s7-l2" x="-26" y="-16" width="52" height="32" rx="6"></rect><text class="gr-nl" y="-28">tool</text></g>
+                        <g transform="translate(0 100)"><rect class="gr-s7-ln gr-s7-l3" x="-26" y="-16" width="52" height="32" rx="6"></rect><text class="gr-nl" y="-30">result</text></g>
+                        <g transform="translate(-100 0)"><rect class="gr-s7-ln gr-s7-l4" x="-26" y="-16" width="52" height="32" rx="6"></rect><text class="gr-nl" y="-28">judge</text></g>
+                        <circle class="gr-s7-loop-dot" r="5"></circle>
+                      </g>
+
+                      <g class="gr-s7-mem" transform="translate(130 0)">
+                        <rect class="gr-s7-mem-frame" x="-32" y="-70" width="64" height="140" rx="8"></rect>
+                        <text class="gr-nl" y="-82">memory</text>
+                        <rect class="gr-s7-mem-tok gr-s7-mt-1" x="-24" y="56" width="48" height="8" rx="2"></rect>
+                        <rect class="gr-s7-mem-tok gr-s7-mt-2" x="-24" y="42" width="48" height="8" rx="2"></rect>
+                        <rect class="gr-s7-mem-tok gr-s7-mt-3" x="-24" y="28" width="48" height="8" rx="2"></rect>
+                        <rect class="gr-s7-mem-tok gr-s7-mt-4" x="-24" y="14" width="48" height="8" rx="2"></rect>
+                        <rect class="gr-s7-mem-tok gr-s7-mt-5" x="-24" y="0" width="48" height="8" rx="2"></rect>
+                        <rect class="gr-s7-mem-tok gr-s7-mt-6" x="-24" y="-14" width="48" height="8" rx="2"></rect>
+                      </g>
+
+                      <line class="gr-s7-q-edge gr-s7-qe-1" x1="150" y1="-50" x2="263" y2="-100"></line>
+                      <line class="gr-s7-q-edge gr-s7-qe-2" x1="170" y1="20" x2="303" y2="50"></line>
+                      <line class="gr-s7-q-edge gr-s7-qe-3" x1="160" y1="60" x2="223" y2="120"></line>
+
+                      <g class="gr-s7-q gr-s7-q1" transform="translate(280 -110)">
+                        <polygon points="0,-20 17,-10 17,10 0,20 -17,10 -17,-10"></polygon>
+                        <text y="5">?</text>
+                      </g>
+                      <g class="gr-s7-q gr-s7-q2" transform="translate(320 60)">
+                        <polygon points="0,-20 17,-10 17,10 0,20 -17,10 -17,-10"></polygon>
+                        <text y="5">?</text>
+                      </g>
+                      <g class="gr-s7-q gr-s7-q3" transform="translate(240 130)">
+                        <polygon points="0,-20 17,-10 17,10 0,20 -17,10 -17,-10"></polygon>
+                        <text y="5">?</text>
+                      </g>
+                    </g>
+
+                  </g>
+                </svg>
+              </div>
+
+              <div class="gr-showcase-label">
+                <div class="gr-showcase-label-k">
+                  <span class="gr-lk gr-lk-1">stage 1 · connection lifecycle</span>
+                  <span class="gr-lk gr-lk-2">stage 2 · diamond resolution</span>
+                  <span class="gr-lk gr-lk-3">stage 3 · node anatomy</span>
+                  <span class="gr-lk gr-lk-4">stage 4 · node roles</span>
+                  <span class="gr-lk gr-lk-5">stage 5 · graph level</span>
+                  <span class="gr-lk gr-lk-6">stage 6 · orchestrate · messaging</span>
+                  <span class="gr-lk gr-lk-7">stage 7 · agent loop · memory</span>
+                </div>
+                <div class="gr-showcase-label-v">
+                  <span class="gr-lv gr-lv-1">START → DIRTY<br />→ DATA → COMPLETE</span>
+                  <span class="gr-lv gr-lv-2">DIRTY converges<br />DATA fires once</span>
+                  <span class="gr-lv gr-lv-3">cache · version<br />guard · up / down</span>
+                  <span class="gr-lv gr-lv-4">state · producer<br />derived · effect</span>
+                  <span class="gr-lv gr-lv-5">describe · observe<br />batch · subgraphs</span>
+                  <span class="gr-lv gr-lv-6">pipeline + hub<br />static · dynamic</span>
+                  <span class="gr-lv gr-lv-7">loop · memory<br />open substrate</span>
+                </div>
+              </div>
+
+              <div class="gr-showcase-chips">
+                <span class="gr-showcase-chip gr-chip-describe">describe</span>
+                <span class="gr-showcase-chip gr-chip-observe">observe</span>
+                <span class="gr-showcase-chip gr-chip-batch">batch</span>
+              </div>
+            </div>
+            <div class="gr-showcase-caption" aria-label="Animation scene caption">
+              <p class="gr-cap gr-cap-1"><strong>Connection lifecycle.</strong> A subscription opens with START, DIRTY marks the downstream node before DATA invokes fn(...), and COMPLETE closes the edge.</p>
+              <p class="gr-cap gr-cap-2"><strong>Diamond resolution.</strong> DIRTY reaches both branches and the join before DATA; the join waits for both branch values and fires once.</p>
+              <p class="gr-cap gr-cap-3"><strong>Node anatomy.</strong> A node exposes fn(...), cache, version, guard, and up/down ports as one inspectable primitive.</p>
+              <p class="gr-cap gr-cap-4"><strong>Node roles.</strong> State and producer feed derived work; derived nodes push visible effects through the same wave protocol.</p>
+              <p class="gr-cap gr-cap-5"><strong>Graph level.</strong> The graph can be described, observed, batched, and grouped into subgraphs while package API details stay package-local.</p>
+              <p class="gr-cap gr-cap-6"><strong>Orchestration.</strong> Static topology carries dynamic data through pipelines, hubs, cursors, and consumers.</p>
+              <p class="gr-cap gr-cap-7"><strong>Agent loop.</strong> Agent, tool, result, judge, memory, and open extension points stay inside one inspectable graph.</p>
+            </div>
         </div>
 
         <div class="lang-row" aria-label="Package routes">
@@ -194,21 +497,20 @@
       <section class="band wave-field" aria-label="Protocol wave frame">
         <div class="section-lede">
           <p class="eyebrow">Wave-based propagation</p>
-          <h2>After activation, updates move in two phases.</h2>
-          <p class="band-intro">START belongs to subscription. Once edges exist, an update wave dirties the reachable downstream cone first, then lets values settle through the graph.</p>
+          <h2>Diamond patterns resolve as one wave.</h2>
+          <p class="band-intro">A source update marks the reachable diamond dirty first. DATA then moves through each branch at its own pace, and the join emits only after both branch values arrive.</p>
         </div>
         <div class="wave-frame">
-          <div class="wave-step is-hot"><span>1</span><b>DIRTY flood</b><small>Reachable downstream edges are marked before values move.</small></div>
-          <div class="wave-step"><span>2</span><b>DATA phase</b><small>Values travel only after the dirty phase closes.</small></div>
-          <div class="wave-step"><span>3</span><b>Join settle</b><small>The diamond recomputes once from settled inputs.</small></div>
-          <div class="wave-step"><span>4</span><b>Terminal down</b><small>COMPLETE is down-only; sealed nodes send no later DATA.</small></div>
+          <div class="wave-step"><span>1</span><b>DIRTY fan-out</b><small>The downstream diamond is marked before values move.</small></div>
+          <div class="wave-step"><span>2</span><b>DATA split</b><small>Source DATA reaches A and B together.</small></div>
+          <div class="wave-step"><span>3</span><b>Join wait</b><small>B finishes first; the join holds it until A emits.</small></div>
+          <div class="wave-step"><span>4</span><b>Joined output</b><small>The join emits once both branch values are present.</small></div>
           <div class="message-key wave-key" aria-label="Wave message key">
-            <span><i class="key-dirty"></i>DIRTY</span>
+            <span><svg class="key-dirty" viewBox="0 0 24 18" aria-hidden="true"><path class="flag-pole" d="M4 3v12" /><path class="flag-sheet" d="M4 3l15 5-15 5" /></svg>DIRTY</span>
             <span><i class="key-data"></i>DATA</span>
-            <span><i class="key-complete"></i>COMPLETE</span>
           </div>
           <svg class="wave-frame-svg" viewBox="0 0 1040 360" role="img" aria-labelledby="wave-frame-title">
-            <title id="wave-frame-title">DIRTY travels before DATA through a diamond graph; COMPLETE travels downstream only</title>
+            <title id="wave-frame-title">DIRTY travels before DATA through a diamond graph; the join emits after both branch values arrive</title>
             <defs>
               <marker id="frame-arrow" viewBox="0 0 10 10" markerWidth="8" markerHeight="8" refX="8" refY="5" orient="auto"><path d="M1 1 9 5 1 9Z" /></marker>
             </defs>
@@ -220,14 +522,14 @@
               <path d="M90 180H210L320 100H450L580 180H725H835" />
               <path d="M90 180H210L320 260H450L580 180" />
             </g>
-            <g class="frame-wave data">
-              <path d="M320 100H450L580 180H725" />
+            <g class="frame-wave data data-a-wave">
+              <path d="M320 100H450L580 180" />
+            </g>
+            <g class="frame-wave data data-b-wave">
               <path d="M320 260H450L580 180" />
             </g>
-            <g class="frame-callouts" aria-hidden="true">
-              <text x="108" y="44">DIRTY first</text>
-              <text x="440" y="44">DATA after</text>
-              <text x="724" y="44">COMPLETE down-only</text>
+            <g class="frame-wave data data-output-wave">
+              <path d="M580 180H835" />
             </g>
             <g class="frame-node source" transform="translate(90 180)"><circle r="34" /><text y="58">SOURCE</text></g>
             <g class="frame-node branch" transform="translate(320 100)"><circle r="30" /><text y="-48">A</text></g>
@@ -271,24 +573,27 @@
             </g>
             <g class="frame-message data-msg data-a-join">
               <circle r="8" />
-              <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.64;0.65;0.76;0.78;1" dur="9s" repeatCount="indefinite" />
-              <animateMotion dur="9s" repeatCount="indefinite" path="M320 100H450L580 180" keyPoints="0;0;1;1" keyTimes="0;0.65;0.78;1" calcMode="linear" />
+              <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.72;0.73;0.84;0.86;1" dur="9s" repeatCount="indefinite" />
+              <animateMotion dur="9s" repeatCount="indefinite" path="M320 100H450L580 180" keyPoints="0;0;1;1" keyTimes="0;0.73;0.86;1" calcMode="linear" />
             </g>
             <g class="frame-message data-msg data-b-join">
               <circle r="8" />
               <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.64;0.65;0.76;0.78;1" dur="9s" repeatCount="indefinite" />
               <animateMotion dur="9s" repeatCount="indefinite" path="M320 260H450L580 180" keyPoints="0;0;1;1" keyTimes="0;0.65;0.78;1" calcMode="linear" />
             </g>
+            <g class="frame-message data-msg join-held-b" transform="translate(580 180)">
+              <circle cx="-11" cy="9" r="5.5" />
+              <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.77;0.78;0.86;0.88;1" dur="9s" repeatCount="indefinite" />
+            </g>
             <g class="frame-message join-msg" transform="translate(580 180)">
               <circle r="9" />
               <path d="m-5 0 3 4 8-9" />
-              <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.78;0.79;0.84;0.87;1" dur="9s" repeatCount="indefinite" />
+              <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.86;0.87;0.9;0.92;1" dur="9s" repeatCount="indefinite" />
             </g>
-            <g class="frame-message complete-msg">
-              <rect x="-7" y="-7" width="14" height="14" rx="2" />
-              <path d="m-4 0 3 4 7-8" />
-              <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.86;0.87;0.96;0.99;1" dur="9s" repeatCount="indefinite" />
-              <animateMotion dur="9s" repeatCount="indefinite" path="M580 180H835" keyPoints="0;0;1;1" keyTimes="0;0.87;0.99;1" calcMode="linear" />
+            <g class="frame-message data-msg data-join-effect">
+              <circle r="8" />
+              <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.89;0.9;0.98;0.995;1" dur="9s" repeatCount="indefinite" />
+              <animateMotion dur="9s" repeatCount="indefinite" path="M580 180H835" keyPoints="0;0;1;1" keyTimes="0;0.9;0.995;1" calcMode="linear" />
             </g>
           </svg>
         </div>

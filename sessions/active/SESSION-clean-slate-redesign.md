@@ -21,6 +21,57 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-07-02 D570: locked the Rust `from_sse` adapter-local parser contract
+  over the D567/D568 HTTP stream fallback. The parser accumulates chunks across
+  boundaries, decodes UTF-8 incrementally, accepts CRLF/CR/LF, ignores comment
+  and unknown fields, splits field lines on the first colon, strips one leading
+  value space, dispatches only data-bearing events on blank lines, joins
+  repeated `data` fields with newline, maps `event`/`id`/valid decimal `retry`
+  into `SseEvent`, and dispatches a buffered data-bearing event before stream
+  `Complete`. The HTTP fallback accepts 2xx `text/event-stream` heads with
+  parameters, while unacceptable heads, invalid UTF-8, or parser overflow emit
+  adapter `ERROR` and cancel/ignore the stream per D569. The parser remains
+  private to `from_sse` with no public parser type, generic text-event stream,
+  retry/reconnect scheduling, Last-Event-ID management, provider/runtime
+  authority, or protocol/conformance behavior.
+
+- 2026-07-02 D569: locked the Rust `LocalHttpStreamDriver` lifecycle
+  contract. A stream invocation emits exactly one `Head`, then zero or more
+  `Chunk` events, then exactly one terminal `Complete` or `Error`; setup or
+  head-acquisition failure may emit exactly one `Error` before any `Head`.
+  Chunks cannot precede `Head`, a second `Head` is invalid, and callbacks must
+  not fire after driver terminal delivery or after cancel takes effect. Driver
+  callbacks may occur synchronously before `DriverCancel` is returned, so source
+  adapters must fence active/terminal state independently of cancel-slot
+  installation. Typed adapters own semantic `Head` acceptance and must ignore
+  later chunks after rejection while canceling once possible. The driver owns no
+  retry, reconnect, scheduler, parser, backpressure authority, domain truth, or
+  graph mutation authority.
+
+- 2026-07-02 D568: locked Rust `from_sse` over the D567 HTTP stream
+  capability. `from_sse` / `from_sse_with_options` resolve through a typed
+  override plus stream fallback: an installed `LocalSseDriver` wins and
+  preserves host-parsed/test protocol hooks; otherwise `LocalHttpStreamDriver`
+  lowers the SSE request to an HTTP GET stream, adds `Accept:
+  text/event-stream` when absent, validates response head material, and parses
+  chunks into `SseEvent` inside the source adapter. Official concrete runtime
+  support should implement `TokioHttpStreamDriver`, not a separate
+  `TokioSseDriver`. The parser remains adapter-local and does not become a
+  public generic stream parser, provider/runtime adapter, retry/reconnect
+  scheduler, or WebSocket session replacement.
+
+- 2026-07-02 D567: locked the Rust B72 EnvironmentDrivers streaming runtime
+  boundary. Rust should add a narrow graph-owned HTTP byte-stream capability
+  (`LocalHttpStreamDriver` over response head/chunk/error/complete events, with
+  optional concrete drivers such as `TokioHttpStreamDriver`) rather than a broad
+  `RuntimeDriver` abstraction. Typed source adapters such as `from_sse` may use
+  this capability to parse protocol-specific events, while preserving existing
+  typed `LocalSseDriver` compatibility as needed. The capability is
+  inbound/network-only boundary work: it does not execute providers, own
+  schedulers, mutate graph truth, expose runtime handles, create generic sinks,
+  replace WebSocket session semantics, or merge with Dispatcher WorkerPool or
+  wire-bridge responsibilities.
+
 - 2026-06-30 D565: locked Canvas graph-built implementation and
   `dev-dispatch` topology delta reporting. Canvas implementation should
   default to named `@graphrefly/ts` graph bundles for nontrivial Workbench or
