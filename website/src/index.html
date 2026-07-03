@@ -17,8 +17,8 @@
     </header>
     <main>
       <section class="hero public-hero">
+        <h1 class="hero-equation"><span>Graph</span><b>+</b><span>Re<i>[active]</i></span><b>=</b><em>Fly</em></h1>
         <div class="hero-copy">
-          <h1 class="hero-equation"><span>Graph</span><b>+</b><span>Re<i>[active]</i></span><b>=</b><em>Fly</em></h1>
           <p class="hero-meta">Reactive Graph Protocol</p>
           <p class="hero-lede"><strong>GraphReFly</strong> makes the future of human-AI collaboration real. <strong>One reactive graph</strong> where humans and AI work as peers — <strong>composing, reviewing, and modifying together</strong>. Changes <strong>propagate</strong> automatically; the model reruns only when it must. A thin harness layer lets you turn each black-box step into a verified outcome. Every flow <strong>observable</strong>, every change <strong>auditable</strong>. Step by step, <strong>probability becomes predictability</strong>.</p>
           <div class="hero-actions">
@@ -605,74 +605,155 @@
         </div>
       </section>
 
-      <section class="band guarantee-sheet" aria-label="Public guarantee map">
+      <section class="band guarantee-sheet" aria-label="Runtime guarantee map">
         <div class="sheet-copy">
-          <p class="eyebrow">Guarantee sheet</p>
-          <h2>Curated guarantees, not internal control state.</h2>
-          <p class="band-intro">This site teaches the stable vocabulary developers need to reason about a graph. Exact syntax and package-specific detail live with the package docs.</p>
+          <p class="eyebrow">Runtime guarantees</p>
+          <h2>The harness properties users can feel.</h2>
+          <p class="band-intro">GraphReFly is useful when an LLM workflow stops being a prompt and starts being a system: state changes, branches rejoin, policies fire, and people need to know why.</p>
         </div>
         <div class="guarantee-table">
-          <div class="table-head"><span>#</span><span>Guarantee</span><span>What it means</span><span>Public terms</span></div>
+          <div class="table-head"><span>#</span><span>Guarantee</span><span>User benefit</span><span>Public terms</span></div>
           <a href="concepts/index.html" class="table-row">
-            <span>01</span><b>Closed verbs</b><p>The public shape is finite: node, graph, batch, state, producer, derived, effect, mount.</p><small>node · graph · effect</small>
-          </a>
-          <a href="reference/index.html" class="table-row">
-            <span>02</span><b>Core wave stages</b><p>The homepage shows the lifecycle words most readers need first; the reference route covers the curated vocabulary.</p><small>START · DIRTY · DATA · COMPLETE</small>
+            <span>01</span><b>Declared topology</b><p>Every source, reduction, join, and effect is a named node, so the harness can show what depends on what before it runs.</p><small>node · graph · edge</small>
           </a>
           <a href="composition/index.html" class="table-row">
-            <span>03</span><b>Glitch-free waves</b><p>DIRTY travels before DATA so fan-out can rejoin without half-old mixes.</p><small>wave · join · batch</small>
+            <span>02</span><b>Glitch-free joins</b><p>Fan-out can rejoin without half-old mixes; downstream work waits for all changed inputs before it recomputes.</p><small>DIRTY -&gt; DATA</small>
           </a>
-          <a href="packages/index.html" class="table-row">
-            <span>04</span><b>Package-local APIs</b><p>Exact language APIs, demos, release notes, and examples stay with each package.</p><small>TypeScript · Python · Rust</small>
+          <a href="examples/index.html" class="table-row">
+            <span>03</span><b>Causal traces</b><p>When an item is flagged, retried, blocked, or approved, you can inspect the structural path that produced it.</p><small>observe · describe</small>
+          </a>
+          <a href="reference/index.html" class="table-row">
+            <span>04</span><b>Controlled execution</b><p>Policies, checkpoints, batch boundaries, and teardown live in the graph instead of scattered glue code.</p><small>batch · guard · lifecycle</small>
           </a>
         </div>
       </section>
 
       <section class="band problem-system" aria-label="Problem and solution rows">
         <div class="section-lede wide">
-          <p class="eyebrow">Problems -> solutions</p>
-          <h2>Why graph projects slow down, and how GraphReFly names the fix.</h2>
-          <p class="band-intro">The homepage is not a package manual. It shows the shared model developers need before they pick syntax.</p>
+          <p class="eyebrow">The harness problem</p>
+          <h2>Three harness problems GraphReFly solves.</h2>
+          <p class="band-intro">Every team building with LLMs hits the same walls. They are not model problems. They are harness-layer problems: state, explanation, and safe composition.</p>
         </div>
         <div class="diagnosis-rows">
           <article class="diagnosis-row">
             <span class="row-number">01</span>
-            <div class="problem-card"><b>Hidden coordination</b><p>Callbacks, logs, queues, and glue code spread structure across places readers cannot inspect together.</p></div>
-            <div class="row-diagram tangled" aria-hidden="true"></div>
-            <div class="solution-card"><b>Declared topology</b><p>Inputs, reductions, joins, and effects become named graph nodes with explicit edges.</p></div>
+            <div class="problem-card"><b>Context without control</b><p>Agent state is scattered across files, databases, queues, and transcripts. The agent becomes the integration layer, then fails.</p></div>
+            <div class="row-diagram context-map" aria-hidden="true">
+              <svg viewBox="0 0 260 128" role="presentation" focusable="false">
+                <path class="diagram-link ghost" d="M42 26 C86 10 108 58 132 47" />
+                <path class="diagram-link ghost" d="M46 99 C86 108 102 75 132 80" />
+                <path class="diagram-link ghost" d="M70 62 C92 40 108 53 132 62" />
+                <path class="diagram-link live" d="M132 64 C158 64 172 48 196 38" />
+                <path class="diagram-link live" d="M132 64 C158 64 173 64 198 64" />
+                <path class="diagram-link live" d="M132 64 C158 64 172 82 196 92" />
+                <g class="diagram-source" transform="translate(42 26)">
+                  <rect x="-22" y="-13" width="44" height="26" rx="5" />
+                  <text y="4">file</text>
+                </g>
+                <g class="diagram-source" transform="translate(70 62)">
+                  <path d="M-20-12h40v24h-40z" />
+                  <path d="M-20-4h40M-20 4h40" />
+                  <text y="-19">db</text>
+                </g>
+                <g class="diagram-source" transform="translate(46 99)">
+                  <path d="M-21-12h42v19h-17l-8 8v-8h-17z" />
+                  <text y="2">chat</text>
+                </g>
+                <g class="diagram-hub" transform="translate(132 64)">
+                  <circle r="20" />
+                  <text y="5">graph</text>
+                </g>
+                <g class="diagram-node" transform="translate(205 38)"><circle r="10" /></g>
+                <g class="diagram-node" transform="translate(210 64)"><circle r="10" /></g>
+                <g class="diagram-node" transform="translate(205 92)"><circle r="10" /></g>
+              </svg>
+            </div>
+            <div class="solution-card"><b>Reactive state harness</b><p>One topology connects every source. State pushes to dependents automatically, without stale snapshots or manual re-reading.</p></div>
           </article>
           <article class="diagnosis-row">
             <span class="row-number">02</span>
-            <div class="problem-card"><b>Stale joins</b><p>Fan-out is easy to sketch and easy to get wrong when each branch reports on its own time.</p></div>
-            <div class="row-diagram wave" aria-hidden="true"></div>
-            <div class="solution-card"><b>Wave semantics</b><p>DIRTY prepares the reachable graph before DATA settles the join once.</p></div>
+            <div class="problem-card"><b>Action without explanation</b><p>Your agent flagged something. Logs give a wall of text; state gives a snapshot, not a story. Trust has nowhere to attach.</p></div>
+            <div class="row-diagram causal-trace" aria-hidden="true">
+              <svg viewBox="0 0 260 128" role="presentation" focusable="false">
+                <g class="trace-result" transform="translate(213 64)">
+                  <rect x="-24" y="-18" width="48" height="36" rx="5" />
+                  <path d="m-8 0 5 6 12-14" />
+                  <text y="-26">flagged</text>
+                </g>
+                <path class="diagram-link live trace" d="M48 64 H102 H156 H189" />
+                <path class="why-back" d="M213 64 C196 28 158 22 130 36 S72 40 48 64" />
+                <g class="why-label" transform="translate(126 22)">
+                  <text>why?</text>
+                </g>
+                <g class="trace-node source" transform="translate(48 64)">
+                  <circle r="10" />
+                  <text y="30">input</text>
+                </g>
+                <g class="trace-node" transform="translate(102 64)">
+                  <circle r="10" />
+                  <text y="30">rule</text>
+                </g>
+                <g class="trace-node join" transform="translate(156 64)">
+                  <circle r="10" />
+                  <path d="M-4-1h8M0-5v8" />
+                  <text y="30">context</text>
+                </g>
+                <g class="trace-log-dim">
+                  <rect x="22" y="21" width="56" height="7" rx="2" />
+                  <rect x="22" y="34" width="44" height="7" rx="2" />
+                  <rect x="22" y="47" width="62" height="7" rx="2" />
+                </g>
+              </svg>
+            </div>
+            <div class="solution-card"><b>Causal tracing</b><p>Ask why something happened and get a structural chain from source to conclusion, not a post-hoc log hunt.</p></div>
           </article>
           <article class="diagnosis-row">
             <span class="row-number">03</span>
-            <div class="problem-card"><b>Package drift</b><p>Shared concepts rot when every language page tries to copy exact details from the others.</p></div>
-            <div class="row-diagram packages" aria-hidden="true"></div>
-            <div class="solution-card"><b>Curated shell, delegated APIs</b><p>This site teaches the common model and routes exact API references to package-owned docs.</p></div>
+            <div class="problem-card"><b>Composition without guardrails</b><p>LLMs compose workflows by writing arbitrary code. One hallucinated branch can cascade through the pipeline.</p></div>
+            <div class="row-diagram policy-rails" aria-hidden="true">
+              <svg viewBox="0 0 260 128" role="presentation" focusable="false">
+                <g class="rejected-code">
+                  <rect x="16" y="24" width="72" height="80" rx="6" />
+                  <path d="M36 43 l-12 12 12 12" />
+                  <path d="M67 43 l12 12 -12 12" />
+                  <path d="M56 39 l-11 34" />
+                  <path class="reject-mark" d="M26 90 L78 38" />
+                  <text x="52" y="116">free code</text>
+                </g>
+                <g class="plan-card">
+                  <rect x="112" y="20" width="124" height="88" rx="7" />
+                  <text x="174" y="36">graph plan</text>
+                  <path class="diagram-link live" d="M135 64 H158" />
+                  <path class="diagram-link live" d="M185 64 H210" />
+                  <g class="plan-node" transform="translate(128 64)"><rect x="-13" y="-13" width="26" height="26" rx="4" /><text y="4">in</text></g>
+                  <g class="plan-node gate" transform="translate(172 64)"><polygon points="0,-16 16,0 0,16 -16,0" /><text y="4">gate</text></g>
+                  <g class="plan-node" transform="translate(218 64)"><path d="M-15-11h30l-7 22h-30z" /><text y="4">run</text></g>
+                  <path class="plan-check" d="m159 91 7 7 15-18" />
+                </g>
+              </svg>
+            </div>
+            <div class="solution-card"><b>Declarative graph plan</b><p>LLMs compose structure instead of imperative glue. Policies, checkpoints, and rollback become part of the harness.</p></div>
           </article>
         </div>
       </section>
 
       <section class="band split-band requirement-band">
         <div>
-          <p class="eyebrow">Public docs requirements</p>
-          <h2>Useful docs without mixing ownership.</h2>
-          <p class="band-intro">Learn the shared model here, then use the TypeScript, Python, or Rust package docs for exact APIs, examples, demos, and release notes.</p>
+          <p class="eyebrow">Production harness</p>
+          <h2>Four requirements for human + LLM work.</h2>
+          <p class="band-intro">A harness between probabilistic model output and production systems has to make both sides safer: humans can audit, LLMs can compose, and the graph enforces boundaries.</p>
         </div>
         <div class="requirement-panel" data-requirement-panel>
-          <div class="requirement-grid" aria-label="Public docs requirements">
-            <button type="button" class="requirement-block is-active" data-requirement="declare">Declare<span>Topology first</span></button>
-            <button type="button" class="requirement-block" data-requirement="push">Push<span>Waves, not polling</span></button>
-            <button type="button" class="requirement-block" data-requirement="inspect">Inspect<span>Readable graph shape</span></button>
-            <button type="button" class="requirement-block" data-requirement="delegate">Delegate<span>Package docs own APIs</span></button>
+          <div class="requirement-grid" aria-label="Production harness requirements">
+            <button type="button" class="requirement-block is-active" data-requirement="security">Security<span>Boundaries first</span></button>
+            <button type="button" class="requirement-block" data-requirement="audit">Human audit<span>Every decision traceable</span></button>
+            <button type="button" class="requirement-block" data-requirement="creation">LLM-safe creation<span>Constrained error space</span></button>
+            <button type="button" class="requirement-block" data-requirement="symmetry">Human / LLM symmetry<span>Compose, review, modify</span></button>
           </div>
           <div class="requirement-detail" aria-live="polite">
-            <span id="requirement-label">Declare</span>
-            <h3 id="requirement-title">Topology is the first artifact.</h3>
-            <p id="requirement-body">GraphReFly docs start from nodes, edges, and waves because those are the objects developers need to reason about across every package.</p>
+            <span id="requirement-label">Security</span>
+            <h3 id="requirement-title">Boundaries must be enforceable.</h3>
+            <p id="requirement-body">A production harness needs per-node ownership, policy checks, and lifecycle control so a generated workflow cannot quietly escape its allowed surface.</p>
           </div>
         </div>
       </section>

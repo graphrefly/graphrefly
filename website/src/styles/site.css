@@ -28,6 +28,18 @@ a:hover {
   color: var(--green-ink);
 }
 
+.brand-word span,
+.hero-equation b,
+.hero-equation em,
+.stage-caption span,
+.requirement-detail span {
+  color: var(--green-ink);
+  background: linear-gradient(180deg, var(--green) 0%, var(--green-ink) 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
 code {
   font-family: var(--mono);
   color: var(--ink);
@@ -125,8 +137,8 @@ button:focus-visible {
 .hero {
   display: grid;
   grid-template-columns: minmax(340px, 0.9fr) minmax(520px, 1.1fr);
-  gap: 44px;
-  align-items: center;
+  gap: 32px 44px;
+  align-items: start;
   max-width: 1500px;
   min-height: 760px;
   margin: 0 auto;
@@ -135,7 +147,7 @@ button:focus-visible {
 
 .hero-copy {
   grid-column: 1;
-  grid-row: 1;
+  grid-row: 2;
   max-width: 690px;
 }
 
@@ -153,16 +165,19 @@ h1 {
 }
 
 .hero-equation {
+  grid-column: 1 / -1;
+  grid-row: 1;
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: baseline;
   gap: 0 0.08em;
-  max-width: 780px;
+  max-width: none;
+  padding-bottom: 0.08em;
+  line-height: 1.02;
 }
 
 .hero-equation b,
 .hero-equation em {
-  color: var(--green-ink);
   font-style: normal;
 }
 
@@ -178,8 +193,8 @@ h1 {
 }
 
 .hero-meta {
-  margin: 22px 0 0;
-  color: var(--ink);
+  margin: 0 0 14px;
+  color: var(--copper);
   font-size: 13px;
 }
 
@@ -192,7 +207,7 @@ h1 {
 
 .hero-lede {
   max-width: 650px;
-  margin: 24px 0 0;
+  margin: 0;
 }
 
 .hero-lede strong {
@@ -242,7 +257,7 @@ h1 {
 
 .lang-row {
   grid-column: 1;
-  grid-row: 2;
+  grid-row: 3;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -270,7 +285,7 @@ h1 {
 
 .protocol-console {
   grid-column: 2;
-  grid-row: 1 / span 2;
+  grid-row: 2;
   min-width: 0;
   border: 1px solid rgba(7, 18, 30, 0.24);
   border-radius: 8px;
@@ -491,8 +506,8 @@ h1 {
   --rule-deep: var(--gr-strong-line);
   --red: var(--gr-red);
   grid-column: 2;
-  grid-row: 1 / span 2;
-  align-self: center;
+  grid-row: 2;
+  align-self: start;
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;
   background: var(--paper);
@@ -2538,6 +2553,7 @@ h1 {
 .band h2 {
   font-size: 60px;
   line-height: 0.95;
+  overflow-wrap: anywhere;
 }
 
 .section-lede {
@@ -3082,6 +3098,7 @@ h1 {
 .row-diagram {
   position: relative;
   z-index: 1;
+  min-width: 0;
 }
 
 .problem-card,
@@ -3113,6 +3130,7 @@ h1 {
   font-family: var(--display);
   font-size: 34px;
   line-height: 1;
+  overflow-wrap: anywhere;
 }
 
 .problem-card b {
@@ -3124,6 +3142,7 @@ h1 {
   color: var(--muted);
   font-size: 15px;
   line-height: 1.55;
+  overflow-wrap: anywhere;
 }
 
 .problem-card p {
@@ -3135,84 +3154,201 @@ h1 {
   min-height: 110px;
   border: 1px solid rgba(7, 18, 30, 0.14);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.74);
+  background:
+    linear-gradient(90deg, rgba(7, 18, 30, 0.035) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(7, 18, 30, 0.035) 1px, transparent 1px),
+    rgba(255, 255, 255, 0.82);
+  background-size: 22px 22px;
   overflow: hidden;
 }
 
-.row-diagram::before,
-.row-diagram::after {
-  content: "";
-  position: absolute;
+.row-diagram svg {
+  display: block;
+  width: 100%;
+  height: 128px;
 }
 
-.row-diagram.tangled {
-  background:
-    radial-gradient(circle at 30% 28%, var(--quiet) 0 4px, transparent 5px),
-    radial-gradient(circle at 64% 18%, var(--quiet) 0 4px, transparent 5px),
-    radial-gradient(circle at 52% 55%, var(--quiet) 0 4px, transparent 5px),
-    radial-gradient(circle at 25% 76%, var(--quiet) 0 4px, transparent 5px),
-    radial-gradient(circle at 78% 76%, var(--quiet) 0 4px, transparent 5px),
-    linear-gradient(135deg, rgba(255, 45, 117, 0.12), rgba(255, 255, 255, 0.84));
+.row-diagram text {
+  fill: var(--ink);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-anchor: middle;
+  text-transform: uppercase;
 }
 
-.row-diagram.tangled::before {
-  left: 18%;
-  right: 20%;
-  top: 30%;
-  height: 42%;
-  border-top: 1px dashed rgba(7, 18, 30, 0.34);
-  border-right: 1px dashed rgba(7, 18, 30, 0.34);
-  border-bottom: 1px dashed rgba(7, 18, 30, 0.34);
-  transform: skew(-18deg);
+.diagram-link,
+.rail,
+.code-spill path {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
-.row-diagram.tangled::after {
-  right: 18px;
-  top: 48%;
-  width: 66px;
-  height: 3px;
-  background: var(--green-ink);
-  box-shadow: 0 0 0 7px rgba(200, 255, 0, 0.16);
+.diagram-link.ghost {
+  stroke: rgba(255, 45, 117, 0.54);
+  stroke-dasharray: 4 6;
+  stroke-width: 2;
 }
 
-.row-diagram.wave::before {
-  left: 8%;
-  right: 8%;
-  top: 50%;
-  height: 0;
-  border-top: 2px solid rgba(7, 18, 30, 0.34);
-  box-shadow:
-    0 -30px 0 -1px rgba(7, 18, 30, 0.34),
-    0 30px 0 -1px rgba(7, 18, 30, 0.34);
+.diagram-link.live {
+  stroke: var(--green-ink);
+  stroke-width: 3;
 }
 
-.row-diagram.wave::after {
-  left: 38%;
-  top: 25%;
-  width: 50px;
-  height: 74px;
-  border: 3px solid var(--green-ink);
-  border-radius: 999px;
-  background: rgba(200, 255, 0, 0.18);
-  box-shadow: 0 0 0 10px rgba(200, 255, 0, 0.11);
+.diagram-source rect,
+.diagram-source path,
+.diagram-hub circle,
+.diagram-node circle,
+.trace-node circle,
+.trace-node path,
+.trace-result rect,
+.trace-result path,
+.trace-log-dim rect,
+.rejected-code rect,
+.rejected-code path,
+.plan-card rect,
+.plan-node rect,
+.plan-node polygon,
+.plan-node path,
+.plan-check {
+  vector-effect: non-scaling-stroke;
 }
 
-.row-diagram.packages {
-  background:
-    radial-gradient(circle at 50% 50%, transparent 0 18px, var(--green-ink) 19px 20px, transparent 21px),
-    radial-gradient(circle at 18% 30%, transparent 0 13px, rgba(7, 18, 30, 0.24) 14px 15px, transparent 16px),
-    radial-gradient(circle at 78% 26%, transparent 0 13px, rgba(255, 45, 117, 0.5) 14px 15px, transparent 16px),
-    radial-gradient(circle at 20% 78%, transparent 0 13px, rgba(7, 18, 30, 0.24) 14px 15px, transparent 16px),
-    radial-gradient(circle at 76% 75%, transparent 0 13px, rgba(7, 18, 30, 0.24) 14px 15px, transparent 16px);
+.diagram-source rect,
+.diagram-source path {
+  fill: #ffffff;
+  stroke: rgba(7, 18, 30, 0.38);
+  stroke-width: 1.8;
 }
 
-.row-diagram.packages::after {
-  right: 18px;
-  top: 51%;
-  width: 64px;
-  height: 3px;
-  background: var(--green-ink);
-  box-shadow: 0 0 0 7px rgba(200, 255, 0, 0.14);
+.diagram-hub circle {
+  fill: var(--green);
+  stroke: var(--green-ink);
+  stroke-width: 2.4;
+  filter: drop-shadow(0 10px 14px rgba(155, 196, 0, 0.22));
+}
+
+.diagram-node circle {
+  fill: #ffffff;
+  stroke: var(--green-ink);
+  stroke-width: 2.2;
+  filter: drop-shadow(0 8px 10px rgba(7, 18, 30, 0.12));
+}
+
+.diagram-link.trace {
+  stroke-width: 3.2;
+  filter: drop-shadow(0 8px 10px rgba(155, 196, 0, 0.18));
+}
+
+.why-back {
+  fill: none;
+  stroke: rgba(255, 45, 117, 0.68);
+  stroke-dasharray: 5 5;
+  stroke-linecap: round;
+  stroke-width: 2.2;
+}
+
+.why-label text {
+  fill: var(--copper);
+}
+
+.trace-node circle {
+  fill: #ffffff;
+  stroke: var(--green-ink);
+  stroke-width: 2.2;
+}
+
+.trace-node.source circle {
+  fill: var(--green);
+}
+
+.trace-node.join path {
+  fill: none;
+  stroke: var(--green-ink);
+  stroke-linecap: round;
+  stroke-width: 2;
+}
+
+.trace-result rect {
+  fill: var(--ink);
+  stroke: var(--green);
+  stroke-width: 2;
+}
+
+.trace-result path {
+  fill: none;
+  stroke: var(--green);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.6;
+}
+
+.trace-result text {
+  fill: var(--copper);
+}
+
+.trace-log-dim rect {
+  fill: rgba(7, 18, 30, 0.1);
+}
+
+.trace-log-dim rect:nth-child(3) {
+  fill: rgba(255, 45, 117, 0.2);
+}
+
+.rejected-code rect {
+  fill: rgba(255, 255, 255, 0.72);
+  stroke: rgba(7, 18, 30, 0.2);
+  stroke-width: 1.6;
+}
+
+.rejected-code path {
+  fill: none;
+  stroke: rgba(7, 18, 30, 0.68);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 3;
+}
+
+.rejected-code .reject-mark {
+  stroke: rgba(255, 45, 117, 0.68);
+  stroke-width: 3.4;
+}
+
+.rejected-code text {
+  fill: var(--quiet);
+}
+
+.plan-card rect {
+  fill: #ffffff;
+  stroke: rgba(7, 18, 30, 0.2);
+  stroke-width: 1.6;
+  filter: drop-shadow(0 10px 16px rgba(7, 18, 30, 0.1));
+}
+
+.plan-card > text {
+  fill: var(--copper);
+}
+
+.plan-node rect,
+.plan-node polygon,
+.plan-node path {
+  fill: rgba(255, 255, 255, 0.96);
+  stroke: var(--green-ink);
+  stroke-width: 2.2;
+}
+
+.plan-node.gate polygon {
+  fill: var(--green);
+}
+
+.plan-check {
+  fill: none;
+  stroke: var(--green-ink);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 3;
 }
 
 .split-band {
@@ -3926,6 +4062,10 @@ h1 {
 
   .band h2 {
     font-size: 40px;
+  }
+
+  .problem-system .section-lede h2 {
+    font-size: 36px;
   }
 
   .wave-frame {

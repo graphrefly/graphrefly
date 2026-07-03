@@ -101,25 +101,25 @@ if (diagnosisRows.length > 0) {
 const requirementPanel = document.querySelector("[data-requirement-panel]");
 if (requirementPanel) {
   const details = {
-    declare: {
-      label: "Declare",
-      title: "Topology is the first artifact.",
-      body: "GraphReFly docs start from nodes, edges, and waves because those are the objects developers need to reason about across every package.",
+    security: {
+      label: "Security",
+      title: "Boundaries must be enforceable.",
+      body: "A production harness needs per-node ownership, policy checks, and lifecycle control so a generated workflow cannot quietly escape its allowed surface.",
     },
-    push: {
-      label: "Push",
-      title: "Updates move as waves.",
-      body: "The public mental model is push-based: DIRTY prepares the reachable graph, then values settle through declared edges without polling.",
+    audit: {
+      label: "Human audit",
+      title: "Every decision needs a path back.",
+      body: "When a model flags, retries, approves, or blocks work, humans need the causal chain: source data, intermediate reductions, joins, and the final effect.",
     },
-    inspect: {
-      label: "Inspect",
-      title: "The graph should explain itself.",
-      body: "The site keeps topology maps, wave traces, batch boundaries, and composition visible as concepts before asking a reader to choose a language package.",
+    creation: {
+      label: "LLM-safe creation",
+      title: "Constrain the shape of generated work.",
+      body: "LLMs should compose declared nodes and edges, not invent invisible callbacks. Graph structure narrows the error space before execution begins.",
     },
-    delegate: {
-      label: "Delegate",
-      title: "Package docs own exact APIs.",
-      body: "The shared site gives the cross-language model. TypeScript, Python, and Rust routes point to package-owned references, demos, examples, and release material.",
+    symmetry: {
+      label: "Human / LLM symmetry",
+      title: "Both sides operate on the same graph.",
+      body: "Humans and models can compose, review, and modify the same declared topology, with propagation and inspection making each change visible.",
     },
   };
   const buttons = [...requirementPanel.querySelectorAll("[data-requirement]")];
