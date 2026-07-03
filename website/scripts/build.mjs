@@ -20,28 +20,30 @@ const examplesRecordsPath = join(repoRoot, "guide", "examples.jsonl");
 const packageRecordsPath = join(repoRoot, "guide", "packages.jsonl");
 const referenceRecordsPath = join(repoRoot, "guide", "reference.jsonl");
 const guideRegistryPath = join(repoRoot, "guide", "guide.jsonl");
+const decisionRecordsPath = join(repoRoot, "decisions", "decisions.jsonl");
+const ruleRecordsPath = join(repoRoot, "spec", "rules.jsonl");
+const conformanceRecordsPath = join(repoRoot, "spec", "conformance.jsonl");
+const protocolAuthoritySource = "decisions/decisions.jsonl + spec/rules.jsonl + spec/conformance.jsonl";
 const publicRoutes = new Set([
+  "/protocol",
+  "/why",
+  "/blog",
   "/learn",
   "/concepts",
   "/composition",
   "/examples",
   "/packages",
   "/reference",
-  "/ts",
-  "/py",
-  "/rust",
 ]);
-const packageRoutes = new Set(["/ts", "/py", "/rust"]);
+const packageRoutes = new Set();
 const expectedSourceJsonlByRoute = new Map([
+  ["/protocol/", protocolAuthoritySource],
   ["/learn/", "guide/learn.jsonl"],
   ["/concepts/", "guide/concepts.jsonl"],
   ["/composition/", "guide/composition.jsonl"],
   ["/examples/", "guide/examples.jsonl"],
   ["/packages/", "guide/packages.jsonl"],
   ["/reference/", "guide/reference.jsonl"],
-  ["/ts/", "guide/packages.jsonl"],
-  ["/py/", "guide/packages.jsonl"],
-  ["/rust/", "guide/packages.jsonl"],
 ]);
 const packageRouteById = new Map([
   ["ts", "/ts"],
@@ -55,6 +57,7 @@ const packageRepoById = new Map([
 ]);
 const publicTopLevelEntries = new Set([
   "assets",
+  "blog",
   "CNAME",
   "composition",
   "concepts",
@@ -62,22 +65,26 @@ const publicTopLevelEntries = new Set([
   "index.html",
   "learn",
   "packages",
-  "py",
+  "protocol",
   "reference",
-  "rust",
   "scripts",
   "styles",
-  "ts",
+  "why",
   "_meta",
 ]);
+const staticPublicRoutes = new Set(["/blog/", "/why/"]);
 const primaryNav = [
-  ["Learn", "/learn"],
-  ["Concepts", "/concepts"],
-  ["Composition", "/composition"],
-  ["Examples", "/examples"],
-  ["Packages", "/packages"],
-  ["Reference", "/reference"],
+  { label: "Why", route: "/why" },
+  { label: "Protocol", route: "/protocol" },
+  { label: "Packages", route: "/packages" },
+  { label: "Blog", route: "/blog" },
+  { label: "GitHub", href: "https://github.com/graphrefly" },
 ];
+const packageDocsHrefById = new Map([
+  ["ts", "https://graphrefly.dev/ts/"],
+  ["py", "https://graphrefly.dev/py/"],
+  ["rust", "https://docs.rs/graphrefly-rs/"],
+]);
 const internalRouteNames = new Set(["decisions", "guide", "maintainers", "spec", "status"]);
 const internalSurfaceText = [
   /\bdashboard(?:\.html)?\b/i,
@@ -202,12 +209,13 @@ function assertCleanSource() {
 function assertPackageRefs(record) {
   for (const pkg of record.package_refs ?? []) {
     const expectedRoute = packageRouteById.get(pkg.package);
-    if (!expectedRoute) {
+    const expectedDocsHref = packageDocsHrefById.get(pkg.package);
+    if (!expectedRoute || !expectedDocsHref) {
       throw new Error(`${record.id} package ref ${pkg.label ?? pkg.package} must use ts, py, or rust`);
     }
     const href = typeof pkg.href === "string" ? pkg.href.replace(/\/$/, "") : "";
-    if (href !== expectedRoute) {
-      throw new Error(`${record.id} package ref ${pkg.label ?? pkg.package} must delegate to ${expectedRoute}/, got ${pkg.href}`);
+    if (href !== expectedRoute && href !== expectedDocsHref.replace(/\/$/, "")) {
+      throw new Error(`${record.id} package ref ${pkg.label ?? pkg.package} must delegate to ${expectedDocsHref}, got ${pkg.href}`);
     }
   }
 }
@@ -505,6 +513,8 @@ const referenceTextBanned = [
   /\bport ledger\b/i,
 ];
 
+const protocolRuleAreas = new Set(["wave", "runtime", "graph", "node", "control"]);
+
 function assertStringArray(value, label) {
   if (!Array.isArray(value) || value.some((item) => typeof item !== "string")) {
     throw new Error(`${label} must be an array of strings`);
@@ -594,6 +604,109 @@ function assertPublicReferenceRecords(records) {
         throw new Error(`reference record ${record.id} contains raw/internal public text matching ${pattern}`);
       }
     }
+  }
+}
+
+function collectPublicRecordText(record) {
+  const sectionText = (record.public_sections ?? []).flatMap((section) => [
+    section.heading,
+    ...(section.body ?? []),
+    ...(section.bullets ?? []),
+  ]);
+  return [record.title, record.public_summary, ...sectionText]
+    .filter((value) => value != null)
+    .join("\n");
+}
+
+function mapById(records, label) {
+  const byId = new Map();
+  for (const record of records) {
+    if (!record.id || byId.has(record.id)) {
+      throw new Error(`${label} has missing or duplicate id: ${record.id}`);
+    }
+    byId.set(record.id, record);
+  }
+  return byId;
+}
+
+function assertProtocolAuthorityAnchor({ id, type, record }) {
+  if (!record) {
+    throw new Error(`protocol projection cites missing ${type} ${id}`);
+  }
+  if (type === "decision" && record.status !== "locked") {
+    throw new Error(`protocol projection cites decision ${id}, but its status is ${record.status}`);
+  }
+  if (type === "rule" && record.status !== "active") {
+    throw new Error(`protocol projection cites rule ${id}, but its status is ${record.status}`);
+  }
+  if (type === "conformance") {
+    if (record.status !== "required") {
+      throw new Error(`protocol projection cites conformance ${id}, but its status is ${record.status}`);
+    }
+    const runtimes = Object.values(record.runtimes ?? {});
+    if (runtimes.length === 0 || runtimes.some((status) => status !== "pass")) {
+      throw new Error(`protocol projection cites conformance ${id}, but not every runtime has passed`);
+    }
+  }
+}
+
+function protocolRecordsFromAuthority({ decisionRecords, ruleRecords, conformanceRecords }) {
+  const decisionsById = mapById(decisionRecords, "decisions/decisions.jsonl");
+  const conformanceById = mapById(conformanceRecords, "spec/conformance.jsonl");
+  return ruleRecords
+    .filter((rule) => rule.status === "active" && protocolRuleAreas.has(rule.area))
+    .map((rule, index) => {
+      for (const id of String(rule.since ?? "").split(",").filter(Boolean)) {
+        assertProtocolAuthorityAnchor({ id, type: "decision", record: decisionsById.get(id) });
+      }
+      for (const id of rule.covers_by ?? []) {
+        assertProtocolAuthorityAnchor({ id, type: "conformance", record: conformanceById.get(id) });
+      }
+      return {
+        ...rule,
+        title: rule.id,
+        kind: "authority-rule",
+        display_order: index + 1,
+        route: "/protocol",
+        publicness: "public",
+        refs: {
+          decisions: String(rule.since ?? "").split(",").filter(Boolean),
+          rules: [rule.id],
+          conformance: rule.covers_by ?? [],
+          sources: [],
+        },
+        conformance_records: (rule.covers_by ?? []).map((id) => {
+          const conformance = conformanceById.get(id);
+          return {
+            id,
+            name: conformance.name,
+            runtimes: conformance.runtimes,
+          };
+        }),
+      };
+    });
+}
+
+function assertProtocolRecords(records) {
+  const seenIds = new Set();
+  for (const record of records) {
+    if (!record.id || seenIds.has(record.id)) {
+      throw new Error(`protocol authority projection has missing or duplicate rule id: ${record.id}`);
+    }
+    seenIds.add(record.id);
+    if (record.kind !== "authority-rule" || record.route !== "/protocol") {
+      throw new Error(`${record.id} must render as an authority rule routed to /protocol`);
+    }
+    if (record.status !== "active" || !protocolRuleAreas.has(record.area)) {
+      throw new Error(`${record.id} must be an active public protocol rule area`);
+    }
+    if (typeof record.statement !== "string" || record.statement.length === 0) {
+      throw new Error(`${record.id} must render authority statement text`);
+    }
+    if (!Number.isInteger(record.display_order) || record.display_order < 1) {
+      throw new Error(`${record.id} must retain source-order display_order`);
+    }
+    assertRecordRefs(record);
   }
 }
 
@@ -687,9 +800,10 @@ function assertPrimaryNav(htmlFile, html) {
   const links = [...navMatch[1].matchAll(/<a\b[^>]*\shref="([^"]+)"[^>]*>([^<]+)<\/a>/g)].map((match) => {
     const target = resolveLocalRef(htmlFile, match[1]);
     const rel = target ? relative(distDir, target).replace(/\/index\.html$/, "") : match[1];
-    return [match[2], `/${rel}`];
+    return { label: match[2], route: target ? `/${rel}` : match[1] };
   });
-  if (JSON.stringify(links) !== JSON.stringify(primaryNav)) {
+  const expected = primaryNav.map((item) => ({ label: item.label, route: item.route ?? item.href }));
+  if (JSON.stringify(links) !== JSON.stringify(expected)) {
     throw new Error(`${relative(repoRoot, htmlFile)} primary nav drifted from the public IA`);
   }
 }
@@ -804,11 +918,11 @@ function assertPublicContentReport(report) {
       if (page.source_kind !== "jsonl" || page.source_jsonl !== expectedSource || page.record_ids.length === 0) {
         throw new Error(`public content report page ${page.route} must source ${expectedSource}`);
       }
-    } else if (page.route !== "/" && page.source_kind !== "jsonl") {
+    } else if (page.route !== "/" && !staticPublicRoutes.has(page.route) && page.source_kind !== "jsonl") {
       throw new Error(`public content report page ${page.route} must be sourced from guide JSONL`);
     }
   }
-  const packagePages = report.pages.filter((page) => ["/packages/", "/ts/", "/py/", "/rust/"].includes(page.route));
+  const packagePages = report.pages.filter((page) => ["/packages/"].includes(page.route));
   for (const page of packagePages) {
     if (page.source_jsonl !== "guide/packages.jsonl") {
       throw new Error(`public content report package page ${page.route} must source guide/packages.jsonl`);
@@ -838,21 +952,19 @@ function mergeRefs(records) {
   return Object.fromEntries(Object.entries(merged).map(([key, values]) => [key, [...values].sort()]));
 }
 
-function writePublicContentReport({ learnRecords, conceptsRecords, compositionRecords, examplesRecords, packageRecords, referenceRecords }) {
+function writePublicContentReport({ learnRecords, protocolRecords, conceptsRecords, compositionRecords, examplesRecords, packageRecords, referenceRecords }) {
   const renderedPages = walk(distDir)
     .filter((item) => item.endsWith(".html") && !relative(distDir, item).startsWith("status/"))
     .map(renderedPageSummary)
     .sort((a, b) => a.route.localeCompare(b.route));
   const guideRecordsByRoute = new Map([
+    ["/protocol/", { sourceJsonl: protocolAuthoritySource, records: protocolRecords.filter((record) => record.publicness === "public" && record.status === "active") }],
     ["/learn/", { sourceJsonl: "guide/learn.jsonl", records: learnRecords.filter((record) => record.publicness === "public" && record.status === "active") }],
     ["/concepts/", { sourceJsonl: "guide/concepts.jsonl", records: conceptsRecords.filter((record) => record.publicness === "public" && record.status === "active") }],
     ["/composition/", { sourceJsonl: "guide/composition.jsonl", records: compositionRecords.filter((record) => record.publicness === "public" && record.status === "active") }],
     ["/examples/", { sourceJsonl: "guide/examples.jsonl", records: examplesRecords.filter((record) => record.publicness === "public" && record.status === "active") }],
     ["/reference/", { sourceJsonl: "guide/reference.jsonl", records: referenceRecords.filter((record) => record.publicness === "public" && record.status === "active") }],
   ]);
-  for (const record of packageRecords.filter((item) => item.publicness === "public" && item.status === "active")) {
-    guideRecordsByRoute.set(`${record.route}/`, { sourceJsonl: "guide/packages.jsonl", records: [record] });
-  }
   guideRecordsByRoute.set("/packages/", { sourceJsonl: "guide/packages.jsonl", records: packageRecords.filter((item) => item.publicness === "public" && item.status === "active") });
 
   const pages = renderedPages.map((page) => {
@@ -870,7 +982,7 @@ function writePublicContentReport({ learnRecords, conceptsRecords, compositionRe
     kind: "graphrefly-public-content-corpus",
     generated_at: new Date().toISOString(),
     policy: {
-      primary_nav: primaryNav.map(([label, route]) => ({ label, route })),
+      primary_nav: primaryNav.map((item) => ({ label: item.label, route: item.route ?? item.href })),
       public_routes: [...publicRoutes].sort(),
       package_routes: [...packageRoutes].sort(),
       dashboard_link_policy: "isolated: no public dashboard links",
@@ -879,6 +991,7 @@ function writePublicContentReport({ learnRecords, conceptsRecords, compositionRe
     pages,
     public_records: [
       ...learnRecords.filter((record) => record.publicness === "public" && record.status === "active").map((record) => publicRecordSummary(record, "guide/learn.jsonl")),
+      ...protocolRecords.filter((record) => record.publicness === "public" && record.status === "active").map((record) => publicRecordSummary(record, protocolAuthoritySource)),
       ...conceptsRecords.filter((record) => record.publicness === "public" && record.status === "active").map((record) => publicRecordSummary(record, "guide/concepts.jsonl")),
       ...compositionRecords.filter((record) => record.publicness === "public" && record.status === "active").map((record) => publicRecordSummary(record, "guide/composition.jsonl")),
       ...examplesRecords.filter((record) => record.publicness === "public" && record.status === "active").map((record) => publicRecordSummary(record, "guide/examples.jsonl")),
@@ -928,22 +1041,26 @@ function renderList(items = []) {
 }
 
 function renderPrimaryNav(routeName) {
-  const activeRoute = packageRoutes.has(`/${routeName}`) ? "/packages" : `/${routeName}`;
+  const activeRoute = `/${routeName}`;
   return primaryNav
-    .map(([label, route]) => {
+    .map((item) => {
+      if (item.href) {
+        return `<a href="${escapeHtml(item.href)}">${escapeHtml(item.label)}</a>`;
+      }
+      const route = item.route;
       const href = `../${route.replace(/^\/+/, "")}/index.html`;
       const current = route === activeRoute ? ' aria-current="page"' : "";
-      return `<a href="${escapeHtml(href)}"${current}>${escapeHtml(label)}</a>`;
+      return `<a href="${escapeHtml(href)}"${current}>${escapeHtml(item.label)}</a>`;
     })
     .join("");
 }
 
 function renderHeader(routeName) {
-  return `<header class="site-header"><a class="brand" href="../index.html"><span class="brand-word">Graph<span>ReFly</span></span><span class="brand-sub">developer docs</span></a><nav class="nav" aria-label="Primary">${renderPrimaryNav(routeName)}</nav></header>`;
+  return `<header class="site-header"><a class="brand" href="../index.html"><span class="brand-word">Graph<span>ReFly</span></span></a><nav class="nav" aria-label="Primary">${renderPrimaryNav(routeName)}</nav></header>`;
 }
 
 function renderFooter(footerSource) {
-  return `<footer class="site-footer rich-footer" data-source="${escapeHtml(footerSource)}"><span>GraphReFly developer docs</span><span>Curated public site. Package APIs stay package-local.</span></footer>`;
+  return `<footer class="site-footer rich-footer" data-source="${escapeHtml(footerSource)}"><div class="footer-brand">GraphReFly<small>Reactive Graph Protocol</small></div><div class="footer-links" aria-label="Footer links"><div><b>Site</b><a href="../why/index.html">Why</a><a href="../protocol/index.html">Protocol</a><a href="../packages/index.html">Packages</a><a href="../blog/index.html">Blog</a></div><div><b>Packages</b><a href="https://graphrefly.dev/ts/">TypeScript</a><a href="https://graphrefly.dev/py/">Python</a><a href="https://docs.rs/graphrefly-rs/">Rust</a></div><div><b>Source</b><a href="https://github.com/graphrefly">GitHub organization</a><a href="../blog/index.html">Blog archive</a></div></div></footer>`;
 }
 
 function renderRecordCards(records, fromRoute) {
@@ -951,7 +1068,7 @@ function renderRecordCards(records, fromRoute) {
     .filter((record) => record.publicness === "public" && record.status === "active")
     .map((record) => {
       const packageLinks = (record.package_refs ?? [])
-        .map((pkg) => `<a href="${escapeHtml(routeHref(pkg.href, fromRoute))}">${escapeHtml(pkg.label)}</a>`)
+        .map((pkg) => `<a href="${escapeHtml(packageDocsHrefById.get(pkg.package) ?? routeHref(pkg.href, fromRoute))}">${escapeHtml(pkg.label)}</a>`)
         .join(" · ");
       const topology = Array.isArray(record.topology)
         ? `<section class="composition-section topology-strip"><h3>Topology</h3><div class="topology-pills">${record.topology.map((node) => `<span><b>${escapeHtml(node.role)}</b>${escapeHtml(node.label)}</span>`).join("")}</div></section>`
@@ -978,7 +1095,7 @@ function renderReferenceCards(records, fromRoute) {
     .filter((record) => record.publicness === "public" && record.status === "active")
     .map((record) => {
       const packageLinks = (record.package_refs ?? [])
-        .map((pkg) => `<a href="${escapeHtml(routeHref(pkg.href, fromRoute))}">${escapeHtml(pkg.label)}</a>`)
+        .map((pkg) => `<a href="${escapeHtml(packageDocsHrefById.get(pkg.package) ?? routeHref(pkg.href, fromRoute))}">${escapeHtml(pkg.label)}</a>`)
         .join(" · ");
       const learnMore = (record.learn_more ?? [])
         .map((link) => `<a href="${escapeHtml(routeHref(link.href, fromRoute))}">${escapeHtml(link.label)}</a>`)
@@ -997,31 +1114,102 @@ function renderReferenceCards(records, fromRoute) {
     .join("");
 }
 
+function protocolAnchor(record) {
+  return record.id.replace(/[^a-z0-9-]/gi, "-").toLowerCase();
+}
+
+function protocolAreaAnchor(area) {
+  return `protocol-area-${area.replace(/[^a-z0-9-]/gi, "-").toLowerCase()}`;
+}
+
+function renderProtocolMeta(record) {
+  const conformance = (record.conformance_records ?? [])
+    .map((item) => {
+      const runtimes = Object.entries(item.runtimes ?? {})
+        .map(([runtime, status]) => `${runtime}:${status}`)
+        .join(" · ");
+      return `<li><span>${escapeHtml(item.id)}</span>${escapeHtml(item.name)}${runtimes ? `<small>${escapeHtml(runtimes)}</small>` : ""}</li>`;
+    })
+    .join("");
+  const rows = [
+    ["Area", record.area],
+    ["Status", record.status],
+    ["Since", record.since],
+    ["Covers By", record.covers_by?.join(", ")],
+  ].filter(([, value]) => value != null && String(value).length > 0);
+  return `<dl class="protocol-authority-meta">${rows.map(([label, value]) => `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join("")}</dl>${conformance ? `<section class="protocol-conformance"><h3>Conformance</h3><ul>${conformance}</ul></section>` : ""}`;
+}
+
+function protocolGroups(records) {
+  const groups = new Map();
+  for (const record of records) {
+    if (!groups.has(record.area)) groups.set(record.area, []);
+    groups.get(record.area).push(record);
+  }
+  return [...groups.entries()].map(([area, areaRecords]) => ({ area, records: areaRecords }));
+}
+
+function renderProtocolRule(record) {
+  return `<article id="${escapeHtml(protocolAnchor(record))}" class="protocol-record protocol-record-${escapeHtml(record.area)}"><header class="protocol-record-head"><span>${String(record.display_order).padStart(2, "0")}</span><h3>${escapeHtml(record.id)}</h3>${renderProtocolMeta(record)}</header><div class="protocol-record-body"><section class="protocol-record-section statement"><h4>Statement</h4><p>${escapeHtml(record.statement)}</p></section></div></article>`;
+}
+
+function renderProtocolCards(records) {
+  const publicRecords = records
+    .filter((record) => record.publicness === "public" && record.status === "active")
+    .sort((a, b) => a.display_order - b.display_order);
+  const groups = protocolGroups(publicRecords);
+  const map = groups
+    .map((group) => `<li><a href="#${escapeHtml(protocolAreaAnchor(group.area))}"><span>${group.records.length}</span>${escapeHtml(group.area)}</a></li>`)
+    .join("");
+  const flow = groups
+    .map((group) => `<section id="${escapeHtml(protocolAreaAnchor(group.area))}" class="protocol-area-group"><header class="protocol-area-head"><p>Area</p><h2>${escapeHtml(group.area)}</h2><span>${group.records.length} rules</span></header>${group.records.map(renderProtocolRule).join("")}</section>`)
+    .join("");
+  return `<div class="protocol-board"><aside class="protocol-map" aria-label="Protocol records"><p>Authority filter</p><dl><div><dt>Status</dt><dd>active</dd></div><div><dt>Records</dt><dd>${publicRecords.length}</dd></div><div><dt>Areas</dt><dd>${groups.length}</dd></div></dl><ol>${map}</ol></aside><div class="protocol-flow">${flow}</div></div>`;
+}
+
 function renderEntryLinks(links = []) {
   if (!links.length) return "";
   return `<div class="entry-link-list">${links.map((link) => `<a href="${escapeHtml(link.href)}">${escapeHtml(link.label)}</a>`).join("")}</div>`;
+}
+
+const packageRuntimeCopy = new Map([
+  ["ts", {
+    packageLabel: "@graphrefly/ts",
+    languageLabel: "TypeScript",
+    install: "npm install @graphrefly/ts",
+  }],
+  ["py", {
+    packageLabel: "graphrefly",
+    languageLabel: "Python",
+    install: "pip install graphrefly",
+  }],
+  ["rust", {
+    packageLabel: "graphrefly-rs",
+    languageLabel: "Rust",
+    install: "cargo add graphrefly-rs",
+  }],
+]);
+
+function packageInstallCommand(record) {
+  const copy = packageRuntimeCopy.get(record.package);
+  if (!copy?.install) return "";
+  return `<code class="install-command">${escapeHtml(copy.install)}</code>`;
+}
+
+function packagePrimaryLink(record) {
+  return record.entry_links?.[0]?.href ?? `https://github.com/graphrefly/${record.canonical_repo}`;
 }
 
 function renderPackageCards(records) {
   return records
     .filter((record) => record.publicness === "public" && record.status === "active")
     .map((record) => {
-      const route = routeHref(`${record.route}/`, "packages");
-      const links = renderEntryLinks(record.entry_links);
-      return `<article class="composition-record package-record package-card"><header class="record-card-head"><p>${escapeHtml(record.package)}</p><h2>${escapeHtml(record.title)}</h2></header><section class="composition-section"><h3>Package</h3><div><p>${escapeHtml(record.package_name)}</p></div></section><section class="composition-section"><h3>Package-Owned Links</h3><div>${links}</div></section><section class="composition-section"><h3>Delegation Page</h3><div><a href="${escapeHtml(route)}">Open ${escapeHtml(record.title)} route</a></div></section><section class="composition-section"><h3>Boundary</h3><div><p>${escapeHtml(record.public_summary)}</p></div></section></article>`;
+      const docsHref = packageDocsHrefById.get(record.package);
+      const copy = packageRuntimeCopy.get(record.package);
+      const packageName = copy?.packageLabel ?? record.package_name;
+      return `<article class="runtime-card runtime-card-${escapeHtml(record.package)}"><div class="runtime-card-top"><h2>${escapeHtml(copy?.languageLabel ?? record.title)}</h2><code class="package-name-command">${escapeHtml(packageName)}</code>${packageInstallCommand(record)}</div><div class="runtime-card-body"><div class="runtime-card-actions"><a class="button" href="${escapeHtml(docsHref)}">Open docs <span aria-hidden="true">-></span></a><a class="button secondary" href="${escapeHtml(packagePrimaryLink(record))}">Repository</a></div></div></article>`;
     })
     .join("");
-}
-
-function renderPackageDetail(record) {
-  const sections = record.public_sections
-    .map((section) => {
-      const body = section.body.map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`).join("");
-      return `<section class="composition-section"><h3>${escapeHtml(section.heading)}</h3><div>${body}${renderList(section.bullets)}</div></section>`;
-    })
-    .join("");
-  const links = renderEntryLinks(record.entry_links);
-  return `<article class="composition-record package-record package-card package-detail-card"><header class="record-card-head"><p>${escapeHtml(record.package)}</p><h2>${escapeHtml(record.package_name)}</h2></header><section class="composition-section"><h3>Package-Owned Links</h3><div>${links}</div></section><section class="composition-section"><h3>Delegated Docs</h3><div><p>${escapeHtml(record.public_summary)}</p></div></section>${sections}</article>`;
 }
 
 function pageShell({ title, eyebrow, heading, intro, routeName, cards, footerSource }) {
@@ -1053,6 +1241,20 @@ function renderGuidePage(records, routeName, page) {
   }));
 }
 
+function renderProtocol(records) {
+  const outDir = join(distDir, "protocol");
+  mkdirSync(outDir, { recursive: true });
+  writeFileSync(join(outDir, "index.html"), pageShell({
+    title: "GraphReFly Protocol",
+    eyebrow: "Protocol",
+    heading: "Active protocol rules.",
+    intro: "Mechanical filter: active authority rule records in wave, runtime, graph, node, and control areas. Conformance rows are resolved from covered scenarios with all runtimes passing.",
+    footerSource: "authority protocol projection",
+    routeName: "protocol",
+    cards: renderProtocolCards(records),
+  }));
+}
+
 function renderReference(records) {
   const outDir = join(distDir, "reference");
   mkdirSync(outDir, { recursive: true });
@@ -1073,27 +1275,12 @@ function renderPackages(records) {
   writeFileSync(join(outDir, "index.html"), pageShell({
     title: "GraphReFly Packages",
     eyebrow: "Packages",
-    heading: "Choose the package for your runtime.",
-    intro: "TypeScript, Python, and Rust each own their exact docs. This shared page keeps the entry points together without copying package APIs.",
+    heading: "Choose your runtime.",
+    intro: "Install a package, then open the language-owned docs for API details and examples.",
     footerSource: "guide/packages.jsonl",
     routeName: "packages",
     cards: renderPackageCards(records),
   }));
-
-  for (const record of records.filter((item) => item.publicness === "public" && item.status === "active")) {
-    const routeName = record.route.replace(/^\/+/, "");
-    const routeDir = join(distDir, routeName);
-    mkdirSync(routeDir, { recursive: true });
-    writeFileSync(join(routeDir, "index.html"), pageShell({
-      title: `GraphReFly ${record.title} Docs`,
-      eyebrow: "Package",
-      heading: record.title,
-      intro: `${record.package_name} docs stay package-local. Use these package-owned links for exact APIs, examples, and setup material.`,
-      footerSource: "guide/packages.jsonl",
-      routeName,
-      cards: renderPackageDetail(record),
-    }));
-  }
 }
 
 function renderComposition(records) {
@@ -1146,8 +1333,13 @@ const examplesRecords = parseJsonl(examplesRecordsPath);
 const packageRecords = parseJsonl(packageRecordsPath);
 const referenceRecords = parseJsonl(referenceRecordsPath);
 const guideRegistryRecords = parseJsonl(guideRegistryPath);
+const decisionRecords = parseJsonl(decisionRecordsPath);
+const ruleRecords = parseJsonl(ruleRecordsPath);
+const conformanceRecords = parseJsonl(conformanceRecordsPath);
+const protocolRecords = protocolRecordsFromAuthority({ decisionRecords, ruleRecords, conformanceRecords });
 assertGuideRegistry(guideRegistryRecords);
 assertPublicGuideRecords(learnRecords, "guide/learn.jsonl", { area: "learn", route: "/learn" });
+assertProtocolRecords(protocolRecords);
 assertPublicGuideRecords(conceptsRecords, "guide/concepts.jsonl", { area: "concepts", route: "/concepts" });
 assertPublicGuideRecords(compositionRecords, "guide/composition.jsonl", { area: "composition", route: "/composition" });
 assertPublicGuideRecords(examplesRecords, "guide/examples.jsonl", { area: "examples", route: "/examples" });
@@ -1169,6 +1361,7 @@ renderGuidePage(learnRecords, "learn", {
   intro: "A language-neutral first path: understand the topology, then jump to TypeScript, Python, or Rust for runnable syntax.",
   footerSource: "guide/learn.jsonl",
 });
+renderProtocol(protocolRecords);
 renderGuidePage(conceptsRecords, "concepts", {
   title: "GraphReFly Concepts",
   eyebrow: "Concepts",
@@ -1188,7 +1381,7 @@ renderPackages(packageRecords);
 renderReference(referenceRecords);
 
 mkdirSync(publicMetaDir, { recursive: true });
-writePublicContentReport({ learnRecords, conceptsRecords, compositionRecords, examplesRecords, packageRecords, referenceRecords });
+writePublicContentReport({ learnRecords, protocolRecords, conceptsRecords, compositionRecords, examplesRecords, packageRecords, referenceRecords });
 assertRenderedPublicSurface();
 
 console.log(`[website] built ${relative(repoRoot, distDir)}`);

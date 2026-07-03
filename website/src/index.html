@@ -4,38 +4,32 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>GraphReFly</title>
-    <meta name="description" content="GraphReFly developer docs for reactive graph concepts, composition patterns, examples, packages, and curated protocol guarantees." />
+    <meta name="description" content="GraphReFly is a reactive graph protocol for observable systems: inspectable topology, auditable waves, package docs, examples, and curated protocol guarantees." />
     <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="styles/site.css" />
   </head>
   <body>
     <header class="site-header">
-      <a class="brand" href="./"><span class="brand-word">Graph<span>ReFly</span></span><span class="brand-sub">developer docs</span></a>
+      <a class="brand" href="./"><span class="brand-word">Graph<span>ReFly</span></span></a>
       <nav class="nav" aria-label="Primary">
-        <a href="learn/index.html">Learn</a><a href="concepts/index.html">Concepts</a><a href="composition/index.html">Composition</a><a href="examples/index.html">Examples</a><a href="packages/index.html">Packages</a><a href="reference/index.html">Reference</a>
+        <a href="why/index.html">Why</a><a href="protocol/index.html">Protocol</a><a href="packages/index.html">Packages</a><a href="blog/index.html">Blog</a><a href="https://github.com/graphrefly">GitHub</a>
       </nav>
     </header>
     <main>
       <section class="hero public-hero">
         <h1 class="hero-equation"><span>GRAPH</span><b>+</b><span>RE<i>[ACTIVE]</i></span><b>=</b><em>FLY</em></h1>
         <div class="hero-copy">
-          <p class="hero-meta">Reactive Graph Protocol</p>
-          <p class="hero-lede"><strong>GraphReFly</strong> makes the future of human-AI collaboration real. <strong>One reactive graph</strong> where humans and AI work as peers — <strong>composing, reviewing, and modifying together</strong>. Changes <strong>propagate</strong> automatically; the model reruns only when it must. A thin harness layer lets you turn each black-box step into a verified outcome. Every flow <strong>observable</strong>, every change <strong>auditable</strong>. Step by step, <strong>probability becomes predictability</strong>.</p>
+          <p class="hero-meta">Reactive graph protocol for observable systems.</p>
+          <p class="hero-lede"><strong>GraphReFly</strong> turns complex flows into <strong>inspectable</strong>, <strong>auditable</strong> causal graphs, so humans, tools, and AI can build on <strong>smaller verified steps</strong>.</p>
           <div class="hero-actions">
-            <a class="button" href="packages/index.html">Choose a package <span aria-hidden="true">-></span></a>
-            <a class="button secondary" href="concepts/index.html">Read concepts</a>
-          </div>
-          <div class="lang-row" aria-label="Package routes">
-            <span>Docs in your language:</span>
-            <a href="ts/index.html">TypeScript</a>
-            <a href="py/index.html">Python</a>
-            <a href="rust/index.html">Rust</a>
+            <a class="button" href="#package-routes">Choose a package <span aria-hidden="true">-></span></a>
+            <a class="button secondary" href="why/index.html">Why it matters</a>
           </div>
         </div>
 
         <div class="protocol-console legacy-showcase" data-legacy-showcase aria-label="GraphReFly seven-scene reactive graph protocol animation">
           <div class="gr-showcase-frame">
-              <span class="gr-showcase-tagline">Core concept · graph waves</span>
+              <span class="gr-showcase-tagline">GraphReFly · Reactive Graph Protocol</span>
               <div class="gr-scrubber" role="tablist" aria-label="Jump to stage">
                 <button type="button" class="gr-seg gr-seg-1" data-ms="0"     title="Stage 1 · Connection lifecycle" aria-label="Stage 1 — Connection lifecycle">1</button>
                 <button type="button" class="gr-seg gr-seg-2" data-ms="14000" title="Stage 2 · Diamond resolution"   aria-label="Stage 2 — Diamond resolution">2</button>
@@ -350,10 +344,10 @@
                       <ellipse class="gr-s5-cap gr-s5-cap-a" cx="-150" cy="-30" rx="200" ry="120"></ellipse>
                       <ellipse class="gr-s5-cap gr-s5-cap-b" cx="180" cy="30" rx="180" ry="110"></ellipse>
 
-                      <text class="gr-s5-lbl gr-s5-lbl-describe" x="0" y="-138">describe — the map</text>
-                      <text class="gr-s5-lbl gr-s5-lbl-observe" x="0" y="148">observe — the magnifier</text>
-                      <text class="gr-s5-lbl gr-s5-lbl-batch" x="0" y="-138">batch — defers DATA, not DIRTY</text>
-                      <text class="gr-s5-lbl gr-s5-lbl-cap" x="0" y="148">subgraphs · multi-agent ownership</text>
+                      <text class="gr-s5-lbl gr-s5-lbl-describe" x="0" y="-138">describe — the topology</text>
+                      <text class="gr-s5-lbl gr-s5-lbl-observe" x="0" y="148">observe — the data flow</text>
+                      <text class="gr-s5-lbl gr-s5-lbl-batch" x="0" y="-138">batch — many waves, resolve once</text>
+                      <text class="gr-s5-lbl gr-s5-lbl-cap" x="0" y="148">subgraphs — isolated causal field</text>
                     </g>
 
                     <!-- ═════ STAGE 6 — orchestrate + messaging ═════ -->
@@ -456,9 +450,9 @@
                 <div class="gr-showcase-label-v">
                   <span class="gr-lv gr-lv-1">START → DIRTY<br />→ DATA → COMPLETE</span>
                   <span class="gr-lv gr-lv-2">DIRTY converges<br />DATA fires once</span>
-                  <span class="gr-lv gr-lv-3">cache · version<br />guard · up / down</span>
+                  <span class="gr-lv gr-lv-3">fn · cache<br />status · deps</span>
                   <span class="gr-lv gr-lv-4">state · producer<br />derived · effect</span>
-                  <span class="gr-lv gr-lv-5">describe · observe<br />batch · subgraphs</span>
+                  <span class="gr-lv gr-lv-5">describe · observe<br />batch</span>
                   <span class="gr-lv gr-lv-6">pipeline + hub<br />static · dynamic</span>
                   <span class="gr-lv gr-lv-7">loop · memory<br />open substrate</span>
                 </div>
@@ -473,25 +467,14 @@
             <div class="gr-showcase-caption" aria-label="Animation scene caption">
               <p class="gr-cap gr-cap-1"><strong>Connection lifecycle.</strong> A subscription opens with START, DIRTY marks the downstream node before DATA invokes fn(...), and COMPLETE closes the edge.</p>
               <p class="gr-cap gr-cap-2"><strong>Diamond resolution.</strong> DIRTY reaches both branches and the join before DATA; the join waits for both branch values and fires once.</p>
-              <p class="gr-cap gr-cap-3"><strong>Node anatomy.</strong> A node exposes fn(...), cache, version, guard, and up/down ports as one inspectable primitive.</p>
+              <p class="gr-cap gr-cap-3"><strong>Node anatomy.</strong> A node carries a fn, cache, status, deps, and up/down message surface as one focused primitive.</p>
               <p class="gr-cap gr-cap-4"><strong>Node roles.</strong> State and producer feed derived work; derived nodes push visible effects through the same wave protocol.</p>
-              <p class="gr-cap gr-cap-5"><strong>Graph level.</strong> The graph can be described, observed, batched, and grouped into subgraphs while package API details stay package-local.</p>
+              <p class="gr-cap gr-cap-5"><strong>Graph level.</strong> The graph can be described, observed, and batched so topology, data flow, and wave boundaries stay inspectable.</p>
               <p class="gr-cap gr-cap-6"><strong>Orchestration.</strong> Static topology carries dynamic data through pipelines, hubs, cursors, and consumers.</p>
-              <p class="gr-cap gr-cap-7"><strong>Agent loop.</strong> Agent, tool, result, judge, memory, and open extension points stay inside one inspectable graph.</p>
+              <p class="gr-cap gr-cap-7"><strong>Agent loop.</strong> Agent, tool, result, review, memory, and open extension points can stay inside one inspectable graph.</p>
             </div>
         </div>
 
-      </section>
-
-      <section class="route-strip" aria-label="Documentation routes">
-        <div class="route-strip-inner public-routes">
-          <a href="learn/index.html"><span>Learn</span><small>Start with the smallest declared graph.</small></a>
-          <a href="concepts/index.html"><span>Concepts</span><small>Nodes, waves, dispatchers, pools, bridges.</small></a>
-          <a href="composition/index.html"><span>Composition</span><small>Patterns for inputs, joins, and effects.</small></a>
-          <a href="examples/index.html"><span>Examples</span><small>Recipes that point to package code.</small></a>
-          <a href="packages/index.html"><span>Packages</span><small>TS, Python, and Rust entry points.</small></a>
-          <a href="reference/index.html"><span>Reference</span><small>Curated public guarantees.</small></a>
-        </div>
       </section>
 
       <section class="band wave-field" aria-label="Protocol wave frame">
@@ -608,36 +591,36 @@
       <section class="band guarantee-sheet" aria-label="Runtime guarantee map">
         <div class="sheet-copy">
           <p class="eyebrow">Runtime guarantees</p>
-          <h2>The harness properties users can feel.</h2>
-          <p class="band-intro">GraphReFly is useful when an LLM workflow stops being a prompt and starts being a system: state changes, branches rejoin, policies fire, and people need to know why.</p>
+          <h2>Protocol guarantees developers can build on.</h2>
+          <p class="band-intro">GraphReFly makes changing systems legible: declared topology, wave-based propagation, glitch-free joins, and read-only inspection surfaces.</p>
         </div>
         <div class="guarantee-table">
           <div class="table-head"><span>#</span><span>Guarantee</span><span>User benefit</span><span>Public terms</span></div>
           <a href="concepts/index.html" class="table-row">
-            <span>01</span><b>Declared topology</b><p>Every source, reduction, join, and effect is a named node, so the harness can show what depends on what before it runs.</p><small>node · graph · edge</small>
+            <span>01</span><b>Declared topology</b><p>Every source, reduction, join, and effect has a place in the graph, so developers can inspect what depends on what.</p><small>node · graph · edge</small>
           </a>
           <a href="composition/index.html" class="table-row">
-            <span>02</span><b>Glitch-free joins</b><p>Fan-out can rejoin without half-old mixes; downstream work waits for all changed inputs before it recomputes.</p><small>DIRTY -&gt; DATA</small>
+            <span>02</span><b>Wave-based propagation</b><p>One message array is one wave. DIRTY travels before DATA, so downstream nodes observe change before values settle.</p><small>DIRTY -&gt; DATA</small>
           </a>
           <a href="examples/index.html" class="table-row">
-            <span>03</span><b>Causal traces</b><p>When an item is flagged, retried, blocked, or approved, you can inspect the structural path that produced it.</p><small>observe · describe</small>
+            <span>03</span><b>Glitch-free joins</b><p>Fan-out can rejoin without half-old mixes; a join recomputes once after changed dependencies settle.</p><small>fan-out · fan-in</small>
           </a>
           <a href="reference/index.html" class="table-row">
-            <span>04</span><b>Controlled execution</b><p>Policies, checkpoints, batch boundaries, and teardown live in the graph instead of scattered glue code.</p><small>batch · guard · lifecycle</small>
+            <span>04</span><b>Read-only inspection</b><p>describe, observe, and profile expose structure, message egress, and runtime counters without hidden mutation.</p><small>describe · observe · profile</small>
           </a>
         </div>
       </section>
 
       <section class="band problem-system" aria-label="Problem and solution rows">
         <div class="section-lede wide">
-          <p class="eyebrow">The harness problems</p>
-          <h2>Three harness problems GraphReFly solves.</h2>
-          <p class="band-intro">Every team building with LLMs hits the same walls. They are not model problems. They are harness-layer problems: state, explanation, and safe composition.</p>
+          <p class="eyebrow">Why observable graphs matter</p>
+          <h2>Complex flows need a visible shape.</h2>
+          <p class="band-intro">Callbacks, queues, scripts, provider logs, and agent transcripts all hide causality in different places. GraphReFly gives the work one inspectable topology.</p>
         </div>
         <div class="diagnosis-rows">
           <article class="diagnosis-row">
-            <span class="row-number">01</span>
-            <div class="problem-card"><b>Context without control</b><p>Agent state is scattered across files, databases, queues, and transcripts. The agent becomes the integration layer, then fails.</p></div>
+            <span class="row-number">Flow</span>
+            <div class="problem-card"><b>Hidden flow</b><p>Complex work disappears into callbacks, queues, scripts, and provider logs. The runtime knows what happened, but the system cannot show its shape.</p></div>
             <div class="row-diagram context-map" aria-hidden="true">
               <svg viewBox="0 0 260 128" role="presentation" focusable="false">
                 <path class="diagram-link ghost" d="M42 26 C86 10 108 58 132 47" />
@@ -668,11 +651,11 @@
                 <g class="diagram-node" transform="translate(205 92)"><circle r="10" /></g>
               </svg>
             </div>
-            <div class="solution-card"><b>Reactive state harness</b><p>One topology connects every source. State pushes to dependents automatically, without stale snapshots or manual re-reading.</p></div>
+            <div class="solution-card"><b>Explicit topology</b><p>GraphReFly gives the work a shape: nodes, edges, waves, status, and graph-local state that can be inspected before and after execution.</p></div>
           </article>
           <article class="diagnosis-row">
-            <span class="row-number">02</span>
-            <div class="problem-card"><b>Action without explanation</b><p>Your agent flagged something. Logs give a wall of text; state gives a snapshot, not a story. Trust has nowhere to attach.</p></div>
+            <span class="row-number">Cause</span>
+            <div class="problem-card"><b>Unclear causality</b><p>A value changed, an effect fired, or a branch rejoined, but the reason is scattered across runtime behavior and disconnected logs.</p></div>
             <div class="row-diagram causal-trace" aria-hidden="true">
               <svg viewBox="0 0 260 128" role="presentation" focusable="false">
                 <g class="trace-result" transform="translate(213 64)">
@@ -705,11 +688,11 @@
                 </g>
               </svg>
             </div>
-            <div class="solution-card"><b>Causal tracing</b><p>Ask why something happened and get a structural chain from source to conclusion, not a post-hoc log hunt.</p></div>
+            <div class="solution-card"><b>Inspectable propagation</b><p>GraphReFly exposes how change moves through the graph: dirty state, settled values, completion, errors, and downstream effects.</p></div>
           </article>
           <article class="diagnosis-row">
-            <span class="row-number">03</span>
-            <div class="problem-card"><b>Composition without guardrails</b><p>LLMs compose workflows by writing arbitrary code. One hallucinated branch can cascade through the pipeline.</p></div>
+            <span class="row-number">Scope</span>
+            <div class="problem-card"><b>Too much shared context</b><p>Large workflows force every collaborator to understand everything at once. Small changes become risky because the boundaries are unclear.</p></div>
             <div class="row-diagram policy-rails" aria-hidden="true">
               <svg viewBox="0 0 260 128" role="presentation" focusable="false">
                 <g class="rejected-code">
@@ -732,51 +715,51 @@
                 </g>
               </svg>
             </div>
-            <div class="solution-card"><b>Declarative graph plan</b><p>LLMs compose structure instead of imperative glue. Policies, checkpoints, and rollback become part of the harness.</p></div>
+            <div class="solution-card"><b>Smaller verified steps</b><p>Graph boundaries let agents focus on the whole graph, a subgraph, or a single node without losing the causal picture.</p></div>
           </article>
         </div>
       </section>
 
       <section class="band split-band requirement-band">
         <div>
-          <p class="eyebrow">Production harness</p>
-          <h2>Four requirements for human + LLM work.</h2>
-          <p class="band-intro">A harness between probabilistic model output and production systems has to make both sides safer: humans can audit, LLMs can compose, and the graph enforces boundaries.</p>
+          <p class="eyebrow">Agentic and LLM-backed work</p>
+          <h2>Probabilistic steps need bounded graph structure.</h2>
+          <p class="band-intro">GraphReFly is not AI-only, but agentic systems benefit from its shape: model-backed steps can stay local while verification, fallback, review, and cost signals live around them.</p>
         </div>
         <div class="requirement-panel" data-requirement-panel>
-          <div class="requirement-grid" aria-label="Production harness requirements">
-            <button type="button" class="requirement-block is-active" data-requirement="security">Security<span>Boundaries first</span></button>
-            <button type="button" class="requirement-block" data-requirement="audit">Human audit<span>Every decision traceable</span></button>
-            <button type="button" class="requirement-block" data-requirement="creation">LLM-safe creation<span>Constrained error space</span></button>
-            <button type="button" class="requirement-block" data-requirement="symmetry">Human / LLM symmetry<span>Compose, review, modify</span></button>
+          <div class="requirement-grid" aria-label="Agentic workflow requirements">
+            <button type="button" class="requirement-block is-active" data-requirement="bounded">Bounded steps<span>Keep probability local</span></button>
+            <button type="button" class="requirement-block" data-requirement="verification">Verification<span>Check the result</span></button>
+            <button type="button" class="requirement-block" data-requirement="fallback">Fallbacks<span>Recover visibly</span></button>
+            <button type="button" class="requirement-block" data-requirement="cost">Cost attribution<span>Track tokens and outcomes</span></button>
           </div>
           <div class="requirement-detail" aria-live="polite">
-            <span id="requirement-label">Security</span>
-            <h3 id="requirement-title">Boundaries must be enforceable.</h3>
-            <p id="requirement-body">A production harness needs per-node ownership, policy checks, and lifecycle control so a generated workflow cannot quietly escape its allowed surface.</p>
+            <span id="requirement-label">Bounded steps</span>
+            <h3 id="requirement-title">Keep probabilistic work inside limited nodes.</h3>
+            <p id="requirement-body">A model call, classifier, planner, or generator can be represented as one bounded step with explicit inputs, outputs, status, and downstream effects.</p>
           </div>
         </div>
       </section>
 
-      <section class="band package-section">
+      <section class="band package-section" id="package-routes">
         <div class="section-lede center">
           <p class="eyebrow">Package routes</p>
           <h2>One shared mental model. Language-local APIs.</h2>
-          <p class="band-intro">The shared site links and delegates. TypeScript, Python, and Rust keep exact API references, demos, examples, and release material in their own package docs.</p>
+          <p class="band-intro">Install a package, then open the language-owned docs for API details and examples.</p>
         </div>
         <div class="package-lanes">
-          <a class="package-lane" href="ts/index.html"><span>@graphrefly/ts</span><b>TypeScript</b><small>Enter TypeScript docs</small></a>
-          <a class="package-lane" href="py/index.html"><span>graphrefly</span><b>Python</b><small>Enter Python docs</small></a>
-          <a class="package-lane" href="rust/index.html"><span>graphrefly-rs</span><b>Rust</b><small>Enter Rust docs</small></a>
+          <a class="package-lane" href="https://graphrefly.dev/ts/"><span>TypeScript</span><code class="package-name-command">@graphrefly/ts</code><code class="install-command">npm install @graphrefly/ts</code><small>Enter TypeScript docs</small></a>
+          <a class="package-lane" href="https://graphrefly.dev/py/"><span>Python</span><code class="package-name-command">graphrefly</code><code class="install-command">pip install graphrefly</code><small>Enter Python docs</small></a>
+          <a class="package-lane" href="https://docs.rs/graphrefly-rs/"><span>Rust</span><code class="package-name-command">graphrefly-rs</code><code class="install-command">cargo add graphrefly-rs</code><small>Enter Rust docs</small></a>
         </div>
       </section>
     </main>
     <footer class="site-footer rich-footer">
       <div class="footer-brand">GraphReFly<small>Reactive Graph Protocol</small></div>
       <div class="footer-links" aria-label="Footer links">
-        <div><b>Docs</b><a href="learn/index.html">Learn</a><a href="concepts/index.html">Concepts</a><a href="composition/index.html">Composition</a><a href="reference/index.html">Reference</a></div>
-        <div><b>Packages</b><a href="ts/index.html">TypeScript</a><a href="py/index.html">Python</a><a href="rust/index.html">Rust</a></div>
-        <div><b>Boundary</b><span>Curated public docs</span><span>Package APIs delegated</span></div>
+        <div><b>Site</b><a href="why/index.html">Why</a><a href="protocol/index.html">Protocol</a><a href="packages/index.html">Packages</a><a href="blog/index.html">Blog</a></div>
+        <div><b>Packages</b><a href="https://graphrefly.dev/ts/">TypeScript</a><a href="https://graphrefly.dev/py/">Python</a><a href="https://docs.rs/graphrefly-rs/">Rust</a></div>
+        <div><b>Source</b><a href="https://github.com/graphrefly">GitHub organization</a><a href="blog/index.html">Blog archive</a></div>
       </div>
     </footer>
     <script src="scripts/site.js"></script>

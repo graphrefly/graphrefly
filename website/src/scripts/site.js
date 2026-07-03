@@ -101,25 +101,25 @@ if (diagnosisRows.length > 0) {
 const requirementPanel = document.querySelector("[data-requirement-panel]");
 if (requirementPanel) {
   const details = {
-    security: {
-      label: "Security",
-      title: "Boundaries must be enforceable.",
-      body: "A production harness needs per-node ownership, policy checks, and lifecycle control so a generated workflow cannot quietly escape its allowed surface.",
+    bounded: {
+      label: "Bounded steps",
+      title: "Keep probabilistic work inside limited nodes.",
+      body: "A model call, classifier, planner, or generator can be represented as one bounded step with explicit inputs, outputs, status, and downstream effects.",
     },
-    audit: {
-      label: "Human audit",
-      title: "Every decision needs a path back.",
-      body: "When a model flags, retries, approves, or blocks work, humans need the causal chain: source data, intermediate reductions, joins, and the final effect.",
+    verification: {
+      label: "Verification",
+      title: "Surround model-backed steps with checks.",
+      body: "Verification nodes, review material, and deterministic checks can sit around a probabilistic step as ordinary graph-visible work.",
     },
-    creation: {
-      label: "LLM-safe creation",
-      title: "Constrain the shape of generated work.",
-      body: "LLMs should compose declared nodes and edges, not invent invisible callbacks. Graph structure narrows the error space before execution begins.",
+    fallback: {
+      label: "Fallbacks",
+      title: "Recover without hiding the failure.",
+      body: "Retries, fallback paths, and review gates can be modeled beside the step that failed, keeping uncertainty local instead of ambient.",
     },
-    symmetry: {
-      label: "Human / LLM symmetry",
-      title: "Both sides operate on the same graph.",
-      body: "Humans and models can compose, review, and modify the same declared topology, with propagation and inspection making each change visible.",
+    cost: {
+      label: "Cost attribution",
+      title: "Make token usage part of the causal picture.",
+      body: "Token usage, latency, decisions, outputs, retries, and verification results can be reported around the node that caused them, making cost controllable.",
     },
   };
   const buttons = [...requirementPanel.querySelectorAll("[data-requirement]")];

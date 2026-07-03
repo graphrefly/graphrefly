@@ -12,27 +12,27 @@ const cnamePath = join(distDir, "CNAME");
 
 const expectedRoutes = new Set([
   "/",
+  "/protocol/",
+  "/why/",
+  "/blog/",
   "/learn/",
   "/concepts/",
   "/composition/",
   "/examples/",
   "/packages/",
   "/reference/",
-  "/ts/",
-  "/py/",
-  "/rust/",
 ]);
-const packagePageRoutes = new Set(["/packages/", "/ts/", "/py/", "/rust/"]);
+const packagePageRoutes = new Set(["/packages/"]);
+const staticPublicRoutes = new Set(["/blog/", "/why/"]);
+const protocolAuthoritySource = "decisions/decisions.jsonl + spec/rules.jsonl + spec/conformance.jsonl";
 const expectedSourceJsonlByRoute = new Map([
+  ["/protocol/", protocolAuthoritySource],
   ["/learn/", "guide/learn.jsonl"],
   ["/concepts/", "guide/concepts.jsonl"],
   ["/composition/", "guide/composition.jsonl"],
   ["/examples/", "guide/examples.jsonl"],
   ["/packages/", "guide/packages.jsonl"],
   ["/reference/", "guide/reference.jsonl"],
-  ["/ts/", "guide/packages.jsonl"],
-  ["/py/", "guide/packages.jsonl"],
-  ["/rust/", "guide/packages.jsonl"],
 ]);
 const internalRouteNames = new Set(["decisions", "guide", "maintainers", "spec", "status"]);
 
@@ -128,7 +128,7 @@ function assertReport() {
       if (page.source_kind !== "jsonl" || page.source_jsonl !== expectedSource || !page.record_ids?.length) {
         fail(`${page.route} must source ${expectedSource}`);
       }
-    } else if (page.route !== "/" && page.source_kind !== "jsonl") {
+    } else if (page.route !== "/" && !staticPublicRoutes.has(page.route) && page.source_kind !== "jsonl") {
       fail(`${page.route} must be sourced from guide JSONL`);
     }
     if (packagePageRoutes.has(page.route)) {
