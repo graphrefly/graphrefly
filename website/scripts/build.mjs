@@ -49,7 +49,7 @@ const expectedSourceJsonlByRoute = new Map([
 ]);
 const packageRouteById = new Map([
   ["ts", "https://ts.graphrefly.dev/"],
-  ["py", "/py"],
+  ["py", "https://py.graphrefly.dev/"],
   ["rust", "/rs"],
 ]);
 const packageRepoById = new Map([
@@ -68,7 +68,6 @@ const publicTopLevelEntries = new Set([
   "learn",
   "packages",
   "protocol",
-  "py",
   "reference",
   "rs",
   "scripts",
@@ -77,7 +76,7 @@ const publicTopLevelEntries = new Set([
   "_meta",
 ]);
 const localPackageRouteById = new Map(
-  [...packageRouteById].filter(([pkg]) => pkg !== "ts"),
+  [...packageRouteById].filter(([pkg]) => pkg === "rust"),
 );
 for (const route of localPackageRouteById.values()) {
   publicRoutes.add(route);
@@ -94,7 +93,7 @@ const primaryNav = [
 ];
 const packageDocsHrefById = new Map([
   ["ts", "https://ts.graphrefly.dev/"],
-  ["py", "https://graphrefly.dev/py/"],
+  ["py", "https://py.graphrefly.dev/"],
   ["rust", "https://graphrefly.dev/rs/"],
 ]);
 const internalRouteNames = new Set(["decisions", "guide", "maintainers", "spec", "status"]);
@@ -1156,7 +1155,7 @@ function renderHeader(routeName) {
 }
 
 function renderFooter(footerSource) {
-  return `<footer class="site-footer rich-footer" data-source="${escapeHtml(footerSource)}"><div class="footer-brand">GraphReFly<small>Reactive Graph Protocol</small></div><div class="footer-links" aria-label="Footer links"><div><b>Site</b><a href="../why/index.html">Why</a><a href="../protocol/index.html">Protocol</a><a href="../packages/index.html">Packages</a><a href="../blog/index.html">Blog</a></div><div><b>Packages</b><a href="https://ts.graphrefly.dev/">TypeScript</a><a href="https://graphrefly.dev/py/">Python</a><a href="https://graphrefly.dev/rs/">Rust</a></div><div><b>Source</b><a href="https://github.com/graphrefly">GitHub organization</a><a href="../blog/index.html">Blog archive</a></div></div></footer>`;
+  return `<footer class="site-footer rich-footer" data-source="${escapeHtml(footerSource)}"><div class="footer-brand">GraphReFly<small>Reactive Graph Protocol</small></div><div class="footer-links" aria-label="Footer links"><div><b>Site</b><a href="../why/index.html">Why</a><a href="../protocol/index.html">Protocol</a><a href="../packages/index.html">Packages</a><a href="../blog/index.html">Blog</a></div><div><b>Packages</b><a href="https://ts.graphrefly.dev/">TypeScript</a><a href="https://py.graphrefly.dev/">Python</a><a href="https://graphrefly.dev/rs/">Rust</a></div><div><b>Source</b><a href="https://github.com/graphrefly">GitHub organization</a><a href="../blog/index.html">Blog archive</a></div></div></footer>`;
 }
 
 function renderRecordCards(records, fromRoute) {

@@ -20,7 +20,6 @@ const expectedRoutes = new Set([
   "/composition/",
   "/examples/",
   "/packages/",
-  "/py/",
   "/reference/",
   "/rs/",
 ]);
@@ -34,7 +33,6 @@ const expectedSourceJsonlByRoute = new Map([
   ["/composition/", "guide/composition.jsonl"],
   ["/examples/", "guide/examples.jsonl"],
   ["/packages/", "guide/packages.jsonl"],
-  ["/py/", "guide/packages.jsonl"],
   ["/reference/", "guide/reference.jsonl"],
   ["/rs/", "guide/packages.jsonl"],
   ["/blog/", "guide/blog.jsonl"],
