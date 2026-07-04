@@ -20,10 +20,13 @@ const expectedRoutes = new Set([
   "/composition/",
   "/examples/",
   "/packages/",
+  "/py/",
   "/reference/",
+  "/rs/",
+  "/ts/",
 ]);
 const packagePageRoutes = new Set(["/packages/"]);
-const staticPublicRoutes = new Set(["/blog/", "/why/"]);
+const staticPublicRoutes = new Set(["/why/"]);
 const protocolAuthoritySource = "decisions/decisions.jsonl + spec/rules.jsonl + spec/conformance.jsonl";
 const expectedSourceJsonlByRoute = new Map([
   ["/protocol/", protocolAuthoritySource],
@@ -32,7 +35,11 @@ const expectedSourceJsonlByRoute = new Map([
   ["/composition/", "guide/composition.jsonl"],
   ["/examples/", "guide/examples.jsonl"],
   ["/packages/", "guide/packages.jsonl"],
+  ["/py/", "guide/packages.jsonl"],
   ["/reference/", "guide/reference.jsonl"],
+  ["/rs/", "guide/packages.jsonl"],
+  ["/ts/", "guide/packages.jsonl"],
+  ["/blog/", "guide/blog.jsonl"],
 ]);
 const internalRouteNames = new Set(["decisions", "guide", "maintainers", "spec", "status"]);
 
