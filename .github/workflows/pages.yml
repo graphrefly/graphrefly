@@ -58,7 +58,7 @@ jobs:
 
       - name: Build Python package docs
         working-directory: package-docs/graphrefly-py
-        run: uv run mkdocs build --strict
+        run: uv run zensical build --strict
 
       - name: Compose Python docs route
         run: |
