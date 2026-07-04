@@ -82,6 +82,19 @@ function assertNoStatusArtifacts() {
   if (existsSync(statusDir)) fail("public website dist must not expose internal status/dashboard artifacts");
 }
 
+function assertRustRouteCanonical() {
+  const legacySourceRoute = join(root, "src", "routes", "rust");
+  const legacyDistRoute = join(distDir, "rust");
+  if (existsSync(legacySourceRoute)) fail("legacy /rust source route must not be active; use /rs");
+  if (existsSync(legacyDistRoute)) fail("legacy /rust dist route must not be published; use /rs");
+  const rsHtml = join(distDir, "rs", "index.html");
+  if (!existsSync(rsHtml)) fail("canonical /rs route must be rendered");
+  const html = readFileSync(rsHtml, "utf8");
+  if (!html.includes("https://graphrefly.github.io/graphrefly-rs/")) {
+    fail("canonical /rs route must link to the graphrefly-rs GitHub Pages rustdoc");
+  }
+}
+
 function assertCnameArtifact() {
   if (!existsSync(cnamePath)) fail("public website dist must include CNAME");
   const value = readFileSync(cnamePath, "utf8").trim();
@@ -150,6 +163,7 @@ function assertReport() {
 run("build website", ["website/scripts/build.mjs"]);
 run("check internal dashboard", ["dashboard/build.mjs", "--check"]);
 assertNoStatusArtifacts();
+assertRustRouteCanonical();
 assertCnameArtifact();
 assertRenderedHtmlLinks();
 assertReport();
