@@ -37,7 +37,7 @@ HTML view (progress / structure / gaps). Schema contract: `dashboard/README.md`.
 | **Conformance (parity)** | `spec/conformance.jsonl` | `/conformance` |
 | **Flowcharts (teaching)** | `spec/flowcharts.jsonl` (structural ones auto-gen in dashboard) | `/spec-amend` |
 | **Design sessions** | `sessions/sessions.jsonl` + `sessions/active/*.md` → `sessions/archive/*.md` | any |
-| **Guides (prose)** | `guide/guide.jsonl` + `COMPOSITION.md`/`DOCS.md`/`TEST.md`/`CONTRIBUTE.md` (pending migrate) | any |
+| **Guides (prose)** | `guide/guide.jsonl` + `guide/*.jsonl` record sets | any |
 | **Formal** | `formal/*.tla` (+ MC) | `/spec-amend` |
 
 > Legacy prose docs (`GRAPHREFLY-SPEC.md`, `COMPOSITION-GUIDE*.md`) are the **old main** content,

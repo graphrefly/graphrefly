@@ -21,6 +21,15 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-07-04 D579: locked AgenticMemory application material identity and
+  operation-scoped status. Application evidence carries a DATA-only canonical
+  material identity for the complete candidate application material, and
+  idempotency requires both operation/version/id coordinates and material
+  identity to match. Operation-scoped application status is a read-model over
+  decisions while aggregate status remains available for whole-evaluation
+  health. No storage, hydration, provider/runtime, permission, WorkItem, graph
+  handle, protocol, patch, or merge semantics are introduced.
+
 - 2026-07-02 D570: locked the Rust `from_sse` adapter-local parser contract
   over the D567/D568 HTTP stream fallback. The parser accumulates chunks across
   boundaries, decodes UTF-8 incrementally, accepts CRLF/CR/LF, ignores comment

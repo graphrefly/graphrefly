@@ -4,6 +4,6 @@
 {"id":"G-examples","title":"Example and recipe records (intent, topology, package-local runnable links)","path":"guide/examples.jsonl","lang":"all","area":"examples","status":"active","record_shape":"jsonl"}
 {"id":"G-packages","title":"Language package entry records (delegated package-local docs and ownership links)","path":"guide/packages.jsonl","lang":"all","area":"packages","status":"active","record_shape":"jsonl"}
 {"id":"G-reference","title":"Curated public reference guarantees (developer-facing, provenance-only authority anchors)","path":"guide/reference.jsonl","lang":"all","area":"reference","status":"active","record_shape":"jsonl"}
-{"id":"G-docs","title":"Docs guidance (jsonl data layer + dashboard conventions; website/docs ownership)","path":"guide/DOCS.md","lang":"all","area":"meta","status":"active"}
+{"id":"G-docs","title":"Docs guidance records (jsonl data layer + dashboard conventions; website/docs ownership)","path":"guide/docs.jsonl","lang":"all","area":"meta","status":"active","record_shape":"jsonl"}
 {"id":"G-test","title":"Test guidance records (unit/property/conformance scenario layering)","path":"guide/testing.jsonl","lang":"all","area":"test","status":"stub","record_shape":"jsonl"}
 {"id":"G-contribute","title":"Contribute/process records (spec-first amendment flow; D# / DS# / conformance process)","path":"guide/contribute.jsonl","lang":"all","area":"meta","status":"stub","record_shape":"jsonl"}
