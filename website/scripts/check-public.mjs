@@ -23,7 +23,6 @@ const expectedRoutes = new Set([
   "/py/",
   "/reference/",
   "/rs/",
-  "/ts/",
 ]);
 const packagePageRoutes = new Set(["/packages/"]);
 const staticPublicRoutes = new Set(["/why/"]);
@@ -38,7 +37,6 @@ const expectedSourceJsonlByRoute = new Map([
   ["/py/", "guide/packages.jsonl"],
   ["/reference/", "guide/reference.jsonl"],
   ["/rs/", "guide/packages.jsonl"],
-  ["/ts/", "guide/packages.jsonl"],
   ["/blog/", "guide/blog.jsonl"],
 ]);
 const internalRouteNames = new Set(["decisions", "guide", "maintainers", "spec", "status"]);

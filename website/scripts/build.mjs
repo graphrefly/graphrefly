@@ -48,7 +48,7 @@ const expectedSourceJsonlByRoute = new Map([
   ["/blog/", "guide/blog.jsonl"],
 ]);
 const packageRouteById = new Map([
-  ["ts", "/ts"],
+  ["ts", "https://ts.graphrefly.dev/"],
   ["py", "/py"],
   ["rust", "/rs"],
 ]);
@@ -73,11 +73,13 @@ const publicTopLevelEntries = new Set([
   "rs",
   "scripts",
   "styles",
-  "ts",
   "why",
   "_meta",
 ]);
-for (const route of packageRouteById.values()) {
+const localPackageRouteById = new Map(
+  [...packageRouteById].filter(([pkg]) => pkg !== "ts"),
+);
+for (const route of localPackageRouteById.values()) {
   publicRoutes.add(route);
   packageRoutes.add(route);
   expectedSourceJsonlByRoute.set(`${route}/`, "guide/packages.jsonl");
@@ -91,7 +93,7 @@ const primaryNav = [
   { label: "GitHub", href: "https://github.com/graphrefly" },
 ];
 const packageDocsHrefById = new Map([
-  ["ts", "https://graphrefly.dev/ts/"],
+  ["ts", "https://ts.graphrefly.dev/"],
   ["py", "https://graphrefly.dev/py/"],
   ["rust", "https://graphrefly.dev/rs/"],
 ]);
@@ -1055,7 +1057,9 @@ function writePublicContentReport({ learnRecords, protocolRecords, conceptsRecor
   const activePackageRecords = packageRecords.filter((item) => item.publicness === "public" && item.status === "active");
   guideRecordsByRoute.set("/packages/", { sourceJsonl: "guide/packages.jsonl", records: activePackageRecords });
   for (const record of activePackageRecords) {
-    guideRecordsByRoute.set(`${record.route}/`, { sourceJsonl: "guide/packages.jsonl", records: [record] });
+    if (localPackageRouteById.has(record.package)) {
+      guideRecordsByRoute.set(`${record.route}/`, { sourceJsonl: "guide/packages.jsonl", records: [record] });
+    }
   }
 
   const pages = renderedPages.map((page) => {
@@ -1152,7 +1156,7 @@ function renderHeader(routeName) {
 }
 
 function renderFooter(footerSource) {
-  return `<footer class="site-footer rich-footer" data-source="${escapeHtml(footerSource)}"><div class="footer-brand">GraphReFly<small>Reactive Graph Protocol</small></div><div class="footer-links" aria-label="Footer links"><div><b>Site</b><a href="../why/index.html">Why</a><a href="../protocol/index.html">Protocol</a><a href="../packages/index.html">Packages</a><a href="../blog/index.html">Blog</a></div><div><b>Packages</b><a href="https://graphrefly.dev/ts/">TypeScript</a><a href="https://graphrefly.dev/py/">Python</a><a href="https://graphrefly.dev/rs/">Rust</a></div><div><b>Source</b><a href="https://github.com/graphrefly">GitHub organization</a><a href="../blog/index.html">Blog archive</a></div></div></footer>`;
+  return `<footer class="site-footer rich-footer" data-source="${escapeHtml(footerSource)}"><div class="footer-brand">GraphReFly<small>Reactive Graph Protocol</small></div><div class="footer-links" aria-label="Footer links"><div><b>Site</b><a href="../why/index.html">Why</a><a href="../protocol/index.html">Protocol</a><a href="../packages/index.html">Packages</a><a href="../blog/index.html">Blog</a></div><div><b>Packages</b><a href="https://ts.graphrefly.dev/">TypeScript</a><a href="https://graphrefly.dev/py/">Python</a><a href="https://graphrefly.dev/rs/">Rust</a></div><div><b>Source</b><a href="https://github.com/graphrefly">GitHub organization</a><a href="../blog/index.html">Blog archive</a></div></div></footer>`;
 }
 
 function renderRecordCards(records, fromRoute) {
