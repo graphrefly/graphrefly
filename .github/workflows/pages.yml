@@ -29,6 +29,43 @@ jobs:
       - name: Build and check public docs
         run: npm run docs:public:check
 
+      - name: Checkout Python host package
+        uses: actions/checkout@v5
+        with:
+          repository: graphrefly/graphrefly-py
+          ref: main
+          path: package-docs/graphrefly-py
+
+      - name: Checkout Rust native engine
+        uses: actions/checkout@v5
+        with:
+          repository: graphrefly/graphrefly-rs
+          ref: main
+          path: package-docs/graphrefly-rs
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Install Python docs dependencies and native extension
+        working-directory: package-docs/graphrefly-py
+        run: |
+          uv sync --group dev --group docs
+          uv run maturin develop --release
+
+      - name: Check Python API docs coverage
+        working-directory: package-docs/graphrefly-py
+        run: uv run python scripts/check_api_docs.py
+
+      - name: Build Python package docs
+        working-directory: package-docs/graphrefly-py
+        run: uv run mkdocs build --strict
+
+      - name: Compose Python docs route
+        run: |
+          rm -rf website/dist/py
+          mkdir -p website/dist/py
+          cp -R package-docs/graphrefly-py/site/. website/dist/py/
+
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
