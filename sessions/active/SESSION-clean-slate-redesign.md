@@ -21,6 +21,26 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-07-05 D587: locked WorkItem-to-AgenticMemory admission/application
+  composition into a separate cross-family solution surface. The
+  WorkItem-memory bridge remains mapper-only under D581/D582, and AgenticMemory
+  core remains independent of WorkItem. The composition recipe may wire bridge
+  proposal outputs into AgenticMemory-owned admission/application helpers, but
+  it does not own policy selection, record truth mutation, storage, hydration,
+  providers/runtimes, WorkItem mutation, or D584 same-evaluation evidence
+  self-feedback.
+
+- 2026-07-05 D583-D586: locked the next AgenticMemory application-boundary
+  expansion set. Admission policy sourcing is an AgenticMemory-owned DATA
+  projection boundary, not WorkItem bridge authority. Application evidence and
+  history project prior evidence for future evaluations, while current
+  application decisions must not synchronously self-feed the same application
+  evaluation. Durable record hydration/storage stays adapter/host-owned with
+  AgenticMemory limited to passive DATA-only snapshot/store-frame/codec helpers.
+  Update/replace sources must materialize complete next records before
+  application; true patch/merge remains deferred to a later AgenticMemory-local
+  design and must not become a generic mutation DSL.
+
 - 2026-07-04 D579: locked AgenticMemory application material identity and
   operation-scoped status. Application evidence carries a DATA-only canonical
   material identity for the complete candidate application material, and
