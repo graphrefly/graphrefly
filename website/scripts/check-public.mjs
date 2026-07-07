@@ -9,6 +9,8 @@ const distDir = join(root, "dist");
 const statusDir = join(distDir, "status");
 const reportPath = join(distDir, "_meta", "public-content-report.json");
 const cnamePath = join(distDir, "CNAME");
+const legacySharedRustDocsUrl = "https://graphrefly.dev" + "/rs";
+const legacyRustPagesUrl = "https://graphrefly.github.io" + "/graphrefly-rs/";
 
 const expectedRoutes = new Set([
   "/",
@@ -24,7 +26,7 @@ const expectedRoutes = new Set([
   "/rs/",
 ]);
 const packagePageRoutes = new Set(["/packages/"]);
-const staticPublicRoutes = new Set(["/why/"]);
+const staticPublicRoutes = new Set(["/why/", "/rs/"]);
 const protocolAuthoritySource = "decisions/decisions.jsonl + spec/rules.jsonl + spec/conformance.jsonl";
 const expectedSourceJsonlByRoute = new Map([
   ["/protocol/", protocolAuthoritySource],
@@ -34,7 +36,6 @@ const expectedSourceJsonlByRoute = new Map([
   ["/examples/", "guide/examples.jsonl"],
   ["/packages/", "guide/packages.jsonl"],
   ["/reference/", "guide/reference.jsonl"],
-  ["/rs/", "guide/packages.jsonl"],
   ["/blog/", "guide/blog.jsonl"],
 ]);
 const internalRouteNames = new Set(["decisions", "guide", "maintainers", "spec", "status"]);
@@ -78,16 +79,30 @@ function assertNoStatusArtifacts() {
   if (existsSync(statusDir)) fail("public website dist must not expose internal status/dashboard artifacts");
 }
 
-function assertRustRouteCanonical() {
+function assertRustDocsSubdomain() {
   const legacySourceRoute = join(root, "src", "routes", "rust");
   const legacyDistRoute = join(distDir, "rust");
   if (existsSync(legacySourceRoute)) fail("legacy /rust source route must not be active; use /rs");
   if (existsSync(legacyDistRoute)) fail("legacy /rust dist route must not be published; use /rs");
   const rsHtml = join(distDir, "rs", "index.html");
-  if (!existsSync(rsHtml)) fail("canonical /rs route must be rendered");
+  if (!existsSync(rsHtml)) fail("compatibility /rs route must be rendered");
   const html = readFileSync(rsHtml, "utf8");
-  if (!html.includes("https://graphrefly.github.io/graphrefly-rs/")) {
-    fail("canonical /rs route must link to the graphrefly-rs GitHub Pages rustdoc");
+  if (!html.includes("https://rs.graphrefly.dev/")) {
+    fail("compatibility /rs route must redirect to rs.graphrefly.dev");
+  }
+}
+
+function assertNoLegacyRustDocsUrl() {
+  for (const file of walk(distDir).filter((item) => item.endsWith(".html") || item.endsWith(".json"))) {
+    const rel = relative(distDir, file);
+    if (rel.startsWith("status/")) continue;
+    const text = readFileSync(file, "utf8");
+    if (text.includes(`${legacySharedRustDocsUrl}/`) || text.includes(legacySharedRustDocsUrl)) {
+      fail(`${relative(repoRoot, file)} still points to the legacy shared Rust docs URL`);
+    }
+    if (text.includes(legacyRustPagesUrl)) {
+      fail(`${relative(repoRoot, file)} still points to the old Rust GitHub Pages rustdoc URL`);
+    }
   }
 }
 
@@ -159,7 +174,8 @@ function assertReport() {
 run("build website", ["website/scripts/build.mjs"]);
 run("check internal dashboard", ["dashboard/build.mjs", "--check"]);
 assertNoStatusArtifacts();
-assertRustRouteCanonical();
+assertRustDocsSubdomain();
+assertNoLegacyRustDocsUrl();
 assertCnameArtifact();
 assertRenderedHtmlLinks();
 assertReport();

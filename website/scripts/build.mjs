@@ -35,6 +35,7 @@ const publicRoutes = new Set([
   "/examples",
   "/packages",
   "/reference",
+  "/rs",
 ]);
 const packageRoutes = new Set();
 const expectedSourceJsonlByRoute = new Map([
@@ -50,7 +51,7 @@ const expectedSourceJsonlByRoute = new Map([
 const packageRouteById = new Map([
   ["ts", "https://ts.graphrefly.dev/"],
   ["py", "https://py.graphrefly.dev/"],
-  ["rust", "/rs"],
+  ["rust", "https://rs.graphrefly.dev/"],
 ]);
 const packageRepoById = new Map([
   ["ts", "graphrefly-ts"],
@@ -76,14 +77,14 @@ const publicTopLevelEntries = new Set([
   "_meta",
 ]);
 const localPackageRouteById = new Map(
-  [...packageRouteById].filter(([pkg]) => pkg === "rust"),
+  [...packageRouteById].filter(([, route]) => route.startsWith("/")),
 );
 for (const route of localPackageRouteById.values()) {
   publicRoutes.add(route);
   packageRoutes.add(route);
   expectedSourceJsonlByRoute.set(`${route}/`, "guide/packages.jsonl");
 }
-const staticPublicRoutes = new Set(["/why/"]);
+const staticPublicRoutes = new Set(["/why/", "/rs/"]);
 const primaryNav = [
   { label: "Why", route: "/why" },
   { label: "Protocol", route: "/protocol" },
@@ -94,7 +95,7 @@ const primaryNav = [
 const packageDocsHrefById = new Map([
   ["ts", "https://ts.graphrefly.dev/"],
   ["py", "https://py.graphrefly.dev/"],
-  ["rust", "https://graphrefly.dev/rs/"],
+  ["rust", "https://rs.graphrefly.dev/"],
 ]);
 const internalRouteNames = new Set(["decisions", "guide", "maintainers", "spec", "status"]);
 const internalSurfaceText = [
@@ -1155,7 +1156,7 @@ function renderHeader(routeName) {
 }
 
 function renderFooter(footerSource) {
-  return `<footer class="site-footer rich-footer" data-source="${escapeHtml(footerSource)}"><div class="footer-brand">GraphReFly<small>Reactive Graph Protocol</small></div><div class="footer-links" aria-label="Footer links"><div><b>Site</b><a href="../why/index.html">Why</a><a href="../protocol/index.html">Protocol</a><a href="../packages/index.html">Packages</a><a href="../blog/index.html">Blog</a></div><div><b>Packages</b><a href="https://ts.graphrefly.dev/">TypeScript</a><a href="https://py.graphrefly.dev/">Python</a><a href="https://graphrefly.dev/rs/">Rust</a></div><div><b>Source</b><a href="https://github.com/graphrefly">GitHub organization</a><a href="../blog/index.html">Blog archive</a></div></div></footer>`;
+  return `<footer class="site-footer rich-footer" data-source="${escapeHtml(footerSource)}"><div class="footer-brand">GraphReFly<small>Reactive Graph Protocol</small></div><div class="footer-links" aria-label="Footer links"><div><b>Site</b><a href="../why/index.html">Why</a><a href="../protocol/index.html">Protocol</a><a href="../packages/index.html">Packages</a><a href="../blog/index.html">Blog</a></div><div><b>Packages</b><a href="https://ts.graphrefly.dev/">TypeScript</a><a href="https://py.graphrefly.dev/">Python</a><a href="https://rs.graphrefly.dev/">Rust</a></div><div><b>Source</b><a href="https://github.com/graphrefly">GitHub organization</a><a href="../blog/index.html">Blog archive</a></div></div></footer>`;
 }
 
 function renderRecordCards(records, fromRoute) {

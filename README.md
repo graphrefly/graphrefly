@@ -27,7 +27,7 @@ The shared website shell lives in [`website/`](./website/). `graphrefly.dev` is 
 
 The generated dashboard remains the internal authority/control view over decisions, full rules, conformance, backlog, phases, sessions, and gaps.
 
-Package API docs, examples, demos, and release material remain owned by the language repos and are linked or delegated under `/ts/`, `/py/`, and `/rs/`.
+Package API docs, examples, demos, and release material remain owned by the language repos and are linked through https://ts.graphrefly.dev/, https://py.graphrefly.dev/, and https://rs.graphrefly.dev/.
 
 ```bash
 npm run website:build
