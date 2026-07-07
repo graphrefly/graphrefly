@@ -21,6 +21,26 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-07-07 D589: locked the AgenticMemory committed fact-log v0
+  contract. The log appends canonical AgenticMemory-owned fact batches with
+  deterministic fact/material identity, whole-batch visibility, stream cursors,
+  closed commit statuses (`committed`, `duplicate`, `conflict`, `rejected`,
+  `uncertain`), and library-owned deterministic materialization from committed
+  facts. Commit results describe durable fact-log persistence only: they are
+  not application acknowledgements, live graph truth, or record mutation
+  authority. SQLite schemas, hot hydration, graph commit barriers, retention,
+  migration, and authorization remain later reviewed designs.
+
+- 2026-07-07 D588: locked AgenticMemory durable fact-log authority.
+  Durable stored facts may become the source of truth for memory state, but
+  the authority is the canonical committed AgenticMemory fact stream, not an
+  adapter callback, live graph cache, application output snapshot, or backend
+  storage handle. The library owns schemas/codecs, ordering/cursors,
+  idempotency/conflict rules, replay/materialization rules, and snapshot/tail
+  compaction invariants. Hosts own physical backends and concrete durability,
+  transaction, retention, backup, and deployment policy. Commit-barrier and
+  hot-hydration APIs remain separate reviewed designs.
+
 - 2026-07-05 D587: locked WorkItem-to-AgenticMemory admission/application
   composition into a separate cross-family solution surface. The
   WorkItem-memory bridge remains mapper-only under D581/D582, and AgenticMemory
