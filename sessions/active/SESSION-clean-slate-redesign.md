@@ -21,6 +21,18 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-07-07 D590: locked the AgenticMemory durable-result gate
+  boundary. AgenticMemory may expose a solution-level DATA read model over
+  D589 committed fact-log append/read results so downstream application
+  workflows can explicitly gate on durable persistence progress. The gate may
+  emit durability result, status, issue, audit, and cursor facts, but those
+  facts describe fact-log persistence only: they are not application
+  acknowledgements, live graph truth, record mutation authority, hot hydration,
+  or graph wave/batch commit barriers. `uncertain` remains neither success nor
+  failure and must resolve through read/idempotency. Backend transaction,
+  retry, retention, auth, live refresh, hot hydration, and protocol-observable
+  commit-barrier behavior remain later reviewed/spec-amend designs.
+
 - 2026-07-07 D589: locked the AgenticMemory committed fact-log v0
   contract. The log appends canonical AgenticMemory-owned fact batches with
   deterministic fact/material identity, whole-batch visibility, stream cursors,
