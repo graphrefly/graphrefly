@@ -21,6 +21,18 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-07-08 D591: locked the AgenticMemory fact-log read
+  materialization re-entry boundary. AgenticMemory may expose explicit
+  solution-level DATA projections over D589 committed fact-log read results:
+  the library owns validation, stream-order materialization, status, issues,
+  audit, and cursor facts, and may emit ordinary records, priorEvidence, and
+  evidence DATA for callers to wire into later admission, application,
+  bootstrap, or restore inputs. Backends only supply read results; they do not
+  replay, apply, admit, mutate records, choose conflict winners, hydrate live
+  graph state, refresh subscribers, or own restore/bootstrap semantics.
+  Re-entry is explicit and caller-wired, not hot hydration, live graph truth
+  mutation, same-evaluation feedback, or a graph wave/batch commit barrier.
+
 - 2026-07-07 D590: locked the AgenticMemory durable-result gate
   boundary. AgenticMemory may expose a solution-level DATA read model over
   D589 committed fact-log append/read results so downstream application
