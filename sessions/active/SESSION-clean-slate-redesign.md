@@ -21,6 +21,32 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-07-08 D593: locked the AgenticMemory materialized fact-log
+  bootstrap and restore-input boundary. AgenticMemory may expose explicit
+  bootstrap/re-entry composition helpers that accept already-materialized D591
+  records, priorEvidence, evidence, status, issues, audit, and cursor DATA and
+  project caller-wirable inputs for later admission, application, bootstrap, or
+  restore-input flows as ordinary graph DATA. These helpers may validate
+  readiness and partial-read status, expose status/issues/audit/cursor, and
+  require caller-visible wiring. They do not read storage, call backends,
+  mutate live graph caches invisibly, refresh subscribers, bypass
+  admission/application ownership, feed current-evaluation application
+  decisions back into the same evaluation, claim restore completion, or create
+  graph wave/batch commit barriers. Any protocol-observable graph
+  restore/hydration lifecycle integration routes through spec-amend against
+  R-restore/R-snapshot.
+
+- 2026-07-08 D592: locked the AgenticMemory committed fact-log backend adapter
+  contract. AgenticMemory may expose a narrow adapter contract whose only
+  GraphReFly-facing semantic operations are append canonical committed fact
+  batches and read committed fact results in fact-stream order. Adapters may own
+  physical transactions, durability attempts, storage cursors, diagnostics, and
+  environment-specific capabilities, but normalize public results to D589
+  append/read result DATA. They must not materialize records, replay facts into
+  application state, apply/admit/mutate records, own restore/bootstrap, expose
+  backend row ids as fact cursors, hydrate live graphs, refresh subscribers, or
+  act as graph commit barriers.
+
 - 2026-07-08 D591: locked the AgenticMemory fact-log read
   materialization re-entry boundary. AgenticMemory may expose explicit
   solution-level DATA projections over D589 committed fact-log read results:
