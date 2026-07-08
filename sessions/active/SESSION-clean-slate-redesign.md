@@ -21,6 +21,24 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-07-08 D594: locked the AgenticMemory concrete committed fact-log
+  backend policy. Concrete reference backends may implement the existing D592
+  backend adapter contract directly; no separate reference-backend policy DTO is
+  required before the first concrete adapter. Concrete backends may choose
+  physical schema, transaction boundaries, storage keys, writer mode, and
+  durability attempt strategy, but their only GraphReFly-facing semantic
+  operations remain append canonical committed fact batches and read committed
+  facts in fact-stream order. Fsync/transaction guarantees, writer mode,
+  storage cursors, row ids, health, and capabilities may appear only as backend
+  status, issue, and audit DATA. The first reference backend should be
+  single-writer unless it uses an explicit passive conditional-create
+  capability. Multi-writer correctness, retention, deletion, redaction,
+  migration, encryption, auth, retry schedulers, hot refresh, restore
+  lifecycle, and graph commit barriers remain separate reviewed designs.
+  Backend row ids and storage cursors must never be fact-log cursors, and
+  uncertain append remains unresolved until explicit read/idempotency
+  resolution.
+
 - 2026-07-08 D593: locked the AgenticMemory materialized fact-log
   bootstrap and restore-input boundary. AgenticMemory may expose explicit
   bootstrap/re-entry composition helpers that accept already-materialized D591
