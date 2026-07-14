@@ -41,8 +41,8 @@ CSP-2.5; deferred self-rewire → CSP-2.7). See each module header for its invar
 in one run (`upKind ∈ {INVALIDATE, DIRTY, TEARDOWN}`): `InvalidateHonored` (source
 clears + onInvalidate + down-cascade) and `DirtyDropped` / `TeardownDropped`
 (source untouched, no down-effect). `InvalidateHonored` is load-bearing — making
-the terminus not clear the cache trips it (mutation-verified). A node guard that
-denies INVALIDATE (R-observe) is an unmodeled opt-out (honor is the default).
+the terminus not clear the cache trips it (mutation-verified). D620 removes the
+archived, unimplemented per-node guard opt-out; honor is the clean-slate rule.
 
 `wave_reentrancy.tla` ships two cfgs: `wave_reentrancy.cfg` (cyclic, `HasFeedback=TRUE`
 — the cycle is rejected at E) and `wave_reentrancy_acyclic.cfg` (`HasFeedback=FALSE`

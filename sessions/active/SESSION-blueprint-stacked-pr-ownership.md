@@ -152,6 +152,11 @@ the plan was generated against stale topology.
 
 ## PART 5: OWNERSHIP CONTROL VIA GUARDS + DIFF CHECKS
 
+> Historical premise notice (D620): the per-node Actor/guard ABAC premise below is superseded for
+> clean-slate GraphReFly. Product authorization is an explicit operation-specific graph boundary over
+> bounded request, external outcome and current fence facts. This notice does not redesign or approve
+> the separate stacked-diff product concept.
+
 The user's observation was that every node can have guards, and guards can express ABAC. This is a
 strong fit for runtime ownership enforcement, but it is not sufficient by itself for source-code
 ownership.
@@ -304,4 +309,3 @@ External sources consulted during the thread:
 - `../graphrefly-ts/archive/docs/SESSION-reactive-linear-and-git.md`: prior discussion on
   causal-dimension collaboration, ownership lifecycle, blueprint as lookup index, static fission,
   and wire-aware reachability prerequisite.
-

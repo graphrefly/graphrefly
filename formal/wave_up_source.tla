@@ -18,8 +18,8 @@ Dep-bearing intermediates only FORWARD upstream control (no self-action); the
 source is the single actor and the down-cascade is the effect — so this focused
 model collapses the chain to {source S -> derived D} and exercises the terminus.
 `upKind` ranges over all three upstream-allowed non-pause control kinds in one
-run (Init picks each). A node guard denying INVALIDATE (R-observe) is an opt-out
-policy, not modeled here (the default = honor is what C-7 pins).
+run (Init picks each). D620 removes the archived, unimplemented per-node guard
+opt-out; C-7 pins the unconditional clean-slate terminus behavior modeled here.
 
 Status: draft (flips active with the CSP-1/CSP-2 up-at-source impl + C-7 green).
  ***************************************************************************)
