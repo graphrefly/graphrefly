@@ -235,6 +235,72 @@ h1 {
   font-weight: 700;
 }
 
+.hero-type-slot {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  margin-inline: 0.25em;
+  vertical-align: bottom;
+}
+
+.hero-type-slot::before {
+  content: attr(data-hero-type);
+  visibility: hidden;
+}
+
+.hero-type-text {
+  position: absolute;
+  inset: 0 auto auto 0;
+}
+
+.hero-type-cursor {
+  position: absolute;
+  top: 0.14em;
+  left: var(--hero-cursor-x, 0);
+  width: 2px;
+  height: 1.18em;
+  background: var(--green-ink);
+  box-shadow: 0 0 10px rgba(105, 150, 0, 0.3);
+  opacity: 0;
+  transition: opacity 320ms ease;
+}
+
+.hero-type-slot.is-cursor-entering .hero-type-cursor {
+  opacity: 1;
+}
+
+.hero-type-slot.is-cursor-visible .hero-type-cursor {
+  opacity: 1;
+  animation: hero-cursor-blink 920ms steps(1, end) infinite;
+}
+
+.hero-type-slot.is-cursor-fading .hero-type-cursor {
+  animation: none;
+  opacity: 0;
+}
+
+.hero-keyword {
+  opacity: 1;
+  transition: opacity 680ms ease;
+}
+
+.hero-keyword.is-hidden {
+  opacity: 0;
+}
+
+.hero-anchor-part.is-emphasized {
+  color: var(--green-ink);
+  background: linear-gradient(180deg, var(--green) 0%, var(--green-ink) 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+@keyframes hero-cursor-blink {
+  0%, 46% { opacity: 1; }
+  47%, 100% { opacity: 0.18; }
+}
+
 .hero-actions,
 .route-actions {
   display: flex;
@@ -1019,8 +1085,7 @@ h1 {
 /*   up/down ports reveal 38–39%                 */
 /*   cache reveals        39.5–40%               */
 /*   version reveals      40.5–41%               */
-/*   guard reveals        41.5–42%               */
-/*   all settled          42–44.88%              */
+/*   all settled          41–44.88%              */
 /*   zoom out             44.88–45.83%           */
 /* ═════════════════════════════════════════════ */
 
@@ -1054,11 +1119,10 @@ h1 {
   letter-spacing: -0.02em;
 }
 
-/* Inner badges (cache / version / guard) — icon + text, no chrome box */
+/* Inner badges (cache / version) — icon + text, no chrome box */
 .gr-s3-tag { opacity: 0; }
 .gr-s3-tag-cache { animation: gr-s3-tag-cache 48s infinite linear; }
 .gr-s3-tag-ver   { animation: gr-s3-tag-ver   48s infinite linear; }
-.gr-s3-tag-guard { animation: gr-s3-tag-guard 48s infinite linear; }
 .gr-s3-tag-text {
   fill: var(--ice);
   font-family: var(--mono); font-size: 11.5px;
@@ -1074,7 +1138,7 @@ h1 {
 }
 .gr-s3-icon-dot { fill: var(--lime); stroke: none; }
 
-/* Reveal sequence: cache @39.5%, version @40.5%, guard @41.5%; all stay until 44.88% */
+/* Reveal sequence: cache @39.5%, version @40.5%; both stay until 44.88% */
 @keyframes gr-s3-tag-cache {
   0%, 39.3% { opacity: 0; }
   39.8%, 44.88% { opacity: 1; }
@@ -1083,11 +1147,6 @@ h1 {
 @keyframes gr-s3-tag-ver {
   0%, 40.3% { opacity: 0; }
   40.8%, 44.88% { opacity: 1; }
-  45.4%, 100% { opacity: 0; }
-}
-@keyframes gr-s3-tag-guard {
-  0%, 41.3% { opacity: 0; }
-  41.8%, 44.88% { opacity: 1; }
   45.4%, 100% { opacity: 0; }
 }
 /* External "↑ UP [deps]" / "↓ DOWN [subs]" ports outside the node */

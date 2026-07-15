@@ -9,6 +9,85 @@ for (const link of links) {
   }
 }
 
+const heroLede = document.querySelector("[data-hero-lede]");
+if (heroLede && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+  const slots = [...heroLede.querySelectorAll("[data-hero-type]")].map((slot) => ({
+    slot,
+    text: slot.querySelector(".hero-type-text"),
+    value: slot.dataset.heroType ?? "",
+  }));
+  const keywords = [...heroLede.querySelectorAll(".hero-keyword")];
+  const anchorParts = [...heroLede.querySelectorAll(".hero-anchor-part")];
+  const wait = (ms) => new Promise((resolve) => window.setTimeout(resolve, ms));
+
+  const renderSlot = (entry, length) => {
+    const value = Array.from(entry.value).slice(0, length).join("");
+    entry.text.textContent = value;
+    entry.slot.style.setProperty("--hero-cursor-x", `${entry.text.getBoundingClientRect().width}px`);
+  };
+
+  const typeTogether = async (direction) => {
+    const lengths = slots.map((entry) => Array.from(entry.value).length);
+    const longest = Math.max(...lengths, 1);
+    const stepMs = 5000 / longest;
+    for (const entry of slots) {
+      entry.slot.classList.remove("is-cursor-fading");
+      entry.slot.classList.add("is-cursor-entering");
+    }
+    await wait(340);
+    for (const entry of slots) {
+      entry.slot.classList.remove("is-cursor-entering");
+      entry.slot.classList.add("is-cursor-visible");
+    }
+    for (let step = 0; step <= longest; step += 1) {
+      slots.forEach((entry, index) => {
+        const progress = Math.min(step, lengths[index]);
+        renderSlot(entry, direction === "delete" ? lengths[index] - progress : progress);
+      });
+      await wait(stepMs);
+    }
+    for (const entry of slots) {
+      entry.slot.classList.add("is-cursor-fading");
+      entry.slot.classList.remove("is-cursor-entering");
+      entry.slot.classList.remove("is-cursor-visible");
+    }
+    await wait(340);
+  };
+
+  const fadeKeywords = async (direction) => {
+    const ordered = direction === "out" ? [...keywords].reverse() : keywords;
+    for (const keyword of ordered) {
+      keyword.classList.toggle("is-hidden", direction === "out");
+      await wait(2000);
+    }
+  };
+
+  const emphasizeAnchor = async () => {
+    for (const part of anchorParts) {
+      part.classList.add("is-emphasized");
+      await wait(500);
+    }
+    await wait(2000);
+    for (const part of anchorParts) {
+      part.classList.remove("is-emphasized");
+      await wait(500);
+    }
+  };
+
+  const playHeroLede = async () => {
+    while (document.body.contains(heroLede)) {
+      await wait(3000);
+      await typeTogether("delete");
+      await fadeKeywords("out");
+      await emphasizeAnchor();
+      await fadeKeywords("in");
+      await typeTogether("restore");
+    }
+  };
+
+  playHeroLede();
+}
+
 const legacyShowcase = document.querySelector("[data-legacy-showcase]");
 if (legacyShowcase) {
   const seekButtons = [...legacyShowcase.querySelectorAll("[data-ms]")];
