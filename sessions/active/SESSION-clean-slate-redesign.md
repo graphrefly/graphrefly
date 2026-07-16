@@ -21,6 +21,23 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-07-15 D626-D627: locked CSP-11's private, evidence-first solution
+  eval program and the B105 deterministic v1 evidence/verdict contract. Planner
+  owns only route plus structured trace; deterministic executor outcome and an
+  independent WorkItem-criteria verifier establish cold/warm truth; reflector,
+  mapper-only bridge, AgenticMemory admission/application, retrieval, and warm
+  rerun remain separately attributable. Actual stage predicates, case-specific
+  expectation, case conformance, and family verdict are distinct; the relevant
+  applied-memory case alone uses the canonical four-predicate positive gate,
+  while four required negative controls may conform through expected warm
+  failure. Cold/warm equivalence uses the strict-canonical WorkItem SHA-256
+  digest plus fixed world/planner/executor/verifier revisions. Private strict-
+  JSON v1 observations and family scorecards report same-input, prior-route
+  avoidance, relevant-memory lift, verifier-derived false-positive rate, exact
+  trace attribution, and proposal/admission/application stage counts. No public
+  Eval/testing SDK, D610 reuse, model/provider/CLI lane, Demo 6, web surface, or
+  protocol/spec/conformance change is authorized.
+
 - 2026-07-08 D594: locked the AgenticMemory concrete committed fact-log
   backend policy. Concrete reference backends may implement the existing D592
   backend adapter contract directly; no separate reference-backend policy DTO is
