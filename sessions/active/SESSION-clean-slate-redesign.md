@@ -21,6 +21,23 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-07-23 D642: locked Canvas local-first productization to one finite,
+  operator-owned ephemeral full-stack Workbench v0 before cloud/live work
+  resumes. The profile keeps the private Control Plane host-local and composes
+  digest-pinned Keycloak, SpiceDB, SPIRE, OpenBao, PostgreSQL, dedicated
+  renderer-origin and the exact D613/D624 Docker family without becoming the
+  D615 production topology. Per-run private bootstrap material stays outside
+  the repository and browser; real canaries, existing authorization/admission/
+  credential/runtime owners, fail-closed shutdown and terminal cleanup—not
+  Compose health—establish connected-loopback evidence. The ordinary Workbench
+  exposes only end-to-end wired functions, omits fixture-only or unimplemented
+  capability, and may use only explicitly inert placeholders. Its global Help
+  control is an accessible session-local guided tour over stable UI anchors,
+  carries no operation or authority and adds no graph nodes or edges. Hosted
+  E2B/D636, managed Kubernetes, customer-hosted workers, ClickHouse/M15 and M8
+  remain deferred; the campaign cannot claim deployed, production-like,
+  release-ready or live-certified posture.
+
 - 2026-07-15 D626-D627: locked CSP-11's private, evidence-first solution
   eval program and the B105 deterministic v1 evidence/verdict contract. Planner
   owns only route plus structured trace; deterministic executor outcome and an
