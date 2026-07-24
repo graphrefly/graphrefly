@@ -21,6 +21,24 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-07-24 B113.5/CSP-13 closeout: the approved D643 focused TypeScript
+  record-use gate is complete through B113.1-B113.4, including strict
+  request/decision data, complete synchronous identities, exact-one fail-closed
+  cardinality, valid-denial-ready semantics, bounded material-free diagnostics,
+  one immutable graph-visible snapshot and allowedRecords-only governed
+  retrieval topology. The removable B113.5 comparison then exercised the real
+  Another Hello ProductGathering continuation selector and transitions across
+  exact current sources, blocking, purpose revocation, source deletion, stale
+  and refreshed external decisions, and a non-empty JSON restart. Its retained
+  probe proves exact source-id/version set equality from the application
+  selector through gate and governed retrieval, plus a complete `describe()`
+  topology with no raw-record bypass. The candidate deleted no duplicated
+  application computation because the selector is already centralized and
+  SQLite transaction revalidation remains mandatory, so Another Hello retained
+  no GraphReFly dependency or adapter and its product/domain contracts did not
+  change. B113 is `done`; with B114 already done, CSP-13 is `done` with
+  `gap:false`. Another Hello HELLO-25/26 remain independently sequenced.
+
 - 2026-07-23 D642: locked Canvas local-first productization to one finite,
   operator-owned ephemeral full-stack Workbench v0 before cloud/live work
   resumes. The profile keeps the private Control Plane host-local and composes
@@ -37,6 +55,99 @@ This began as a pure design artifact, but the active implementation state now li
   E2B/D636, managed Kubernetes, customer-hosted workers, ClickHouse/M15 and M8
   remain deferred; the campaign cannot claim deployed, production-like,
   release-ready or live-certified posture.
+
+- 2026-07-23 D641: locked B114 to the two approved persistence
+  capabilities. Existing `attachObserveSink`/`attachObserveEventLog`,
+  strict observe frames, and passive append logs remain the explicit
+  selected-node/path Graph DATA persistence path; whole-graph capture is not
+  default, and observation logs are audit/projection inputs rather than domain
+  truth or restore authority. Reusable committed-fact mechanics move below
+  vertical solutions as a focused application-infrastructure journal contract
+  for canonical batches, whole-batch visibility, identity/material equality,
+  ordered reads, distinct fact/backend cursors, normalized commit results, and
+  bounded diagnostics. Domains retain their schemas, coordinates, validation,
+  materializers, and source authority. AgenticMemory remains the first profile
+  without generalizing `AgenticMemoryRecord`; a non-memory fixture must prove
+  domain neutrality. Startup re-entry remains explicit caller-wired DATA, with
+  automatic event sourcing, hot hydration, multi-writer, physical erasure,
+  protocol, spec, and conformance outside this slice.
+  B114 landed the same day: the selected observe-event path now requires an
+  explicit path and projection and canonicalizes complete frames; the focused
+  `@graphrefly/ts/committed-facts` journal owns strict batches, normalized
+  outcomes, stream/backend cursor separation, bounded diagnostics and
+  corruption checks; deterministic non-memory and AgenticMemory profiles prove
+  neutrality; and raw plus insight startup materialization is exercised across
+  separate cold Node processes. At that B114 landing checkpoint, CSP-13
+  remained `impl` because B113 was still open; the dated B113.5 closeout above
+  records its later completion.
+
+- 2026-07-23 D640: locked a solution-level, externally authorized
+  AgenticMemory use boundary. Admission remains the decision that candidate
+  material may become record truth, application remains the evidence that the
+  record changed, the new use gate decides whether one exact record version may
+  enter one exact subject/purpose/scope use, and retrieval/ranking operates only
+  over the gate's allowed records. Host/application authority supplies bounded
+  decisions pinned to current record and source/policy coordinates; missing,
+  duplicate, mismatched, stale, or denied decisions fail closed. Model output,
+  similarity, confidence, and ranking cannot widen the allowed set. Another
+  Hello remains an optional derived-only first consumer whose SQLite sources,
+  audiences, purposes, corrections, and deletions stay authoritative; WorkItem
+  scope/relevance is the second concrete consumer. D588-D594 committed fact-log
+  persistence can later supply restored records to the same gate, but D640 does
+  not change fact families, hot hydration, physical deletion/redaction, storage
+  authority, protocol, or conformance. CSP-13/B113 owns later separately
+  approved TS implementation, while B114 tracks portable durable
+  fact/memory/insight persistence hardening over the existing adapters.
+
+- 2026-07-23 D643: locked B113's exact v1 record-use gate contract. One
+  static gate instance represents one exact use and consumes current records,
+  one strict request, and external decisions. Strict-canonical request and
+  complete-record identities carry currentness synchronously; domain revisions
+  remain request source coordinates rather than a second owner-version truth.
+  Every input record requires exactly one matching decision, including a
+  fail-closed identical-duplicate rule, while a valid denial is a successful
+  evaluation rather than a gate error. One immutable snapshot projects bounded
+  allowed records, exclusions, status, issues, audit, and an evaluation/count
+  cursor that is distinct from identity, revision, storage, and fact-stream
+  cursors. Governed consumers wire only allowed records into retrieval, and
+  multiple uses remain multiple inspectable gate instances. B113.1-B113.4 are
+  now design-ready but still require separately approved implementation.
+
+- 2026-07-23 D639: locked B112's empirical experiment protocol. One
+  preregistered matched trial block runs a real cold attempt and, only after an
+  independently verified eligible task failure, fans the same immutable cold
+  evidence into five fresh-worktree warm arms: relevant-applied,
+  proposal-only, admission-rejected, irrelevant-applied, and
+  wrong-scope-applied. Proposal-only is the primary natural-retry control;
+  provider, infrastructure, cleanup, protection, and unverifiable-verifier
+  outcomes remain visible but non-evaluable. The first calibration catalog is
+  five immutable graphrefly-ts tasks (three historical pre-fix regressions and
+  two held-out defect overlays), with no result-driven replacement. Closed
+  executable verifier profiles reuse WorkItem acceptance and verification
+  vocabulary without exposing treatment, memory, expectations, planner
+  verdicts, or auxiliary model judgment. Campaign aggregation reports paired
+  relevant-memory lift, each negative-control contrast, task-clustered
+  versioned intervals, conformance, attribution, non-evaluable rate, cost,
+  latency, and provider-scoped usage. Smoke, calibration, and preregistered
+  confirmatory profiles remain distinct; private manifest, trial-observation,
+  and campaign-scorecard v1 artifacts do not alter D635 publication truth.
+  B112 remains open pending separately approved implementation.
+
+- 2026-07-23 D638: locked CSP-11's private empirical solution-eval
+  execution and evidence boundary. Real-model lanes reuse the D626/D627
+  cases, independent verifier, predicates, and scorecard through one
+  provider-neutral semantic model port plus focused runtime-private bindings.
+  Token usage remains scoped to provider/model/endpoint/adapter and optional
+  tokenizer coordinates rather than becoming a false cross-model unit. Cold
+  and warm runs use separate fresh worktrees from one immutable repository
+  snapshot, with graph-visible admitted/applied/retrieved memory as the only
+  intended treatment. Protection is staged and local-first; only sanitized
+  strict-JSON artifacts persist by default, while any future raw debug vault
+  remains explicit, encrypted, host-retained, and outside Graph DATA. Actor,
+  auxiliary judge, and semantic redactor keep separate policy/input authority;
+  model judgment never overrides the independent verifier or family verdict.
+  B112 owns the remaining experiment-protocol design and later separately
+  approved implementation; B106 remains presentation-only.
 
 - 2026-07-15 D626-D627: locked CSP-11's private, evidence-first solution
   eval program and the B105 deterministic v1 evidence/verdict contract. Planner
