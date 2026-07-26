@@ -3228,7 +3228,7 @@ This began as a pure design artifact, but the active implementation state now li
 
 | ID | Lock |
 |---|---|
-| L2.A | **9 tiers**: value-settle = DIRTY/DATA/RESOLVED/INVALIDATE; terminal = COMPLETE/ERROR/TEARDOWN; control = **PAUSE/RESUME (tier-0, orthogonal to value flow)**. Closed set. |
+| L2.A | **7 tiers / 11 closed message types** (D34/D269): 0 START; 1 PAUSE/RESUME/PULL; 2 DIRTY; 3 DATA/RESOLVED; 4 INVALIDATE; 5 COMPLETE/ERROR; 6 TEARDOWN. Adding a tier or message type is constitutional. |
 | L2.B | Wave boundary: outside batch = one `ctx.down(msgs)` call; inside batch = accumulate to commit. |
 | L2.C | PAUSE/RESUME = `[["PAUSE", lock_id]]` / `[["RESUME", lock_id]]`; **lockset/refcount** (all locks must RESUME to truly resume); lock_id caller-generated; same-id repeat PAUSE idempotent; RESUME unknown id = no-op. |
 | L2.D / D' | In-process message = **tuple** (debug-friendly, NOT for serialization size). Wire = **protobuf** (when compact needed). The two representations are **decoupled**; conversion at wire-bridge boundary. |
@@ -3237,7 +3237,7 @@ This began as a pure design artifact, but the active implementation state now li
 | L2.G | push-on-subscribe is part of the protocol. |
 | L2.H | Formalization depth = **γ** (markdown spec + TLA+ model + cross-impl property tests). |
 | L2-Q8 | diamond/fan-in coalesce: spec writes only **observable behavior** ("D recomputes exactly once after all changed deps settle in same wave"); mechanism (dirtyMask) is impl freedom; TLA+ models the mechanism. |
-| L2-Q9 | equals default substitution (hit→RESOLVED / miss→DATA); custom equals is L4 opts. **equals substitution fires ONLY when wave has exactly 1 DATA** — 0 DATA irrelevant, ≥2 DATA does not engage (multi-DATA has no skip-fn benefit, all pass as DATA). |
+| L2-Q9 | **SUPERSEDED by D49.** Every value occurrence remains DATA; RESOLVED means undirty-only. Dedup is opt-in at the operator layer; the substrate has no equals substitution or `NodeOptions.equals`. |
 | L2-Q10 | SENTINEL = protocol concept ("absence-of-DATA" must be decidable); concrete sentinel value is **per-language representation** (TS `undefined` / Rust `Option::None` / Py sentinel), same semantics. |
 | L2-Q11 | terminal-is-forever default; `resubscribable: true` opt-in. |
 | L2-Q12 | SENTINEL state push-on-subscribe pushes only `[START]`; dirty state pushes `[START, DIRTY]`. |
@@ -3254,12 +3254,12 @@ This began as a pure design artifact, but the active implementation state now li
 | L3-Q1 | pool 1.0 essentials = **LocalSync + LocalAsync**; dispatcher structure keeps a **pluggable pool trait** (WorkerPool/RemotePool added with L2.F wire bridge maturity). |
 | L3-Q2 | dispatcher = explicit first-class; pool attached to dispatcher; graph bound to a dispatcher (default = process-global). |
 | L3-Q3 | Node self-contains wave state machine (handle_ref · deps · dep_records · dirty_mask · pending_count · cache · status · subscribers · _inside_run_wave · pause_lockset). "Thin" = no inspection cruft, NOT no wave state. |
-| **L3.C** | **graph = causal domain = concurrency domain = single thread.** Compute parallelism via pool callback (wave-state mutation always serializes back to graph's single thread); true parallelism via multi-graph + wire bridge. **Rust drops actor model (D221/D222) → `!Send` single-thread core; Py drops per-subgraph RLock → single-thread core + multi-instance.** rewire only intra-graph; inter-graph only wire bridge. Consequence 1 (accepted): disjoint waves in same graph don't parallelize (→ use separate graphs). Consequence 2 (accepted): rewire scope = single graph; `setDeps/addDep/removeDep` has no inter-graph form. |
+| **L3.C** | **graph = concurrency domain = single thread** (D22), not the bound of causal influence. Causal influence may cross graphs through the async wire bridge as delayed consistency. Compute parallelism uses pool callbacks; true parallelism uses multi-graph + wire bridge. Rust drops the old actor core; Py drops per-subgraph locking. Rewire is intra-graph only. Consequence 1 (accepted): disjoint waves in one graph do not parallelize. Consequence 2 (accepted): `setDeps/addDep/removeDep` has no inter-graph form. |
 | L3-Q5 | ctx lifecycle per-pool: LocalSync uses node-stable ctx (reset fields, zero alloc); async pools use per-invocation ctx (survives await/boundary). |
 | L3-Q6 | `ctx.state` = per-node private cross-wave state (implicit OK — node-private, not shared). Shared memory = explicit node + dep (graph-first). Operators' state/cleanup hide in their graph-layer impl. |
 | L3-Q7 | **parity = behavioral conformance (replaces structural `Impl`)** + property mirror. Operators/sugar/inspection are L4 per-language, never in parity. New substrate behavior is spec-driven. **`cross-track-ledger.md` retires** ("Impl widening" concept disappears). Parity surface shrinks to: wave protocol behavior + dispatcher contract + handle format. |
 | L3-Q8 | snapshot = topology + cache + factory-name refs; restore re-resolves by name via dispatcher registry; incremental via DS-14 changeset; anonymous inline fn (no name) marked `local-only` (can't restore cross-process — honestly labeled). |
-| L3-Q9 | clock: monotonic = **graph-local counter** (folded into graph; causal-domain ordering); wall = system call; **no global clock singleton**. (Rewrites CLAUDE.md "Time utility rule".) |
+| L3-Q9 | clock: monotonic = **graph-local counter** (folded into graph; in-domain wave ordering); wall = system call; **no global clock singleton**. (Rewrites CLAUDE.md "Time utility rule".) |
 | L3-Q10 | Only global singleton = default dispatcher (overridable by explicit dispatcher); all other defaults = graph/dispatcher opts. |
 | L3-Q11 | All operational config (limits/policy/inspector/versioning/codec/hashFn) = graph/dispatcher opts with defaults; **no global config singleton; freeze mechanism gone**. |
 
@@ -3288,12 +3288,18 @@ This began as a pure design artifact, but the active implementation state now li
 ```ts
 type Wave = Message[]
 type Ctx<TDeps> = {
-  up(msgs: Wave): void                                   // upstream inject (PAUSE/RESUME/invalidate-request)
+  up(msgs: Wave, towardDep?: number): void                // upstream control/demand; START is not up-going
+  upNext(msgs: Wave, towardDep?: number): void            // committed-boundary deferred upstream control/demand
   down(msgs: Wave): void                                 // downstream emit (DATA/ERROR/COMPLETE/...)
-  depRecords: DepRecord<TDeps>[]                         // latest/tier/prevData per dep
+  waveData: readonly (readonly (readonly unknown[])[])[] // sole raw dep-value input (D77)
+  terminal: readonly unknown[]                          // separate COMPLETE/ERROR metadata
   state: { get(): S|undefined; set(v: S): void; persist(on?: boolean): void }  // per-node private
+  pull?: PullDemand                                      // holder-visible PULL context
+  rewireNext: RewireNext                                 // committed-boundary deferred self-rewire
+  track?(depIndex: number): unknown                      // dynamicNode-only derived read
   onDeactivation(fn: () => void): void                   // external resource release
   onInvalidate(fn: () => void): void                     // INVALIDATE flush
+  environment(): EnvironmentDrivers                      // graph-owned source/adapter boundary
 }
 ```
 
@@ -3328,9 +3334,9 @@ count.set(5)
 
 | ID | Lock |
 |---|---|
-| L6-Q1 | **per-language independent complete packages** (`@graphrefly/ts` · `@graphrefly/rust` · `@graphrefly/py`, each = substrate + sugar + operators) + coarse-grained wire bridge. NO cross-language peer-deps. **Drops D080/D206 entirely** (no presentation-peer-deps-substrate, no sync-vs-async drop-in, no overrides redirect, no Option-B anxiety) + drops the 9.5× concurrency-machinery tax (actor model + fine-grained napi). Trade-off: gives up the (never-functional) "TS code transparently enjoys Rust substrate" fantasy; cross-language = wire bridge, not in-process napi swap. |
-| L6-Q2 | naming: keep `@graphrefly/` namespace, per-language subpackages; brand "GraphReFly" unchanged; operator subpkg `@graphrefly/<lang>-operators`. |
-| L6-Q3 | wire = protobuf schema-codegen (single `.proto`, per-language codegen); in-process tuple ↔ protobuf at wire-bridge boundary; **implementation deferred** (with cross-runtime, post-1.0). Design-time lock: wire = schema-codegen, not ad-hoc JSON. |
+| L6-Q1 | **per-language independent complete packages** (`@graphrefly/ts` · `@graphrefly/rust` · `@graphrefly/py`, each = substrate + sugar + operators) + coarse-grained wire bridge. NO cross-language peer-deps. Drops the retired old-main presentation/substrate N-API split and its actor/fine-grained-bridge machinery. Cross-language = wire bridge, not an in-process substrate swap. |
+| L6-Q2 | naming: keep `@graphrefly/` namespace and brand "GraphReFly"; operators ship as free-standing tree-shakable factories in each language package (D48), not a separate operator package. |
+| L6-Q3 | Design lock: wire = protobuf schema-codegen from one canonical `.proto`; in-process tuple ↔ protobuf conversion occurs at the wire-bridge boundary. **B2 remains open:** current runtime helpers are behavior/vector-aligned handwritten validators/encoders, so the schema-codegen single-source promise is not yet complete. |
 | L6-Q4 | adoption path: `npm i @graphrefly/ts` → `graph()` → 10-line hello world → operators → producer/connector → wire-bridge dispatch heavy node to Rust runtime. Zero-config default global dispatcher + LocalSync pool. |
 
 ---
@@ -3342,15 +3348,15 @@ count.set(5)
 | **1 🔴 restore vs fresh-lifecycle wipe** | restore ≠ fresh lifecycle. snapshot serializes ALL ctx.state (persist-flag irrelevant to snapshot); restore restores ALL (state-preserving, "restored" status not "fresh"); wipe only on fresh-lifecycle transition. **Must be written into spec.** CLOSE-with-rule. |
 | **2 F-NO-WEDGE-CUT verify** | All 8 verbs serve ≥2 segments (node/graph/batch/derived=all; state=UI/harness/memory; producer=stream/DE/UI; effect=UI/harness/DE; mount=harness/memory/multi-agent). CLOSED. |
 | **3 effect maps onDeactivation only** | Accepted limit, doc it. effect = React-useEffect form (return cleanup = deactivation only); INVALIDATE cleanup → upgrade to node/producer. CLOSED. |
-| **4 PAUSE/RESUME via ctx.up** | ctx.up carries control tier; upstream node updates `pause_lockset` (L3-Q3). CLOSED. |
-| **5 equals custom passing (operator value-level)** | equals via opts (`g.map(deps,fn,{equals})`), not fn param; value-level fn only transforms. CLOSED. |
+| **4 PAUSE/RESUME/PULL via ctx.up** | ctx.up carries the R-ctx-up control/demand set; PAUSE/RESUME update the pause lockset and PULL routes demand by pullId. START is handshake-only and not up-going. CLOSED. |
+| **5 equals custom passing (operator value-level)** | **SUPERSEDED by D49.** The substrate has no equals option; dedup is explicit operator-layer composition such as `distinctUntilChanged`. CLOSED. |
 
 ## config singleton dissolution (17 items)
 
 `GraphReFlyConfig` singleton + freeze-on-first-read mechanism **fully dissolved** into 4 destinations:
 - **A. compile-time const** — message type attrs (tier/wireCrossing/metaPassthrough), tier lookups; custom message type extension CUT.
 - **B. substrate-fixed (unreplaceable)** — onMessage (dispatch), onSubscribe (push-on-subscribe handshake).
-- **C. graph/dispatcher/constructor opts** — codec; node runtime versioning default/policy and hashFn via graph/constructor opts per D109 (V0 default, V1 cid/prev, V2/V3 still deferred); inspectorEnabled, globalInspector (→ dispatcher hook), rigorRecorder (→ dispatcher test-only hook), maxFnRerunDepth (100), maxBatchDrainIterations (1000), pauseBufferMax (10_000), equalsThrowPolicy.
+- **C. graph/dispatcher/constructor opts** — codec; node runtime versioning default/policy and hashFn via graph/constructor opts per D109 (V0 default, V1 cid/prev, V2/V3 still deferred); inspection/runtime policies explicitly owned by current graph/dispatcher APIs. D37 uses precise in-wave re-entry detection (no `maxFnRerunDepth`), and D49 removes substrate equals policy.
 - **D. gone** — `_frozen` + freeze mechanism; isolated `new GraphReFlyConfig` for test (test isolation = `new graph()`).
 
 Trade-off accepted: cuts user-defined protocol stacks (onMessage/onSubscribe/registerMessageType custom). To observe → inspector (read-only); to inject logic → add a node; new tier → spec change.
@@ -3361,13 +3367,13 @@ Trade-off accepted: cuts user-defined protocol stacks (onMessage/onSubscribe/reg
 
 | Area | Today | Clean-slate |
 |---|---|---|
-| Rust concurrency | actor model (D221/D222, per-Core actor thread + sync channel) | `!Send` single-thread core + multi-instance + wire bridge (drops 12× actor.run overhead + D292 libuv deadlock class) |
+| Rust concurrency | retired old-main per-Core actor thread + sync channel | `!Send` single-thread core + multi-instance + wire bridge (drops 12× actor.run overhead + the old libuv deadlock class) |
 | Py concurrency | per-subgraph RLock + per-node cache_lock | single-thread core + multi-instance |
-| Concurrency unit | subgraph | **graph** (= causal domain) |
+| Concurrency unit | subgraph | **graph** (= single-thread concurrency domain; causal influence may cross it) |
 | Parity | structural `Impl` interface (symbol set) + cross-track-ledger + per-symbol D-number | **behavioral conformance suite** + property mirror; cross-track-ledger retires |
-| Packaging | pure-ts (substrate) + native (rust, napi) + graphrefly (presentation, peer-deps substrate) — D080/D206 | per-language independent complete packages + coarse wire bridge |
-| TS↔Rust | TS presentation on Rust substrate via napi (fine-grained, never functional per D206) | each language self-contained; cross-language = coarse wire bridge (dispatch heavy node) |
-| fn signature | `(data, actions, ctx) => NodeFnCleanup\|void` | `(ctx) => void` (ctx = up/down/depRecords/state); sugar return mapped in graph layer |
+| Packaging | retired old-main pure-ts substrate + Rust/N-API native + presentation package with substrate peer-deps | per-language independent complete packages + coarse wire bridge |
+| TS↔Rust | retired old-main TS presentation on a fine-grained Rust/N-API substrate (never functional) | each language self-contained; cross-language = coarse wire bridge (dispatch heavy node) |
+| fn signature | `(data, actions, ctx) => NodeFnCleanup\|void` | `(ctx) => void` (ctx = up/down/waveData/terminal/state); sugar return mapped in graph layer |
 | cleanup | `return NodeFnCleanup` (4 hooks: onRerun/onDeactivation/onInvalidate/onResubscribableReset) | `ctx.onDeactivation` + `ctx.onInvalidate` (2 hooks) |
 | config | `GraphReFlyConfig` singleton + freeze-on-first-read | dissolved (const + substrate-fixed + graph/dispatcher opts) |
 | clock | global `clock.ts` singleton (monotonicNs/wallClockNs) | graph-local monotonic + system wall-call; no global singleton |

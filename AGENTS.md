@@ -13,12 +13,13 @@ Clean-slate (no backward compat). Big deltas locked in **DS-1** (`sessions/activ
   and later migrations, delete retired shapes directly; do not add legacy shims,
   compatibility aliases, or old field/method facades unless a new locked decision explicitly
   re-opens that constraint.
-- **graph = single-thread causal domain** (D22) — Rust drops actor model, Py drops subgraph locks; rewire intra-graph only.
+- **graph = single-thread concurrency domain** (D22) — causal influence may cross graphs through
+  delayed-consistency wire bridges; Rust drops actor model, Py drops subgraph locks; rewire intra-graph only.
 - **behavioral parity replaces structural `Impl`** (D24) — cross-track-ledger retires; parity = conformance scenarios + property mirror.
-- **per-language independent packages** (D32) — drops D080/D206 (substrate/presentation napi split).
+- **per-language independent packages** (D32) — drops the old-main substrate/presentation N-API split.
 - **config singleton dissolved** (D26); clock graph-local; messageTier compile-time const.
-- **ctx.up/down(msgs)** fn surface (D8); handle = pure data (D7); D34 7-tier const table with
-  the D9/START 10-message closed set.
+- **ctx.up/down(msgs)** fn surface (D8); handle = pure data (D7); D34/D269 7-tier const table with
+  the 11-message closed set (START + PULL included).
 - **docs = jsonl + generated dashboard** (decision 2/3) — see below.
 
 ## Documentation system (jsonl source of truth + generated dashboard)

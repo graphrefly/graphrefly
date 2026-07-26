@@ -9,11 +9,13 @@
 ## What changed vs the old `main` (read first)
 
 Clean-slate (no backward compat). Big deltas locked in **DS-1** (`sessions/active/SESSION-clean-slate-redesign.md`):
-- **graph = single-thread causal domain** (D22) — Rust drops actor model, Py drops subgraph locks; rewire intra-graph only.
+- **graph = single-thread concurrency domain** (D22) — causal influence may cross graphs through
+  delayed-consistency wire bridges; Rust drops actor model, Py drops subgraph locks; rewire intra-graph only.
 - **behavioral parity replaces structural `Impl`** (D24) — cross-track-ledger retires; parity = conformance scenarios + property mirror.
-- **per-language independent packages** (D32) — drops D080/D206 (substrate/presentation napi split).
+- **per-language independent packages** (D32) — drops the old-main substrate/presentation N-API split.
 - **config singleton dissolved** (D26); clock graph-local; messageTier compile-time const.
-- **ctx.up/down(msgs)** fn surface (D8); handle = pure data (D7); 9 tiers + PAUSE/RESUME (D9).
+- **ctx.up/down(msgs)** fn surface (D8); handle = pure data (D7); D34/D269 7-tier const table with
+  the 11-message closed set (START + PULL included).
 - **docs = jsonl + generated dashboard** (decision 2/3) — see below.
 
 ## Documentation system (jsonl source of truth + generated dashboard)
