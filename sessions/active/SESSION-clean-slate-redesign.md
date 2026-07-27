@@ -4073,3 +4073,18 @@ Next step: design the clean-slate documentation system (see the session continua
   test, lint, typecheck, ESM/CJS/DTS, complete negative export-smoke, diff, and
   dashboard gates passed. B111 remains open for B111.6/B111.7 and CSP-12
   remains impl/gap=true.
+- 2026-07-27 B111.6 deterministic lifecycle/authority evaluation landed
+  without a new architectural lock. A test-only strict canonical serialized
+  atomic-host image models D650 receipt-first replay/conflict, exact state plus
+  allowed-or-denied outcome-receipt commit, explicit state-revision linkage,
+  complete image coherence, and fail-closed revision/currentness. Fresh
+  Graph/adapter instances and image rehydration preserve fixed-window state,
+  ordered/coalesced exact sliding ledgers, and token-bucket rational remainder;
+  two independent Graph/adapters sharing the controlled authority preserve
+  capacity under both transaction orders for all three algorithms. Existing
+  describe/observe/profile expose only declared Graph topology, and a custom
+  KeyedRateLimitAuthority works without reference evaluators or a registry.
+  This evidence deliberately does not certify a real store, fsync,
+  crash-mid-commit recovery, parallel-process isolation, or protected-effect
+  exactly-once. B111 remains open only for B111.7 examples/release notes;
+  CSP-12 remains impl/gap=true.
