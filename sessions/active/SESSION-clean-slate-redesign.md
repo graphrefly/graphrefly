@@ -4088,3 +4088,27 @@ Next step: design the clean-slate documentation system (see the session continua
   crash-mid-commit recovery, parallel-process isolation, or protected-effect
   exactly-once. B111 remains open only for B111.7 examples/release notes;
   CSP-12 remains impl/gap=true.
+- 2026-07-27 B111.7 package-local documentation and release closeout landed
+  without a new architectural lock. The TypeScript package README, structured
+  JSDoc, 641-page generated API reference, minor Changeset, and runnable
+  workspace-typechecked example document `@graphrefly/ts/rate-limit` as the
+  sole focused public domain import while authority capability/attachment stay
+  under adapters and package root/orchestration remain unchanged. The example
+  exercises authority/request-id receipt namespaces, identical replay before
+  policy/state/time/evaluation, changed-material conflict, exact policy/state
+  ordering, externally supplied `observedAtMs`, atomic next-state plus outcome
+  receipt modeling, externally authoritative adapter delivery, admission-only
+  protected effects, all three D650 evaluators, and a custom authority without
+  a reference evaluator or registry. Documentation separates durable quota
+  receipts, bounded live-gate retention, and application-owned protected-effect
+  receipts; the local fixed-window helper stays non-authoritative. B111.6
+  remains deterministic serialized contract-model evidence rather than real
+  database, fsync/crash, parallel-process isolation, or protected-effect
+  exactly-once certification. Final evidence is green: example typecheck/run,
+  83 focused assertions, 119 TypeScript test files with 1903 passing and one
+  intentional live-host skip, lint/raw-async/typecheck, API generation check,
+  ESM/CJS/DTS plus positive/negative export smoke (with an 8192 MB Node heap
+  after the desktop default DTS-worker heap proved insufficient), diff-check,
+  and two independent adversarial reviews. No runtime/export-map/tsup-entry/
+  Graph-topology/protocol/spec/conformance/cross-language change was added.
+  B111 and CSP-12 are done; CSP-12 has `gap=false`.
