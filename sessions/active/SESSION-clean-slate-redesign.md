@@ -32,11 +32,22 @@ This began as a pure design artifact, but the active implementation state now li
   and refreshed external decisions, and a non-empty JSON restart. Its retained
   probe proves exact source-id/version set equality from the application
   selector through gate and governed retrieval, plus a complete `describe()`
-  topology with no raw-record bypass. The candidate deleted no duplicated
-  application computation because the selector is already centralized and
-  SQLite transaction revalidation remains mandatory, so Another Hello retained
-  no GraphReFly dependency or adapter and its product/domain contracts did not
-  change. B113 is `done`; with B114 already done, CSP-13 is `done` with
+  topology with no raw-record bypass. That candidate deleted no product-policy
+  computation, so its no-adoption finding applies only to the shallow
+  selector-to-decision-to-gate wrapper. A separately approved disposable
+  upstream experiment then modeled a temporary file-backed SQLite authoritative
+  snapshot, a commit-pushed rebuildable Graph mirror, one eligibility projection
+  shared by view/context/proposal/createPlan, and a declared
+  create-plan-to-effect-request seam. It observed one selector evaluation per
+  committed source or policy coordinate change, instrumented zero selector
+  execution inside continuation transactions, duplicate-ref denial, stale
+  source/policy failure, exact idempotency replay/conflict behavior, and exact
+  rebuild after closing and reopening SQLite. SQLite/domain truth remains
+  application-owned, but the transaction requirement is the atomic expected
+  source revision, policy revision and idempotency/material fence—not mandatory
+  full selector recomputation. Another Hello retained no production GraphReFly
+  dependency or adapter and its product/domain contracts did not change. B113
+  remains `done`; with B114 already done, CSP-13 remains `done` with
   `gap:false`. Another Hello HELLO-25/26 remain independently sequenced.
 
 - 2026-07-23 D642: locked Canvas local-first productization to one finite,
@@ -4004,3 +4015,40 @@ Next step: design the clean-slate documentation system (see the session continua
   child ownership with cascade and rollback, and the future full C-1 diamond
   harness uses explicit deterministic host transport pump steps over canonical
   protobuf bytes rather than hidden schedulers or in-process shortcuts.
+- 2026-07-24 D648/D649, B111.1-B111.4: landed the TypeScript-first keyed
+  externally authoritative rate-limit surface. D649 supersedes D648's
+  unbounded live replay wording with an exact retained-completion horizon and
+  orders bounded adapter intake before host quota work. The adapter exposes
+  authority-request, outcome, status, error, and cursor projections while its
+  composed gate uses one activation-safe correlation-fact lane, so cached-input
+  activation cannot lose a synchronous outcome. Strict request identity covers
+  the complete request and is representable for every accepted request;
+  mismatched callbacks settle the original request fail-closed, admission and
+  denial ids bind request plus outcome coordinates, ordinary
+  deactivate/resubscribe preserves retained correlation, and delivery errors
+  cannot be swallowed by a host callback. Governed effects depend only on
+  composed admissions. The former in-memory helper is now
+  localFixedWindowRateLimitBundle and explicitly non-authoritative. Focused
+  D649 adversarial tests are 24/24; the full TypeScript suite is 117 files and
+  1856 passing tests with one live-host test skipped by design; lint,
+  raw-async, typecheck, ESM/CJS/DTS build, export smoke, diff-check, and
+  dashboard consistency are green. B111 stays open for B111.5 algorithm
+  semantics, remaining B111.6 algorithm/restart/multi-instance evidence, and
+  B111.7 examples/release notes; CSP-12 stays impl.
+- 2026-07-26 D650, B111.5 design lock: preserved the D648/D649 graph-visible
+  authority boundary and locked three optional synchronous pure host-side
+  reference transition families. Fixed-window-v1 uses epoch-aligned half-open
+  windows; sliding-window-v1 uses an exact, canonically coalesced, strictly
+  ordered successful-consumption ledger with policy-declared maxEntries capped
+  at 4096; token-bucket-v1 uses integer rational refill with persisted
+  remainder and no authoritative floating-point accumulation. Strict versioned
+  policy/state bind exact key, policy/algorithm revision, and authority scope;
+  time is one externally observed safe-integer epoch millisecond; malformed,
+  stale, regressed, overflowing, or bounded-state-invalid material fails
+  closed. Durable authority processing is receipt-first and atomically persists
+  next state plus outcome receipt; identical replay never re-reads time or
+  advances state, and revision changes never silently reset or migrate quota.
+  The evaluators are not Graph nodes, admission authority, clocks, stores,
+  transaction managers, registries, or effect executors. B111 remains open for
+  B111.5 implementation, B111.6 evidence, and B111.7 examples/release notes;
+  CSP-12 remains impl.
