@@ -124,6 +124,20 @@ This began as a pure design artifact, but the active implementation state now li
   multiple uses remain multiple inspectable gate instances. B113.1-B113.4 are
   now design-ready but still require separately approved implementation.
 
+- 2026-07-27 B112.6.1 (TS commit e1301aba): completed the separately approved private empirical
+  prerequisite contract model under D638-D639. The TS-only eval-support surface
+  now validates an exactly-five-task synthetic 3+2 catalog shape, semantic task
+  uniqueness, clean single-baseline qualification observations, a closed
+  task/profile- and harness-bound verifier-evidence set, explicit one-provider
+  binding coordinates, isolated actor/judge/redactor authorities, hierarchical
+  budgets, canonical report/catalog digests, and a fail-closed frozen-manifest
+  gate. Fixtures are calibration-only placeholders; actual observations remain
+  ignored private evidence by default. No provider invocation, real task
+  freeze, worktree runner, protection pipeline, trial observation/scorecard
+  persistence, public/package/runtime API, deterministic correctness change,
+  Demo/web surface, protocol/conformance change, or cross-language work entered
+  this slice. B112 remains open for separately approved B112.6.2+ work.
+
 - 2026-07-23 D639: locked B112's empirical experiment protocol. One
   preregistered matched trial block runs a real cold attempt and, only after an
   independently verified eligible task failure, fans the same immutable cold
