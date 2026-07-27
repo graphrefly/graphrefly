@@ -4049,6 +4049,27 @@ Next step: design the clean-slate documentation system (see the session continua
   next state plus outcome receipt; identical replay never re-reads time or
   advances state, and revision changes never silently reset or migrate quota.
   The evaluators are not Graph nodes, admission authority, clocks, stores,
-  transaction managers, registries, or effect executors. B111 remains open for
-  B111.5 implementation, B111.6 evidence, and B111.7 examples/release notes;
-  CSP-12 remains impl.
+  transaction managers, registries, or effect executors. B111.5 implementation
+  and gates landed later that day; D651 subsequently rehomed their public
+  ownership before B111.6. B111 remains open for B111.6 evidence and B111.7
+  examples/release notes; CSP-12 remains impl.
+- 2026-07-26 D651, B111 focused-surface lock: superseded D650 only where it
+  retained keyed rate limiting on the broad orchestration subpath. The complete
+  public keyed rate-limit domain moves to one independently importable
+  `@graphrefly/ts/rate-limit` application-infrastructure subpath: strict
+  request/outcome/identity and admission contracts, the correlation bundle,
+  all three reference-transition families, and the explicitly
+  non-authoritative local fixed-window bundle. The orchestration barrel retains
+  no compatibility export and the package root remains unchanged.
+  `attachKeyedRateLimitAuthority`, `KeyedRateLimitAuthority`, and
+  adapter-specific lifecycle/status/error/cursor contracts remain under
+  adapters and preserve host-private clock, store, transaction, receipt,
+  callback, cancellation, and runtime ownership. This is neither a patterns
+  recipe nor a vertical solution kit and introduces no registry, persistence
+  API, concrete store, Graph evaluator node, protocol/parity claim, or product
+  adoption. The rehome landed later that day as a physical move with no
+  compatibility re-export: package root and graph topology remained unchanged,
+  adapters retained host-private authority ownership, and focused/full
+  test, lint, typecheck, ESM/CJS/DTS, complete negative export-smoke, diff, and
+  dashboard gates passed. B111 remains open for B111.6/B111.7 and CSP-12
+  remains impl/gap=true.
