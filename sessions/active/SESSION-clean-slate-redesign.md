@@ -4383,3 +4383,28 @@ Next step: design the clean-slate documentation system (see the session continua
   dependency install, verifier execution, model loop, provider call,
   timeout/retry/scheduler, artifact persistence, public export, Graph topology,
   protocol/conformance, cross-language, Demo, or web surface.
+
+- 2026-07-28 D658 implementation completed in graphrefly-ts commit `94fedd48`.
+  The package-private eval materializer now performs exact batched Git-object
+  export, canonical byte/tree and private-overlay validation, synchronous
+  request/overlay provenance snapshots, POSIX-host-qualified `0700` staging,
+  deterministic parentless repository construction, exact ref/object/filesystem
+  closure checks, sealed workspace handoff, and ownership-token cleanup.
+  Adversarial QA closed source/workspace overlap, lazy-fetch, accessor and
+  symbol-key material, oversized sparse arrays, mutable request/overlay TOCTOU,
+  no-op overlays, special permission bits, dangling objects, cancellation, and
+  cleanup edge cases. Focused tests passed 16/16; the full package passed 124
+  files and 1948 tests with one intentional live-host skip; lint, raw-async,
+  test typecheck, ESM/CJS/DTS build, package-export smoke, diff, and dashboard
+  gates passed. A disposable probe of commit
+  `3b8115f37c8675b8970b24ada3aa351b772e5144` and tree
+  `74f94a624b627aeb62ff0f1ea191bc5c62b13e78` reproduced the exact Git tree in
+  one zero-parent commit with canonical digest
+  `sha256:9c6f13dc17a09e4f467d8e1a6a9a124b36505e0e3f12fe9eece822b85e0450a2`,
+  1685 entries, 20,957,126 bytes, and 28 bounded Git processes, then cleaned
+  successfully. B112 remains open for exact task/profile qualification,
+  verifier calibration, the separately designed actor/tool host runner,
+  explicit live-call credential/budget, observations, and scorecards. No actor
+  command, dependency install, verifier/provider execution, persistence,
+  public/runtime export, Graph topology, protocol/conformance, cross-language,
+  Demo, or web work entered this implementation slice.
