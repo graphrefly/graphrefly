@@ -4468,3 +4468,22 @@ Next step: design the clean-slate documentation system (see the session continua
   empirical observation/scorecard persistence. No live provider call,
   credential, durable persistence, public/runtime export, Graph topology,
   protocol/conformance, cross-language, Demo, or web work entered D659.
+
+- 2026-07-28 D660 preserves D657 as the first implemented focused binding and
+  leaves its direct OpenAI contract unchanged, while selecting OpenRouter as
+  the second package-private focused binding and the gateway for B112's first
+  credentialed empirical evaluation. Exact five-task offline materialization,
+  verifier calibration, and qualification remain provider-independent and may
+  proceed without credentials or cost. No live smoke or campaign may begin
+  until both the focused OpenRouter binding and exact five-task qualification
+  are green.
+
+  The first live route is fixed to OpenRouter shared capacity, exact model
+  `openai/gpt-5.6-sol`, and downstream provider OpenAI, with no BYOK, fallback,
+  alternate model, plugin, or hidden routing. D660 supersedes D659 only where
+  D659 names direct OpenAI as the first live smoke; D659's closed host, actor
+  tool, budget, workspace, protection, and verifier semantics remain
+  unchanged. This lock authorizes no live call, ambient credential, generic
+  OpenAI-compatible adapter, provider registry, public/runtime export, Graph
+  topology, protocol/conformance change, cross-language parity, Demo, or web
+  surface.
