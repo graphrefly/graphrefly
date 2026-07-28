@@ -4295,3 +4295,28 @@ Next step: design the clean-slate documentation system (see the session continua
   This approved implementation slice is mock-transport-only and makes no
   remote call. Live smoke remains separately gated by final task/worktree/host
   runner freeze, an explicit credential capability, and a remote-call budget.
+
+- 2026-07-27 B112.6.5 implemented D657 in graphrefly-ts commit `3b8115f3`.
+  The package-private focused factory constructs both the D652 model-turn port
+  and D656 exact-private-needle executor from one explicit bearer capability.
+  It sends one canonical stateless Responses request through an
+  OpenAI-specific host-injected byte transport, protects both the nested user
+  envelope and canonical outer body, and fixes the first binding to the
+  alias-disclosed `gpt-5.6-sol` profile with medium reasoning, strict structured
+  output and function schemas, disabled parallel tool calls, and
+  provider-reported usage. Response handling rejects duplicate JSON keys,
+  malformed UTF-8/JSON, model/status mismatch, refusals, ambiguous message/tool
+  results, unsupported items, oversized bytes, and schema-invalid output;
+  reasoning is ignored, D653 remains the final semantic validator, D655 owns
+  blocked-candidate provenance, and over-budget usage/byte evidence is
+  sanitized before outcome validation. Both independent adversarial QA passes
+  closed all findings. Focused regressions, full 123-file/1943-pass with one
+  intentional live-host skip, lint/biome/raw-async/test typecheck,
+  ESM/CJS/DTS/export smoke, private-export/source-boundary scans, and diff
+  checks passed. B112 remains open for final task/commit freeze,
+  worktree/protection execution, host agent/tool runner, an explicitly
+  credentialed and budgeted live invocation, observations/scorecards, later
+  focused providers, and presentation. No real network call, SDK dependency,
+  ambient environment lookup, configurable base URL, retry/fallback/timeout,
+  public export, Graph topology, protocol/conformance, cross-language, Demo,
+  web, or durable store entered this slice.
