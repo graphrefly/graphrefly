@@ -4235,3 +4235,21 @@ Next step: design the clean-slate documentation system (see the session continua
   invocation, final task freeze, worktree/host runner, observation/scorecard
   persistence, public export, Graph topology, protocol/conformance,
   cross-language parity, Demo, or web surface entered this slice.
+
+- 2026-07-27 D656 locks B112's first concrete protection profile as the
+  package-private synchronous `exact-private-needle-v1`. The host supplies
+  1..16 unique explicit protected needles through a private credential or
+  protection capability; no ambient environment discovery occurs. Each needle
+  is 16..4096 UTF-16 code units, canonical protection subjects are limited to
+  262144 bytes before inspection, and exact case-sensitive substring matching
+  covers every strict-JSON string value and object key. The profile has no
+  normalization, regex, entropy or field-name semantics, hidden I/O, model
+  call, registry, timer, retry, store, or Graph authority. It returns only
+  `allowed`/`blocked` into the D655 wrapper and never persists needle or match
+  material. Construction and policy-coordinate mismatch fail closed; policy
+  revision changes bind algorithm/bounds and credential-capability revision.
+  The receipt proves only that this known-needle profile ran, not unknown
+  secret, PII, or general exfiltration detection. Implementation, adversarial
+  QA, and the first separately bounded OpenAI binding remain subsequent B112
+  work; no public export, protocol/conformance, cross-language, Demo, or web
+  surface is approved here.
