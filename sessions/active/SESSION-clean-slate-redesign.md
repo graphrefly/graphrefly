@@ -4511,3 +4511,34 @@ Next step: design the clean-slate documentation system (see the session continua
   qualification and dispatch is not prevented or certified. This remains
   private eval-infrastructure evidence, not model correctness authority, and
   changes none of D659's host/tool/verifier semantics or D660's pre-live gate.
+
+- 2026-07-28 D660-D661 implementation landed in graphrefly-ts commit
+  `b88ca6e4`. One package-private focused OpenRouter Responses binding
+  implements the unchanged D652 provider-neutral turn port over a
+  host-injected byte transport. It fixes the route to OpenRouter shared
+  capacity, exact model `openai/gpt-5.6-sol`, and downstream OpenAI; requires
+  the closed same-credential dedicated-workspace zero-BYOK qualification
+  before construction; and accepts only closed direct first-attempt
+  non-BYOK router metadata after response.
+
+  Deterministic provider-safe wire-name lowering preserves exact internal
+  tool/output references, the D656 same-token protection capability covers
+  the canonical request and raw model egress including response id, and
+  bounded `error_type`/status decoding keeps provider failures distinct
+  without retaining raw bodies or thrown values. Three independent
+  adversarial QA passes found and closed shared-capacity admission,
+  response-id protection, error classification, optional-attempt closure,
+  dotted tool-ref lowering, unknown route-field, and prior-tool-result
+  wire-name defects; every final review reported no findings.
+
+  Focused tests passed 25/25. Full package tests passed 126 files and 1983
+  tests with one intentional live-host skip; biome/lint, raw-async and test
+  typecheck, ESM/CJS/DTS build, package-export smoke, private-source/public-
+  export/topology scans, and diff checks passed. B112 remains open and
+  CSP-11 remains `impl` with `gap=true` pending exact five-task/profile
+  offline qualification, explicit OpenRouter credential and budget approval,
+  the first live smoke, and empirical observation/scorecard persistence. No
+  live network call, credential, ambient environment lookup, SDK/client,
+  management API, generic adapter/registry, retry/fallback, durable
+  persistence, public/runtime export, Graph topology, protocol/conformance,
+  cross-language, Demo, or web work entered this slice.
