@@ -138,6 +138,63 @@ This began as a pure design artifact, but the active implementation state now li
   Demo/web surface, protocol/conformance change, or cross-language work entered
   this slice. B112 remains open for separately approved B112.6.2+ work.
 
+- 2026-07-27 D652: locked B112's private semantic model boundary to one
+  explicit model turn. The host runner owns the agent/tool loop, tool
+  execution, later calls, step and budget ledgers, timeout/cancellation policy,
+  worktrees, persistence, verification, and memory lifecycle. The port accepts
+  one strict bounded manifest/task/trial/role/step-bound request and emits
+  either structured output or declared tool intents plus bounded
+  provider-neutral status, usage, latency, evidence, issues, and protection
+  receipt. Focused provider bindings require explicit credential capabilities;
+  no credential material, ambient environment lookup, hidden retry/fallback,
+  raw provider response, provider registry, callback engine, public API, Graph
+  node, or protocol surface enters the contract. B112.6.2 is authorized only
+  for private contracts, validators, and deterministic fake-binding evidence;
+  the first real provider/model binding and remote invocation remain separately
+  approved future work.
+
+- 2026-07-27 D653: closed B112.6.2 QA design findings. The frozen manifest
+  owns a bounded private strict-json-shape.v1 catalog whose canonical material
+  and digest are copied into each turn and validated without a hidden registry;
+  the package-private validator checks final structured output and tool
+  arguments itself. Source-ingress, tool-ingress, and model-egress protection
+  receipts bind the exact material digest and frozen policy but make no durable
+  receipt or perfect secret-detection claim. Remote request count is 0 or 1,
+  completed outcomes require one request, token nullability depends on the
+  frozen usage source, and missing required usage is non-evaluable. Step index
+  is bounded by configuration plus agent-run step/request limits; canonical
+  output and host-measured bytes both obey the remaining byte budget. Validation
+  consumes B112.6.1's frozen-manifest wrapper and qualified report. No real
+  provider, network, store, schema SDK/registry, public API, Graph node, or
+  protocol/cross-language surface is authorized.
+
+- 2026-07-27 D654: resolved the one-turn structured-output null ambiguity.
+  The private strict-json-shape catalog keeps null available recursively for
+  nested values, tool arguments, structured input, and tool results, while a
+  role output schema root must not semantically accept JSON null. The existing
+  `structuredOutput: null` remains the unique no-output sentinel; no presence
+  flag, nullable-value envelope, provider sentinel, or outcome version is
+  added. A future empirical requirement for completed root-null output must
+  trigger a separately approved versioned presence design.
+
+- 2026-07-27 B112.6.2 (TS commit 3c60a2df): completed the private one-turn
+  semantic model contract under D652-D654. The frozen qualified manifest owns
+  exact bounded tool/output schema material; requests bind protected structured
+  input and prior host tool results; outcomes bind protected structured output
+  or tool intents plus honest 0-or-1 request usage, latency, evidence, and
+  remaining step/token/byte budgets. Root-null role outputs are rejected while
+  nested and tool null values remain valid. Structural and arbitrary strict
+  JSON validation rejects executable descriptors, sparse/non-index material,
+  cycles, excessive depth/nodes/bytes, and huge sparse lengths without
+  unbounded scans. A deterministic fake proves explicit credential capability,
+  exact request matching, and host cancellation without adding a real provider
+  or hidden loop. Focused tests (20), full TS tests (1923 passed, 1 skipped),
+  lint/typecheck/raw-async, build/export smoke, privacy/topology scans,
+  `git diff --check`, two-agent adversarial QA, and dashboard consistency
+  passed. B112 remains open for separately approved real provider invocation,
+  final task freeze, worktree/protection execution, host runner, and empirical
+  observation/scorecard persistence.
+
 - 2026-07-23 D639: locked B112's empirical experiment protocol. One
   preregistered matched trial block runs a real cold attempt and, only after an
   independently verified eligible task failure, fans the same immutable cold
