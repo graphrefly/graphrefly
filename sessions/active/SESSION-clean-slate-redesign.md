@@ -4435,3 +4435,36 @@ Next step: design the clean-slate documentation system (see the session continua
   credentials, remote budget, observations/scorecards, public/runtime exports,
   Graph topology, protocol/conformance, cross-language, Demo, and web remain
   separately unapproved.
+
+- 2026-07-28 D659 implementation landed in graphrefly-ts commit `289aa4ce`.
+  The package-private deterministic host binds frozen task, profile, material,
+  protection, and verifier coordinates to one sealed D658 workspace; drives
+  explicit sequential D652 turns over the closed read, literal-search,
+  digest-bound-replace, bounded-diff, and preregistered-command tool surface;
+  and admits only fixed no-shell commands with sanitized environment and
+  bounded streams. Conservative result bounds are checked before dispatch and
+  exact canonical bytes after execution. Every next-turn tool-result batch is
+  protected by a runtime-constructed D656 executor, duplicate tool-call refs
+  fail closed, cancellation terminates the command process group, and cleanup
+  must return the exact conforming success result.
+
+  The host snapshots the complete trusted repository closure, normalizes and
+  checks the Git index, admits only the exact writable-file diff and modes, and
+  binds the final canonical workspace-state digest into disjoint
+  `target-verification` evidence with exact task, verifier-profile, fixture,
+  and harness coordinates. This is deterministic trusted-repository evidence,
+  not hostile same-UID race, process-session, network, or OS sandbox
+  containment. The D639 calibration runner executes every required
+  known-good, plausible-wrong, missing-evidence, tamper, and out-of-policy case
+  sequentially through one hidden-fixture capability and fails closed on
+  incomplete, duplicate, mismatched, cancelled, or misclassified evidence.
+
+  Focused D656/D659/empirical tests passed 38/38; the full package tests, lint,
+  raw-async and test typecheck, ESM/CJS/DTS build, package-export smoke,
+  forbidden-capability scan, diff check, and three independent read-only QA
+  passes are green. B112 remains open and CSP-11 remains `impl` with
+  `gap=true` pending exact five-task/profile qualification, explicit live-call
+  credential and budget approval, the first OpenAI smoke observation, and
+  empirical observation/scorecard persistence. No live provider call,
+  credential, durable persistence, public/runtime export, Graph topology,
+  protocol/conformance, cross-language, Demo, or web work entered D659.
