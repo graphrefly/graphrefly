@@ -4487,3 +4487,27 @@ Next step: design the clean-slate documentation system (see the session continua
   OpenAI-compatible adapter, provider registry, public/runtime export, Graph
   topology, protocol/conformance change, cross-language parity, Demo, or web
   surface.
+
+- 2026-07-28 D661 closes the OpenRouter shared-capacity admission fork found
+  during D660 implementation review. OpenRouter currently offers no
+  per-request BYOK-off control and automatically prioritizes matching BYOK
+  credentials. Before dispatch, the focused binding therefore requires one
+  closed frozen host-attested qualification bound to the same credential
+  ref/revision and one dedicated workspace ref/revision, with capacity mode
+  `openrouter-shared-only`, `qualified=true`, and `byokCredentialCount=0`.
+  The trusted campaign host obtains this through an out-of-band read-only
+  workspace check; the binding owns no management client/API call, ambient
+  credential discovery, workspace mutation, durable qualification store, or
+  automatic refresh.
+
+  After response, closed versioned router metadata must independently prove
+  the exact requested `openai/gpt-5.6-sol` model, direct first-attempt
+  downstream OpenAI route, `is_byok=false`, exactly one selected endpoint,
+  and no contradictory routing or material pipeline stage. Optional attempts,
+  when present, must contain exactly the successful OpenAI/model/200 attempt.
+  Missing metadata, cached replay without metadata, additive unreviewed
+  fields, fallback, alternate model, BYOK, plugin/pipeline, or contradictory
+  route material is bounded non-evaluable. External workspace drift between
+  qualification and dispatch is not prevented or certified. This remains
+  private eval-infrastructure evidence, not model correctness authority, and
+  changes none of D659's host/tool/verifier semantics or D660's pre-live gate.
