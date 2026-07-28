@@ -4408,3 +4408,30 @@ Next step: design the clean-slate documentation system (see the session continua
   command, dependency install, verifier/provider execution, persistence,
   public/runtime export, Graph topology, protocol/conformance, cross-language,
   Demo, or web work entered this implementation slice.
+
+- 2026-07-28 D659 locks the package-private B112 actor/tool and verifier host
+  execution boundary. It accepts only frozen qualified campaign/task
+  coordinates, exact operator-private tool/command/verifier profiles, one D658
+  sealed workspace, one D652 model-turn port, the frozen protection executor,
+  and an explicit host cancellation signal. Actor tools are closed to bounded
+  regular-file read, literal search, digest-bound exact text replacement,
+  bounded workspace diff, and preregistered `commandRef` execution. A
+  `commandRef` resolves to fixed executable/argv/cwd/sanitized environment and
+  bounded streams; the actor never supplies shell, executable, argv, cwd,
+  environment, network/credential/container authority, verifier commands,
+  hidden fixtures, expected patches, special-file operations, or out-of-tree
+  paths. This is trusted-repository reproducibility, not OS containment.
+
+  The host performs explicit sequential one-turn calls and ordered tool
+  execution with pre-dispatch budget checks, digest-bound protected canonical
+  results, no parallel intents, and no hidden retry/fallback/provider switch,
+  timer, scheduler, queue, or autonomous continuation. After final actor output
+  it applies the exact diff-policy gate, then invokes a disjoint host-private
+  verifier whose commands, fixtures, expected material, and evidence cannot be
+  discovered or satisfied by actor claims. All D639 verifier calibration cases
+  remain required. Failures remain distinct bounded non-evaluable outcomes.
+  The first implementation is deterministic fake-model plus local calibration
+  only and persists no raw or hidden material. Live OpenAI invocation,
+  credentials, remote budget, observations/scorecards, public/runtime exports,
+  Graph topology, protocol/conformance, cross-language, Demo, and web remain
+  separately unapproved.
