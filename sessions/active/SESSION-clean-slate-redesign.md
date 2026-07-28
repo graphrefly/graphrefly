@@ -4269,3 +4269,29 @@ Next step: design the clean-slate documentation system (see the session continua
   observations/scorecards, and later presentation. No other provider,
   provider registry, public export, Graph topology, protocol/conformance,
   cross-language, Demo, or web surface entered this slice.
+
+- 2026-07-27 D657 locks B112's first provider integration as one
+  package-private OpenAI Responses binding over the D652 one-turn semantic
+  port. The binding is fixed to `POST https://api.openai.com/v1/responses`
+  and the first smoke coordinates `gpt-5.6-sol` as an honestly
+  alias-disclosed model with explicit medium reasoning, provider-reported
+  usage, omitted sampling controls, strict structured output and host
+  function tools, disabled parallel tool calls, and stateless
+  `store/background/stream=false` plus truncation disabled. One focused
+  factory receives an explicit bearer credential and constructs both the
+  model-turn port and the D656 exact-private-needle executor from that same
+  credential. An OpenAI-specific host transport receives canonical bounded
+  request bytes and the host AbortSignal, returns at most 1048576 response
+  bytes, and owns no SDK defaults, retry, fallback, timeout, queue, limiter,
+  persistence, base-url discovery, or provider registry. Structured input and
+  prior protected tool results use one canonical stateless user envelope;
+  no native continuation or provider session is retained. Private schema
+  lowering supports only the all-required closed structural subset and D653
+  remains the final local semantic validator. Transient reasoning is ignored;
+  a response must yield exactly one structured assistant output or function
+  calls, never both. Provider and protection failures are sanitized and
+  distinct, raw request/response/error/reasoning/credential material is never
+  evidence or Graph DATA, and blocked candidates use D655 digest provenance.
+  This approved implementation slice is mock-transport-only and makes no
+  remote call. Live smoke remains separately gated by final task/worktree/host
+  runner freeze, an explicit credential capability, and a remote-call budget.
