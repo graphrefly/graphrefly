@@ -4542,3 +4542,9 @@ Next step: design the clean-slate documentation system (see the session continua
   management API, generic adapter/registry, retry/fallback, durable
   persistence, public/runtime export, Graph topology, protocol/conformance,
   cross-language, Demo, or web work entered this slice.
+D662 locked 2026-07-28: `@graphrefly/reactive-layout-node-canvas` is owned and released by the standalone
+`graphrefly/graphrefly-reactive-layout-node-canvas` repository, not by `graphrefly-react` or
+`@graphrefly/ts`. The package keeps only the concrete optional-peer `canvas` loader/injection seam; neutral
+measurement capabilities and layout algorithms remain in `@graphrefly/ts`. The React repository must remove
+the child implementation and release ownership after the standalone repository is green, with no mirror,
+compatibility facade, dual publication, protocol change, graph change, or new layout behavior.
