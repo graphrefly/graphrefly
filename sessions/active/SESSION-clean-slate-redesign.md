@@ -4249,7 +4249,23 @@ Next step: design the clean-slate documentation system (see the session continua
   material. Construction and policy-coordinate mismatch fail closed; policy
   revision changes bind algorithm/bounds and credential-capability revision.
   The receipt proves only that this known-needle profile ran, not unknown
-  secret, PII, or general exfiltration detection. Implementation, adversarial
-  QA, and the first separately bounded OpenAI binding remain subsequent B112
-  work; no public export, protocol/conformance, cross-language, Demo, or web
-  surface is approved here.
+  secret, PII, or general exfiltration detection.
+
+- 2026-07-27 B112.6.4 implemented D656 in graphrefly-ts commit `79902a5a`.
+  The package-private executor copies protected needles only from validated own
+  data descriptors, rejects custom array prototypes, freezes its private copy,
+  and exposes only profile plus policy/capability coordinates and the closed
+  inspection method. D655 now bounds every canonical protection subject to
+  262144 bytes before invoking any policy. Regression tests cover key and
+  string-value matches, case sensitivity, no normalization, all three stages,
+  zero/duplicate/short/long/over-count/malformed capabilities, getter and
+  custom-array-method non-execution, material-free results, policy mismatch,
+  and pre-inspection byte rejection. Two independent QA passes found and closed
+  the custom-array method-dispatch leak and a missing test-typecheck include.
+  Focused 17/17, full 122-file/1931-pass with one intentional live-host skip,
+  lint/biome/raw-async/test typecheck, ESM/CJS/DTS/export smoke, private-export
+  scan, and diff checks are green. B112 remains open for the first focused
+  OpenAI binding and invocation, final task freeze, worktree/host runner,
+  observations/scorecards, and later presentation. No other provider,
+  provider registry, public export, Graph topology, protocol/conformance,
+  cross-language, Demo, or web surface entered this slice.
