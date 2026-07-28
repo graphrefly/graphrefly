@@ -195,6 +195,36 @@ This began as a pure design artifact, but the active implementation state now li
   final task freeze, worktree/protection execution, host runner, and empirical
   observation/scorecard persistence.
 
+- 2026-07-27 D655: locked truthful blocked model-egress evidence without
+  expanding the private one-turn outcome v1 shape. One synchronous local-first
+  protection capability serves the contracted source-ingress, tool-ingress,
+  and model-egress stages. Allowed model completions keep their receipt bound
+  to canonical published egress; a blocked bounded provider candidate produces
+  a non-evaluable outcome with no model output or tool intents, exactly one
+  model-egress-blocked-subject evidence ref bound to the candidate digest, and
+  one blocked receipt bound to that same digest. Raw candidates, matched
+  material, provider objects, secrets, and unprocessed errors are not
+  persisted. Non-protection failures protect sanitized failure egress, policy
+  execution failures fail closed as protection non-evaluable, and receipts
+  remain neither durable nor proof of perfect detection. D655 authorizes the
+  design lock only; protection implementation, provider binding, and network
+  invocation remain separately approved B112 work.
+
+- 2026-07-27 B112 provider rollout approval: the intended focused-binding
+  roster is OpenAI, Anthropic, Google Gemini, xAI/Grok, DeepSeek,
+  Moonshot/Kimi, Zhipu/GLM, and OpenRouter. This records the target roster and
+  staged order, not simultaneous implementation or a provider registry. D639
+  remains unchanged: after D655 protection implementation, OpenAI is the sole
+  first binding/smoke; Anthropic is the materially different second-provider
+  semantic-port smoke; Gemini, Grok, DeepSeek, Kimi, and GLM follow as
+  separately approved focused bindings; OpenRouter follows last with explicit
+  downstream route/model identity and no hidden fallback. Each runner remains
+  constructed for one exact binding, provider/model/endpoint/adapter/usage/
+  pricing coordinates remain frozen per campaign manifest, and no generic
+  OpenAI-compatible adapter, mega union, dynamic discovery, public provider
+  SDK, simultaneous first wave, or cross-provider token-unit comparison is
+  authorized.
+
 - 2026-07-23 D639: locked B112's empirical experiment protocol. One
   preregistered matched trial block runs a real cold attempt and, only after an
   independently verified eligible task failure, fans the same immutable cold
@@ -4183,3 +4213,25 @@ Next step: design the clean-slate documentation system (see the session continua
   and two independent adversarial reviews. No runtime/export-map/tsup-entry/
   Graph-topology/protocol/spec/conformance/cross-language change was added.
   B111 and CSP-12 are done; CSP-12 has `gap=false`.
+
+- 2026-07-27 B112.6.3 D655 protection execution landed in graphrefly-ts
+  commit `3c2121c3`. One package-private synchronous wrapper serves
+  source-ingress, tool-ingress, and model-egress over bounded canonical
+  strict-JSON subjects. Policy implementations return only `allowed` or
+  `blocked`; the wrapper owns material-free canonical receipt refs/digests and
+  converts thrown or malformed implementations into deterministic blocked
+  failure receipts without retaining the raw subject or error. Allowed
+  receipts and both blocked provenance forms are byte-reconstructable.
+  Blocked model candidates publish no output or tool intents and retain exactly
+  one fixed-id candidate-digest evidence ref plus exactly one policy-block or
+  protection-failure issue whose classification must match the canonical
+  receipt. Two adversarial QA passes found and closed classification swapping,
+  candidate metadata leakage, and forged allowed-receipt bypasses. Focused
+  model execution is 11/11; the full TypeScript suite is 121 files with 1925
+  passing and one intentional live-host skip; lint/biome/raw-async/test
+  typecheck, ESM/CJS/DTS and package-export smoke, and diff checks are green.
+  B112 remains open because no concrete frozen local detection policy/profile
+  has yet been selected; therefore no OpenAI or other provider binding, network
+  invocation, final task freeze, worktree/host runner, observation/scorecard
+  persistence, public export, Graph topology, protocol/conformance,
+  cross-language parity, Demo, or web surface entered this slice.
