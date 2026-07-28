@@ -4320,3 +4320,28 @@ Next step: design the clean-slate documentation system (see the session continua
   ambient environment lookup, configurable base URL, retry/fallback/timeout,
   public export, Graph topology, protocol/conformance, cross-language, Demo,
   web, or durable store entered this slice.
+
+- 2026-07-28 the user approved B112's final five-task identity, order, and
+  smoke-task preregistration under D639. The three historical pre-fix tasks
+  are: (1, first smoke) canonical managed-compute admission ref at commit
+  `a396eda3249b90e32de0f4c69f5380960adf3002` / Git tree
+  `665f5ea2993087a54762d2bfac987efd68872666`; (2) malformed orphan
+  remoteCall isolation at commit
+  `62a3c4031402c5f810c239f97c79f36bcd85fe02` / Git tree
+  `fc486aa93ce7b3e22c844eaedf4ea6bdd4830ca2`; and (3) closed wave
+  message directions at commit
+  `22c54fa393bc1c85bbbe29e7994b886ac7e3fc2f` / Git tree
+  `8fa9fe95802a23e7974fb8f3eba60dae08a16074`. The two held-out overlays
+  are: (4) local fixed-window exact-boundary rollover and (5) recursive
+  mounted-graph `Graph.find` lookup, both based on committed graphrefly-ts
+  commit `3b8115f37c8675b8970b24ada3aa351b772e5144` / Git tree
+  `74f94a624b627aeb62ff0f1ea191bc5c62b13e78`. Mutation material,
+  expected patches, and hidden verifier fixtures remain operator-private.
+  These Git tree object IDs are provenance anchors, not the manifest's
+  canonical `sha256:` tree digests. This approval freezes task identity,
+  order, and smoke selection only; it is not yet a canonical task catalog,
+  qualified manifest, runner, credential, remote call, or observation.
+  B112 remains open for a separately approved history-free single-baseline
+  materializer, canonical digests and exact task/profile material, verifier
+  calibration, host runner, live-call capability/budget, observations, and
+  scorecards.
