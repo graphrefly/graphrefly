@@ -4548,3 +4548,35 @@ D662 locked 2026-07-28: `@graphrefly/reactive-layout-node-canvas` is owned and r
 measurement capabilities and layout algorithms remain in `@graphrefly/ts`. The React repository must remove
 the child implementation and release ownership after the standalone repository is green, with no mirror,
 compatibility facade, dual publication, protocol change, graph change, or new layout behavior.
+
+- 2026-07-28 D663 locks a separately sequenced reusable public model-turn
+  adapter boundary below solutions. Provider mechanics proven by B112 may be
+  extracted into one zero-dependency focused
+  `@graphrefly/ts/adapters/model-turn` subpath with strict bounded
+  provider-neutral single-turn request/outcome contracts and focused OpenAI
+  Responses plus OpenRouter Responses factories. The package root and
+  existing `@graphrefly/ts/adapters` aggregate remain unchanged.
+
+  The reusable adapter owns only one explicit request/response translation,
+  supported tool and structured-output lowering, bounded provider decoding,
+  provider-scoped usage/error/routing evidence, host-measured latency through
+  an explicit monotonic-measurement capability, propagation of a caller-owned
+  `AbortSignal`, explicit credential capability, and standards-based or
+  injected bounded transport. It owns no agent/tool loop, tool execution,
+  later turn, retry/fallback/provider selection, registry, ambient
+  credentials, cancellation policy/controller, scheduler/queue, WorkItem or
+  AgenticMemory lifecycle,
+  admission/application, verifier, correctness, persistence, durable receipt,
+  scorecard, or eval pass/fail. Provider material remains evidence, never
+  application or evaluation authority.
+
+  B112's `Empirical*` manifest, campaign, task, trial, qualification, budget,
+  protection, evidence, and closed-host contracts remain private wrappers;
+  they are not renamed or exported as a generic harness API. Additional
+  provider factories require focused review rather than a compatible-base-URL
+  adapter or registry. D663 is architecture approval only. After B112's first
+  successful live OpenRouter smoke, B115 still requires a separate exact
+  public-contract design review and authority lock; implementation and
+  export-map work require a later separate user approval. No export-map,
+  runtime, Graph topology, protocol/spec/conformance, cross-language, Demo,
+  or web change entered this decision.
