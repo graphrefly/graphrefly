@@ -4345,3 +4345,41 @@ Next step: design the clean-slate documentation system (see the session continua
   materializer, canonical digests and exact task/profile material, verifier
   calibration, host runner, live-call capability/budget, observations, and
   scorecards.
+
+- 2026-07-28 D658 locks B112's package-private history-free single-baseline
+  repository materializer. A host supplies an exact source-repository
+  capability, a private allocator/cleanup capability, and optional
+  operator-private exact-replacement overlay bytes. The materializer verifies
+  the lowercase 40-hex commit and preregistered tree object with replacement
+  objects and ambient Git configuration disabled, then reads only the committed
+  object graph through fixed batched `ls-tree -z` and `cat-file --batch`
+  plumbing. It accepts bounded portable regular-file trees only: `100644` and
+  `100755`, at most 4096 entries, 64 MiB total, 4 MiB per file, 512 path bytes,
+  and 255 bytes per component; symlinks, gitlinks, special paths/files,
+  case-fold collisions, filters, archives, ordinary worktrees, filesystem
+  copies, fuzzy patches, generic shell, and per-file process loops are rejected.
+  Canonical evidence hashes strict canonical JSON over byte-sorted path, mode,
+  byte length, and exact content digest records with no text normalization.
+  Version-one overlays replace 1..16 exact existing regular files, bind base
+  mode/content plus replacement length/content digest, and remain private; they
+  cannot add, delete, rename, change mode, or expose mutation material,
+  expected patches, source paths, hidden verifier material, or raw errors.
+
+  Materialization occurs in host-owned `0700` staging, applies any overlay
+  before a destination repository exists, and builds a new deterministic
+  parentless repository through fixed Git plumbing with an empty template and
+  no signing, hooks, remotes, reflogs, alternates, replacements, grafts,
+  shallow state, or shared object store. Success requires exactly one
+  zero-parent commit, clean status, no unreachable objects, and an exact full
+  filesystem-to-canonical-manifest match including absence of ignored extras.
+  Historical actor digests equal their original tree digest; held-out overlay
+  actor digests differ. The actor receives only a sealed runtime-private
+  workspace capability and bounded path-free evidence. Cleanup requires the
+  exact allocator ownership token, never follows symlinks or uses a broad
+  target, receives at most one immediate attempt, and surfaces failure as
+  non-evaluable. D658 claims repository-local reproducibility and source-history
+  isolation only, not same-UID filesystem/process/network containment or a
+  hostile-code security sandbox. This slice owns no actor/tool commands,
+  dependency install, verifier execution, model loop, provider call,
+  timeout/retry/scheduler, artifact persistence, public export, Graph topology,
+  protocol/conformance, cross-language, Demo, or web surface.
