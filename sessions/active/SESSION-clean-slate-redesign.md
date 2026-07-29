@@ -4876,6 +4876,71 @@ compatibility facade, dual publication, protocol change, graph change, or new la
   campaign, Another Hello, store, Rust/Python, Demo, UI, web, Graph topology,
   protocol, spec or conformance surface entered this slice.
 
+- 2026-07-29 the user-approved continuation toward a complete first-task smoke
+  produced two further sanitized live generations and exposed the remaining
+  boundary as actor-turn semantics rather than provider, route, credential or
+  byte transport failure. V17 raised the frozen agent-run and route request
+  ceilings from four to eight, aligned the static task-model/campaign request
+  coverage at 48 for the cold plus five warm-arm manifest invariant, and
+  retained one first-task / one-cold-block execution with no retry, fallback,
+  parallel call or campaign continuation. The exact-five qualification
+  remained 5/5 with qualification-report digest
+  `sha256:0d115c535bf05726b08c64745cc5e95330464c3177768d8bd8a7371e2b3c0407`
+  and manifest digest
+  `sha256:3f9d5e60e7cf35e2e25096892a9fd61bf56a05a2b1186408d9981d0db9d35bb5`.
+
+  V17 completed five accepted direct OpenAI requests before the sixth request
+  was rejected pre-transport solely by the bounded input-token reservation:
+  prospective 156,155 tokens exceeded the 150,000-token route ceiling while
+  prospective cost 993,979 microusd remained below the 1,200,000-microusd
+  cap. Provider usage for the five accepted requests was 54,817 input tokens,
+  375 output tokens and 352,936 microusd. The generation digest is
+  `sha256:6ec683346f2835dcf62165eb0d72c707990d53f9ac64cc0196099f3aeb6de20c`,
+  observation digest
+  `sha256:b36dc39e3520098b18df54fbdf1cf4491763426ccd52670ba2186ea965cf23d4`,
+  and scorecard digest
+  `sha256:18fb14fd2a0171ca6bd6596a00f38507becc732f4392b04160579bf726f8c149`.
+
+  V18 minimally raised only the aggregate input-token ceiling to 200,000.
+  Its exact-five qualification again remained 5/5 with report digest
+  `sha256:e7c0064a80e5817b5f3f314354383af8d7135642108561b4ae92269cc8b99827`
+  and manifest digest
+  `sha256:30db2e5c18548aaab21ba8bb6a2f8f6dd4d9380b28026379d2cee62614dc1967`.
+  Mandatory injected no-network preflight passed 69/69 tests before each live
+  dispatch. All eight v18 requests passed admission, were accepted by
+  OpenRouter, proved the exact direct OpenAI shared-capacity route, and
+  produced eight protection receipts; the bounded admission diagnostic was
+  null. Provider usage was 107,560 input tokens, 658 output tokens,
+  689,952 microusd and 24,948 ms.
+
+  Every v18 provider outcome nevertheless ended in `tool_calls`; no structured
+  final output was returned by the eighth frozen turn, so the host correctly
+  emitted `agent-step-budget-exhausted` and did not invoke the verifier. The
+  generation digest is
+  `sha256:30e674dd7e9317e58277ede4ae3c1c7a339d949799788bf38b958f4941432ea3`,
+  observation digest
+  `sha256:c7619fed56946f72f9b1d2b113656a64baf540d8de4bddd2ec8540d1649f5c2f`,
+  and scorecard digest
+  `sha256:7787b81bd9675dbf4acf3b7b1d95daeecad4543f3228222358e90404830c8678`.
+  Files remain 0600 under the 0700 ignored private root and both scorecards
+  retain `efficacyClaim=none`.
+
+  Read-only control-plane observation after v18 showed approximately USD 1.96
+  used of the user-approved no-reset USD 3.00 total key limit. More turns are
+  not an unbounded continuation option: D659 explicitly locks each protected
+  tool result to only the next explicit model turn, while the focused binding
+  is stateless. Adding a cumulative tool transcript, step-aware continuation
+  prompt or provider conversation state would change the locked actor-turn
+  flow and request lowering rather than fix a budget or transport bug. Per the
+  user's architecture-fork stop condition, no such change, new D-number or
+  further charged block was made autonomously. B112 remains open and CSP-11
+  remains `impl` with `gap=true`; the live transport, credential, zero-BYOK,
+  route, accounting and private persistence slices are proven, but a
+  verifier-complete smoke and any efficacy claim remain absent. No public
+  D663 adapter, real campaign, Another Hello, store, Rust/Python, Demo, UI,
+  web, Graph topology, protocol, spec or conformance surface entered this
+  continuation.
+
 - 2026-07-29 the explicitly approved diagnostic replacement smoke v3
   executed exactly one first-task / one-attempted-block OpenRouter HTTP
   request under the unchanged USD 0.75 hard cap, with no retry, fallback,
