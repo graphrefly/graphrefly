@@ -4828,3 +4828,50 @@ compatibility facade, dual publication, protocol change, graph change, or new la
   B112 remains open and CSP-11 remains `impl` with `gap=true`. No public D663
   adapter, real campaign, Another Hello, store, Rust/Python, Demo, UI, web,
   Graph topology, protocol, spec, or conformance surface entered this slice.
+
+- 2026-07-29 the explicitly approved B112 replacement smoke v2 executed
+  exactly one first-task / one-attempted-block OpenRouter HTTP request after
+  the monotonic-measurement fix, with no retry, fallback, parallel call or
+  automatic continuation. The operator-private atomic generation is
+  `non-evaluable`: one request, one step, 3,533 host input bytes, zero host
+  output bytes, 827 ms latency, no provider token usage, no accepted route
+  evidence, verifier not run, and issues `model-turn-non-evaluable` plus
+  `openrouter-request-rejected`. The persisted 99,585 microusd remains the
+  conservative reservation for 7,629 input and 2,048 output tokens, not
+  measured provider spend.
+
+  A same-session read-only check of the dedicated GraphReFly `Local Eval 2`
+  key showed the no-reset USD 0.75 limit unchanged, total/today/week/month
+  usage `$0.0000`, key-limit usage `$0 / $0.75`, zero activity requests and
+  token volume, and no generation or upstream-request log entry. Thus the
+  local transport truthfully records one attempted HTTP request while the
+  OpenRouter control plane records no admitted transaction and no charge.
+  The bounded evidence deliberately discarded the provider body and did not
+  retain the exact HTTP status or canonical error type, so the specific
+  rejection cause cannot be recovered or claimed from v2.
+
+  A package-private offline follow-up adds only allowlisted rejection
+  diagnostics to the existing issue-code evidence: bounded HTTP status,
+  recognized OpenRouter canonical `error_type`, and recognized Responses
+  `error.code`. Unknown values become `unrecognized`; raw message, body,
+  headers, credential and arbitrary provider strings remain excluded. This
+  does not add a public schema, export, logger, retry path or persistence
+  owner, and it cannot retroactively diagnose v2. Per D669, the changed
+  response parsing and canonical outcome bytes advance the frozen binding
+  coordinate from `graphrefly-openrouter-responses-wire.v2` to
+  `graphrefly-openrouter-responses-wire.v3`; any future route qualification
+  must pin that new revision. A fixture places a credential sentinel in the
+  untrusted `error_type` position and proves it is not reflected into the
+  outcome. Any diagnostic v3 provider attempt requires a new explicit user
+  approval and generation coordinate.
+
+  The v2 generation digest is
+  `sha256:1f52d22e4bd233ccfbfbd3df6b67c98701fd8c4f2262d3b6baba054ea8fd1e49`;
+  observation digest
+  `sha256:7d80f07b28acaf37b6c5c1093ec43ba92ba12bfc2fede3112aaec1af7bfe9a14`;
+  and scorecard digest
+  `sha256:233093c2682922556ad4ea476d7d7fdcd4fba5341fd89db706483bdce3bdd890`.
+  The scorecard still carries `efficacyClaim=none`. B112 remains open and
+  CSP-11 remains `impl` with `gap=true`; no public D663 adapter, real
+  campaign, Another Hello, store, Rust/Python, Demo, UI, web, Graph topology,
+  protocol, spec or conformance surface entered this slice.
