@@ -21,6 +21,21 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-07-29 D667-D668: expanded the still-open D642 local functional Workbench to the
+  approved non-LLM Canvas product spine and locked its missing code boundary. D667 names a
+  separately certified rootless-Podman local-untrusted-JS compute family rather than
+  reclassifying hosted D612 E2B, the fixed D645 PostgreSQL workload, or the D614 iframe
+  renderer. A fixed host compiler and runner admit immutable bounded JS/TS-derived bundles,
+  expose only the runner-owned Graph's bounded answer/topology/describe/provenance, deny
+  ambient npm/shell/network/filesystem/secret/datasource authority, and require fresh
+  containers, exact cancellation and zero-residue cleanup. D668 keeps Code Pane drafts
+  session-local, accepts immutable code WorkGraph revisions through an app-private SQLite
+  CAS repository in the ephemeral profile, separates save/materialize/run authorization,
+  treats runtime inspection as Lens primary truth, admits generated widget artifacts
+  separately through D614, and requires real browser refresh/fresh-host reopen of code,
+  historical result topology and pinned widget presentation. D624 Docker, hosted E2B,
+  cloud/D615, M8, ClickHouse/M15 breadth and LLM integration remain deferred.
+
 - 2026-07-24 B113.5/CSP-13 closeout: the approved D643 focused TypeScript
   record-use gate is complete through B113.1-B113.4, including strict
   request/decision data, complete synchronous identities, exact-one fail-closed
