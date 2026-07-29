@@ -4617,3 +4617,48 @@ compatibility facade, dual publication, protocol change, graph change, or new la
   approval, the first live smoke, and empirical observation/scorecard
   persistence. No public/runtime export, Graph topology,
   protocol/conformance, cross-language, Demo or web work entered this slice.
+
+- 2026-07-28 B112 package-private scripted model-turn replay hardening
+  completed in graphrefly-ts commit `1e8b54da`. The former one-pair
+  deterministic fake is now one provider-neutral strict semantic replay
+  adapter: construction prevalidates a dense ordered request/outcome script
+  against the frozen manifest, qualification report and explicit credential
+  capability; invocation requires the exact canonical request digest for the
+  current step; misses and cancellation fail closed without consuming the
+  step; and every permitted attempt consumes the frozen agent-run request
+  budget. Successful-call observations are immutable and carry both the
+  actual attempt index and script index, so rejected or aborted attempts
+  remain detectable without retaining raw provider material. Sparse scripts,
+  over-budget scripts, credential substitution, unexpected requests,
+  cancellation, exhaustion and stable attempt-budget closure are covered.
+
+  This is test-only deterministic semantic fixture evidence for the D652
+  port and D659 host control flow. A scripted completed outcome retains
+  D653's simulated `usage.requests=1` solely to exercise validators and
+  accounting branches; it is not a provider request, trial observation,
+  campaign scorecard or model-efficacy result. Provider HTTP mapping remains
+  a separate injected byte-transport fixture layer. The adapter owns no
+  network, timer, retry, fallback, filesystem, store, credential lookup or
+  empirical-artifact persistence. It remains below `src/__tests__`; no
+  package export, subpath, package-root/adapters aggregate, runtime behavior
+  or Graph topology changed. The lint boundary now explicitly excludes only
+  the already gitignored operator-private B112 artifact directory.
+
+  Two adversarial QA reviewers found and closed invisible rejected-attempt
+  accounting, sparse-script acceptance, an unreachable credential branch
+  and unbounded invocation attempts; both final reviews reported no
+  findings. Focused semantic and OpenAI/OpenRouter wire tests passed 37/37;
+  the final full package run passed 127 files and 1989 tests with one
+  intentional live-host skip; lint/biome, raw-async, example and test
+  typecheck, ESM/CJS/DTS build, package-export smoke and diff checks passed.
+  The local DTS worker required `NODE_OPTIONS=--max-old-space-size=8192`
+  after the default Node worker heap exhausted; no type or export failure
+  occurred.
+
+  B112 remains open and CSP-11 remains `impl` with `gap=true`. The remaining
+  gates are unchanged: explicit OpenRouter credential plus same-credential
+  dedicated-workspace zero-BYOK qualification, explicit pricing/budget
+  approval, the first live smoke, and empirical observation/scorecard
+  persistence. No live provider call, public adapter implementation,
+  Another Hello adoption, durable store, Rust/Python work, real-model
+  campaign, Demo or UI entered this slice.
