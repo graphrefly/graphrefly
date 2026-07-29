@@ -4875,3 +4875,55 @@ compatibility facade, dual publication, protocol change, graph change, or new la
   CSP-11 remains `impl` with `gap=true`; no public D663 adapter, real
   campaign, Another Hello, store, Rust/Python, Demo, UI, web, Graph topology,
   protocol, spec or conformance surface entered this slice.
+
+- 2026-07-29 the explicitly approved diagnostic replacement smoke v3
+  executed exactly one first-task / one-attempted-block OpenRouter HTTP
+  request under the unchanged USD 0.75 hard cap, with no retry, fallback,
+  parallel call or automatic continuation. Before dispatch, the private
+  exact-five qualification was regenerated against
+  `graphrefly-openrouter-responses-wire.v3`: all five observations remained
+  qualified, the qualification-report digest became
+  `sha256:d18144b5a8f6d2e7de15e67a362d3abec63e1c805707602b539b886131838874`,
+  and the frozen manifest digest became
+  `sha256:1c8450a66e10ea4d1cbdf61494984e596d68bf68a5ac58efe380acbdf4a7d79e`.
+  The live route used qualification revision
+  `b112-openrouter-first-task-live-route.2026-07-29.v2` and approval revision
+  `b112-replacement-smoke-budget-approval.2026-07-29.v3`.
+
+  The sanitized atomic generation is again `non-evaluable`: one request,
+  one step, 3,533 host input bytes, zero host output bytes, 352 ms latency,
+  no provider token usage, no accepted route evidence, verifier not run,
+  and issues `model-turn-non-evaluable`, `openrouter-http-status:404` and
+  `openrouter-request-rejected`. The response carried no recognized
+  canonical `error_type` or Responses `error.code`, so the evidence narrows
+  the failure to HTTP 404 but does not justify claiming model-not-found,
+  endpoint-not-found or a specific Responses compatibility cause. The
+  persisted 99,585 microusd remains the conservative reservation for 7,629
+  input and 2,048 output tokens, not measured provider spend.
+
+  Immediately before dispatch, a fresh read-only control-plane check showed
+  the complete GraphReFly BYOK provider list unconfigured and `Local Eval 2`
+  at zero usage, Last Used `Never`, and zero of its no-reset USD 0.75 limit.
+  After the attempt, the key still showed `$0.000`, Last Used `Never` and 0%
+  of USD 0.75, while the key-filtered OpenRouter upstream-request log
+  remained empty. Thus the local transport records one rejected HTTP request
+  while the OpenRouter control plane records no admitted transaction and no
+  charge. This out-of-band UI observation is narrative operator evidence,
+  not a sanitized control-plane attestation hash-bound into the v3 generation,
+  and it does not claim independent reconstruction or protection against
+  later workspace drift. Approval was immediately relocked; no subsequent
+  request was made.
+
+  The v3 generation digest is
+  `sha256:9164866cf8ef6dbb35b2e451d97b7044865c04fdb8238c0b37e463d6bf5a6ff2`;
+  observation digest
+  `sha256:c3712aed6886936634b535998f8f870178beae49f5b8eaa213ead1fddc4960a1`;
+  and scorecard digest
+  `sha256:dcb8ec22dac9937e58ef34e2bd92dadfea0f09ad9bb2529913789cd92aac6de2`.
+  Files remain 0600 under the 0700 gitignored private root, credential and
+  forbidden-material scans are empty, and the scorecard still carries
+  `efficacyClaim=none`. B112 remains open and CSP-11 remains `impl` with
+  `gap=true`. Any further provider diagnostic requires a new explicit
+  approval and generation coordinate; no public D663 adapter, real campaign,
+  Another Hello, store, Rust/Python, Demo, UI, web, Graph topology, protocol,
+  spec or conformance surface entered this slice.
