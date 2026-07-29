@@ -4711,3 +4711,71 @@ compatibility facade, dual publication, protocol change, graph change, or new la
   open and CSP-11 remains `impl` with `gap=true`; no public adapter,
   provider registry, live call, Graph topology, protocol/conformance,
   cross-language, Demo, or web work is authorized by this lock.
+
+- 2026-07-29 B112 D669 package-private pre-live smoke boundary completed in
+  graphrefly-ts commit `8b78d666`. The implementation adds a strict
+  operator-supplied route qualification bound to the frozen campaign,
+  manifest, trial block, exact `openai/gpt-5.6-sol` model configuration,
+  downstream OpenAI route, same credential binding, dedicated workspace,
+  zero-BYOK attestation, official pricing revision, explicit spend
+  approval, and no-reset key limit. The binding continues to receive only
+  an explicit credential capability; only the outer package-private
+  operator reads `OPENROUTER_API_KEY`, constructs the capability, creates
+  the standards-based fetch transport, and applies the qualified latency
+  timeout. No credential material is committed or persisted.
+
+  The focused byte transport performs at most one fixed-endpoint POST per
+  invocation, accepts the caller AbortSignal, rejects redirects, bounds
+  request and streamed response bytes, and contains no retry, fallback,
+  provider switch, timer, scheduler, queue, SDK or management API client.
+  The paid-request admission gate reserves against the actual materialized
+  wire-body bytes and only literal `true` authorizes dispatch. The
+  one-task/one-cold-block runner never auto-runs warm, calibration or
+  confirmatory work and turns budget exhaustion, in-flight transport
+  failure, and known post-attempt usage overruns into sanitized
+  non-evaluable evidence.
+
+  Strict versioned `empirical-trial-block-observation.v1` and
+  `empirical-campaign-scorecard.v1` projections bind manifest, task, route,
+  pricing, budget, verifier, usage, host-byte, latency and cost
+  coordinates. Determinism means identical frozen observation bytes
+  aggregate to identical canonical scorecard bytes; it does not claim a
+  model rerun is reproducible. The scorecard always carries the smoke
+  no-efficacy-claim boundary. Raw provider bodies, stdout/stderr, secrets,
+  hidden verifier material, expected patches and environment material are
+  excluded. Validated artifacts are protected, written 0600 beneath the
+  existing ignored operator-private root, fsynced in a 0700 staging
+  directory, and published by one atomic directory rename; no database or
+  network store was added.
+
+  The mandatory injected no-network dry run covers semantic model-turn
+  mapping, closed host turns, bounded tool intent/result, verifier,
+  canonical observation and scorecard, and atomic private persistence. It
+  also proves actual-wire-byte admission, request/step/cost exhaustion,
+  unexpected request rejection, literal-true admission, no retry/fallback,
+  secret-sentinel absence, transport-failure persistence, known-usage
+  overrun persistence, and collision/path/protection failure behavior.
+  Simulated `usage.requests=1` remains contract evidence only and is not
+  live empirical evidence.
+
+  Final validation passed 130 test files and 2018 tests with two intentional
+  live skips; lint/biome, raw-async, example and eval/test typecheck,
+  ESM/CJS/DTS build with the package-export smoke, topology/source scans,
+  `git diff --check`, and the authority dashboard consistency check all
+  passed. Two independent read-only reviewers closed route/credential/wire
+  admission, response cancellation, secret protection, atomic visibility,
+  actual-cost, failure-observation, timeout, and evidence-cardinality
+  findings. No package root, adapters aggregate, public subpath, tsup
+  entry, Graph topology, protocol/spec/conformance, Rust/Python, Another
+  Hello, real store, real-model campaign, Demo, UI or web surface changed.
+
+  No provider/network call occurred. B112 remains open and CSP-11 remains
+  `impl` with `gap=true`. Before the first charged smoke, an operator must
+  still supply the dedicated-workspace same-key read-only zero-BYOK
+  qualification, freeze non-placeholder live approval coordinates, place
+  the credential only in the local shell environment, and receive explicit
+  user approval for the hard spend cap. The proposed first-block cap is
+  four requests, eight steps, 65,536 wire bytes per request, 100,000
+  aggregate input tokens, 8,192 aggregate output tokens, 60,000 ms, and
+  750,000 microusd model spend under the frozen $5/M input and $30/M output
+  price; OpenRouter's credit-purchase fee is outside that model-usage cap.
