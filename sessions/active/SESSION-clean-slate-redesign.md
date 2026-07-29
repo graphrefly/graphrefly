@@ -4940,6 +4940,86 @@ compatibility facade, dual publication, protocol change, graph change, or new la
   campaign, Another Hello, database/store, Rust/Python, Demo/UI/web, Graph
   topology, protocol, spec or conformance surface entered this continuation.
 
+- 2026-07-29 the user raised the dedicated `Local Eval 2` no-reset total key
+  limit from USD 3.00 to USD 8.00 and approved a USD 2.00 hard cap for one
+  replacement first-task smoke. The earlier reservation failures were
+  GraphReFly pre-transport admission decisions, not OpenRouter limits:
+  `canonical-byte-upper-bound-reservation.v2` reserves one possible input
+  token per canonical request byte and combines that with frozen output,
+  request, step, latency and cost ceilings before each network call. The
+  binding and transport cannot change the OpenRouter account limit.
+
+  A proposed checkpoint/resume shortcut was reviewed against D659. The
+  current host deliberately supplies each protected tool result only to the
+  next explicit model turn, retains raw actor/provider material only in
+  bounded memory, always cleans the D658 workspace after an outcome and
+  persists only sanitized observation/scorecard evidence. Consequently no
+  sufficient continuation state exists after a block. Adding workspace/tool
+  transcript checkpoint ownership, restoration semantics and budget-ledger
+  continuation would change the locked eval flow and private-material
+  boundary; it was not introduced under this smoke continuation.
+
+  The operator updated only gitignored private coordinates, re-observed all
+  64 OpenRouter workspace BYOK providers as unconfigured, regenerated the
+  exact-five qualification and reran the 74-test mandatory no-network slice.
+  One initial v20 invocation failed before any provider request because the
+  route's newly approved USD 2.00 cap exceeded the still-frozen USD 1.20
+  campaign/task ceiling. The private manifest was aligned to USD 2.00,
+  requalified 5/5 and validated through the actual operator-input module
+  before dispatch.
+
+  V20 then completed five accepted direct OpenAI shared-capacity requests
+  before request six was rejected pre-transport because its 124,618-byte
+  wire request exceeded the frozen 106,496-byte canonical request ceiling.
+  Provider usage for those five accepted requests was 54,602 input tokens,
+  376 output tokens, 349,217 microusd and 17,650 ms. The sanitized v20
+  generation remained non-evaluable with verifier not run; generation digest
+  `sha256:e1ab5e5678ac745b0abe5ddc1fc64e86cbe39c8c27763640f101bb60135571c5`,
+  observation digest
+  `sha256:21804db0ece74f705d8908e03ac9155293ef732e9cd4e7aa0f97aa7b36408534`
+  and scorecard digest
+  `sha256:ccc0557bdb81e13daeaeec3a96fc188da22b57169df3f09c496dbd9e4093cfac`.
+
+  V21 retained the USD 2.00 hard cap while raising only the private route
+  request/input admission coordinates to 262,144 canonical bytes and 400,000
+  aggregate input tokens, within the committed one-megabyte D652 request
+  codec bound. Cost remained the ultimate pre-transport ceiling. Fresh
+  exact-five qualification remained 5/5 with task-catalog digest
+  `sha256:14eed1802f6e3d0e782a5b77c7c0b1ebbaa17f7e80b79288759b7ae8f02beddc`,
+  qualification-report digest
+  `sha256:93c838f062f3a104250ccdcee0d771b825cf9e95e574134dfaf3c95f3d9f2007`
+  and manifest digest
+  `sha256:b39dc20840db70feb9b83210350ed26fae2948ba781a5fa4ea4d604dbe9803de`.
+
+  V21 completed all eight serial provider turns with no admission rejection,
+  direct downstream OpenAI shared-capacity route evidence for every accepted
+  response, final structured actor output and an executed disjoint closed
+  verifier. Provider usage was 107,487 input tokens, 615 output tokens,
+  108,102 total tokens, 418,811 host input bytes, 2,357 host output bytes,
+  45,497 ms and 685,646 microusd. The verifier honestly failed the submitted
+  artifact with `target-artifact-mismatch`; the preregistered cold-failed
+  policy therefore produced an `incomplete` scorecard and did not run warm
+  arms. This is a verifier-complete infrastructure smoke, not an efficacy
+  success or an AgenticMemory claim. The generation digest is
+  `sha256:24f83eddff1ce7694e5a28fbf5d5f86cf0b79796174d9b5c38d5196c51a33d68`,
+  observation digest
+  `sha256:22287b7a3d441a0573282fb748650a88bcf9afc49789170bfd9de8311843207a`
+  and scorecard digest
+  `sha256:9e04b3d40480f3785659fd5ad81e081561bb283d40c1530c3ef7f2ea4715c198`.
+  All three files parse canonically, remain 0600 under the ignored private
+  root and contain no credential or raw-material markers; the scorecard keeps
+  `empiricalLiveEvidence=true` and `efficacyClaim=none`.
+
+  OpenRouter's key page still displayed its earlier USD 2.4886 total after
+  v20/v21, so final budget reporting uses the more conservative known ledger:
+  at least USD 3.5235 cumulative including the provider-reported v20 and v21
+  costs, leaving at most approximately USD 4.4765 under the USD 8.00 key
+  limit. No further provider call, retry, fallback, parallel work,
+  calibration or confirmatory campaign followed. B112 remains open for the
+  broader efficacy program and CSP-11 remains `impl` with `gap=true`. No
+  public D663 adapter, Another Hello, database/store, Rust/Python, Demo/UI/web,
+  Graph topology, protocol, spec or conformance surface entered this slice.
+
 - 2026-07-29 the user-approved continuation toward a complete first-task smoke
   produced two further sanitized live generations and exposed the remaining
   boundary as actor-turn semantics rather than provider, route, credential or
