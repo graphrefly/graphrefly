@@ -4580,3 +4580,40 @@ compatibility facade, dual publication, protocol change, graph change, or new la
   export-map work require a later separate user approval. No export-map,
   runtime, Graph topology, protocol/spec/conformance, cross-language, Demo,
   or web change entered this decision.
+
+- 2026-07-28 B112 exact five-task offline qualification completed. The
+  package-private orchestrator seam landed in graphrefly-ts commit
+  `1bf1aadd`; its six committed tests are deterministic contract-model
+  evidence and do not stand in for the real qualification.
+
+  The separately executed operator-private gate used D658 to materialize the
+  exact ordered three historical pre-fix snapshots and two held-out overlays.
+  It bound exact task, WorkItem, acceptance, workspace, allowed-command and
+  verifier-profile coordinates and ran all twelve D639 calibration actions
+  for each task. Known-good exact artifacts passed; target-defect and
+  plausible-wrong artifacts failed; actor claims could not satisfy the
+  verifier; command, out-of-policy, test/verifier-tamper and workspace
+  isolation gates were observed; and missing, unreliable and non-executable
+  evidence remained non-evaluable.
+
+  All five observations qualified with zero issues. The task-catalog digest
+  is
+  `sha256:193276dc1675cfcbb515b7f8e63800ff774fdfa64f25b3841abe9f0749171b38`,
+  the qualification-report digest is
+  `sha256:15b83027dd00f1d5809f80509bc2362a5b3121423d207d0e301ef7aa15b39b92`,
+  and the frozen offline-manifest digest is
+  `sha256:101bae005a589bd2b886822f1bd66c3efd26b2f5ab90c2451ffe5abe8974d188`.
+  Two independent post-fix reviews reported no remaining findings. The
+  ignored private bundle is published as one fail-closed atomic generation
+  with 0600 files; overlay bytes, expected material, credentials, raw errors
+  and provider/runtime objects are absent.
+
+  This is operator-private offline task/profile/materializer/verifier
+  qualification only, not model-efficacy evidence or a live provider call.
+  Its manifest retains pending credential/pricing coordinates and is not
+  dispatch authority. B112 remains open, and CSP-11 remains `impl` with
+  `gap=true`, pending an explicit OpenRouter credential and same-credential
+  dedicated-workspace zero-BYOK qualification, explicit pricing/budget
+  approval, the first live smoke, and empirical observation/scorecard
+  persistence. No public/runtime export, Graph topology,
+  protocol/conformance, cross-language, Demo or web work entered this slice.
