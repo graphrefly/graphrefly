@@ -4713,8 +4713,8 @@ compatibility facade, dual publication, protocol change, graph change, or new la
   cross-language, Demo, or web work is authorized by this lock.
 
 - 2026-07-29 B112 D669 package-private pre-live smoke boundary completed in
-  graphrefly-ts commit `8b78d666`. The implementation adds a strict
-  operator-supplied route qualification bound to the frozen campaign,
+  graphrefly-ts commits `8b78d666` and `f885c670`. The implementation adds
+  a strict operator-supplied route qualification bound to the frozen campaign,
   manifest, trial block, exact `openai/gpt-5.6-sol` model configuration,
   downstream OpenAI route, same credential binding, dedicated workspace,
   zero-BYOK attestation, official pricing revision, explicit spend
@@ -4758,7 +4758,7 @@ compatibility facade, dual publication, protocol change, graph change, or new la
   Simulated `usage.requests=1` remains contract evidence only and is not
   live empirical evidence.
 
-  Final validation passed 130 test files and 2018 tests with two intentional
+  Final validation passed 130 test files and 2019 tests with two intentional
   live skips; lint/biome, raw-async, example and eval/test typecheck,
   ESM/CJS/DTS build with the package-export smoke, topology/source scans,
   `git diff --check`, and the authority dashboard consistency check all
@@ -4768,6 +4768,16 @@ compatibility facade, dual publication, protocol change, graph change, or new la
   findings. No package root, adapters aggregate, public subpath, tsup
   entry, Graph topology, protocol/spec/conformance, Rust/Python, Another
   Hello, real store, real-model campaign, Demo, UI or web surface changed.
+
+  The final QA follow-up additionally keeps a sanitized non-evaluable
+  model-turn result after the outer deadline aborts an in-flight request, so
+  the persisted block retains the attempted request, step, protection and
+  budget evidence instead of rebuilding zero-count evidence. Successful
+  outcomes are still rejected after cancellation. Strict validation now
+  requires protection-receipt cardinality for every attempted step and
+  accepted-route cardinality for known-usage budget overruns while still
+  permitting an unavailable transport attempt to have no provider route
+  evidence.
 
   No provider/network call occurred. B112 remains open and CSP-11 remains
   `impl` with `gap=true`. Before the first charged smoke, an operator must
