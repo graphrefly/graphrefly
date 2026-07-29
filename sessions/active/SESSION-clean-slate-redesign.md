@@ -4789,3 +4789,42 @@ compatibility facade, dual publication, protocol change, graph change, or new la
   aggregate input tokens, 8,192 aggregate output tokens, 60,000 ms, and
   750,000 microusd model spend under the frozen $5/M input and $30/M output
   price; OpenRouter's credit-purchase fee is outside that model-usage cap.
+
+- 2026-07-29 B112 first approved OpenRouter operator invocation produced a
+  sanitized, atomic, operator-private non-evaluable generation before byte
+  transport. The live-approved block was bound to exact model
+  `openai/gpt-5.6-sol`, downstream OpenAI, the official 2026-07-29 pricing
+  revision, same-key dedicated GraphReFly workspace qualification,
+  `byokCredentialCount=0`, no-reset USD 0.75 key limit, and the user-approved
+  four-request / eight-step / 750,000-microusd cap. The persisted observation
+  and scorecard make no efficacy claim and report one attempted cold block,
+  one step, `requests=0`, no provider usage, no provider route evidence,
+  verifier not run, and issue `openrouter-measurement-invalid`.
+
+  Root cause was the outer package-private CLI passing fractional
+  `performance.now()` values to the binding's safe-integer monotonic
+  measurement contract. Therefore no HTTP/provider request occurred and the
+  persisted 99,585 microusd is conservative pre-dispatch reservation, not
+  actual spend. The CLI now floors the monotonic reading and a focused
+  regression binds the outer operator seam to non-negative safe-integer
+  milliseconds. Final QA also separated live approval from provider evidence:
+  the zero-request observation and scorecard now use
+  `live-approved-no-provider-evidence`, set `empiricalLiveEvidence=false`,
+  and carry `costBasis=conservative-reservation` plus the reserved input and
+  output token counts into the standalone scorecard. The original
+  semantically-invalid private generation was retained under an explicitly
+  superseded directory name; the corrected generation was atomically
+  republished at the original generation coordinate without another model
+  attempt or network call. No automatic retry was performed. A replacement
+  live block requires a new explicit approval and generation coordinate.
+
+  The generation remains 0600 under the existing 0700 gitignored private
+  ownership root. Its generation digest is
+  `sha256:0a94b608adcb1c1d6d9eda0e9e01b9c7b2fde8fdad20160f198bbfbb555503b5`;
+  observation digest
+  `sha256:6364af4a1471ac1a2044836bddb8cad09b9212addf6a2ca522d08809f3ceb76f`;
+  and scorecard digest
+  `sha256:ee4e656d82dcda939302cffb7169165773acebdaa2850287f4d10e615bab0a0f`.
+  B112 remains open and CSP-11 remains `impl` with `gap=true`. No public D663
+  adapter, real campaign, Another Hello, store, Rust/Python, Demo, UI, web,
+  Graph topology, protocol, spec, or conformance surface entered this slice.
