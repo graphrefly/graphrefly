@@ -4876,6 +4876,70 @@ compatibility facade, dual publication, protocol change, graph change, or new la
   campaign, Another Hello, store, Rust/Python, Demo, UI, web, Graph topology,
   protocol, spec or conformance surface entered this slice.
 
+- 2026-07-29 the package-private D669 OpenRouter lowering was revised without
+  changing the D659 host loop. TS commit `38dfda24` adds the already-validated
+  D652 `stepIndex` plus the effective frozen turn limit to the stateless user
+  envelope, where the limit is the minimum of model, agent-run and qualified
+  route step/request ceilings and the request schema's 256-turn
+  representability bound. An out-of-route step fails before admission or
+  transport. The actual final turn lowers `tool_choice=none`; a provider tool
+  call that violates that request still passes through D656 raw-egress
+  protection, provider-usage normalization and sanitized route-evidence
+  construction before becoming non-evaluable. Prompt/system envelopes moved
+  to v2 and the D669 wire binding moved to
+  `graphrefly-openrouter-responses-wire.v7`.
+
+  Adversarial review found and fixed two pre-dispatch defects: qualified route
+  caps were initially absent from the final-turn calculation, and the first
+  final-tool rejection path bypassed raw protection, over-budget usage
+  normalization and route evidence. Regression coverage now includes stricter
+  route caps, pre-transport step rejection, enforced final no-tool lowering,
+  forbidden final tool calls, credential-sentinel blocking, over-budget token
+  normalization and the complete bad-loop observation/scorecard/private
+  persistence path. Both independent final read-only reviews reported no
+  P0/P1/P2 findings. Mandatory injected no-network preflight passed 74/74;
+  the full suite passed 2,032 tests with four intentional skips, plus lint,
+  raw-async/typecheck, ESM/CJS/DTS build/export, topology, diff and dashboard
+  gates.
+
+  Fresh exact-five qualification remained 5/5 with task-catalog digest
+  `sha256:14eed1802f6e3d0e782a5b77c7c0b1ebbaa17f7e80b79288759b7ae8f02beddc`,
+  qualification-report digest
+  `sha256:7df3111ea064fb628e93b2556e08e40d7ba38d51d5de9e7a425e71c9bf320816`
+  and manifest digest
+  `sha256:924ec9a49af80bf66912c2b51c622f0c68a4dc07d14619fd31ef4cc42f5273f9`.
+  The operator re-observed the dedicated `Local Eval 2` key at approximately
+  USD 1.96 used of the approved no-reset USD 3.00 total limit and all 64 BYOK
+  providers unconfigured, then froze v19 at one first-task/cold block, eight
+  serial requests/steps and a USD 1.00 hard cap.
+
+  V19 completed seven accepted direct OpenAI shared-capacity requests. The
+  eighth request, which would have been the enforced final-output turn, was
+  rejected before transport because its conservative one-token-per-canonical-
+  byte reservation produced a 1,169,047-microusd prospective block total,
+  above the 1,000,000-microusd v19 cap. The seven charged requests used 81,983
+  input tokens, 541 output tokens, 82,524 total tokens, 319,794 host input
+  bytes, 2,174 host output bytes and 26,436 ms, for 526,460 microusd provider
+  cost. The sanitized generation is non-evaluable with verifier not run,
+  `efficacyClaim=none`, generation digest
+  `sha256:72c2304a84e71b9cdc9d1aff03c16baca6956ec5332ea6bd99c239e79e43e568`,
+  observation digest
+  `sha256:208af264236ddce03ec707f505e94dbfea0dadd00ef32177aec737e1a6d3659a`
+  and scorecard digest
+  `sha256:482cb837dea4ac9b85fd38ae82aa2919a64ec301139ef1269473aaf429530edb`.
+  The three files are 0600 under the ignored private root.
+
+  Post-v19 the OpenRouter control plane reports approximately USD 2.49 used
+  (82.954083% of USD 3.00), leaving about USD 0.51. A verifier-complete
+  replacement cannot fit both the existing conservative 1.2-million-microusd
+  final-turn reservation and that remaining key limit. No retry, fallback,
+  parallel call, continuation/resume, key-limit increase or further charged
+  block was performed. Completing a v20 replacement requires new user
+  authority to raise `Local Eval 2` above USD 3.00; B112 therefore remains
+  open and CSP-11 remains `impl` with `gap=true`. No public D663 adapter, real
+  campaign, Another Hello, database/store, Rust/Python, Demo/UI/web, Graph
+  topology, protocol, spec or conformance surface entered this continuation.
+
 - 2026-07-29 the user-approved continuation toward a complete first-task smoke
   produced two further sanitized live generations and exposed the remaining
   boundary as actor-turn semantics rather than provider, route, credential or
