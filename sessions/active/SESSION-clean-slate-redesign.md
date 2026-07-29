@@ -4677,3 +4677,37 @@ compatibility facade, dual publication, protocol change, graph change, or new la
   persistence. No live provider call, public adapter implementation,
   Another Hello adoption, durable store, Rust/Python work, real-model
   campaign, Demo or UI entered this slice.
+
+- 2026-07-29 D669 supersedes D660-D661 only where they made
+  `openai/gpt-5.6-sol` through downstream OpenAI the globally fixed
+  OpenRouter route. OpenRouter shared capacity remains the gateway for
+  B112's first credentialed smoke, but each smoke, calibration, or
+  confirmatory trial block now selects one exact package-private frozen
+  route qualification bound to its `EmpiricalModelConfigurationV1` and
+  digest. That qualification pins the requested model, identity kind,
+  downstream provider, endpoint/adapter revisions, supported capabilities,
+  sampling/reasoning/output/tool settings, usage/pricing revisions,
+  same-credential dedicated-workspace zero-BYOK qualification, and closed
+  route-evidence revision.
+
+  The focused binding must derive request model, downstream-provider
+  constraints, and supported settings only from the frozen qualified
+  material. Matched cold/warm arms share identical configuration and route
+  digests; a different model/provider is a separate preregistered trial
+  block. Ambient environment selection, arbitrary base URLs, fallback,
+  alternate-model routing, BYOK, plugins, and material pipelines remain
+  forbidden. A model change under the same supported OpenRouter wire
+  contract requires a new frozen profile and qualification revision, not
+  necessarily a new binding revision; changed request lowering, response
+  parsing, or supported wire semantics requires a binding revision. Exact
+  post-response route mismatch remains bounded non-evaluable. Smoke remains
+  infrastructure evidence and makes no efficacy claim.
+
+  D652-D653 and D659 host, budget, protection, verifier, and authority
+  boundaries remain unchanged. D669 authorizes the architecture only:
+  TypeScript route-qualification implementation, the exact first route
+  profile, credential use, pricing/budget approval, remote invocation, and
+  observation/scorecard persistence remain separately gated. B112 remains
+  open and CSP-11 remains `impl` with `gap=true`; no public adapter,
+  provider registry, live call, Graph topology, protocol/conformance,
+  cross-language, Demo, or web work is authorized by this lock.
