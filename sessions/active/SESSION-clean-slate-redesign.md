@@ -4927,3 +4927,66 @@ compatibility facade, dual publication, protocol change, graph change, or new la
   approval and generation coordinate; no public D663 adapter, real campaign,
   Another Hello, store, Rust/Python, Demo, UI, web, Graph topology, protocol,
   spec or conformance surface entered this slice.
+
+- 2026-07-29 the explicitly approved B112 replacement smoke sequence reached
+  the live OpenRouter shared-capacity route and separated provider/network
+  success from two independent local host bounds. The v15 block completed
+  three accepted `openai/gpt-5.6-sol` requests through downstream OpenAI with
+  no BYOK, fallback, alternate model, plugin or parallel call. Provider usage
+  was 27,538 input tokens, 235 output tokens and 177,142 microusd. A fourth
+  model turn was rejected before byte transport by the monotonic smoke
+  admission gate, so the atomic observation was bounded non-evaluable and
+  the verifier did not run. No provider or office-network rejection occurred.
+
+  TS commit `d59b6ba1` then added a package-private, non-persisted admission
+  diagnostic that reports only a fixed seven-reason allowlist plus bounded
+  request/step/byte/token/cost integers. It preserves the prior admission
+  predicates and control flow and excludes the diagnostic from the trial
+  observation, campaign scorecard and all three atomic private generation
+  files. It does not expose credential, environment, provider body, hidden
+  verifier material or raw stdout/stderr and changes no package root,
+  adapters aggregate, subpath, tsup entry or public D663 surface. Full QA
+  passed 130 test files and 2,027 tests with four intentional skips, lint,
+  raw-async and typecheck gates, ESM/CJS/DTS build and export smoke, topology,
+  privacy, diff and dashboard gates; two independent static reviews reported
+  no findings.
+
+  For the explicitly approved v16 block, the operator changed only the
+  dedicated `Local Eval 2` control-plane total limit to USD 3.00 with no
+  reset, re-observed all 64 workspace BYOK providers as unconfigured, and
+  froze a 950,000-microusd per-block hard cap. The regenerated exact-five
+  qualification remained 5/5 with zero issues; its task-catalog digest was
+  `sha256:14eed1802f6e3d0e782a5b77c7c0b1ebbaa17f7e80b79288759b7ae8f02beddc`,
+  qualification-report digest
+  `sha256:9d0795bc41523757bd8df895f4081e7a123f9e6da0649637fe6f1ef546b2ad64`,
+  and live manifest digest
+  `sha256:5e5cf200fc7c6c654fae4d4289ddb98b8ab4f23e7d974b6ce684b7d77507916c`.
+  The injected-transport, closed-host, verifier, observation/scorecard and
+  atomic-persistence preflight passed 69/69 focused tests before dispatch.
+
+  V16 then executed exactly one first-task / one-attempted-block run. All four
+  allowed requests were accepted by OpenRouter, routed to OpenAI and charged
+  as provider usage; the admission diagnostic was null. Every response ended
+  in `tool_calls`, however, so no structured final output was produced before
+  the frozen D652 host `agentRun.maxRequests=4` boundary. The persisted result
+  is therefore `non-evaluable` with issue `agent-step-budget-exhausted`,
+  verifier not run, four requests/four steps, 53,695 input tokens, 288 output
+  tokens, 208,946 host input bytes, 1,253 host output bytes, 15,230 ms latency
+  and 343,317 microusd provider cost. The generation digest is
+  `sha256:583c7f679f13e4c3fa081aa4c75a9cd8fe4aa40d75a609af47373fc1ccaad738`,
+  observation digest
+  `sha256:668e68ab300c222d281c4f1e87e75846f05b4ba105035074a7196c4c9692765b`,
+  and scorecard digest
+  `sha256:914409992ca42e87c5831f2d86dc1e8bdf5fc5dbbd0045a6a0580f66d763df78`.
+  Files remain 0600 beneath the 0700 gitignored private root and the scorecard
+  retains `efficacyClaim=none`.
+
+  This proves the byte transport, credential, zero-BYOK, exact route, provider
+  accounting, sanitized observation/scorecard and atomic private persistence
+  slices under live execution, but it is not an AgenticMemory efficacy result.
+  Raising the model-turn count would change the frozen D652 host budget and
+  the user-declared eval flow, so it was not done autonomously; no additional
+  provider request or automatic replacement block followed v16. B112 remains
+  open and CSP-11 remains `impl` with `gap=true`. No public D663 adapter, real
+  campaign, Another Hello, store, Rust/Python, Demo, UI, web, Graph topology,
+  protocol, spec or conformance surface entered this slice.
