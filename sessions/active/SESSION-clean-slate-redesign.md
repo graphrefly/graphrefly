@@ -4876,6 +4876,52 @@ compatibility facade, dual publication, protocol change, graph change, or new la
   campaign, Another Hello, store, Rust/Python, Demo, UI, web, Graph topology,
   protocol, spec or conformance surface entered this slice.
 
+- 2026-07-29 D670 and graphrefly-ts commit `9dfe51f0` completed the
+  package-private B112 empirical evidence v2 action-attribution slice. The
+  closed D659 host now derives delivered-memory identity from the validated
+  initial structured request and emits a bounded action trace that binds the
+  initial request, exact per-turn request, unique digested tool-call
+  reference, closed tool ref, protected intent/result digests and delivered
+  memory-context record digest. Observation v2 persists ordered turn-request
+  digests plus sanitized one-to-one tool-result bindings; validators require
+  turn zero to equal the initial request, exact ordinal binding, unique tool
+  calls, nondecreasing action steps and the shared 256-action host ceiling.
+  The same-baseline/different-route/workspace-change
+  `prior_failure_route_avoided` field remains diagnostic and outside the
+  D626-D627 family gate.
+
+  Reflection no longer copies actor-controlled final summaries. Its relevant
+  memory is task-agnostic host-observed failure, bounded prior action route
+  and generic inspect-contract-correct-validate guidance; a correction-bearing
+  cold summary is proven absent from the warm context. The scripted no-network
+  matched block validates the exact selected record digest before emitting
+  its correction. It produced one verifier-passing relevant warm run while
+  all four controls failed, demonstrating contract wiring only. Because no
+  explicit actor-produced cognition attribution exists,
+  `warm_decision_trace_includes_memory=false`, `familyPassed=false`, and the
+  scorecard retains `efficacyClaim=none`.
+
+  The v2 observation, scorecard and generation contracts are intentionally
+  incompatible with historical v1 bytes and expose no v1 aliases or
+  compatibility shims. Atomic 0600/0700 private persistence regression tests
+  prove a non-empty historical v1 generation remains byte- and mode-identical
+  across a colliding v2 failure and an adjacent successful v2 generation.
+  Tamper cases cover duplicated result bindings, substituted first turns,
+  reversed action steps, unequal workspace baselines, secret sentinels and
+  partial persistence failure. Focused closed-host tests passed 31/31; the
+  full package passed 130 files and 2,033 tests with four intentional skips;
+  lint/typecheck/raw-async, ESM/CJS/DTS build and export smoke, privacy,
+  topology, diff and dashboard gates passed. Two independent final QA
+  reviewers reported no remaining actionable findings.
+
+  This slice made no provider or network call and does not replace or
+  reinterpret the existing v22 matched live observation. B112 remains open
+  and CSP-11 remains `impl` with `gap=true`: a real larger matched campaign
+  and explicit actor attribution/efficacy boundary remain future separately
+  approved work. No public D663 adapter, package export, provider registry,
+  retry/fallback/parallel call, real store, Graph topology, protocol/spec/
+  conformance, Rust/Python, Another Hello, Demo, UI or web work entered D670.
+
 - 2026-07-29 the explicitly approved B112 v22 first-task matched live smoke
   completed one uninterrupted block through the package-private D669
   OpenRouter route. Immediately before dispatch, the operator changed only
