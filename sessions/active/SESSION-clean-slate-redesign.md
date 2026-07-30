@@ -5507,3 +5507,55 @@ compatibility facade, dual publication, protocol change, graph change, or new la
   `gap=true`; no public D663 adapter, real campaign, Another Hello,
   database/store, Rust/Python, Demo, UI, web, Graph topology, protocol, spec or
   conformance surface entered this slice.
+
+- 2026-07-30 the explicitly approved B112 GLM-5.2 high Chat v9 replacement
+  v3 performed one and only one first-task matched-block attempt. Immediately
+  before dispatch, the operator re-observed the dedicated `Local Eval 2` key
+  at USD 18.00 total with no reset, approximately USD 7.67 used and more than
+  the USD 1.00 block cap remaining. OpenRouter's expanded BYOK list contained
+  65 providers, all unconfigured, so the fresh shared-capacity observation
+  remained `qualified=true`, `capacityMode=openrouter-shared-only` and
+  `byokCredentialCount=0`; it does not claim protection against later
+  workspace drift. The regenerated exact-five qualification remained 5/5
+  with zero issues: task-catalog digest
+  `sha256:14eed1802f6e3d0e782a5b77c7c0b1ebbaa17f7e80b79288759b7ae8f02beddc`,
+  qualification-report digest
+  `sha256:603790d9a598e06f5fe4f893cfed692f388a57d133f0d0df2fff12d1f0601bda`,
+  and frozen manifest digest
+  `sha256:6e5668425427a81facb8a350e94fea2586d21160d610a981160b7941fa7ae335`.
+
+  V3 reached OpenRouter through the exact Chat endpoint but again received
+  HTTP 404 before any generation or upstream request. The atomic 0600
+  observation is bounded `non-evaluable` with issues
+  `model-turn-non-evaluable`, `openrouter-http-status:404` and
+  `openrouter-request-rejected`; verifier and warm branches did not run.
+  It records one request/step, 3,790 host-input bytes, zero host-output bytes,
+  491 ms latency, and a 3,209-microusd conservative reservation for 4,814
+  input plus 256 output tokens. Provider token usage and provider cost remain
+  null. The generation digest is
+  `sha256:b06b5849e6044ffa1da2f146597c62f3a58f6d2eb5b11d08de1a0abafc261c24`,
+  observation digest
+  `sha256:fa6afd89806347b50ca898549c1a0c69d3279e9cba28ceb74106e0fd0b93f168`,
+  and scorecard digest
+  `sha256:7b4e02ff0e5a82a52247a5520c6a1c3a4fe17a85488ff7f56a2671ff4b16c2c7`.
+
+  The key's last-used time and approximately USD 7.67 usage remained
+  unchanged after the request, and no GLM generation appeared in the
+  workspace logs. Official endpoint metadata still listed healthy
+  `z-ai/glm-5.2` Decart `decart/fp4` capacity with the frozen pricing and
+  required parameters. The remaining control-plane mismatch is that the
+  guardrail currently assigned to `Local Eval 2` is an Only-Allow policy for
+  the Z.ai provider and GLM 5.2 model, while D669 and the request require the
+  distinct Decart provider exclusively. This is the narrow leading inference
+  for the router-level 404; the sanitized evidence does not contain the raw
+  body and therefore does not claim a confirmed provider error string.
+
+  No second request, retry, fallback or parallel call followed. The used v3
+  coordinate was advanced to an approval-locked v4 private input. Resolving
+  the external guardrail conflict requires an explicit choice between
+  broadening the shared guardrail (which also affects another key) or assigning
+  a dedicated Decart-only GLM guardrail to `Local Eval 2`; it was not changed
+  autonomously. The scorecard retains `efficacyClaim=none`, B112 remains open,
+  and CSP-11 remains `impl` with `gap=true`. No public D663 adapter, larger
+  campaign, Another Hello, database/store, Rust/Python, Demo, UI, web, Graph
+  topology, protocol, spec or conformance surface entered this slice.
