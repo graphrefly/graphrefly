@@ -5345,3 +5345,45 @@ compatibility facade, dual publication, protocol change, graph change, or new la
   open and CSP-11 remains `impl` with `gap=true`. No public D663 adapter, real
   campaign, Another Hello, store, Rust/Python, Demo, UI, web, Graph topology,
   protocol, spec or conformance surface entered this slice.
+
+- 2026-07-30 the user-approved B112 D669 model-profile change completed in
+  graphrefly-ts commit `1148c53e` without changing the eval structure. The
+  package-private OpenRouter Responses binding now derives frozen reasoning
+  effort and supports an exact `z-ai/glm-5.2` high profile pinned to downstream
+  `decart/fp4` / Decart shared capacity. Binding revision
+  `graphrefly-openrouter-responses-wire.v8` sends `require_parameters=true`,
+  omits the unsupported `parallel_tool_calls` parameter, and retains one
+  request per invocation with no BYOK, retry, fallback, alternate model,
+  plugin, transform, parallel provider call or SDK/client dependency. The
+  smoke runner fail-closes before transport unless the complete profile tuple
+  matches GLM high, the exact downstream provider, official endpoint pricing
+  source/revision and frozen USD 0.60/M input plus USD 1.25/M output rates;
+  the historical GPT-5.6 Sol medium tuple remains separately exact.
+
+  The operator-private exact-five qualification was regenerated for GLM high:
+  five of five tasks qualified with zero issues, task-catalog digest
+  `sha256:14eed1802f6e3d0e782a5b77c7c0b1ebbaa17f7e80b79288759b7ae8f02beddc`,
+  qualification-report digest
+  `sha256:a8530e6e7585b45b59c37803fcb56f70e225dc2c238fe5757d77d6cb0640c487`,
+  and frozen manifest digest
+  `sha256:5f1e4051b73f2c58c23782f8e9594cce787a61b3d8c9337182500763fe3975bc`.
+  The complete no-network matched-block dry run exercised the failed cold run,
+  all five fresh warm arms, eight injected provider turns, the closed host and
+  verifier, empirical observation/scorecard v2, and 0600 atomic private
+  persistence. Provider/rate substitution and GLM medium effort both fail
+  before transport. Two independent QA reviews found and closed the exact
+  pricing/downstream and exact reasoning-effort gaps, then reported no
+  remaining findings. Final gates passed 130 test files and 2,036 tests with
+  four intentional skips, lint/typecheck/raw-async, 8192 MiB
+  ESM/CJS/DTS/export build, public topology, privacy, diff and dashboard
+  checks.
+
+  No GLM provider request or charge occurred in this slice. The ignored
+  operator input remains non-dispatchable pending a fresh same-credential
+  `Local Eval 2` zero-BYOK/shared-capacity observation, exact GLM budget
+  approval and new live generation coordinates. The scripted positive
+  comparison remains contract evidence only: live efficacy is not established
+  and any smoke scorecard must retain `efficacyClaim=none`. B112 remains open
+  and CSP-11 remains `impl` with `gap=true`; no public D663 adapter, real
+  campaign, Another Hello, database/store, Rust/Python, Demo, UI, web, Graph
+  topology, protocol, spec or conformance surface entered this slice.
