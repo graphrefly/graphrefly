@@ -5445,3 +5445,65 @@ compatibility facade, dual publication, protocol change, graph change, or new la
   larger/confirmatory campaign, Another Hello, database/store, Rust/Python,
   Demo, UI, web, Graph topology, protocol, spec or conformance surface entered
   this slice.
+
+- 2026-07-30 graphrefly-ts commit `2ce51d7d` completed the package-private
+  D669 repair for the GLM-5.2 high route without changing the D652 semantic
+  model-turn port, D659 closed host, verifier, observation/scorecard or
+  persistence structure. The exact GLM/Decart profile now uses OpenRouter Chat
+  Completions endpoint revision `openrouter-chat-completions-2026-07-30.v1`,
+  adapter revision `graphrefly-openrouter-chat-completions-turn.v1` and binding
+  revision `graphrefly-openrouter-chat-completions-wire.v9`. The historical
+  GPT-5.6 Sol/OpenAI route remains on its separately exact Responses v8
+  profile; arbitrary endpoints and generic OpenAI-compatible provider
+  registration remain rejected.
+
+  The Chat binding lowers the same protected canonical user envelope into one
+  system plus one user message, preserves the exact frozen model, provider,
+  high-reasoning, tool and strict structured-output coordinates, and accepts
+  only one bounded non-streaming response with direct one-attempt,
+  non-BYOK route evidence. It adds no SDK/client dependency, retry, fallback,
+  alternate model, timer, scheduler, queue or parallel provider call.
+  Credential lookup remains outside the binding in the operator runner. The
+  shared fetch byte transport allowlists only the exact Responses and Chat
+  endpoints and retains redirect rejection, caller cancellation and bounded
+  response bytes.
+
+  OpenRouter's official accounting defines reasoning tokens as a subset of
+  completion tokens. The new Chat parser therefore records
+  `outputTokens=completion_tokens`, strictly bounds an optional
+  `completion_tokens_details.reasoning_tokens`, rejects reasoning greater than
+  completion, and rejects any
+  `total_tokens != prompt_tokens + completion_tokens` response. This prevents
+  both hidden-usage acceptance and reasoning-token double counting before
+  observation or scorecard construction.
+
+  The final operator-private exact-five qualification remained 5/5 with zero
+  issues: task-catalog digest
+  `sha256:14eed1802f6e3d0e782a5b77c7c0b1ebbaa17f7e80b79288759b7ae8f02beddc`,
+  qualification-report digest
+  `sha256:8aff5c0ba8c716cfd6899930fa148313290c89fa73f33080fb875c3f7f7f83d9`,
+  and frozen manifest digest
+  `sha256:859bf644c15f387ea0f7ae2a1d942c7bd123df8044e6dc74fb63326204d757d7`.
+  The no-network matched dry run exercised Chat request/response fixtures,
+  closed host turns, bounded tools, verifier, action trace, observation,
+  deterministic scorecard and atomic 0600 private persistence. It also proved
+  request/step/cost bad-loop bounds, unexpected-request rejection, no
+  retry/fallback, credential-sentinel exclusion and atomic persistence
+  failure handling. Simulated usage remains contract evidence only.
+
+  Final QA passed 130 test files and 2,039 tests with four intentional skips,
+  lint/typecheck/raw-async, 8192 MiB ESM/CJS/DTS/export build, package topology,
+  timer/retry/fallback, privacy, 0600 mode, diff and dashboard gates. Two
+  independent final static reviews reported no findings; one intermediate
+  usage-accounting concern was corrected against OpenRouter's official
+  definition and independently re-reviewed.
+
+  The v3 operator input remains approval-locked and no second GLM provider
+  request or charge occurred. The prior one-block approval was consumed by the
+  v2 router rejection, so v3 requires a fresh same-credential zero-BYOK
+  observation and a new explicit one-block approval before dispatch. A smoke
+  still cannot establish AgenticMemory efficacy and must retain
+  `efficacyClaim=none`. B112 remains open and CSP-11 remains `impl` with
+  `gap=true`; no public D663 adapter, real campaign, Another Hello,
+  database/store, Rust/Python, Demo, UI, web, Graph topology, protocol, spec or
+  conformance surface entered this slice.
