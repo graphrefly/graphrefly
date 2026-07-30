@@ -4876,6 +4876,57 @@ compatibility facade, dual publication, protocol change, graph change, or new la
   campaign, Another Hello, store, Rust/Python, Demo, UI, web, Graph topology,
   protocol, spec or conformance surface entered this slice.
 
+- 2026-07-29 B112 pre-live matched-block slice completed in graphrefly-ts
+  commit `13b641e8`. The package-private runner now treats a verified failed
+  cold first-task run as D639 rerun-eligible and executes the exact five fresh
+  serial warm arms in frozen order: relevant-applied, proposal-only,
+  admission-rejected, irrelevant-applied and wrong-scope-applied. One binding,
+  route digest and monotonic request/input/output/cost/latency ledger span all
+  six runs; only the frozen per-run request/step counter resets. Fresh warm
+  factories can supply only D658 materializations, so they cannot replace the
+  cold verifier, task profile, qualification report or manifest authority.
+  No retry, fallback, provider switch, parallel call or background work was
+  added.
+
+  The provisional private `empirical-trial-block-observation.v1` and
+  `empirical-campaign-scorecard.v1` now represent the complete D639 five-arm
+  smoke shape. Lifecycle conformance binds every stage predicate and selected
+  record digest through proposal, admission, application and graph-visible
+  retrieval. The scorecard records the primary relevant-applied versus
+  proposal-only contrast plus the three required secondary paired contrasts,
+  while retaining `efficacyClaim=none` and the smoke-only claim boundary.
+  Budget exhaustion and warm materialization failure persist bounded
+  incomplete evidence with all charged cold/provider accounting; atomic 0600
+  sanitized private generation persistence remains the only durable owner.
+
+  A proposed cross-invocation checkpoint/resume path was rejected and removed:
+  it is the architecture fork already excluded by the D659 flow and could
+  replay a charged but not-yet-checkpointed arm. No new D-number was created.
+  The mandatory injected-transport no-network dry-run covers cold plus all
+  five arms, global versus per-run bounds, unexpected requests, no
+  retry/fallback, secret-sentinel exclusion, canonical scorecard aggregation,
+  persistence failure and atomicity. Final full TS gates passed 130 test files
+  and 2,033 tests with four intentional skips, plus lint/raw-async/typecheck,
+  ESM/CJS/DTS build and package-export smoke. Both independent final read-only
+  reviews reported no P0/P1 findings.
+
+  The operator re-observed the dedicated GraphReFly OpenRouter workspace:
+  all 64 BYOK providers were unconfigured and `Local Eval 2` remained an
+  USD 8.00 no-reset total key with approximately USD 3.52 used and USD 4.48
+  remaining. Official OpenRouter endpoint data was refrozen at the
+  under-272k-input conservative OpenAI ceiling of USD 6.25/M cache-write input
+  and USD 30/M output; the request-price tier is now checked before dispatch.
+  Exact-five offline qualification remained 5/5 with task-catalog digest
+  `sha256:14eed1802f6e3d0e782a5b77c7c0b1ebbaa17f7e80b79288759b7ae8f02beddc`,
+  qualification-report digest
+  `sha256:aaf169a305e6152cd6b56e8891fbc89cef7d9687868b94d354328921196ff3ca`
+  and manifest digest
+  `sha256:23ab8c739bf9c8519d92aeca7e3687098ca801701e9ac4ce7281fec9c18e8bd8`.
+  The ignored v22 operator input remains fail-closed and unapproved. No v22
+  provider call occurred. B112 remains open and CSP-11 remains `impl` with
+  `gap=true` pending an exact incremental spend approval and a key limit that
+  can cover one uninterrupted matched block.
+
 - 2026-07-29 the package-private D669 OpenRouter lowering was revised without
   changing the D659 host loop. TS commit `38dfda24` adds the already-validated
   D652 `stepIndex` plus the effective frozen turn limit to the stateless user
