@@ -4876,6 +4876,55 @@ compatibility facade, dual publication, protocol change, graph change, or new la
   campaign, Another Hello, store, Rust/Python, Demo, UI, web, Graph topology,
   protocol, spec or conformance surface entered this slice.
 
+- 2026-07-29 the explicitly approved B112 v22 first-task matched live smoke
+  completed one uninterrupted block through the package-private D669
+  OpenRouter route. Immediately before dispatch, the operator changed only
+  the dedicated enabled `Local Eval 2` total no-reset key limit from USD 8.00
+  to USD 8.25, re-observed all 64 GraphReFly workspace BYOK providers as
+  unconfigured, and froze an incremental USD 4.70 hard cap. The exact route
+  remained `openai/gpt-5.6-sol` through downstream OpenAI shared capacity,
+  with no BYOK, fallback, alternate model, plugin, retry, parallel request or
+  background continuation. The v22 approval bit was relocked immediately
+  after the one operator execution.
+
+  The live block completed the failed cold run plus all five fresh serial
+  warm arms: relevant-applied, proposal-only, admission-rejected,
+  irrelevant-applied and wrong-scope-applied. All 48 requests and 48 steps
+  were accepted under one monotonic ledger, with 647,318 input tokens, 4,006
+  output tokens, 651,324 total tokens, 2,522,366 host input bytes, 14,124 host
+  output bytes, 155,061 ms aggregate latency and 4,147,524 microusd measured
+  provider cost. No admission rejection, budget exhaustion, provider/network
+  rejection or non-evaluable arm occurred.
+
+  The independent verifier failed cold and every warm arm with
+  `target-artifact-mismatch`. The relevant record was genuinely proposed,
+  admitted, retrieved and applied; its trace included memory and recorded
+  prior-failure-route avoidance, but the resulting workspace still failed.
+  Proposal-only and all three secondary controls also failed. The primary
+  relevant-applied versus proposal-only comparison is therefore
+  `concordant-fail` with risk difference zero; all three secondary comparisons
+  are also `concordant-fail`. This is a complete matched smoke result showing
+  no observed benefit on the first task, not evidence that memory helped or
+  harmed generally. The scorecard retains `efficacyClaim=none` and
+  `smoke-integration-no-efficacy-claim`; no calibration or confirmatory
+  campaign followed automatically.
+
+  The sanitized atomic private generation is canonical strict JSON beneath a
+  0700 gitignored root with 0600 files. Its generation digest is
+  `sha256:4392ca9e98091225470f152e72120d0c868747b1f072e9223117b6586ad5a07c`,
+  observation digest is
+  `sha256:16f389190a56217e1247e954e4ebd276731a3f7bcef4d9c5fd6fd91e720f2038`,
+  and scorecard digest is
+  `sha256:36246548e62b5d2875d2a2b5a06a3b74613cd288ff4e90db0b86c9017b5e2763`.
+  Digest, canonical-byte, permission and credential/raw/private-material
+  absence scans passed. This completes the requested first-task live smoke,
+  observation, scorecard and persistence slice. B112 remains open and CSP-11
+  remains `impl` with `gap=true` for any separately preregistered exploratory
+  calibration or confirmatory campaign and later presentation work. No
+  public D663 adapter, Another Hello, durable store, Rust/Python parity,
+  Demo/UI/web, Graph topology, protocol, spec or conformance surface entered
+  this slice.
+
 - 2026-07-29 B112 pre-live matched-block slice completed in graphrefly-ts
   commit `13b641e8`. The package-private runner now treats a verified failed
   cold first-task run as D639 rerun-eligible and executes the exact five fresh
