@@ -5387,3 +5387,61 @@ compatibility facade, dual publication, protocol change, graph change, or new la
   and CSP-11 remains `impl` with `gap=true`; no public D663 adapter, real
   campaign, Another Hello, database/store, Rust/Python, Demo, UI, web, Graph
   topology, protocol, spec or conformance surface entered this slice.
+
+- 2026-07-30 the user-approved B112 GLM-5.2 high v1 operator sequence
+  configured the dedicated GraphReFly `Local Eval 2` key to a no-reset USD
+  18.00 total limit and froze a USD 1.00 matched-block hard cap. A fresh
+  out-of-band read-only qualification observed all 64 OpenRouter BYOK
+  provider entries unconfigured, `byokCredentialCount=0`, and the same
+  credential/workspace revision used by the live input. The regenerated
+  exact-five qualification remained 5/5 with zero issues: task-catalog digest
+  `sha256:14eed1802f6e3d0e782a5b77c7c0b1ebbaa17f7e80b79288759b7ae8f02beddc`,
+  qualification-report digest
+  `sha256:4a060c2bb4f57b8a1adc17fe94bffc206d97213619de2fb76e598f4ff471e059`,
+  and frozen live-manifest digest
+  `sha256:27669339be0167973d8ec416d3feb853c364e68aa882990ef56396741aabb676`.
+  The injected byte-transport, closed-host, bounded tool, verifier,
+  observation/scorecard and atomic-private-persistence preflight passed 68/68
+  focused no-network tests. An initial v1 operator attempt failed before
+  transport on a stale credential-binding revision and produced no generation;
+  the coordinate was corrected and the unused route, budget and generation
+  approvals were advanced to v2 before dispatch.
+
+  V2 executed exactly one first-task / one-attempted-block request with no
+  retry, fallback, alternate model or parallel call. The local byte transport
+  reached OpenRouter and received HTTP 404 after 316 ms, but produced no model
+  bytes, provider-scoped usage, accepted route evidence or verifier run. The
+  sanitized observation is bounded `non-evaluable` with issues
+  `model-turn-non-evaluable`, `openrouter-http-status:404`, and
+  `openrouter-request-rejected`; its 3,186-microusd value is a conservative
+  pre-dispatch reservation for 4,776 input plus 256 output tokens, not measured
+  provider spend. OpenRouter's key-filtered Generations and Upstream Requests
+  views contained no GLM/Decart transaction, and the key detail remained
+  exactly USD 7.6710 total usage, USD 4.1475 today, Last Used 16 hours ago and
+  USD 18.00 no-reset limit after the attempt. This is narrative operator
+  evidence that the router rejected the request before upstream admission and
+  did not charge it; it is not a hash-bound management attestation and makes no
+  claim against later workspace drift.
+
+  Official OpenRouter documentation presents Chat Completions as the standard
+  model endpoint, while the separately documented Responses API remains beta.
+  Together with the absent upstream transaction, the narrow current inference
+  is that the exact GLM-5.2/Decart profile is not accepted through the existing
+  Responses wire route. The raw 404 body was not persisted and the evidence
+  does not establish a more specific router cause. Under D669, changing request
+  lowering or response parsing requires a new binding revision; a second live
+  request was therefore not made under the one-block approval.
+
+  The atomic 0600 private generation digest is
+  `sha256:c8462c4ecd28760e11556fde0a7246ff019cb7e1ea6216d9aaead89ffd5ec37d`;
+  observation digest
+  `sha256:b02158be7982cb3e1e8a4878afb13db4dada9355e4d8be717ab823d649b2b56d`;
+  and scorecard digest
+  `sha256:2410ad3bf54769d6f7229bdfb45c68715883d7b9d59af31516d07a2f232fe21e`.
+  Approval was immediately relocked. The scorecard retains
+  `efficacyClaim=none`; B112 remains open and CSP-11 remains `impl` with
+  `gap=true` pending a separately approved package-private Chat Completions
+  binding revision and replacement matched block. No public D663 adapter,
+  larger/confirmatory campaign, Another Hello, database/store, Rust/Python,
+  Demo, UI, web, Graph topology, protocol, spec or conformance surface entered
+  this slice.
