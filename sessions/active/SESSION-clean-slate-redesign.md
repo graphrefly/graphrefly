@@ -5575,3 +5575,45 @@ compatibility facade, dual publication, protocol change, graph change, or new la
   and CSP-11 remains `impl` with `gap=true`. No public D663 adapter, larger
   campaign, Another Hello, database/store, Rust/Python, Demo, UI, web, Graph
   topology, protocol, spec or conformance surface entered this slice.
+
+- 2026-07-30 D672 implementation landed in graphrefly-ts commit `55c7ce87`
+  as a package-private, non-persisted DeepInfra fp4 mechanical capability
+  probe plus exact matched-block admission gates. The prior Decart route
+  profile remains separately named and priced; only the exact DeepInfra
+  profile receives `parallel_tool_calls=false`. The probe is restricted to
+  the preregistered first cold task, a non-final step-zero request, one
+  admitted request, USD 0.02, `tool_choice=required`, no retry, fallback or
+  parallel call, and `efficacyClaim=none`. Post-load validation and credential
+  failures clean the materialized workspace before returning.
+
+  The operator assigned the dedicated `Local Eval 2` key to an Only-Allow
+  GLM 5.2 / DeepInfra guardrail, retained its USD 18.00 no-reset total limit,
+  and re-observed 65 BYOK providers all unconfigured. The regenerated
+  exact-five qualification remained 5/5 with zero issues: task-catalog digest
+  `sha256:14eed1802f6e3d0e782a5b77c7c0b1ebbaa17f7e80b79288759b7ae8f02beddc`,
+  qualification-report digest
+  `sha256:1c7e2113daaffffd5fda0c7ff75932ee2a11bf9da6834f60945d8a00ebec5136`,
+  and frozen manifest digest
+  `sha256:61aa31385f1b67d8f42464939a7bc7b9a44a092ad8a3f9c43489ec1ec7cfca54`.
+
+  The explicitly approved live mechanical probe sent exactly one request and
+  returned bounded `capable=false`, `status=non-evaluable`, requests=1,
+  provider cost null, and issue codes `openrouter-http-status:404` plus
+  `openrouter-request-rejected`. No matched block, verifier, observation,
+  scorecard, persistence, retry, fallback or second provider request followed.
+  This is consistent with OpenRouter's official DeepInfra endpoint metadata
+  not declaring `parallel_tool_calls` while the exact D672 probe requires that
+  parameter and `require_parameters=true`; it is route-capability rejection,
+  not AgenticMemory efficacy evidence.
+
+  Final QA passed 130 test files and 2,048 tests with four intentional skips,
+  focused DeepInfra/Decart route tests, lint/typecheck/raw-async, the 8192 MiB
+  ESM/CJS/DTS/export build, package topology, credential/private-material,
+  retry/fallback/parallel, diff and dashboard gates. Two independent final
+  reviews reported no remaining code blocker. B112 remains open and CSP-11
+  remains `impl` with `gap=true`; progressing the matched block now requires
+  a new explicit architecture choice because exact-one nonparallel tool-call
+  proof is unavailable on this published route. No public D663 adapter,
+  efficacy campaign, Another Hello, database/store, Rust/Python, Demo, UI,
+  web, Graph topology, protocol, spec or conformance surface entered this
+  slice.
