@@ -5634,3 +5634,52 @@ compatibility facade, dual publication, protocol change, graph change, or new la
   remain unchanged. No public D663 adapter, registry/export, Graph,
   protocol/spec/conformance, cross-language, Demo, UI or store surface is
   introduced.
+
+- 2026-07-30 D673 implementation landed in graphrefly-ts commit `24f35fc2`.
+  OpenRouter Chat wire v15 omits the unsupported DeepInfra
+  `parallel_tool_calls` parameter while retaining `require_parameters=true`,
+  exact model/provider routing, response-side exactly-one tool-intent
+  validation and pre-tool fail-closed behavior. Exact-five offline
+  qualification remained 5/5 with zero issues: task-catalog digest
+  `sha256:7ed25de6186ee31394b21115950278caf3b425e585018250addda33b139c19dc`,
+  qualification-report digest
+  `sha256:7763f4b4ec096828cd7705a0d03ca0718de9c173e537114df48fd677d3ae62d5`,
+  and frozen manifest digest
+  `sha256:1844fc56c4e5f3795bea6b1dbb4833862cf8cc8bf21824042f60bed9b93daebd`.
+  Fresh official metadata still reported healthy DeepInfra fp4 at USD
+  0.75/M input and USD 2.40/M output with tools, tool_choice and
+  reasoning_effort but not parallel_tool_calls. Fresh control-plane checks
+  retained the dedicated Local Eval 2 DeepInfra-only guardrail, USD 18.00
+  no-reset total key limit and 65/65 BYOK providers unconfigured.
+
+  The approved one-request capability probe succeeded with
+  `capable=true`, exactly one native tool intent, zero issues and
+  856 microusd provider cost. It remained non-persisted
+  mechanical-capability evidence with `efficacyClaim=none`. The subsequently
+  approved first-task matched block then executed the cold host for six
+  serial requests/steps with no retry wait, fallback or parallel request.
+  Its first five turns each produced one accepted read-file action; turn six
+  was bounded `non-evaluable` as
+  `openrouter-invalid-unsupported-response`, before verifier or warm-arm
+  execution. The provider-usage total was 148,309 input tokens, 668 output
+  tokens, 59,550 microusd and 23,608 ms. This is integration failure
+  evidence, not negative AgenticMemory efficacy evidence.
+
+  Atomic 0600 private persistence succeeded with generation digest
+  `sha256:4844899cbad57192676c4fa53cb70f9a7f3f33b0e1750cfc22a60e7a87358f25`,
+  observation digest
+  `sha256:701c35dbe767de5b42fe9e1066c96e62b2ca6b3a347a5bb40c852097213e866d`,
+  and scorecard digest
+  `sha256:a737c87404e82848afdbd4febc1879ce6972ea1cd8effe4f84f14977dc6ab343`.
+  Final gates passed 2,048 package tests with four intentional skips, focused
+  85/85 transport/host/evidence tests, lint/typecheck/raw-async, ESM/CJS/DTS
+  build/export, boundary/privacy scans, diff and dashboard checks. Two
+  independent QA reviewers found no semantic blocker after one formatting
+  fix. B112 remains open and CSP-11 remains `impl` with `gap=true`; no efficacy
+  claim is available because the cold run never reached the verifier and no
+  warm arm was attempted. A replacement matched block would require separate
+  approval after choosing whether to keep strict response-side rejection,
+  change the route/model, or separately design a different sequentialization
+  boundary. No public D663 adapter, real larger campaign, Another Hello,
+  database/store, Rust/Python, Demo, UI, web, Graph topology, protocol, spec or
+  conformance surface entered this slice.
