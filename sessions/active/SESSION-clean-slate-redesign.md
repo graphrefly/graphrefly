@@ -5388,6 +5388,22 @@ compatibility facade, dual publication, protocol change, graph change, or new la
   campaign, Another Hello, database/store, Rust/Python, Demo, UI, web, Graph
   topology, protocol, spec or conformance surface entered this slice.
 
+- 2026-07-30 D672 locks B112's next GLM-5.2 route as the exact OpenRouter
+  DeepInfra fp4 profile at the frozen official USD 0.75/M input and USD 2.40/M
+  output pricing. Before a matched block, one operator-private first-turn
+  capability probe may send `tool_choice=required` plus
+  `parallel_tool_calls=false` with one request, no retry/fallback/parallel call
+  and a USD 0.02 hard cap. Because OpenRouter's published DeepInfra parameter
+  list does not claim `parallel_tool_calls`, rejection or any result other than
+  exactly one native tool intent fails closed before the matched block. Probe
+  output is mechanical integration evidence only and never empirical/efficacy
+  evidence. After probe success and fresh same-credential zero-BYOK
+  qualification, only the already-approved first-task matched block may run
+  under USD 1.00 and D671 same-route retry; D659 flow, tools, verifier, baseline
+  and D626-D627 efficacy criteria stay unchanged. No public
+  adapter/registry/export, Graph/protocol/conformance, cross-language, Demo, UI
+  or store surface is introduced.
+
 - 2026-07-30 the user-approved B112 GLM-5.2 high v1 operator sequence
   configured the dedicated GraphReFly `Local Eval 2` key to a no-reset USD
   18.00 total limit and froze a USD 1.00 matched-block hard cap. A fresh
