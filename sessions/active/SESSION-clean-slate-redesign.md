@@ -5683,3 +5683,35 @@ compatibility facade, dual publication, protocol change, graph change, or new la
   boundary. No public D663 adapter, real larger campaign, Another Hello,
   database/store, Rust/Python, Demo, UI, web, Graph topology, protocol, spec or
   conformance surface entered this slice.
+
+- 2026-07-31 graphrefly-ts commit `d2064065` added package-private, bounded
+  OpenRouter Chat response diagnostics for the D673/B112 integration-failure
+  boundary. The existing `openrouter-invalid-unsupported-response` umbrella
+  remains the stable failure class; one fixed allowlisted subtype now
+  distinguishes invalid envelope/usage/choice/message/finish shape,
+  final/non-final turn-contract conflict, zero/multiple/malformed tool calls,
+  unknown tool name, invalid call id/arguments, and post-parse validation
+  failure. The subtype flows through the existing bounded `issueCodes` seam
+  into sanitized observation, scorecard and atomic 0600 private persistence;
+  no raw provider body, tool-call material, credential, stdout/stderr, hidden
+  verifier material or expected patch is retained.
+
+  Validated provider usage and cost remain attached when a later response
+  check fails, and multiple tool calls are classified before individual call
+  parsing so malformed later calls cannot mask the cardinality failure. The
+  taxonomy is Chat-only and does not change the Responses endpoint, eval
+  structure, retry/fallback/parallel policy, verifier, budgets, efficacy
+  criteria, schemas or public exports. Injected-byte integration evidence
+  proved one request, non-evaluable classification, canonical
+  observation/scorecard propagation, sanitized atomic persistence and secret
+  sentinel absence without a network call.
+
+  Final QA passed 130 test files and 2,049 tests with four intentional skips,
+  focused binding/persistence tests, lint/typecheck/raw-async, the 8192 MiB
+  ESM/CJS/DTS/export build, package topology, privacy/risk scans, diff and
+  dashboard gates. Independent final review reported no finding. B112 remains
+  open and CSP-11 remains `impl` with `gap=true`; this diagnostics slice makes
+  the next provider rejection attributable but is not an efficacy claim and
+  did not execute another paid request. No public D663 adapter, new campaign,
+  Another Hello, database/store, Rust/Python, Demo, UI, web, Graph topology,
+  protocol, spec or conformance surface entered this slice.
