@@ -5617,3 +5617,20 @@ compatibility facade, dual publication, protocol change, graph change, or new la
   efficacy campaign, Another Hello, database/store, Rust/Python, Demo, UI,
   web, Graph topology, protocol, spec or conformance surface entered this
   slice.
+
+- 2026-07-30 D673 supersedes D672 only for the exact DeepInfra request
+  lowering. The package-private OpenRouter Chat Completions wire revision
+  omits `parallel_tool_calls`, because the endpoint advertises `tools`,
+  `tool_choice` and `reasoning_effort` but not that parameter, while
+  `require_parameters=true` remains fail-closed. This does not assert that
+  DeepInfra produces only one tool call. On every non-final turn, the
+  unchanged semantic validator and D659 host admit exactly one valid native
+  tool intent before execution; zero, direct-output, multiple, malformed or
+  unqualified outcomes are non-evaluable and execute no tool. The approved
+  USD 0.02 one-request probe may be rerun with no retry/fallback/parallel
+  request; only probe success plus fresh D661 zero-BYOK qualification admits
+  the unchanged USD 1.00 first-task matched block. Eval structure, route,
+  budgets, D671 retry, verifier, persistence and D626-D627 efficacy criteria
+  remain unchanged. No public D663 adapter, registry/export, Graph,
+  protocol/spec/conformance, cross-language, Demo, UI or store surface is
+  introduced.
