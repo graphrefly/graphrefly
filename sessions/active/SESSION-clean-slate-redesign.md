@@ -5754,3 +5754,69 @@ compatibility facade, dual publication, protocol change, graph change, or new la
   No public D663 adapter, efficacy campaign, Another Hello, database/store,
   Rust/Python, Demo, UI, web, Graph topology, protocol, spec or conformance
   surface entered this slice.
+
+- 2026-07-31 D674 supersedes D673's response-side exactly-one narrowing for
+  the exact B112 DeepInfra GLM-5.2 Chat route. The package-private Chat
+  binding restores D652's bounded one-or-more semantic outcome: one through
+  64 native tool calls may be admitted only when the complete batch has
+  unique ids, declared tool names, strict bounded arguments, route/usage
+  evidence and D656 protection evidence. Zero, direct non-final output,
+  malformed, duplicate, unknown, invalid, unqualified, byte-overflow or
+  token-overflow responses remain bounded non-evaluable.
+
+  D659 remains the execution authority. It rejects 17 or more intents before
+  action one, then applies existing action/result budgets and executes an
+  admitted batch of at most 16 in provider-declared order, serially, before
+  one explicit next model turn. This ordered execution is intentionally not
+  transactional: a later intent failure does not undo an already-completed
+  earlier tool action. Multiple calls in one response are not multiple HTTP
+  requests and do not authorize parallel provider calls, hidden scheduling,
+  retry, fallback, alternate routing or provider switching. The mechanical
+  capability probe now requires any nonempty bounded valid list and remains
+  non-empirical contract evidence only.
+
+  Fresh same-credential D661 zero-BYOK qualification and the approved USD
+  1.00 first-task matched-block cap remain mandatory. Observation,
+  scorecard, persistence, privacy, verifier and D626-D627 efficacy boundaries
+  are unchanged. No public D663 adapter, package export, provider registry,
+  WorkItem lifecycle change, Graph topology, protocol/spec/conformance,
+  cross-language runtime, Demo, UI or store is introduced; production-path
+  WorkItem dogfooding remains a separate future integration slice.
+
+- 2026-07-31 D674 implementation advanced only the package-private OpenRouter
+  Chat binding to `graphrefly-openrouter-chat-completions-wire.v16`, restored
+  bounded multiple-intent admission, and added focused boundary evidence for
+  64/65 binding intents plus D659's 17-intent pre-execution rejection, ordinary
+  multi-intent ordered serial state visibility, and non-transactional
+  later-action failure. The
+  exact package root, adapters aggregate, export map and build-entry topology
+  remain unchanged.
+
+  After the frozen five-task qualification was regenerated for the revised
+  binding, one non-persisted live mechanical probe completed with one request,
+  one admitted tool intent and 952 microusd provider-reported cost. The
+  separately approved first-task matched block then ran once as private
+  generation `b112-glm-5.2-deepinfra-live-smoke-2026-07-31-v2`. The cold arm
+  completed three ordered `read-file` actions across its first three turns;
+  turn four was sanitized as `openrouter-response-usage-invalid` under the
+  stable `openrouter-invalid-unsupported-response` umbrella. The block stopped
+  fail-closed before another action, verifier execution or any warm arm. It
+  made four serial requests/steps, recorded 35,691 ms aggregate latency and a
+  124,037 microusd conservative reservation, but persisted no provider token
+  or actual-cost claim because the final usage envelope was invalid.
+
+  Atomic private 0600 persistence succeeded with generation digest
+  `sha256:4ff50d7c001396ec832acf72e937b9651e8f8e4fdea150e2c6601ba9b7965c96`,
+  observation digest
+  `sha256:4a36b5111dfd67cd0b2619d5349b657273708cf9238fe011aa8dcc66bcf4f742`,
+  and scorecard digest
+  `sha256:a75e7421ceb2a686ba758a7b30d24b3e1563bb27626274e7845fb572a6d8a9ab`.
+  Raw provider response, credential material, hidden verifier material and
+  workspace contents were not persisted. The result is integration evidence
+  only: `status=non-evaluable`, `familyPassed=null` and
+  `efficacyClaim=none`; it does not show positive or negative AgenticMemory
+  efficacy. B112 remains open and CSP-11 remains `impl` with `gap=true`.
+  Another paid replacement requires a fresh explicit approval; production-path
+  `WorkItemEffectPlan -> EffectRun -> AgentRequest` dogfooding remains a
+  separate slice, and CSP-8 product/Canvas dogfooding still waits for
+  graphrefly-canvas.
