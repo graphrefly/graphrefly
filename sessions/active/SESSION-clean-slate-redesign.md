@@ -5820,3 +5820,75 @@ compatibility facade, dual publication, protocol change, graph change, or new la
   `WorkItemEffectPlan -> EffectRun -> AgentRequest` dogfooding remains a
   separate slice, and CSP-8 product/Canvas dogfooding still waits for
   graphrefly-canvas.
+
+- 2026-07-31 the user-approved B112 GLM-5.2 high usage-diagnostic
+  replacement v3 advances only the package-private Chat binding to
+  `graphrefly-openrouter-chat-completions-wire.v17`. Read-only OpenRouter
+  generation evidence for the exact failed v2 DeepInfra response showed a
+  successful HTTP 200 route with 26,087 prompt tokens, 903 completion tokens,
+  931 reasoning-detail tokens and 25,792 cached tokens. This supersedes the
+  earlier implementation-note assumption that this route's optional
+  `completion_tokens_details.reasoning_tokens` is necessarily a subset of
+  `completion_tokens`.
+
+  The v17 parser treats the reasoning-detail field only as bounded auxiliary
+  route metadata: it neither adds it to `outputTokens` nor uses it for cost or
+  efficacy. Prompt, completion, total and provider-reported cost remain
+  independently bounded, and `total_tokens` must still equal prompt plus
+  completion. Invalid usage retains the existing allowlisted
+  `openrouter-response-usage-invalid` umbrella and adds one closed subtype;
+  no raw response, message, headers, credential or private material is exposed
+  or persisted. This is the request/response parsing revision already
+  contemplated by D669, not a public accounting or adapter decision. The
+  Before execution, the approved live v3 was gated on fresh zero-BYOK
+  qualification and all no-network preflight gates, with a USD 1.00 hard cap,
+  only the first-task matched block, D671 same-route bounded retry, and no
+  fallback or parallel provider calls.
+
+  All pre-live gates passed, including 41/41 complete closed-host dry-run
+  tests, 130 passing test files and 2,053 passing tests with four intentional
+  skips, lint/typecheck/raw-async, ESM/CJS/DTS/export build, topology/privacy
+  scans, diff and dashboard checks. Fresh operator observation retained the
+  Local Eval 2 DeepInfra-only guardrail, USD 18.00 no-reset key limit and
+  65/65 BYOK providers unconfigured. The approved v3 block then executed once
+  as private generation
+  `b112-glm-5.2-deepinfra-live-smoke-2026-07-31-v3` and atomically persisted
+  sanitized 0600 evidence with generation digest
+  `sha256:b7024c164e37df01d51a72c0d26d192a6aed58308ac30a95b8d21858a4d23b76`,
+  observation digest
+  `sha256:dc23ab1286e9f7c985ff0e714b708aaae4eefc4a3fcf441878840d321dc87d25`
+  and scorecard digest
+  `sha256:33d34b28af880c9a6877e760a88e8e61494d25dcb3b654fa09692657e9c59871`.
+  Raw provider response, credential, stdout/stderr, hidden verifier material,
+  expected patch, workspace contents and environment material were not
+  persisted. It made two serial
+  requests with no retry wait, fallback or parallel request, recorded 64,313
+  input tokens, 1,178 output tokens, 65,491 total tokens, 50,595 microusd
+  provider cost and 20,220 ms aggregate latency.
+
+  The cold arm stopped before verifier and warm arms as
+  `openrouter-response-finish-reason-invalid`; the OpenRouter control-plane
+  log independently showed that request two ended with `finish_reason=length`
+  at exactly 1,024 output tokens, matching the frozen actor's 1,024-token
+  per-turn maximum. This is a local output-cap integration failure, not a
+  route, quota, usage-accounting, retry, verifier or AgenticMemory result.
+  The scorecard remains `status=non-evaluable`, `familyPassed=null` and
+  `efficacyClaim=none`.
+
+  An operator-private v4 candidate is prepared but approval-disabled. It
+  raises only the frozen actor per-turn output maximum from 1,024 to 4,096;
+  the campaign total remains 8,192 output tokens, eight steps and USD 1.00,
+  with the same model, high reasoning, route, host, tools, arms, verifier and
+  efficacy criteria. Its regenerated exact-five qualification is 5/5 with
+  task-catalog digest
+  `sha256:7ed25de6186ee31394b21115950278caf3b425e585018250addda33b139c19dc`,
+  qualification-report digest
+  `sha256:fa1b78f5a5fbac09dcb22711e47584576c570dbbabebe8ddf25f82a9f55c22c6`
+  and manifest digest
+  `sha256:1463b110ccf243509cc8859a1e8dfec8b25190ba8cef0ec6d589d223b14fcb21`.
+  The operator entrypoint fails closed and creates no v4 artifact until a new
+  explicit paid-invocation approval is recorded. B112 remains open and
+  CSP-11 remains `impl` with `gap=true`; no public D663 adapter,
+  production-path WorkItem dogfood, efficacy campaign, Another Hello,
+  database/store, Rust/Python, Demo, UI, web, Graph topology, protocol, spec
+  or conformance surface entered this slice.
