@@ -5715,3 +5715,42 @@ compatibility facade, dual publication, protocol change, graph change, or new la
   did not execute another paid request. No public D663 adapter, new campaign,
   Another Hello, database/store, Rust/Python, Demo, UI, web, Graph topology,
   protocol, spec or conformance surface entered this slice.
+
+- 2026-07-31 the explicitly approved B112 DeepInfra GLM-5.2 high replacement
+  generation `b112-glm-5.2-deepinfra-live-smoke-2026-07-31-v1` ran under the
+  unchanged USD 1.00 hard cap after a fresh read-only D661 control-plane
+  recheck. The exact `B112 GLM 5.2 DeepInfra` guardrail still allowed only
+  DeepInfra plus GLM 5.2, all 65 BYOK providers remained unconfigured, and
+  Local Eval 2 retained its USD 18.00 no-reset total limit with conservatively
+  recorded remaining capacity of 10,249,958 microusd. The same frozen
+  credential ref/revision was used; no credential material entered output or
+  persistence, and no post-observation workspace-drift prevention is claimed.
+
+  The cold host made four serial requests/steps with no retry wait, fallback,
+  alternate route, parallel or background call. The first three responses
+  each produced one admitted `read-file` action. On step index 3 the route
+  returned multiple native tool calls; the unchanged exactly-one gate rejected
+  the turn before executing either call and persisted
+  `openrouter-response-tool-call-count-multiple` beneath the stable
+  `openrouter-invalid-unsupported-response` umbrella. The result was bounded
+  `non-evaluable`, with four requests, three executed actions, 87,701 input
+  tokens, 729 output tokens, 88,430 total tokens, 50,856 microusd provider
+  cost and 17,469 ms aggregate latency. The verifier did not run, no warm arm
+  was attempted, `familyPassed` remained null and `efficacyClaim` remained
+  `none`. This proves working network/provider integration and identifies an
+  exact sequential-tool contract failure; it is neither negative nor positive
+  AgenticMemory efficacy evidence.
+
+  Atomic sanitized 0600 persistence succeeded with generation digest
+  `sha256:6941ce99c6e160cc5556fbce5dab4b3716e6cf22ea5b1a7c5f934fe7abd3e6f1`,
+  observation digest
+  `sha256:24cccbb092c896c39d30239c6fc3410a5a56fc5a2d3a7c8784c87f4f0431156f`,
+  and scorecard digest
+  `sha256:3cffd39f5ba98e9898937579cc9e857decba267812a42e4b873ad778fcf95550`.
+  Permission, forbidden-material, workspace-cleanup, generation-ownership and
+  repository-status checks passed. B112 remains open and CSP-11 remains
+  `impl` with `gap=true`; another paid replacement or any change to the
+  sequential host invariant requires a separate explicit choice and approval.
+  No public D663 adapter, efficacy campaign, Another Hello, database/store,
+  Rust/Python, Demo, UI, web, Graph topology, protocol, spec or conformance
+  surface entered this slice.
