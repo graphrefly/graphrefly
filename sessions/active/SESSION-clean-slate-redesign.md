@@ -5839,8 +5839,8 @@ compatibility facade, dual publication, protocol change, graph change, or new la
   `openrouter-response-usage-invalid` umbrella and adds one closed subtype;
   no raw response, message, headers, credential or private material is exposed
   or persisted. This is the request/response parsing revision already
-  contemplated by D669, not a public accounting or adapter decision. The
-  Before execution, the approved live v3 was gated on fresh zero-BYOK
+  contemplated by D669, not a public accounting or adapter decision. Before
+  execution, the approved live v3 was gated on fresh zero-BYOK
   qualification and all no-network preflight gates, with a USD 1.00 hard cap,
   only the first-task matched block, D671 same-route bounded retry, and no
   fallback or parallel provider calls.
@@ -5892,3 +5892,54 @@ compatibility facade, dual publication, protocol change, graph change, or new la
   production-path WorkItem dogfood, efficacy campaign, Another Hello,
   database/store, Rust/Python, Demo, UI, web, Graph topology, protocol, spec
   or conformance surface entered this slice.
+
+- 2026-08-01 the explicitly approved B112 GLM-5.2 high output-cap
+  replacement v4 executed once without changing the eval structure. The
+  frozen actor per-turn maximum was 4,096 output tokens; the campaign retained
+  8,192 total output tokens, eight steps, USD 1.00 hard cap, the same first
+  task, high reasoning, DeepInfra-only route, D659 host/tools/verifier/arms,
+  D626-D627 efficacy criteria and D671 same-route retry boundary. Fresh
+  operator observation retained the Local Eval 2 DeepInfra-only guardrail,
+  USD 18.00 no-reset total limit and 65/65 BYOK providers unconfigured.
+  Official endpoint metadata still reported the healthy DeepInfra fp4 route
+  at USD 0.75/M input and USD 2.40/M output with tools, tool_choice and
+  reasoning_effort.
+
+  The pre-execution exact-five qualification was 5/5 with task-catalog digest
+  `sha256:7ed25de6186ee31394b21115950278caf3b425e585018250addda33b139c19dc`,
+  qualification-report digest
+  `sha256:d41c8257fdaf4ccbc10c8d1cb7772f09891ebcf7488e34f8bf60318d923a3399`
+  and manifest digest
+  `sha256:603f1de9bf2f1fafc8952b2ab3855725e4bd3b2c24e83fc0ed525237fd1dab2f`.
+  Private generation
+  `b112-glm-5.2-deepinfra-live-smoke-2026-08-01-v4` atomically persisted
+  sanitized 0600 evidence with generation digest
+  `sha256:3d1b47cd14544f3be8269476ff8c1f3e19e3db69fd29ebb33fd9e0e3ac18c6fd`,
+  observation digest
+  `sha256:91bc1627af96c98d437f2e0d7878923b4d82669b7aeb311c956923b604298598`
+  and scorecard digest
+  `sha256:3de2f6ff3bc859ea7f00747a2c93eccf7193c98a53b8183d480fdece812460df`.
+
+  The cold arm made two serial requests/steps with no retry wait, fallback or
+  parallel request. It recorded 64,317 input tokens, 4,281 output tokens,
+  68,598 total tokens, 58,044 microusd provider cost and 46,063 ms aggregate
+  latency. Turn zero completed three ordered read-file actions. Turn one was
+  sanitized as `openrouter-response-finish-reason-invalid` under the stable
+  unsupported-response umbrella before verifier or warm-arm execution. The
+  first response used 185 output tokens and the second exhausted the remaining
+  exact 4,096 per-turn output tokens. This is strong evidence of another
+  output-cap truncation, but the OpenRouter Logs page had indexed only the
+  first tool_calls row at observation time, so the second response's raw
+  finish reason is not claimed as independently control-plane-confirmed.
+
+  Raw provider response, credential, stdout/stderr, hidden verifier material,
+  expected patch, workspace contents and environment material were not
+  persisted. The scorecard remains `status=non-evaluable`,
+  `familyPassed=null` and `efficacyClaim=none`; this is not positive or
+  negative AgenticMemory evidence. The consumed v4 private approval was
+  disabled immediately after execution. B112 remains open and CSP-11 remains
+  `impl` with `gap=true`. Any larger per-turn/campaign output budget or another
+  paid replacement requires a fresh explicit approval. No public D663
+  adapter, production-path WorkItem dogfood, efficacy campaign, Another
+  Hello, database/store, Rust/Python, Demo, UI, web, Graph topology,
+  protocol, spec or conformance surface entered this slice.
