@@ -5527,6 +5527,21 @@ compatibility facade, dual publication, protocol change, graph change, or new la
   claim can be made from the incomplete primary comparison. The consumed v7
   approval was disabled immediately after execution.
 
+  Post-v7 QA then closed the diagnostic ambiguity without issuing another
+  provider request. TypeScript commit `f82d3e7d` keeps the compatibility
+  `openrouter-unavailable-transport` umbrella and adds the bounded
+  `openrouter-host-cancelled` subtype whenever the caller AbortSignal is
+  observed aborted. Rejected-transport and resolved-after-abort paths both
+  account elapsed monotonic latency; if that measurement is itself invalid,
+  the outcome additionally records `openrouter-measurement-invalid` rather
+  than masking cancellation. Responses binding revision v10 and Chat
+  Completions binding revision v19 freeze that behavior. The subtype does not
+  expand D671 retry admission, exposes no raw provider or credential material,
+  and changes neither eval structure nor efficacy semantics. Independent
+  package-private binding and adversarial QA reviews found no remaining
+  actionable issue after the combined cancellation/measurement precedence was
+  tested.
+
   The smallest separately approval-gated replacement keeps the eval structure,
   global 600,000 ms deadline, request/step limits, USD cap and efficacy criteria
   unchanged while raising only configurable per-run elapsed time from 60,000
