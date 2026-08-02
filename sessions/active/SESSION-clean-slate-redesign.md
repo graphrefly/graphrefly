@@ -5542,10 +5542,86 @@ compatibility facade, dual publication, protocol change, graph change, or new la
   actionable issue after the combined cancellation/measurement precedence was
   tested.
 
-  The smallest separately approval-gated replacement keeps the eval structure,
-  global 600,000 ms deadline, request/step limits, USD cap and efficacy criteria
-  unchanged while raising only configurable per-run elapsed time from 60,000
-  to 120,000 ms and campaign output reservation from 65,536 to 131,072 tokens.
+  Later on 2026-08-01 the user explicitly superseded the previously proposed
+  minimal replacement coordinates after repeated local-limit interruptions
+  and approved immediate B112 GLM-5.2 high replacement v8 execution with the
+  relevant configurable resource ceilings doubled and the per-block hard cap
+  raised from USD 1.50 to USD 3.00. The frozen v8 coordinates retain the exact
+  first-task matched block, 48-request route maximum, eight steps per run,
+  serial arms, D671 same-route bounded retry only, no fallback and no parallel
+  provider calls. They set actor per-turn output to 65,536 tokens, campaign
+  output reservation to 262,144 tokens, route input to 2,000,000 tokens,
+  per-run elapsed to 120,000 ms, campaign elapsed to 1,200,000 ms, host output
+  to 131,072 bytes and campaign/task cost ceilings to 16,000,000 microusd; the
+  exact route remains the narrower USD 3,000,000 spend authority. The existing
+  48-request and 262,144 canonical-request-byte values were not doubled because
+  they are already the package-private validator maxima, and maxSteps remains
+  eight to avoid changing the eval structure or efficacy criteria. This is an
+  invocation-specific budget approval under D669/D671, not a new architecture,
+  protocol, public API or efficacy claim.
+
+  Before that later approval, the smallest proposed replacement would have
+  kept the global 600,000 ms deadline and USD cap unchanged while raising only
+  per-run elapsed to 120,000 ms and campaign output reservation to 131,072
+  tokens. The explicit v8 approval above supersedes that unexecuted proposal.
+
+  The approved v8 block then executed once after a fresh out-of-band read-only
+  qualification found all 65 GraphReFly workspace BYOK providers unconfigured,
+  Local Eval 2 at 8,266,772 microusd usage against its USD 18 no-reset limit,
+  and 9,733,228 microusd remaining. Official endpoint metadata still froze the
+  direct DeepInfra GLM-5.2 route at USD 0.75/M input, USD 2.40/M output,
+  1,048,576 context and 131,072 maximum completion tokens. The exact-five
+  offline qualification remained 5/5 with catalog digest
+  `sha256:14eed1802f6e3d0e782a5b77c7c0b1ebbaa17f7e80b79288759b7ae8f02beddc`,
+  report digest
+  `sha256:733aea090e5e3e4cb06fdfb031e36d369baa3dc0dbcdd39ea0b5beeda262c4da`
+  and manifest digest
+  `sha256:0fcdc8e96a9d787d955d7980fc87331d4286ed2bc31b25ad58b837fddf5025a6`.
+
+  V8 removed the v7 local-limit failure: it persisted with
+  `admissionRejection=null` after 47 serial requests/attempts/steps, 264,830 ms
+  aggregate model latency, 4,355,838 host input bytes, 14,485 host output
+  bytes and a 662,026 microusd conservative cost basis. Local Eval 2 moved to
+  8,677,368 microusd usage, an observed control-plane delta of 410,596
+  microusd; the difference is expected because the scorecard conservatively
+  reserves unknown terminal usage. Cold plus relevant-applied, proposal-only,
+  admission-rejected and wrong-scope-applied arms completed their eight turns,
+  but every one produced no target workspace change and failed the independent
+  verifier with `target-artifact-mismatch`. Relevant-applied delivered and
+  bound the selected memory context to its action trace, while
+  `warm_decision_trace_includes_memory=false`,
+  `prior_failure_route_avoided=false` and `warm_run_passed=false` remained
+  honest. The primary comparison is therefore a concordant failure with zero
+  observed risk difference, not positive AgenticMemory evidence.
+
+  The irrelevant-applied control completed six turns, then its seventh request
+  failed before a provider response with bounded diagnostics
+  `openrouter-transport-phase:request` and
+  `openrouter-transport-cause:und-err-socket`. D671 does not admit socket
+  failures for retry, so the host neither retried nor substituted a route. That
+  single control remains non-evaluable; consequently the atomic 0700/0600
+  private generation correctly records `status=incomplete`,
+  `familyPassed=null` and `efficacyClaim=none`. Generation digest is
+  `sha256:76c89f92984854e1e49e89fb1cad8aab4bcf83e5df0e570316bad1a3ea0b0325`,
+  observation digest
+  `sha256:14c50fdd5ed240d9cc39480dacc18a5edae7af269ec7ac9fc6a3a8cae37c28fe`
+  and scorecard digest
+  `sha256:ea38943f79c352361792e57b9ed597ebda701b18336c115fc4390b3e0cfc9c11`.
+  The consumed v8 approval was immediately disabled.
+
+  Pre-live adversarial QA also found that the outer smoke operator could leave
+  its initial materialized workspace behind when route, private-root,
+  credential or early asynchronous runner validation failed before the closed
+  host acquired cleanup authority. Graphrefly-ts commit `7fa609ed` now gives
+  the initial
+  materialization one shared, promise-memoized cleanup capability: outer
+  failures and the closed host can both request cleanup, but the underlying
+  cleanup executes at most once. The ignored private factory likewise cleans
+  if route construction fails. A manual missing-credential check plus focused
+  ownership-mismatch and pre-/post-host asynchronous rejection tests prove the
+  covered failure paths do not leak or double-clean the initial workspace; no
+  retry, provider, evidence, public export or eval-structure behavior changed.
+
   B112 remains open and CSP-11 remains `impl` with `gap=true`. No public D663
   adapter, checkpoint/resume recipe, production-path WorkItem dogfood, efficacy
   campaign, Another Hello, database/store, Rust/Python, Demo, UI, web, Graph
