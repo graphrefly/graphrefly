@@ -5943,3 +5943,64 @@ compatibility facade, dual publication, protocol change, graph change, or new la
   adapter, production-path WorkItem dogfood, efficacy campaign, Another
   Hello, database/store, Rust/Python, Demo, UI, web, Graph topology,
   protocol, spec or conformance surface entered this slice.
+
+- 2026-08-01 the explicitly approved B112 GLM-5.2 high output-cap
+  replacement v5 executed once with a USD 1.50 hard cap, 32,768 actor
+  per-turn output tokens and 65,536 campaign output tokens. The exact first
+  task, high reasoning, DeepInfra-only route, D659 host/tools/verifier/arms,
+  D626-D627 efficacy criteria, D671 same-route retry policy and prohibition on
+  fallback/parallel calls remained unchanged. Fresh operator observation
+  retained the Local Eval 2 DeepInfra-only guardrail, USD 18.00 no-reset total
+  limit and 65/65 BYOK providers unconfigured. Official endpoint metadata
+  still reported the healthy DeepInfra route with a 1,048,576-token context,
+  131,072 max completion tokens and the frozen USD 0.75/M input plus USD
+  2.40/M output pricing.
+
+  The pre-execution exact-five qualification was 5/5 with task-catalog digest
+  `sha256:7ed25de6186ee31394b21115950278caf3b425e585018250addda33b139c19dc`,
+  qualification-report digest
+  `sha256:9bc471f9189c6dc8b522622f45a58df78b6d97181232bc94daf4144085ff0e40`
+  and manifest digest
+  `sha256:7ac072b74334f9e7e22c5a2b97c748af82922226df2f1e83e3ba39716699f3bf`.
+  Private generation
+  `b112-glm-5.2-deepinfra-live-smoke-2026-08-01-v5` atomically persisted
+  sanitized 0600 evidence with generation digest
+  `sha256:a7b5e55319e384efa4f80592c595caa33fffc9fdc94def9c1370847843b377c2`,
+  observation digest
+  `sha256:472a800c34f10b14d4ed28f02dd6d5240ba50af4de1b01b8b68898578582d206`
+  and scorecard digest
+  `sha256:ab4f7a663f4df753eb219ca56a2f641492606ac4cb60d9b8fe87993cd5d6c640`.
+
+  The cold arm completed four serial model turns and four bounded actions.
+  Its fifth request attempt failed before an HTTP response as
+  `openrouter-unavailable-transport` with zero measured provider latency.
+  D671 permits retry only for explicit HTTP 429 rate_limit_exceeded or HTTP
+  503 provider_overloaded evidence, so no retry, fallback or parallel request
+  followed. A subsequent unauthenticated official-metadata connectivity probe
+  succeeded immediately, consistent with a transient local/network transport
+  failure. Because a fetch exception cannot prove that the provider did not
+  accept an ambiguous request, automatically retrying this class could create
+  a duplicate billed generation and requires a separate evidence/architecture
+  decision rather than silent D671 expansion.
+
+  The generation recorded five requests/attempts/steps, 14,467 ms aggregate
+  latency, 453,420 host input bytes and 1,174 host output bytes. The terminal
+  response had no validated provider usage, so aggregate input/output/total
+  tokens remain null and the scorecard honestly uses a 223,367 microusd
+  conservative reservation basis rather than claiming provider cost. Verifier
+  and warm arms did not run; `status=non-evaluable`, `familyPassed=null` and
+  `efficacyClaim=none` remain correct. Raw provider response, credential,
+  stdout/stderr, hidden verifier material, expected patch, workspace contents
+  and environment material were not persisted. The consumed v5 approval was
+  disabled immediately after execution.
+
+  Separately, the now-indexed OpenRouter Logs row confirmed that v4 request
+  two ended as `length` at exactly 4,096 output tokens, strengthening the
+  prior output-cap diagnosis without changing v5's distinct transport result.
+  B112 remains open and CSP-11 remains `impl` with `gap=true`. Another exact
+  replacement remains separately approval-gated. Extending D671 to ambiguous
+  transport failures or adding checkpoint/resume would be a new decision and
+  was not undertaken. No public D663 adapter, production-path WorkItem
+  dogfood, efficacy campaign, Another Hello, database/store, Rust/Python,
+  Demo, UI, web, Graph topology, protocol, spec or conformance surface entered
+  this slice.
