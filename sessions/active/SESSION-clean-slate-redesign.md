@@ -5462,6 +5462,80 @@ compatibility facade, dual publication, protocol change, graph change, or new la
   Demo, UI, web, Graph topology, protocol, spec or conformance surface entered
   this slice.
 
+- 2026-08-01 the explicitly approved B112 GLM-5.2 high transport-diagnostic
+  replacement v7 executed once against the exact first-task matched block with
+  the frozen high-effort/required-tools profile, 32,768 actor per-turn output
+  tokens, 65,536 campaign output tokens, USD 1.50 hard cap, D671 same-route
+  bounded retry only and no fallback or parallel provider calls. Fresh
+  operator control-plane observation found Local Eval 2 at 8,118,593 microusd
+  usage against its USD 18.00 no-reset total limit, retained the
+  `B112 GLM 5.2 DeepInfra` guardrail and found all 65 BYOK providers
+  unconfigured. Official endpoint metadata still reported the direct
+  DeepInfra route with 1,048,576 context tokens, 131,072 maximum completion
+  tokens, tools/tool_choice/reasoning_effort support and USD 0.75/M input plus
+  USD 2.40/M output pricing.
+
+  The refreshed exact-five qualification was 5/5 with task-catalog digest
+  `sha256:7ed25de6186ee31394b21115950278caf3b425e585018250addda33b139c19dc`,
+  qualification-report digest
+  `sha256:a10136919d348ddc87926adf68cada9079eb0676d875e08e37752482ae954f8e`
+  and manifest digest
+  `sha256:3c21e3f2756112f86a31b66272793a1f75c15f13ab08598d04cbbed6ca482609`.
+  Private generation
+  `b112-glm-5.2-deepinfra-live-smoke-2026-08-01-v7` atomically persisted
+  sanitized 0600 evidence with generation digest
+  `sha256:bdf206d20dc804ec2ffceebf9a34fefd79c5bdacfe59387fa43a8c0b28a206f8`,
+  observation digest
+  `sha256:c2070d7b8d3bce1f293cb007c24251c100501f15429d96c9f09239316aea56e0`
+  and scorecard digest
+  `sha256:53acafbfa3bf97afd5c14318d9bc0c2c0fe4528a001604214a280e89eb989402`.
+
+  The cold run completed all eight serial requests and produced eight bounded
+  read/search actions but no workspace change. Its validated provider usage was
+  176,216 input plus 1,529 output tokens at 82,077 microusd. The verifier
+  correctly failed `target-artifact-mismatch`; the failure was therefore
+  eligible for matched warm execution. Reflection produced three bounded
+  candidate records. The relevant-applied warm lifecycle retrieved, admitted
+  and applied the selected record, and all seven completed action-trace entries
+  were bound to that memory-context digest, but the model again emitted only
+  read-file actions. `warm_decision_trace_includes_memory=false`,
+  `prior_failure_route_avoided=false` and `warm_run_passed=false` remain honest:
+  delivery/binding does not prove decision use or efficacy.
+
+  The relevant-applied warm run's eighth request ended non-evaluable as the
+  compatibility umbrella `openrouter-unavailable-transport` after 34,355 ms.
+  It carried no request/response-body diagnostic subtype, consistent with the
+  package-private transport preserving a host-raised AbortSignal as AbortError
+  rather than misclassifying cancellation. The per-run 60,000 ms signal starts
+  before warm materialization, while the eight recorded model-turn latencies
+  totalled 54,808 ms; the evidence therefore strongly supports per-run deadline
+  exhaustion after preparation/host overhead, but does not claim a causal fact
+  unavailable from the persisted observation. A fresh OpenRouter Logs refresh
+  indexed the 15 v7 generations corresponding to the completed turns and did
+  not yet show a sixteenth row, so there is no evidence that the terminal
+  request was accepted by the provider. D671 correctly did not retry it.
+
+  Before the proposal-only arm could send its first request, the local
+  reservation gate projected 67,786 output tokens against the frozen 65,536
+  campaign ceiling: the prior unknown terminal attempt conservatively retained
+  a 32,768-token reservation. It stopped with zero provider requests for that
+  arm. The remaining three controls were not attempted. The persisted block
+  therefore records 16 requests, 17 attempts/steps, 92,214 ms aggregate model
+  latency, 1,449,830 host input bytes, 5,304 host output bytes and a 304,098
+  microusd conservative cost basis. `status=incomplete`, `familyPassed=null`
+  and `efficacyClaim=none` remain correct; no positive or negative efficacy
+  claim can be made from the incomplete primary comparison. The consumed v7
+  approval was disabled immediately after execution.
+
+  The smallest separately approval-gated replacement keeps the eval structure,
+  global 600,000 ms deadline, request/step limits, USD cap and efficacy criteria
+  unchanged while raising only configurable per-run elapsed time from 60,000
+  to 120,000 ms and campaign output reservation from 65,536 to 131,072 tokens.
+  B112 remains open and CSP-11 remains `impl` with `gap=true`. No public D663
+  adapter, checkpoint/resume recipe, production-path WorkItem dogfood, efficacy
+  campaign, Another Hello, database/store, Rust/Python, Demo, UI, web, Graph
+  topology, protocol, spec or conformance surface entered this slice.
+
 - 2026-07-30 graphrefly-ts commit `2ce51d7d` completed the package-private
   D669 repair for the GLM-5.2 high route without changing the D652 semantic
   model-turn port, D659 closed host, verifier, observation/scorecard or
