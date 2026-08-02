@@ -6069,3 +6069,58 @@ compatibility facade, dual publication, protocol change, graph change, or new la
   production-path WorkItem dogfood, efficacy campaign, Another Hello,
   database/store, Rust/Python, Demo, UI, web, Graph topology, protocol, spec or
   conformance surface entered this slice.
+
+- 2026-08-01 the B112 transport-diagnostic follow-up added a package-private,
+  bounded and versioned
+  `graphrefly.private-solution-eval.openrouter-transport-failure-diagnostic.v1`
+  envelope. The fetch transport now distinguishes only `request` from
+  `response-body` phase and maps nested runtime error codes to a closed
+  allowlist such as `und-err-socket` or `econnreset`; unrecognized errors remain
+  `unrecognized`. The binding preserves the compatibility umbrella
+  `openrouter-unavailable-transport`, appends only the bounded phase/cause
+  subtypes and advances the Responses and Chat wire revisions to v9 and v18.
+  Runtime phase validation, frozen diagnostic/error objects and trap-safe exact
+  reading prevent injected or mutated material from escaping the closed
+  vocabulary. It never reflects raw error messages, response bytes, credential
+  material or arbitrary runtime properties. A host abort during response-body
+  reading remains a fixed-message `AbortError`, while non-cancellation transport
+  failures consume their bounded monotonic elapsed latency; an invalid clock
+  measurement fails closed as `openrouter-measurement-invalid`. The D671 retry
+  boundary did not change:
+  ambiguous transport failure remains non-retryable, while only explicit HTTP
+  429 `rate_limit_exceeded` and HTTP 503 `provider_overloaded` evidence can use
+  the already-bounded same-route retry. No SDK, dependency, timer, fallback,
+  provider switch, public export or eval-structure change entered this slice.
+
+  Fresh read-only operator observation found the dedicated Local Eval 2 key at
+  approximately USD 8.08 usage against its USD 18.00 no-reset limit, retained
+  the DeepInfra-only guardrail and found all 65 OpenRouter BYOK providers
+  unconfigured. Official route metadata continued to report the healthy
+  `z-ai/glm-5.2` DeepInfra route with a 1,048,576-token context, 131,072 maximum
+  completion tokens, tools/tool_choice/reasoning_effort support and USD 0.75/M
+  input plus USD 2.40/M output pricing.
+
+  Two serial, no-retry/no-fallback diagnostic pairs compared Node standards-
+  based fetch with curl using the same fixed DeepInfra-only request shape in
+  the user's current non-office network. The 256-output-token pair returned
+  HTTP 200 from both clients with 183 input and 256 output tokens; Node received
+  4,677 bytes in 6,689 ms for 713 microusd and curl received 4,854 bytes in
+  12,490 ms for 674 microusd. The 8,192-output-token pair also returned HTTP
+  200 from both clients with 183 input and 8,192 output tokens; Node received
+  112,707 bytes in 55,127 ms for 19,759 microusd and curl received 112,983 bytes
+  in 65,492 ms for 19,720 microusd. This rules out a reproducible Node-fetch,
+  current-network or approximately 113 KB response-size failure, but cannot
+  retrospectively identify the v5/v6 connection interruption. Together with
+  the later OpenRouter Logs evidence that v6's ambiguous second generation
+  completed and was billed, the best supported classification remains a
+  transient response-delivery/body-consumption interruption, not a provider
+  rejection. It remains unsafe to retry that class blindly.
+
+  These probes were transport-contract evidence only: they did not run an eval
+  arm, verifier or scorecard and make no efficacy claim. B112 remains open and
+  CSP-11 remains `impl` with `gap=true`. A further exact paid replacement,
+  checkpoint/resume or broader ambiguous-transport policy remains separately
+  approval/decision-gated. No public D663 adapter, production-path WorkItem
+  dogfood, efficacy campaign, Another Hello, database/store, Rust/Python,
+  Demo, UI, web, Graph topology, protocol, spec or conformance surface entered
+  this slice.
