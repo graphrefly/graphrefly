@@ -6004,3 +6004,68 @@ compatibility facade, dual publication, protocol change, graph change, or new la
   dogfood, efficacy campaign, Another Hello, database/store, Rust/Python,
   Demo, UI, web, Graph topology, protocol, spec or conformance surface entered
   this slice.
+
+- 2026-08-01 the explicitly approved B112 GLM-5.2 high exact replacement v6
+  executed once with the same frozen eval structure and efficacy criteria as
+  v5: the exact first task, one attempted matched block, high reasoning,
+  DeepInfra-only route, 32,768 actor per-turn output tokens, 65,536 campaign
+  output tokens, USD 1.50 hard cap, D659 host/tools/verifier/arms and D671
+  same-route bounded retry only. Fallback and parallel provider calls remained
+  prohibited. Fresh operator observation found the Local Eval 2 key at USD
+  8.01 usage against its USD 18.00 no-reset total limit and all 65 OpenRouter
+  BYOK providers unconfigured. Official endpoint metadata still reported the
+  healthy DeepInfra route with a 1,048,576-token context, 131,072 maximum
+  completion tokens, tools/tool_choice/reasoning_effort support and the frozen
+  USD 0.75/M input plus USD 2.40/M output pricing.
+
+  The pre-execution exact-five qualification was 5/5 with task-catalog digest
+  `sha256:7ed25de6186ee31394b21115950278caf3b425e585018250addda33b139c19dc`,
+  qualification-report digest
+  `sha256:3b71e185bdf62da60bf0c82c9b16a1e198ee0f40f4a2e065557047054a7b4fb2`
+  and manifest digest
+  `sha256:d27a97493177f9a946c86b49660a77f5d43ee229e8aebcbfaa146732b0ae33f7`.
+  Private generation
+  `b112-glm-5.2-deepinfra-live-smoke-2026-08-01-v6` atomically persisted
+  sanitized 0600 evidence with generation digest
+  `sha256:6f6c04e3b6e662c539a2c6cdf76e411da2e5773f66e5194d12f4180c99dd6c31`,
+  observation digest
+  `sha256:41d1675c7ea9e9c71e0ec9c594f9f7bf2b8514df112f852ea8273285bcab8fe2`
+  and scorecard digest
+  `sha256:8393a996007eacfc02c08dd94e3d640487f14c94759459af99f16683c81213ae`.
+
+  The first cold model turn completed and returned three bounded read-file
+  intents, which the closed host executed in order. The second request failed
+  before any HTTP status was available as `openrouter-unavailable-transport`
+  with zero measured provider latency. D671 permits retry only for explicit
+  HTTP 429 `rate_limit_exceeded` or HTTP 503 `provider_overloaded` evidence,
+  so no retry, fallback or parallel provider request followed. The run recorded
+  two requests/attempts/steps, three action-trace entries, 5,745 ms aggregate
+  latency, 238,594 host input bytes and 880 host output bytes. Because the
+  terminal attempt had no validated provider usage, token totals remain null
+  and the scorecard uses a 256,788 microusd conservative reservation basis
+  rather than claiming provider cost. At initial evidence capture the
+  OpenRouter Logs page had not indexed a v6 row. A later read-only refresh
+  indexed both DeepInfra generations: the first reported 997 input and 187
+  output tokens at USD 0.00116, and the second reported 63,321 input and 7,054
+  output tokens at USD 0.064; both ended with `tool_calls`. This later
+  control-plane evidence proves that OpenRouter accepted and DeepInfra
+  completed the host-ambiguous second request, but it does not identify why
+  the runner received no HTTP response. It also strengthens the D671 boundary:
+  automatically retrying this fetch exception would have duplicated an
+  already completed and billed generation. The canonical observation remains
+  unchanged because its null provider totals and conservative reservation
+  faithfully record what the runner could validate at execution time; the
+  later 64,318 input, 7,241 output tokens and USD 0.06516 aggregate are
+  separately scoped control-plane evidence.
+
+  Verifier and warm arms did not run; `status=non-evaluable`,
+  `familyPassed=null` and `efficacyClaim=none` remain correct. Raw provider
+  response, credential, stdout/stderr, hidden verifier material, expected
+  patch, workspace contents and environment material were not persisted. The
+  consumed v6 private approval was disabled immediately after execution.
+  B112 remains open and CSP-11 remains `impl` with `gap=true`. Another paid
+  block, checkpoint/resume or an extension of D671 to ambiguous transport
+  failures remains separately decision/approval-gated. No public D663 adapter,
+  production-path WorkItem dogfood, efficacy campaign, Another Hello,
+  database/store, Rust/Python, Demo, UI, web, Graph topology, protocol, spec or
+  conformance surface entered this slice.
