@@ -6289,3 +6289,25 @@ compatibility facade, dual publication, protocol change, graph change, or new la
   dogfood, efficacy campaign, Another Hello, database/store, Rust/Python,
   Demo, UI, web, Graph topology, protocol, spec or conformance surface entered
   this slice.
+
+- 2026-08-03 D676 implementation completed the package-private no-network
+  calibration contract-model slice. It freezes one qualified actor
+  configuration, schedules the existing five tasks by three cold blocks in
+  manifest order, models the five warm arms serially, and computes the locked
+  task-first exhaustive task-cluster interval with at most 3,125 resamples.
+  Request counts are per simulated cold/warm run and remain bounded by the
+  frozen run, task, and campaign request ceilings. Cancellation, manifest/task/
+  configuration substitution, custom array behavior, reserved runner issue
+  spoofing, non-evaluable accounting, and incomplete post-cold warm coverage
+  fail closed.
+
+  The resulting records are explicitly `simulated-contract`,
+  `empiricalEvidence=false`, and `efficacyClaim=none`. They contain no provider
+  route, credential, pricing/cost, raw response, verifier authority, live
+  observation, empirical scorecard, or persistence claim. A future live
+  calibration must generalize and consume the existing fully validated matched-
+  block v3 evidence chain rather than treating this simulation projection as
+  evidence. B112 remains open and CSP-11 remains `impl` with `gap=true` for the
+  larger matched campaign and any efficacy claim. No real provider call,
+  public D663 adapter/export, Graph/protocol/conformance change, real store,
+  Another Hello, Rust/Python parity, Demo, UI, or web work entered this slice.
