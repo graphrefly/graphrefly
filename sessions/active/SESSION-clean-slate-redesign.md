@@ -6311,3 +6311,42 @@ compatibility facade, dual publication, protocol change, graph change, or new la
   larger matched campaign and any efficacy claim. No real provider call,
   public D663 adapter/export, Graph/protocol/conformance change, real store,
   Another Hello, Rust/Python parity, Demo, UI, or web work entered this slice.
+
+- 2026-08-03 D677 locks B112's authoritative calibration evidence boundary.
+  Historical empirical observation, scorecard, and private-generation v1-v3
+  bytes remain immutable. The live-capable package-private path must reuse one
+  matched-trial-block execution core, schedule the exact five tasks by three
+  blocks serially, and produce one canonical terminal record for all fifteen
+  planned slots before any campaign scorecard is generated. Non-evaluable and
+  not-attempted slots stay in complete request, usage, latency, cost, and reason
+  accounting but never enter D676's paired-effect denominator. Missing,
+  duplicate, reordered, substituted, or budget-truncated evidence makes the
+  campaign incomplete and cannot trigger optional continuation or an efficacy
+  claim. Calibration remains exploratory with `efficacyClaim=none`; baseline,
+  branches, host, verifier, AgenticMemory lifecycle, route identity, retry,
+  fallback, and parallel-call rules remain unchanged. D677 authorizes offline
+  implementation and injected-transport dry-run only, not a charged campaign,
+  public D663 adapter/export, Graph/protocol/conformance change, store,
+  cross-language runtime, Another Hello, Demo, UI, or web work.
+
+- 2026-08-03 D677 offline implementation completed the package-private
+  calibration evidence v4 slice. One qualified frozen scheduler now binds the
+  exact five manifest-ordered tasks by three canonical trial-block identities,
+  executes all blocks serially through a mechanical bridge to the same matched
+  host/binding/protection/verifier path as smoke, records all fifteen terminal
+  slots before one task-first D676 aggregation, and persists the manifest,
+  slots, observations, and exploratory `efficacyClaim=none` scorecard as one
+  sanitized atomic 0600 private generation. Per-block D669 qualification
+  identities remain exact and distinct while aggregation compares their stable
+  route profile; remaining campaign/task request, cost, and elapsed ceilings
+  narrow transport admission before any byte request. Injected-transport gates
+  proved one calibration request reaches the shared core and zero remaining
+  budget produces zero transport calls. V4 additionally rejects substituted
+  task/block identities, hostile array prototypes, stripped nested issue
+  accounting, forged unqualified manifests, partial persistence, and incomplete
+  evidence falsely labeled complete. Historical v1-v3 smoke bytes and public
+  package/export topology remain unchanged. No credential was read and no real
+  provider call occurred. B112 remains open and CSP-11 remains `impl` with
+  `gap=true` pending an explicitly approved charged five-task calibration and
+  any later efficacy threshold/claim; D663 public adapter, real campaign, store,
+  Another Hello, Rust/Python, Demo, UI, and web work remain out of scope.
