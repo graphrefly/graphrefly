@@ -6350,3 +6350,27 @@ compatibility facade, dual publication, protocol change, graph change, or new la
   `gap=true` pending an explicitly approved charged five-task calibration and
   any later efficacy threshold/claim; D663 public adapter, real campaign, store,
   Another Hello, Rust/Python, Demo, UI, and web work remain out of scope.
+
+- 2026-08-03 D678 locks the charged B112 calibration operator. One independent
+  package-private outer operator reuses the D677 scheduler and authoritative
+  matched-block path for the exact five tasks by three serial blocks. The route
+  remains DeepSeek V4 Flash 0731 high through the exact DeepInfra fp4
+  shared-capacity endpoint at the frozen official USD 0.09/M input and USD
+  0.18/M output pricing. Each block requires a fresh same-credential D661
+  zero-BYOK qualification, is capped at USD 3.00 and 192 requests, and may use
+  only D671/D675 explicit same-route bounded retry. Each task is capped at three
+  blocks, 576 requests, and USD 9.00; the full serial campaign is capped at
+  2,880 requests, USD 18.00, and 72,000,000 ms. Budget or preparation failure
+  produces bounded incomplete terminal slots, never optional continuation.
+  Complete injected-transport preflight and sanitized atomic 0600 persistence
+  remain mandatory. Calibration stays exploratory with `efficacyClaim=none`;
+  fallback, provider switching, parallel provider calls, public D663 exports,
+  Graph/protocol/conformance changes, cross-language work, store, Another Hello,
+  Demo, UI, and web work remain excluded.
+
+- 2026-08-03 D679 corrects only D678's task-model aggregate cost ceiling
+  from USD 9.00 to USD 3.60. Five equal task ceilings now sum exactly to the
+  unchanged USD 18.00 complete-campaign hard cap required by the existing
+  fail-closed manifest validator. The independent USD 3.00 per-block cap and
+  every other D678 route, serial execution, qualification, retry, persistence,
+  scope, and `efficacyClaim=none` boundary remain unchanged.
