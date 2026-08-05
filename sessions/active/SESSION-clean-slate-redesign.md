@@ -6453,3 +6453,31 @@ compatibility facade, dual publication, protocol change, graph change, or new la
   package exports, a confirmatory efficacy claim, real store/database, Another
   Hello, Graph/protocol/conformance changes, Rust/Python work, Demo, UI, and web
   work remain outside this slice.
+- 2026-08-05 D682 replaces only B112's next evaluation sequence with an
+  execution-qualified eval v2. The persisted D678-D681 v13 generation remains
+  immutable historical evidence with `efficacyClaim=none`. Seven v13 agent
+  runs ended between 951 and 958 seconds against the exact 960-second
+  agent-run deadline, so the offline slice must distinguish host-owned elapsed
+  exhaustion from true provider/network cancellation instead of merely
+  increasing limits. In a sealed single-writer D658 workspace, the actor now
+  proposes path plus exact old/new text while the D659 host derives and records
+  the current base-content digest at execution time; path, match-count, byte,
+  diff and verifier authorities remain unchanged. Only bounded task-agnostic
+  progress coordinates may return to the actor.
+
+- D682 also requires one package-private no-export prototype composing the
+  existing WorkItemEffectPlan, dependency admission, EffectRun and
+  AgentRequest primitives for production-path dogfood. Offline and
+  injected-transport evidence must prove the generic read -> replace -> diff ->
+  command -> final path, stale/multi-action failure handling, dependency and
+  evidence binding, elapsed classification, loop bounds and sanitized
+  persistence. No provider call is authorized. After offline QA, a separately
+  approved three-fixture serial mechanical qualification may use an aggregate
+  USD 0.50 hard cap and must pass 3/3 before any memory diagnostic. A later
+  fifth-task matched block is development evidence only, and any held-out
+  efficacy campaign requires another attribution/sample/stopping/budget lock.
+  No public D663 adapter or WorkItem recipe, package export, retry/fallback
+  expansion, provider switch, parallel provider call, efficacy claim,
+  task-specific extraction prompt, Graph/protocol/conformance change,
+  cross-language work, store, Another Hello, Demo, UI or web work enters this
+  slice.
