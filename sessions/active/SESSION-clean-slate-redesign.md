@@ -6374,3 +6374,82 @@ compatibility facade, dual publication, protocol change, graph change, or new la
   fail-closed manifest validator. The independent USD 3.00 per-block cap and
   every other D678 route, serial execution, qualification, retry, persistence,
   scope, and `efficacyClaim=none` boundary remain unchanged.
+
+- 2026-08-04 D680 scopes calibration exhaustion to the authority owning the
+  bound. Agent-run and block exhaustion makes only that observed block
+  incomplete; task aggregate exhaustion skips only the remainder of that
+  task; campaign exhaustion skips all later slots; preparation failure remains
+  campaign-terminal. Continuation across independent preregistered slots is
+  mandatory and cannot inspect interim efficacy or scoring, so the complete
+  canonical ledger remains free of optional stopping.
+
+- 2026-08-04 D681 replaces stale rounded key-balance admission with one
+  package-private outermost read-only `GET /api/v1/key` preflight before each
+  attempted block. Only bounded allowlisted current-key limit coordinates are
+  retained and conservatively converted to integer microUSD; raw responses and
+  credentials are discarded. This uses the inference key, owns no management
+  API, and leaves D661 zero-BYOK workspace qualification operator-supplied and
+  out of band.
+
+- 2026-08-04 the D678-D681 charged DeepSeek calibration completed on its v13
+  replacement after two fail-closed aggregate diagnostics. V11 executed all
+  fifteen blocks but rejected its terminal scorecard because the stable route
+  profile incorrectly treated each required fresh qualification revision as a
+  route substitution. V12 executed all fifteen blocks but rejected persistence
+  before the atomic rename because one valid live terminal slot exceeded the
+  D655 wrapper's 4,096-node per-inspection bound. Neither failure published a
+  partial generation. The offline correction keeps qualification identities
+  distinct in evidence while excluding their refs, revisions, and digests only
+  from the stable route-profile comparison, and scans every canonical artifact
+  string value and key through bounded overlapping D656 exact-needle subjects
+  without raising the global protection bound. A 4,097-node regression fixture
+  proves the former live shape passes while a secret sentinel remains blocked;
+  a maximum 4,096-code-unit secret crossing the 32,768-code-unit scan boundary
+  is also rejected.
+
+- The v13 replacement used the same frozen OpenRouter
+  `deepseek/deepseek-v4-flash-0731` / DeepInfra fp4 shared-capacity route,
+  high reasoning, official USD 0.09/M input plus USD 0.18/M output pricing,
+  five tasks by three serial blocks, USD 3 block, USD 3.60 task, and USD 18
+  campaign caps. Immediately before dispatch, the GraphReFly workspace showed
+  all 65 BYOK providers not configured and Local Eval 2 remained enabled at a
+  no-reset USD 32 total limit; the same credential/workspace revision carried
+  `capacityMode=openrouter-shared-only`, `qualified=true`, and
+  `byokCredentialCount=0`. D681 current-key admission started from USD
+  11.816220 used / USD 20.183780 remaining and finished at USD 12.201015 used /
+  USD 19.798985 remaining, so the control-plane-accounted v13 increment was USD
+  0.384795. The scorecard deliberately records a larger USD 0.552650
+  conservative-reservation cost because non-evaluable cancelled turns without
+  complete provider usage retain their full reservation. This distinction is
+  expected: current-key metadata owns exact remote quota admission, while the
+  scorecard owns fail-closed campaign accounting.
+
+- V13 produced one sanitized gitignored atomic 0600 generation with generation
+  digest `sha256:4d7abcbda044722d8df4a3997e643831b1087d156f576583f872b23264104368`,
+  terminal-slot digest
+  `sha256:4c1391fd73f6ff788d278bd958a2711be5ed674168f6ecf56a4d8e6ee43417f9`,
+  and scorecard digest
+  `sha256:3c711bd194759a967d0761dbe99f7ef21fa687dd3d1abe854cf9cc3feade281d`.
+  All fifteen planned slots were attempted and observed: two cold blocks
+  completed with verifier pass, twelve were non-evaluable, and one cold block
+  failed verification and attempted all five warm arms. That block's
+  relevant-applied and proposal-only arms were both non-evaluable; only the
+  admission-rejected and irrelevant-applied arms were verifier-evaluable.
+  Therefore there are zero primary evaluable pairs, zero evaluable task
+  clusters, no point estimate, and no 95 percent interval. The scorecard is
+  correctly `incomplete` with `efficacyClaim=none`; it neither supports nor
+  refutes AgenticMemory efficacy. It accounts for 420 requests, 417 logical
+  steps, 420 attempts, 13,003,680 ms aggregate provider latency, 19,704,639
+  host-input bytes, and 215,355 host-output bytes. Canonical replay reproduced
+  the scorecard digest exactly; all four generation files strict-JSON
+  round-trip, have exact 0600 permissions, and contain neither credential
+  material nor the ambient credential variable name.
+
+- B112 remains open and CSP-11 remains `impl` with `gap=true`. The exploratory
+  calibration has now established a complete live execution and persistence
+  slice but produced no evaluable primary memory/control pair. A future
+  confirmatory campaign still requires separately frozen attribution, sample,
+  threshold, stopping, and budget authority. D663 public model-turn adapter,
+  package exports, a confirmatory efficacy claim, real store/database, Another
+  Hello, Graph/protocol/conformance changes, Rust/Python work, Demo, UI, and web
+  work remain outside this slice.
