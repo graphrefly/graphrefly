@@ -6607,3 +6607,19 @@ compatibility facade, dual publication, protocol change, graph change, or new la
   universal superiority claim. It authorizes no network, LLM, provider, spend,
   CSP-11 scoring change, protocol/conformance change, cross-language work,
   Demo, UI or website work.
+- 2026-08-06 the package-private D686 implementation recorded five frozen
+  scenarios across three arms (15 observations). All final-outcome and
+  admission-time prerequisite-readiness verifiers passed, and all arms were
+  behaviorally equivalent. The canonical scorecard and persisted qualified
+  summary bind the preregistration, candidate source and every arm source by
+  SHA-256 coordinates.
+- D686 remains `partial-offline` and the D685 public subpath is not promoted.
+  The two GraphReFly arms intentionally share caller-owned result-admission
+  provenance, so arm independence is not qualified; the marker-based source
+  counts are raw proxies rather than committed before/after category change
+  surfaces. The recipe was worse than the plain-TypeScript arm on that raw
+  provenance proxy (20 versus 18 statements), so the preregistered provenance
+  non-inferiority gate fails closed even though dependency-rich and failure
+  paths were lower on the same unqualified proxy. The evidence supports a
+  bounded dependency/readiness composition result, but not a default-export,
+  developer-ergonomics or universal-simplicity claim.
