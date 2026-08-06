@@ -6656,3 +6656,32 @@ compatibility facade, dual publication, protocol change, graph change, or new la
   machine, generality, package-entry and export gates pass, the focused
   `@graphrefly/ts/solutions/work-item/execution` subpath may be public. It does
   not enter the package root or aggregate solutions/work-item exports.
+
+Implementation evidence (2026-08-06):
+
+- The D687 offline qualification passed all five frozen standard 1:1 DAG cases.
+  Both arms passed independent expected-outcome verifiers and produced the same
+  canonical plan, EffectRequested, EffectRun, AgentRequest facts, issued
+  requests, ledger, terminal results and topology-stage reachability. Explicit
+  `required=false` was observed through EffectRequested, EffectRun, proposal and
+  issued request; duplicate EffectRun injection produced one run plus the
+  expected bounded duplicate issue.
+- The manual current-library arm uses only existing public core,
+  orchestration and WorkItem-scheduling entry primitives and requires 36
+  consumer statements and 31 calls. The focused recipe arm requires zero
+  statements and one factory call under the frozen AST metric. No executor,
+  provider, retry, queue, timer, scheduler, result-admission or other hidden
+  authority entered the recipe.
+- Canonical D687 evidence is
+  `sha256:cc8daee161fcdbe041fe2ce336ee9fa17b4af4164eb2477f758b5b8c6bfc7c61`.
+  The actual package build passed ESM import, CJS require and declaration
+  subpath smoke. The focused execution subpath is public; root, solutions and
+  solutions/work-item aggregates remain unchanged. D686 v1 historical bytes
+  remain intact and a separate v2 artifact records showcase-only/no-API-
+  promotion authority.
+- Final TypeScript gates passed: 2132 tests with four skips, lint, raw-async and
+  type checks, focused package topology assertions, ESM/CJS/DTS build/export
+  smoke, privacy/authority scans and `git diff --check`. Two independent QA
+  reviews closed all findings. No network, provider, spend, CSP-11 scoring,
+  protocol/conformance, cross-language, Demo, UI or website work entered this
+  slice.
