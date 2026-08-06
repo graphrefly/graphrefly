@@ -6481,3 +6481,36 @@ compatibility facade, dual publication, protocol change, graph change, or new la
   task-specific extraction prompt, Graph/protocol/conformance change,
   cross-language work, store, Another Hello, Demo, UI or web work enters this
   slice.
+
+- 2026-08-05 the user separately approved and the operator completed D682's
+  charged mechanical qualification on the frozen OpenRouter
+  `deepseek/deepseek-v4-flash-0731` / DeepInfra fp4 shared-capacity route with
+  high reasoning, current official USD 0.09/M input plus USD 0.18/M output
+  pricing revision
+  `openrouter-deepseek-v4-flash-0731-deepinfra-fp4-2026-08-05.v2`, fresh
+  same-credential `capacityMode=openrouter-shared-only`, `qualified=true`,
+  `byokCredentialCount=0`, and the approved USD 0.50 aggregate hard cap. The
+  three preregistered generic mutation fixtures executed serially with no
+  fallback, provider switch or parallel provider call. All three stopped after
+  their first provider request as bounded non-evaluable outcomes: fixtures one
+  and three reported `read-path-not-allowed`, and fixture two reported
+  `tool-execution-invalid`. No verifier ran and no workspace changed. The
+  scorecard is therefore `not-qualified`, 0/3 passed, with 3 requests, 3
+  attempts, 3,366 input tokens, 430 output tokens, 3,796 total tokens, 12,722 ms
+  aggregate latency and 230 microusd provider cost. This is negative mechanical
+  route/tool-path evidence, not AgenticMemory efficacy evidence.
+
+- The sanitized gitignored atomic 0600 generation has generation digest
+  `sha256:f7db094bcdeef7218f2a96fc8d6ce81cb3b765d14fa21e9deb1d80dd6cb94499`,
+  catalog digest
+  `sha256:741391329684d1e26309a93bfa802817fec4d3ae84bcc1043f7c090be6ddcd79`,
+  observations digest
+  `sha256:d10d8ae15fc9e8842feb0174d5ea7f5b120e165e01c3e59abb6801015d23cfab`,
+  and scorecard digest
+  `sha256:9b29e505b11f144127ec9c7fc385a0049aa755ab61c3be3fd01b033e7da640dd`.
+  `efficacyClaim=none`; B112 remains open and CSP-11 remains `impl` with
+  `gap=true`. Because D682 requires a 3/3 mechanical pass before a memory
+  diagnostic, no matched-memory block or efficacy campaign followed. No public
+  D663 adapter or WorkItem recipe, package export, Graph/protocol/conformance
+  change, real store, Another Hello, Rust/Python work, Demo, UI or web work
+  entered this slice.
