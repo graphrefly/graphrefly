@@ -6570,3 +6570,40 @@ compatibility facade, dual publication, protocol change, graph change, or new la
   is secondary and the tier cannot emit `efficacy=true`. Offline scripted work
   is authorized; live use remains blocked on D682 mechanical 3/3 and separate
   route, credential, pricing and spend approval.
+
+## D685 — WorkItem execution recipe
+
+- `@graphrefly/ts` may promote the repeated WorkItem execution wiring into a
+  focused `@graphrefly/ts/solutions/work-item/execution` recipe. It composes the
+  existing dependency admission, EffectRun, AgentRequest and request-ledger
+  primitives and mechanically maps each EffectRun to at most one deterministic
+  provider-neutral request.
+- The caller still owns execution and admitted EffectRunResult facts.
+  Dependency readiness remains in the existing projector. The recipe owns no
+  executor, provider/tool loop, queue, retry, timer, scheduler, concurrency,
+  fabricated result or callback registry; advanced users may keep composing the
+  primitives directly.
+- The focused subpath is conditional on D686. It must not enter the package root
+  or an aggregate solutions export and changes no protocol, conformance or
+  cross-language surface.
+
+## D686 — WorkItem execution project-fit evidence
+
+- A new fully offline package-local eval, independent of CSP-11, B112 and
+  AgenticMemory, compares three arms: the D685 recipe, manual GraphReFly
+  primitive composition and a plain-TypeScript baseline importing no
+  GraphReFly code.
+- Frozen categories cover dependency-rich fan-out/fan-in and branch extension,
+  prerequisite failure with an independent optional branch and join,
+  provenance/fault governance, and a simple-linear negative control. Every arm
+  must pass the same independent behavioral verifier.
+- Promotion requires all favorable behavior/provenance invariants, no
+  handwritten scheduler/readiness table/execution loop in the recipe arm,
+  strictly lower attributable coordinator change surface than plain TypeScript
+  in at least two of three favorable categories and non-inferiority in the
+  third, plus no extra state machine in the linear control beyond fixed recipe
+  construction. A failing gate retains evidence and blocks the public export.
+- Evidence is a versioned canonical comparative project-fit case study, not a
+  universal superiority claim. It authorizes no network, LLM, provider, spend,
+  CSP-11 scoring change, protocol/conformance change, cross-language work,
+  Demo, UI or website work.
