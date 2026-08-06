@@ -6514,3 +6514,38 @@ compatibility facade, dual publication, protocol change, graph change, or new la
   D663 adapter or WorkItem recipe, package export, Graph/protocol/conformance
   change, real store, Another Hello, Rust/Python work, Demo, UI or web work
   entered this slice.
+
+## D683 — GraphReFly orchestration comparative evidence
+
+- CSP-11 now owns a package-private, fully offline comparative case-study suite.
+  It runs the same frozen contracts, events and fault injections through an
+  existing GraphReFly WorkItem execution path and an independently implemented
+  plain-TypeScript state machine. The first matrix covers a dependency-rich
+  fan-out/fan-in fit case, provenance and fault rejection, and an intentionally
+  simple linear negative control.
+- Both paths must pass the same behavioral verifier. Canonical evidence may
+  report topology inspection, dependency/provenance coverage, mutable
+  coordination structures, transition branches, fault coverage and one frozen
+  extension change surface. Source lines remain auxiliary and no elapsed-time,
+  universal simplicity or superiority claim is permitted. A future blog or
+  guide may describe only the exact artifact-backed comparative case study.
+- This lock authorizes no public primitive, export, provider adapter,
+  Graph/protocol/conformance change, cross-language work, Demo, UI or website.
+
+## D684 — AgenticMemory developer-guidance utility
+
+- CSP-11 now owns a separate package-private guidance-utility evidence tier.
+  It preserves D626-D627 full-task efficacy and all historical observations,
+  and compares relevant-applied with proposal-only plus admission-rejected,
+  irrelevant-applied and wrong-scope-applied controls.
+- Primary outcomes are bounded, independently observable development progress:
+  exact scope/file/symbol/test/failure-class selection where verifiable,
+  requests and time to first valid action and verifier progress, repeated known
+  failure routes, and invalid or harmful actions. Delivery, attribution, action,
+  mutation and verifier evidence remain separate; model self-report cannot
+  prove correctness.
+- Its scorecard claim boundary is
+  `developer-guidance-utility-no-full-task-efficacy-claim`. Full task completion
+  is secondary and the tier cannot emit `efficacy=true`. Offline scripted work
+  is authorized; live use remains blocked on D682 mechanical 3/3 and separate
+  route, credential, pricing and spend approval.
