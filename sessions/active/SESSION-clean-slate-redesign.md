@@ -6531,6 +6531,27 @@ compatibility facade, dual publication, protocol change, graph change, or new la
   guide may describe only the exact artifact-backed comparative case study.
 - This lock authorizes no public primitive, export, provider adapter,
   Graph/protocol/conformance change, cross-language work, Demo, UI or website.
+- 2026-08-05 offline implementation evidence completed the initial D683 matrix
+  plus its preregistered dependency extension. Both paths independently passed
+  every frozen behavioral verifier; GraphReFly additionally exposed named
+  topology while the plain state machine did not. The auxiliary TypeScript-AST
+  audit deliberately does not claim semantic complexity or developer time. A
+  QA amendment replaced the initial asymmetric selected-function scope with the
+  same local-call-closure rule from each path entry and replaced assumed-empty
+  coordinator buckets with attribution of every hunk in the frozen target diff.
+  Under that corrected auxiliary proxy, GraphReFly contained 8 mutated local
+  collection bindings, 17 conditional syntax nodes and 255 source lines; plain
+  TypeScript contained 5, 10 and 98 respectively. The isolated extension
+  surface contained one shared contract/fixture hunk and one test hunk, while
+  both coordinator buckets remained unchanged as preregistered. The complete
+  frozen diff also reports but excludes 13 measurement-infrastructure hunks and
+  three QA duplicate-admission correction hunks from that extension surface.
+  This evidence supports composability, inspection and provenance as an exact
+  comparative case study, but does not support a simplicity claim or promotion
+  of a new default mechanical recipe. Existing topology, provenance and
+  keyed-rate-limit building blocks remain public precedents; a general recipe
+  and a unified CostModel/BudgetLedger require separate design evidence and
+  approval.
 
 ## D684 — AgenticMemory developer-guidance utility
 
