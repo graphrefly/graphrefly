@@ -6573,6 +6573,11 @@ compatibility facade, dual publication, protocol change, graph change, or new la
 
 ## D685 — WorkItem execution recipe
 
+- Superseded by D687 where D685 coupled public export to D686 and required
+  callers to provide both WorkItem projections and seeds. The recipe boundary,
+  caller-owned execution/results, advanced primitive escape hatch and focused
+  non-aggregate subpath remain preserved under D687.
+
 - `@graphrefly/ts` may promote the repeated WorkItem execution wiring into a
   focused `@graphrefly/ts/solutions/work-item/execution` recipe. It composes the
   existing dependency admission, EffectRun, AgentRequest and request-ledger
@@ -6588,6 +6593,10 @@ compatibility facade, dual publication, protocol change, graph change, or new la
   cross-language surface.
 
 ## D686 — WorkItem execution project-fit evidence
+
+- Superseded by D687 only as API-promotion authority. D686 remains a separate
+  package-private project-fit showcase with its existing observations and
+  limitations; it cannot approve or block the D685 default.
 
 - A new fully offline package-local eval, independent of CSP-11, B112 and
   AgenticMemory, compares three arms: the D685 recipe, manual GraphReFly
@@ -6623,3 +6632,27 @@ compatibility facade, dual publication, protocol change, graph change, or new la
   paths were lower on the same unqualified proxy. The evidence supports a
   bounded dependency/readiness composition result, but not a default-export,
   developer-ergonomics or universal-simplicity claim.
+
+## D687 — WorkItem execution default qualification
+
+- D685 default qualification now compares the current public GraphReFly
+  primitives with the default recipe under the same inputs and outputs. D686's
+  GraphReFly-versus-plain-TypeScript evidence is showcase-only and no longer
+  controls API promotion.
+- The frozen generality matrix covers static linear, fan-out, fan-in and diamond
+  DAGs; required/optional members; prerequisite success/failure and blocked
+  joins; all-required/evidence-only joins; multiple WorkItems/revisions/effect
+  kinds; input/limits/policy/source propagation; duplicate suppression; one
+  deterministic request per EffectRun; caller-owned execution/results; and
+  inspectable topology, facts and ledger. Advanced multi-request, admission,
+  executor/provider, payload/identifier, retry, queue, rate-limit and parallel
+  scheduling policies remain primitive composition.
+- `required` propagates from plan member through WorkItemEffectRequested and
+  EffectRun to AgentRequest facts without metadata inference. A reusable
+  graph-visible WorkItemProjection-to-WorkItemSeed projector lives at the
+  solutions/work-item boundary; the default accepts one WorkItem projection
+  node and orchestration core remains solution-independent.
+- After same-behavior, reduced-wiring, no-hidden-authority, no-extra-state-
+  machine, generality, package-entry and export gates pass, the focused
+  `@graphrefly/ts/solutions/work-item/execution` subpath may be public. It does
+  not enter the package root or aggregate solutions/work-item exports.
