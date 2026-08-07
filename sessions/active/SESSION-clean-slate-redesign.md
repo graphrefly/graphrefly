@@ -6685,3 +6685,64 @@ Implementation evidence (2026-08-06):
   reviews closed all findings. No network, provider, spend, CSP-11 scoring,
   protocol/conformance, cross-language, Demo, UI or website work entered this
   slice.
+
+## D688 — execution-qualified developer-guidance calibration evidence
+
+- 2026-08-06 the replacement D682 charged mechanical qualification completed
+  all three preregistered generic mutation fixtures through the exact
+  read → replace → diff → command → final contract. All three closed verifiers
+  passed in 15 serial requests for 2,213 microusd. Its private scorecard digest
+  is `sha256:42046553a2e274aabe688ac0d370730497f814413f7259cd14c7c37b0466a9b4`.
+  This satisfied D688's execution gate before the developer-guidance campaign.
+- The D688 live campaign then attempted all 15 preregistered blocks: five
+  history-free held-out tasks × three serial matched blocks, with the frozen
+  relevant-applied, proposal-only, admission-rejected, irrelevant-applied and
+  wrong-scope-applied arm order. Every block used a fresh same-credential
+  operator qualification confirming all 65 OpenRouter BYOK provider entries
+  were not configured and DeepInfra was specifically not configured. The exact
+  route remained OpenRouter shared capacity, DeepSeek V4 Flash 0731 high,
+  DeepInfra fp4, binding wire v31 and system prompt v6; no fallback, provider
+  switch or parallel provider call occurred.
+- The source campaign attempted 15/15 blocks and persisted 13 complete plus two
+  incomplete blocks. It made 177 serial requests/steps and recorded
+  10,232,578 host-input bytes, 84,175 host-output bytes and 10,043,474 ms of
+  bounded latency. The two incomplete blocks were retained: block 4 exhausted
+  its bounded smoke budget after an invalid/unsupported OpenRouter response and
+  did not attempt its final warm branch; block 14 retained one non-evaluable
+  relevant-applied response-envelope failure. No post-hoc exclusion,
+  replacement block or automatic budget extension occurred.
+- The developer-guidance projection materialized 74/75 arm observations, 71
+  evaluable observations and 14 evaluable relevant-applied versus proposal-only
+  matched pairs across all five task clusters. All 14 matched differences were
+  zero for first valid action, exact coordinates, invalid/harmful action,
+  repeated-known-failure route and final task completion; no arm passed the
+  final task verifier. The minimum-pair and no-harm gates passed, but zero of
+  five task clusters had a positive verified-progress direction. Therefore
+  `recommendConfirmatoryDesign=false`, `efficacyClaim=none`, and the result
+  provides no evidence that relevant AgenticMemory guidance improved this
+  model's development progress under the frozen harness.
+- The private source scorecard conservatively reserved 284,157 microusd. The
+  dedicated OpenRouter key's observed usage increased by 236,599 microusd over
+  this campaign, leaving 19,556,352 microusd under the Local Eval 2 no-reset
+  limit; the 47,558-microusd difference is conservative accounting headroom,
+  not an omitted request. The campaign stayed far below the USD 18 hard cap.
+- Atomic gitignored private persistence produced seven 0600 files. Generation
+  digest is
+  `sha256:3644aa64ac6bf234bd6c03e9310058d0d4d78d0ef3cfb0b1fb3e6c7e203fc98c`;
+  terminal slots
+  `sha256:0036e698a695a64c63c66534ba5ffb1dc5338b8f7a6795e67aa23323d9dbcef3`;
+  guidance observations
+  `sha256:ff5c62ac5477947e23569224246e1a84fedbd651a6fc9efab421a928efee86af`;
+  guidance scorecard
+  `sha256:d926b0ccf60cff7bfefb06cf4f959b93ae9bed64a733db007bccf77c8636f6ac`;
+  and recommendation
+  `sha256:3d71f2b8b79580ba20448d55fe375b80b8ea42ec3cddfbe3b4ef3692bc8bba2c`.
+  Credential material, authorization headers, raw provider responses, raw
+  stdout/stderr, expected patches and sentinel material were absent; each
+  one-shot attestation was consumed.
+- B112 remains open and CSP-11 remains `impl` with `gap=true`. D688 explicitly
+  stops the guidance sequence because the positive-task-cluster gate failed;
+  it does not authorize a confirmatory campaign or any efficacy claim. No
+  public D663 adapter, package-root or aggregate export, Graph topology or
+  protocol/conformance change, real store, Another Hello, Rust/Python work,
+  Demo, UI or web work entered this slice.
