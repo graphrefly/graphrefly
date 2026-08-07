@@ -6746,3 +6746,50 @@ Implementation evidence (2026-08-06):
   public D663 adapter, package-root or aggregate export, Graph topology or
   protocol/conformance change, real store, Another Hello, Rust/Python work,
   Demo, UI or web work entered this slice.
+
+## D689 — cross-WorkItem successful-experience transfer offline evidence
+
+- 2026-08-07 D689 was locked in authority commit `8765ec3` after the D688
+  forensic review established that D688 had tested same-WorkItem failed-run
+  summaries rather than successful cross-task transfer. Thirteen of fourteen
+  evaluable relevant/proposal pairs repeated the same tool route, eleven
+  repeated the same intent sequence, every warm arm remained read-only and all
+  matched effects were zero. D689 preserves those historical facts and claim
+  boundaries rather than reinterpreting them.
+- graphrefly-ts commit `1748a9be` implements the first authorized package-private
+  offline slice: strict bounded transfer-memory and pair-qualification schemas;
+  independently bound source success, task/file/symbol/test/expected-material
+  distinctness, causal-mechanism, target-history, actionability and non-generic
+  attestations; deterministic quality reports; and a no-network dry-run
+  evidence builder that re-executes each gate rather than trusting caller-made
+  reports.
+- The actor-visible memory accepts only generalized trigger conditions,
+  diagnostic discriminators, correction principles, validation strategy,
+  contraindications, applicability scope and exact source evidence digests.
+  Source raw code/patch, target expected material, credentials, environment and
+  private-workspace material are excluded by one D689-branded package-private
+  protection bundle. The bundle internally constructs the D656 executor from
+  exact nonempty per-class needles and binds the actual set through a
+  material-free canonical digest, preventing same-coordinate executor
+  substitution. Reports retain only sanitized receipt and digest coordinates.
+- The focused suite passes six tests covering a qualified positive pair,
+  source/pair/history/actionability failures, target/source-patch/credential/
+  environment/private-workspace sentinel blocking, incomplete protection
+  coverage, single-read capability substitution, same-coordinate/different-set
+  substitution, malformed/accessor/unbound evidence, locale-independent rule
+  ordering, canonical round-trip and deterministic case aggregation. The
+  frozen offline evidence digest is
+  `sha256:3b154b7f259a5ae4ab1cd383a7601c71103ac6fe494f558b5ca91aab71961090`.
+- Two independent read-only QA reviews found and then verified closure of
+  private-material coverage/set-binding, locale-dependent sorting, capability
+  TOCTOU, history provenance and process-local report-identity issues. Focused
+  tests, all @graphrefly/ts tests, lint/typecheck/raw-async, 8-GB build,
+  package-export smoke, source/export topology scans, forbidden transport/
+  retry scans, dashboard consistency and git diff checks passed.
+- This slice made zero provider/network calls and spent USD 0. It creates no
+  public export or Graph topology delta and does not select real source/target
+  task pairs, a model/provider route, sample, pricing or budget. B112 remains
+  open and CSP-11 remains `impl` with `gap=true`; `efficacyClaim=none`. A later
+  preregistration and explicit approval are still required before any charged
+  D689 execution. No public D663 adapter, confirmatory campaign, real store,
+  Another Hello, Rust/Python work, Demo, UI or web work entered this slice.
