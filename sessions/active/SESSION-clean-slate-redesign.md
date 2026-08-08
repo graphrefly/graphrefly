@@ -6853,3 +6853,59 @@ Implementation evidence (2026-08-06):
   AgenticMemory efficacy or inefficacy. No public D663 adapter, confirmatory
   campaign, real store, Another Hello, Rust/Python work, Demo, UI or web work
   entered D690-D691.
+
+## D692 — derived historical-transfer forensic
+
+- 2026-08-08 D692 was locked in authority commit `e3ac5f3` and implemented in
+  graphrefly-ts commit `37a43c01`. The package-private projector accepts only
+  the exact validated D691 live observation and the actual bounded bytes of the
+  reviewed private D691 host source, which it hashes internally before deriving
+  evidence. It does not alter or reinterpret the persisted D691 observation or
+  scorecard.
+- All six arms are mechanically classified as
+  `inspection-only-structured-output`: each completed two provider turns, all
+  four allowlisted actions were `read-file` actions in turn zero, the structured
+  final entered the hidden verifier on turn one, the workspace remained
+  unchanged and the verifier failed. Every arm has the same intent-digest set
+  and result-digest set, with three distinct action-order digests. The relevant
+  arm alone carried and host-bound the qualified memory context. These are
+  observable action facts only; `causalAttribution=undetermined` and
+  `efficacyClaim=none` remain frozen.
+- The actor-capability projection separates general read, exact-mutation and
+  diff tools from validation authority. Each of the transfer memory's four
+  validation instructions is recorded separately as not executable through the
+  actor-visible command contract: producer/consumer path exercise, negative
+  shorthand rejection, focused verifier and broader suite. The aggregate
+  elapsed remainder is not recoverable from D691; D692 therefore records only
+  provider-model latency and an explicitly non-exact aggregate-headroom upper
+  bound.
+- The deterministic counterfactual sends the same frozen inspection trace
+  through the production terminal-transition helper used by the current closed
+  host. The current generic policy invokes the verifier once and accepts the
+  final for failed verifier evaluation; the candidate objective-progress policy
+  rejects before verifier execution and invokes it zero times. The two
+  transition receipts are contract-model evidence only and do not authorize or
+  select the candidate gate.
+- Canonical gitignored private persistence atomically produced four 0600 files:
+  forensic
+  `sha256:0c1cd895b9d36624b13b27d90ebf609c81944c2e8d9c4aa11643742924b26d47`,
+  counterfactual
+  `sha256:854bba27a3c3dc2352bf3933af2b8e05a3146c7783aa7933727bd3a176b9de23`,
+  scorecard
+  `sha256:e970a072eea14dfca11df6f1985c00a7d7de559d8977b1e15e77dab7a0b4755e`
+  and generation
+  `sha256:52ec6da4249cb07590d688859cec8941dc5b6e0e58d311a46d02c73b8134614c`.
+  Provider calls, network calls and charged cost were all zero; duplicate
+  generation and durability failures do not return success.
+- Two independent read-only reviews found and verified closure of the initial
+  counterfactual, elapsed-headroom, source-byte binding, scorecard, per-clause
+  actionability, bounded validation and persistence findings. Focused tests,
+  all 2,165 @graphrefly/ts tests with four intentional skips, lint/typecheck/
+  raw-async, 8-GB ESM/CJS/DTS build, package-export smoke, privacy/topology and
+  diff gates passed.
+- B112 remains open and CSP-11 remains `impl` with `gap=true`. D692 diagnoses
+  the completed D691 measurement but does not authorize an actor-visible
+  verifier, progress gate, assisted replacement or charged rerun. No public
+  D663 adapter, package export, Graph topology, protocol/conformance change,
+  confirmatory campaign, real store, Another Hello, Rust/Python work, Demo, UI
+  or web work entered this slice.
