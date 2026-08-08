@@ -6793,3 +6793,63 @@ Implementation evidence (2026-08-06):
   preregistration and explicit approval are still required before any charged
   D689 execution. No public D663 adapter, confirmatory campaign, real store,
   Another Hello, Rust/Python work, Demo, UI or web work entered this slice.
+
+## D690-D691 — qualified historical transfer pair and first matched live block
+
+- 2026-08-07 D690 completed the single approved history-free historical-pair
+  qualification under exact mechanism
+  `producer-owned-canonical-admission-provenance-consumer-local-grammar.v1`.
+  It binds the previously verifier-passed source observation, reconstructs the
+  target without repository history, proves the sealed baseline fails and the
+  hidden fixed workspace passes, protects the exact five frozen private-material
+  classes, and executes its verifier inside a digest-bound 149-package runtime
+  closure with a deny-network sandbox and post-run closure verification. Its
+  canonical gitignored 0600 offline evidence digest is
+  `sha256:efd96ff501acefbfbff845f3c34edfbb04e93f7015f5827a717e8870b95ecba1`;
+  provider calls, network calls and charged cost are all zero.
+- D691 was locked in authority commit `ced8562` and implemented in
+  graphrefly-ts commit `ea0c9d09`. The package-private runner freezes one cold
+  arm followed by relevant-applied, proposal-only, admission-rejected,
+  irrelevant-applied and wrong-scope-applied arms, all serial, on DeepSeek V4
+  Flash 0731 high through the exact DeepInfra fp4 OpenRouter shared-capacity
+  route. It retains USD 6, 576-attempt and 7,200,000-millisecond aggregate hard
+  bounds, D671/D675 same-route bounded retry only, strict observation
+  derivation, matched-lifecycle predicates, branded leakage protection, and
+  atomic gitignored private persistence. No package/public export or Graph
+  topology changed.
+- The complete no-network dry-run passed before dispatch with 22 injected
+  transport calls, maximum concurrency one and zero retry waits. Its sanitized
+  canonical observation, scorecard and generation digests are respectively
+  `sha256:462ea2cd95d4960f76d72a0510e0597208a681e73e5b3ccc20f7b5f0193edfaf`,
+  `sha256:2b91a56891c5f87a11ca473f5abca3f2490b52a5d513b44ab52c5eaa7bb3b4d4`,
+  and `sha256:55df633fd26caf6b1846b860e927b20a23dfa0d241ff748752186dace23ba5d8`.
+  Focused adversarial tests, the full @graphrefly/ts suite, lint/typecheck/
+  raw-async, 8-GB build, package-export, privacy/topology, dashboard and diff
+  gates passed; two independent read-only reviews found no residual issue.
+- Fresh same-credential admission observed the dedicated Local Eval 2 key at a
+  no-reset USD 32 total limit with more than the required USD 6 remaining, and
+  the dedicated workspace at zero BYOK credentials. Because the actual limit
+  was already above the approved USD 18 floor, the operator did not lower or
+  otherwise modify it. Current official DeepInfra pricing remained USD 0.09/M
+  input and USD 0.18/M output under the frozen route revision.
+- The one approved live block completed without retry, fallback, provider
+  switch or parallel calls: 12 requests/attempts and 12 logical steps,
+  428,886 input plus 79,735 output tokens, 1,384,910 milliseconds provider
+  latency and 42,812 microusd charged cost. Cold and all five warm arms each
+  executed four bounded `read-file` actions, made no workspace mutation and
+  failed the hidden target verifier. Relevant memory was proposed, admitted,
+  applied, retrieved and host-bound to its action trace, but the actor did not
+  attribute its decision trace to that memory and did not avoid the prior
+  failure route. The scorecard is therefore
+  `complete-no-positive-signal`, `positiveExploratoryTransferPattern=false`
+  and `efficacyClaim=none`, not an infrastructure or non-evaluable failure.
+  Sanitized live observation, scorecard and atomic generation digests are
+  `sha256:67e7a27a00c034a1567987190ebc43b51ca4ba538604c15ce60fe698ba3db5f2`,
+  `sha256:016b858073f67502f977d47ee12c4e2a29cde88d430199437ecb7affd5047c1d`,
+  and `sha256:ab97823cf050d51332ebb0c400cc5ee3b9d2214be350c9ddcbb67872f80c59b1`.
+- B112 remains open and CSP-11 remains `impl` with `gap=true`. This one
+  completed controlled pair supplies negative exploratory evidence for the
+  frozen transfer memory and DeepSeek route, but cannot establish broad
+  AgenticMemory efficacy or inefficacy. No public D663 adapter, confirmatory
+  campaign, real store, Another Hello, Rust/Python work, Demo, UI or web work
+  entered D690-D691.
