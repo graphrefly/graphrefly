@@ -7002,3 +7002,43 @@ Implementation evidence (2026-08-06):
   no automatic next replacement or campaign; `causalAttribution=undetermined`
   and `efficacyClaim=none` remain fixed. B112 remains open and CSP-11 remains
   `impl` with `gap=true` pending the replacement result.
+
+Execution evidence (2026-08-08):
+
+- graphrefly-ts commit `863311b8` added an operator-private durable single-use
+  dispatch claim before credential, current-key, or provider access. Atomic
+  cross-process contention, partial-claim fail-closed behavior, exact 0700/0600
+  ownership, complete package test/lint/build/export gates, a zero-network
+  private preflight, and two independent read-only reviews passed before the
+  D699 claim was consumed.
+- The exact DeepSeek V4 Flash 0731 / DeepInfra fp4 high cold arm made three
+  serial requests/attempts with no retry, fallback, provider switch, parallel,
+  or background call. It recorded 141554 input tokens, 20227 output tokens,
+  383940 ms model latency, and provider-reported cost 16230 microusd. Local
+  Eval 2 remained at its USD 32 no-reset limit; the same-key current-key read
+  reported cumulative usage USD 12.547788852 and remaining USD 19.452211148,
+  exactly matching the 16230-microusd block delta within the prior read's
+  display precision.
+- Step 0 executed the same four protected read-file actions as the historical
+  cold path. Step 1 returned a premature structured final and was rejected by
+  the D693 objective-progress gate. Step 2 used one host-authored D695
+  continuation request with `requiredDisposition=tool-intents`; its returned
+  intent batch was rejected before tool execution as
+  `no-progress-stale-result-intent-batch`. No mutation, diff, focused
+  validation, hidden verifier, or warm arm occurred. The block is therefore
+  incomplete and non-evaluable with zero evaluable pairs,
+  `completedRunsSatisfiedObjectiveProgress=false`,
+  `positiveExploratoryContinuationAssistedPattern=false`,
+  `causalAttribution=undetermined`, and `efficacyClaim=none`.
+- Canonical gitignored 0600 artifacts are observation
+  `sha256:3dbbc78302e0781488644197ab4fe0268c6c3d63f58f443a1305b1922f038c3e`,
+  scorecard
+  `sha256:8c33106261de265eece68414bfada8740f9f436302cc0163db72844f387cb046`,
+  and generation
+  `sha256:faddcf9e6a56f2ff7671d29a670524b89f2938afb431bf691b79b1aba377d0ce`.
+  D699 is consumed and does not authorize another call. B112 remains open and
+  CSP-11 remains `impl` with `gap=true`; any change to multi-intent stale-result
+  admission or any charged replacement requires a new exact decision and
+  explicit approval. No D663 public adapter, package export, Graph/protocol/
+  conformance change, real store, Another Hello, Rust/Python, Demo, UI, or web
+  work entered D699.
