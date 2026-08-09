@@ -7148,3 +7148,18 @@ all zero. Cleanup completed and no D704 workspace residue remained. D704 is
 consumed by design; this is an operational credential-delivery failure rather
 than eval, model, quota or efficacy evidence, and any replacement requires a
 new explicit decision and numeric approval.
+
+## D705 — D704 exact credential-delivery replacement
+
+- D705 authorizes exactly one D704 replacement under a new durable claim and
+  D705-owned package-private evidence identity. D704 remains immutable evidence
+  of zero provider/control-plane calls after missing operator credential.
+- The operator must establish credential presence, fresh official pricing and
+  fresh same-credential zero-BYOK before acquiring the D705 claim. Fresh
+  current-key admission with at least USD 6 remaining stays after the claim and
+  before inference.
+- All experimental coordinates remain D704-exact: D699/D696 baseline, D702 sole
+  treatment delta, DeepSeek V4 Flash 0731 high / DeepInfra fp4 Chat, USD 6/32,
+  six arms and stopping, D671/D675-only retry, serial execution and no fallback,
+  switch, parallel or background calls. Attribution remains undetermined and
+  efficacyClaim remains none.

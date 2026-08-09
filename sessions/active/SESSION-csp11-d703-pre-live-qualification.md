@@ -87,3 +87,15 @@ does not introduce independent design authority.
   failure, not an eval result, model result, quota failure or efficacy evidence.
   Any replacement requires a new explicit decision and numeric approval after
   the credential capability is made available to the operator process.
+
+## D705 exact replacement approval
+
+- D705 authorizes one exact D704 replacement with a distinct single-use claim,
+  observation, scorecard and generation. D704 history remains immutable.
+- The only operational correction is ordering: the exact operator credential
+  capability must be present before acquiring the D705 claim. Fresh pricing and
+  zero-BYOK also precede claim acquisition; fresh current-key admission remains
+  after claim acquisition and before inference.
+- Every model, provider, route, six-arm, stopping, budget, retry, concurrency,
+  privacy and attribution coordinate remains D704-exact. No automatic rerun is
+  authorized.
