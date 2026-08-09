@@ -120,3 +120,19 @@ does not introduce independent design authority.
   result. Any replacement requires a new explicit decision and numeric
   approval after an offline-qualified provider-neutral separation between
   frozen execution pricing coordinates and fresh pricing-observation evidence.
+
+## D706 fresh-pricing observation separation
+
+- The frozen execution pricing schedule remains the historical DeepSeek V4
+  Flash 0731 / DeepInfra fp4 v3 coordinate used by the exact measurement route.
+  D706 does not alter the generic route schema or reinterpret D704/D705 bytes.
+- Freshness is represented by a separate package-private, exact-response-bound
+  pricing observation. It binds official source, provider/tag/quantization,
+  atomic prices, derived rates and observation revision without replacing the
+  route's schedule revision.
+- A future route is admissible only when the fresh observation exactly matches
+  the frozen execution schedule. Real price/provider drift stops before claim
+  acquisition and requires a new measurement decision.
+- D706 is offline-only and authorizes no credential, control-plane, provider,
+  network, claim, spend or live replacement. Attribution remains undetermined
+  and efficacyClaim remains none.

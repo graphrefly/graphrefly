@@ -7174,3 +7174,15 @@ were zero; no observation, scorecard or generation was persisted, and cleanup
 left no temporary workspace residue. D705 is consumed and is route-validation
 defect evidence only. It is not an eval, model, memory, quota or efficacy result;
 any replacement requires a new exact decision and numeric approval.
+
+## D706 — fresh-pricing observation separation
+
+- The route's v3 pricing revision remains the immutable execution schedule
+  coordinate. Fresh official endpoint evidence is a distinct package-private
+  exact-byte-bound observation with its own revision and digest.
+- The observation must prove exact source/provider/tag/quantization and
+  input/output-rate equality with the frozen schedule; drift fails before a
+  dispatch claim and cannot silently change the experiment.
+- D706 is offline-only. It changes no historical evidence or measurement,
+  grants no credential/network/spend authority and preserves undetermined
+  attribution plus efficacyClaim none.
