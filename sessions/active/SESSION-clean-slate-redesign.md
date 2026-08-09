@@ -7186,3 +7186,17 @@ any replacement requires a new exact decision and numeric approval.
 - D706 is offline-only. It changes no historical evidence or measurement,
   grants no credential/network/spend authority and preserves undetermined
   attribution plus efficacyClaim none.
+- The package-private offline qualification completed on Node v24.18.0 with
+  exact response digest
+  `sha256:8da1a79c9960910408e4b3690c8ca87f57539dd65c262619057e90bef9c9e17e`,
+  observation digest
+  `sha256:ae0fae7dd33dbe3350a44af46c968e61f49ff25154d65b730781774b257e9e8a`
+  and qualification digest
+  `sha256:7428f4c834f0418dfb4ad19134cb90b616ee9d199f4c8f5752485a5de6b87b74`.
+  It recorded zero provider and network calls, no route-schema change and no
+  historical-evidence reinterpretation. Full TS tests (2,216 passed), lint,
+  package build, private strict typecheck and dashboard consistency all passed.
+- This qualification does not authorize or itself perform the future official
+  pricing fetch. A later live replacement must own that fetch, reconstruct the
+  same-process observation from its exact bounded response bytes and obtain a
+  new numeric spend approval before any dispatch claim or provider call.
