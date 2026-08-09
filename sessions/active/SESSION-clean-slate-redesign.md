@@ -7138,3 +7138,13 @@ Execution evidence (2026-08-08):
   plus current-key admission with at least USD 6 remaining before inference.
 - `causalAttribution=undetermined` and `efficacyClaim=none` remain fixed. The
   unchanged stopping rule may end on a cold pass without opening warm arms.
+
+Execution evidence (2026-08-09): the durable D704 dispatch claim and its
+single-use execution lease were consumed, but the operator process had no
+`OPENROUTER_API_KEY` environment capability. The runner failed closed before
+current-key admission and before any provider request, so provider/control-plane
+calls, charged attempts and persisted D704 observation/scorecard/generation are
+all zero. Cleanup completed and no D704 workspace residue remained. D704 is
+consumed by design; this is an operational credential-delivery failure rather
+than eval, model, quota or efficacy evidence, and any replacement requires a
+new explicit decision and numeric approval.

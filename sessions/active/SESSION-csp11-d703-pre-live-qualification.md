@@ -53,6 +53,7 @@ does not introduce independent design authority.
   typecheck, build, private strict typecheck, canonical artifact replay and
   dashboard consistency are required final gates.
 - No credential, control-plane, provider request or charged call was made.
+
 ## D704 live approval
 
 - D704 authorizes exactly one D703 mutation-first live block using DeepSeek V4
@@ -71,3 +72,18 @@ does not introduce independent design authority.
 - `causalAttribution=undetermined` and `efficacyClaim=none` remain fixed. A cold
   pass still stops before warm arms and therefore may yield mechanical recovery
   evidence without an AgenticMemory comparison.
+
+### D704 dispatch result (2026-08-09)
+
+- The durable D704 claim was acquired and the distinct execution lease was
+  consumed, but the operator process had no `OPENROUTER_API_KEY` environment
+  capability. The runner therefore failed closed before current-key admission
+  and before any provider request.
+- Provider/control-plane requests and charged inference attempts were zero. No
+  D704 observation, scorecard or generation was persisted, and all allocated
+  workspaces were cleaned.
+- D704 is consumed because its claim is intentionally non-releasable and its
+  execution lease is single-use. This is an operational credential-delivery
+  failure, not an eval result, model result, quota failure or efficacy evidence.
+  Any replacement requires a new explicit decision and numeric approval after
+  the credential capability is made available to the operator process.
