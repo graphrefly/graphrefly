@@ -6957,3 +6957,27 @@ Implementation evidence (2026-08-06):
   fallback, provider/model/route switch, alternate route, parallel/background
   calls, an automatic replacement block or a follow-on campaign. B112 remains
   open and CSP-11 remains `impl` with `gap=true` pending the live result.
+- The approved block was consumed once under the exact Node 24.18.0 verifier
+  toolchain after the default Node 26.4.0 operator attempt failed before any
+  inference request on the frozen historical-measurement identity gate. The
+  charged attempt made exactly two serial DeepSeek V4 Flash 0731 / DeepInfra
+  fp4 requests; OpenRouter reported 69,896 input plus 8,290 output tokens at USD
+  0.00771 and 1,535 input plus 219 output tokens at USD 0.000173, approximately
+  USD 0.007883 total. No retry, fallback, provider switch, parallel or
+  background inference call was observed. Local Eval 2 remained at the USD 32
+  no-reset limit with approximately USD 19.47 remaining after the attempt.
+- Canonical D696 observation construction then failed closed before persistence:
+  the host classified an owned elapsed deadline before retaining the completed
+  continuation turn's provider usage, while the shared budget ledger had
+  already reconciled that charged attempt. The cross-check therefore rejected
+  the inconsistent token/cost basis. No D696 live observation, scorecard or
+  generation artifact was written, so the block is operationally incomplete
+  and non-evaluable and supports no continuation, memory, causal or efficacy
+  conclusion. graphrefly-ts commit `c30c6aa2` fixes the package-private host by
+  recording validated usage/attempt/turn evidence before elapsed
+  classification while still blocking tool, final and verifier side effects;
+  ordinary and continuation elapsed paths, cancellation precedence, D695/D696
+  focused tests, full package tests, lint, build and two independent read-only
+  reviews are green. D698 is consumed and does not authorize a rerun. B112 stays
+  open and CSP-11 stays `impl` with `gap=true`; any replacement charged block
+  requires a new exact authority decision and explicit user approval.
