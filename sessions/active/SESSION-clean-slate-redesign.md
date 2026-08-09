@@ -6940,3 +6940,20 @@ Implementation evidence (2026-08-06):
   deliberately disabled until a later authority revision records the user's
   final explicit USD 6 hard-cap approval; B112 remains open and CSP-11 remains
   `impl` with `gap=true`.
+
+## D698 — continuation-assisted live spend approval
+
+- 2026-08-08 D698 records the final explicit numeric authorization for exactly
+  one D696 live replacement block: USD 6 block hard cap and Local Eval 2 USD 32
+  no-reset total limit. The exact D697-qualified D695 policy, D690 historical
+  pair, D693 objective-progress gate, six serial arms, DeepSeek/DeepInfra route,
+  D671/D675-only same-route retry boundary, stopping rules and
+  `causalAttribution=undetermined` / `efficacyClaim=none` remain unchanged.
+- Dispatch still fails closed until exact D690/D693 and frozen D696 dry-run
+  artifacts validate, current official pricing is frozen, and fresh
+  same-credential current-key plus out-of-band zero-BYOK qualification confirms
+  the dedicated Local Eval 2 workspace/key at the USD 32 no-reset limit with at
+  least USD 6 remaining. D698 authorizes one block only; it does not authorize
+  fallback, provider/model/route switch, alternate route, parallel/background
+  calls, an automatic replacement block or a follow-on campaign. B112 remains
+  open and CSP-11 remains `impl` with `gap=true` pending the live result.
