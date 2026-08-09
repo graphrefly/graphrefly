@@ -6926,3 +6926,17 @@ Implementation evidence (2026-08-06):
   subordinate to the unchanged 262144-byte complete-request admission ceiling.
   D697 authorizes offline requalification only; no credential, control-plane,
   provider or charged call is authorized by this correction.
+- D697 offline requalification completed in graphrefly-ts commits `69a20d0d`
+  and `975e5fd4`. The corrected D695 policy digest is
+  `sha256:8796fcc6dfb0cad8fe319bc7321f7ef1f0484751053d79a06d27088d75b04a77`.
+  The complete D696 injected-byte-transport dry-run executed all six serial
+  arms with 37 simulated requests/attempts, 25 exact continuation-wire
+  invocations, maximum concurrency one, zero retry waits, zero
+  provider/network calls and zero cost. Canonical gitignored 0600 artifact
+  SHA-256 values are observation `0ca932a8...47e95`, scorecard
+  `312585ed...9875` and generation `ff73e4cd...d08c`. Exact preflight,
+  persistence, full package, lint/build/export, privacy/topology/residue,
+  dashboard and independent QA gates are green. Live dispatch remains
+  deliberately disabled until a later authority revision records the user's
+  final explicit USD 6 hard-cap approval; B112 remains open and CSP-11 remains
+  `impl` with `gap=true`.
