@@ -6909,3 +6909,20 @@ Implementation evidence (2026-08-06):
   D663 adapter, package export, Graph topology, protocol/conformance change,
   confirmatory campaign, real store, Another Hello, Rust/Python work, Demo, UI
   or web work entered this slice.
+
+## D696–D697 — continuation-assisted replacement preregistration
+
+- 2026-08-08 D696 preregistered a distinct package-private replacement of the
+  D694 historical-transfer block. It preserves the exact D690 pair, six-arm
+  order, D693 progress policy, DeepSeek/DeepInfra route, USD 6 proposed hard
+  cap, serial execution, retry boundary and `efficacyClaim=none`; the sole
+  treatment delta is the independently qualified D695 host-authored
+  continuation and same-state no-progress breaker. D691–D695 evidence remains
+  immutable. Offline preparation is authorized, but the first provider request
+  still requires a final explicit confirmation of the numeric USD 6 cap.
+- The first complete D696 no-network attempt exposed that D695's 131072-byte
+  retained-result ceiling could not hold even one legitimate frozen target
+  read result. D697 therefore corrected only `maxRetainedBytes` to 240000,
+  subordinate to the unchanged 262144-byte complete-request admission ceiling.
+  D697 authorizes offline requalification only; no credential, control-plane,
+  provider or charged call is authorized by this correction.
