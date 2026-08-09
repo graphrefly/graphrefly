@@ -136,3 +136,17 @@ does not introduce independent design authority.
 - D706 is offline-only and authorizes no credential, control-plane, provider,
   network, claim, spend or live replacement. Attribution remains undetermined
   and efficacyClaim remains none.
+
+## D707 fresh-pricing-separated replacement preflight
+
+- D707 keeps the exact D705/D703 six-arm measurement, frozen v3 schedule and
+  stopping. D706 fresh-pricing observation is the sole operational delta and
+  remains separate from route.pricing.pricingRevision.
+- A package-private exact official-pricing GET seam and new D707 observation,
+  scorecard and generation must be qualified with injected bytes. Redirect,
+  non-success status, byte overflow, ambiguous endpoint, accessor/TOCTOU,
+  provider/tag/quantization/rate or route drift fail before any future claim.
+- This slice is no-network and no-spend. It authorizes no credential,
+  control-plane, provider, dispatch claim or live execution. A later live block
+  requires a distinct numeric approval and fresh pricing, same-credential
+  zero-BYOK and current-key admission.

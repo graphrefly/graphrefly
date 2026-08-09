@@ -7200,3 +7200,18 @@ any replacement requires a new exact decision and numeric approval.
   pricing fetch. A later live replacement must own that fetch, reconstruct the
   same-process observation from its exact bounded response bytes and obtain a
   new numeric spend approval before any dispatch claim or provider call.
+
+## D707 — fresh-pricing-separated replacement preflight
+
+- D707 keeps the exact D705/D703 six-arm measurement and immutable v3 pricing
+  schedule, while adding D706 fresh-pricing observation as the sole operational
+  delta under new package-private observation, scorecard and generation
+  identities.
+- Its exact official-pricing GET seam is qualified only with injected bytes in
+  this slice. Redirect, non-success status, oversized or ambiguous response,
+  provider/tag/quantization/rate drift and observation/route substitution must
+  fail before any future dispatch claim.
+- D707 pre-live grants no credential, control-plane, network, provider, claim or
+  spend authority. Attribution remains undetermined and efficacyClaim remains
+  none; a live block still requires a later numeric approval plus fresh official
+  pricing, same-credential zero-BYOK and current-key admission.
