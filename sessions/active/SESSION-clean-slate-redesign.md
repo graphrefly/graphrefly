@@ -7122,3 +7122,19 @@ Execution evidence (2026-08-08):
   pass. The unchanged cold-pass stopping rule left the matched pair
   non-evaluable, so `causalAttribution=undetermined` and `efficacyClaim=none`
   remain the only allowed claims.
+## D704 — D703 mutation-first live block approval
+
+- D704 authorizes one single-use USD 6 D703 live block on the exact DeepSeek V4
+  Flash 0731 high / DeepInfra fp4 Chat route, under the Local Eval 2 USD 32
+  no-reset limit. D699/D696 remains the baseline and D702 remains the sole
+  treatment delta.
+- Exact six-arm order, warm eligibility, stopping, all resource ceilings,
+  serial execution and D671/D675-only same-route retry remain fixed. Fallback,
+  provider/model switching, alternate routes and parallel/background provider
+  calls remain forbidden.
+- All historical and pre-live artifacts must validate before credential access.
+  The operator must then acquire a durable non-releasable D704 single-use claim,
+  freeze current official pricing and obtain fresh same-credential zero-BYOK
+  plus current-key admission with at least USD 6 remaining before inference.
+- `causalAttribution=undetermined` and `efficacyClaim=none` remain fixed. The
+  unchanged stopping rule may end on a cold pass without opening warm arms.

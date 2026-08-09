@@ -53,3 +53,21 @@ does not introduce independent design authority.
   typecheck, build, private strict typecheck, canonical artifact replay and
   dashboard consistency are required final gates.
 - No credential, control-plane, provider request or charged call was made.
+## D704 live approval
+
+- D704 authorizes exactly one D703 mutation-first live block using DeepSeek V4
+  Flash 0731 high through DeepInfra fp4 Chat, with a USD 6 block hard cap and
+  Local Eval 2 USD 32 no-reset total limit.
+- The D699/D696 baseline, six-arm order, warm eligibility, stopping and all
+  request/token/action/byte/elapsed ceilings remain unchanged. D702 remains the
+  sole treatment delta. Only D671/D675 same-route bounded retry is allowed;
+  fallback, provider/model switch, alternate route, parallel and background
+  provider calls remain forbidden.
+- Before any credential or network access, the operator must validate all exact
+  historical and pre-live artifacts and acquire a durable, non-releasable D704
+  single-use dispatch claim. Fresh current official pricing, same-credential
+  zero-BYOK and current-key admission with at least USD 6 remaining are required
+  before inference.
+- `causalAttribution=undetermined` and `efficacyClaim=none` remain fixed. A cold
+  pass still stops before warm arms and therefore may yield mechanical recovery
+  evidence without an AgenticMemory comparison.
