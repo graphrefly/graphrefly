@@ -7042,3 +7042,52 @@ Execution evidence (2026-08-08):
   explicit approval. No D663 public adapter, package export, Graph/protocol/
   conformance change, real store, Another Hello, Rust/Python, Demo, UI, or web
   work entered D699.
+
+## D702 — stale-result mutation-first recovery offline qualification
+
+- 2026-08-09 D702 adds one independent, explicit and package-private recovery
+  policy after D699 demonstrated a zero-side-effect
+  `no-progress-stale-result-intent-batch` rejection. D674 ordered multi-intent
+  execution remains authoritative: the rejected batch is never reordered,
+  split, filtered, replayed or executed.
+- Only when D693 and D695 are already active, the workspace state is unchanged,
+  exact mutation is still missing and the exact stale-result receipt is
+  host-produced may the host issue one additional logical continuation per run.
+  Its versioned capsule binds the rejection, exact request and retained-result
+  bytes, workspace state and remaining bounds, and requires `replaceExact` as
+  the first intent. The binding may lower this semantic requirement to a
+  provider-supported specific named `tool_choice`; the host independently
+  enforces it. Wrong ordering, a later second mutation, another stale batch,
+  substitution, drift or exhaustion stops before tool/verifier execution.
+- D702 is offline only. Scripted D699-shaped recovery plus at least two generic
+  fixtures, request/wire, state and retry TOCTOU, accessor/replay/collision,
+  bounds/privacy, canonical evidence, atomic 0600 persistence and complete
+  no-network QA must pass. D691-D699 bytes and meanings remain immutable;
+  `causalAttribution=undetermined` and `efficacyClaim=none` remain fixed. No
+  credential, provider call, charge, live replacement, public D663 adapter,
+  package export, Graph/protocol/conformance, cross-language, store, Another
+  Hello, Demo, UI or web work is authorized. Any charged replacement requires
+  a later exact decision and explicit approval.
+
+### D702 qualified implementation evidence — 2026-08-09
+
+- The package-private host and binding implement one host-authored, exact-byte
+  attested mutation-first recovery without changing the absent-policy path or
+  any D691-D699 persisted evidence. Endpoint-specific Chat and Responses named
+  `tool_choice` fixtures pass, while the host independently enforces the exact
+  first mutation and preserves safe D674 provider order afterward.
+- Qualification passes the historical-shaped path and two independent non-D690
+  generic fixtures plus wrong-first, repeated-stale, replay/substitution,
+  accessor, collision, state/retry TOCTOU, zero-retained-result, bounds,
+  privacy and atomic-persistence gates. Negative batches execute zero recovery
+  side effects and never enter the verifier.
+- Evidence: D702 focused 5/5, D695+D702 12/12, empirical boundary 29/29, full
+  `@graphrefly/ts` 142 files / 2195 tests passed with four existing skips,
+  lint/typecheck/build/export/Biome/diff checks green, and no D702 temp/staging
+  residue. One unrelated D658 filesystem test timed out at 5018 ms on the first
+  parallel run, then passed alone in 2289 ms and passed in the second full run.
+- No credential was read and no provider/network or charged call occurred.
+  There is no public export, Graph/protocol/conformance, cross-language, store,
+  Another Hello, Demo, UI or web delta. `causalAttribution=undetermined` and
+  `efficacyClaim=none` remain fixed; B112 remains open and CSP-11 remains
+  `impl` with `gap=true`.
