@@ -6981,3 +6981,24 @@ Implementation evidence (2026-08-06):
   reviews are green. D698 is consumed and does not authorize a rerun. B112 stays
   open and CSP-11 stays `impl` with `gap=true`; any replacement charged block
   requires a new exact authority decision and explicit user approval.
+
+## D699 — accounting-fixed D696 replacement approval
+
+- 2026-08-08 D699 authorizes one replacement execution of the exact D696
+  measurement after D698 was consumed without canonical persistence. The sole
+  implementation delta is graphrefly-ts commit `c30c6aa2`: completed charged
+  ordinary and continuation turns retain validated usage, attempt and turn
+  evidence before owned-elapsed classification, while tool, final and verifier
+  side effects remain blocked and cancellation keeps its prior precedence over
+  cumulative output exhaustion.
+- All D698 coordinates remain frozen: exact D690/D693 receipts, D697-qualified
+  D695 policy and digest, six serial arms and stopping, DeepSeek V4 Flash 0731 /
+  DeepInfra fp4 high route, USD 6 block hard cap, Local Eval 2 USD 32 no-reset
+  total limit, D671/D675-only same-route retry and no fallback, switch,
+  alternate route, hidden retry, parallel or background call. Dispatch requires
+  Node 24.18.0, current complete no-network/QA gates, current official pricing,
+  fresh same-credential current-key admission with at least USD 6 remaining and
+  fresh out-of-band zero-BYOK qualification. D699 is single-use and authorizes
+  no automatic next replacement or campaign; `causalAttribution=undetermined`
+  and `efficacyClaim=none` remain fixed. B112 remains open and CSP-11 remains
+  `impl` with `gap=true` pending the replacement result.
