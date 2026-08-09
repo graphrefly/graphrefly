@@ -7091,3 +7091,34 @@ Execution evidence (2026-08-08):
   Another Hello, Demo, UI or web delta. `causalAttribution=undetermined` and
   `efficacyClaim=none` remain fixed; B112 remains open and CSP-11 remains
   `impl` with `gap=true`.
+
+## D703 — D702 mutation-first historical-transfer pre-live measurement
+
+- D703 creates a new package-private measurement over the exact D699/D696
+  six-arm baseline. The exact D702 mutation-first recovery policy is the sole
+  treatment delta; historical D696/D699 evidence stays immutable.
+- The shared matched runner may install only a binding-owned D702 continuation
+  port and must reconcile it through the same transport admission,
+  reservation, actual usage/cost/latency and D671/D675 retry ledger. Caller
+  ports are rejected and the absent-policy path is unchanged.
+- D703 owns new strict observation, scorecard, generation and preflight
+  identities and must bind durable D702 qualification plus a complete
+  D699-shaped no-network dry-run. Mechanical recovery is not efficacy:
+  `causalAttribution=undetermined` and `efficacyClaim=none` remain fixed.
+- D703 authorizes no credential, control-plane, provider/network, charged or
+  live call. Any live measurement requires a later exact preregistration and
+  explicit numeric approval after fresh pricing, current-key and same-credential
+  zero-BYOK gates.
+- D703 pre-live evidence qualified one durable D702 generation
+  (`sha256:9505f9b7662105d30fd409b4548f3b694cd1b2a1288270741ce1ccaeac9da3fe`)
+  and one canonical deny-network D703 v3 generation
+  (`sha256:4f2e4709953f57e59dbc220e45dfe0e120f22db855b7ada6906616ad2a3d23dd`).
+  The D703 dry-run used fifteen injected-byte transport calls including one
+  exact D671/D675 same-route retry, with maximum concurrency one, one retry
+  wait exactly bound to the retry trace, no fallback/provider switch, an
+  OS-denied TCP probe and exact cleanup of every tracked materialization root.
+  It observed stale-batch zero-action rejection followed by one mutation-first
+  `replaceExact`, ordered diff, focused validation, final output and verifier
+  pass. The unchanged cold-pass stopping rule left the matched pair
+  non-evaluable, so `causalAttribution=undetermined` and `efficacyClaim=none`
+  remain the only allowed claims.
