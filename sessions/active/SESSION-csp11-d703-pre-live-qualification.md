@@ -99,3 +99,24 @@ does not introduce independent design authority.
 - Every model, provider, route, six-arm, stopping, budget, retry, concurrency,
   privacy and attribution coordinate remains D704-exact. No automatic rerun is
   authorized.
+
+### D705 dispatch result (2026-08-09)
+
+- The D705 credential capability, exact private preflight, fresh official
+  pricing and out-of-band zero-BYOK gates passed before the durable claim. The
+  new claim was then acquired and its execution lease consumed.
+- Fresh current-key admission completed once and satisfied the required
+  remaining-spend floor. The following route-validation gate failed closed
+  because the generic validator required the fresh D705 pricing evidence
+  revision `openrouter-deepseek-v4-flash-0731-deepinfra-fp4-2026-08-09.v5` to
+  equal the historical frozen configuration revision
+  `openrouter-deepseek-v4-flash-0731-deepinfra-fp4-2026-08-06.v3`.
+- No inference transport was constructed or invoked. Provider requests,
+  charged attempts and inference cost were zero; no D705 observation,
+  scorecard or generation was persisted. The initial materialization was
+  cleaned and no D690/D703/D705 temporary workspace residue remained.
+- D705 is consumed and cannot be retried. This is a route-evidence validation
+  defect before inference, not an eval, model, memory, quota or efficacy
+  result. Any replacement requires a new explicit decision and numeric
+  approval after an offline-qualified provider-neutral separation between
+  frozen execution pricing coordinates and fresh pricing-observation evidence.

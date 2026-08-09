@@ -7163,3 +7163,14 @@ new explicit decision and numeric approval.
   six arms and stopping, D671/D675-only retry, serial execution and no fallback,
   switch, parallel or background calls. Attribution remains undetermined and
   efficacyClaim remains none.
+
+Execution evidence (2026-08-09): D705 passed its credential, exact preflight,
+fresh pricing and zero-BYOK gates, acquired its durable claim and completed one
+fresh current-key admission with the required remaining-spend floor. It then
+failed closed before inference because the generic route validator required the
+fresh D705 pricing evidence revision v5 to equal the historical frozen manifest
+configuration revision v3. Provider calls, charged attempts and inference cost
+were zero; no observation, scorecard or generation was persisted, and cleanup
+left no temporary workspace residue. D705 is consumed and is route-validation
+defect evidence only. It is not an eval, model, memory, quota or efficacy result;
+any replacement requires a new exact decision and numeric approval.
