@@ -150,3 +150,30 @@ does not introduce independent design authority.
   control-plane, provider, dispatch claim or live execution. A later live block
   requires a distinct numeric approval and fresh pricing, same-credential
   zero-BYOK and current-key admission.
+
+Qualification evidence (2026-08-09):
+
+- `graphrefly-ts` commit `e1ef1c4a` adds the exact injected GET seam, a
+  single-use historical preflight over the frozen D703 artifacts and D705
+  source bytes, and distinct D707 observation/scorecard/generation schemas.
+- Node 24.18.0 reproduced the canonical private generation exactly. Internal
+  digests are observation
+  `sha256:e0bef8eca042fbdb832d70c5f10bd5a01dff5c8c19a039ab9ccac9e24a57a51d`,
+  scorecard
+  `sha256:b40c5703a35bd7aaa117d1545b2e9afdb3ad5a579b172ae38a5f473e85dc335f`
+  and generation
+  `sha256:ee3b78bb1a34e5f12d684cfd3d9fd261d18f9e2ddcd93a8c8f8f453ffe6a6271`.
+- Artifact SHA-256 values are observation
+  `a8d627a283aae15bd0d97a8502831857565e78adb8b1055bccdd8a4199fdd9d0`,
+  scorecard
+  `d5f33884dcc4f657f3bdb335e795092881199e8b60e77c7f0f55eabc18e0cb59`
+  and generation
+  `828fce63be1f3e8f5acc439a2c302645e611ce819541e300232e7c3543e1c323`.
+  The directory is 0700 and all three files are 0600.
+- Full package QA passed 147 test files and 2225 tests, plus lint, typecheck,
+  raw-async, build/DTS/export, dashboard, privacy, historical-byte and residue
+  gates. The build needed a 12GB DTS worker heap after the default and 4GB
+  worker limits exhausted; the raised-heap build completed without code or type
+  changes. Qualification recorded zero credential reads, control-plane calls,
+  network calls, provider calls and dispatch claims. Attribution remains
+  undetermined and efficacyClaim remains none.
