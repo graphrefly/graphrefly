@@ -1,6 +1,6 @@
 # SESSION — Data Agent Solution / Query-as-Verified-Pipeline
 
-**Status:** 🌱 EXPLORATION ACTIVE — upper-layer solution candidate, not a core protocol lock  
+**Status:** 🌱 EXPLORATION ACTIVE — D718 solution/product contract locked; public solution remains deferred
 **Opened:** 2026-06-06  
 **Trigger:** User asked to deepen GraphReFly's Data Agent direction beyond a demo, integrating external user-pattern research, Snowflake Cortex-style data-agent harness lessons, and the existing GraphReFly building blocks around messaging, orchestration, harnesses, async runtime, and agentic memory.  
 **Method:** Product/solution research session. Records positioning, scenarios, and preset shape. Does **not** amend the wave protocol, clean-slate core, or L0 narrow-waist decision.
@@ -22,6 +22,21 @@ The goal is not to make the core data-specific. The goal is to prove that GraphR
 - guarded execution and approval gates for high-risk steps;
 - agentic memory for business context, semantic definitions, verified examples, feedback, and stale-context handling;
 - async / remote runtime adapters so enterprise data can stay inside the correct trust boundary.
+
+## Locked Product Contract — D718
+
+D718 locks the Data Agent WorkGraph boundary without adding a core primitive. Stable semantic stages,
+causal dependencies, policy/admission gates, independent verification, and user-review boundaries may be
+real nodes or named bundles. Tables, documents, source candidates, messages, model turns, tool calls, and
+attempts remain bounded DATA, ledgers, or evidence whose cardinality does not automatically change
+topology. LLMs may propose plans, requests, recovery, or WorkGraph edits, but only a separately authorized
+and host-accepted immutable revision may change executable topology or dispatch external work.
+
+Canvas therefore shows the actual admitted workload Graph in Topology Lens and shows run-specific DATA,
+turns, attempts, outcomes, and evidence in Side Panel/trajectory surfaces. The first Canvas wedge remains
+app-private and sequenced after local-v0 closure. B116 defers any public `solutions/data-agent` extraction
+until two independent scenarios prove a genuinely reusable bundle rather than merely reusing existing
+WorkItem, hub, context, executor, admission, and verification building blocks.
 
 ---
 
@@ -222,7 +237,7 @@ The design bias should be **dynamic data, stable topology**: route changing work
 
 ## Open Questions
 
-- Should the first artifact be a `solutions/data-agent` preset, a cookbook recipe, or a demo package that imports only existing public building blocks?
+- After the app-private Canvas wedge and B116's second independent scenario, does evidence justify a public `solutions/data-agent` preset, or should the result remain a Canvas recipe/cookbook composition over existing public building blocks?
 - Is the primary builder persona a data engineer, analytics engineer, platform engineer, or application developer embedding analytics into a product?
 - Which runtime adapter should prove the privacy story first: Snowflake, ClickHouse, DuckDB/local lakehouse, dbt Semantic Layer, Cube, or a generic handle-returning warehouse adapter?
 - Should the first workflow end at a verified answer, a proposed topology diff, a dbt/semantic-layer PR, or a reverse-ETL activation handoff?

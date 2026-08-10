@@ -21,6 +21,26 @@ This began as a pure design artifact, but the active implementation state now li
 
 ### Recent spec/design locks
 
+- 2026-08-09 D700-D701: locked the approved Canvas design extraction from the
+  Cloudflare OS and Sandstorm research without introducing either platform as a
+  dependency. D700 adds an app-private canonical ObservationManifest and fresh
+  operation-specific current-access checks for derived artifacts, using strict
+  all-required-source access by default while permitting only explicitly
+  admitted monotonic restricted projections with independent revision,
+  manifest, policy and audit evidence. It does not promote provenance,
+  Graph observation logs, historical allows or share links to permission truth
+  and adds no graph-wide taint or per-node guard. D701 adds same-tenant exact
+  WorkGraph revision copying with a distinct copy-definition permission, new
+  target ownership, separate fork lineage, strict copy allowlisting, fresh
+  compilation/authorization/admission and delayed presentation-seed
+  materialization after a fresh target result and widget admission. Gadget
+  remains only a composite UX DTO and GraphBlueprint remains read-only topology
+  evidence. Gatekeeper-style mediation stays a D609/D620 host-private adapter
+  unless a future decision authorizes bearer-capability issuance. Cloudflare
+  Dynamic Worker execution and cloud-durable isolated state remain deferred as
+  separate execution-family and persistence-owner decisions and cannot replace
+  or inherit certification from D612 E2B or D667 Podman.
+
 - 2026-07-29 D667-D668: expanded the still-open D642 local functional Workbench to the
   approved non-LLM Canvas product spine and locked its missing code boundary. D667 names a
   separately certified rootless-Podman local-untrusted-JS compute family rather than
@@ -7122,6 +7142,7 @@ Execution evidence (2026-08-08):
   pass. The unchanged cold-pass stopping rule left the matched pair
   non-evaluable, so `causalAttribution=undetermined` and `efficacyClaim=none`
   remain the only allowed claims.
+
 ## D704 — D703 mutation-first live block approval
 
 - D704 authorizes one single-use USD 6 D703 live block on the exact DeepSeek V4
@@ -7232,3 +7253,330 @@ any replacement requires a new exact decision and numeric approval.
   USD 6 remaining before inference. The claim is non-releasable and no automatic
   rerun is authorized. D708 evidence remains material-free with undetermined
   attribution and efficacyClaim none.
+
+Execution evidence (2026-08-09): D708 completed its pre-provider gates and one
+single-use live dispatch. The cold arm's first request completed four exact
+`read-file` actions. Its ordinary post-read second request returned HTTP 429
+with only the sanitized `openrouter-http-status:429` and
+`openrouter-quota-rate-limit` issues. It supplied neither the D671-required
+`rate_limit_exceeded` type/code nor a parsed Retry-After, so no retry was
+admitted. D695 and D702 were never exposed, no mutation/diff/validation/verifier
+occurred and the five warm arms remained unattempted. The block is incomplete
+and non-evaluable; its recorded cost is conservative reservation rather than
+confirmed provider billing. No automatic rerun is authorized.
+
+## D709 — untyped HTTP 429 pre-treatment forensic
+
+- D709 derives a strict, material-free forensic, scorecard and generation from
+  the exact D708 observation, scorecard, generation and terminal receipt. It
+  preserves the four-read then ordinary-continuation trace, untyped 429,
+  D671 retry rejection, absent D695/D702 exposure, unattempted warm arms and
+  conservative cost basis without reinterpreting D708.
+- Future package-private adapter evidence may add only closed body/media shape,
+  recognized-type/code presence and Retry-After presence/parse facts. Raw
+  bodies, headers, messages, credentials and private material remain forbidden.
+- Retry, status, request, stopping, route and budget behavior do not change.
+  `causalAttribution=undetermined` and `efficacyClaim=none` remain fixed. D709
+  is offline-only; any untyped-429 retry experiment requires a new decision,
+  qualification and charged approval.
+
+## D710 — untyped HTTP 429 single-retry pre-live qualification
+
+- D710 adds one explicit package-private policy at the existing D671/D675
+  host retry seam. Only a first-attempt HTTP 429 whose D709 discriminator has
+  no recognized type or code may obtain one identical same-route retry.
+- A bounded parsed Retry-After is the scheduled minimum. Absent, invalid or
+  unavailable Retry-After uses the exact 60000ms fallback. A second untyped
+  429 is terminal under D710.
+- The exact DeepSeek V4 Flash / DeepInfra route, six-arm order and stopping,
+  D693/D695/D702 treatment, all ledgers and ceilings, serial execution and
+  no-fallback/provider-switch/parallel/background boundaries remain fixed.
+- D710 is offline-only. It must produce strict canonical no-network evidence
+  for successful recovery and all fail-closed boundaries before any later
+  live proposal. Attribution remains undetermined and efficacyClaim remains
+  none; credential, control-plane, provider, network, claim and spend authority
+  are not granted.
+
+## D711 — untyped HTTP 429 single-retry live replacement approval
+
+- D711 authorizes exactly one USD 6 live replacement under the Local Eval 2
+  USD 32 no-reset limit. The exact D708/D703 six-arm measurement, D693/D695/
+  D702 treatment policies, arm order, warm eligibility, stopping and all
+  non-spend ceilings remain fixed.
+- The sole new operational delta is the exact D710 policy: one qualifying
+  first-attempt untyped HTTP 429 may receive one identical same-route serial
+  retry, using bounded Retry-After or the exact 60000ms fallback. Existing
+  D671/D675 retries remain bounded; no third attempt may arise after D710 is
+  consumed.
+- Exact historical/offline artifacts, implementation/toolchain, fresh official
+  pricing, credential presence and fresh same-credential zero-BYOK must pass
+  before acquiring a new non-releasable single-use D711 claim. Current-key
+  admission occurs after claim consumption and before the sole provider block.
+- D711 owns distinct material-free observation, scorecard, generation,
+  terminal receipt and claim identities. Attribution remains undetermined and
+  efficacyClaim remains none. No rerun, fallback, route/provider switch,
+  parallel/background calls or public/runtime/protocol expansion is authorized.
+- The qualified D711 entrypoint was attempted once on 2026-08-10 and stopped at
+  the first pre-claim gate. The exact official OpenRouter endpoint returned the
+  DeepInfra fp4 prompt rate `0.00000008` USD/token and cache-read rate
+  `0.000000016`, while the immutable v3 schedule requires `0.00000009` and
+  `0.000000018`; completion remained `0.00000018`. The operator therefore made
+  no credential read, acquired no dispatch claim, performed no current-key or
+  model/provider call and incurred no eval spend. D711 is not rerunnable under
+  a changed schedule; a new measurement decision is required.
+
+## D712 — DeepInfra fp4 v4 pricing schedule pre-live qualification
+
+- D712 preserves the exact D711/D710 measurement and introduces only a new
+  immutable pricing schedule identity: input USD 0.08/M, output USD 0.18/M and
+  cache read USD 0.016/M under revision
+  `openrouter-deepseek-v4-flash-0731-deepinfra-fp4-2026-08-10.v4`.
+- The v3 schedule and every D706–D711 artifact, claim, receipt and meaning remain
+  immutable. D712 uses distinct package-private observation, qualification and
+  generation schemas with no compatibility alias or historical reinterpretation.
+- Qualification must replay the full injected six-arm D710 path with exact retry
+  identity and accounting, serial transport, unchanged stopping, no fallback or
+  provider switch, strict rate/route/accessor/TOCTOU rejection, cleanup, privacy
+  and failure-atomic 0600 persistence.
+- D712 is pre-live only. `causalAttribution=undetermined` and
+  `efficacyClaim=none` remain fixed; no credential, control-plane, official
+  network, claim, provider or charged call is authorized. A v4 live replacement
+  requires another explicit numeric decision.
+- The canonical D712 qualification completed under the macOS deny-network
+  sandbox with Node 24.18.0. All six arms ran in the exact D710 order, with 43
+  serial simulated transport requests/attempts, maximum concurrency one, one
+  byte-identical untyped-429 retry, one simulated 60000 ms wait, five warm arms,
+  no fallback/provider switch, complete workspace cleanup, zero provider/network
+  calls and zero charged cost. The frozen v4 pricing observation is
+  `sha256:9681a165560e7f7ea76b6bfe1cb7bdcbd6594901a0c037eacbe9c061e0b084de`,
+  the qualification artifact is
+  `sha256:c7dd4e5477de78914dd92bf57bbf26c2a811b4aad03575fbd13d18933525304f`,
+  and the generation artifact is
+  `sha256:7547ac3b42ea5cdbb3b5d762bc65c14bc37fdc23af6af8dab6ed1fc112365d48`.
+  The generation directory is 0700 and its three canonical material-free files
+  are 0600. D712 remains pre-live and grants no authority to read credentials,
+  acquire a claim or call a provider.
+
+## D713 — D712 v4-pricing live replacement approval
+
+- D713 authorizes exactly one D712-qualified live block on DeepSeek V4 Flash
+  0731 high through DeepInfra fp4 Chat, with a USD 6 block hard cap and the
+  Local Eval 2 USD 32 no-reset total.
+- The v4 schedule is input USD 0.08/M, output USD 0.18/M and cache-read USD
+  0.016/M. The exact six-arm order, warm eligibility, stopping, D693/D695/D702
+  treatment and D710 plus D671/D675 bounded same-route retry remain unchanged.
+- Exact D712 artifacts/current implementation, fresh official pricing equality,
+  credential presence and fresh same-credential zero-BYOK must pass before the
+  new durable non-releasable single-use D713 claim. Current-key admission with
+  at least USD 6 remaining occurs only after claim consumption.
+- Fallback, provider/model/route switch, alternate endpoint, hidden retry,
+  parallel/background calls and automatic rerun are forbidden. D713 evidence
+  remains material-free with `causalAttribution=undetermined` and
+  `efficacyClaim=none`.
+
+### D713 live result — incomplete, non-evaluable
+
+- The single-use D713 claim was consumed once after exact D712/current-source
+  validation, one official-pricing observation matching v4, credential
+  presence, a fresh GraphReFly-workspace zero-BYOK observation covering all 67
+  available providers, and current-key admission. Local Eval 2 reported a USD
+  32 no-reset limit, 12,547,962 microusd used and 19,452,038 microusd remaining
+  before provider dispatch.
+- Only the cold run executed. It made 8 serial requests/attempts and 8 logical
+  steps with maximum provider concurrency 1, no D710/D671/D675 retry, no
+  fallback or provider switch, 271,581 input tokens, 37,589 output tokens,
+  1,125,669 ms recorded provider latency and 28,034 microusd of complete
+  provider-usage cost.
+- Six D695 continuation requests were delivered. At cold step 7 the host
+  rejected one stale-result intent batch before tool execution. The actor had
+  already completed a content-changing exact mutation at step 4 and a later
+  workspace diff at step 5, so D702's deliberately narrower
+  mutation-still-missing recovery predicate did not apply; mutation-first
+  invocation count therefore stayed zero. No focused-validation receipt or
+  hidden-verifier run followed, all five warm arms remained unattempted and the
+  matched pair was not evaluable. This is an incomplete operational result,
+  not a zero effect and not evidence for or against AgenticMemory efficacy.
+- Canonical private evidence is observation
+  `sha256:b974b651f14ea5a89a1c2b4b4f81d7635189a7e252a072afaad4bad30470d7c2`,
+  scorecard
+  `sha256:854977eb1bacf153153ce7672330368a91884ccf058641317ac4cea54e00197e`
+  and generation
+  `sha256:a7b21481c33cf1b6f1e4baac1eaa3aaee16ef65fc283bffe88b418009af9c8e0`.
+  The terminal receipt is
+  `sha256:0562b4ce9466a6be9c99900b02efed07c99f6c6f82d599cd638dfc75772f9f6e`
+  with successful generation persistence. Artifact ownership is 0700/0600,
+  cleanup reports zero residue, exact D712 artifact hashes remain unchanged,
+  and `causalAttribution=undetermined` / `efficacyClaim=none` remain fixed.
+
+## D714 — Graph-native phase-progress measurement
+
+- D714 makes GraphReFly own the next offline measurement's decisive causal
+  coordination. Six frozen arms are declarative WorkItems with independent
+  graph-visible admissions; a cold result no longer censors otherwise admitted
+  warm arms.
+- Immutable caller-owned host/effect facts feed a graph-derived progress ladder:
+  inspection, content-changing mutation, later non-empty diff, focused validation
+  attempted/passed, and hidden verifier attempted/passed. Full completion remains
+  secondary rather than the sole evaluability gate.
+- The existing `workItemExecutionRecipe` owns the mechanical WorkItem → EffectPlan
+  → EffectRun → AgentRequest path. Async provider, filesystem, tool, verifier,
+  credential and timer effects remain outside the synchronous graph.
+- D713 history is immutable. D714 is package-private, offline-only and fixes
+  `causalAttribution=undetermined` / `efficacyClaim=none`.
+
+## D715 — Graph-native phase-directed recovery
+
+- D715 replaces the next harness-only recovery branch with graph-visible planning.
+  Workspace-state evidence, objective phase, rejection receipt and remaining
+  budget enter as facts; the graph derives `nextRequiredPhase` and one bounded
+  recovery EffectPlan, which the D687 recipe lowers mechanically.
+- The D713 stale post-mutation batch remains wholly rejected with zero side
+  effects. Graph policy may issue one fresh correction-first request; it never
+  reorders, splits, replays or partially executes the rejected batch.
+- Qualification uses the exact sanitized D713 phase trace plus at least two
+  independent generic fixtures and covers topology, provenance, dependency
+  admission, bounds, privacy, no-network and atomic persistence.
+- D715 is package-private and offline-only; it adds no public LLM-only primitive,
+  provider authority, protocol change or efficacy claim.
+
+### D714–D715 offline qualification result — graph-owned coordination qualified
+
+- The package-private qualification now uses two real named GraphReFly topologies.
+  D714 admits all six frozen arms independently through
+  `d714IndependentArmAdmission`, projects ordered phase progress through
+  `d714OrderedPhaseProjection`, and lowers six WorkItems through the existing
+  `workItemExecutionRecipe`. The cold D713 source is bound to observation
+  `sha256:b974b651f14ea5a89a1c2b4b4f81d7635189a7e252a072afaad4bad30470d7c2`;
+  its mutation plus later non-empty diff is preserved as evaluable
+  `workspace-diff` progress rather than collapsed into a non-evaluable zero.
+- D715 derives one provider-neutral recovery plan from graph-visible workspace,
+  phase, rejection and remaining-budget facts. The D713-shaped case selects
+  `correction-first`; two independent generic cases select
+  `exact-mutation` and `workspace-diff`. The stale rejected batch remains at
+  zero executed actions, and duplicate EffectRun/request emission is suppressed
+  mechanically by the D687 recipe.
+- Persisted topology digests are
+  `sha256:e6e04685795ded5b170d2bab5c5e5a2fdc763924b3ea69c9872cf98523d1a2d0`
+  for measurement and
+  `sha256:8b1a246d80984c748ca507bee9708390cf569c9c553da6185d4c15c6035a4fa5`
+  for recovery. Canonical private 0600 evidence is qualification
+  `sha256:56d5ec277761d635b9036a2dd0a2c84db6bcd8731d3f148f020744b17297b644`,
+  scorecard
+  `sha256:46d422c8178b6d18d584dbb3b589c80cd7893c369f20500c561e687777a9e67f`
+  and generation
+  `sha256:1d1c1b72e81fd6b4aa6ed3e1a0c8f5e1da960a067abb1b9cbd86cacfa4e48588`.
+  Provider calls, network calls and charged cost are all zero.
+- Focused D714/D715 tests passed 5/5; the complete package suite passed 2268
+  tests with four intentional skips; lint, no-raw-async, test typecheck, private
+  runner strict typecheck, ESM/CJS/DTS build/export smoke, privacy/export/residue,
+  diff and dashboard gates passed. The default build needed a larger Node heap
+  only for the DTS worker after the default worker limit OOM.
+- This proves GraphReFly can own this eval's admission, phase measurement,
+  provenance and recovery planning. It does not yet replace the live imperative
+  matched-runner coordinator and authorizes no credential, network, provider,
+  charged run, causal attribution or efficacy claim.
+
+## D716 — Graph-native matched live-harness coordination
+
+- D716 makes the D714 topology an opt-in authority inside the package-private
+  matched harness. Six frozen arm WorkItems are admitted independently and the
+  existing `workItemExecutionRecipe` releases one serial provider-neutral request
+  at a time; a completion fact for the active arm is required before the graph
+  releases the next arm.
+- Workspace materialization, host/model/tool/verifier execution, retries, timers,
+  credentials, pricing and filesystems remain caller-owned async effects outside
+  the synchronous graph. Their strict immutable completion facts return to the
+  graph for provenance admission and ordered phase/evaluability projection.
+- The D716 path removes the imperative cold-verifier-gates-warm eligibility rule:
+  cold pass, failure and non-evaluable outcomes do not censor otherwise admitted
+  warm arms. Exact arm order, serial execution and existing budget, elapsed,
+  cancellation, preparation-failure and cleanup stopping remain fixed.
+- D691–D715 paths and evidence remain immutable when the constructed capability is
+  absent. D715 recovery is not connected to the model information set in this
+  slice. D716 is simulated-contract/no-network only and fixes
+  `causalAttribution=undetermined` / `efficacyClaim=none`.
+- Implementation and QA completed 2026-08-10. The opt-in matched runner now takes
+  every arm from a same-process constructed Graph coordinator, and only an exact
+  immutable completion fact for the active Graph-issued request releases the next
+  arm. A DeepSeek/DeepInfra-shaped injected Chat run proved that a cold verifier
+  pass no longer censors the five warm arms: all six ran in frozen order through
+  `workItemExecutionRecipe`, 48 injected transport requests were strictly serial,
+  and the graph projected six hidden-verifier-passed phases. A second integrated
+  path made the cold run non-evaluable after one injected transport failure and
+  then injected warm-materialization failure; the graph still completed all six
+  arm facts with the five warm phases non-evaluable and material-free.
+- The D716 qualification additionally exercised one-active-arm admission,
+  canonical request/provenance substitution, graph-level coordinate mismatch,
+  duplicate/stale completion, accessor rejection before read, non-evaluable-cold
+  advancement, bounded topology evidence and failure-atomic private persistence.
+  The persisted test generation used a 0700 directory and three 0600 files and
+  duplicate generation admission left no staging residue. Full package results:
+  154 test files passed with one intentional skipped file, 2269 tests passed with
+  four intentional skips; lint, no-raw-async, test typecheck, ESM/CJS/DTS build and
+  export smoke, privacy/export/residue, diff and dashboard gates passed. No
+  credential, control-plane, provider/network or charged call occurred, and no
+  public export, protocol/conformance, D715 live recovery or efficacy claim was
+  added.
+
+## D717 — Graph-native live-provider pre-live integration
+
+- D717 keeps the exact D716 Graph topology and makes `live-provider` execution
+  class the sole operational delta to qualify offline. The Graph remains the
+  authority for six independent admissions, one-active-arm serial request
+  release, provenance, phase/evaluability/budget projection and the next arm.
+- The caller-owned executor may materialize workspaces and run host, model,
+  provider, tool, verifier, retry timer, pricing, credential and filesystem
+  effects, but it may only return immutable completion facts; it cannot select,
+  skip, reorder or terminate arms independently. Cold outcomes do not censor
+  otherwise admitted warm arms.
+- Model, DeepSeek/DeepInfra route, D712 v4 pricing, budgets, retry, stopping and
+  treatment order remain fixed. D715 recovery remains outside the model
+  information set. D691–D716 evidence remains immutable.
+- The first slice is package-private and injected no-network only. It must add
+  distinct D717 observation/scorecard/generation evidence, bind Graph topology
+  and completion provenance, prove serial accounting, failure cleanup, privacy
+  and atomic 0700/0600 persistence, and keep
+  `causalAttribution=undetermined` / `efficacyClaim=none`.
+- D717 authorizes no credential read, dispatch claim, control-plane/provider
+  network, charged call, live execution, public export or protocol/conformance
+  change. Any provider execution needs a later explicit numeric approval.
+- The package-private pre-live slice is complete. The matched live-provider
+  runner now consumes a one-shot capability for the exact D716 coordinator;
+  the Graph alone releases all six arms, while the caller executor returns one
+  immutable completion fact per arm. D717 observation evidence records all six
+  Graph-projected arm phases, evaluability, request/cost/elapsed totals,
+  provenance and stopped reasons, and the scorecard derives a bounded harness
+  diagnostic only from those Graph facts. The injected full-six-arm path,
+  D710 retry and budget path, provider and warm-materialization failures,
+  cold-independent warm release, provenance/accessor substitution rejection,
+  cleanup, privacy and failure-atomic 0700/0600 persistence passed. Exact D713
+  historical artifact bytes were separately validated; injected history is
+  explicitly labelled and cannot qualify as exact historical bytes. No
+  credential, dispatch claim, network/provider or charged call occurred.
+
+## D719 — Graph-native eval evidence and experience authority
+
+- D719 promotes the successful D714–D717 vertical slice into one package-private,
+  eval-local canonical evidence and experience path without changing the
+  GraphReFly library. External provider, tool, verifier, filesystem, timer and
+  process boundaries remain caller-owned, but only immutable facts admitted by
+  the Graph with exact provenance may affect next-arm release, phase,
+  evaluability, budget, retry, cleanup, stopping, persisted claims or findings.
+- One Graph ledger and versioned projections become the single authority for
+  those decisions. Existing empirical observations, scorecards and generations
+  may remain only as mechanically Graph-derived compatibility artifacts;
+  historical bytes and meanings remain immutable.
+- Graph-visible evidence derives bounded harness findings, repair proposals and
+  offline qualification outcomes. AI proposals must cite exact evidence digests,
+  arms, phases and unknowns, and cannot accept policy, execute effects or bypass
+  host/user authority.
+- The first offline slice must map every in-scope matched-harness decision to a
+  Graph fact path, demote duplicate caller-side decision sources, prove reuse
+  across budget/retry, materialization/cleanup and objective-progress/recovery
+  failures, and show that a new fixture registers facts and projections rather
+  than recreating a coordinator plus observation/scorecard/generation stack.
+- D719 remains package-private and no-network. It fixes
+  `causalAttribution=undetermined` and `efficacyClaim=none` and authorizes no
+  credential, dispatch claim, provider/network or charge, public Eval SDK or
+  export, library/protocol/conformance change, cross-language work, store, Demo,
+  UI or web work.
