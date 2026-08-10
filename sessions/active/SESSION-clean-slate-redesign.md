@@ -7215,3 +7215,20 @@ any replacement requires a new exact decision and numeric approval.
   spend authority. Attribution remains undetermined and efficacyClaim remains
   none; a live block still requires a later numeric approval plus fresh official
   pricing, same-credential zero-BYOK and current-key admission.
+
+## D708 — fresh-pricing-separated live replacement approval
+
+- D708 authorizes exactly one D707 replacement on DeepSeek V4 Flash 0731 high
+  through DeepInfra fp4 Chat, with a USD 6 block hard cap and USD 32 Local Eval
+  2 no-reset total.
+- The exact six-arm order, stopping, D671/D675-only same-route retry, serial
+  execution and no fallback/provider-switch/parallel/background boundaries
+  remain unchanged.
+- Before the new durable claim, the operator must validate all frozen evidence,
+  perform one exact official-pricing GET, prove equality with frozen v3,
+  establish credential presence and complete fresh same-credential zero-BYOK.
+  Any pricing/route drift stops before claim consumption.
+- After claim acquisition, one fresh current-key admission must show at least
+  USD 6 remaining before inference. The claim is non-releasable and no automatic
+  rerun is authorized. D708 evidence remains material-free with undetermined
+  attribution and efficacyClaim none.

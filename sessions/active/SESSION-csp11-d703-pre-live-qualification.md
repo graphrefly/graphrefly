@@ -177,3 +177,18 @@ Qualification evidence (2026-08-09):
   changes. Qualification recorded zero credential reads, control-plane calls,
   network calls, provider calls and dispatch claims. Attribution remains
   undetermined and efficacyClaim remains none.
+
+## D708 fresh-pricing-separated live replacement
+
+- D708 authorizes one USD 6 live replacement under the Local Eval 2 USD 32
+  no-reset total. The model, DeepInfra fp4 Chat route, six-arm order, stopping,
+  D671/D675-only retry envelope and serial/no-fallback boundaries remain exact.
+- Historical/offline/toolchain validation, one bounded official-pricing GET,
+  exact frozen-v3 schedule equality, credential presence and fresh
+  same-credential zero-BYOK all precede the new durable single-use claim. Any
+  route or rate drift stops without consuming the claim.
+- Only after claim acquisition may the operator perform fresh current-key
+  admission and the single serial block. The claim is non-releasable and grants
+  no automatic replacement or rerun.
+- D708 owns distinct material-free observation, scorecard and generation
+  identities. Attribution remains undetermined and efficacyClaim remains none.
