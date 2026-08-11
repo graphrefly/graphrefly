@@ -1,16 +1,15 @@
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
-import { execFileSync } from "node:child_process";
 import { dirname, isAbsolute, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
+import { renderHomeShowcase } from "./home-showcase.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const repoRoot = dirname(root);
 const srcDir = join(root, "src");
 const publicDir = join(root, "public");
 const distDir = join(root, "dist");
-const dashboardDir = join(repoRoot, "dashboard");
-const publicMetaDir = join(distDir, "_meta");
-const publicContentReportOut = join(publicMetaDir, "public-content-report.json");
+const checkMetaDir = join(root, ".generated");
+const publicContentReportOut = join(checkMetaDir, "public-content-report.json");
 const publicCnamePath = join(publicDir, "CNAME");
 const distCnamePath = join(distDir, "CNAME");
 const learnRecordsPath = join(repoRoot, "guide", "learn.jsonl");
@@ -20,6 +19,7 @@ const examplesRecordsPath = join(repoRoot, "guide", "examples.jsonl");
 const packageRecordsPath = join(repoRoot, "guide", "packages.jsonl");
 const referenceRecordsPath = join(repoRoot, "guide", "reference.jsonl");
 const blogRecordsPath = join(repoRoot, "guide", "blog.jsonl");
+const siteRecordsPath = join(repoRoot, "guide", "site.jsonl");
 const guideRegistryPath = join(repoRoot, "guide", "guide.jsonl");
 const decisionRecordsPath = join(repoRoot, "decisions", "decisions.jsonl");
 const ruleRecordsPath = join(repoRoot, "spec", "rules.jsonl");
@@ -35,10 +35,11 @@ const publicRoutes = new Set([
   "/examples",
   "/packages",
   "/reference",
-  "/rs",
 ]);
 const packageRoutes = new Set();
 const expectedSourceJsonlByRoute = new Map([
+  ["/", "guide/site.jsonl"],
+  ["/why/", "guide/site.jsonl"],
   ["/protocol/", protocolAuthoritySource],
   ["/learn/", "guide/learn.jsonl"],
   ["/concepts/", "guide/concepts.jsonl"],
@@ -70,11 +71,9 @@ const publicTopLevelEntries = new Set([
   "packages",
   "protocol",
   "reference",
-  "rs",
   "scripts",
   "styles",
   "why",
-  "_meta",
 ]);
 const localPackageRouteById = new Map(
   [...packageRouteById].filter(([, route]) => route.startsWith("/")),
@@ -84,14 +83,13 @@ for (const route of localPackageRouteById.values()) {
   packageRoutes.add(route);
   expectedSourceJsonlByRoute.set(`${route}/`, "guide/packages.jsonl");
 }
-const staticPublicRoutes = new Set(["/why/", "/rs/"]);
 const primaryNav = [
   { label: "Why", route: "/why" },
-  { label: "Protocol", route: "/protocol" },
   { label: "Packages", route: "/packages" },
   { label: "Blog", route: "/blog" },
   { label: "GitHub", href: "https://github.com/graphrefly" },
 ];
+const blogCategories = new Set(["Product", "Engineering", "Ideas", "Community", "Project", "Ecosystem"]);
 const packageDocsHrefById = new Map([
   ["ts", "https://ts.graphrefly.dev/"],
   ["py", "https://py.graphrefly.dev/"],
@@ -583,8 +581,10 @@ function assertPublicReferenceRecords(records) {
     if (record.area !== "reference" || record.kind !== "guarantee" || record.route !== "/reference") {
       throw new Error(`${record.id} must be a reference guarantee routed to /reference`);
     }
-    if (record.publicness !== "public" || record.status !== "active") {
-      throw new Error(`${record.id} reference records must be public and active`);
+    const isPublic = record.publicness === "public" && record.status === "active";
+    const isInternal = record.publicness === "internal" && record.status === "active";
+    if (!isPublic && !isInternal) {
+      throw new Error(`${record.id} reference records must be active public guarantees or active internal source records`);
     }
     if (record.owner !== "graphrefly" || record.canonical_repo !== "graphrefly") {
       throw new Error(`${record.id} reference records must be owned by graphrefly`);
@@ -610,10 +610,12 @@ function assertPublicReferenceRecords(records) {
         }
       }
     }
-    const publicText = collectPublicReferenceText(record);
-    for (const pattern of referenceTextBanned) {
-      if (pattern.test(publicText)) {
-        throw new Error(`reference record ${record.id} contains raw/internal public text matching ${pattern}`);
+    if (isPublic) {
+      const publicText = collectPublicReferenceText(record);
+      for (const pattern of referenceTextBanned) {
+        if (pattern.test(publicText)) {
+          throw new Error(`reference record ${record.id} contains raw/internal public text matching ${pattern}`);
+        }
       }
     }
   }
@@ -627,8 +629,8 @@ function assertBlogRecords(records) {
       throw new Error(`guide/blog.jsonl has missing or duplicate id: ${record.id}`);
     }
     ids.add(record.id);
-    if (record.area !== "blog" || record.kind !== "post" || record.route !== "/blog") {
-      throw new Error(`${record.id} must be a blog post routed to /blog`);
+    if (record.area !== "blog" || !["post", "editorial-brief"].includes(record.kind) || record.route !== "/blog") {
+      throw new Error(`${record.id} must be a blog post or editorial brief routed to /blog`);
     }
     if (typeof record.slug !== "string" || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(record.slug)) {
       throw new Error(`${record.id} must provide a URL-safe slug`);
@@ -643,20 +645,39 @@ function assertBlogRecords(records) {
     if (typeof record.time !== "string" || !/^\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/.test(record.time)) {
       throw new Error(`${record.id} must provide time as HH:mm:ss±HH:mm`);
     }
-    if (record.publicness !== "public" || record.status !== "active") {
-      throw new Error(`${record.id} blog seed records must be public and active`);
+    const isPublished = record.kind === "post" && record.publicness === "public" && record.status === "active";
+    const isEditorialBrief = record.kind === "editorial-brief" && record.publicness === "internal" && record.status === "draft";
+    if (!isPublished && !isEditorialBrief) {
+      throw new Error(`${record.id} must be either a public active post or an internal draft editorial brief`);
     }
     if (record.owner !== "graphrefly" || record.canonical_repo !== "graphrefly") {
       throw new Error(`${record.id} blog records must be owned by graphrefly`);
     }
-    if (!Array.isArray(record.audience) || !record.audience.includes("developer")) {
-      throw new Error(`${record.id} blog records must include developer audience`);
+    if (typeof record.title !== "string" || record.title.trim().length === 0) {
+      throw new Error(`${record.id} must provide a title`);
+    }
+    if (!Array.isArray(record.audience) || record.audience.length === 0) {
+      throw new Error(`${record.id} blog records must declare an audience`);
     }
     if (!Array.isArray(record.tags) || record.tags.some((tag) => typeof tag !== "string" || tag.length === 0)) {
       throw new Error(`${record.id} must provide string tags`);
     }
     if (typeof record.summary !== "string" || record.summary.length === 0) {
       throw new Error(`${record.id} must provide summary`);
+    }
+    if (isPublished) {
+      if (!record.audience.includes("developer")) {
+        throw new Error(`${record.id} public posts must include developer audience`);
+      }
+      if (!blogCategories.has(record.category)) {
+        throw new Error(`${record.id} must use an approved blog category`);
+      }
+      if (typeof record.author !== "string" || record.author.length === 0) {
+        throw new Error(`${record.id} must provide an author`);
+      }
+      if (!Number.isInteger(record.read_time_minutes) || record.read_time_minutes < 1) {
+        throw new Error(`${record.id} must provide a positive integer read_time_minutes`);
+      }
     }
     if (!Array.isArray(record.sections) || record.sections.length === 0) {
       throw new Error(`${record.id} must provide sections`);
@@ -682,6 +703,21 @@ function assertBlogRecords(records) {
         }
       }
     }
+    if (isPublished) {
+      const publicText = JSON.stringify({
+        title: record.title,
+        summary: record.summary,
+        category: record.category,
+        author: record.author,
+        tags: record.tags,
+        sections: record.sections,
+      });
+      for (const pattern of publicRecordBanned) {
+        if (pattern.test(publicText)) {
+          throw new Error(`public blog record ${record.id} contains rejected stale term matching ${pattern}`);
+        }
+      }
+    }
     assertRecordRefs(record);
     assertPackageRefs(record);
     if (record.render_policy?.render_refs !== "provenance-only" || record.render_policy?.api_docs !== "delegate") {
@@ -692,6 +728,135 @@ function assertBlogRecords(records) {
         throw new Error(`${record.id} migration_source must include kind and sources`);
       }
     }
+  }
+}
+
+function assertSiteRecords(records) {
+  const expected = new Map([
+    ["/", { id: "site.home", kind: "landing-page" }],
+    ["/why", { id: "site.why", kind: "narrative-page" }],
+  ]);
+  if (records.length !== expected.size) {
+    throw new Error(`guide/site.jsonl must contain exactly ${expected.size} public page records`);
+  }
+  for (const record of records) {
+    const shape = expected.get(record.route);
+    if (!shape || record.id !== shape.id || record.kind !== shape.kind) {
+      throw new Error(`${record.id ?? "(unknown)"} is not an admitted public site page`);
+    }
+    if (record.area !== "site" || record.publicness !== "public" || record.status !== "active") {
+      throw new Error(`${record.id} must be an active public site record`);
+    }
+    if (record.owner !== "graphrefly" || record.canonical_repo !== "graphrefly") {
+      throw new Error(`${record.id} must be owned by graphrefly`);
+    }
+    if (!record.audience?.includes("developer") || !record.audience?.includes("executive")) {
+      throw new Error(`${record.id} must include executive and developer audiences`);
+    }
+    for (const field of ["title", "description", "public_summary"]) {
+      if (typeof record[field] !== "string" || record[field].trim().length === 0) {
+        throw new Error(`${record.id} must provide ${field}`);
+      }
+    }
+    if (!Array.isArray(record.public_sections) || record.public_sections.length === 0) {
+      throw new Error(`${record.id} must provide public_sections for corpus indexing`);
+    }
+    const requireText = (value, field) => {
+      if (typeof value !== "string" || value.trim().length === 0) throw new Error(`${record.id} must provide ${field}`);
+    };
+    const requireItems = (items, field) => {
+      if (!Array.isArray(items) || items.length === 0) throw new Error(`${record.id} must provide ${field}`);
+      return items;
+    };
+    const requireUniqueIds = (items, field) => {
+      const ids = new Set();
+      for (const item of requireItems(items, field)) {
+        if (typeof item.id !== "string" || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(item.id) || ids.has(item.id)) {
+          throw new Error(`${record.id} ${field} must use unique URL-safe ids`);
+        }
+        ids.add(item.id);
+      }
+    };
+    if (record.route === "/") {
+      requireText(record.hero?.meta, "hero.meta");
+      for (const action of [record.hero?.primary_action, record.hero?.secondary_action]) {
+        requireText(action?.label, "hero action label");
+        requireText(action?.href, "hero action href");
+      }
+      requireText(record.hero?.body, "hero.body");
+      for (const [index, line] of requireItems(record.hero?.headline, "hero.headline").entries()) requireText(line, `hero.headline[${index}]`);
+      if (record.hero.headline.length !== 2) throw new Error(`${record.id} hero.headline must contain exactly two lines`);
+      requireText(record.hero?.category, "hero.category");
+      for (const field of ["eyebrow", "heading", "intro", "source_label", "result_label", "problem", "solution"]) requireText(record.example?.[field], `example.${field}`);
+      for (const [index, branch] of requireItems(record.example?.branches, "example.branches").entries()) {
+        requireText(branch.label, `example.branches[${index}].label`);
+        requireText(branch.detail, `example.branches[${index}].detail`);
+      }
+      if (record.example.branches.length !== 3) throw new Error(`${record.id} example.branches must contain exactly three branches`);
+      for (const field of ["heading", "aria_label", "source_detail", "result_detail", "caption_lead", "caption_body"]) {
+        requireText(record.example?.diagram?.[field], `example.diagram.${field}`);
+      }
+      for (const field of ["eyebrow", "heading"]) requireText(record.reasons?.[field], `reasons.${field}`);
+      requireUniqueIds(record.reasons?.items, "reasons.items");
+      for (const [index, item] of record.reasons.items.entries()) {
+        for (const field of ["number", "title", "body", "benefit", "href"]) requireText(item[field], `reasons.items[${index}].${field}`);
+      }
+      if (record.reasons.items.length !== 3) throw new Error(`${record.id} reasons.items must contain exactly three reasons`);
+      for (const field of ["eyebrow", "heading", "intro"]) requireText(record.inspection?.[field], `inspection.${field}`);
+      for (const [index, item] of requireItems(record.inspection?.items, "inspection.items").entries()) {
+        requireText(item.name, `inspection.items[${index}].name`);
+        requireText(item.body, `inspection.items[${index}].body`);
+      }
+      if (record.inspection.items.length !== 3) throw new Error(`${record.id} inspection.items must contain exactly three entries`);
+      for (const section of ["problem", "boundary", "shared_truth", "evidence", "adoption"]) {
+        requireText(record[section]?.heading, `${section}.heading`);
+        requireText(record[section]?.body, `${section}.body`);
+      }
+      for (const field of ["eyebrow", "without_label", "without", "with_label", "with"]) requireText(record.problem?.[field], `problem.${field}`);
+      requireText(record.boundary?.callout, "boundary.callout");
+      requireText(record.shared_truth?.note, "shared_truth.note");
+      requireText(record.progress?.heading, "progress.heading");
+      for (const [index, item] of requireItems(record.progress?.items, "progress.items").entries()) {
+        requireText(item.label, `progress.items[${index}].label`);
+        requireText(item.body, `progress.items[${index}].body`);
+      }
+      if (record.progress.items.length !== 3) throw new Error(`${record.id} progress.items must contain exactly three entries`);
+      requireText(record.adoption?.note, "adoption.note");
+      for (const [index, action] of requireItems(record.adoption?.actions, "adoption.actions").entries()) {
+        requireText(action.label, `adoption.actions[${index}].label`);
+        requireText(action.href, `adoption.actions[${index}].href`);
+      }
+      for (const field of ["eyebrow", "heading", "intro"]) requireText(record.packages?.[field], `packages.${field}`);
+    } else {
+      for (const field of ["eyebrow", "heading", "body"]) requireText(record.hero?.[field], `hero.${field}`);
+      requireText(record.index_label, "index_label");
+      requireUniqueIds(record.sections, "sections");
+      const expectedSectionIds = ["one-coherent-explanation", "the-graph-is-the-system", "connected-change", "smaller-context", "causal-evidence", "explicit-boundaries", "what-changes", "where-to-start"];
+      if (record.sections.map((section) => section.id).join("|") !== expectedSectionIds.join("|")) {
+        throw new Error(`${record.id} sections must preserve the approved eight-section order`);
+      }
+      for (const section of record.sections) {
+        for (const field of ["mark", "index_title", "heading"]) requireText(section[field], `sections.${section.id}.${field}`);
+        if (!Array.isArray(section.body)) throw new Error(`${record.id} sections.${section.id}.body must be an array`);
+        for (const [index, paragraph] of section.body.entries()) requireText(paragraph, `sections.${section.id}.body[${index}]`);
+        if (section.callout != null) requireText(section.callout, `sections.${section.id}.callout`);
+        if (section.after != null) requireText(section.after, `sections.${section.id}.after`);
+        if (section.bullets != null) for (const [index, item] of requireItems(section.bullets, `sections.${section.id}.bullets`).entries()) requireText(item, `sections.${section.id}.bullets[${index}]`);
+        if (section.example != null) for (const field of ["without_label", "without", "with_label", "with"]) requireText(section.example[field], `sections.${section.id}.example.${field}`);
+        if (section.table != null) {
+          if (!Array.isArray(section.table.columns) || section.table.columns.length !== 3) throw new Error(`${record.id} sections.${section.id}.table must have three columns`);
+          if (!Array.isArray(section.table.rows) || section.table.rows.some((row) => !Array.isArray(row) || row.length !== 3)) throw new Error(`${record.id} sections.${section.id}.table rows must have three cells`);
+        }
+      }
+      if (record.sections.length !== 8) throw new Error(`${record.id} sections must contain exactly eight sections`);
+      for (const field of ["eyebrow", "heading", "body"]) requireText(record.coda?.[field], `coda.${field}`);
+      for (const [index, action] of requireItems(record.coda?.actions, "coda.actions").entries()) {
+        requireText(action.label, `coda.actions[${index}].label`);
+        requireText(action.href, `coda.actions[${index}].href`);
+        if (!new Set(["primary", "secondary"]).has(action.style)) throw new Error(`${record.id} coda.actions[${index}] has invalid style`);
+      }
+    }
+    assertRecordRefs(record);
   }
 }
 
@@ -958,6 +1123,7 @@ function publicRecordSummary(record, sourceJsonl) {
     area: record.area,
     kind: record.kind,
     route: record.route,
+    slug: record.slug,
     source_jsonl: sourceJsonl,
     provenance: refsForRecord(record),
     package_refs: packageRefsForRecord(record),
@@ -978,11 +1144,15 @@ function packageEntrySummary(record) {
   };
 }
 
-function assertPublicContentReport(report) {
+function assertPublicContentReport(report, activeBlogRecords) {
   if (report.kind !== "graphrefly-public-content-corpus") {
     throw new Error("public content report has the wrong kind");
   }
-  const expectedRoutes = new Set(["/", ...[...publicRoutes].map((route) => `${route}/`)]);
+  const expectedRoutes = new Set([
+    "/",
+    ...[...publicRoutes].map((route) => `${route}/`),
+    ...activeBlogRecords.map((record) => `/blog/${record.slug}/`),
+  ]);
   const actualRoutes = new Set(report.pages.map((page) => page.route));
   for (const route of expectedRoutes) {
     if (!actualRoutes.has(route)) {
@@ -1006,9 +1176,19 @@ function assertPublicContentReport(report) {
       if (page.source_kind !== "jsonl" || page.source_jsonl !== expectedSource || page.record_ids.length === 0) {
         throw new Error(`public content report page ${page.route} must source ${expectedSource}`);
       }
-    } else if (page.route !== "/" && !staticPublicRoutes.has(page.route) && page.source_kind !== "jsonl") {
-      throw new Error(`public content report page ${page.route} must be sourced from guide JSONL`);
+    } else if (page.source_kind !== "jsonl") {
+      throw new Error(`public content report page ${page.route} must be sourced from structured records`);
     }
+  }
+  const homePage = report.pages.find((page) => page.route === "/");
+  const homeInputs = new Map((homePage?.source_inputs ?? []).map((input) => [input.source_jsonl, new Set(input.record_ids)]));
+  if (!homeInputs.get("guide/site.jsonl")?.has("site.home")) {
+    throw new Error("public content report home page must include site.home as a source input");
+  }
+  const expectedHomePackageIds = new Set(report.package_entries.map((entry) => entry.id));
+  const actualHomePackageIds = homeInputs.get("guide/packages.jsonl") ?? new Set();
+  if (actualHomePackageIds.size !== expectedHomePackageIds.size || [...expectedHomePackageIds].some((id) => !actualHomePackageIds.has(id))) {
+    throw new Error("public content report home page must include every rendered package record as a source input");
   }
   const packagePages = report.pages.filter((page) => ["/packages/"].includes(page.route));
   for (const page of packagePages) {
@@ -1040,12 +1220,14 @@ function mergeRefs(records) {
   return Object.fromEntries(Object.entries(merged).map(([key, values]) => [key, [...values].sort()]));
 }
 
-function writePublicContentReport({ learnRecords, protocolRecords, conceptsRecords, compositionRecords, examplesRecords, packageRecords, referenceRecords, blogRecords }) {
+function writePublicContentReport({ siteRecords, learnRecords, protocolRecords, conceptsRecords, compositionRecords, examplesRecords, packageRecords, referenceRecords, blogRecords }) {
   const renderedPages = walk(distDir)
     .filter((item) => item.endsWith(".html") && !relative(distDir, item).startsWith("status/"))
     .map(renderedPageSummary)
     .sort((a, b) => a.route.localeCompare(b.route));
   const guideRecordsByRoute = new Map([
+    ["/", { sourceJsonl: "guide/site.jsonl", records: siteRecords.filter((record) => record.route === "/") }],
+    ["/why/", { sourceJsonl: "guide/site.jsonl", records: siteRecords.filter((record) => record.route === "/why") }],
     ["/protocol/", { sourceJsonl: protocolAuthoritySource, records: protocolRecords.filter((record) => record.publicness === "public" && record.status === "active") }],
     ["/learn/", { sourceJsonl: "guide/learn.jsonl", records: learnRecords.filter((record) => record.publicness === "public" && record.status === "active") }],
     ["/concepts/", { sourceJsonl: "guide/concepts.jsonl", records: conceptsRecords.filter((record) => record.publicness === "public" && record.status === "active") }],
@@ -1054,6 +1236,10 @@ function writePublicContentReport({ learnRecords, protocolRecords, conceptsRecor
     ["/reference/", { sourceJsonl: "guide/reference.jsonl", records: referenceRecords.filter((record) => record.publicness === "public" && record.status === "active") }],
     ["/blog/", { sourceJsonl: "guide/blog.jsonl", records: blogRecords.filter((record) => record.publicness === "public" && record.status === "active") }],
   ]);
+  const activeBlogRecords = blogRecords.filter((record) => record.publicness === "public" && record.status === "active");
+  for (const record of activeBlogRecords) {
+    guideRecordsByRoute.set(`/blog/${record.slug}/`, { sourceJsonl: "guide/blog.jsonl", records: [record] });
+  }
   const activePackageRecords = packageRecords.filter((item) => item.publicness === "public" && item.status === "active");
   guideRecordsByRoute.set("/packages/", { sourceJsonl: "guide/packages.jsonl", records: activePackageRecords });
   for (const record of activePackageRecords) {
@@ -1064,11 +1250,18 @@ function writePublicContentReport({ learnRecords, protocolRecords, conceptsRecor
 
   const pages = renderedPages.map((page) => {
     const source = guideRecordsByRoute.get(page.route);
+    const sourceInputs = source
+      ? [{ source_jsonl: source.sourceJsonl, record_ids: source.records.map((record) => record.id) }]
+      : [];
+    if (page.route === "/") {
+      sourceInputs.push({ source_jsonl: "guide/packages.jsonl", record_ids: activePackageRecords.map((record) => record.id) });
+    }
     return {
       ...page,
       source_jsonl: source?.sourceJsonl ?? null,
-      source_kind: source ? "jsonl" : "static",
+      source_kind: source ? "jsonl" : "unmapped",
       record_ids: source?.records.map((record) => record.id) ?? [],
+      source_inputs: sourceInputs,
       provenance: source ? mergeRefs(source.records) : { rules: [], conformance: [], sources: [] },
     };
   });
@@ -1078,13 +1271,14 @@ function writePublicContentReport({ learnRecords, protocolRecords, conceptsRecor
     generated_at: new Date().toISOString(),
     policy: {
       primary_nav: primaryNav.map((item) => ({ label: item.label, route: item.route ?? item.href })),
-      public_routes: [...publicRoutes].sort(),
+      public_routes: [...publicRoutes, ...activeBlogRecords.map((record) => `/blog/${record.slug}`)].sort(),
       package_routes: [...packageRoutes].sort(),
       dashboard_link_policy: "isolated: no public dashboard links",
       package_api_policy: "delegate",
     },
     pages,
     public_records: [
+      ...siteRecords.map((record) => publicRecordSummary(record, "guide/site.jsonl")),
       ...learnRecords.filter((record) => record.publicness === "public" && record.status === "active").map((record) => publicRecordSummary(record, "guide/learn.jsonl")),
       ...protocolRecords.filter((record) => record.publicness === "public" && record.status === "active").map((record) => publicRecordSummary(record, protocolAuthoritySource)),
       ...conceptsRecords.filter((record) => record.publicness === "public" && record.status === "active").map((record) => publicRecordSummary(record, "guide/concepts.jsonl")),
@@ -1098,7 +1292,7 @@ function writePublicContentReport({ learnRecords, protocolRecords, conceptsRecor
       .map(packageEntrySummary),
   };
 
-  assertPublicContentReport(report);
+  assertPublicContentReport(report, activeBlogRecords);
   writeFileSync(publicContentReportOut, `${JSON.stringify(report, null, 2)}\n`);
 }
 
@@ -1136,7 +1330,7 @@ function renderList(items = []) {
   return `<ul>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`;
 }
 
-function renderPrimaryNav(routeName) {
+function renderPrimaryNav(routeName, pathPrefix = "../") {
   const activeRoute = `/${routeName}`;
   return primaryNav
     .map((item) => {
@@ -1144,36 +1338,33 @@ function renderPrimaryNav(routeName) {
         return `<a href="${escapeHtml(item.href)}">${escapeHtml(item.label)}</a>`;
       }
       const route = item.route;
-      const href = `../${route.replace(/^\/+/, "")}/index.html`;
+      const href = `${pathPrefix}${route.replace(/^\/+/, "")}/index.html`;
       const current = route === activeRoute ? ' aria-current="page"' : "";
       return `<a href="${escapeHtml(href)}"${current}>${escapeHtml(item.label)}</a>`;
     })
     .join("");
 }
 
-function renderHeader(routeName) {
-  return `<header class="site-header"><a class="brand" href="../index.html"><span class="brand-word">Graph<span>ReFly</span></span></a><nav class="nav" aria-label="Primary">${renderPrimaryNav(routeName)}</nav></header>`;
+function renderHeader(routeName, pathPrefix = "../") {
+  return `<header class="site-header"><a class="brand" href="${pathPrefix}index.html"><span class="brand-word">Graph<span>ReFly</span></span></a><nav class="nav" aria-label="Primary">${renderPrimaryNav(routeName, pathPrefix)}</nav></header>`;
 }
 
-function renderFooter(footerSource) {
-  return `<footer class="site-footer rich-footer" data-source="${escapeHtml(footerSource)}"><div class="footer-brand">GraphReFly<small>Reactive Graph Protocol</small></div><div class="footer-links" aria-label="Footer links"><div><b>Site</b><a href="../why/index.html">Why</a><a href="../protocol/index.html">Protocol</a><a href="../packages/index.html">Packages</a><a href="../blog/index.html">Blog</a></div><div><b>Packages</b><a href="https://ts.graphrefly.dev/">TypeScript</a><a href="https://py.graphrefly.dev/">Python</a><a href="https://rs.graphrefly.dev/">Rust</a></div><div><b>Source</b><a href="https://github.com/graphrefly">GitHub organization</a><a href="../blog/index.html">Blog archive</a></div></div></footer>`;
+function renderFooter(footerSource, pathPrefix = "../") {
+  return `<footer class="site-footer rich-footer" data-source="${escapeHtml(footerSource)}"><div class="footer-brand">GraphReFly<small>Reactive graphs for understandable systems</small></div><div class="footer-links" aria-label="Footer links"><div><b>Site</b><a href="${pathPrefix}why/index.html">Why GraphReFly</a><a href="${pathPrefix}packages/index.html">Packages</a><a href="${pathPrefix}blog/index.html">Blog</a></div><div><b>Learn</b><a href="${pathPrefix}learn/index.html">Start here</a><a href="${pathPrefix}concepts/index.html">Core ideas</a><a href="${pathPrefix}examples/index.html">Examples</a><a href="${pathPrefix}reference/index.html">Guarantees</a></div><div><b>Technical</b><a href="${pathPrefix}protocol/index.html">Protocol reference</a><a href="https://github.com/graphrefly">GitHub</a></div><div><b>Packages</b><a href="https://ts.graphrefly.dev/">TypeScript</a><a href="https://py.graphrefly.dev/">Python</a><a href="https://rs.graphrefly.dev/">Rust</a></div></div></footer>`;
 }
 
-function renderRecordCards(records, fromRoute) {
+function renderRecordCards(records) {
   return records
     .filter((record) => record.publicness === "public" && record.status === "active")
     .map((record) => {
-      const packageLinks = (record.package_refs ?? [])
-        .map((pkg) => `<a href="${escapeHtml(packageDocsHrefById.get(pkg.package) ?? routeHref(pkg.href, fromRoute))}">${escapeHtml(pkg.label)}</a>`)
-        .join(" · ");
       const topology = Array.isArray(record.topology)
-        ? `<section class="composition-section topology-strip"><h3>Topology</h3><div class="topology-pills">${record.topology.map((node) => `<span><b>${escapeHtml(node.role)}</b>${escapeHtml(node.label)}</span>`).join("")}</div></section>`
+        ? `<section class="composition-section topology-strip"><h3>Shape</h3><div class="topology-pills">${record.topology.map((node) => `<span><b>${escapeHtml(node.role)}</b>${escapeHtml(node.label)}</span>`).join("")}</div></section>`
         : "";
       const learns = Array.isArray(record.learns) && record.learns.length
-        ? `<section class="composition-section"><h3>Learns</h3><div class="topic-tags">${record.learns.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div></section>`
+        ? `<section class="composition-section"><h3>Useful ideas</h3><div class="topic-tags">${record.learns.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div></section>`
         : "";
       const intent = typeof record.intent === "string"
-        ? `<section class="composition-section"><h3>Intent</h3><div><p>${escapeHtml(record.intent)}</p></div></section>`
+        ? `<p class="record-intent">${escapeHtml(record.intent)}</p>`
         : "";
       const sections = record.public_sections
         .map((section) => {
@@ -1181,7 +1372,7 @@ function renderRecordCards(records, fromRoute) {
           return `<section class="composition-section"><h3>${escapeHtml(section.heading)}</h3><div>${body}${renderList(section.bullets)}</div></section>`;
         })
         .join("");
-      return `<article class="composition-record record-card"><header class="record-card-head"><p>${escapeHtml(record.kind)}</p><h2>${escapeHtml(record.title)}</h2></header><section class="composition-section"><h3>Summary</h3><div><p>${escapeHtml(record.public_summary)}</p></div></section>${intent}${topology}${learns}${sections}<div class="record-meta"><span>Package docs: ${packageLinks}</span></div></article>`;
+      return `<article class="composition-record record-card"><header class="record-card-head"><h2>${escapeHtml(record.title)}</h2><p>${escapeHtml(record.public_summary)}</p></header>${intent}${topology}${learns}${sections}</article>`;
     })
     .join("");
 }
@@ -1190,22 +1381,20 @@ function renderReferenceCards(records, fromRoute) {
   return records
     .filter((record) => record.publicness === "public" && record.status === "active")
     .map((record) => {
-      const packageLinks = (record.package_refs ?? [])
-        .map((pkg) => `<a href="${escapeHtml(packageDocsHrefById.get(pkg.package) ?? routeHref(pkg.href, fromRoute))}">${escapeHtml(pkg.label)}</a>`)
-        .join(" · ");
       const learnMore = (record.learn_more ?? [])
         .map((link) => `<a href="${escapeHtml(routeHref(link.href, fromRoute))}">${escapeHtml(link.label)}</a>`)
         .join(" · ");
       const sections = record.public_sections
         .map((section) => {
           const body = section.body.map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`).join("");
-          return `<section class="composition-section"><h3>${escapeHtml(section.heading)}</h3><div>${body}${renderList(section.bullets)}</div></section>`;
+          const heading = section.heading === "Guarantee" ? "What it means" : section.heading === "Use It" ? "When it helps" : section.heading;
+          return `<section class="composition-section"><h3>${escapeHtml(heading)}</h3><div>${body}${renderList(section.bullets)}</div></section>`;
         })
         .join("");
       const learnMoreSection = learnMore
-        ? `<section class="composition-section"><h3>Learn More</h3><div>${learnMore}</div></section>`
+        ? `<section class="composition-section"><h3>Explore next</h3><div>${learnMore}</div></section>`
         : "";
-      return `<article class="composition-record reference-record record-card"><header class="record-card-head"><p>Guarantee</p><h2>${escapeHtml(record.title)}</h2></header><section class="composition-section"><h3>Public Promise</h3><div><p>${escapeHtml(record.public_summary)}</p></div></section>${sections}${learnMoreSection}<div class="record-meta"><span>Package docs: ${packageLinks}</span></div></article>`;
+      return `<article class="composition-record reference-record record-card"><header class="record-card-head"><h2>${escapeHtml(record.title)}</h2><p>${escapeHtml(record.public_summary)}</p></header>${sections}${learnMoreSection}</article>`;
     })
     .join("");
 }
@@ -1226,19 +1415,28 @@ function renderBlogCards(records) {
     .sort((a, b) => `${b.date}T${b.time}`.localeCompare(`${a.date}T${a.time}`))
     .map((record) => {
       const tags = record.tags.map((tag) => `<span>${escapeHtml(tag)}</span>`).join("");
-      const packageLinks = (record.package_refs ?? [])
-        .map((pkg) => `<a href="${escapeHtml(packageDocsHrefById.get(pkg.package) ?? routeHref(pkg.href, "blog"))}">${escapeHtml(pkg.label)}</a>`)
-        .join(" · ");
-      const sections = record.sections
-        .map((section) => `<section class="composition-section"><h3>${escapeHtml(section.heading)}</h3><div>${section.body.map(renderBlogBlock).join("")}</div></section>`)
-        .join("");
-      const sourceCount = record.migration_source?.sources?.length ?? 0;
-      const migration = record.migration_source
-        ? `<section class="composition-section"><h3>Draft Policy</h3><div><p>${escapeHtml(record.migration_source.policy)}</p>${sourceCount ? `<p>${sourceCount} archive source${sourceCount === 1 ? "" : "s"} marked for editorial rewrite.</p>` : ""}</div></section>`
-        : "";
-      return `<article id="${escapeHtml(record.slug)}" class="composition-record blog-record record-card"><header class="record-card-head"><p>${escapeHtml(record.date)} · ${escapeHtml(record.kind)}</p><h2>${escapeHtml(record.title)}</h2><div class="topic-tags">${tags}</div></header><section class="composition-section"><h3>Summary</h3><div><p>${escapeHtml(record.summary)}</p></div></section>${sections}${migration}<div class="record-meta"><span>Package docs: ${packageLinks}</span></div></article>`;
+      return `<article id="${escapeHtml(record.slug)}" class="blog-card"><div class="blog-card-meta"><span>${escapeHtml(record.category)}</span><time datetime="${escapeHtml(record.date)}">${escapeHtml(record.date)}</time></div><h2><a href="${escapeHtml(record.slug)}/index.html">${escapeHtml(record.title)}</a></h2><p>${escapeHtml(record.summary)}</p><div class="blog-card-foot"><span>${escapeHtml(record.author)} · ${escapeHtml(record.read_time_minutes)} min read</span><div class="topic-tags">${tags}</div><a class="blog-read-link" href="${escapeHtml(record.slug)}/index.html">Read article <span aria-hidden="true">-&gt;</span></a></div></article>`;
     })
     .join("");
+}
+
+function renderBlogArticle(record) {
+  const sections = record.sections
+    .map((section) => `<section><h2>${escapeHtml(section.heading)}</h2>${section.body.map(renderBlogBlock).join("")}</section>`)
+    .join("");
+  return renderDocument({
+    title: `${record.title} · GraphReFly`,
+    description: record.summary,
+    routeName: "blog",
+    pathPrefix: "../../",
+    footerSource: "guide/blog.jsonl",
+    main: `<main class="blog-post">
+      <a class="blog-back" href="../index.html">&lt;- All posts</a>
+      <header class="blog-post-head"><p class="eyebrow">${escapeHtml(record.category)}</p><h1>${escapeHtml(record.title)}</h1><p class="blog-deck">${escapeHtml(record.summary)}</p><div class="blog-byline"><span>${escapeHtml(record.author)}</span><time datetime="${escapeHtml(record.date)}">${escapeHtml(record.date)}</time><span>${escapeHtml(record.read_time_minutes)} min read</span></div></header>
+      <article class="blog-post-body">${sections}</article>
+      <aside class="blog-post-next"><p>See where GraphReFly fits.</p><div class="route-actions"><a class="button" href="../../why/index.html">Why GraphReFly</a><a class="button secondary" href="../../packages/index.html">Choose a package</a></div></aside>
+    </main>`,
+  });
 }
 
 function protocolAnchor(record) {
@@ -1249,22 +1447,12 @@ function protocolAreaAnchor(area) {
   return `protocol-area-${area.replace(/[^a-z0-9-]/gi, "-").toLowerCase()}`;
 }
 
-function renderProtocolMeta(record) {
-  const conformance = (record.conformance_records ?? [])
-    .map((item) => {
-      const runtimes = Object.entries(item.runtimes ?? {})
-        .map(([runtime, status]) => `${runtime}:${status}`)
-        .join(" · ");
-      return `<li><span>${escapeHtml(item.id)}</span>${escapeHtml(item.name)}${runtimes ? `<small>${escapeHtml(runtimes)}</small>` : ""}</li>`;
-    })
-    .join("");
-  const rows = [
-    ["Area", record.area],
-    ["Status", record.status],
-    ["Since", record.since],
-    ["Covers By", record.covers_by?.join(", ")],
-  ].filter(([, value]) => value != null && String(value).length > 0);
-  return `<dl class="protocol-authority-meta">${rows.map(([label, value]) => `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join("")}</dl>${conformance ? `<section class="protocol-conformance"><h3>Conformance</h3><ul>${conformance}</ul></section>` : ""}`;
+function humanizeProtocolLabel(value) {
+  return String(value)
+    .replace(/^R-/, "")
+    .split("-")
+    .map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1)}`)
+    .join(" ");
 }
 
 function protocolGroups(records) {
@@ -1277,7 +1465,7 @@ function protocolGroups(records) {
 }
 
 function renderProtocolRule(record) {
-  return `<article id="${escapeHtml(protocolAnchor(record))}" class="protocol-record protocol-record-${escapeHtml(record.area)}"><header class="protocol-record-head"><span>${String(record.display_order).padStart(2, "0")}</span><h3>${escapeHtml(record.id)}</h3>${renderProtocolMeta(record)}</header><div class="protocol-record-body"><section class="protocol-record-section statement"><h4>Statement</h4><p>${escapeHtml(record.statement)}</p></section></div></article>`;
+  return `<article id="${escapeHtml(protocolAnchor(record))}" class="protocol-record protocol-record-${escapeHtml(record.area)}"><header class="protocol-record-head"><span>${String(record.display_order).padStart(2, "0")}</span><h3>${escapeHtml(humanizeProtocolLabel(record.id))}</h3><code class="protocol-rule-id">${escapeHtml(record.id)}</code></header><div class="protocol-record-body"><section class="protocol-record-section statement"><h4>Technical guarantee</h4><p>${escapeHtml(record.statement)}</p></section></div></article>`;
 }
 
 function renderProtocolCards(records) {
@@ -1286,12 +1474,12 @@ function renderProtocolCards(records) {
     .sort((a, b) => a.display_order - b.display_order);
   const groups = protocolGroups(publicRecords);
   const map = groups
-    .map((group) => `<li><a href="#${escapeHtml(protocolAreaAnchor(group.area))}"><span>${group.records.length}</span>${escapeHtml(group.area)}</a></li>`)
+    .map((group) => `<li><a href="#${escapeHtml(protocolAreaAnchor(group.area))}"><span>${group.records.length}</span>${escapeHtml(humanizeProtocolLabel(group.area))}</a></li>`)
     .join("");
   const flow = groups
-    .map((group) => `<section id="${escapeHtml(protocolAreaAnchor(group.area))}" class="protocol-area-group"><header class="protocol-area-head"><p>Area</p><h2>${escapeHtml(group.area)}</h2><span>${group.records.length} rules</span></header>${group.records.map(renderProtocolRule).join("")}</section>`)
+    .map((group) => `<section id="${escapeHtml(protocolAreaAnchor(group.area))}" class="protocol-area-group"><header class="protocol-area-head"><p>Topic</p><h2>${escapeHtml(humanizeProtocolLabel(group.area))}</h2><span>${group.records.length} guarantees</span></header>${group.records.map(renderProtocolRule).join("")}</section>`)
     .join("");
-  return `<div class="protocol-board"><aside class="protocol-map" aria-label="Protocol records"><p>Authority filter</p><dl><div><dt>Status</dt><dd>active</dd></div><div><dt>Records</dt><dd>${publicRecords.length}</dd></div><div><dt>Areas</dt><dd>${groups.length}</dd></div></dl><ol>${map}</ol></aside><div class="protocol-flow">${flow}</div></div>`;
+  return `<div class="protocol-board"><aside class="protocol-map" aria-label="Protocol topics"><p>Browse by topic</p><p class="protocol-map-note">This is the implementer-facing contract. Most users can begin with Why, Examples, or a language package.</p><ol>${map}</ol></aside><div class="protocol-flow">${flow}</div></div>`;
 }
 
 function renderEntryLinks(links = []) {
@@ -1339,23 +1527,38 @@ function renderPackageCards(records) {
     .join("");
 }
 
-function pageShell({ title, eyebrow, heading, intro, routeName, cards, footerSource }) {
+function renderDocument({ title, description = "", routeName, pathPrefix = "../", main, footerSource, bodyClass = "" }) {
   return `<!doctype html>
 <html lang="en">
-  <head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>${escapeHtml(title)}</title><link rel="icon" href="../assets/favicon.svg" type="image/svg+xml" /><link rel="stylesheet" href="../styles/site.css" /></head>
-  <body>
-    ${renderHeader(routeName)}
-    <main class="route-page composition-page route-${escapeHtml(routeName)}">
+  <head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />${description ? `<meta name="description" content="${escapeHtml(description)}" />` : ""}<title>${escapeHtml(title)}</title><link rel="icon" href="${pathPrefix}assets/favicon.svg" type="image/svg+xml" /><link rel="stylesheet" href="${pathPrefix}styles/site.css" /></head>
+  <body data-site-shell="public"${bodyClass ? ` class="${escapeHtml(bodyClass)}"` : ""}>
+    ${renderHeader(routeName, pathPrefix)}
+    ${main}
+    ${renderFooter(footerSource, pathPrefix)}<script src="${pathPrefix}scripts/site.js"></script>
+  </body>
+</html>`;
+}
+
+function renderPackageChooser() {
+  return `<aside class="page-package-chooser"><div><p class="eyebrow">Ready to try it?</p><h2>Start with the language your team already uses.</h2></div><div class="page-package-links"><a href="https://ts.graphrefly.dev/">TypeScript</a><a href="https://py.graphrefly.dev/">Python</a><a href="https://rs.graphrefly.dev/">Rust</a></div></aside>`;
+}
+
+function pageShell({ title, description = "", eyebrow, heading, intro, routeName, cards, footerSource, mainClass = "", afterCards = "" }) {
+  return renderDocument({
+    title,
+    description,
+    routeName,
+    footerSource,
+    main: `<main class="route-page composition-page route-${escapeHtml(routeName)} ${escapeHtml(mainClass)}">
       <section class="route-hero">
         <p class="eyebrow">${escapeHtml(eyebrow)}</p>
         <h1>${escapeHtml(heading)}</h1>
         <p>${escapeHtml(intro)}</p>
       </section>
       <section class="composition-list">${cards}</section>
-    </main>
-    ${renderFooter(footerSource)}<script src="../scripts/site.js"></script>
-  </body>
-</html>`;
+      ${afterCards}
+    </main>`,
+  });
 }
 
 function renderGuidePage(records, routeName, page) {
@@ -1364,7 +1567,8 @@ function renderGuidePage(records, routeName, page) {
   writeFileSync(join(outDir, "index.html"), pageShell({
     ...page,
     routeName,
-    cards: renderRecordCards(records, routeName),
+    cards: renderRecordCards(records),
+    afterCards: renderPackageChooser(),
   }));
 }
 
@@ -1372,10 +1576,10 @@ function renderProtocol(records) {
   const outDir = join(distDir, "protocol");
   mkdirSync(outDir, { recursive: true });
   writeFileSync(join(outDir, "index.html"), pageShell({
-    title: "GraphReFly Protocol",
-    eyebrow: "Protocol",
-    heading: "Active protocol rules.",
-    intro: "Mechanical filter: active authority rule records in wave, runtime, graph, node, and control areas. Conformance rows are resolved from covered scenarios with all runtimes passing.",
+    title: "GraphReFly Protocol Reference",
+    eyebrow: "Technical reference",
+    heading: "The contract behind GraphReFly implementations.",
+    intro: "This page is for people implementing, reviewing, or comparing runtimes. It records the guarantees that keep GraphReFly behavior consistent. If you are deciding whether to use the library, start with Why or Examples instead.",
     footerSource: "authority protocol projection",
     routeName: "protocol",
     cards: renderProtocolCards(records),
@@ -1387,27 +1591,37 @@ function renderReference(records) {
   mkdirSync(outDir, { recursive: true });
   writeFileSync(join(outDir, "index.html"), pageShell({
     title: "GraphReFly Reference",
-    eyebrow: "Reference",
-    heading: "What developers can rely on.",
-    intro: "These records summarize the stable behavior promises behind GraphReFly. Use them as a public map, then follow package docs for exact syntax.",
+    eyebrow: "Guarantees",
+    heading: "What your team can rely on.",
+    intro: "A plain-language view of the promises behind GraphReFly: visible relationships, coherent updates, honest missing data, and clear boundaries for outside work.",
     footerSource: "guide/reference.jsonl",
     routeName: "reference",
     cards: renderReferenceCards(records, "reference"),
+    afterCards: renderPackageChooser(),
   }));
 }
 
 function renderBlog(records) {
   const outDir = join(distDir, "blog");
   mkdirSync(outDir, { recursive: true });
+  const publicRecords = records
+    .filter((record) => record.publicness === "public" && record.status === "active")
+    .sort((a, b) => `${b.date}T${b.time}`.localeCompare(`${a.date}T${a.time}`));
   writeFileSync(join(outDir, "index.html"), pageShell({
     title: "GraphReFly Blog",
     eyebrow: "Blog",
-    heading: "Public essays from the shared graph.",
-    intro: "Narrative posts explain the motivation, design judgment, and developer-facing tradeoffs behind GraphReFly. Internal decisions and package APIs stay as provenance or delegated docs, not copied post bodies.",
+    heading: "Notes from building GraphReFly.",
+    intro: "Product releases, engineering stories, comparisons, community notes, and the ideas shaping a graph-first reactive library.",
     footerSource: "guide/blog.jsonl",
     routeName: "blog",
-    cards: renderBlogCards(records),
+    mainClass: "blog-index",
+    cards: renderBlogCards(publicRecords),
   }));
+  for (const record of publicRecords) {
+    const postDir = join(outDir, record.slug);
+    mkdirSync(postDir, { recursive: true });
+    writeFileSync(join(postDir, "index.html"), renderBlogArticle(record));
+  }
 }
 
 function renderPackages(records) {
@@ -1416,8 +1630,8 @@ function renderPackages(records) {
   writeFileSync(join(outDir, "index.html"), pageShell({
     title: "GraphReFly Packages",
     eyebrow: "Packages",
-    heading: "Choose your runtime.",
-    intro: "Install a package, then open the language-owned docs for API details and examples.",
+    heading: "Pick the language your team already uses.",
+    intro: "The graph model is shared across TypeScript, Python, and Rust. Each package owns its installation guide, runnable examples, and exact API reference.",
     footerSource: "guide/packages.jsonl",
     routeName: "packages",
     cards: renderPackageCards(records),
@@ -1426,27 +1640,139 @@ function renderPackages(records) {
 
 function renderComposition(records) {
   const publicRecords = records.filter((record) => record.publicness === "public" && record.status === "active");
-  const cards = renderRecordCards(publicRecords, "composition");
-
-  const html = `<!doctype html>
-<html lang="en">
-  <head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>GraphReFly Composition</title><link rel="icon" href="../assets/favicon.svg" type="image/svg+xml" /><link rel="stylesheet" href="../styles/site.css" /></head>
-  <body>
-    ${renderHeader("composition")}
-    <main class="route-page composition-page route-composition">
+  const cards = renderRecordCards(publicRecords);
+  const html = renderDocument({
+    title: "GraphReFly Composition",
+    routeName: "composition",
+    footerSource: "guide/composition.jsonl",
+    main: `<main class="route-page composition-page route-composition">
       <section class="route-hero">
         <p class="eyebrow">Composition</p>
-        <h1>Patterns for declared reactive graphs.</h1>
-        <p>Use these public patterns to shape inputs, reductions, joins, lifecycle, and effects before jumping to package-specific syntax.</p>
+        <h1>Common shapes for software that changes over time.</h1>
+        <p>These patterns show how to arrange inputs, calculations, joins, and outward effects before worrying about language-specific syntax.</p>
       </section>
       <section class="composition-list">${cards}</section>
-    </main>
-    ${renderFooter("guide/composition.jsonl")}<script src="../scripts/site.js"></script>
-  </body>
-</html>`;
+      ${renderPackageChooser()}
+    </main>`,
+  });
   const outDir = join(distDir, "composition");
   mkdirSync(outDir, { recursive: true });
   writeFileSync(join(outDir, "index.html"), html);
+}
+
+function renderHome(record, packageRecords) {
+  const headline = record.hero.headline.map((line, index) => `<span${index === record.hero.headline.length - 1 ? ' class="is-accent"' : ""}>${escapeHtml(line)}</span>`).join(" ");
+  const reasons = record.reasons.items
+    .map((item) => `<a class="home-reason" href="${escapeHtml(item.href)}"><span>${escapeHtml(item.number)}</span><div><h3>${escapeHtml(item.title)}</h3><p>${escapeHtml(item.body)}</p></div><b>${escapeHtml(item.benefit)}</b></a>`)
+    .join("");
+  const inspection = record.inspection.items
+    .map((item) => `<article><code>${escapeHtml(item.name)}</code><p>${escapeHtml(item.body)}</p></article>`)
+    .join("");
+  const progress = record.progress.items
+    .map((item) => `<article><h3>${escapeHtml(item.label)}</h3><p>${escapeHtml(item.body)}</p></article>`)
+    .join("");
+  const adoptionActions = record.adoption.actions
+    .map((action) => action.style === "text"
+      ? `<a class="text-link" href="${escapeHtml(action.href)}">${escapeHtml(action.label)} <span aria-hidden="true">-&gt;</span></a>`
+      : `<a class="button${action.style === "secondary" ? " secondary" : ""}" href="${escapeHtml(action.href)}">${escapeHtml(action.label)}</a>`)
+    .join("");
+  const packageLanes = packageRecords
+    .filter((item) => item.publicness === "public" && item.status === "active")
+    .map((item) => {
+      const copy = packageRuntimeCopy.get(item.package);
+      return `<a class="package-lane" href="${escapeHtml(packageDocsHrefById.get(item.package))}"><span>${escapeHtml(item.title)}</span><code class="package-name-command">${escapeHtml(item.package_name)}</code><code class="install-command">${escapeHtml(copy.install)}</code><small>Enter ${escapeHtml(item.title)} docs</small></a>`;
+    })
+    .join("");
+  const main = `<main>
+      <section class="focus-hero">
+        <p class="hero-meta">${escapeHtml(record.hero.meta)}</p>
+        <h1>${headline}</h1>
+        <p class="focus-hero-body">${escapeHtml(record.hero.body)}</p>
+        <div class="hero-actions"><a class="button" href="${escapeHtml(record.hero.primary_action.href)}">${escapeHtml(record.hero.primary_action.label)} <span aria-hidden="true">-&gt;</span></a><a class="button secondary" href="${escapeHtml(record.hero.secondary_action.href)}">${escapeHtml(record.hero.secondary_action.label)}</a></div>
+        <p class="focus-category">${escapeHtml(record.hero.category)}</p>
+      </section>
+      <section class="band focus-example" id="causal-walkthrough">
+        <div class="focus-example-grid">
+          <div class="focus-example-copy"><p class="eyebrow">${escapeHtml(record.example.eyebrow)}</p><h2>${escapeHtml(record.example.heading)}</h2><p class="band-intro">${escapeHtml(record.example.intro)}</p><div class="focus-example-contrast"><div><span>The risk</span><p>${escapeHtml(record.example.problem)}</p></div><div><span>The graph behavior</span><p>${escapeHtml(record.example.solution)}</p></div></div></div>
+          ${renderHomeShowcase(record.example)}
+        </div>
+      </section>
+      <section class="band home-problem">
+        <div class="home-problem-heading"><p class="eyebrow">${escapeHtml(record.problem.eyebrow)}</p><h2>${escapeHtml(record.problem.heading)}</h2></div>
+        <div class="home-problem-copy"><p>${escapeHtml(record.problem.body)}</p><div class="home-problem-contrast"><article><span>${escapeHtml(record.problem.without_label)}</span><p>${escapeHtml(record.problem.without)}</p></article><article><span>${escapeHtml(record.problem.with_label)}</span><p>${escapeHtml(record.problem.with)}</p></article></div></div>
+      </section>
+      <section class="band home-reasons">
+        <div class="section-lede wide"><p class="eyebrow">${escapeHtml(record.reasons.eyebrow)}</p><h2>${escapeHtml(record.reasons.heading)}</h2></div>
+        <div class="home-reason-grid">${reasons}</div>
+      </section>
+      <section class="band home-inspection">
+        <div class="section-lede"><p class="eyebrow">${escapeHtml(record.inspection.eyebrow)}</p><h2>${escapeHtml(record.inspection.heading)}</h2><p class="band-intro">${escapeHtml(record.inspection.intro)}</p></div>
+        <div class="inspection-list">${inspection}</div>
+      </section>
+      <section class="band home-boundaries">
+        <div><h2>${escapeHtml(record.boundary.heading)}</h2><p>${escapeHtml(record.boundary.body)}</p></div><strong>${escapeHtml(record.boundary.callout)}</strong>
+      </section>
+      <section class="band home-shared-truth">
+        <div><h2>${escapeHtml(record.shared_truth.heading)}</h2><p>${escapeHtml(record.shared_truth.body)}</p><p class="home-shared-note">${escapeHtml(record.shared_truth.note)}</p></div>
+        <aside><h3>${escapeHtml(record.evidence.heading)}</h3><p>${escapeHtml(record.evidence.body)}</p></aside>
+      </section>
+      <section class="band home-progress">
+        <div class="section-lede wide"><h2>${escapeHtml(record.progress.heading)}</h2></div><div class="progress-list">${progress}</div>
+      </section>
+      <section class="band home-adoption">
+        <div><h2>${escapeHtml(record.adoption.heading)}</h2><p>${escapeHtml(record.adoption.body)}</p><strong>${escapeHtml(record.adoption.note)}</strong></div><div class="home-adoption-actions">${adoptionActions}</div>
+      </section>
+      <section class="band package-section" id="package-routes">
+        <div class="section-lede center"><p class="eyebrow">${escapeHtml(record.packages.eyebrow)}</p><h2>${escapeHtml(record.packages.heading)}</h2><p class="band-intro">${escapeHtml(record.packages.intro)}</p></div>
+        <div class="package-lanes">${packageLanes}</div>
+      </section>
+    </main>`;
+  writeFileSync(join(distDir, "index.html"), renderDocument({
+    title: record.title,
+    description: record.description,
+    routeName: "",
+    pathPrefix: "",
+    footerSource: "guide/site.jsonl",
+    main,
+  }));
+}
+
+function renderWhySection(section) {
+  const paragraphs = section.body.map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`).join("");
+  const table = section.table
+    ? `<div class="why-table-wrap"><table><caption>How each representation can drift from execution</caption><thead><tr>${section.table.columns.map((column) => `<th scope="col">${escapeHtml(column)}</th>`).join("")}</tr></thead><tbody>${section.table.rows.map((row) => `<tr><th scope="row">${escapeHtml(row[0])}</th>${row.slice(1).map((cell) => `<td>${escapeHtml(cell)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`
+    : "";
+  const example = section.example
+    ? `<div class="why-contrast">${section.example.label ? `<p class="why-example-label">${escapeHtml(section.example.label)}</p>` : ""}<div><span>${escapeHtml(section.example.without_label)}</span><p>${escapeHtml(section.example.without)}</p></div><div><span>${escapeHtml(section.example.with_label)}</span><p>${escapeHtml(section.example.with)}</p></div></div>`
+    : "";
+  const bullets = section.bullets
+    ? `<ul class="why-start-list">${section.bullets.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`
+    : "";
+  return `<article class="why-record why-layout-${section.table ? "table" : section.example ? "contrast" : "prose"}" id="${escapeHtml(section.id)}"><div class="why-mark"><span>${escapeHtml(section.mark)}</span></div><div class="why-copy"><h2>${escapeHtml(section.heading)}</h2>${paragraphs}${table}${example}${bullets}${section.callout ? `<p class="why-payoff">${escapeHtml(section.callout)}</p>` : ""}${section.after ? `<p>${escapeHtml(section.after)}</p>` : ""}</div></article>`;
+}
+
+function renderWhy(record) {
+  const index = record.sections
+    .map((item, position) => `<a href="#${escapeHtml(item.id)}"><span>${String(position + 1).padStart(2, "0")}</span>${escapeHtml(item.index_title)}</a>`)
+    .join("");
+  const argumentsHtml = record.sections.map(renderWhySection).join("");
+  const actions = record.coda.actions
+    .map((action) => `<a class="button${action.style === "secondary" ? " secondary" : ""}" href="${escapeHtml(action.href)}">${escapeHtml(action.label)}</a>`)
+    .join("");
+  const main = `<main class="why-page">
+      <section class="why-hero"><p class="eyebrow">${escapeHtml(record.hero.eyebrow)}</p><h1>${escapeHtml(record.hero.heading)}</h1><p>${escapeHtml(record.hero.body)}</p></section>
+      <section class="why-board"><nav class="why-index" aria-label="Why page index"><p>${escapeHtml(record.index_label)}</p>${index}</nav><section class="why-ledger" aria-label="Why GraphReFly arguments">${argumentsHtml}</section></section>
+      <section class="why-coda"><p class="eyebrow">${escapeHtml(record.coda.eyebrow)}</p><h2>${escapeHtml(record.coda.heading)}</h2><p>${escapeHtml(record.coda.body)}</p><div class="route-actions">${actions}</div></section>
+    </main>`;
+  const outDir = join(distDir, "why");
+  mkdirSync(outDir, { recursive: true });
+  writeFileSync(join(outDir, "index.html"), renderDocument({
+    title: record.title,
+    description: record.description,
+    routeName: "why",
+    footerSource: "guide/site.jsonl",
+    main,
+  }));
 }
 
 function copyIfPresent(from, to) {
@@ -1455,15 +1781,20 @@ function copyIfPresent(from, to) {
   return true;
 }
 
-function copyPublicRoutes() {
-  const routesDir = join(distDir, "routes");
-  if (!existsSync(routesDir)) return;
-  for (const name of readdirSync(routesDir)) {
-    if (publicRoutes.has(`/${name}`)) {
-      cpSync(join(routesDir, name), join(distDir, name), { recursive: true });
+function copySiteAssets() {
+  const admittedEntries = new Set(["scripts", "styles"]);
+  for (const name of readdirSync(srcDir)) {
+    if (!admittedEntries.has(name)) {
+      throw new Error(`website/src contains unadmitted source entry ${name}; add an explicit build policy before publishing it`);
     }
   }
-  rmSync(routesDir, { recursive: true, force: true });
+  copyIfPresent(join(srcDir, "scripts"), join(distDir, "scripts"));
+  copyIfPresent(join(srcDir, "styles"), join(distDir, "styles"));
+  for (const file of walk(srcDir)) {
+    if (file.endsWith(".html")) {
+      throw new Error(`${relative(repoRoot, file)} is a static HTML source; render public pages from structured records instead`);
+    }
+  }
 }
 
 assertCleanSource();
@@ -1474,6 +1805,7 @@ const examplesRecords = parseJsonl(examplesRecordsPath);
 const packageRecords = parseJsonl(packageRecordsPath);
 const referenceRecords = parseJsonl(referenceRecordsPath);
 const blogRecords = parseJsonl(blogRecordsPath);
+const siteRecords = parseJsonl(siteRecordsPath);
 const guideRegistryRecords = parseJsonl(guideRegistryPath);
 const decisionRecords = parseJsonl(decisionRecordsPath);
 const ruleRecords = parseJsonl(ruleRecordsPath);
@@ -1489,43 +1821,45 @@ assertPackageEntryRecords(packageRecords);
 assertPublicGuideRecords(referenceRecords, "guide/reference.jsonl", { area: "reference", route: "/reference" });
 assertPublicReferenceRecords(referenceRecords);
 assertBlogRecords(blogRecords);
-execFileSync(process.execPath, [join(dashboardDir, "build.mjs")], { cwd: repoRoot, stdio: "inherit" });
+assertSiteRecords(siteRecords);
 rmSync(distDir, { recursive: true, force: true });
 mkdirSync(distDir, { recursive: true });
-copyIfPresent(srcDir, distDir);
+copySiteAssets();
 copyIfPresent(publicDir, distDir);
-copyPublicRoutes();
 assertCnameArtifact();
+
+renderHome(siteRecords.find((record) => record.route === "/"), packageRecords);
+renderWhy(siteRecords.find((record) => record.route === "/why"));
 
 renderGuidePage(learnRecords, "learn", {
   title: "Learn GraphReFly",
-  eyebrow: "Learn",
-  heading: "Build a declared reactive graph.",
-  intro: "A language-neutral first path: understand the topology, then jump to TypeScript, Python, or Rust for runnable syntax.",
+  eyebrow: "Start here",
+  heading: "See the graph before the syntax.",
+  intro: "Begin with three questions: what can change, what depends on it, and where should the result leave the graph? Then choose a language for runnable code.",
   footerSource: "guide/learn.jsonl",
 });
 renderProtocol(protocolRecords);
 renderGuidePage(conceptsRecords, "concepts", {
   title: "GraphReFly Concepts",
   eyebrow: "Concepts",
-  heading: "The graph is the coordination surface.",
-  intro: "GraphReFly organizes work as inspectable topology: one graph owns one ordered concurrency domain, waves carry updates through declared edges, and async or remote work re-enters through explicit boundaries.",
+  heading: "Three ideas explain most of GraphReFly.",
+  intro: "A graph shows the relationships. A wave keeps one change coherent. A boundary makes outside work explicit.",
   footerSource: "guide/concepts.jsonl",
 });
 renderComposition(compositionRecords);
 renderGuidePage(examplesRecords, "examples", {
   title: "GraphReFly Examples",
   eyebrow: "Examples",
-  heading: "Recipes that delegate to package code.",
-  intro: "These examples describe intent and topology. Runnable examples, generated API docs, demos, install commands, and release material stay package-local.",
+  heading: "Start from a problem you already recognize.",
+  intro: "Forms, event streams, reports, and outside services all create familiar graph shapes. Pick the closest example, then open your language package for runnable code.",
   footerSource: "guide/examples.jsonl",
 });
 renderPackages(packageRecords);
 renderReference(referenceRecords);
 renderBlog(blogRecords);
 
-mkdirSync(publicMetaDir, { recursive: true });
-writePublicContentReport({ learnRecords, protocolRecords, conceptsRecords, compositionRecords, examplesRecords, packageRecords, referenceRecords, blogRecords });
+mkdirSync(checkMetaDir, { recursive: true });
+writePublicContentReport({ siteRecords, learnRecords, protocolRecords, conceptsRecords, compositionRecords, examplesRecords, packageRecords, referenceRecords, blogRecords });
 assertRenderedPublicSurface();
 
 console.log(`[website] built ${relative(repoRoot, distDir)}`);

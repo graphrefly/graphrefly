@@ -7580,3 +7580,24 @@ confirmed provider billing. No automatic rerun is authorized.
   credential, dispatch claim, provider/network or charge, public Eval SDK or
   export, library/protocol/conformance change, cross-language work, store, Demo,
   UI or web work.
+
+## D721 — Graph-native provider-capable effect adapter pre-live integration
+
+- D721 keeps committed D720 (`c2aee022`) as the sole runtime and evidence
+  baseline. The only operational delta is a package-private adapter that can
+  invoke caller-owned materialization, provider/model, tool, verifier,
+  retry-wait and cleanup capabilities after exact Graph admission.
+- The adapter executes exactly one admitted effect and returns one bounded
+  immutable fact plus actual usage. It cannot loop, retry, select the next arm,
+  stop the run or construct canonical evidence. D719/D720 remains the only
+  admission, reconciliation, retry, stopping and projection authority.
+- Six-arm order, cold-independent warm admission, one active arm, budgets,
+  retry and stopping remain fixed. The new qualification must exercise all
+  effect kinds in a full injected no-network run and cover accounting,
+  cancellation, cleanup, provenance, bounds, privacy, historical immutability
+  and failure-atomic 0700/0600 persistence.
+- D721 emits no legacy empirical observation, scorecard or generation and
+  fixes `causalAttribution=undetermined` and `efficacyClaim=none`. It authorizes
+  no credential, control-plane, provider/network, dispatch claim, charge,
+  public export, Eval SDK, library or protocol/conformance change. Live use
+  requires a later distinct numeric approval.

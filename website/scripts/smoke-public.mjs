@@ -7,7 +7,7 @@ import { dirname } from "node:path";
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const repoRoot = dirname(root);
 const distDir = join(root, "dist");
-const reportPath = join(distDir, "_meta", "public-content-report.json");
+const reportPath = join(root, ".generated", "public-content-report.json");
 const requirePlaywright = process.argv.includes("--require-playwright") || process.env.GRAPHREFLY_REQUIRE_PLAYWRIGHT === "1";
 const chromeExecutable = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE;
 const viewports = [
@@ -40,7 +40,7 @@ function publicRoutesFromReport(report) {
 }
 
 function readReport() {
-  if (!existsSync(reportPath)) fail("missing website/dist/_meta/public-content-report.json; run docs:public:check first");
+  if (!existsSync(reportPath)) fail("missing website/.generated/public-content-report.json; run docs:public:check first");
   const report = JSON.parse(readFileSync(reportPath, "utf8"));
   if (report.kind !== "graphrefly-public-content-corpus") fail("public content report has wrong kind");
   return report;

@@ -26,6 +26,9 @@ jobs:
         with:
           node-version: 22
 
+      - name: Check internal authority dashboard
+        run: npm run dashboard:check
+
       - name: Build and check public docs
         run: npm run docs:public:check
 

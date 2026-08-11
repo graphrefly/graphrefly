@@ -5,6 +5,7 @@
 {"id":"G-packages","title":"Language package entry records (delegated package-local docs and ownership links)","path":"guide/packages.jsonl","lang":"all","area":"packages","status":"active","record_shape":"jsonl"}
 {"id":"G-reference","title":"Curated public reference guarantees (developer-facing, provenance-only authority anchors)","path":"guide/reference.jsonl","lang":"all","area":"reference","status":"active","record_shape":"jsonl"}
 {"id":"G-blog","title":"Public blog records (narrative essays with compact provenance anchors)","path":"guide/blog.jsonl","lang":"all","area":"blog","status":"active","record_shape":"jsonl"}
+{"id":"G-site","title":"Public website landing and narrative page records","path":"guide/site.jsonl","lang":"all","area":"site","status":"active","record_shape":"jsonl"}
 {"id":"G-blog-migration","title":"Blog migration inventory (old graphrefly-ts archive triage)","path":"guide/blog-migration.jsonl","lang":"all","area":"blog","status":"active","record_shape":"jsonl"}
 {"id":"G-docs","title":"Docs guidance records (jsonl data layer + dashboard conventions; website/docs ownership)","path":"guide/docs.jsonl","lang":"all","area":"meta","status":"active","record_shape":"jsonl"}
 {"id":"G-test","title":"Test guidance records (unit/property/conformance scenario layering)","path":"guide/testing.jsonl","lang":"all","area":"test","status":"stub","record_shape":"jsonl"}
