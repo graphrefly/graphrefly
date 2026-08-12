@@ -7887,3 +7887,11 @@ confirmed provider billing. No automatic rerun is authorized.
 - D752 diagnostics remain non-decision evidence admitted only by Graph.
   Failure persists only atomic partial Graph evidence; fallback, switching,
   parallel/background execution and automatic rerun remain forbidden.
+
+## D754 — D753 schema-preflight-fixed live replacement
+
+- D753 failed before credential, claim, current-key, provider or charge because its local preflight
+  transposed the exact D752 bundle schema literal. D754 authorizes one replacement with that literal
+  repaired and a distinct durable claim/generation.
+- D753 route, six-arm serial Graph authority, USD 6/32 ceilings, retry policy, fresh-admission gates,
+  atomic partial evidence and no-automatic-rerun boundaries remain unchanged.
