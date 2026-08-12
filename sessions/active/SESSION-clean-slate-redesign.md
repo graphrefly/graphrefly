@@ -7722,3 +7722,17 @@ confirmed provider billing. No automatic rerun is authorized.
 - After injected no-network qualification, D739 authorizes one new USD 6/32
   single-use live block on the same route and retry boundaries. Prior claims are
   never reused and causal/efficacy claims remain undetermined/none.
+
+## D740 — Graph-native inspection-saturation recovery
+
+- D739 proved the one-MiB envelope but three runs still exhausted it after
+  repeated valid inspection/search effects; the fourth reached a failed read
+  after eighteen inspection effects.
+- Graph now admits at most six pre-mutation inspection effects per run, simulates
+  the whole incoming batch against that allowance, and rejects an overflowing
+  batch before every side effect.
+- At saturation Graph issues the existing one-shot phase context directly and
+  requires its replacement response to begin with the tool for nextRequiredPhase.
+- D740 retains the exact route, budgets, serial six-arm order, retries and
+  undetermined/none claim boundary, with a new single-use USD 6/32 live claim
+  only after no-network qualification.

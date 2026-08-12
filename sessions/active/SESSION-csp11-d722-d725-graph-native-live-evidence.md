@@ -1,4 +1,4 @@
-# CSP-11 D722–D739 Graph-native completion and failure evidence
+# CSP-11 D722–D740 Graph-native completion and failure evidence
 
 This focused session is an evidence index for the DS-1-owned B112 decisions D722–D739. It introduces no independent design authority.
 
@@ -14,7 +14,8 @@ This focused session is an evidence index for the DS-1-owned B112 decisions D722
 - D737 adds one Graph-authored, zero-side-effect objective-phase recovery continuation and authorizes a new single-use live replacement after no-network qualification.
 - D738 makes Graph provider-effect admissions authoritative when an outer transport observation is lower because an effect fails before transport.
 - D739 raises the bounded private Chat request envelope to one MiB and makes objective-phase recovery preflight the complete ordered tool batch before any tool side effect.
+- D740 makes Graph own pre-mutation inspection saturation and the exact phase tool required from its one-shot recovery context.
 
 ## Current boundary
 
-D739 permits one new live replacement after no-network qualification, fresh pricing, same-credential zero-BYOK, a new durable claim and current-key admission. Graph remains the sole tool, retry, next-arm, stopping and evidence authority; fallback, provider/model/route switch, parallel/background provider calls, public export, library/protocol/conformance change, skill and autonomous memory application remain forbidden.
+D740 permits one new live replacement after no-network qualification, fresh pricing, same-credential zero-BYOK, a new durable claim and current-key admission. Graph remains the sole tool, retry, next-arm, stopping and evidence authority; fallback, provider/model/route switch, parallel/background provider calls, public export, library/protocol/conformance change, skill and autonomous memory application remain forbidden.
