@@ -7627,3 +7627,22 @@ confirmed provider billing. No automatic rerun is authorized.
   profiles, exact wire and access/endpoint binding, replay/accessor/TOCTOU and
   bounds, privacy, persistence and D732 historical immutability. No credential,
   network/provider, claim, charge or automatic rerun is authorized.
+
+## D734 — Graph-native route-profile six-arm integration pre-live
+
+- D734 keeps the committed D719/D722 six-arm Graph scheduler, budget/retry
+  ledger, objective lifecycle and terminal-HTTP authority unchanged. Its only
+  integration delta is a package-private route-bound provider turn plus a Graph
+  authority for the exact request/admission/result/profile binding.
+- The caller adapter cannot create a second route ledger or decide retries,
+  stopping or the next arm. A provider result counts only after the route fact
+  and the normal effect result are both Graph-admitted and replay to an exact
+  bijection.
+- The injected qualification runs all six arms with one active effect, cold
+  never censoring warm, the existing D671/D675/D710 serial retries, ordered tool
+  progress, verification and cleanup. It also exercises a second canonical
+  provider/model profile through the same integration seam without source
+  edits.
+- D734 is offline-only. It authorizes package-private implementation, private
+  no-network artifacts and QA, but no credential, control-plane, provider or
+  network call, claim, charge, live replacement or automatic rerun.
