@@ -7773,3 +7773,36 @@ confirmed provider billing. No automatic rerun is authorized.
 - D744 is the first successful complete six-arm Graph-native measurement, but its relevant-applied recovery consumed the one run-level context to reach exact mutation and then could not receive the newly required workspace-diff after a second zero-effect policy rejection.
 - D745 allows one Graph-authored context per distinct forward objective phase and at most four per run. Same-phase/backward repetition, a fifth context, state drift, replay, wrong first tool or any budget denial remains arm-local and fail-closed.
 - The adapter remains transparent; D744's eight-turn run ceiling, 96-request block ceiling, route, retry, serial topology, cost and claim boundaries remain unchanged. A new live claim is authorized only after exact no-network qualification.
+
+## D749 — consumed live claim and exact phase-trigger replay repair
+
+- D749 acquired and consumed its single-use durable claim, passed fresh pricing,
+  same-credential zero-BYOK and post-claim current-key admission, and recorded
+  18619638 microusd remaining before inference. It executed provider and tool
+  effects for about 25 minutes, then failed during canonical Graph replay with
+  `D722 completion context lacks exact rejected-final provenance`.
+- No D749 success or partial live generation was published. The consumed claim
+  authorizes no automatic rerun or second block.
+- The failure isolated a multi-intent provenance defect: after `read-file`
+  advanced the objective from none to inspection, later same-phase inspection
+  facts in the same provider batch became adjacent to the proactive exact-mutation
+  context. Runtime evidence therefore retained the correct phase transition, but
+  replay incorrectly treated the last same-phase inspection as its trigger.
+- The repaired runtime preserves the exact phase-advancing admitted fact until
+  the Graph-authored context is issued; canonical replay resolves that exact
+  request digest among preceding admitted facts instead of assuming adjacency.
+  Subsequent same-phase inspection facts cannot replace the trigger.
+- D748 qualification v2 now makes this case load-bearing in every arm: a
+  `read-file` phase trigger, an intervening `search-repository`, then a
+  non-adjacent exact-mutation context. The no-network artifact is
+  `sha256:7ab2807c15ccf70a3413c4519d206a211b7d26a3fe8f0aabfc344387d2a23c68`,
+  bundle digest
+  `sha256:c40e95add584b63c97bf38328a579c0e668850706ad613059bac07f9757563fd`,
+  qualification digest
+  `sha256:44ec8022253a69e846949e51c742e6fcb999ee897bfd369fa4f69ea5bf7937d4`
+  and generation digest
+  `sha256:66bf91f2a0a801a71132785c3051ad1176753617386c59ce638c1ebcf8ebeaa1`.
+- The repair is committed in the TypeScript eval at `d6d33742`. Full QA passed
+  2385 tests with 4 skipped, lint/typecheck/build/export checks, and no provider
+  or network call was made during repair qualification. Any replacement live
+  block requires a new explicit numeric decision and a new durable claim.
