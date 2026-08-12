@@ -7847,3 +7847,14 @@ confirmed provider billing. No automatic rerun is authorized.
   are distinguishable before considering any retry-policy change.
 - D750 authorizes no automatic rerun. causalAttribution remains undetermined and
   efficacyClaim remains none.
+
+## D751 — Graph-admitted bounded transport diagnostics
+
+- D751 treats D750's exact partial artifacts as immutable failure evidence and
+  preserves the byte transport's existing `request|response-body` phase plus
+  allowlisted cause code through the package-private adapter result.
+- The diagnostic becomes authoritative only after Graph effect admission and is
+  bound to exact request, admission, result and reconciliation coordinates.
+  Raw error text, stack, body, headers and credential material remain forbidden.
+- D671/D675/D710 retry semantics are unchanged. D751 is offline-only and grants
+  no credential, claim, network/provider, charge, live replacement or rerun.

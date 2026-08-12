@@ -1,6 +1,6 @@
-# CSP-11 D722–D748 Graph-native completion and failure evidence
+# CSP-11 D722–D751 Graph-native completion and failure evidence
 
-This focused session is an evidence index for the DS-1-owned B112 decisions D722–D748. It introduces no independent design authority.
+This focused session is an evidence index for the DS-1-owned B112 decisions D722–D751. It introduces no independent design authority.
 
 ## Locked progression
 
@@ -23,9 +23,13 @@ This focused session is an evidence index for the DS-1-owned B112 decisions D722
 - D746 preserves the already sanitized `UND_ERR_SOCKET` transport diagnostic at the Graph provider boundary so the existing D675 one-additional-attempt retry remains admissible without collapsing other transport failures into HTTP evidence.
 - D747 authorizes and consumes one D746-qualified charged replacement under the unchanged exact route, USD 6/32, six-arm, retry and serial-execution boundaries.
 - D748 makes Graph proactively expose each newly admitted forward objective phase to the next provider effect and makes the D722 core preserve conservative reconciliation provenance.
+- D749–D750 consume two single-use D748-qualified replacements; D750 completes six-arm admission but exposes generic-only transport-failure evidence.
+- D751 preserves the already sanitized transport phase and cause code through adapter result admission into canonical Graph executor-failure facts without expanding retry policy.
 
 ## Current boundary
 
 The D747 replacement is consumed. Its exact canonical bundle artifact is `sha256:cbdb295e3a918ba7a49d896ce580b37a078113701e19bb46ce90951d61e434b2`, with bundle digest `sha256:11ba822a82252014f5fa38509e4a73103691280923e36b0592d91ef82b436465`, partial generation digest `sha256:1c1f77f84c03bc744b94b795aa7938d9eef023baf86296953764f92c9819a84c` and terminal receipt digest `sha256:6b5c21dcfdb63429e0c67a254e2f99509a9ecc0ff191cdf22d09c67ef7ee3727`. Graph completed all six frozen arms through ten primary/recovery runs and admitted exactly 36 provider effects matching 36 outer transport calls, with one D710 retry wait, no fallback/switch/parallel/background execution and all ten cleanups succeeded. The Graph ledger charged `283102` microusd, but this is a safe accounting upper bound rather than fully measured cost: its two executor-failure reconciliations each use the exact provider reservation ceiling (`100000` microusd and `1200000` ms) while incorrectly persisting `basis=measured`, so the derived `conservativeReservationCount=0` is an observed accounting-classification defect. The result is `partial-failure`: no run reached workspace diff, focused validation or hidden verification; two mutation-bearing primary runs stopped before diff, most other primary/recovery runs ended arm-locally on objective-phase policy violations, and the exact failure projection contains one transport-failure fact plus one response-decode-failure fact. `causalAttribution=undetermined` and `efficacyClaim=none` remain fixed. D747 authorizes no rerun or successor measurement.
 
 D748 authorizes only the offline implementation and no-network qualification of the two exact D747-derived repairs. No new live measurement or dispatch authority exists.
+
+D751 authorizes only package-private implementation and offline qualification of bounded transport diagnostics over immutable D750 failure evidence. It authorizes no credential, claim, network, provider, charged block or automatic rerun.
