@@ -7601,3 +7601,29 @@ confirmed provider billing. No automatic rerun is authorized.
   no credential, control-plane, provider/network, dispatch claim, charge,
   public export, Eval SDK, library or protocol/conformance change. Live use
   requires a later distinct numeric approval.
+
+## D733 — Graph-native canonical route-profile repair pre-live
+
+- D733 uses the consumed D732 partial Graph bundle as immutable failure evidence:
+  the six arms were admitted serially, but every request was filtered before
+  DeepInfra because the active 0423 alias did not match the credential
+  workspace's 0731-only model guardrail.
+- The active eval no longer owns model/provider identity through scattered code
+  constants or ambient environment variables. A strict package-private
+  `graph-native-route-profile.v1` canonical input carries model, selected
+  endpoint, provider/tag, quantization, protocol, reasoning, wire parameters and
+  pricing. Graph admission binds its exact digest through endpoint eligibility,
+  wire lowering, route evidence and persistence.
+- A distinct route-access projection must bind the exact credential workspace's
+  allowed model and provider to the same profile before any future dispatch.
+  Public endpoint health alone, caller labels and environment route overrides
+  cannot establish access.
+- The first profile is DeepSeek V4 Flash 0731 on DeepInfra `deepinfra/fp4` Chat,
+  endpoint `deepseek/deepseek-v4-flash-20260731`, with the official
+  USD 0.08/M input, USD 0.18/M output and USD 0.016/M cache-read schedule.
+  Future providers use a new canonical profile and qualification artifact rather
+  than a harness source edit.
+- D733 is offline-only: injected no-network qualification must cover two route
+  profiles, exact wire and access/endpoint binding, replay/accessor/TOCTOU and
+  bounds, privacy, persistence and D732 historical immutability. No credential,
+  network/provider, claim, charge or automatic rerun is authorized.
