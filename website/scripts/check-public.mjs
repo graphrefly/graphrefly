@@ -24,7 +24,6 @@ const expectedRoutes = new Set([
   "/learn/",
   "/concepts/",
   "/composition/",
-  "/examples/",
   "/packages/",
   "/reference/",
 ]);
@@ -37,7 +36,6 @@ const expectedSourceJsonlByRoute = new Map([
   ["/learn/", "guide/learn.jsonl"],
   ["/concepts/", "guide/concepts.jsonl"],
   ["/composition/", "guide/composition.jsonl"],
-  ["/examples/", "guide/examples.jsonl"],
   ["/packages/", "guide/packages.jsonl"],
   ["/reference/", "guide/reference.jsonl"],
   ["/blog/", "guide/blog.jsonl"],
@@ -268,7 +266,7 @@ function assertReport() {
   const sourceWhyRecord = sourceSiteByRoute.get("/why/");
   const homeHeadline = sourceHomeRecord?.hero?.headline?.join(" ");
   const whyHeadline = sourceWhyRecord?.hero?.heading;
-  if (homeHeadline !== "The graph you see is the system that runs." || homePage?.h1 !== homeHeadline) {
+  if (homeHeadline !== "The graph you see, the system that runs." || homePage?.h1 !== homeHeadline) {
     fail("Home must lead with the causal WYSIWYG promise");
   }
   if (whyHeadline !== "Software becomes hard to change when it has more than one version of the truth." || whyPage?.h1 !== whyHeadline) {
@@ -276,11 +274,14 @@ function assertReport() {
   }
   const homeHtml = readFileSync(join(distDir, "index.html"), "utf8");
   const whyHtml = readFileSync(join(distDir, "why", "index.html"), "utf8");
-  if ([...homeHtml.matchAll(/class="home-reason"/g)].length !== 3 || !homeHtml.includes('class="focus-showcase"') || !homeHtml.includes('id="causal-walkthrough"')) {
+  if ([...homeHtml.matchAll(/class="home-reason(?:\s|")/g)].length !== 3 || !homeHtml.includes('class="focus-showcase"') || !homeHtml.includes('id="causal-walkthrough"')) {
     fail("Home must render three differentiators around one clearly bounded causal walkthrough");
   }
-  for (const requiredClass of ["home-problem", "home-inspection", "home-boundaries", "home-shared-truth", "home-progress", "home-adoption"]) {
+  for (const requiredClass of ["focus-example", "home-reasons", "home-inspect-system", "home-start-boundary", "package-section"]) {
     if (!homeHtml.includes(`class="band ${requiredClass}`)) fail(`Home must render the ${requiredClass} section`);
+  }
+  if ([...homeHtml.matchAll(/<section class=/g)].length !== 6) {
+    fail("Home must stay focused across six primary sections");
   }
   if ([...whyHtml.matchAll(/class="why-record\b/g)].length !== 8) {
     fail("Why must render exactly eight sections in the approved argument order");

@@ -19,13 +19,12 @@ export function renderHomeShowcase(example) {
     })
     .join("");
   const edges = branchY
-    .map((y, index) => `<path class="focus-edge focus-edge-${index + 1}" d="M170 190 C245 190 260 ${y} 314 ${y}" /><path class="focus-edge focus-edge-${index + 1}" d="M466 ${y} C530 ${y} 536 190 610 190" />`)
+    .map((y, index) => `<path class="focus-edge focus-edge-${index + 1}" pathLength="1" d="M170 190 H242 V${y} H314" /><path class="focus-edge focus-edge-${index + 1}" pathLength="1" d="M466 ${y} H538 V190 H610" />`)
     .join("");
   const mobileBranches = example.branches
     .map((branch) => `<span><b>${escapeHtml(branch.label)}</b><small>${escapeHtml(branch.detail)}</small></span>`)
     .join("");
   const diagramLabel = escapeHtml(example.diagram.aria_label);
-
   return `<figure class="focus-showcase" aria-labelledby="focus-showcase-title focus-showcase-caption">
     <div class="focus-showcase-top"><span id="focus-showcase-title">${escapeHtml(example.diagram.heading)}</span><span>GraphReFly</span></div>
     <svg viewBox="0 0 780 380" role="img" aria-label="${diagramLabel}">

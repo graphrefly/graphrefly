@@ -15,7 +15,6 @@ const distCnamePath = join(distDir, "CNAME");
 const learnRecordsPath = join(repoRoot, "guide", "learn.jsonl");
 const conceptsRecordsPath = join(repoRoot, "guide", "concepts.jsonl");
 const compositionRecordsPath = join(repoRoot, "guide", "composition.jsonl");
-const examplesRecordsPath = join(repoRoot, "guide", "examples.jsonl");
 const packageRecordsPath = join(repoRoot, "guide", "packages.jsonl");
 const referenceRecordsPath = join(repoRoot, "guide", "reference.jsonl");
 const blogRecordsPath = join(repoRoot, "guide", "blog.jsonl");
@@ -32,7 +31,6 @@ const publicRoutes = new Set([
   "/learn",
   "/concepts",
   "/composition",
-  "/examples",
   "/packages",
   "/reference",
 ]);
@@ -44,7 +42,6 @@ const expectedSourceJsonlByRoute = new Map([
   ["/learn/", "guide/learn.jsonl"],
   ["/concepts/", "guide/concepts.jsonl"],
   ["/composition/", "guide/composition.jsonl"],
-  ["/examples/", "guide/examples.jsonl"],
   ["/packages/", "guide/packages.jsonl"],
   ["/reference/", "guide/reference.jsonl"],
   ["/blog/", "guide/blog.jsonl"],
@@ -65,7 +62,6 @@ const publicTopLevelEntries = new Set([
   "CNAME",
   "composition",
   "concepts",
-  "examples",
   "index.html",
   "learn",
   "packages",
@@ -293,19 +289,6 @@ function assertPublicGuideRecords(records, fileLabel, expected = {}) {
       }
       assertRecordRefs(record);
       assertPackageRefs(record);
-      if (record.area === "examples") {
-        if (typeof record.intent !== "string" || record.intent.length === 0) {
-          throw new Error(`${record.id} example records must provide intent`);
-        }
-        if (!Array.isArray(record.topology) || record.topology.length === 0) {
-          throw new Error(`${record.id} example records must provide topology`);
-        }
-        for (const [index, node] of record.topology.entries()) {
-          if (typeof node.role !== "string" || typeof node.label !== "string") {
-            throw new Error(`${record.id} topology[${index}] must provide role and label strings`);
-          }
-        }
-      }
     }
   }
 }
@@ -1220,7 +1203,7 @@ function mergeRefs(records) {
   return Object.fromEntries(Object.entries(merged).map(([key, values]) => [key, [...values].sort()]));
 }
 
-function writePublicContentReport({ siteRecords, learnRecords, protocolRecords, conceptsRecords, compositionRecords, examplesRecords, packageRecords, referenceRecords, blogRecords }) {
+function writePublicContentReport({ siteRecords, learnRecords, protocolRecords, conceptsRecords, compositionRecords, packageRecords, referenceRecords, blogRecords }) {
   const renderedPages = walk(distDir)
     .filter((item) => item.endsWith(".html") && !relative(distDir, item).startsWith("status/"))
     .map(renderedPageSummary)
@@ -1232,7 +1215,6 @@ function writePublicContentReport({ siteRecords, learnRecords, protocolRecords, 
     ["/learn/", { sourceJsonl: "guide/learn.jsonl", records: learnRecords.filter((record) => record.publicness === "public" && record.status === "active") }],
     ["/concepts/", { sourceJsonl: "guide/concepts.jsonl", records: conceptsRecords.filter((record) => record.publicness === "public" && record.status === "active") }],
     ["/composition/", { sourceJsonl: "guide/composition.jsonl", records: compositionRecords.filter((record) => record.publicness === "public" && record.status === "active") }],
-    ["/examples/", { sourceJsonl: "guide/examples.jsonl", records: examplesRecords.filter((record) => record.publicness === "public" && record.status === "active") }],
     ["/reference/", { sourceJsonl: "guide/reference.jsonl", records: referenceRecords.filter((record) => record.publicness === "public" && record.status === "active") }],
     ["/blog/", { sourceJsonl: "guide/blog.jsonl", records: blogRecords.filter((record) => record.publicness === "public" && record.status === "active") }],
   ]);
@@ -1283,7 +1265,6 @@ function writePublicContentReport({ siteRecords, learnRecords, protocolRecords, 
       ...protocolRecords.filter((record) => record.publicness === "public" && record.status === "active").map((record) => publicRecordSummary(record, protocolAuthoritySource)),
       ...conceptsRecords.filter((record) => record.publicness === "public" && record.status === "active").map((record) => publicRecordSummary(record, "guide/concepts.jsonl")),
       ...compositionRecords.filter((record) => record.publicness === "public" && record.status === "active").map((record) => publicRecordSummary(record, "guide/composition.jsonl")),
-      ...examplesRecords.filter((record) => record.publicness === "public" && record.status === "active").map((record) => publicRecordSummary(record, "guide/examples.jsonl")),
       ...referenceRecords.filter((record) => record.publicness === "public" && record.status === "active").map((record) => publicRecordSummary(record, "guide/reference.jsonl")),
       ...blogRecords.filter((record) => record.publicness === "public" && record.status === "active").map((record) => publicRecordSummary(record, "guide/blog.jsonl")),
     ],
@@ -1350,7 +1331,7 @@ function renderHeader(routeName, pathPrefix = "../") {
 }
 
 function renderFooter(footerSource, pathPrefix = "../") {
-  return `<footer class="site-footer rich-footer" data-source="${escapeHtml(footerSource)}"><div class="footer-brand">GraphReFly<small>Reactive graphs for understandable systems</small></div><div class="footer-links" aria-label="Footer links"><div><b>Site</b><a href="${pathPrefix}why/index.html">Why GraphReFly</a><a href="${pathPrefix}packages/index.html">Packages</a><a href="${pathPrefix}blog/index.html">Blog</a></div><div><b>Learn</b><a href="${pathPrefix}learn/index.html">Start here</a><a href="${pathPrefix}concepts/index.html">Core ideas</a><a href="${pathPrefix}examples/index.html">Examples</a><a href="${pathPrefix}reference/index.html">Guarantees</a></div><div><b>Technical</b><a href="${pathPrefix}protocol/index.html">Protocol reference</a><a href="https://github.com/graphrefly">GitHub</a></div><div><b>Packages</b><a href="https://ts.graphrefly.dev/">TypeScript</a><a href="https://py.graphrefly.dev/">Python</a><a href="https://rs.graphrefly.dev/">Rust</a></div></div></footer>`;
+  return `<footer class="site-footer rich-footer" data-source="${escapeHtml(footerSource)}"><div class="footer-brand">GraphReFly<small>Reactive graphs for understandable systems</small></div><div class="footer-links" aria-label="Footer links"><div><b>Site</b><a href="${pathPrefix}why/index.html">Why GraphReFly</a><a href="${pathPrefix}packages/index.html">Packages</a><a href="${pathPrefix}blog/index.html">Blog</a></div><div><b>Learn</b><a href="${pathPrefix}learn/index.html">Start here</a><a href="${pathPrefix}concepts/index.html">Core ideas</a><a href="${pathPrefix}reference/index.html">Guarantees</a></div><div><b>Maintainers</b><a href="${pathPrefix}protocol/index.html">Runtime contract</a><a href="https://github.com/graphrefly">GitHub</a></div><div><b>Packages</b><a href="https://ts.graphrefly.dev/">TypeScript</a><a href="https://py.graphrefly.dev/">Python</a><a href="https://rs.graphrefly.dev/">Rust</a></div></div></footer>`;
 }
 
 function renderRecordCards(records) {
@@ -1479,7 +1460,7 @@ function renderProtocolCards(records) {
   const flow = groups
     .map((group) => `<section id="${escapeHtml(protocolAreaAnchor(group.area))}" class="protocol-area-group"><header class="protocol-area-head"><p>Topic</p><h2>${escapeHtml(humanizeProtocolLabel(group.area))}</h2><span>${group.records.length} guarantees</span></header>${group.records.map(renderProtocolRule).join("")}</section>`)
     .join("");
-  return `<div class="protocol-board"><aside class="protocol-map" aria-label="Protocol topics"><p>Browse by topic</p><p class="protocol-map-note">This is the implementer-facing contract. Most users can begin with Why, Examples, or a language package.</p><ol>${map}</ol></aside><div class="protocol-flow">${flow}</div></div>`;
+  return `<div class="protocol-board"><aside class="protocol-map" aria-label="Protocol topics"><p>Browse by topic</p><p class="protocol-map-note">This maintainer contract keeps language runtimes aligned. Product users should begin with Why or a language package.</p><ol>${map}</ol></aside><div class="protocol-flow">${flow}</div></div>`;
 }
 
 function renderEntryLinks(links = []) {
@@ -1576,10 +1557,10 @@ function renderProtocol(records) {
   const outDir = join(distDir, "protocol");
   mkdirSync(outDir, { recursive: true });
   writeFileSync(join(outDir, "index.html"), pageShell({
-    title: "GraphReFly Protocol Reference",
-    eyebrow: "Technical reference",
-    heading: "The contract behind GraphReFly implementations.",
-    intro: "This page is for people implementing, reviewing, or comparing runtimes. It records the guarantees that keep GraphReFly behavior consistent. If you are deciding whether to use the library, start with Why or Examples instead.",
+    title: "GraphReFly Maintainer Protocol",
+    eyebrow: "Maintainer reference",
+    heading: "The contract used to keep runtimes aligned.",
+    intro: "This internal maintainer view tracks the guarantees shared by GraphReFly implementations. Product users should begin with Why or choose a language package.",
     footerSource: "authority protocol projection",
     routeName: "protocol",
     cards: renderProtocolCards(records),
@@ -1663,13 +1644,10 @@ function renderComposition(records) {
 function renderHome(record, packageRecords) {
   const headline = record.hero.headline.map((line, index) => `<span${index === record.hero.headline.length - 1 ? ' class="is-accent"' : ""}>${escapeHtml(line)}</span>`).join(" ");
   const reasons = record.reasons.items
-    .map((item) => `<a class="home-reason" href="${escapeHtml(item.href)}"><span>${escapeHtml(item.number)}</span><div><h3>${escapeHtml(item.title)}</h3><p>${escapeHtml(item.body)}</p></div><b>${escapeHtml(item.benefit)}</b></a>`)
+    .map((item) => `<a class="home-reason trace-surface" href="${escapeHtml(item.href)}"><span>${escapeHtml(item.number)}</span><div class="home-reason-principle"><small>Principle</small><h3>${escapeHtml(item.title)}</h3><p>${escapeHtml(item.body)}</p></div><div class="home-reason-result"><small>Practical result</small><b>${escapeHtml(item.benefit)}</b></div></a>`)
     .join("");
   const inspection = record.inspection.items
     .map((item) => `<article><code>${escapeHtml(item.name)}</code><p>${escapeHtml(item.body)}</p></article>`)
-    .join("");
-  const progress = record.progress.items
-    .map((item) => `<article><h3>${escapeHtml(item.label)}</h3><p>${escapeHtml(item.body)}</p></article>`)
     .join("");
   const adoptionActions = record.adoption.actions
     .map((action) => action.style === "text"
@@ -1683,49 +1661,78 @@ function renderHome(record, packageRecords) {
       return `<a class="package-lane" href="${escapeHtml(packageDocsHrefById.get(item.package))}"><span>${escapeHtml(item.title)}</span><code class="package-name-command">${escapeHtml(item.package_name)}</code><code class="install-command">${escapeHtml(copy.install)}</code><small>Enter ${escapeHtml(item.title)} docs</small></a>`;
     })
     .join("");
-  const main = `<main>
-      <section class="focus-hero">
-        <p class="hero-meta">${escapeHtml(record.hero.meta)}</p>
-        <h1>${headline}</h1>
-        <p class="focus-hero-body">${escapeHtml(record.hero.body)}</p>
-        <div class="hero-actions"><a class="button" href="${escapeHtml(record.hero.primary_action.href)}">${escapeHtml(record.hero.primary_action.label)} <span aria-hidden="true">-&gt;</span></a><a class="button secondary" href="${escapeHtml(record.hero.secondary_action.href)}">${escapeHtml(record.hero.secondary_action.label)}</a></div>
-        <p class="focus-category">${escapeHtml(record.hero.category)}</p>
-      </section>
-      <section class="band focus-example" id="causal-walkthrough">
-        <div class="focus-example-grid">
-          <div class="focus-example-copy"><p class="eyebrow">${escapeHtml(record.example.eyebrow)}</p><h2>${escapeHtml(record.example.heading)}</h2><p class="band-intro">${escapeHtml(record.example.intro)}</p><div class="focus-example-contrast"><div><span>The risk</span><p>${escapeHtml(record.example.problem)}</p></div><div><span>The graph behavior</span><p>${escapeHtml(record.example.solution)}</p></div></div></div>
-          ${renderHomeShowcase(record.example)}
+  const causalMessages = [
+    ["START", "start"],
+    ["DIRTY", "dirty"],
+    ["DATA", "data"],
+    ["COMPLETE", "complete"],
+  ].map(([label, type]) => `<span class="causal-protocol-message causal-protocol-message-${type}" data-protocol-message><i></i><b>${label}</b></span>`).join("");
+  const diamondMessages = ["dirty", "data"]
+    .flatMap((type) => ["out", "in"].flatMap((leg) => [0, 1, 2].map((index) => `<span class="causal-diamond-message causal-diamond-message-${type}" data-diamond-message data-message-type="${type}" data-message-leg="${leg}" data-message-index="${index}"><i></i><b>${type.toUpperCase()}</b></span>`)))
+    .join("");
+  const causalFlow = `<div class="causal-flow" aria-hidden="true">
+        <svg class="causal-flow-map" preserveAspectRatio="none">
+          <path class="causal-flow-rail" data-causal-rail />
+          <path class="causal-flow-progress" data-causal-progress />
+          <g class="causal-flow-branches" data-causal-branches></g>
+          <g class="causal-flow-masks" data-causal-masks></g>
+          <g class="causal-flow-branch-progress" data-causal-branch-progress></g>
+        </svg>
+        <div class="causal-flow-nodes" data-causal-nodes></div>
+        <div class="causal-protocol-messages">${causalMessages}</div>
+        <div class="causal-diamond-messages">${diamondMessages}</div>
+        <div class="causal-flow-spark" data-causal-spark><i></i></div>
+      </div>`;
+  const main = `<main class="home-page" data-causal-flow>
+      <section class="focus-hero" data-flow-label="EXECUTABLE GRAPH" data-flow-detail="The graph is the system" data-flow-side="right" data-flow-x="0.79" data-flow-y="0.72">
+        <div class="flow-section-content">
+          <p class="hero-meta">${escapeHtml(record.hero.meta)}</p>
+          <h1>${headline}</h1>
+          <p class="focus-hero-body">${escapeHtml(record.hero.body)}</p>
+          <div class="hero-actions"><a class="button" href="${escapeHtml(record.hero.primary_action.href)}">${escapeHtml(record.hero.primary_action.label)} <span aria-hidden="true">-&gt;</span></a><a class="button secondary" href="${escapeHtml(record.hero.secondary_action.href)}">${escapeHtml(record.hero.secondary_action.label)}</a></div>
+          <p class="focus-category">${escapeHtml(record.hero.category)}</p>
         </div>
       </section>
-      <section class="band home-problem">
-        <div class="home-problem-heading"><p class="eyebrow">${escapeHtml(record.problem.eyebrow)}</p><h2>${escapeHtml(record.problem.heading)}</h2></div>
-        <div class="home-problem-copy"><p>${escapeHtml(record.problem.body)}</p><div class="home-problem-contrast"><article><span>${escapeHtml(record.problem.without_label)}</span><p>${escapeHtml(record.problem.without)}</p></article><article><span>${escapeHtml(record.problem.with_label)}</span><p>${escapeHtml(record.problem.with)}</p></article></div></div>
+      <section class="band focus-example" id="causal-walkthrough" data-flow-label="${escapeHtml(record.example.eyebrow)}" data-flow-detail="One cause through registered paths" data-flow-side="left" data-flow-x="0.18" data-flow-node-y="92">
+        <div class="flow-section-content">
+          <div class="home-section-heading trace-surface"><h2>${escapeHtml(record.example.heading)}</h2><p>${escapeHtml(record.example.intro)}</p></div>
+          <div class="focus-example-grid">
+            <div class="focus-example-copy trace-surface"><div class="focus-example-contrast"><div><span>The risk</span><p>${escapeHtml(record.example.problem)}</p></div><div><span>The graph behavior</span><p>${escapeHtml(record.example.solution)}</p></div></div></div>
+            ${renderHomeShowcase(record.example)}
+          </div>
+        </div>
       </section>
-      <section class="band home-reasons">
-        <div class="section-lede wide"><p class="eyebrow">${escapeHtml(record.reasons.eyebrow)}</p><h2>${escapeHtml(record.reasons.heading)}</h2></div>
-        <div class="home-reason-grid">${reasons}</div>
+      <section class="band home-reasons" data-flow-label="${escapeHtml(record.reasons.eyebrow)}" data-flow-detail="A delivery address fans out" data-flow-side="left" data-flow-x="0.17" data-flow-pattern="diamond" data-flow-branches="${escapeHtml(record.example.branches.map((branch) => branch.label).join("|"))}">
+        <div class="flow-section-content">
+          <div class="home-section-heading trace-surface"><h2>${escapeHtml(record.reasons.heading)}</h2></div>
+          <div class="home-reason-grid">${reasons}</div>
+        </div>
       </section>
-      <section class="band home-inspection">
-        <div class="section-lede"><p class="eyebrow">${escapeHtml(record.inspection.eyebrow)}</p><h2>${escapeHtml(record.inspection.heading)}</h2><p class="band-intro">${escapeHtml(record.inspection.intro)}</p></div>
-        <div class="inspection-list">${inspection}</div>
+      <section class="band home-inspect-system" data-flow-label="INSPECT THE SYSTEM" data-flow-detail="Read-only evidence from the graph" data-flow-side="right" data-flow-x="0.79" data-flow-node-y="96">
+        <div class="flow-section-content">
+          <div class="home-section-heading trace-surface"><h2>${escapeHtml(record.inspection.heading)}</h2></div>
+          <div class="home-inspect-layout">
+            <div class="home-inspect-intro trace-surface"><p>${escapeHtml(record.inspection.intro)}</p><strong>${escapeHtml(record.evidence.heading)}</strong></div>
+            <div class="inspection-list trace-surface">${inspection}</div>
+          </div>
+        </div>
       </section>
-      <section class="band home-boundaries">
-        <div><h2>${escapeHtml(record.boundary.heading)}</h2><p>${escapeHtml(record.boundary.body)}</p></div><strong>${escapeHtml(record.boundary.callout)}</strong>
+      <section class="band home-start-boundary" data-flow-label="START AT A BOUNDARY" data-flow-detail="One bounded result returns as facts" data-flow-side="left" data-flow-x="0.21" data-flow-node-y="96">
+        <div class="flow-section-content">
+          <div class="home-section-heading trace-surface"><h2>Start where coordination becomes unclear.</h2></div>
+          <div class="home-boundary-grid">
+            <article class="home-module home-module-boundary trace-surface"><span>Boundary rule</span><h3>${escapeHtml(record.boundary.heading)}</h3><p>${escapeHtml(record.boundary.body)}</p><strong>${escapeHtml(record.boundary.callout)}</strong></article>
+            <article class="home-module home-module-start trace-surface"><span>Starting point</span><h3>${escapeHtml(record.adoption.heading)}</h3><p>${escapeHtml(record.adoption.body)}</p><div class="home-adoption-actions">${adoptionActions}</div></article>
+          </div>
+        </div>
       </section>
-      <section class="band home-shared-truth">
-        <div><h2>${escapeHtml(record.shared_truth.heading)}</h2><p>${escapeHtml(record.shared_truth.body)}</p><p class="home-shared-note">${escapeHtml(record.shared_truth.note)}</p></div>
-        <aside><h3>${escapeHtml(record.evidence.heading)}</h3><p>${escapeHtml(record.evidence.body)}</p></aside>
+      <section class="band package-section" id="package-routes" data-flow-label="${escapeHtml(record.packages.eyebrow)}" data-flow-detail="TypeScript, Python, Rust" data-flow-side="left" data-flow-x="0.21" data-flow-node-y="94">
+        <div class="flow-section-content">
+          <div class="home-section-heading trace-surface"><h2>${escapeHtml(record.packages.heading)}</h2><p>${escapeHtml(record.packages.intro)}</p></div>
+          <div class="package-lanes">${packageLanes}</div>
+        </div>
       </section>
-      <section class="band home-progress">
-        <div class="section-lede wide"><h2>${escapeHtml(record.progress.heading)}</h2></div><div class="progress-list">${progress}</div>
-      </section>
-      <section class="band home-adoption">
-        <div><h2>${escapeHtml(record.adoption.heading)}</h2><p>${escapeHtml(record.adoption.body)}</p><strong>${escapeHtml(record.adoption.note)}</strong></div><div class="home-adoption-actions">${adoptionActions}</div>
-      </section>
-      <section class="band package-section" id="package-routes">
-        <div class="section-lede center"><p class="eyebrow">${escapeHtml(record.packages.eyebrow)}</p><h2>${escapeHtml(record.packages.heading)}</h2><p class="band-intro">${escapeHtml(record.packages.intro)}</p></div>
-        <div class="package-lanes">${packageLanes}</div>
-      </section>
+      ${causalFlow}
     </main>`;
   writeFileSync(join(distDir, "index.html"), renderDocument({
     title: record.title,
@@ -1738,30 +1745,32 @@ function renderHome(record, packageRecords) {
 }
 
 function renderWhySection(section) {
-  const paragraphs = section.body.map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`).join("");
+  const paragraphs = section.body.length
+    ? `<div class="why-brief">${section.body.map((paragraph, index) => `<p class="why-sentence why-sentence-${index === 0 ? "lead" : "support"}">${escapeHtml(paragraph)}</p>`).join("")}</div>`
+    : "";
   const table = section.table
-    ? `<div class="why-table-wrap"><table><caption>How each representation can drift from execution</caption><thead><tr>${section.table.columns.map((column) => `<th scope="col">${escapeHtml(column)}</th>`).join("")}</tr></thead><tbody>${section.table.rows.map((row) => `<tr><th scope="row">${escapeHtml(row[0])}</th>${row.slice(1).map((cell) => `<td>${escapeHtml(cell)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`
+    ? `<div class="why-table-wrap why-evidence-table"><table><caption>How each representation can drift from execution</caption><thead><tr>${section.table.columns.map((column) => `<th scope="col">${escapeHtml(column)}</th>`).join("")}</tr></thead><tbody>${section.table.rows.map((row) => `<tr><th scope="row">${escapeHtml(row[0])}</th>${row.slice(1).map((cell) => `<td>${escapeHtml(cell)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`
     : "";
   const example = section.example
-    ? `<div class="why-contrast">${section.example.label ? `<p class="why-example-label">${escapeHtml(section.example.label)}</p>` : ""}<div><span>${escapeHtml(section.example.without_label)}</span><p>${escapeHtml(section.example.without)}</p></div><div><span>${escapeHtml(section.example.with_label)}</span><p>${escapeHtml(section.example.with)}</p></div></div>`
+    ? `<div class="why-contrast why-comparison">${section.example.label ? `<p class="why-example-label">${escapeHtml(section.example.label)}</p>` : ""}<div><span>${escapeHtml(section.example.without_label)}</span><p>${escapeHtml(section.example.without)}</p></div><div><span>${escapeHtml(section.example.with_label)}</span><p>${escapeHtml(section.example.with)}</p></div></div>`
     : "";
   const bullets = section.bullets
-    ? `<ul class="why-start-list">${section.bullets.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`
+    ? `<ul class="why-start-list why-parallel-list">${section.bullets.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`
     : "";
-  return `<article class="why-record why-layout-${section.table ? "table" : section.example ? "contrast" : "prose"}" id="${escapeHtml(section.id)}"><div class="why-mark"><span>${escapeHtml(section.mark)}</span></div><div class="why-copy"><h2>${escapeHtml(section.heading)}</h2>${paragraphs}${table}${example}${bullets}${section.callout ? `<p class="why-payoff">${escapeHtml(section.callout)}</p>` : ""}${section.after ? `<p>${escapeHtml(section.after)}</p>` : ""}</div></article>`;
+  return `<article class="why-record why-layout-${section.table ? "table" : section.example ? "contrast" : "prose"}" id="${escapeHtml(section.id)}"><div class="why-mark"><span>${escapeHtml(section.mark)}</span></div><div class="why-copy"><h2>${escapeHtml(section.heading)}</h2>${paragraphs}${table}${example}${bullets}${section.callout ? `<p class="why-payoff why-punchline">${escapeHtml(section.callout)}</p>` : ""}${section.after ? `<p class="why-after">${escapeHtml(section.after)}</p>` : ""}</div></article>`;
 }
 
 function renderWhy(record) {
   const index = record.sections
-    .map((item, position) => `<a href="#${escapeHtml(item.id)}"><span>${String(position + 1).padStart(2, "0")}</span>${escapeHtml(item.index_title)}</a>`)
+    .map((item, position) => `<a href="#${escapeHtml(item.id)}"${position === 0 ? ' aria-current="true"' : ""}><span>${String(position + 1).padStart(2, "0")}</span><b>${escapeHtml(item.index_title)}</b></a>`)
     .join("");
   const argumentsHtml = record.sections.map(renderWhySection).join("");
   const actions = record.coda.actions
     .map((action) => `<a class="button${action.style === "secondary" ? " secondary" : ""}" href="${escapeHtml(action.href)}">${escapeHtml(action.label)}</a>`)
     .join("");
-  const main = `<main class="why-page">
+  const main = `<main class="why-page" data-why-flow>
       <section class="why-hero"><p class="eyebrow">${escapeHtml(record.hero.eyebrow)}</p><h1>${escapeHtml(record.hero.heading)}</h1><p>${escapeHtml(record.hero.body)}</p></section>
-      <section class="why-board"><nav class="why-index" aria-label="Why page index"><p>${escapeHtml(record.index_label)}</p>${index}</nav><section class="why-ledger" aria-label="Why GraphReFly arguments">${argumentsHtml}</section></section>
+      <section class="why-board"><nav class="why-index" aria-label="Why page index"><i aria-hidden="true"></i><p>${escapeHtml(record.index_label)}</p>${index}</nav><section class="why-ledger" aria-label="Why GraphReFly arguments">${argumentsHtml}</section></section>
       <section class="why-coda"><p class="eyebrow">${escapeHtml(record.coda.eyebrow)}</p><h2>${escapeHtml(record.coda.heading)}</h2><p>${escapeHtml(record.coda.body)}</p><div class="route-actions">${actions}</div></section>
     </main>`;
   const outDir = join(distDir, "why");
@@ -1801,7 +1810,6 @@ assertCleanSource();
 const learnRecords = parseJsonl(learnRecordsPath);
 const conceptsRecords = parseJsonl(conceptsRecordsPath);
 const compositionRecords = parseJsonl(compositionRecordsPath);
-const examplesRecords = parseJsonl(examplesRecordsPath);
 const packageRecords = parseJsonl(packageRecordsPath);
 const referenceRecords = parseJsonl(referenceRecordsPath);
 const blogRecords = parseJsonl(blogRecordsPath);
@@ -1816,7 +1824,6 @@ assertPublicGuideRecords(learnRecords, "guide/learn.jsonl", { area: "learn", rou
 assertProtocolRecords(protocolRecords);
 assertPublicGuideRecords(conceptsRecords, "guide/concepts.jsonl", { area: "concepts", route: "/concepts" });
 assertPublicGuideRecords(compositionRecords, "guide/composition.jsonl", { area: "composition", route: "/composition" });
-assertPublicGuideRecords(examplesRecords, "guide/examples.jsonl", { area: "examples", route: "/examples" });
 assertPackageEntryRecords(packageRecords);
 assertPublicGuideRecords(referenceRecords, "guide/reference.jsonl", { area: "reference", route: "/reference" });
 assertPublicReferenceRecords(referenceRecords);
@@ -1847,19 +1854,12 @@ renderGuidePage(conceptsRecords, "concepts", {
   footerSource: "guide/concepts.jsonl",
 });
 renderComposition(compositionRecords);
-renderGuidePage(examplesRecords, "examples", {
-  title: "GraphReFly Examples",
-  eyebrow: "Examples",
-  heading: "Start from a problem you already recognize.",
-  intro: "Forms, event streams, reports, and outside services all create familiar graph shapes. Pick the closest example, then open your language package for runnable code.",
-  footerSource: "guide/examples.jsonl",
-});
 renderPackages(packageRecords);
 renderReference(referenceRecords);
 renderBlog(blogRecords);
 
 mkdirSync(checkMetaDir, { recursive: true });
-writePublicContentReport({ siteRecords, learnRecords, protocolRecords, conceptsRecords, compositionRecords, examplesRecords, packageRecords, referenceRecords, blogRecords });
+writePublicContentReport({ siteRecords, learnRecords, protocolRecords, conceptsRecords, compositionRecords, packageRecords, referenceRecords, blogRecords });
 assertRenderedPublicSurface();
 
 console.log(`[website] built ${relative(repoRoot, distDir)}`);
