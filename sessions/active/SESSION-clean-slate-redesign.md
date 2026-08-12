@@ -7757,3 +7757,10 @@ confirmed provider billing. No automatic rerun is authorized.
 - Its 48 Graph provider proposals, 47 transport calls and 47 route facts isolate one admitted provider request rejected by the outer fetch carrier before transport.
 - The final byte transport now carries the same one-MiB envelope already admitted by D719 and D723/D733; legacy model-turn builders keep their smaller pre-transport bounds.
 - D743 retains the exact route, budgets, serial six-arm order, retries and undetermined/none boundary, with one new USD 6/32 live claim after no-network qualification.
+
+## D744 — Graph-native arm-local objective-policy and provider-turn bounds
+
+- D743 partial artifact `sha256:502ee02f5393d72c26c157d88d1f990668024c6b035bc76a655f8dbe502d1d53`, bundle `sha256:b7bb9d14e8c46b778c788067b13248b8ce3f08e167d738b4361dc805e2890d25` and generation `sha256:9c293172b0ea2c067714b4afd0f8f9229f7a000a978c4cf265db46d05cd9fa59` are immutable failure evidence.
+- A model-authored objective-phase violation was classified as a global executor failure after three completed arms, although no executor, route or transport failure occurred.
+- Graph now admits bounded objective-policy violations and an eight-provider-request per-run ceiling as arm-local outcomes. They release the next frozen arm after cleanup while block-global request, retry, cost and elapsed budgets remain authoritative.
+- D744 retains the exact DeepSeek/DeepInfra route, serial six-arm order, cold-does-not-censor-warm rule, D671/D675/D710 retries and undetermined/none boundary, with one new USD 6/32 live claim after no-network qualification.
