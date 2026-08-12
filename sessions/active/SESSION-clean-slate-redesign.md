@@ -7646,3 +7646,19 @@ confirmed provider billing. No automatic rerun is authorized.
 - D734 is offline-only. It authorizes package-private implementation, private
   no-network artifacts and QA, but no credential, control-plane, provider or
   network call, claim, charge, live replacement or automatic rerun.
+
+## D735 — Graph-native provider-capable route-profile pre-live composition
+
+- D735 keeps D719/D722/D734 as the only provider-effect admission, retry,
+  tool, next-arm, stopping, budget and evidence authority. The adapter may
+  issue one admitted D733-profile-bound request and return one immutable
+  result; it cannot own a loop or canonical claim.
+- A Graph-visible preflight projection proves the offline ordering of exact
+  implementation/history, fresh pricing, credential presence, same-credential
+  zero-BYOK, route access/eligibility, simulated claim, current-key admission
+  and provider readiness without creating any live authority.
+- Qualification covers the full serial six-arm path, all frozen retry families,
+  terminal/decode/transport/route failures, usage reconciliation, cleanup,
+  privacy, replay and atomic success/partial-failure persistence.
+- D735 remains offline-only: no credential read, external control-plane,
+  provider/network call, real claim, spend, live execution or automatic rerun.
