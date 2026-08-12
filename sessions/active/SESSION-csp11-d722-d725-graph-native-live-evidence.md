@@ -1,6 +1,6 @@
-# CSP-11 D722–D737 Graph-native completion and failure evidence
+# CSP-11 D722–D739 Graph-native completion and failure evidence
 
-This focused session is an evidence index for the DS-1-owned B112 decisions D722–D737. It introduces no independent design authority.
+This focused session is an evidence index for the DS-1-owned B112 decisions D722–D739. It introduces no independent design authority.
 
 ## Locked progression
 
@@ -12,7 +12,9 @@ This focused session is an evidence index for the DS-1-owned B112 decisions D722
 - D727–D735 separate executor/HTTP provenance, qualify failure-safe Graph evidence and generalize the exact provider route profile.
 - D736 executes the first D735-qualified route-profile block and persists its objective-phase failure as immutable partial Graph evidence.
 - D737 adds one Graph-authored, zero-side-effect objective-phase recovery continuation and authorizes a new single-use live replacement after no-network qualification.
+- D738 makes Graph provider-effect admissions authoritative when an outer transport observation is lower because an effect fails before transport.
+- D739 raises the bounded private Chat request envelope to one MiB and makes objective-phase recovery preflight the complete ordered tool batch before any tool side effect.
 
 ## Current boundary
 
-D737 permits one new live replacement after no-network qualification, fresh pricing, same-credential zero-BYOK, a new durable claim and current-key admission. Graph remains the sole tool, retry, next-arm, stopping and evidence authority; fallback, provider/model/route switch, parallel/background provider calls, public export, library/protocol/conformance change, skill and autonomous memory application remain forbidden.
+D739 permits one new live replacement after no-network qualification, fresh pricing, same-credential zero-BYOK, a new durable claim and current-key admission. Graph remains the sole tool, retry, next-arm, stopping and evidence authority; fallback, provider/model/route switch, parallel/background provider calls, public export, library/protocol/conformance change, skill and autonomous memory application remain forbidden.

@@ -7706,3 +7706,19 @@ confirmed provider billing. No automatic rerun is authorized.
 - D738 keeps D737 recovery plus the exact route, USD 6/32 ceilings, six serial
   arms, cold-non-censoring and D671/D675/D710 retry envelope. It uses a fresh
   single-use claim; prior D736/D737 claims are never reused.
+
+## D739 — Graph-native bounded provider context and whole-batch phase recovery
+
+- D738 persisted four Graph-admitted provider effects that failed before transport
+  after the actor accumulated four file reads plus repository searches. The frozen
+  readable files total 231850 bytes, so the old 262144-byte Chat request ceiling
+  became the harness failure rather than a provider, route or model result.
+- D739 freezes a 1048576-byte private Chat request ceiling while retaining the
+  existing Graph request, token, elapsed, cost, message, response and result
+  bounds. Every encoded request still follows D719 admission.
+- Graph now simulates the whole provider-authored tool batch in order before any
+  tool effect. Any later out-of-phase intent rejects the whole batch with zero
+  side effects and uses the existing one-shot D737 recovery context.
+- After injected no-network qualification, D739 authorizes one new USD 6/32
+  single-use live block on the same route and retry boundaries. Prior claims are
+  never reused and causal/efficacy claims remain undetermined/none.
