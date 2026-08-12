@@ -1,4 +1,4 @@
-# CSP-11 D722–D744 Graph-native completion and failure evidence
+# CSP-11 D722–D745 Graph-native completion and failure evidence
 
 This focused session is an evidence index for the DS-1-owned B112 decisions D722–D739. It introduces no independent design authority.
 
@@ -19,7 +19,8 @@ This focused session is an evidence index for the DS-1-owned B112 decisions D722
 - D742 makes the exact D719 provider-effect proposal set the sole source of the provider-effect count used in every persisted projection.
 - D743 aligns the real fetch byte transport with the already qualified one-MiB Graph-native Chat request envelope.
 - D744 makes bounded objective-policy violations and per-run provider-turn exhaustion arm-local Graph outcomes, preserving all-six-arm admission without weakening block-global budgets.
+- D745 permits one bounded Graph-authored recovery context per distinct forward objective phase, while retaining a four-context and eight-provider-request per-run ceiling.
 
 ## Current boundary
 
-The D744 replacement is consumed. Its exact live bundle artifact `sha256:ef8833fe33d30e32fee26492708d50c155e8ede948f768f8807fbc0855c2f47e`, bundle digest `sha256:159c2ce60e882c73d4e72778c629ba8b373ba2be62be17662168ab3170fca6de` and success generation `sha256:f88a2e0a1479b8209f1d1d31a178a2e4fd779cae31d898dc397e04671a3682d1` record a complete six-arm Graph-native measurement. Graph admitted 47 provider effects serially, completed every frozen arm, persisted exact cleanup and terminal evidence, used 108863 microusd, and retained `causalAttribution=undetermined` plus `efficacyClaim=none`. No automatic replacement remains authorized.
+The D744 replacement is consumed. Its exact live bundle artifact `sha256:ef8833fe33d30e32fee26492708d50c155e8ede948f768f8807fbc0855c2f47e`, bundle digest `sha256:159c2ce60e882c73d4e72778c629ba8b373ba2be62be17662168ab3170fca6de` and success generation `sha256:f88a2e0a1479b8209f1d1d31a178a2e4fd779cae31d898dc397e04671a3682d1` record a complete six-arm Graph-native measurement. D745 now authorizes a phase-scoped offline qualification and, only after green gates, one new single-use live replacement under the unchanged USD 6/32 and route boundaries.

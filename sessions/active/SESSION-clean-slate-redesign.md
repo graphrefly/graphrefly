@@ -7767,3 +7767,9 @@ confirmed provider billing. No automatic rerun is authorized.
 - The single-use D744 live claim was consumed successfully. Canonical artifact `sha256:ef8833fe33d30e32fee26492708d50c155e8ede948f768f8807fbc0855c2f47e`, bundle `sha256:159c2ce60e882c73d4e72778c629ba8b373ba2be62be17662168ab3170fca6de`, generation `sha256:f88a2e0a1479b8209f1d1d31a178a2e4fd779cae31d898dc397e04671a3682d1` and terminal receipt `sha256:19694c5367bfa405ffee54cb7e9f22690d44458b1396b411f3c63767ec538d33` replay cleanly.
 - Graph completed all six frozen arms with 47 exact serial provider effects, one retry wait, 108863 microusd and 2745572 ms. It emitted no executor-failure or terminal-HTTP fact, performed exact cleanup, used no fallback/switch/parallel/background path, and persisted `causalAttribution=undetermined` plus `efficacyClaim=none`.
 - The claim recorded 18829200 microusd remaining before inference. This measurement has no automatic rerun authority.
+
+## D745 — Graph-native phase-scoped objective recovery
+
+- D744 is the first successful complete six-arm Graph-native measurement, but its relevant-applied recovery consumed the one run-level context to reach exact mutation and then could not receive the newly required workspace-diff after a second zero-effect policy rejection.
+- D745 allows one Graph-authored context per distinct forward objective phase and at most four per run. Same-phase/backward repetition, a fifth context, state drift, replay, wrong first tool or any budget denial remains arm-local and fail-closed.
+- The adapter remains transparent; D744's eight-turn run ceiling, 96-request block ceiling, route, retry, serial topology, cost and claim boundaries remain unchanged. A new live claim is authorized only after exact no-network qualification.
