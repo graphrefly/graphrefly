@@ -7662,3 +7662,16 @@ confirmed provider billing. No automatic rerun is authorized.
   privacy, replay and atomic success/partial-failure persistence.
 - D735 remains offline-only: no credential read, external control-plane,
   provider/network call, real claim, spend, live execution or automatic rerun.
+
+## D736 — D735-qualified Graph-native real-provider live block
+
+- D736 binds the exact D735 qualified artifact and the D733 DeepSeek V4 Flash
+  0731 / DeepInfra fp4 Chat profile to one new durable single-use claim.
+- Fresh pricing, credential presence and same-credential zero-BYOK precede the
+  claim; current-key admission follows it and must prove the Local Eval 2
+  no-reset USD 32 limit with at least USD 6 remaining.
+- The one block remains six-arm serial, cold never censors warm, and only
+  D671/D675/D710 same-route retries are admitted by Graph. No fallback, switch,
+  parallel/background effect or automatic rerun is authorized.
+- Success and partial failure are mutually exclusive atomic generations;
+  attribution stays undetermined and efficacy stays none.
