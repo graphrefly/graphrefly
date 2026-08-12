@@ -7691,3 +7691,18 @@ confirmed provider billing. No automatic rerun is authorized.
 - D737 preserves the exact route, USD 6/32 ceilings, serial six-arm order,
   cold-non-censoring, D671/D675/D710 retry envelope and undetermined/none claim
   boundary. Its live replacement uses a new single-use claim.
+
+## D738 — Graph-native provider-attempt evidence repair live replacement
+
+- D737 consumed its exact claim and completed the executor path, but its wrapper
+  discarded the run before persistence because a caller-side transport counter
+  did not equal the 30 Graph-admitted provider effects.
+- D738 makes the D719/D722 ledger authoritative for provider-effect admission
+  and budget usage, and D734 route facts authoritative for completed route-bound
+  turns. The outer transport count remains bounded operational evidence only;
+  it cannot suppress canonical partial or success evidence.
+- Every post-execution outcome must atomically persist the Graph ledger, route
+  facts, typed executor/HTTP/cleanup facts and both explicitly named counts.
+- D738 keeps D737 recovery plus the exact route, USD 6/32 ceilings, six serial
+  arms, cold-non-censoring and D671/D675/D710 retry envelope. It uses a fresh
+  single-use claim; prior D736/D737 claims are never reused.
