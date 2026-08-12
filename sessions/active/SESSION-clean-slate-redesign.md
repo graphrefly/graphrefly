@@ -7895,3 +7895,7 @@ confirmed provider billing. No automatic rerun is authorized.
   repaired and a distinct durable claim/generation.
 - D753 route, six-arm serial Graph authority, USD 6/32 ceilings, retry policy, fresh-admission gates,
   atomic partial evidence and no-automatic-rerun boundaries remain unchanged.
+- D754 completed all six arms and six recoveries with exact 27/27/27 Graph-provider/route/transport
+  accounting, zero retries/failures and all cleanups succeeded. All runs nevertheless ended on
+  arm-local objective-policy violations before verification, so this is canonical harness success
+  but not an evaluable efficacy result; attribution remains undetermined and efficacy remains none.

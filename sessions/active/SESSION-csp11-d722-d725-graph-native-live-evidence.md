@@ -37,3 +37,20 @@ D748 authorizes only the offline implementation and no-network qualification of 
 D752 pre-live qualification is complete. The canonical private generation binds implementation manifest `sha256:51a24fa551ce1db0044146b20ba3ef71a5d0a408ae3145c298bc7c10a5489ded`, qualification digest `sha256:a59d1b9b7c864d2522b66692489d7234c9eeb764dd3b8966078108871ec3e28b`, bundle digest `sha256:c4e9673dd5ef69abb89e1d3b0f8379817d02e2f5db0d2458b5b3907fa95d14b7`, qualification artifact `sha256:87a12d96777bf944667a71fb3f47cbda5bfbfc51dbee1289d5c0a487409d20f8` and bundle artifact `sha256:478a4299a28fc907914e44802450af3dbbe7726aadf4a063730b1b3416e4c3bb`. Its two injected serial six-arm Graph runs preserve the exact D671/D675/D710 retry set, admit two terminal transport diagnostics across separate arms, pass successful and non-transport outcomes transparently, reject proposal replay, clean all workspaces and record no network calls. All provider/result counts are mechanically derived from canonical Graph facts; the adapter retains no persisted side ledger. D752 authorizes no credential, claim, network, provider, charged block or automatic rerun.
 
 D753 is the only live authority following D752. It binds commit `12569797` and exact D752 bundle artifact `sha256:478a4299a28fc907914e44802450af3dbbe7726aadf4a063730b1b3416e4c3bb`, preserves the exact route, six-arm serial Graph authority, USD 6/32 budget and D671/D675/D710 retry set, and permits one new durable claim with no rerun.
+
+D754 is consumed and complete. D753 first failed locally before credential, claim, current-key or
+provider access because its runner transposed the exact D752 schema literal; D754 repaired only that
+preflight and used a distinct claim/generation. The canonical live bundle artifact is
+`sha256:af6b987bd0c67beb28768728d1735fcfb78004c8671467997a6692ecff22d17d`,
+with bundle digest `sha256:f6a52cc8e07220e3536f31448df75cf65ce146ba15db4f5e7239ecababa8b1c7`,
+Graph evidence digest `sha256:27318125a570359cea7073c428d00e71c051f94708e1393d8e5ff88e3a1c91e8`,
+success generation digest `sha256:4b58461cadc8db21938cbe68e656d52c3aabf4d4b1361ad8583d0f081b6841fe`
+and terminal receipt digest `sha256:acc1febfe978aec892cffce6f012b81b29732888846c77884894a505f6db10a6`.
+Graph admitted all six frozen arms and their six recoveries in order, reconciled exactly 27 provider
+effects to 27 route facts and 27 transports, used no retry waits, recorded no HTTP terminal,
+transport-diagnostic or executor-failure facts, and completed all 12 cleanups. Measured usage was
+`87704` microusd and `1944553` ms. This is a successful harness measurement, not a positive task
+result: every primary/recovery run ended arm-locally on `arm-policy-violated`; two primaries mutated,
+one reached a non-empty diff, none attempted focused validation or hidden verification. Therefore
+no arm is efficacy-evaluable, `causalAttribution=undetermined`, and `efficacyClaim=none`. D754
+authorizes no rerun.
