@@ -7806,3 +7806,44 @@ confirmed provider billing. No automatic rerun is authorized.
   2385 tests with 4 skipped, lint/typecheck/build/export checks, and no provider
   or network call was made during repair qualification. Any replacement live
   block requires a new explicit numeric decision and a new durable claim.
+
+## D750 — complete six-arm scheduling with generic transport-failure evidence
+
+- D750 consumed claim artifact
+  `sha256:05a837913f052d119f1a76eef674144aadb10268a33659ff58780c12fa7c9a45`,
+  claim digest
+  `sha256:a8411e46671ffaef17f2e55926c9da4d46e549a7bb6f1eec00df74f458f36d8f`
+  and current-key marker artifact
+  `sha256:abc0de77912538a26476bd0ebccb5fa542b5e55c41e45527112048d8cb315bc1`.
+  Current-key admission recorded 18567054 microusd remaining before inference.
+- The live block atomically persisted canonical partial bundle artifact
+  `sha256:c8030f76a65f21dab0bad020f5e72243385cf936d92bbb2e05fdaf627e38bcc4`,
+  bundle digest
+  `sha256:c5b8fe7128fef05fc1ce9420993a93e543968440904732d12e7c4c12cfdcee97`,
+  generation digest
+  `sha256:afbc26e5087186c088797a8b98f4c2213bb9a745d5179a2666d02b1f1ff53cd5`
+  and terminal receipt digest
+  `sha256:d5ee9be3c659bc5cdf3371bc2da99123c8c4cb65927436821352bfda984bf9f9`.
+- Graph admitted all six fixed arms, so cold did not censor warm. It recorded
+  seven provider-effect proposals, six transport calls, one successful
+  DeepInfra route fact, four successful cold reads and exact cleanup for every
+  arm. There was no HTTP terminal fact, fallback, route/provider/model switch,
+  parallel or background execution.
+- After the first successful `tool_calls` response, five calls failed at the
+  byte-transport boundary before OpenRouter generation logging. They were not
+  exact `UND_ERR_SOCKET`, so D675 did not apply; the current evidence schema
+  collapsed their sanitized diagnostic to generic `transport-failure`. Five
+  conservative 100000-microusd/1200000-ms reservations then left insufficient
+  elapsed headroom for the final Graph provider admission. Canonical usage is
+  500113 microusd, 6040255 ms, six attempted requests and five conservative
+  reservations; confirmed OpenRouter UI billing exposes only the one successful
+  call at USD 0.000112.
+- This outcome does not falsify the D748-v2 phase-trigger repair: its first
+  non-adjacent exact-mutation context was constructed and admitted, but the
+  corresponding provider transport failed before a model result. The next
+  harness gap is diagnostic provenance: a future offline decision should retain
+  an allowlisted transport stage/cause-code enum in the Graph executor-failure
+  fact so connection timeout, headers/body timeout, socket reset and cancellation
+  are distinguishable before considering any retry-policy change.
+- D750 authorizes no automatic rerun. causalAttribution remains undetermined and
+  efficacyClaim remains none.
