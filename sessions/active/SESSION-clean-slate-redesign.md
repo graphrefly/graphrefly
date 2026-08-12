@@ -7743,3 +7743,10 @@ confirmed provider billing. No automatic rerun is authorized.
 - A bounded model-authored read rejection after exact mutation was incorrectly emitted as executor-threw and censored the last two arms.
 - Invalid argument/path/replacement/validation requests become sanitized failed tool-action facts admitted by Graph; real I/O, process, route, transport, decode and state failures remain executor failures.
 - Failed tool actions clean only the current run. D741 retains the exact route, budgets, serial six-arm order, retries and undetermined/none boundary, with one new USD 6/32 live claim after no-network qualification.
+
+## D742 — Graph provider-effect count construction repair
+
+- The consumed D741 claim artifact `sha256:0451000484a33fcd0e665a7649b043e1303a39a020f058793fdde980fbea2eac`, claim digest `sha256:4d6e1d407d17c109928018d32a4beee0ae8575880494cc32a5716732f07e7ccf` and current-key marker `sha256:b2b435baa05d6bb58bb7111554a64709baca837b8bb9c58cb9dfa95c8615763c` are immutable failure evidence.
+- The charged execution returned, but bundle construction used aggregate usage.requests for graphProviderEffectCount while canonical replay correctly derived 40 provider proposals from D719.
+- D719 provider-request effect proposals are the only authority for this count; route facts and outer transport calls remain separately typed observations.
+- D742 retains all D741 behavior and authorizes one new USD 6/32 live claim after no-network qualification.
