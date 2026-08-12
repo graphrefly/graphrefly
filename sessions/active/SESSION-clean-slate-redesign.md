@@ -7750,3 +7750,10 @@ confirmed provider billing. No automatic rerun is authorized.
 - The charged execution returned, but bundle construction used aggregate usage.requests for graphProviderEffectCount while canonical replay correctly derived 40 provider proposals from D719.
 - D719 provider-request effect proposals are the only authority for this count; route facts and outer transport calls remain separately typed observations.
 - D742 retains all D741 behavior and authorizes one new USD 6/32 live claim after no-network qualification.
+
+## D743 — Graph-native live byte-transport envelope repair
+
+- D742 partial artifact `sha256:44abd5e2c530e6b0cef483f7e774503f70084525ae61e536924200d644a3debf`, bundle `sha256:cd67276cefa8b55b61420eb275737e007591c5972179de7774264c5033365aa2` and generation `sha256:c969dea417c0919c740da9d3e9c5afc0549f9525e6bceae306d7479628f14523` are immutable failure evidence.
+- Its 48 Graph provider proposals, 47 transport calls and 47 route facts isolate one admitted provider request rejected by the outer fetch carrier before transport.
+- The final byte transport now carries the same one-MiB envelope already admitted by D719 and D723/D733; legacy model-turn builders keep their smaller pre-transport bounds.
+- D743 retains the exact route, budgets, serial six-arm order, retries and undetermined/none boundary, with one new USD 6/32 live claim after no-network qualification.

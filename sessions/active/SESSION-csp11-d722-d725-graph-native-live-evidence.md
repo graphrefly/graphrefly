@@ -1,4 +1,4 @@
-# CSP-11 D722–D742 Graph-native completion and failure evidence
+# CSP-11 D722–D743 Graph-native completion and failure evidence
 
 This focused session is an evidence index for the DS-1-owned B112 decisions D722–D739. It introduces no independent design authority.
 
@@ -17,7 +17,8 @@ This focused session is an evidence index for the DS-1-owned B112 decisions D722
 - D740 makes Graph own pre-mutation inspection saturation and the exact phase tool required from its one-shot recovery context.
 - D741 makes bounded model-authored tool rejection an arm-local Graph fact instead of an executor failure that censors later arms.
 - D742 makes the exact D719 provider-effect proposal set the sole source of the provider-effect count used in every persisted projection.
+- D743 aligns the real fetch byte transport with the already qualified one-MiB Graph-native Chat request envelope.
 
 ## Current boundary
 
-D742 permits one new live replacement after no-network qualification, fresh pricing, same-credential zero-BYOK, a new durable claim and current-key admission. Graph remains the sole tool, retry, next-arm, stopping and evidence authority; fallback, provider/model/route switch, parallel/background provider calls, public export, library/protocol/conformance change, skill and autonomous memory application remain forbidden.
+D743 permits one new live replacement after no-network qualification, fresh pricing, same-credential zero-BYOK, a new durable claim and current-key admission. Graph remains the sole tool, retry, next-arm, stopping and evidence authority; fallback, provider/model/route switch, parallel/background provider calls, public export, library/protocol/conformance change, skill and autonomous memory application remain forbidden.
