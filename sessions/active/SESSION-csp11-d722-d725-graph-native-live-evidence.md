@@ -1,6 +1,6 @@
-# CSP-11 D722–D752 Graph-native completion and failure evidence
+# CSP-11 D722–D753 Graph-native completion and failure evidence
 
-This focused session is an evidence index for the DS-1-owned B112 decisions D722–D752. It introduces no independent design authority.
+This focused session is an evidence index for the DS-1-owned B112 decisions D722–D753. It introduces no independent design authority.
 
 ## Locked progression
 
@@ -26,6 +26,7 @@ This focused session is an evidence index for the DS-1-owned B112 decisions D722
 - D749–D750 consume two single-use D748-qualified replacements; D750 completes six-arm admission but exposes generic-only transport-failure evidence.
 - D751 preserves the already sanitized transport phase and cause code through adapter result admission into canonical Graph executor-failure facts without expanding retry policy.
 - D752 connects the D751 one-shot proposal to the provider-capable route adapter and admits it only after exact D719/D720 canonical request, admission, result and reconciliation evidence exists.
+- D753 authorizes one new D752-qualified USD 6/32 live replacement with a fresh durable claim and no automatic rerun.
 
 ## Current boundary
 
@@ -34,3 +35,5 @@ The D747 replacement is consumed. Its exact canonical bundle artifact is `sha256
 D748 authorizes only the offline implementation and no-network qualification of the two exact D747-derived repairs. No new live measurement or dispatch authority exists.
 
 D752 pre-live qualification is complete. The canonical private generation binds implementation manifest `sha256:51a24fa551ce1db0044146b20ba3ef71a5d0a408ae3145c298bc7c10a5489ded`, qualification digest `sha256:a59d1b9b7c864d2522b66692489d7234c9eeb764dd3b8966078108871ec3e28b`, bundle digest `sha256:c4e9673dd5ef69abb89e1d3b0f8379817d02e2f5db0d2458b5b3907fa95d14b7`, qualification artifact `sha256:87a12d96777bf944667a71fb3f47cbda5bfbfc51dbee1289d5c0a487409d20f8` and bundle artifact `sha256:478a4299a28fc907914e44802450af3dbbe7726aadf4a063730b1b3416e4c3bb`. Its two injected serial six-arm Graph runs preserve the exact D671/D675/D710 retry set, admit two terminal transport diagnostics across separate arms, pass successful and non-transport outcomes transparently, reject proposal replay, clean all workspaces and record no network calls. All provider/result counts are mechanically derived from canonical Graph facts; the adapter retains no persisted side ledger. D752 authorizes no credential, claim, network, provider, charged block or automatic rerun.
+
+D753 is the only live authority following D752. It binds commit `12569797` and exact D752 bundle artifact `sha256:478a4299a28fc907914e44802450af3dbbe7726aadf4a063730b1b3416e4c3bb`, preserves the exact route, six-arm serial Graph authority, USD 6/32 budget and D671/D675/D710 retry set, and permits one new durable claim with no rerun.

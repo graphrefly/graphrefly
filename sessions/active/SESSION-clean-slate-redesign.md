@@ -7871,3 +7871,19 @@ confirmed provider billing. No automatic rerun is authorized.
 - Diagnostics remain non-decision evidence: retry, budget, stopping, arm
   admission and model-visible context are unchanged. D752 is no-network and
   authorizes no credential, claim, provider call, charge or automatic rerun.
+
+## D753 — D752-qualified Graph-native live replacement
+
+- D753 binds committed implementation `12569797` and exact D752 bundle
+  artifact `sha256:478a4299a28fc907914e44802450af3dbbe7726aadf4a063730b1b3416e4c3bb`
+  for exactly one new Graph-native live block.
+- The DeepSeek V4 Flash 0731 / DeepInfra fp4 Chat route, six serial arms,
+  cold-does-not-censor-warm scheduling, USD 6/32 budget and
+  D671/D675/D710-only retry boundary remain fixed.
+- Exact artifact and implementation validation, fresh pricing and route
+  eligibility, credential presence and fresh same-credential zero-BYOK occur
+  before a new single-use claim; current-key admission with at least USD 6
+  remaining occurs after claim and before inference.
+- D752 diagnostics remain non-decision evidence admitted only by Graph.
+  Failure persists only atomic partial Graph evidence; fallback, switching,
+  parallel/background execution and automatic rerun remain forbidden.
