@@ -7675,3 +7675,19 @@ confirmed provider billing. No automatic rerun is authorized.
   parallel/background effect or automatic rerun is authorized.
 - Success and partial failure are mutually exclusive atomic generations;
   attribution stays undetermined and efficacy stays none.
+
+## D737 — Graph-native objective-phase recovery live replacement
+
+- D736 is immutable partial evidence: three successful provider turns reached
+  inspection, then the provider requested workspace-diff and focused-validation
+  while Graph required exact-mutation.
+- D737 makes this a Graph-owned objective-phase-policy-violation rather than
+  executor failure. The rejected batch has zero tool effects; Graph may issue
+  one state/budget-bound completion context and independently admit the
+  replacement response.
+- The adapter transparently lowers the context and discards the rejected
+  assistant tool-call turn. It does not invent results, reorder tools, decide
+  retry, or decide the next arm.
+- D737 preserves the exact route, USD 6/32 ceilings, serial six-arm order,
+  cold-non-censoring, D671/D675/D710 retry envelope and undetermined/none claim
+  boundary. Its live replacement uses a new single-use claim.
