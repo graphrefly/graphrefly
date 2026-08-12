@@ -22,4 +22,4 @@ This focused session is an evidence index for the DS-1-owned B112 decisions D722
 
 ## Current boundary
 
-D744 permits one new live replacement after no-network qualification, fresh pricing, same-credential zero-BYOK, a new durable claim and current-key admission. Graph remains the sole tool, retry, next-arm, stopping and evidence authority; fallback, provider/model/route switch, parallel/background provider calls, public export, library/protocol/conformance change, skill and autonomous memory application remain forbidden.
+The D744 replacement is consumed. Its exact live bundle artifact `sha256:ef8833fe33d30e32fee26492708d50c155e8ede948f768f8807fbc0855c2f47e`, bundle digest `sha256:159c2ce60e882c73d4e72778c629ba8b373ba2be62be17662168ab3170fca6de` and success generation `sha256:f88a2e0a1479b8209f1d1d31a178a2e4fd779cae31d898dc397e04671a3682d1` record a complete six-arm Graph-native measurement. Graph admitted 47 provider effects serially, completed every frozen arm, persisted exact cleanup and terminal evidence, used 108863 microusd, and retained `causalAttribution=undetermined` plus `efficacyClaim=none`. No automatic replacement remains authorized.
