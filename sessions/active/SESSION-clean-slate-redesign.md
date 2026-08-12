@@ -7736,3 +7736,10 @@ confirmed provider billing. No automatic rerun is authorized.
 - D740 retains the exact route, budgets, serial six-arm order, retries and
   undetermined/none claim boundary, with a new single-use USD 6/32 live claim
   only after no-network qualification.
+
+## D741 — Graph-native arm-local tool rejection
+
+- D740 partial artifact `sha256:affa381c30fa375b9e8d6acc5a5097fec93d6fb7ff95c29bc3efa4a8c314e486`, bundle `sha256:59d3e5565b985ba2cbb304980a27dab77a1903eda44cee5eb02a9af1ea241e55` and generation `sha256:594c42e6e085301507b06bab9cdee46a65b076d91d4023557d22ce85ce5c69fc` are immutable failure evidence.
+- A bounded model-authored read rejection after exact mutation was incorrectly emitted as executor-threw and censored the last two arms.
+- Invalid argument/path/replacement/validation requests become sanitized failed tool-action facts admitted by Graph; real I/O, process, route, transport, decode and state failures remain executor failures.
+- Failed tool actions clean only the current run. D741 retains the exact route, budgets, serial six-arm order, retries and undetermined/none boundary, with one new USD 6/32 live claim after no-network qualification.
