@@ -7858,3 +7858,16 @@ confirmed provider billing. No automatic rerun is authorized.
   Raw error text, stack, body, headers and credential material remain forbidden.
 - D671/D675/D710 retry semantics are unchanged. D751 is offline-only and grants
   no credential, claim, network/provider, charge, live replacement or rerun.
+
+## D752 — real-provider diagnostic adapter integration pre-live
+
+- D752 binds committed implementation `31de3d8d`, D751 implementation manifest
+  `sha256:26ee44ba8c0afe0e29721f7c377ad0b0860c0b50bcfb6206ba0a9ba874254489`
+  and v5 qualification artifact
+  `sha256:bdeddf7e1cf977f13584274c7560cf5de23f786d3aa27e06d2e195bd176b98e8`.
+- The provider-capable adapter may carry one one-shot sanitized transport
+  proposal, but only exact D719/D720 request, admission, result and
+  reconciliation evidence admitted by D751 Graph authority makes it canonical.
+- Diagnostics remain non-decision evidence: retry, budget, stopping, arm
+  admission and model-visible context are unchanged. D752 is no-network and
+  authorizes no credential, claim, provider call, charge or automatic rerun.
