@@ -1,6 +1,6 @@
 # CSP-11 D722–D760 Graph-native completion and failure evidence
 
-This focused session is an evidence index for the DS-1-owned B112 decisions D722–D753. It introduces no independent design authority.
+This focused session is an evidence index for the DS-1-owned B112 decisions D722–D760. It introduces no independent design authority.
 
 ## Locked progression
 
@@ -94,3 +94,25 @@ artifact `sha256:eaba776fe5f650829ca9e542f549da74ae9483d6e3c902ba42f532f221927fa
 manifest `sha256:ba2832ccc6e7076c0e877e7e63b765c01cbc999c921b2041b5be449c562eea8d`. It permits exactly one
 new durable claim and one charged six-arm replacement under the unchanged D758 route, USD 6/32,
 serial execution and D671/D675/D710-only retry boundaries, with no automatic rerun.
+
+D760 is consumed. Its exact canonical bundle artifact is
+`sha256:873781f630d57fb1691226bf7aaf3ffc7a5298c00f964cb976300d87db7742c3`, with bundle digest
+`sha256:85c074e83b8b6ee7a2c3d0b8264ddff5e3a7da8f3dbb5c95f2525d70bb4ebf93`, Graph evidence digest
+`sha256:baaf9f2e242e69fb7bc138101275e8b568da767ea541a388f12aa0cb3d7d0d96`, partial generation digest
+`sha256:a787e25c1e3237b43b9b97b5352ab9b7cf873b0cc98f6ad58efa54bd2d10f54e` and terminal receipt digest
+`sha256:067830e48479413bf531783dbbba51795a2261520e0a29792f5d27e46b9a79a7`. Graph completed all six
+fixed arms through six primary and six recovery runs. It admitted 68 provider effects matching 68
+outer transports, with 67 route facts, one D710 retry wait, no HTTP-terminal or sanitized transport
+failure fact, one Graph-admitted `response-decode-failure` executor fact in the proposal-only recovery,
+and all 12 cleanups succeeded. The ledger recorded `289006` microusd, `4424666` ms, 68 requests and
+two conservative reservations. Four Graph-authored `hidden-verifier-failed` correction contexts were
+delivered. Three re-entered exact mutation, non-empty diff and focused validation before a second
+hidden-verifier failure; the fourth ended on the response-decode failure before its correction mutation.
+All 13 hidden-verifier attempts across the block failed. The remaining arm-local findings comprise five terminal
+hidden-verifier failures and three objective-progress-missing findings, including one proposal-only
+recovery that ended on the decode failure before completing its correction. The persisted disposition is
+therefore `partial-failure` even though the Graph run itself is complete and all arms were admitted. This
+is useful negative harness evidence: the named-tool correction path executed as designed, but the
+material-free verifier-failure signal was insufficient to produce a verifier-passing repair on this task.
+It is not efficacy evidence; `causalAttribution=undetermined` and `efficacyClaim=none` remain fixed.
+The single-use D760 claim is consumed and authorizes no rerun.
