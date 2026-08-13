@@ -8195,3 +8195,23 @@ authority itself.
   D774 authorizes injected no-network six-arm qualification and private atomic evidence only; it fixes
   `causalAttribution=undetermined` and `efficacyClaim=none` and authorizes no credential, claim, provider/network,
   charge, live replacement, automatic rerun, library/public API, protocol or conformance change.
+
+## D775 — D774-qualified Graph-native live measurement
+
+- D775 freezes TypeScript baseline commit `dee43fe1`, D774 bundle artifact
+  `sha256:8c3da09d69cd20c127252b65260cf72d81ba9acd313d9fed8ee3807b91b32cbc`, and D774 implementation
+  manifest `sha256:f411c3eb4fabe55e5b6828a7942cb9cdefefd8b609c3e25629ea4d4a0495c908`.
+- A package-private live composition may be added without changing D774 Graph decisions. All injected
+  no-network, route-bijection, phase-lowering, accounting, replay, cleanup, privacy, provenance and atomic
+  persistence gates must pass before any credential or live admission.
+- Once green, exactly one six-arm fixed-order serial measurement may execute on DeepSeek V4 Flash 0731 through
+  DeepInfra fp4 Chat under a USD 6 block hard cap and Local Eval 2 no-reset USD 32 total. Cold never censors warm.
+- Exact implementation and D774 artifacts, fresh official pricing, route eligibility, credential presence and
+  fresh same-credential zero-BYOK evidence precede the new durable single-use claim. Current-key admission proving
+  at least USD 6 remaining follows claim and precedes provider dispatch.
+- Only D671/D675/D710 same-request, same-route serial retries are permitted. Fallback, provider/model/route switch,
+  parallel/background calls, automatic rerun and a second use of the claim are forbidden.
+- Graph alone evaluates the frozen positive-differential gate. A complete gate may record frozen-task/block
+  positive-differential efficacy evidence; otherwise `efficacyClaim=none`. `causalAttribution=undetermined` is
+  fixed. Any failure publishes only atomic partial canonical Graph evidence plus its terminal receipt, never a
+  success generation.
