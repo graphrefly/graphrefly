@@ -264,3 +264,13 @@ lowering and route authority separately but did not exercise this exact private-
 identity boundary. A replacement must make the route proposal cross the Graph result/reconciliation boundary by
 an exact digest/capability coordinate and add an end-to-end private composition test; it must not restore an
 adapter-authored evidence ledger.
+
+D774 is the offline repair boundary over consumed D773 evidence. It versions the provider result so a bounded
+material-free route-lowering proposal crosses the same Graph admission and reconciliation boundary as the exact
+provider outcome; only then may Graph derive a canonical route fact. Route facts and provider results must form
+an exact bijection, and object-identity recovery, digest-keyed pending state and adapter evidence ledgers are
+forbidden. D774 also completes mechanical D761 lowering for every current correction phase: `replace_exact`,
+`workspace_diff`, `focused_validation`, then hidden-verifier structured-final. It preserves distinct public
+semantic, hidden-verifier, executor, transport and HTTP failure provenance. D774 is pre-live/no-network only,
+fixes `causalAttribution=undetermined` and `efficacyClaim=none`, and grants no credential, claim, provider,
+network, charge, rerun, public API, library, protocol or conformance authority.

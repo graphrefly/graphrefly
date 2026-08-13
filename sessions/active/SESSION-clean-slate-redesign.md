@@ -8180,3 +8180,18 @@ authority itself.
   never match. The next offline qualification must carry a one-shot proposal through an exact Graph-bound digest
   or capability and exercise the full private adapter→canonical replay boundary; it must not introduce a second
   adapter evidence ledger.
+
+## D774 — Graph-admitted provider route result and complete correction-phase lowering
+
+- Consumed D773 partial canonical Graph evidence is the sole baseline. A new package-private provider-result
+  envelope carries one bounded material-free route-lowering proposal across the exact provider effect boundary;
+  it becomes canonical only after Graph admits the matching request, admission, result and usage reconciliation.
+- Provider results and route facts must be an exact bijection. WeakMap/object-identity lookup, digest-keyed
+  pending side tables and adapter evidence ledgers are forbidden.
+- D761 correction lowering follows the current Graph phase exactly: `exact-mutation` → `replace_exact`,
+  `workspace-diff` → `workspace_diff`, `focused-validation` → `focused_validation`, and `hidden-verifier` →
+  structured-final/no tool. The capsule, prompt, retry, budget, stopping and model information set do not change.
+- Public semantic, hidden verifier, executor, transport and HTTP failures remain distinct Graph provenance.
+  D774 authorizes injected no-network six-arm qualification and private atomic evidence only; it fixes
+  `causalAttribution=undetermined` and `efficacyClaim=none` and authorizes no credential, claim, provider/network,
+  charge, live replacement, automatic rerun, library/public API, protocol or conformance change.
