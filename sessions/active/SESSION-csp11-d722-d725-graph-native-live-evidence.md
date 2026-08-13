@@ -179,3 +179,12 @@ gates pass 36/36, package lint/typecheck passes and the full suite passes 2388 t
 historical-manifest requalification failures in D722/D727/D731/D751-D758; D767 does not edit those shared
 sources or their historical artifacts. D767 still authorizes no credential, claim, provider/network call,
 charge or automatic rerun.
+
+D768 is the sole live authority following D767. It binds TypeScript commit `2dfeeb69`, D767 bundle
+artifact `sha256:b770dba74ecf4940c322f5b34cccae5dec4c14155c79be65e50f89185507042c` and implementation
+manifest `sha256:b14745426a7676b2b1c3e28643e29f8ca09b64881ed8e6731c6ceba87004cca2`. It permits exactly one
+new durable claim and one charged six-arm replacement under the unchanged DeepSeek V4 Flash 0731 /
+DeepInfra fp4 Chat route, USD 6/32 boundary, fixed serial arm order and D671/D675/D710-only retry
+rules. D767 retry exhaustion remains arm-local and grants no extra attempt. Fresh pricing, route
+eligibility, same-credential zero-BYOK and post-claim current-key admission are mandatory before
+provider dispatch. Fallback, switching, parallel/background calls and automatic rerun remain forbidden.
