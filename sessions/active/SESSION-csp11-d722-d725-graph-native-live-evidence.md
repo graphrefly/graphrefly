@@ -1,4 +1,4 @@
-# CSP-11 D722–D759 Graph-native completion and failure evidence
+# CSP-11 D722–D760 Graph-native completion and failure evidence
 
 This focused session is an evidence index for the DS-1-owned B112 decisions D722–D753. It introduces no independent design authority.
 
@@ -29,6 +29,7 @@ This focused session is an evidence index for the DS-1-owned B112 decisions D722
 - D753 authorizes one new D752-qualified USD 6/32 live replacement with a fresh durable claim and no automatic rerun.
 - D756–D758 qualify Graph-authored named-tool lowering and complete one six-arm live block with exact Graph/transport accounting.
 - D759 uses the admitted hidden-verifier failure fact to authorize one material-free, same-workspace correction continuation per run; it is offline-only.
+- D760 authorizes one single-use D759-v2-qualified live replacement under the unchanged D758 route, USD 6/32, serial six-arm and retry boundaries.
 
 ## Current boundary
 
@@ -87,3 +88,9 @@ Separate canonical probes proved that a second verifier failure receives no seco
 a wrong correction tool has zero tool side effects. Atomic after-write and after-rename faults cleaned
 their exact owned generations. This remains simulated-contract evidence with
 `causalAttribution=undetermined` and `efficacyClaim=none`; it does not authorize a charged rerun.
+
+D760 is the sole live authority following D759. It binds TypeScript commit `7ae1737e`, D759 v2 bundle
+artifact `sha256:eaba776fe5f650829ca9e542f549da74ae9483d6e3c902ba42f532f221927fa3` and implementation
+manifest `sha256:ba2832ccc6e7076c0e877e7e63b765c01cbc999c921b2041b5be449c562eea8d`. It permits exactly one
+new durable claim and one charged six-arm replacement under the unchanged D758 route, USD 6/32,
+serial execution and D671/D675/D710-only retry boundaries, with no automatic rerun.
