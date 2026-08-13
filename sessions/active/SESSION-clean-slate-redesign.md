@@ -8134,3 +8134,21 @@ authority itself.
   state, retry, bounds, privacy, implementation-drift and atomic-persistence failures. It records
   `causalAttribution=undetermined` and `efficacyClaim=none` and authorizes no credential, claim, network,
   provider or charged execution.
+
+## D773 — D771-qualified Graph-native live measurement
+
+- D773 freezes TypeScript commit `0446f6b6`, D771 bundle artifact
+  `sha256:d6994fea93b82eddb5e337cb8694b4842bbcc8f25a04cfd7668507efc2843a25` and implementation
+  manifest `sha256:6b3a371bc57a4d84b6a3b8adbfb96b4e8440ed314ec073fa020e71e0a0bd79f0` as the only baseline.
+- A package-private real-provider composition must first pass complete injected no-network QA. Only after all
+  gates are green may one new durable claim authorize one six-arm DeepSeek V4 Flash 0731 / DeepInfra fp4
+  Chat block under the frozen USD 6 / Local Eval 2 no-reset USD 32 limits.
+- The six arms remain fixed-order serial with one active arm and cold never censoring warm. Fresh official
+  pricing, route eligibility, credential presence and same-credential zero-BYOK occur before claim; current-key
+  admission with at least USD 6 remaining occurs after claim and before provider dispatch.
+- Only D671/D675/D710 same-request, same-route serial retry is permitted. Fallback, switching,
+  parallel/background calls and automatic rerun remain forbidden.
+- Graph alone evaluates the frozen arm-aware positive-differential gate. Only a complete gate may record the
+  frozen-task/block positive-differential efficacy evidence; otherwise `efficacyClaim=none`.
+  `causalAttribution=undetermined` remains fixed. Failure publishes only atomic partial canonical Graph evidence
+  plus terminal receipt and never a success generation. Consuming the claim exhausts D773.

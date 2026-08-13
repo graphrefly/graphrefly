@@ -219,3 +219,14 @@ are clean, accounting is Graph-replayed and every workspace cleans. Provider/net
 qualification records no efficacy claim. Focused D771, D759/D760 historical regression, empirical boundary, lint/typecheck, build/export and
 dashboard gates pass. The full suite retains the pre-existing 32 historical-manifest requalification failures
 in D722/D727/D731/D751-D758; D771 neither modifies those shared sources nor treats them as new regressions.
+
+D773 is the sole live authority following D771. It binds TypeScript commit `0446f6b6`, D771 bundle artifact
+`sha256:d6994fea93b82eddb5e337cb8694b4842bbcc8f25a04cfd7668507efc2843a25` and implementation
+manifest `sha256:6b3a371bc57a4d84b6a3b8adbfb96b4e8440ed314ec073fa020e71e0a0bd79f0`. After a complete injected
+no-network qualification, it permits one new durable claim and one six-arm DeepSeek V4 Flash 0731 / DeepInfra
+fp4 Chat live measurement under USD 6 / Local Eval 2 no-reset USD 32, fixed serial arm order, cold-not-censoring-
+warm, and D671/D675/D710-only same-request same-route retry. Fresh pricing, route eligibility, credential
+presence and same-credential zero-BYOK must precede claim; current-key remaining at least USD 6 must follow claim
+and precede provider dispatch. No fallback, switch, parallel/background call, automatic rerun or second claim is
+authorized. Graph alone evaluates the frozen gate; incomplete gate means `efficacyClaim=none`, and failures persist
+only partial canonical Graph evidence plus terminal receipt. `causalAttribution=undetermined` remains fixed.
