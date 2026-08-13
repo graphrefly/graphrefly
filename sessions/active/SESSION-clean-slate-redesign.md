@@ -7899,3 +7899,136 @@ confirmed provider billing. No automatic rerun is authorized.
   accounting, zero retries/failures and all cleanups succeeded. All runs nevertheless ended on
   arm-local objective-policy violations before verification, so this is canonical harness success
   but not an evaluable efficacy result; attribution remains undetermined and efficacy remains none.
+
+## D755 acceptance completion — Causal WYSIWYG assurance contract
+
+### Definitions
+
+- **Managed causal scope:** an explicitly declared boundary with a stable scope ref, managed business
+  verb, WorkGraph or outcome boundary, graph-visible inputs and policies, managed outcome, delegated
+  external authorities, claimed assurance levels and evidence-coverage policy. Host behavior outside
+  the declared boundary does not acquire Causal WYSIWYG assurance merely because adjacent behavior
+  uses GraphReFly.
+- **Topology truth:** the stable semantic stages, policy gates and dependencies in the managed scope
+  are the same dependencies exposed by the live graph topology/describe snapshot. This does not require
+  every dynamic occurrence to become a topology node.
+- **Causal-slice truth:** for one concrete managed outcome or occurrence, every in-scope shared semantic
+  influence capable of changing that result is represented by executable graph dependencies,
+  graph-visible facts or policies, or an exact delegated external-authority request/outcome contract.
+- **Durable causal truth:** under a declared adapter assurance and crash model, causal records,
+  committed decisions, external-effect uncertainty and the next legal recovery action survive restart
+  and reconstruct without a hidden runner, queue or storage policy independently deciding semantics.
+- **Retained evidence coverage:** the declared subset of topology snapshots, facts, request/outcome
+  records, digests, external refs and explicit gaps actually retained for later inspection. Retained
+  coverage is orthogonal to execution truth: extensive logs do not create causal authority, and a real
+  causal execution may retain incomplete evidence when that incompleteness is explicit.
+
+### Invariants
+
+1. A scoped claim never implies whole-system Causal WYSIWYG.
+2. Metadata, annotations, Canvas/Stack projections and human or model explanations never create
+   execution authority.
+3. Hosts and adapters may own private mechanics but may not introduce undeclared business branching,
+   fallback, retry, admission, recovery or effect commitment inside the managed scope.
+4. Stable semantic stages belong in topology; high-cardinality occurrences belong in DATA, ledgers or
+   bounded external refs.
+5. External noun bodies may remain authoritative outside GraphReFly, but every interaction that can
+   change a managed outcome crosses an exact request/outcome and authority boundary.
+6. Business occurrence identity must not be represented as core protocol wave identity unless the wave
+   protocol actually authored that identity.
+7. Missing, sampled, redacted, stale, external-only and unavailable evidence remains explicit.
+8. Inspectability never requires credentials, clients, transactions, worker handles or raw secret
+   material to enter graph DATA.
+9. Durability is forward-only under D93: persistence failure emits visible failure, conflict, retry or
+   reconcile facts and does not roll back an already completed graph wave.
+10. External-effect uncertainty is handled through declared repeatability, idempotency and reconcile
+    capability; GraphReFly does not infer exactly-once execution.
+
+### Acceptance scenarios
+
+#### CW-A1 — scoped progressive adoption
+
+Given an application that places only one business verb under GraphReFly while other host behavior
+remains unmanaged, when the user declares that verb's managed causal scope, then only the declared scope
+may claim its earned assurance levels and no product surface may generalize the claim to the host system.
+
+#### CW-A2 — topology truth
+
+Given a graph-visible input that passes through a branch policy into two consequences and a fan-in, when
+the live topology snapshot is inspected, then every stable semantic stage, policy gate and real dependency
+is visible, no decorative edge is present, and one related input wave produces a coherent settled fan-in
+result.
+
+#### CW-A3 — solution causal occurrence
+
+Given graph-visible facts carrying scoped occurrence, direct-cause, request and attempt identity, when an
+outcome is admitted, then its exact refs correlate the request, policy and consequence; wrong-scope,
+stale-attempt, unknown-cause and mismatched-request outcomes do not change the managed result.
+
+#### CW-A4 — external authority boundary
+
+Given an externally authoritative noun body or effect owned by the host, when GraphReFly emits a typed
+request and the host returns a bounded outcome, then only the exact admitted outcome may advance the
+managed graph result while clients, credentials, transactions and raw external responses remain private.
+
+#### CW-A5 — shadow workflow rejection
+
+Given an adapter that independently retries, falls back, admits or recovers in a way capable of changing
+the managed business outcome, when that behavior is absent from executable graph dependencies, visible
+policy or exact request/outcome facts, then the scope fails Causal WYSIWYG and adapter telemetry cannot
+repair the missing authority.
+
+#### CW-A6 — retained evidence coverage honesty
+
+Given a recorder that retains only selected fact families and redacts some material, when it exports an
+evidence bundle, then included, excluded, redacted, sampled, external-only and unavailable coverage is
+explicit and the bundle does not claim complete retained evidence.
+
+#### CW-A7 — durable compare-and-commit
+
+Given a runtime transition proposed from durable revision N, when a persistence adapter atomically checks
+the revision and idempotency receipt, appends immutable records and advances the scope to N+1, then
+committed, exact replay, conflict and failure are distinguishable and only committed or exact replay
+success may advance a durable consequence.
+
+#### CW-A8 — crash/restart reconstruction
+
+Given crashes before request commit, after request commit but before dispatch, after possible external
+execution but before outcome commit, and after outcome commit but before graph consequence reconstruction,
+when the runtime restarts, then durable records determine the unique legal next action without relying on
+lost in-process maps, sets, callbacks or handles.
+
+#### CW-A9 — uncertain external effect
+
+Given a non-idempotent or unknown external effect whose dispatch may have occurred but whose outcome is
+unavailable, when recovery runs, then the activity becomes reconcile-required or needs-review and is not
+automatically replayed. Read-only, idempotent or idempotency-keyed work may retry or reconcile only under
+visible policy and exact identity.
+
+#### CW-A10 — projection cannot authorize
+
+Given a Canvas view, Stack enrichment, model explanation or source annotation that recommends an action,
+when no executable dependency, graph-visible policy decision or admitted request authorizes it, then the
+action does not execute and the presentation material remains a reference to authority rather than
+authority itself.
+
+### Conditional protocol forks — deferred, with no current trigger
+
+- Core-authored causal or wave occurrence identity requires a later decision and `/spec-amend` only if a
+  concrete acceptance scenario proves that typed solution/runtime DATA cannot honestly cover arbitrary
+  control, terminal, diamond, restore or cross-wire occurrences. Candidate surfaces include
+  `R-msg-format` and `R-wave-boundary`, plus wave/wire formal models and cross-runtime conformance.
+- A storage commit barrier or storage-failure rollback of graph waves would revise `R-wave-boundary` and
+  batch/runtime ordering, conflict with D93, and require a new formal rollback/commit model plus
+  cross-runtime scenarios. It is not part of the approved durable substrate.
+- A durable runtime ledger becoming graph restore authority, or changing restore's observable lifecycle,
+  would revise `R-restore`/`R-snapshot`, `wave_snapshot_restore.tla` and C-24. The approved runtime instead
+  reconstructs outside the sync core and re-enters through ordinary graph-visible facts.
+- Cross-graph atomic causal settlement stronger than D22 delayed-consistency wire behavior would revise
+  `R-graph-domain` and wire rules, `wave_xgraph.tla` and the C-1 family. Exact evidence correlation alone
+  does not trigger that amendment.
+- A new durability or causal message type/tier would revise the constitutional closed sets in
+  `R-msg-closed-set`/`R-tier`; the approved DATA/request/outcome design needs neither.
+- A non-activating universal inspection tap is an inspection/API design under D24 rather than a wave
+  protocol amendment. It routes through `/design-review` and per-language tests unless a later design also
+  changes protocol-observable message or wave behavior.
