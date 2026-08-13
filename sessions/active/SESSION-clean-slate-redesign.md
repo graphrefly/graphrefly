@@ -8215,3 +8215,20 @@ authority itself.
   positive-differential efficacy evidence; otherwise `efficacyClaim=none`. `causalAttribution=undetermined` is
   fixed. Any failure publishes only atomic partial canonical Graph evidence plus its terminal receipt, never a
   success generation.
+- The D775 dispatch claim was consumed exactly once on 2026-08-13. Fresh pricing, route eligibility,
+  same-credential zero-BYOK and post-claim current-key admission completed before provider dispatch. The run
+  admitted and cleaned all six primary arms in frozen serial order, with no retry, fallback, switch, parallel or
+  background call. Its terminal disposition is `partial-failure`; it published
+  `d775-provider-envelope-live-2026-08-13-v1` as partial Graph evidence and no success generation.
+- Canonical Graph evidence recorded five measured provider requests with total confirmed cost `192` microusd.
+  Each returned an initial `workspace-diff` while the Graph-required phase was `inspection`. Graph rejected the
+  out-of-phase intent without a tool effect and authored an `inspection` completion context. D774 route lowering
+  then rejected that context before transport because its phase vocabulary omitted `inspection`; each such
+  pre-transport exception was admitted as `executor-threw` and conservatively reconciled at `100000` microusd and
+  `1200000` ms. The resulting Graph ledger is conservatively `500192` microusd, `6042921` ms, ten admitted
+  provider requests and zero retry waits; the sixth arm's provider request was denied by the elapsed reservation.
+- All six cleanup effects succeeded and no workspace/TMP residue remained. The frozen efficacy gate failed with
+  `six-arm-horizon-not-complete` plus one `required-differential-not-observed` finding per arm, so
+  `efficacyClaim=none` and `causalAttribution=undetermined` remain fixed. The canonical evidence digest is
+  `sha256:d136636eb906ede1f8bcbc7de76fe52f80567f1f2c999d7ca3ff00e647af9b2b`; the terminal receipt digest is
+  `sha256:be6614eb2c7c4ef07515c4162a9013ac5e57a99d8670282c306cce29c6c4d038`. D775 is exhausted and cannot rerun.
