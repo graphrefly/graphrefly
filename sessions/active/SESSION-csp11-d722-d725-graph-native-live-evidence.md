@@ -124,3 +124,21 @@ material-free criterion result and at most one exact-mutation continuation befor
 verification. D761 freezes the six-arm positive-differential gate before another measurement and remains
 offline-only: it authorizes no credential, claim, control-plane/provider/network call, charge, live block or
 automatic rerun. Its own `causalAttribution=undetermined` and `efficacyClaim=none` remain fixed.
+
+D761 pre-live qualification is complete. The versioned implementation is isolated in a D761-owned
+Graph ledger/runtime/projection/eval closure, so D759 and D760 retain and pass their exact frozen source
+qualifications without rewriting historical hashes. The canonical private v6 generation binds implementation
+manifest `sha256:99b5d365234d1765a6033f9a515ee4a9c2a3ffe981560ca5ba82deb8f3e334c2`,
+bundle digest `sha256:3247a3069029bd0f327ebf8eca6f02418143198ba66f8e6762509f02bd21e6fd`,
+qualification digest `sha256:80b0e983fbb73563760ee94b45888ddaddc31cfed3095da52474cae70a2279a9`,
+generation digest `sha256:dd5c28eab56eebb8598ccc64868cccd6b99f4bec78c81c132af49a3576eaf7af`
+and persistence digest `sha256:1da76f847d63f5baabe668db93cb1973ab740c84c9fc54a52c5e62c221f64b56`.
+The injected six-arm run derives public semantic failures from the four allowlisted actor-visible acceptance
+criteria, admits one exact-mutation correction continuation, requires a new diff and semantic pass, and leaves
+the independent hidden verifier as the final correctness authority. Separate canonical negative runs prove
+repeated semantic failure, semantic-executor failure, wrong-first-tool, insufficient public-semantic recovery
+headroom and insufficient hidden-verifier recovery headroom all end arm-locally with cleanup and no unauthorized
+model-context change. The future positive-differential gate is frozen but unevaluated; caller-authored booleans
+cannot satisfy it. The qualification made zero provider/network calls and did not read credentials or acquire a
+dispatch claim. `causalAttribution=undetermined` and `efficacyClaim=none` remain fixed; a live measurement still
+requires a separate explicit numeric decision.
