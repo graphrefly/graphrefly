@@ -8084,3 +8084,37 @@ authority itself.
   honestly labeled graph classes, but never Canvas-internal topology or links that reconstruct it.
 - Any current user-readable bundle or serializable contract containing Canvas-internal structure is a later
   implementation/packaging audit target. D770 itself changes no code, export, deployment or Canvas roadmap.
+
+## D768 execution evidence — consumed Graph-native live replacement
+
+- D768 was consumed exactly once on 2026-08-13 through durable claim
+  `d768-retry-exhaustion-dispatch-2026-08-13-v1`; the execution marker and material-free current-key
+  admission are durable. Current-key admission occurred after claim acquisition and recorded
+  `remainingMicrousd=18115714`, above the authorized USD 6 block cap. No automatic rerun occurred.
+- The canonical Graph run completed all six frozen arms in order with `maxActiveArms=1`; cold did not
+  censor warm. The six arms produced twelve primary/recovery run executions. Every one of the twelve
+  cleanup effects succeeded and no workspace residue was retained by the live adapter.
+- Graph admitted 44 provider-effect attempts while the transport issued 43 HTTPS requests: the one-attempt
+  difference is an admitted criterion-failure continuation that failed in the executor before transport.
+  The final cumulative Graph budget state was 44 requests, 3 retry waits, 202529 microusd and 4377810 ms,
+  within the frozen USD 6 / 96-request / 12-retry / 7200000-ms limits. The three admitted retries were one
+  D675 `und-err-socket` retry and two D710 untyped-HTTP-429 retries; no fallback, switch, parallel or
+  background execution occurred.
+- Public semantic validation ran eight times and every result failed with the same bounded public codes:
+  `malformed-provenance-not-rejected`, `local-reconstruction-not-rejected`, and
+  `authorization-invariant-regressed`. Hidden verification was therefore never admitted. The only emitted
+  public-criterion correction capsule was Graph-authored and provenance/budget bound, but the real route
+  reused D756 lowering validation, whose accepted schema/key set excludes the D761
+  `criterion-failure-continuation.v1` capsule and its `criterionFailures` field. It failed before HTTP as
+  canonical `executor-threw`; this is a harness integration defect, not provider or model evidence.
+- D768's live positive-differential evaluator also contains an independent projection defect: it requires
+  `graph.effectRuns.length===6` and indexes one run per arm, while the frozen D767 topology emits twelve
+  primary/recovery runs for six arms. This produces `six-arm-horizon-not-complete` even though the ledger's
+  six-arm horizon is complete. Correcting that evaluator alone cannot produce efficacy because no semantic
+  validation passed and no hidden verifier ran.
+- The result remains `causalAttribution=undetermined` and `efficacyClaim=none`. Canonical coordinates are:
+  Graph evidence digest `sha256:3e898e0cb00d94dc0e030a6c8447e838440beac3b80cb8ea932d70ba828c5bd6`,
+  bundle digest `sha256:9b16bffe83d8b151de19b66d1838b19d99d5cc64121f10da422ca7e83119185b`,
+  generation digest `sha256:fd44cf7e7a6a2f309bf89ae96a01252658a55a9b41e9fcdc2d7ff27328dc00e6`,
+  and persisted bundle bytes SHA-256
+  `sha256:952eb36b889c7dac583bb8575b52943fd3dc43bd5d01401609e9364c793d66f8`.
