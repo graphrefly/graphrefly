@@ -10176,6 +10176,7 @@ body > main,
 }
 
 .home-page .trace-surface,
+.home-page .focus-hero .hero-equation,
 .home-page .focus-hero .hero-meta,
 .home-page .focus-hero h1,
 .home-page .focus-hero .focus-hero-body,
@@ -10191,6 +10192,7 @@ body > main,
 
 @media (prefers-reduced-transparency: reduce) {
   .home-page .trace-surface,
+  .home-page .focus-hero .hero-equation,
   .home-page .focus-hero .hero-meta,
   .home-page .focus-hero h1,
   .home-page .focus-hero .focus-hero-body,
@@ -10238,6 +10240,52 @@ body > main,
   font-size: clamp(72px, 7.8vw, 100px);
   line-height: 0.88;
   text-wrap: balance;
+}
+
+.home-page .focus-hero .hero-equation {
+  position: absolute;
+  top: clamp(32px, 5vh, 52px);
+  right: clamp(28px, 4.5vw, 64px);
+  z-index: 4;
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 0.16em;
+  width: max-content;
+  max-width: 100%;
+  margin: 0;
+  padding: 0 0 0.14em;
+  color: var(--ink);
+  font-family: var(--display);
+  font-size: clamp(30px, 3.1vw, 42px);
+  font-weight: 900;
+  letter-spacing: -0.035em;
+  line-height: 1.12;
+  text-align: right;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+.home-page .focus-hero .hero-equation b,
+.home-page .focus-hero .hero-equation em {
+  color: var(--green-ink);
+  font-style: normal;
+  background: linear-gradient(180deg, var(--green) 0%, var(--green-deep, #9bc400) 58%, var(--green-ink) 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.home-page .focus-hero .hero-equation i {
+  display: inline;
+  margin-left: 0.04em;
+  color: var(--green-ink);
+  font-family: var(--mono);
+  font-size: 0.42em;
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  vertical-align: 0.42em;
 }
 
 .home-page .focus-hero h1 span {
@@ -10529,6 +10577,12 @@ body > main,
 }
 
 @media (max-width: 760px) {
+  .home-page .focus-example-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 30px;
+    align-items: start;
+  }
+
   .home-inspect-layout,
   .home-boundary-grid {
     grid-template-columns: minmax(0, 1fr);
@@ -10547,6 +10601,12 @@ body > main,
 
   .home-page .focus-hero h1 {
     font-size: clamp(48px, 14vw, 60px);
+  }
+
+  .home-page .focus-hero .hero-equation {
+    top: 28px;
+    right: 22px;
+    font-size: clamp(25px, 8.5vw, 34px);
   }
 
   .home-section-heading h2 {

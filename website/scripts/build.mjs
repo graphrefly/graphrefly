@@ -1685,6 +1685,7 @@ function renderHome(record, packageRecords) {
       </div>`;
   const main = `<main class="home-page" data-causal-flow>
       <section class="focus-hero" data-flow-label="EXECUTABLE GRAPH" data-flow-detail="The graph is the system" data-flow-side="right" data-flow-x="0.79" data-flow-y="0.72">
+        <p class="hero-equation" aria-label="Graph plus Reactive equals Fly"><span>Graph</span><b>+</b><span>Re<i>[active]</i></span><b>=</b><em>Fly</em></p>
         <div class="flow-section-content">
           <p class="hero-meta">${escapeHtml(record.hero.meta)}</p>
           <h1>${headline}</h1>
