@@ -1,4 +1,4 @@
-# CSP-11 D722–D760 Graph-native completion and failure evidence
+# CSP-11 D722–D761 Graph-native completion and failure evidence
 
 This focused session is an evidence index for the DS-1-owned B112 decisions D722–D760. It introduces no independent design authority.
 
@@ -30,6 +30,7 @@ This focused session is an evidence index for the DS-1-owned B112 decisions D722
 - D756–D758 qualify Graph-authored named-tool lowering and complete one six-arm live block with exact Graph/transport accounting.
 - D759 uses the admitted hidden-verifier failure fact to authorize one material-free, same-workspace correction continuation per run; it is offline-only.
 - D760 authorizes one single-use D759-v2-qualified live replacement under the unchanged D758 route, USD 6/32, serial six-arm and retry boundaries.
+- D761 adds offline-only Graph-admitted public semantic validation and freezes the narrow future positive-differential efficacy gate before any new live observation.
 
 ## Current boundary
 
@@ -116,3 +117,10 @@ is useful negative harness evidence: the named-tool correction path executed as 
 material-free verifier-failure signal was insufficient to produce a verifier-passing repair on this task.
 It is not efficacy evidence; `causalAttribution=undetermined` and `efficacyClaim=none` remain fixed.
 The single-use D760 claim is consumed and authorizes no rerun.
+
+D761 is the only authorized next slice. It adds a package-private Graph effect that evaluates bounded
+behavioral criteria derived only from the public task statement and acceptance criteria, then admits a
+material-free criterion result and at most one exact-mutation continuation before independent hidden
+verification. D761 freezes the six-arm positive-differential gate before another measurement and remains
+offline-only: it authorizes no credential, claim, control-plane/provider/network call, charge, live block or
+automatic rerun. Its own `causalAttribution=undetermined` and `efficacyClaim=none` remain fixed.
