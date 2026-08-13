@@ -8118,3 +8118,19 @@ authority itself.
   generation digest `sha256:fd44cf7e7a6a2f309bf89ae96a01252658a55a9b41e9fcdc2d7ff27328dc00e6`,
   and persisted bundle bytes SHA-256
   `sha256:952eb36b889c7dac583bb8575b52943fd3dc43bd5d01401609e9364c793d66f8`.
+
+## D771 — D761 criterion continuation real-route lowering and arm-aware gate projection
+
+- D768 remains immutable consumed failure evidence. D771 is package-private and pre-live only.
+- The exact Graph-authored D761 criterion-failure capsule is validated and mechanically lowered to one named
+  Chat tool choice without adapter interpretation, prompt mutation, retry expansion or a second evidence
+  ledger.
+- The efficacy projection binds D767 primary/recovery runs back to exact arm and run coordinates. It no
+  longer equates arm count with effect-run count, but it also cannot cherry-pick: exactly one complete
+  semantic-correction lifecycle must qualify each arm, all other runs must be clean and nonpositive, and the
+  frozen D761 hidden-verifier differential, zero provider/executor failure, accounting, cleanup and
+  provenance conditions remain mandatory.
+- Qualification must exercise the full no-network wire and six-arm lifecycle plus substitution, replay,
+  state, retry, bounds, privacy, implementation-drift and atomic-persistence failures. It records
+  `causalAttribution=undetermined` and `efficacyClaim=none` and authorizes no credential, claim, network,
+  provider or charged execution.

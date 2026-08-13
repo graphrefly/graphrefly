@@ -188,3 +188,34 @@ DeepInfra fp4 Chat route, USD 6/32 boundary, fixed serial arm order and D671/D67
 rules. D767 retry exhaustion remains arm-local and grants no extra attempt. Fresh pricing, route
 eligibility, same-credential zero-BYOK and post-claim current-key admission are mandatory before
 provider dispatch. Fallback, switching, parallel/background calls and automatic rerun remain forbidden.
+
+D771 is the offline-only repair boundary after the consumed D768 measurement. It adds a versioned
+package-private lowering boundary for the exact Graph-authored D761 public-criterion continuation and a
+separate arm-aware positive-differential projection. Lowering is mechanical: the exact bounded capsule must
+bind its enclosing Graph run, request and workspace coordinates before one named `replace_exact` tool choice
+is emitted; the adapter may not author, alter or interpret the capsule or maintain a second evidence ledger.
+The efficacy projection groups the exact ordered primary and optional recovery run of each frozen arm,
+requires exactly one complete non-cherry-picked public semantic correction lifecycle per arm, requires every
+other run to remain clean and nonpositive, preserves the frozen hidden-verifier differential and rejects
+provider/executor failures, imprecise accounting, unclean workspaces or substituted provenance. Qualification remains simulated-contract/no-network with
+`causalAttribution=undetermined` and `efficacyClaim=none`; D771 grants no credential, claim, provider/network,
+charge, live replacement or automatic rerun authority.
+
+D771 no-network qualification is complete. The final implementation manifest is
+`sha256:6b3a371bc57a4d84b6a3b8adbfb96b4e8440ed314ec073fa020e71e0a0bd79f0`; the private 0600
+bundle artifact is `sha256:d6994fea93b82eddb5e337cb8694b4842bbcc8f25a04cfd7668507efc2843a25`, with bundle
+digest `sha256:c1c1471e0994f5a234e2d27a3cfccf8f02f1063732809c0256fe214ac47e654e`, Graph evidence
+digest `sha256:e2d1cb1c1bd8e5c24b176816de2853be257545743b042c54b481c31288c9c953`, lowering Graph
+evidence digest `sha256:812dc4b04900ae4f9c693fd0ee538ba1d91adc5fa558778b7b2e4db0377c8693`, gate projection
+digest `sha256:a16d5a6654a04746beb7415561f645febab9cff918e454a5e87ee35c81056c39` and persistence
+digest `sha256:5f98213d86b0a701870c73d92465275f299f19e7fb40e6535a1b792c24cf2e4e`. The positive
+fixture completes eleven exact primary/recovery runs across the six frozen arms: exactly one qualifying
+public-criterion correction lifecycle per arm and five clean, nonpositive recovery runs. The lowering wire
+route/lowering/exposure proposal becomes canonical only after exact D719 admission/result/reconciliation binding;
+the transport consumes an exact Graph-issued route directive before any request, the final model-visible message
+bytes are checked against that directive, and the original provider-result evidence digest remains intact. Separate injected
+D710 cases prove one context-bearing and one context-free same-request/context/body retry without changing the gate. All provider/executor paths
+are clean, accounting is Graph-replayed and every workspace cleans. Provider/network calls remain zero and
+qualification records no efficacy claim. Focused D771, D759/D760 historical regression, empirical boundary, lint/typecheck, build/export and
+dashboard gates pass. The full suite retains the pre-existing 32 historical-manifest requalification failures
+in D722/D727/D731/D751-D758; D771 neither modifies those shared sources nor treats them as new regressions.
