@@ -8152,3 +8152,31 @@ authority itself.
   frozen-task/block positive-differential efficacy evidence; otherwise `efficacyClaim=none`.
   `causalAttribution=undetermined` remains fixed. Failure publishes only atomic partial canonical Graph evidence
   plus terminal receipt and never a success generation. Consuming the claim exhausts D773.
+
+### D773 execution result
+
+- D773 executed once from TypeScript implementation commit `d2416a20` / manifest
+  `sha256:794dc7cb2f43bd1726b52e52b98c6e6b6db16b973998ec01daf654ef64fd64f8`; its durable claim is consumed
+  and no automatic or second run is authorized.
+- Fresh zero-BYOK and current-key gates passed; current-key admission recorded USD 18.013207 remaining. Graph
+  completed all six fixed-order arms with 36 serial provider requests, one D710 retry wait, ten successful
+  cleanups, USD 0.189928 reconciled cost and 5,712,479 ms reconciled elapsed time.
+- The atomic outcome is `partial-failure`: bundle
+  `sha256:11f34343932a79df0d9b86d5f04418a8b09971036ac5e7b45b297d4ffef566a7`, Graph evidence
+  `sha256:5a62d13b0c6557b129886bb38ffe53ad10b3e24351bf2c1ed1b630436aaa5db4`, partial generation
+  `sha256:2cbfc327744420728fccd681fef6a05c5f18aafe7db8da4e42b0f6d2585ccf1e` and terminal receipt
+  `sha256:46b5bca9e9faf2b47de4c27d6437d8891234d3f027b529195e7ee2ba06a8df16`. The frozen positive-differential
+  gate failed for every arm, so `efficacyClaim=none`; `causalAttribution=undetermined` remains fixed.
+- Canonical findings expose three distinct offline harness issues: D761 correction context remains typed as
+  criterion-failure after its exact mutation, while D771 lowering recognizes only the initial exact-mutation and
+  hidden-verifier shapes; the intermediate `workspace-diff` request therefore had no specific named-tool lowering
+  and the provider emitted another `replace-exact`. Public semantic failures were summarized as hidden-verifier findings before hidden
+  verification; and one terminal provider exception retained only `executor-threw` without a more useful
+  sanitized cause. Separately, wrong-scope-applied exhausted its one allowed D710 retry on two identical untyped
+  HTTP 429 results. D773 grants no authority to change these boundaries or run again.
+- D773 also proved a first-order composition defect: the route projection recorded 36 provider results but zero
+  admitted route facts (`coverageComplete=false`). Proposals were keyed by original effect-request object identity
+  and then looked up with strict-snapshotted canonical Graph request objects, so the post-replay identity could
+  never match. The next offline qualification must carry a one-shot proposal through an exact Graph-bound digest
+  or capability and exercise the full private adapter→canonical replay boundary; it must not introduce a second
+  adapter evidence ledger.

@@ -230,3 +230,37 @@ presence and same-credential zero-BYOK must precede claim; current-key remaining
 and precede provider dispatch. No fallback, switch, parallel/background call, automatic rerun or second claim is
 authorized. Graph alone evaluates the frozen gate; incomplete gate means `efficacyClaim=none`, and failures persist
 only partial canonical Graph evidence plus terminal receipt. `causalAttribution=undetermined` remains fixed.
+
+D773 executed once and is exhausted. The final implementation commit is `d2416a20` with manifest
+`sha256:794dc7cb2f43bd1726b52e52b98c6e6b6db16b973998ec01daf654ef64fd64f8`. Fresh browser evidence
+showed zero configured BYOK providers and bound the `Local Eval 2` credential; the post-claim current-key
+admission recorded USD 18.013207 remaining. The Graph completed all six arms in the frozen serial order,
+admitted 36 provider requests, one D710 retry wait and ten successful cleanups, and reconciled USD 0.189928
+and 5,712,479 ms. The block produced atomic `partial-failure` evidence, not a success generation: bundle
+`sha256:11f34343932a79df0d9b86d5f04418a8b09971036ac5e7b45b297d4ffef566a7`, Graph evidence
+`sha256:5a62d13b0c6557b129886bb38ffe53ad10b3e24351bf2c1ed1b630436aaa5db4`, partial generation
+`sha256:2cbfc327744420728fccd681fef6a05c5f18aafe7db8da4e42b0f6d2585ccf1e` and terminal receipt
+`sha256:46b5bca9e9faf2b47de4c27d6437d8891234d3f027b529195e7ee2ba06a8df16`. The frozen gate failed all
+six arm differentials, so `efficacyClaim=none` and `causalAttribution=undetermined` remain correct.
+
+The canonical findings isolate the next offline harness work without authorizing a rerun. Cold and
+relevant-applied primary runs reached inspection but their exact replacement failed without changing state;
+their recovery runs did mutate, diff and focus-validate, but after public semantic failure the D761 correction
+advanced to `workspace-diff` while D771 recognized only the initial criterion-failure mutation and hidden-verifier
+shapes; the intermediate request therefore lacked specific named-tool lowering and the provider emitted another
+`replace-exact`, causing arm-policy violation. Proposal-only ended in an executor-threw terminal provider fact. Admission-rejected and both
+irrelevant-applied runs reached focused validation but failed the same three public criteria
+(`malformed-provenance-not-rejected`, `local-reconstruction-not-rejected`, and
+`authorization-invariant-regressed`); the Graph summarized these as hidden-verifier findings before a hidden
+verifier effect was admitted. Wrong-scope-applied mutated successfully but its workspace-diff provider request
+received the same untyped HTTP 429 twice, exhausting the single D710 retry. These are immutable D773 failure
+evidence, not an efficacy result or authority for another charged block.
+
+The first-order composition defect is even earlier: D773 persisted `providerResultCount=36` but zero admitted
+route facts, so `coverageComplete=false`. The live transport stored proposals in a WeakMap keyed by the original
+effect-request object, then attempted to recover them using strict-snapshotted request objects from canonical
+Graph evidence; identical request bytes no longer had object identity. The no-network gates qualified the
+lowering and route authority separately but did not exercise this exact private-adapter-to-canonical-replay
+identity boundary. A replacement must make the route proposal cross the Graph result/reconciliation boundary by
+an exact digest/capability coordinate and add an end-to-end private composition test; it must not restore an
+adapter-authored evidence ledger.
