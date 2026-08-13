@@ -160,3 +160,22 @@ and releases the next frozen arm without adding another retry. Global budget, ca
 and cleanup failures still stop. D767 must qualify cold and warm exhaustion, all-six-arm serial admission,
 exact retry identity/accounting, cleanup, canonical replay, provenance, privacy and atomic persistence before
 any separately approved live replacement.
+
+D767 pre-live qualification is complete. Its versioned D761-derived closure leaves the consumed D761/D766
+sources and evidence unchanged while adding one Graph-owned `provider-retry-exhausted` arm-local disposition.
+The canonical private generation binds implementation manifest
+`sha256:b14745426a7676b2b1c3e28643e29f8ca09b64881ed8e6731c6ceba87004cca2`, bundle artifact
+`sha256:b770dba74ecf4940c322f5b34cccae5dec4c14155c79be65e50f89185507042c`, bundle digest
+`sha256:cd8fb6f4f77914400cff6efc17829c3a8e5713e2af0c9ae1fa0a98bf7e9cd9b6`, Graph evidence digest
+`sha256:2c5a96a3550dc70d9d4dce095520561ecf25d39f84a728f50a788e28500bdbaf`, qualification digest
+`sha256:379a289f8e761f58ddaf0d32bb3dbd644504959e26bc931cd9c930c446e6ad91`, generation digest
+`sha256:51aae0311e85dd94d9edfb7c9c8868e72847280070f0740ac0f2e8adc51c767f` and persistence digest
+`sha256:16f4830554f3eed215945cd2fb48239056c0500b862c61f68a0fe7cdd8beeda4`. The no-network six-arm
+matrix admits exact D710, D675 and D671 exhaustion in cold and warm arms, respectively: 31 provider requests,
+four retry waits, three arm-local exhaustion findings, every cleanup succeeded, all six arms completed in
+fixed serial order, no third/extra attempt, no network call and no workspace residue. A changed retry
+discriminator stops as executor-failed rather than joining the admitted chain. Focused D761+D767+empirical
+gates pass 36/36, package lint/typecheck passes and the full suite passes 2388 tests while retaining 32 known
+historical-manifest requalification failures in D722/D727/D731/D751-D758; D767 does not edit those shared
+sources or their historical artifacts. D767 still authorizes no credential, claim, provider/network call,
+charge or automatic rerun.
