@@ -1,4 +1,4 @@
-# CSP-11 D722–D753 Graph-native completion and failure evidence
+# CSP-11 D722–D759 Graph-native completion and failure evidence
 
 This focused session is an evidence index for the DS-1-owned B112 decisions D722–D753. It introduces no independent design authority.
 
@@ -27,6 +27,8 @@ This focused session is an evidence index for the DS-1-owned B112 decisions D722
 - D751 preserves the already sanitized transport phase and cause code through adapter result admission into canonical Graph executor-failure facts without expanding retry policy.
 - D752 connects the D751 one-shot proposal to the provider-capable route adapter and admits it only after exact D719/D720 canonical request, admission, result and reconciliation evidence exists.
 - D753 authorizes one new D752-qualified USD 6/32 live replacement with a fresh durable claim and no automatic rerun.
+- D756–D758 qualify Graph-authored named-tool lowering and complete one six-arm live block with exact Graph/transport accounting.
+- D759 uses the admitted hidden-verifier failure fact to authorize one material-free, same-workspace correction continuation per run; it is offline-only.
 
 ## Current boundary
 
@@ -54,3 +56,34 @@ result: every primary/recovery run ended arm-locally on `arm-policy-violated`; t
 one reached a non-empty diff, none attempted focused validation or hidden verification. Therefore
 no arm is efficacy-evaluable, `causalAttribution=undetermined`, and `efficacyClaim=none`. D754
 authorizes no rerun.
+
+D758 is consumed and complete as a harness measurement. Its canonical bundle digest is
+`sha256:cd7d65871a825f3120d3bf8eb6cc687b35f65ca1b64071b589cb126e3ee1566a`, Graph evidence digest is
+`sha256:5b9dcc0b12b82f8c08bce33388134f74dd7485e004a4c377b169fdf4c55acdd3`, success generation digest is
+`sha256:44327af357e44626cd4be989054356fa16687553fc4ea7c25e98d136c9717c82` and terminal receipt digest is
+`sha256:ec43c067d23935e33f57846eabcb265e5837309d9fe36ac4e7c804b32da24c85`. Graph completed all six
+arms and six recoveries, matched 54 provider admissions to 54 transports, admitted three D710 waits,
+recorded no executor/transport/terminal-HTTP failure and cleaned all 12 workspaces. Usage was `165576`
+microusd and `3574771` ms. Nine runs reached mutation, non-empty diff and focused validation, but every
+hidden verifier failed; three other runs stopped before verification. D758 therefore proves the harness
+and named-tool lifecycle, not task efficacy. `causalAttribution=undetermined` and `efficacyClaim=none`.
+
+D759 authorizes only the package-private, injected no-network qualification of one Graph-authored
+hidden-verifier correction context. It authorizes no credential, claim, provider/network call, charge or
+automatic rerun; any charged replacement requires a separate D760 numeric approval.
+
+D759 pre-live qualification is complete. The canonical v2 private generation binds implementation
+manifest `sha256:ba2832ccc6e7076c0e877e7e63b765c01cbc999c921b2041b5be449c562eea8d`,
+bundle digest `sha256:1ba78355c71da78f04d84da89349fa939dc8e52fb046f8ced375d83c463e0e8c`,
+qualification digest `sha256:1ca6aea89764ef2b53a6af3439caa107a42079de314949ef3eb993216d5acad5`,
+generation digest `sha256:b0ad9b9fcaa820ab6313393ac87a0e587c128eb3394f61650c3f2c912e7b87e2`,
+persistence digest `sha256:c1057d6296714a03e3ebd72a689398d03312709bf2359a107afeac60cf3f1dad`
+and bundle artifact `sha256:eaba776fe5f650829ca9e542f549da74ae9483d6e3c902ba42f532f221927fa3`.
+Its main injected six-arm run admitted 55 provider effects, including one exact D710 retry of the
+Graph-authored correction request, with max active arm/effect 1, zero network calls and zero workspace
+residue. Every arm recorded one material-free hidden-verifier-failed context, exact named
+`replace-exact`, re-entered diff/validation/final/verification and produced failed→passed verifier facts.
+Separate canonical probes proved that a second verifier failure receives no second correction and that
+a wrong correction tool has zero tool side effects. Atomic after-write and after-rename faults cleaned
+their exact owned generations. This remains simulated-contract evidence with
+`causalAttribution=undetermined` and `efficacyClaim=none`; it does not authorize a charged rerun.
