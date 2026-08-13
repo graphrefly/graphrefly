@@ -1,15 +1,16 @@
 # SESSION - Prime Agent, pi, and Graph-Native Durable Harness Research
 
-**Status:** active research / architecture discussion, non-locking  
+**Status:** active research / architecture discussion; D772 locked
 **Opened:** 2026-08-11  
 **Trigger:** The user saw Prime Agent's rapid adoption and asked why it was
 successful, how its relationship to pi maps onto GraphReFly, and whether its
 persistent context plus runtime-managed lifecycle resembles GraphReFly's
 WorkItem/EffectRun direction.  
-**Scope:** Product and architecture research only. This session records verified
+**Scope:** Product and architecture research. This session records verified
 premises, layer mappings, current gaps, sequencing, and candidate host/runtime
-shapes. It does not create a D# decision, amend protocol behavior, approve a
-public API, authorize implementation, or make an efficacy claim.
+shapes. D772 now locks the task-centric proposal/commitment boundary and the
+combined current context contract. It does not amend protocol behavior, approve
+a public API, authorize implementation, or make an efficacy claim.
 
 ---
 
@@ -177,8 +178,8 @@ Verified TypeScript premise as of 2026-08-11:
   operationId and rejects stale, duplicate, and wrong-kind material;
 - the current public `workItemExecutionRecipe` explicitly emits at most one
   deterministic AgentRequest tuple for each EffectRun;
-- no landed WorkItem recipe realizes the complete D194
-  ContextRequest/ContextSource/ContextFrame assembly path.
+- no landed WorkItem recipe realizes the complete D772 generic context kernel
+  and unified ContextContribution lifecycle.
 
 The architecture therefore permits the direction, but the current WorkItem
 recipe does not provide it. B117 records the design gap.
@@ -346,16 +347,17 @@ must not be published before the capability is evidenced:
 
 ## 12. Working Sequence
 
-This session records the following working sequence, not an implementation
-approval:
+This session records the following current working sequence, not an
+implementation approval:
 
-1. keep durable fact/checkpoint semantics visible during current CSP-11 work;
-2. reach the next stable B112 empirical checkpoint;
-3. design B117 adaptive context allocation within an EffectRun;
-4. design B118 capability hub and immutable graph/tool revision admission;
-5. design B119 opinionated host policy-profile factories;
-6. prove a minimal crash/resume WorkItem host before productizing daemon APIs;
-7. accumulate real workload trajectories before adaptive-harness training work.
+1. close the current CSP-11 checkpoint without broadening it into product work;
+2. complete CSP-14's B120 causal/evidence contract and B121 retained flagship;
+3. complete CSP-15's first generic durable runtime and SQLite crash vertical;
+4. trigger B117 only if a retained consumer then needs adaptive multi-request
+   context inside one EffectRun;
+5. trigger B118 only after repeated consumer demand, then B119 after B117/B118;
+6. accumulate verifier-qualified real workload trajectories before any
+   adaptive-harness training work.
 
 ## 13. Governing Existing Decisions
 
@@ -363,7 +365,9 @@ This discussion is constrained by existing locks rather than replacing them:
 
 - D189: WorkItem effects are graph-visible request projections, not imperative
   runners.
-- D194/D202: context assembly is generic, contribution-based, and data-first.
+- D772/D202: context assembly is generic, uses one unified ContextContribution
+  lifecycle, and lets models or other producers propose later bounded context
+  without acquiring admission authority.
 - D207: WorkItem, EffectRun, and AgentRequest have separate flows/ledgers.
 - D218/D221: runtime helpers are composition scaffolds; mechanical defaults and
   semantic/external authority have different boundaries.
@@ -420,10 +424,32 @@ This discussion is constrained by existing locks rather than replacing them:
 
 - `sessions/active/SESSION-clean-slate-redesign.md`
 - `plan/backlog.jsonl`: B106, B112, B117, B118, B119
-- `decisions/decisions.jsonl`: D189, D194, D202, D207, D218, D221,
+- `decisions/decisions.jsonl`: D189, D202, D207, D218, D221,
   D234, D283, D359, D571, D572, D583, D640, D643, D683, D687,
-  D689, D718
+  D689, D718, D772
 - `../graphrefly-ts/packages/ts/src/solutions/work-item/execution.ts`
 - `../graphrefly-ts/packages/ts/src/executors/tool-provider.ts`
 - `../graphrefly-ts/packages/ts/src/solutions/agentic-memory/admission-policy-source.ts`
 
+## 17. D772 — Open Proposal, Explicit Commitment
+
+D772 consolidates and supersedes D194-D195 as the single current context
+authority. It retains the reusable generic context kernel and makes D195's
+ready/pending/issue `ContextContribution` lifecycle authoritative, removing the
+ambiguous reading that retrieval requests are a sibling public response API.
+
+The model, a human, a policy producer, or another executor may propose the next
+bounded `ContextRequest` or `AgentRequest` within an `EffectRun` after admitted
+evidence or outcomes arrive. A changed causal decomposition may instead produce
+a proposed `EffectPlan` or `WorkItem`. Proposal latitude includes responsibility,
+scope, limits, priority, rationale, expected result and budget posture; it grants
+no execution, mutation, capability, verification or external-effect authority.
+Only graph-visible narrow admission and owning domain authorities may commit the
+proposal and return correlated accepted truth.
+
+Executor plurality is execution DATA rather than WorkItem ontology. Exact model,
+agent, tool or human identity, request cardinality, handoff, attempt, outcome and
+evidence remain recorded, while stable business stages, policy gates,
+verification boundaries and causal dependencies remain topology. CSP-14 may
+freeze one exact executor configuration for reproducibility, but single-agent
+versus multi-agent performance is not part of its required proof axis.
