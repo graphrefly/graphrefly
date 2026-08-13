@@ -142,3 +142,21 @@ model-context change. The future positive-differential gate is frozen but uneval
 cannot satisfy it. The qualification made zero provider/network calls and did not read credentials or acquire a
 dispatch claim. `causalAttribution=undetermined` and `efficacyClaim=none` remain fixed; a live measurement still
 requires a separate explicit numeric decision.
+
+D766 is consumed and incomplete. Its canonical private bundle digest is
+`sha256:67f9d120df75a1462373ac72797ce139e73d8f51e7c6a020d9121f95fcaac935`, generation digest is
+`sha256:bb601ce2d88c53a3b3df9a433a6b6a8c02616db5d46a6cce81e716163960664c`, persistence digest is
+`sha256:0661f846af5a2bdd66f0b00226a90b54b3789f585d21eb3563e4213117bf345b` and Graph evidence digest is
+`sha256:ca831f855c4097726ff60647fc819ae927beed6c48286fc3557288d4f72f173c`. The cold arm reached exact
+mutation after two successful provider turns and four read effects, then the workspace-diff provider turn
+returned two exact D710 untyped HTTP 429 outcomes around one admitted 60002 ms wait. Graph recorded 9011
+microusd confirmed cost and cleaned the workspace, but classified exhausted retry as executor-failed and
+stopped before every warm arm. The frozen positive-differential gate therefore failed and
+`efficacyClaim=none`; D766 authorizes no rerun.
+
+D767 is the only authorized next slice. It adds an offline-only, versioned Graph disposition that turns an
+exact exhausted D671/D675/D710 retry chain into a material-free arm-local non-evaluable fact, admits cleanup
+and releases the next frozen arm without adding another retry. Global budget, cancellation, materialization
+and cleanup failures still stop. D767 must qualify cold and warm exhaustion, all-six-arm serial admission,
+exact retry identity/accounting, cleanup, canonical replay, provenance, privacy and atomic persistence before
+any separately approved live replacement.
