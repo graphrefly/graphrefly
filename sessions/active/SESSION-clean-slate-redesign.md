@@ -8032,3 +8032,55 @@ authority itself.
 - A non-activating universal inspection tap is an inspection/API design under D24 rather than a wave
   protocol amendment. It routes through `/design-review` and per-language tests unless a later design also
   changes protocol-observable message or wave behavior.
+
+## D769 — Canvas authority classes and graph-built product boundary
+
+- Canvas Workbench is a presentation and interaction consumer of declared authorities. It owns ephemeral
+  interaction state and emits typed Canvas-product commands or domain/runtime proposals. A separately named
+  Canvas Host may own admitted, scoped and versioned presentation/workspace truth such as saved views,
+  annotations, pins, drafts, widget composition, layout and preferences.
+- Executable GraphReFly topology, host/domain truth, Canvas product truth, derived display material and
+  runtime-private material remain distinct authority classes. Every graph-shaped view declares its kind,
+  owner/scope, executable posture, exact source identity and revision/fingerprint, currentness and
+  provenance/coverage. Only live inspection or an exact admitted snapshot of the actually materialized graph
+  may be presented as the system that runs.
+- A real WorkspaceGraph solution bundle may be executable GraphReFly topology. Canvas WorkspaceGraph DTOs and
+  WorkGraphRefs remain product projections or inert refs; host resolution and materialization do not turn a
+  ref into a nested runtime handle or topology edge.
+- Graph implementation and authority class are orthogonal. D565 graph-built Canvas bundles make the Canvas
+  behavior itself executable and inspectable but never promote upstream projections or explanations into
+  workload/domain truth. Canvas-internal graph topology is not an ordinary user-facing product surface; an
+  explicit developer/diagnostic exposure labels it Canvas-internal and never presents it as the user's
+  workload topology. Static DTO/schema, pure projection, CSS/rendering and ephemeral UI work remain outside
+  synthetic graph topology.
+- Derived caches bind exact source coordinates and derivation versions, fail stale explicitly and never
+  authorize. UI-local mutations, admitted Canvas-product mutations and domain/runtime proposals remain
+  separate; only a fresh owner-admitted outcome, evidence record or topology snapshot proves an upstream
+  mutation.
+- D763 may later own canonical durable run/activity/request/attempt/outcome/recovery/evidence records. Canvas
+  presentation persistence remains a D609 feature-specific product record family and binds canonical runtime
+  refs rather than duplicating runtime authority; shared adapters or compare-and-commit mechanics do not merge
+  the two truth classes.
+- Credentials, clients, connections, transactions, workers, sandbox handles, raw secrets, private logs and
+  unredacted artifacts remain host-private. D769 authorizes no protocol, public API, export, implementation or
+  Canvas roadmap change.
+
+## D770 — Canvas-internal topology confidentiality boundary
+
+- D770 narrows D769's exposure clause: Canvas-internal graph names, topologyGroup names, node/edge identity,
+  dependencies, inspection snapshots and lifecycle composition are confidential implementation material.
+- No customer, tenant/end user, customer administrator/developer, third-party integrator or user-accessible
+  support, developer, debug, diagnostic, advanced or experimental surface may receive or infer that topology.
+  Labeling it Canvas-internal does not authorize disclosure.
+- Authorized GraphReFly/Canvas maintainers may inspect the topology only in access-controlled, non-user-facing
+  source, test, CI, private development or private operations systems. Maintainer inspectability remains
+  required; it is distinct from product exposure.
+- Internal topology does not enter browser/client payloads, customer APIs, downloadable diagnostics,
+  customer-visible logs/telemetry, support exports, generated explanations, extension/sandbox props or user
+  artifacts. CSS hiding, undocumented routes, feature flags, minification, obfuscation and client-side checks
+  are not confidentiality boundaries.
+- User-facing diagnostics may return only admitted bounded non-structural status, issue and remediation
+  material. User Topology Lens may still show the user's admitted workload topology and other D769-authorized,
+  honestly labeled graph classes, but never Canvas-internal topology or links that reconstruct it.
+- Any current user-readable bundle or serializable contract containing Canvas-internal structure is a later
+  implementation/packaging audit target. D770 itself changes no code, export, deployment or Canvas roadmap.
