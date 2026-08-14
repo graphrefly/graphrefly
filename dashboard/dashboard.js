@@ -4,7 +4,7 @@
 (function () {
   "use strict";
   var payload = JSON.parse(document.getElementById("payload").textContent);
-  var M = payload.model, G = payload.gaps, C = payload.counts;
+  var M = payload.model, G = payload.gaps, C = payload.counts, A = payload.authority;
   var gapTotal = Object.keys(G).reduce(function (n, k) { return n + G[k].length; }, 0);
   var $ = function (id) { return document.getElementById(id); };
   var dogfoodFacts = (payload.dogfood && payload.dogfood.facts ? payload.dogfood.facts : []).slice();
@@ -91,6 +91,7 @@
   // ===== TABS =====
   var TABS = [
     { id: "dashboard", label: "Dashboard" },
+    { id: "authority", label: "Authority", cnt: A.unresolvedConflicts.length },
     { id: "dogfood", label: "Workbench" },
     { id: "gaps", label: "Gaps", cnt: gapTotal },
     { id: "structure", label: "Structure" },
@@ -137,6 +138,103 @@
       ]));
     });
     fill(v, [sectionH("Mission status", "clean-slate · DS-1"), h("div", { class: "grid cols" }, [phaseCard, decCard])]);
+  })();
+
+  // ===== AUTHORITY (D783 / D784 generated views) =====
+  (function () {
+    var v = $("view-authority");
+    var F = A.federation || { ledgers: [], qualified_ids: [], relocations: [], unverified_relocations: [] };
+    var CP = F.current_product || { complete: false, current_qualified_ids: [], current_by_owner: {}, historical_qualified_ids: [] };
+    var metricTiles = h("div", { class: "gaptiles" });
+    [
+      [A.metrics.currentProtocolRules, "current protocol rules"],
+      [A.metrics.draftProtocolRules, "draft protocol rules omitted"],
+      [A.metrics.unresolvedRefs, "unresolved refs"],
+      [A.metrics.supersessionCycles, "supersession cycles"],
+      [A.metrics.exactDuplicateCurrentRuleStatements, "duplicate current rules"],
+      [A.metrics.activeUncoveredRules, "current rules without scenarios"],
+      [A.metrics.unclassifiedDecisions, "current root decisions awaiting concern"],
+      [CP.current_qualified_ids.length, "current product decisions across owners"],
+      [F.relocations.length, "relocated historical records"],
+      [F.unverified_relocations.length, "external bodies not verified in root-only build"],
+    ].forEach(function (metric) {
+      metricTiles.appendChild(h("div", { class: "gaptile" + (metric[0] === 0 ? " zero" : "") }, [
+        h("div", { class: "gn" }, [String(metric[0])]),
+        h("div", { class: "gl" }, [metric[1]]),
+      ]));
+    });
+
+    var protocol = h("table", { class: "matrix" }, [h("tr", {}, [
+      h("th", {}, ["rule"]), h("th", {}, ["area"]), h("th", {}, ["decisions"]), h("th", {}, ["scenarios"]),
+    ])]);
+    A.currentProtocol.rules.forEach(function (rule) {
+      protocol.appendChild(h("tr", {}, [
+        h("td", { class: "cid" }, [rule.id]),
+        h("td", {}, [rule.area]),
+        h("td", {}, [rule.decisions.join(", ") || "—"]),
+        h("td", {}, [rule.conformance.join(", ") || "pending"]),
+      ]));
+    });
+
+    var state = h("div", { class: "grid cols", style: "margin-top:1.4rem" }, [
+      h("div", { class: "alert-panel " + (CP.complete ? "ok" : "orphan") }, [
+        h("b", {}, ["Product constitution · " + A.currentProductConstitution.state]),
+        h("p", {}, [CP.complete
+          ? CP.current_qualified_ids.length + " current non-superseded durable decision(s) derived across owner ledgers; " + A.metrics.unclassifiedDecisions + " current root concern label(s) remain legacy-unclassified."
+          : "Root-only projection is incomplete while owner bodies are unavailable; run dashboard:workspace."]),
+      ]),
+      h("div", { class: "alert-panel " + (A.gateOk ? "ok" : "broken") }, [
+        h("b", {}, [A.gateOk ? "✓ authority gate clean" : "⚠ authority gate failed"]),
+        h("p", {}, [A.supersessionGraph.edges.length + " supersession edge(s) · reverse edges generated · no hand-maintained superseded-by"]),
+      ]),
+      h("div", { class: "alert-panel " + (A.metrics.draftProtocolRules ? "orphan" : "ok") }, [
+        h("b", {}, [A.metrics.draftProtocolRules ? "Protocol activation review incomplete" : "✓ no draft protocol revisions"]),
+        h("p", {}, [A.metrics.draftProtocolRules
+          ? A.metrics.draftProtocolRules + " draft rule revision(s) are omitted from the current/public projection; their text is not silently promoted by implementation evidence."
+          : "Every terminal protocol revision has explicit activation provenance."]),
+      ]),
+      h("div", { class: "alert-panel " + (F.unverified_relocations.length ? "orphan" : "ok") }, [
+        h("b", {}, [F.unverified_relocations.length ? "Workspace verification required" : "✓ relocation bodies verified"]),
+        h("p", {}, [F.unverified_relocations.length
+          ? F.unverified_relocations.length + " external relocation body/bodies are locator-resolved but not hash-verified by this root-only build; run authority:check:workspace."
+          : "Every relocation body loaded by this build matches its canonical locator hash."]),
+      ]),
+    ]);
+    var ownership = h("table", { class: "matrix" }, [h("tr", {}, [
+      h("th", {}, ["origin"]), h("th", {}, ["owner"]), h("th", {}, ["class"]), h("th", {}, ["canonical ledger"]), h("th", {}, ["state"]), h("th", {}, ["records"]),
+    ])]);
+    F.ledgers.forEach(function (ledger) {
+      ownership.appendChild(h("tr", {}, [
+        h("td", { class: "cid" }, [ledger.origin]),
+        h("td", {}, [ledger.owner]),
+        h("td", {}, [ledger.authority_class]),
+        h("td", {}, [ledger.path]),
+        h("td", {}, [ledger.state]),
+        h("td", {}, [ledger.records == null ? "—" : String(ledger.records)]),
+      ]));
+    });
+    var currentOwners = h("table", { class: "matrix" }, [h("tr", {}, [
+      h("th", {}, ["owner"]), h("th", {}, ["current"]), h("th", {}, ["governing identities"]),
+    ])]);
+    Object.keys(CP.current_by_owner).sort().forEach(function (owner) {
+      var ids = CP.current_by_owner[owner];
+      currentOwners.appendChild(h("tr", {}, [
+        h("td", {}, [owner]),
+        h("td", {}, [String(ids.length)]),
+        h("td", {}, [ids.slice(0, 12).join(", ") + (ids.length > 12 ? " …" : "")]),
+      ]));
+    });
+    fill(v, [
+      sectionH("Generated authority", "D783 ownership · D784 current protocol · fail closed"),
+      metricTiles,
+      state,
+      sectionH("Authority ownership map", F.qualified_ids.length + " decision identities loaded in this build"),
+      ownership,
+      sectionH("Current product constitution by owner", CP.complete ? "complete workspace-derived terminal set" : "incomplete root-only projection"),
+      currentOwners,
+      sectionH("Current protocol constitution", A.currentProtocol.projection),
+      protocol,
+    ]);
   })();
 
   // ===== DOGFOOD (CSP-8 reactive jira / messaging-hub board) =====

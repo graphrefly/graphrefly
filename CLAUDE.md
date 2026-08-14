@@ -26,7 +26,7 @@ HTML view (progress / structure / gaps). Schema contract: `dashboard/README.md`.
 
 | Concern | File | Skill that writes it |
 |---|---|---|
-| **Decisions (why)** — unified D# log | `decisions/decisions.jsonl` | `/decision-guard` (read) · locked via `/design-review` → `/dev-dispatch` |
+| **Decisions (why)** — federated by unique owner/class | `authority/ledgers.jsonl` → root durable, root execution, and owner-local ledgers; resolve with `authority/federation.mjs` | `/decision-guard` (read) · locked via `/design-review` → owner ledger |
 | **Sequencer (what next)** — single canonical | `plan/phases.jsonl` | `/dev-dispatch` |
 | **Backlog + deferred** | `plan/backlog.jsonl` | any |
 | **Anti-patterns (lessons)** | `plan/antipatterns.jsonl` | `/qa` |
@@ -43,8 +43,8 @@ HTML view (progress / structure / gaps). Schema contract: `dashboard/README.md`.
 ## Workflow rules (clean-slate)
 
 - **spec-first** (F-NO-IMPL-DEFINED): any protocol change → `spec/rules.jsonl` + `formal/*.tla` + `spec/conformance.jsonl` **before** code (`/spec-amend`).
-- **decision-first**: any architectural lock → `decisions/decisions.jsonl` D# before code.
-- **single canonical per concern**: one sequencer (`plan/phases.jsonl`), one decision log (`decisions/`). No splitting.
+- **decision-first and owner-first**: any architectural lock → resolve its unique owner/class through `authority/ledgers.jsonl`, then append an origin-qualified D# to that ledger before code. Protocol and cross-project locks remain root-owned.
+- **single canonical per concern**: one unique owner and one canonical body; D783 routes future local authority to Canvas, Stack or the language package while the root keeps language-neutral/cross-project authority. Never copy record text into an index or summary.
 - **archive = move, not mark**: resolved/superseded sessions move `active/` → `archive/`; status in jsonl, not prose tags.
 - **dashboard check on commit**: `node dashboard/build.mjs --check` (non-zero on broken links/orphans).
 
@@ -53,6 +53,13 @@ HTML view (progress / structure / gaps). Schema contract: `dashboard/README.md`.
 ```
 node dashboard/build.mjs           # build dashboard.html + consistency report
 node dashboard/build.mjs --check   # CI gate: broken links/orphans
+npm run authority:check            # D783/D784 refs, supersession and current-view gate
+npm run authority:check:workspace  # also verify available sibling owner ledgers
+npm run test:authority             # resolver regression tests
 ```
 
 Canonical design record: `sessions/active/SESSION-clean-slate-redesign.md` (DS-1).
+
+Post-migration decision admission: every new record must satisfy authority/README.md (stable
+concerns, decision/change kind, protocol impact, completion conditions and semantic obligations).
+Historical-only ledgers reject new records.

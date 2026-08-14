@@ -1,6 +1,7 @@
 ---------------------- MODULE wave_teardown_terminal ----------------------
 (***************************************************************************
 GraphReFly -- TEARDOWN relays through terminal intermediates (D65 / B33).
+Pins R-teardown-terminal-relay; the rule statement remains in spec/rules.jsonl.
 
 A -> B -> C. B may already be terminal when TEARDOWN arrives from A. Terminal
 seals value output but does not drop TEARDOWN, which is a destroy/unwire signal.

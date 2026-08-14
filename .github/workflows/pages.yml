@@ -29,6 +29,9 @@ jobs:
       - name: Check internal authority dashboard
         run: npm run dashboard:check
 
+      - name: Check authority resolver
+        run: npm run authority:check && npm run test:authority
+
       - name: Build and check public docs
         run: npm run docs:public:check
 

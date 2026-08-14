@@ -1,6 +1,7 @@
 ------------------- MODULE wave_undirty_settle_timing -------------------
 (***************************************************************************
 GraphReFly -- timing of substrate-synthesized undirty RESOLVED (D64 / B39).
+Pins R-undirty-settle-timing; the rule statement remains in spec/rules.jsonl.
 
 An undirty RESOLVED balances a previously broadcast DIRTY after an absorbed
 terminal or INVALIDATE dirty-clear. It must use the normal delivery gates:

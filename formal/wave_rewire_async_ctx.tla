@@ -1,6 +1,7 @@
 ---------------------- MODULE wave_rewire_async_ctx ----------------------
 (***************************************************************************
 GraphReFly -- async late ctx uses live deps after rewire (D66 / B17).
+Pins R-rewire-async-live-edge; the rule statement remains in spec/rules.jsonl.
 
 N starts async work while deps={A}; before the callback emits, N is rewired to
 deps={B}. The late ctx emission routes through the live dep set, not a hidden

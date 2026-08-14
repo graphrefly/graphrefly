@@ -2,6 +2,8 @@ import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statS
 import { dirname, isAbsolute, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { renderHomeShowcase } from "./home-showcase.mjs";
+import { buildAuthorityViews, loadFormalArtifacts } from "../../authority/model.mjs";
+import { loadFederation } from "../../authority/federation.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const repoRoot = dirname(root);
@@ -20,10 +22,9 @@ const referenceRecordsPath = join(repoRoot, "guide", "reference.jsonl");
 const blogRecordsPath = join(repoRoot, "guide", "blog.jsonl");
 const siteRecordsPath = join(repoRoot, "guide", "site.jsonl");
 const guideRegistryPath = join(repoRoot, "guide", "guide.jsonl");
-const decisionRecordsPath = join(repoRoot, "decisions", "decisions.jsonl");
 const ruleRecordsPath = join(repoRoot, "spec", "rules.jsonl");
 const conformanceRecordsPath = join(repoRoot, "spec", "conformance.jsonl");
-const protocolAuthoritySource = "decisions/decisions.jsonl + spec/rules.jsonl + spec/conformance.jsonl";
+const protocolAuthoritySource = "authority/ledgers.jsonl + decision ledgers + spec/rules.jsonl + spec/conformance.jsonl + formal/*.tla + formal/*.cfg";
 const publicRoutes = new Set([
   "/protocol",
   "/why",
@@ -506,8 +507,6 @@ const referenceTextBanned = [
   /\bport ledger\b/i,
 ];
 
-const protocolRuleAreas = new Set(["wave", "runtime", "graph", "node", "control"]);
-
 function assertStringArray(value, label) {
   if (!Array.isArray(value) || value.some((item) => typeof item !== "string")) {
     throw new Error(`${label} must be an array of strings`);
@@ -865,62 +864,27 @@ function mapById(records, label) {
   return byId;
 }
 
-function assertProtocolAuthorityAnchor({ id, type, record }) {
-  if (!record) {
-    throw new Error(`protocol projection cites missing ${type} ${id}`);
-  }
-  if (type === "decision" && record.status !== "locked") {
-    throw new Error(`protocol projection cites decision ${id}, but its status is ${record.status}`);
-  }
-  if (type === "rule" && record.status !== "active") {
-    throw new Error(`protocol projection cites rule ${id}, but its status is ${record.status}`);
-  }
-  if (type === "conformance") {
-    if (record.status !== "required") {
-      throw new Error(`protocol projection cites conformance ${id}, but its status is ${record.status}`);
-    }
-    const runtimes = Object.values(record.runtimes ?? {});
-    if (runtimes.length === 0 || runtimes.some((status) => status !== "pass")) {
-      throw new Error(`protocol projection cites conformance ${id}, but not every runtime has passed`);
-    }
-  }
-}
-
-function protocolRecordsFromAuthority({ decisionRecords, ruleRecords, conformanceRecords }) {
-  const decisionsById = mapById(decisionRecords, "decisions/decisions.jsonl");
+function protocolRecordsFromAuthority({ decisionRecords, ruleRecords, conformanceRecords, formalArtifacts, knownExternalDecisionIds }) {
   const conformanceById = mapById(conformanceRecords, "spec/conformance.jsonl");
-  return ruleRecords
-    .filter((rule) => rule.status === "active" && protocolRuleAreas.has(rule.area))
-    .map((rule, index) => {
-      for (const id of String(rule.since ?? "").split(",").filter(Boolean)) {
-        assertProtocolAuthorityAnchor({ id, type: "decision", record: decisionsById.get(id) });
-      }
-      for (const id of rule.covers_by ?? []) {
-        assertProtocolAuthorityAnchor({ id, type: "conformance", record: conformanceById.get(id) });
-      }
-      return {
-        ...rule,
-        title: rule.id,
-        kind: "authority-rule",
-        display_order: index + 1,
-        route: "/protocol",
-        publicness: "public",
-        refs: {
-          decisions: String(rule.since ?? "").split(",").filter(Boolean),
-          rules: [rule.id],
-          conformance: rule.covers_by ?? [],
-          sources: [],
-        },
-        conformance_records: (rule.covers_by ?? []).map((id) => {
-          const conformance = conformanceById.get(id);
-          return {
-            id,
-            name: conformance.name,
-            runtimes: conformance.runtimes,
-          };
-        }),
-      };
-    });
+  const views = buildAuthorityViews({ decisions: decisionRecords, rules: ruleRecords, conformance: conformanceRecords, formalArtifacts, knownExternalDecisionIds });
+  if (!views.gateOk) throw new Error(`protocol authority gate failed:\n${views.errors.join("\n")}`);
+  const records = views.currentProtocol.rules.map((rule, index) => ({
+    ...rule,
+    status: "active",
+    title: rule.id,
+    kind: "authority-rule",
+    display_order: index + 1,
+    route: "/protocol",
+    publicness: "public",
+    refs: {
+      decisions: rule.decisions,
+      rules: [rule.id],
+      conformance: rule.conformance,
+      sources: [],
+    },
+    conformance_records: rule.conformance.map((id) => ({ id, name: conformanceById.get(id)?.name })),
+  }));
+  return { records, projection: views.currentProtocol };
 }
 
 function assertProtocolRecords(records) {
@@ -933,8 +897,8 @@ function assertProtocolRecords(records) {
     if (record.kind !== "authority-rule" || record.route !== "/protocol") {
       throw new Error(`${record.id} must render as an authority rule routed to /protocol`);
     }
-    if (record.status !== "active" || !protocolRuleAreas.has(record.area)) {
-      throw new Error(`${record.id} must be an active public protocol rule area`);
+    if (record.status !== "active" || typeof record.area !== "string" || record.area.length === 0) {
+      throw new Error(`${record.id} must be an active root protocol rule`);
     }
     if (typeof record.statement !== "string" || record.statement.length === 0) {
       throw new Error(`${record.id} must render authority statement text`);
@@ -1446,13 +1410,13 @@ function protocolGroups(records) {
 }
 
 function renderProtocolRule(record) {
-  return `<article id="${escapeHtml(protocolAnchor(record))}" class="protocol-record protocol-record-${escapeHtml(record.area)}"><header class="protocol-record-head"><span>${String(record.display_order).padStart(2, "0")}</span><h3>${escapeHtml(humanizeProtocolLabel(record.id))}</h3><code class="protocol-rule-id">${escapeHtml(record.id)}</code></header><div class="protocol-record-body"><section class="protocol-record-section statement"><h4>Technical guarantee</h4><p>${escapeHtml(record.statement)}</p></section></div></article>`;
+  const decisions = record.decisions.length ? `Established by ${record.decisions.join(", ")}` : "No governing decision reference";
+  const conformance = record.conformance.length ? `Scenarios: ${record.conformance.join(", ")}` : "No scenario linked yet";
+  return `<article id="${escapeHtml(protocolAnchor(record))}" class="protocol-record protocol-record-${escapeHtml(record.area)}"><header class="protocol-record-head"><span>${String(record.display_order).padStart(2, "0")}</span><h3>${escapeHtml(humanizeProtocolLabel(record.id))}</h3><code class="protocol-rule-id">${escapeHtml(record.id)}</code></header><div class="protocol-record-body"><section class="protocol-record-section statement"><h4>Normative guarantee</h4><p>${escapeHtml(record.statement)}</p><p class="protocol-record-provenance">${escapeHtml(decisions)} · ${escapeHtml(conformance)}</p></section></div></article>`;
 }
 
 function renderProtocolCards(records) {
-  const publicRecords = records
-    .filter((record) => record.publicness === "public" && record.status === "active")
-    .sort((a, b) => a.display_order - b.display_order);
+  const publicRecords = [...records].sort((a, b) => a.display_order - b.display_order);
   const groups = protocolGroups(publicRecords);
   const map = groups
     .map((group) => `<li><a href="#${escapeHtml(protocolAreaAnchor(group.area))}"><span>${group.records.length}</span>${escapeHtml(humanizeProtocolLabel(group.area))}</a></li>`)
@@ -1553,18 +1517,35 @@ function renderGuidePage(records, routeName, page) {
   }));
 }
 
-function renderProtocol(records) {
+function renderProtocol(records, projection) {
   const outDir = join(distDir, "protocol");
   mkdirSync(outDir, { recursive: true });
   writeFileSync(join(outDir, "index.html"), pageShell({
-    title: "GraphReFly Maintainer Protocol",
-    eyebrow: "Maintainer reference",
-    heading: "The contract used to keep runtimes aligned.",
-    intro: "This internal maintainer view tracks the guarantees shared by GraphReFly implementations. Product users should begin with Why or choose a language package.",
+    title: "GraphReFly Protocol Specification",
+    eyebrow: "Public protocol specification",
+    heading: "The current language-neutral contract.",
+    intro: `This view is generated from canonical protocol authority. Historical, draft, retired, superseded, duplicate, dangling, cyclic, or ambiguous revisions cannot enter it.${projection.draftRules.length ? ` ${projection.draftRules.length} draft rule revision(s) remain omitted pending explicit activation review.` : ""}`,
     footerSource: "authority protocol projection",
     routeName: "protocol",
-    cards: renderProtocolCards(records),
+    cards: `${renderProtocolCards(records)}<p class="protocol-machine-link"><a href="spec.json">Machine-readable current protocol (JSON)</a></p>`,
   }));
+  writeFileSync(join(outDir, "spec.json"), `${JSON.stringify({
+    schemaVersion: 1,
+    projection: "current-protocol",
+    projectionStatus: projection.draftRules.length ? "activated-rules-with-drafts-omitted" : "complete",
+    omittedDraftRuleCount: projection.draftRules.length,
+    rules: records.map((record) => ({
+      id: record.id,
+      revision: record.revision,
+      area: record.area,
+      statement: record.statement,
+      rationale: record.rationale,
+      decisions: record.decisions,
+      conformance: record.conformance,
+      formal: record.formal,
+      owner: record.owner,
+    })),
+  }, null, 2)}\n`);
 }
 
 function renderReference(records) {
@@ -1816,10 +1797,19 @@ const referenceRecords = parseJsonl(referenceRecordsPath);
 const blogRecords = parseJsonl(blogRecordsPath);
 const siteRecords = parseJsonl(siteRecordsPath);
 const guideRegistryRecords = parseJsonl(guideRegistryPath);
-const decisionRecords = parseJsonl(decisionRecordsPath);
+const federation = loadFederation(repoRoot);
+if (federation.errors.length) throw new Error(`federated authority failed:\n${federation.errors.join("\n")}`);
+const decisionRecords = federation.decisionRecords;
 const ruleRecords = parseJsonl(ruleRecordsPath);
 const conformanceRecords = parseJsonl(conformanceRecordsPath);
-const protocolRecords = protocolRecordsFromAuthority({ decisionRecords, ruleRecords, conformanceRecords });
+const protocolAuthority = protocolRecordsFromAuthority({
+  decisionRecords,
+  ruleRecords,
+  conformanceRecords,
+  formalArtifacts: loadFormalArtifacts(join(repoRoot, "formal")),
+  knownExternalDecisionIds: federation.relocations.map((relocation) => relocation.id),
+});
+const protocolRecords = protocolAuthority.records;
 assertGuideRegistry(guideRegistryRecords);
 assertPublicGuideRecords(learnRecords, "guide/learn.jsonl", { area: "learn", route: "/learn" });
 assertProtocolRecords(protocolRecords);
@@ -1846,7 +1836,7 @@ renderGuidePage(learnRecords, "learn", {
   intro: "Begin with three questions: what can change, what depends on it, and where should the result leave the graph? Then choose a language for runnable code.",
   footerSource: "guide/learn.jsonl",
 });
-renderProtocol(protocolRecords);
+renderProtocol(protocolRecords, protocolAuthority.projection);
 renderGuidePage(conceptsRecords, "concepts", {
   title: "GraphReFly Concepts",
   eyebrow: "Concepts",

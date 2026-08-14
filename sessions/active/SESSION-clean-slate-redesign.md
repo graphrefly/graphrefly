@@ -8468,3 +8468,31 @@ authority itself.
   reaching public semantic validation failed the same three public criteria: `malformed-provenance-not-rejected`,
   `local-reconstruction-not-rejected`, and `authorization-invariant-regressed`. Therefore `efficacyClaim=none` and
   `causalAttribution=undetermined` remain correct. D782 is consumed and authorizes no rerun.
+
+## D783 — Federated authority ownership and stable relocation
+
+- Canonical decisions are owned by the repo and authority class whose concern they govern. Root retains the
+  language-neutral constitution, protocol and cross-project boundaries; Canvas, Stack and language packages own
+  local product, API and implementation decisions; one-time authorizations and receipts leave the durable-product
+  retrieval surface.
+- Approved migrations physically relocate owner-misplaced history while preserving its origin-qualified stable D#,
+  decision and rationale, provenance and supersession meaning. A relocation registry contains locator and integrity
+  facts only, never a second copy of decision text.
+- Ledger location determines owner/class, new cross-repo refs are qualified, and only forward semantic relations are
+  canonical. Reverse refs, current views, ownership maps and unified search are generated. Ambiguous ownership or
+  partial supersession remains unresolved rather than inferred.
+- D783 replaces the one-physical-root-log workflow convention, changes no protocol behavior and authorizes no tooling,
+  ledger, migration, docs, skill or repo edit without a separately approved batch.
+
+## D784 — Derived current protocol constitution and forward-only evidence
+
+- Public `/protocol` is a fail-closed projection over append-only immutable R-* revisions. Stable public R-* ids do not
+  change; internal revision coordinates retain history. Exactly one terminal activated revision may govern each id.
+- Draft, replaced, retired, cyclic, dangling, ambiguous or duplicate current material cannot enter the public spec.
+  Existing normative statements and legal trace sets remain byte-stable during authority-schema migration.
+- Scenarios canonically declare only forward `covers`; runtime results come from commit-bound evidence receipts; formal
+  models declare their own forward rule coverage. `covers_by`, superseded-by, current flags, coverage matrices and
+  website records are generated rather than hand-maintained.
+- Semantic near-duplicates stop for `/spec-amend` review instead of being guessed. D784 changes no protocol behavior and
+  authorizes no schema, rule, conformance, formal, website, dashboard, CI or repo implementation without a separately
+  approved batch.

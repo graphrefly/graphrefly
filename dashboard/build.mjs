@@ -5,12 +5,16 @@
 // Run: node dashboard/build.mjs        (writes dashboard/dashboard.html)
 //      node dashboard/build.mjs --check (report only; non-zero exit on broken links)
 
-import { readFileSync, writeFileSync, readdirSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { buildAuthorityViews, loadFormalArtifacts } from "../authority/model.mjs";
+import { loadFederation } from "../authority/federation.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const checkOnly = process.argv.includes("--check");
+const workspace = process.argv.includes("--workspace");
+const federation = loadFederation(ROOT, { includeExternal: workspace });
 
 function loadJsonl(rel) {
   const p = join(ROOT, rel);
@@ -28,15 +32,31 @@ function loadJsonl(rel) {
 }
 
 const model = {
-  decisions: loadJsonl("decisions/decisions.jsonl"),
+  decisions: federation.decisionRecords,
+  ownerDecisions: workspace ? federation.ownerDecisionRecords : [],
   phases: loadJsonl("plan/phases.jsonl"),
   backlog: loadJsonl("plan/backlog.jsonl"),
   antipatterns: loadJsonl("plan/antipatterns.jsonl"),
   rules: loadJsonl("spec/rules.jsonl"),
   conformance: loadJsonl("spec/conformance.jsonl"),
+  formalArtifacts: loadFormalArtifacts(join(ROOT, "formal")),
   flowcharts: loadJsonl("spec/flowcharts.jsonl"),
   sessions: loadJsonl("sessions/sessions.jsonl"),
   guide: loadJsonl("guide/guide.jsonl"),
+};
+const authority = buildAuthorityViews({
+  ...model,
+  federation: federation.ledgers,
+  knownExternalDecisionIds: federation.relocations.map((relocation) => relocation.id),
+});
+authority.federation = {
+  ledgers: federation.ledgers,
+  qualified_ids: federation.qualifiedIds,
+  reference_edges: federation.referenceEdges,
+  supersession_cycles: federation.supersessionCycles,
+  unverified_relocations: federation.unverifiedRelocations,
+  relocations: federation.relocations,
+  current_product: federation.currentProduct,
 };
 
 function dogfoodRef(kind, id, metadata) {
@@ -982,7 +1002,10 @@ function createDogfoodPayload() {
 }
 
 // ---- consistency checks (fixes P4 stale-premise + P6 link-rot) ----
-const decIds = new Set(model.decisions.map((d) => d.id));
+const decIds = new Set([
+  ...model.decisions.map((d) => d.id),
+  ...federation.relocations.map((relocation) => relocation.id),
+]);
 const sessIds = new Set(model.sessions.map((s) => s.id));
 const ruleIds = new Set(model.rules.map((r) => r.id));
 const broken = [];
@@ -998,9 +1021,9 @@ const legacyRefs = [];
 for (const d of model.decisions)
   for (const sup of d.supersedes ?? []) {
     if (decIds.has(sup)) continue;
-    // 3-digit D### (e.g. D080/D196/D206/D221) are legacy decisions from the old
-    // main-branch log that clean-slate supersedes — external refs, not broken links.
-    if (/^D\d{3}$/.test(sup) || /^R\d+$/.test(sup)) legacyRefs.push(`${d.id} supersedes legacy ${sup}`);
+    // The only retained non-D# supersession family is the old R# decision namespace.
+    // Missing D# refs must resolve through a canonical ledger or relocation locator.
+    if (/^R\d+$/.test(sup)) legacyRefs.push(`${d.id} supersedes legacy ${sup}`);
     else broken.push(`decision ${d.id} supersedes unknown ${sup}`);
   }
 for (const c of model.conformance)
@@ -1009,6 +1032,10 @@ for (const c of model.conformance)
 for (const fc of model.flowcharts)
   for (const e of fc.explains ?? [])
     if (!ruleIds.has(e) && !decIds.has(e)) broken.push(`flowchart ${fc.id} explains unknown ${e}`);
+for (const error of authority.errors)
+  if (!broken.includes(error)) broken.push(error);
+for (const error of federation.errors)
+  if (!broken.includes(error)) broken.push(error);
 
 const referencedDecisions = new Set([
   ...model.sessions.flatMap((s) => s.locks ?? []),
@@ -1021,9 +1048,7 @@ const gaps = {
   designPhases: model.phases.filter((p) => p.gap || p.status === "design").map((p) => p.id),
   openDecisions: model.decisions.filter((d) => d.status === "open").map((d) => d.id),
   deferredBacklog: model.backlog.filter((b) => b.state === "deferred").map((b) => b.id),
-  uncoveredRules: model.rules
-    .filter((r) => !(r.covers_by?.length) && !model.conformance.some((c) => c.covers?.includes(r.id)))
-    .map((r) => r.id),
+  uncoveredRules: authority.uncoveredCurrentRules,
   todoConformance: model.conformance
     .filter((c) => Object.values(c.runtimes ?? {}).some((v) => v === "todo"))
     .map((c) => c.id),
@@ -1034,6 +1059,7 @@ const counts = Object.fromEntries(Object.entries(model).map(([k, v]) => [k, v.le
 console.log("=== GraphReFly dashboard build ===");
 console.log("counts:", counts);
 console.log("gaps:", Object.fromEntries(Object.entries(gaps).map(([k, v]) => [k, v.length])));
+console.log("authority metrics:", authority.metrics);
 if (broken.length) console.error("BROKEN LINKS:\n  " + broken.join("\n  "));
 if (orphans.length) console.warn("orphans:\n  " + orphans.join("\n  "));
 if (legacyRefs.length) console.log("legacy external refs (ok):\n  " + legacyRefs.join("\n  "));
@@ -1054,6 +1080,8 @@ const payload = {
   orphans,
   legacyRefs,
   gateOk: broken.length === 0,
+  authority,
+  federation: authority.federation,
   model,
   dogfood: createDogfoodPayload(),
 };
@@ -1071,7 +1099,7 @@ const head = [
   `<link rel="stylesheet" href="./dashboard.css?v=${stamp}">`,
 ].join("\n  ");
 
-const viewSections = ["dashboard", "dogfood", "gaps", "structure", "search"]
+const viewSections = ["dashboard", "authority", "dogfood", "gaps", "structure", "search"]
   .map(
     (id, i) =>
       `    <section class="view${i === 0 ? " active" : ""}" id="view-${id}" role="tabpanel" aria-labelledby="tab-${id}"></section>`,
@@ -1101,4 +1129,7 @@ const html = `<!doctype html>
 </body>
 </html>`;
 writeFileSync(join(ROOT, "dashboard", "dashboard.html"), html);
+mkdirSync(join(ROOT, "dashboard", ".generated"), { recursive: true });
+writeFileSync(join(ROOT, "dashboard", ".generated", "authority-report.json"), `${JSON.stringify(authority, null, 2)}\n`);
 console.log("wrote dashboard/dashboard.html");
+console.log("wrote dashboard/.generated/authority-report.json");

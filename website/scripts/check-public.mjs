@@ -28,7 +28,7 @@ const expectedRoutes = new Set([
   "/reference/",
 ]);
 const packagePageRoutes = new Set(["/packages/"]);
-const protocolAuthoritySource = "decisions/decisions.jsonl + spec/rules.jsonl + spec/conformance.jsonl";
+const protocolAuthoritySource = "authority/ledgers.jsonl + decision ledgers + spec/rules.jsonl + spec/conformance.jsonl + formal/*.tla + formal/*.cfg";
 const expectedSourceJsonlByRoute = new Map([
   ["/", "guide/site.jsonl"],
   ["/why/", "guide/site.jsonl"],
@@ -145,6 +145,31 @@ function assertRenderedHtmlLinks() {
       fail(`${relative(repoRoot, file)} links to the internal dashboard`);
     }
   }
+}
+
+function assertProtocolSpec() {
+  const path = join(distDir, "protocol", "spec.json");
+  if (!existsSync(path)) fail("public protocol must expose protocol/spec.json");
+  const spec = JSON.parse(readFileSync(path, "utf8"));
+  if (spec.projection !== "current-protocol" || !Array.isArray(spec.rules) || spec.rules.length === 0) {
+    fail("protocol/spec.json must be the non-empty derived current-protocol projection");
+  }
+  if (!Number.isInteger(spec.omittedDraftRuleCount) || spec.omittedDraftRuleCount < 0) {
+    fail("protocol/spec.json must expose the derived omitted draft-rule count");
+  }
+  const expectedProjectionStatus = spec.omittedDraftRuleCount === 0 ? "complete" : "activated-rules-with-drafts-omitted";
+  if (spec.projectionStatus !== expectedProjectionStatus) fail("protocol/spec.json projection status disagrees with its draft omission count");
+  let formalReferenceCount = 0;
+  for (const rule of spec.rules) {
+    if (!Array.isArray(rule.formal)) fail(`${rule.id} formal coverage must be a derived array`);
+    for (const artifact of rule.formal) {
+      formalReferenceCount += 1;
+      if (!/^formal\/.+\.(?:tla|cfg)$/.test(artifact) || !existsSync(join(repoRoot, artifact))) {
+        fail(`${rule.id} formal coverage references missing artifact ${artifact}`);
+      }
+    }
+  }
+  if (formalReferenceCount === 0) fail("protocol/spec.json lost all derived formal coverage");
 }
 
 function assertReport() {
@@ -352,5 +377,6 @@ assertNoSharedRustRoute();
 assertNoLegacyRustDocsUrl();
 assertCnameArtifact();
 assertRenderedHtmlLinks();
+assertProtocolSpec();
 assertReport();
 console.log("[public-docs gate] ok");

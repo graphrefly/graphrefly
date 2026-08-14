@@ -3,8 +3,13 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "authority:check": "node authority/check.mjs",
+    "authority:check:workspace": "node authority/check.mjs --workspace",
+    "test:authority": "node --test authority/*.test.mjs",
     "dashboard": "node dashboard/build.mjs",
+    "dashboard:workspace": "node dashboard/build.mjs --workspace",
     "dashboard:check": "node dashboard/build.mjs --check",
+    "dashboard:check:workspace": "node dashboard/build.mjs --workspace --check",
     "website:build": "node website/scripts/build.mjs",
     "docs:public:check": "node website/scripts/check-public.mjs",
     "docs:public:smoke": "npm run docs:public:check && node website/scripts/smoke-public.mjs",
