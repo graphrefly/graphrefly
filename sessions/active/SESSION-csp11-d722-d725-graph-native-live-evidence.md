@@ -291,3 +291,24 @@ sanitized rejection facts. Its implementation manifest is
 `sha256:da34527b5987945a2fb2525df4f252eea300a95db882af728fdda3055d091c70`. Credential and network counts are
 zero; `causalAttribution=undetermined` and `efficacyClaim=none` remain fixed. D778 is qualification only and does
 not authorize a claim, provider call, live replacement or automatic rerun.
+
+D779 is the offline real-provider composition boundary over D778. It binds TypeScript commit `500af9cd`, the
+D778 0600 bundle artifact `sha256:bab5ac3f4f2fbd72b3ab2e2639b6604a1971c877f2f50b9066cf033e3b894ea0`
+and implementation manifest `sha256:7fe25f0fa4ef320c10b057b554ae0cffbb47e51e906c9ccfe448fb323b1ec37f`.
+The final Chat wire task receipt and actual tool-rejection proposal must cross the same canonical Graph
+request/admission/result/reconciliation boundary as their effects before they become facts. Qualification must
+prove strict task/tool fact bijection, all six serial arms, retry identity, rejection mapping, cleanup, privacy,
+implementation drift and atomic persistence without an adapter evidence ledger. D779 grants no live authority.
+
+The completed D779 qualification is committed as TypeScript `16545b14` and uses implementation manifest
+`sha256:5900a0b65b488370e498f4ed953329522e4585e44070b09e014f6269e675a066`. Its final 0600 bundle artifact is
+`sha256:f75987d6854ff8212020d0c9749b4de285ad4f48eecc6f1d97cd6a4ff081beec`, with canonical bundle digest
+`sha256:20064a75711b14438b4bc34c2077b10f7c85d25282cb4ceb2a9333f07e7b00ed`, generation digest
+`sha256:aff409dca48abad3bb9021be83f788fe30d10d16b0fd2ae900cff026b9a3e6fe` and persistence digest
+`sha256:d083e5015c96bda962b9b1b32ade3f811624688a22bd6983676704ce2b662d15`. All six arms complete serially;
+60 provider results have exact task-exposure facts, five real bounded tool rejections cover the frozen sanitized
+cause vocabulary, and canonical route evidence proves D671/D675/D710 same-logical-request wire identity.
+Credential, control-plane and network counts remain zero. Focused D776/D778/D779 plus empirical gates pass
+43/43; lint/typecheck, build/export and dashboard pass. The full package run passes 2,421 tests and retains the
+32 already-known historical current-source manifest requalification failures across ten D722/D727/D731/D751–D758
+files; D779 does not modify those shared historical sources or manifests.

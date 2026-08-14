@@ -8334,3 +8334,28 @@ authority itself.
   the final 44-test focused gate includes those two additional passing cases. D778 does not modify their frozen shared
   sources or reinterpret those historical artifacts. Qualification records
   `causalAttribution=undetermined` and `efficacyClaim=none` and grants no live authority.
+
+## D779 — D778 real-provider composition qualification
+
+- D779 binds TypeScript commit `500af9cd`, D778 bundle artifact
+  `sha256:bab5ac3f4f2fbd72b3ab2e2639b6604a1971c877f2f50b9066cf033e3b894ea0` and implementation manifest
+  `sha256:7fe25f0fa4ef320c10b057b554ae0cffbb47e51e906c9ccfe448fb323b1ec37f` as its sole baseline.
+- A new package-private composition must carry the exact D778 complete task envelope through the real
+  provider-capable final Chat boundary and carry bounded sanitized tool-rejection proposals through the actual
+  tool-effect boundary. Task/tool proposals become facts only after exact Graph request, admission, result and
+  reconciliation admission, with strict effect/fact bijection and no adapter evidence ledger.
+- The injected no-network qualification must exercise all six serial arms, the complete objective lifecycle,
+  D671/D675/D710 retry identity, real rejection mapping, replay/substitution/state-drift failures, cleanup,
+  privacy, implementation provenance and atomic partial/success persistence.
+- Route, pricing, budget, retry, stopping, one-active-arm order, cold-not-censoring-warm and the D778 model
+  information set remain unchanged. D779 is offline-only and authorizes no credential, claim, control-plane,
+  provider/network call, charge, live replacement or automatic rerun. `causalAttribution=undetermined` and
+  `efficacyClaim=none` remain fixed.
+- Qualification completed as TypeScript commit `16545b14` with implementation manifest
+  `sha256:5900a0b65b488370e498f4ed953329522e4585e44070b09e014f6269e675a066`, final 0600 artifact
+  `sha256:f75987d6854ff8212020d0c9749b4de285ad4f48eecc6f1d97cd6a4ff081beec`, canonical bundle
+  `sha256:20064a75711b14438b4bc34c2077b10f7c85d25282cb4ceb2a9333f07e7b00ed` and generation
+  `sha256:aff409dca48abad3bb9021be83f788fe30d10d16b0fd2ae900cff026b9a3e6fe`. Six arms complete serially with
+  60 exact task-exposure facts and five exact sanitized tool-rejection facts; credential/control-plane/network
+  counts are zero. Focused gates, lint/typecheck, build/export and dashboard pass. The full package run retains
+  only the 32 known historical current-source manifest requalification failures and introduces no D779 failure.
