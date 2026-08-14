@@ -8417,3 +8417,19 @@ authority itself.
   retries are permitted. Fallback, switch, parallel/background work, claim reuse and automatic rerun remain
   prohibited. Efficacy and causal-attribution boundaries are unchanged; failure publishes partial Graph evidence
   only, never success generation. Claim consumption exhausts D781.
+- The authorized D781 attempt completed its 60-call/6-retry-wait injected no-network qualification with zero
+  credential/control-plane/provider-network calls, then durably consumed claim
+  `sha256:bf0eb7dd1f0b70b685a53f0dd67707e43e81ba2d3d894b63fa97afc71a52a2d3` after fresh pricing,
+  route, same-credential zero-BYOK and current-key admission
+  `sha256:f37b1f223de5c8a469a18c401f145860ab2f1228a647e05a1cdbbea00f0bd54c` with USD 17.748444
+  remaining. Before any provider effect, the live boundary rejected the historical artifact because it incorrectly
+  compared the D779 artifact's implementation manifest (`sha256:5900a0b6…a066`) to the independent repaired
+  D780 baseline (`sha256:4b3f23f9…3328`). Provider call count was zero; no Graph evidence, success generation or
+  efficacy result exists, and automatic rerun remains forbidden.
+- A material-free 0600 private forensic records the pre-provider failure with internal digest
+  `sha256:3e3d54dafa4c11115e9ba1939e558f817a8bed1e1249c1583ee81aea5e9808ab` and artifact SHA-256
+  `sha256:98a30d25378285895e5870c992c77cbe8552edeeb5765226a7f0a67c065dc37b`. The offline repair now
+  binds the D779 historical implementation and repaired D780 baseline as distinct coordinates and validates the
+  exact real D779 artifact before pricing, credential or claim access. TypeScript commit `23250891`, repaired D781
+  manifest `sha256:125bd81f30e7ae691b03bc3acb9e59a6394a7ba363b54325baf1da38763677fe`, focused QA 38/38,
+  typecheck, Biome and diff-check are green. D781 remains consumed and authorizes no replacement.
