@@ -8399,3 +8399,21 @@ authority itself.
   typecheck, Biome, and diff-check pass. The repaired implementation manifest is
   `sha256:4b3f23f9b6b42e977dcb15869d76617ebaedb85724290fd8e7919ac2ff273328`. D780 remains exhausted and
   authorizes no rerun.
+
+## D781 — D780 tool-failure-provenance replacement
+
+- D781 binds TypeScript commit `835e10a1`, repaired implementation manifest
+  `sha256:4b3f23f9b6b42e977dcb15869d76617ebaedb85724290fd8e7919ac2ff273328`, and the consumed D780 forensic
+  receipt `sha256:58e55ef7e91bf0593b8bb172ef86508465b2b89d7ac02c2c4f515991bb7d6151`.
+- D781 changes only the reverse-coverage classification: D778 sanitized tool rejections remain exact Graph
+  fact bijections, while deterministic `executor-threw` and `graph-admission-denied` tool failures remain their
+  own Graph provenance and require no fabricated D778 proposal. D780 evidence and claim stay immutable.
+- D781 first runs a new package-private injected no-network six-arm qualification covering positive task
+  exposure, real tool rejection, wrong-tool Graph failure, replay/substitution, retry/budget, cleanup, privacy,
+  implementation drift and atomic persistence. Only after all gates are green may it automatically execute one
+  new same-route USD 6/32 serial six-arm block under a distinct durable single-use claim.
+- Fresh pricing, route eligibility, credential presence and same-credential zero-BYOK remain preclaim gates;
+  current-key admission remains postclaim and pre-provider. Only D671/D675/D710 same-request same-route serial
+  retries are permitted. Fallback, switch, parallel/background work, claim reuse and automatic rerun remain
+  prohibited. Efficacy and causal-attribution boundaries are unchanged; failure publishes partial Graph evidence
+  only, never success generation. Claim consumption exhausts D781.
