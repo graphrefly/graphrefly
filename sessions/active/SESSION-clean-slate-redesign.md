@@ -8297,3 +8297,40 @@ authority itself.
   harness-failure evidence, not evidence against treatment efficacy. Any repair must be a new offline-qualified
   decision that binds the complete actor-visible task and acceptance material into the exact Graph-admitted wire
   input and adds a bounded material-free tool-rejection discriminator; it cannot reuse D777's consumed claim.
+
+## D778 — Graph-authored complete task exposure and tool-rejection diagnostics
+
+- D778 treats the consumed D777 claim and partial Graph/route/terminal evidence as immutable harness-failure
+  evidence. It adds no live authority and cannot reuse the D777 claim.
+- A versioned package-private Graph task-exposure envelope owns the complete actor-visible task statement,
+  public acceptance criteria, bounded readable/writable coordinates, arm exposure and exact
+  run/request/workspace/freshness provenance. The exact final model-visible Chat messages must be validated and
+  digest-bound to Graph admission before transport. Hidden-verifier material, expected patches and historical
+  correct modifications remain excluded.
+- A separate versioned sanitized tool-rejection proposal may contain only allowlisted material-free cause and
+  phase/tool coordinates. It becomes canonical only after the exact tool request/admission/result/reconciliation
+  enter Graph, with strict proposal/fact bijection. No raw arguments, private paths, file contents, patches,
+  errors, stacks or secrets enter evidence, and the adapter owns no side ledger.
+- D778 must qualify the exact final wire messages with an injected model that actually consumes them, complete
+  the fixed serial six-arm lifecycle, and make coordinate-only/omitted/substituted task material and malformed,
+  extra or disallowed tool inputs load-bearing negative cases. Retry identity, budget, cleanup, privacy, replay,
+  implementation provenance, D777 immutability and atomic persistence remain mandatory.
+- D778 is package-private and offline-only. It changes no library/public API, wave protocol, conformance,
+  model/route/pricing/budget/retry/stopping or efficacy rule; it authorizes no credential, claim,
+  control-plane/provider/network call, charge, live replacement or automatic rerun.
+- D778 no-network qualification is complete. The exact implementation manifest is
+  `sha256:7fe25f0fa4ef320c10b057b554ae0cffbb47e51e906c9ccfe448fb323b1ec37f`; the private 0600 bundle
+  artifact is `sha256:bab5ac3f4f2fbd72b3ab2e2639b6604a1971c877f2f50b9066cf033e3b894ea0`, with canonical bundle
+  digest `sha256:ae897c69fe4ccd2374c99a5ff2279f0e19c1a5d8525035c60a419a563aaff213`, generation digest
+  `sha256:da34527b5987945a2fb2525df4f252eea300a95db882af728fdda3055d091c70` and persistence digest
+  `sha256:3baa3c5ddcf2d3c56e52ed5ea0e8a17f863ddc53626f9e0386a82be9674bbaad`. The injected scripted model
+  consumed the exact final Chat messages for all 60 provider attempts across the fixed serial six arms; all
+  same-logical-request retries retained byte-identical model-visible task material. Five bounded sanitized
+  rejection causes were admitted with unchanged workspace state. Stable-handle persistence uses an exclusive
+  generation claim, 0700 directories, 0600 no-follow files, final inode/byte rebind and injected precommit cleanup
+  faults. Focused D776/D777/D778 and empirical gates pass (44 tests), lint/typecheck, build/export, dashboard and diff checks pass, and credential/network counts
+  remain zero. The package-wide run before the two final atomic-focused cases passed 2,417 tests and retained 32
+  known historical current-source manifest requalification failures across ten D722/D727/D731/D751-D758 files;
+  the final 44-test focused gate includes those two additional passing cases. D778 does not modify their frozen shared
+  sources or reinterpret those historical artifacts. Qualification records
+  `causalAttribution=undetermined` and `efficacyClaim=none` and grants no live authority.

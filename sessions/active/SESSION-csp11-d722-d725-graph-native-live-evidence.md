@@ -274,3 +274,20 @@ forbidden. D774 also completes mechanical D761 lowering for every current correc
 semantic, hidden-verifier, executor, transport and HTTP failure provenance. D774 is pre-live/no-network only,
 fixes `causalAttribution=undetermined` and `efficacyClaim=none`, and grants no credential, claim, provider,
 network, charge, rerun, public API, library, protocol or conformance authority.
+
+D778 completes the offline repair over consumed D777 harness-failure evidence. Graph now owns one versioned,
+complete actor-visible task envelope containing the public task, acceptance criteria, readable/writable
+coordinates, arm/run/logical-request/workspace provenance and freshness references. The final Chat message bytes
+are validated before transport and become a canonical task-exposure fact only after exact Graph
+request/admission/result/reconciliation binding. Same-logical-request retries retain byte-identical task material.
+A separate one-shot sanitized tool-rejection proposal admits only five frozen material-free causes after the same
+Graph boundary; raw arguments, file bodies, patches, private paths, errors and secrets remain absent.
+
+The D778 no-network qualification completes all six serial arms and records 60 task-exposure facts plus five
+sanitized rejection facts. Its implementation manifest is
+`sha256:7fe25f0fa4ef320c10b057b554ae0cffbb47e51e906c9ccfe448fb323b1ec37f`; the 0600 bundle artifact is
+`sha256:bab5ac3f4f2fbd72b3ab2e2639b6604a1971c877f2f50b9066cf033e3b894ea0`, with bundle digest
+`sha256:ae897c69fe4ccd2374c99a5ff2279f0e19c1a5d8525035c60a419a563aaff213` and generation digest
+`sha256:da34527b5987945a2fb2525df4f252eea300a95db882af728fdda3055d091c70`. Credential and network counts are
+zero; `causalAttribution=undetermined` and `efficacyClaim=none` remain fixed. D778 is qualification only and does
+not authorize a claim, provider call, live replacement or automatic rerun.
