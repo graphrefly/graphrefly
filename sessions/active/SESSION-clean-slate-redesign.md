@@ -8232,3 +8232,19 @@ authority itself.
   `efficacyClaim=none` and `causalAttribution=undetermined` remain fixed. The canonical evidence digest is
   `sha256:d136636eb906ede1f8bcbc7de76fe52f80567f1f2c999d7ca3ff00e647af9b2b`; the terminal receipt digest is
   `sha256:be6614eb2c7c4ef07515c4162a9013ac5e57a99d8670282c306cce29c6c4d038`. D775 is exhausted and cannot rerun.
+
+## D776 — Graph-authored inspection-phase lowering repair
+
+- D776 uses the consumed D775 partial Graph evidence as immutable failure evidence. Its sole behavioral delta is
+  adding the existing Graph `inspection` phase to the package-private route-lowering vocabulary and mapping it
+  mechanically to the existing `read_file` named tool.
+- The load-bearing no-network path must reproduce D775's out-of-phase `workspace-diff`, Graph zero-effect
+  rejection and bounded inspection continuation, then prove ordered inspection, exact mutation, new diff,
+  focused validation, public-semantic validation and hidden verification across all six arms.
+- The adapter remains transparent and all route facts retain exact request/admission/result/reconciliation
+  bijection. D776 also gates wrong/missing tools, stale/substituted contexts, retry identity, headroom denial,
+  cleanup, privacy, replay, implementation drift, D775 immutability and atomic persistence.
+- D776 authorizes package-private offline implementation, injected no-network qualification, private artifacts
+  and QA only. It authorizes no credential, claim, network/provider call, charge, live replacement or automatic
+  rerun and changes no library/public API, protocol, conformance, model/route/pricing/budget/retry/stopping or
+  efficacy boundary.
