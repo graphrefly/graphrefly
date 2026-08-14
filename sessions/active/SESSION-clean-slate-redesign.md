@@ -8359,3 +8359,25 @@ authority itself.
   60 exact task-exposure facts and five exact sanitized tool-rejection facts; credential/control-plane/network
   counts are zero. Focused gates, lint/typecheck, build/export and dashboard pass. The full package run retains
   only the 32 known historical current-source manifest requalification failures and introduces no D779 failure.
+
+## D780 — D779-qualified Graph-native live measurement
+
+- D780 freezes TypeScript commit `16545b14`, D779 bundle artifact
+  `sha256:f75987d6854ff8212020d0c9749b4de285ad4f48eecc6f1d97cd6a4ff081beec` and implementation manifest
+  `sha256:5900a0b65b488370e498f4ed953329522e4585e44070b09e014f6269e675a066` as its sole qualified baseline.
+- D780 may add only the package-private live composition, exact implementation manifest, injected no-network
+  gates, one new durable single-use claim, and atomic success or partial-failure persistence. It must not
+  change D779 Graph decisions, task/tool fact admission, retry, budget, stopping, model information set, or
+  efficacy-gate semantics.
+- Once every no-network gate is green, D780 may automatically execute exactly one fixed-order serial six-arm
+  measurement on DeepSeek V4 Flash 0731 through DeepInfra fp4 Chat under a USD 6 block hard cap and Local Eval
+  2 no-reset USD 32 total. Cold never censors warm and only one arm is active.
+- Exact D779 artifacts/current implementation, fresh official pricing, fresh route eligibility, credential
+  presence, and fresh same-credential zero-BYOK evidence must pass before the new claim. Current-key admission
+  proving remaining spend at least USD 6 occurs after claim and before provider dispatch. Only D671/D675/D710
+  same-request, same-route serial retries are allowed; fallback, switch, parallel/background work, automatic
+  rerun, and claim reuse are forbidden.
+- Graph alone evaluates the frozen positive-differential gate. Only a complete gate may record frozen-task/block
+  positive differential efficacy evidence; otherwise `efficacyClaim=none`; `causalAttribution=undetermined`
+  remains fixed. Failures persist only atomic partial canonical Graph evidence and a terminal receipt, never a
+  success generation. Claim consumption exhausts D780.
