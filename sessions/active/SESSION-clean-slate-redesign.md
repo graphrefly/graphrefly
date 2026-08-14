@@ -8381,3 +8381,21 @@ authority itself.
   positive differential efficacy evidence; otherwise `efficacyClaim=none`; `causalAttribution=undetermined`
   remains fixed. Failures persist only atomic partial canonical Graph evidence and a terminal receipt, never a
   success generation. Claim consumption exhausts D780.
+- The one authorized D780 execution consumed claim
+  `sha256:c88b010dbb2b860bcbc03857f9d99ac0196f14ba43e81bac95992a06fedf6ff7` after fresh pricing,
+  route, credential, zero-BYOK, and current-key admission
+  `sha256:0a00a9f822a44b5b0c34e9bb9c882a23d4f1fe4c49d12f5b2bc845ec9f9de305` with USD
+  17.921611 remaining. The fixed DeepSeek/DeepInfra route executed serial provider activity, then the local
+  post-run validator rejected the constructed bundle with `tool-rejection-failed-effect-coverage-drift`.
+- Root cause: the D780 reverse-coverage check treated Graph-synthesized `executor-threw` and
+  `graph-admission-denied` failed tool effects as if each required a D778 sanitized tool-rejection proposal.
+  Those provenances are intentionally distinct, so the check rejected otherwise admissible partial evidence.
+  The runner exited before atomic persistence; no success generation or canonical partial Graph bundle exists,
+  and no efficacy result can be evaluated. A material-free 0600 private forensic receipt records this evidence
+  loss explicitly with digest `sha256:58e55ef7e91bf0593b8bb172ef86508465b2b89d7ac02c2c4f515991bb7d6151`.
+- The offline fix separates the two deterministic Graph-synthesized failure digests from D778 rejection
+  coverage while retaining strict rejection fact/result/reconciliation bijection. D779 wrong-tool and real
+  rejection fixtures are now load-bearing D780 regressions; focused D779/D780/empirical QA is 35/35 green,
+  typecheck, Biome, and diff-check pass. The repaired implementation manifest is
+  `sha256:4b3f23f9b6b42e977dcb15869d76617ebaedb85724290fd8e7919ac2ff273328`. D780 remains exhausted and
+  authorizes no rerun.
