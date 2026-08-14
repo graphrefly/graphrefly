@@ -312,3 +312,26 @@ Credential, control-plane and network counts remain zero. Focused D776/D778/D779
 43/43; lint/typecheck, build/export and dashboard pass. The full package run passes 2,421 tests and retains the
 32 already-known historical current-source manifest requalification failures across ten D722/D727/D731/D751–D758
 files; D779 does not modify those shared historical sources or manifests.
+
+D782 is the consumed live replacement that separates the D779 historical implementation coordinate from the
+repaired D781 executable baseline before pricing, credential or claim access. Its TypeScript implementation commit is
+`a41b38b5`, implementation manifest is
+`sha256:2ce26cee4109e2b3312aa20c9772faf168333576b6869a6341df6d51c10e3398`, and injected qualification digest is
+`sha256:82bb93301697b82cb13f9251e1c1922baa398836d7630e7fc64c794426ede6aa`. Fresh pricing, route eligibility,
+credential presence and same-credential zero-BYOK passed before single-use claim
+`sha256:16a3cd758a907d9682981b7e3584092dd1f90475959fca33f029a6ce0c94fb78`; current-key admission remained
+postclaim and pre-provider.
+
+Graph completed all six frozen arms and twelve primary/recovery runs with 162 exact effect
+proposal/admission/reconciliation triples, 47 provider requests, six allowed retry waits, twelve successful cleanups,
+USD 0.186391 reconciled cost and no reservation overrun. The atomic partial bundle is
+`sha256:39d4b9934f23d45767ecf18df43fc1b7e3322075641dfd87c24c004e6f9089c4`; Graph evidence is
+`sha256:78b91ee895534fc92e49a3de4941914e7fa50872a896589acf359e8c2cae195d`; partial generation is
+`sha256:fd1047a7ee746db3154ee250c3cc95e005ba5f86ca0e7c5e90dce2ad10bb09b9`; terminal receipt is
+`sha256:3d94ca80fc5e89e9a749bd3dcc54e0b9dbdd8ceead54be754b318f39d4e00e30`.
+
+No arm satisfied the positive differential. Five runs failed exact mutation, while every candidate reaching public
+semantic validation failed the same public criteria: malformed provenance was not rejected, local reconstruction was
+not rejected, and the authorization invariant regressed. The six arm projections therefore all report
+`required-differential-not-observed`; no success generation or efficacy result exists, `efficacyClaim=none` and
+`causalAttribution=undetermined` remain fixed, and D782 authorizes no automatic rerun.

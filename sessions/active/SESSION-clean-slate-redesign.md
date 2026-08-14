@@ -8445,3 +8445,26 @@ authority itself.
 - After injected no-network and QA gates pass, D782 may execute one fresh-pricing/route/zero-BYOK/current-key
   replacement under a new durable claim. Fallback, switch, parallel/background work and automatic rerun remain
   forbidden. Claim consumption exhausts D782; Graph alone derives any frozen positive differential.
+- D782 implementation commit `a41b38b5` and manifest
+  `sha256:2ce26cee4109e2b3312aa20c9772faf168333576b6869a6341df6d51c10e3398` passed the exact injected
+  six-arm qualification (digest `sha256:82bb93301697b82cb13f9251e1c1922baa398836d7630e7fc64c794426ede6aa`),
+  lint/typecheck, build/export and dashboard gates. The broader package run retained only the already-known
+  historical current-source manifest requalification failures; D782 focused and current Graph-native paths were
+  green.
+- The authorized D782 attempt passed fresh pricing, route eligibility, credential-presence and fresh
+  same-credential zero-BYOK, then consumed claim
+  `sha256:16a3cd758a907d9682981b7e3584092dd1f90475959fca33f029a6ce0c94fb78` and current-key admission
+  `sha256:f37b1f223de5c8a469a18c401f145860ab2f1228a647e05a1cdbbea00f0bd54c`. Graph completed all six
+  frozen arms and twelve primary/recovery runs serially, with 162 exact proposal/admission/reconciliation triples,
+  47 provider requests, six admitted retry waits, twelve successful cleanups, no reservation overrun, USD 0.186391
+  reconciled cost and 5,193,370 ms reconciled elapsed time.
+- The block atomically published partial canonical evidence: bundle
+  `sha256:39d4b9934f23d45767ecf18df43fc1b7e3322075641dfd87c24c004e6f9089c4`, Graph evidence
+  `sha256:78b91ee895534fc92e49a3de4941914e7fa50872a896589acf359e8c2cae195d`, route evidence
+  `sha256:6b21bbceefcee8fa55d33dbf30bb2b39fd91e6d84a0d1a23984adc26410f125b`, partial generation
+  `sha256:fd1047a7ee746db3154ee250c3cc95e005ba5f86ca0e7c5e90dce2ad10bb09b9`, and terminal receipt
+  `sha256:3d94ca80fc5e89e9a749bd3dcc54e0b9dbdd8ceead54be754b318f39d4e00e30`. No success generation
+  exists. Every arm failed the frozen differential gate. Five runs failed the exact mutation effect; every candidate
+  reaching public semantic validation failed the same three public criteria: `malformed-provenance-not-rejected`,
+  `local-reconstruction-not-rejected`, and `authorization-invariant-regressed`. Therefore `efficacyClaim=none` and
+  `causalAttribution=undetermined` remain correct. D782 is consumed and authorizes no rerun.
