@@ -8259,3 +8259,20 @@ authority itself.
   package sweep leaves only the already-known historical D722-D760 current-source manifest requalification
   failures; D776 does not rewrite those immutable historical manifests. D776 remains offline-only and grants no
   live dispatch authority.
+
+## D777 — D776-qualified Graph-native live measurement
+
+- D777 freezes TypeScript commit `2583cb55`, D776 bundle artifact
+  `sha256:a9dd575c9773fa9ecaae77ba3b2de6c278b8f5946290f5b846cb0a8433a2657c` and implementation manifest
+  `sha256:0dabb4f2bc5ebde179a718e0b893e64fbeeab9051c13f2aceaed5861ba4f940f` as its only baseline.
+- It authorizes exactly one new fixed-order serial six-arm measurement on DeepSeek V4 Flash 0731 through
+  DeepInfra fp4 Chat, with a USD 6 block hard cap and Local Eval 2 no-reset USD 32 total. Cold does not censor
+  warm and only one arm may be active.
+- Fresh official pricing, route eligibility, credential presence and same-credential zero-BYOK must pass before
+  a new durable single-use claim. Current-key admission with remaining spend at least USD 6 occurs after claim
+  and before provider dispatch. Only D671/D675/D710 same-request same-route serial retries are allowed; fallback,
+  provider/model/route switch, parallel/background calls, automatic rerun and reuse of any earlier claim are
+  forbidden.
+- Any failure publishes only atomic partial canonical Graph evidence and a terminal receipt. Claim consumption
+  exhausts D777. `causalAttribution=undetermined` remains fixed and no efficacy evidence may be recorded unless
+  the complete frozen positive-differential gate is satisfied.
