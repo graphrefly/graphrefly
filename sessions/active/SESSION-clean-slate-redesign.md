@@ -8433,3 +8433,15 @@ authority itself.
   exact real D779 artifact before pricing, credential or claim access. TypeScript commit `23250891`, repaired D781
   manifest `sha256:125bd81f30e7ae691b03bc3acb9e59a6394a7ba363b54325baf1da38763677fe`, focused QA 38/38,
   typecheck, Biome and diff-check are green. D781 remains consumed and authorizes no replacement.
+
+## D782 — D781 historical-coordinate replacement
+
+- D782 binds TypeScript commit `23250891`, repaired D781 manifest
+  `sha256:125bd81f30e7ae691b03bc3acb9e59a6394a7ba363b54325baf1da38763677fe`, and consumed D781
+  forensic artifact `sha256:98a30d25378285895e5870c992c77cbe8552edeeb5765226a7f0a67c065dc37b`.
+- The only operational repair is preclaim separation of the exact D779 historical implementation coordinate
+  from the repaired D781 baseline. D782 otherwise preserves the same Graph evaluator, route, model information,
+  USD 6/32 budgets, six-arm serial order, cold-not-censoring-warm, stopping and D671/D675/D710-only retries.
+- After injected no-network and QA gates pass, D782 may execute one fresh-pricing/route/zero-BYOK/current-key
+  replacement under a new durable claim. Fallback, switch, parallel/background work and automatic rerun remain
+  forbidden. Claim consumption exhausts D782; Graph alone derives any frozen positive differential.
