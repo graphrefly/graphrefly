@@ -8276,3 +8276,24 @@ authority itself.
 - Any failure publishes only atomic partial canonical Graph evidence and a terminal receipt. Claim consumption
   exhausts D777. `causalAttribution=undetermined` remains fixed and no efficacy evidence may be recorded unless
   the complete frozen positive-differential gate is satisfied.
+- D777 executed exactly once on 2026-08-13 after the offline gates, fresh pricing/route/credential/zero-BYOK
+  checks and post-claim current-key admission passed. The current-key admission recorded
+  `remainingMicrousd=17923109`. The fixed serial topology admitted and cleaned all six arms (12 total primary and
+  recovery runs), used 26 provider requests and two bounded retry waits, reached maximum active arms one, and
+  reconciled `costMicrousd=1510` and `elapsedMs=264970`. The durable claim is consumed and D777 may not rerun.
+- The atomic result is `partial-failure`, with bundle digest
+  `sha256:ceb765a1fdb798f313e24d497327ad873b01db3cf5b9248c3a57f77b8e402a84`, Graph evidence digest
+  `sha256:7b901a43273f71d3a44fd0cbe8995f2c90974b2ea997dae78fa9361fb6ff0271`, route evidence digest
+  `sha256:906d50a49cc33655117f22869c014e3f69bc0e9ad485581b64213ac29c99c840` and terminal receipt artifact
+  `sha256:415254a964ff5cbc5b3bd8ed183c045e0b7e2b516df5fa571c55df7ff9c3d95c`. All six arm projections failed with
+  `required-differential-not-observed`; `efficacyClaim=none` and `causalAttribution=undetermined` remain correct.
+- The canonical trace localizes the failure before mutation: every initial provider turn returned tool intents,
+  Graph admitted an `objective-phase-policy-violation` inspection continuation, every continuation returned the
+  required `read_file`, and all 12 admitted read effects were rejected with unchanged workspace state before
+  successful cleanup. Source inspection identifies the harness defect: D771's Graph-authored non-empty
+  conversation contains only an opaque task coordinate and arm-exposure label, while the D723 request builder
+  includes the real task statement only when that conversation is empty. The live model therefore received no
+  task description, target paths or public acceptance criteria and had no grounded read path. D777 is immutable
+  harness-failure evidence, not evidence against treatment efficacy. Any repair must be a new offline-qualified
+  decision that binds the complete actor-visible task and acceptance material into the exact Graph-admitted wire
+  input and adds a bounded material-free tool-rejection discriminator; it cannot reuse D777's consumed claim.
