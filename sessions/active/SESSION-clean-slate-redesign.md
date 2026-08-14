@@ -8248,3 +8248,14 @@ authority itself.
   and QA only. It authorizes no credential, claim, network/provider call, charge, live replacement or automatic
   rerun and changes no library/public API, protocol, conformance, model/route/pricing/budget/retry/stopping or
   efficacy boundary.
+- D776 qualification completed on TypeScript commit `2583cb55`. The frozen implementation manifest is
+  `sha256:0dabb4f2bc5ebde179a718e0b893e64fbeeab9051c13f2aceaed5861ba4f940f`; the private bundle artifact is
+  `sha256:a9dd575c9773fa9ecaae77ba3b2de6c278b8f5946290f5b846cb0a8433a2657c`; its canonical bundle digest is
+  `sha256:892334801bc770fbb9d13614d06e5294a02a2e10550911d5478efeaba74f1571`; and the persistence digest is
+  `sha256:8a0f04d6689ac09cc79ae04948cf1ace957cdf649b027bb1a5df37488766b4ba`. The injected qualification admitted
+  all six arms, recorded 60 exact provider-route facts with maximum concurrency one, exercised D671/D675/D710
+  retry identity both before and during inspection, and observed zero credential reads and zero network calls.
+  Focused D776, D774/D775 regression, empirical-boundary, typecheck, lint and build gates are green. The full
+  package sweep leaves only the already-known historical D722-D760 current-source manifest requalification
+  failures; D776 does not rewrite those immutable historical manifests. D776 remains offline-only and grants no
+  live dispatch authority.
