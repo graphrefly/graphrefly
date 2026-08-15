@@ -38,6 +38,29 @@ app-private and sequenced after local-v0 closure. B116 defers any public `soluti
 until two independent scenarios prove a genuinely reusable bundle rather than merely reusing existing
 WorkItem, hub, context, executor, admission, and verification building blocks.
 
+## D772/D785/D786 Follow-Up Boundary
+
+The 2026-08-14 task-centric and systems-engineering follow-up keeps Data Agent as the first intended private
+consumer for three deferred engineering contracts without adding a new core Agent or Multi-Agent primitive.
+Under D772, one admitted continuation may explicitly propose several sibling `AgentRequestProposal` values;
+each is admitted and routed separately, including to different executor or model profiles. B133 will qualify
+an app-private candidate-set identity over membership, completion policy, evaluator revision and budget, plus
+a separately admitted aggregator that proposes a selection over eligible terminal outcomes. The independent
+verifier and owning authority remain responsible for the published answer.
+
+Under D785, the wedge should retain causally attributed resource observations for context, requests, attempts,
+executor usage, external calls and opt-in graph profiling where available. These observations may later feed
+B131's named replaceable cost-model graph, but the wedge does not promise one universal cost scalar or automatic
+optimization. Under D786, it may exercise exact verified-result substitution and advisory reusable-insight use
+as distinct proposal/admission paths. An insight may guide later context but cannot become result or verifier
+truth; a prior result may substitute execution only under an explicit current compatibility and exact-use
+decision. B132 owns the later generic contract.
+
+Canvas remains causal/evidence first: actual candidate requests, attempts, outcomes, aggregation and verifier
+evidence may appear in the read-only trajectory projection, while cost/context are later derived overlays over
+the same exact coordinates. Nothing in this follow-up activates the parked wedge, changes the current Canvas
+cursor, grants Canvas write/execution authority, approves model/provider calls or authorizes a public solution.
+
 ---
 
 ## Positioning
@@ -242,6 +265,11 @@ The design bias should be **dynamic data, stable topology**: route changing work
 - Which runtime adapter should prove the privacy story first: Snowflake, ClickHouse, DuckDB/local lakehouse, dbt Semantic Layer, Cube, or a generic handle-returning warehouse adapter?
 - Should the first workflow end at a verified answer, a proposed topology diff, a dbt/semantic-layer PR, or a reverse-ETL activation handoff?
 - How much agentic memory should be included in the preset versus left as an adapter contract?
+- Which candidate completion policy should the first private scenario freeze: all, quorum, or budget-bounded?
+- Which compatibility coordinates make the first verified data result safely substitutable, and which prior
+  findings should remain advisory insights only?
+- Which resource observations are available without default-on tracing and are meaningful inputs to both a
+  default cost-model graph and a user-owned replacement?
 
 ---
 

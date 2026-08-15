@@ -1,6 +1,7 @@
 {"origin":"graphrefly","owner":"graphrefly","authority_class":"durable-root","path":"decisions/decisions.jsonl","availability":"required","include_in_root_dashboard":true,"admission_after":784}
 {"origin":"graphrefly","owner":"graphrefly","authority_class":"evaluation-execution","path":"decisions/execution.jsonl","availability":"required","include_in_root_dashboard":true,"admission_after":784}
 {"origin":"graphrefly-ts","owner":"graphrefly-ts","authority_class":"package-local","path":"../graphrefly-ts/decisions/decisions.jsonl","availability":"workspace-optional","include_in_root_dashboard":false,"admission_after":0}
+{"origin":"graphrefly-ts","owner":"graphrefly-ts","authority_class":"evaluation-execution","path":"../graphrefly-ts/decisions/execution.jsonl","availability":"workspace-optional","include_in_root_dashboard":false,"admission_after":0}
 {"origin":"graphrefly","owner":"graphrefly-ts","authority_class":"package-local-history","path":"../graphrefly-ts/decisions/root-origin-history.jsonl","availability":"workspace-optional","include_in_root_dashboard":false,"historical_only":true}
 {"origin":"graphrefly-rs","owner":"graphrefly-rs","authority_class":"package-local","path":"../graphrefly-rs/decisions/decisions.jsonl","availability":"workspace-optional","include_in_root_dashboard":false,"admission_after":0}
 {"origin":"graphrefly","owner":"graphrefly-rs","authority_class":"package-local-history","path":"../graphrefly-rs/decisions/root-origin-history.jsonl","availability":"workspace-optional","include_in_root_dashboard":false,"historical_only":true}

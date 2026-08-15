@@ -1,16 +1,20 @@
 # SESSION - Prime Agent, pi, and Graph-Native Durable Harness Research
 
-**Status:** active research / architecture discussion; D772 locked
+**Status:** active research / architecture discussion; D772/D785/D786 locked
 **Opened:** 2026-08-11  
 **Trigger:** The user saw Prime Agent's rapid adoption and asked why it was
 successful, how its relationship to pi maps onto GraphReFly, and whether its
 persistent context plus runtime-managed lifecycle resembles GraphReFly's
-WorkItem/EffectRun direction.  
+WorkItem/EffectRun direction. Later multi-agent and systems-engineering posts
+prompted follow-up reviews of context isolation, candidate search, cost
+attribution, evaluator-driven reliability and verified work reuse.
 **Scope:** Product and architecture research. This session records verified
 premises, layer mappings, current gaps, sequencing, and candidate host/runtime
-shapes. D772 now locks the task-centric proposal/commitment boundary and the
-combined current context contract. It does not amend protocol behavior, approve
-a public API, authorize implementation, or make an efficacy claim.
+shapes. D772 locks the task-centric proposal/commitment boundary and the
+combined current context contract. D785 separates resource evidence, replaceable
+cost policy and optimization authority. D786 separates verified-result
+substitution from advisory insight reuse. None amends protocol behavior, approves
+a public API, authorizes implementation, or makes an efficacy claim.
 
 ---
 
@@ -355,8 +359,11 @@ implementation approval:
 3. complete CSP-15's first generic durable runtime and SQLite crash vertical;
 4. trigger B117 only if a retained consumer then needs adaptive multi-request
    context inside one EffectRun;
-5. trigger B118 only after repeated consumer demand, then B119 after B117/B118;
-6. accumulate verifier-qualified real workload trajectories before any
+5. when the Data Agent wedge is explicitly active, qualify B133 as an app-private
+   multi-candidate recipe and let it produce real evidence for B131/B132 without
+   making those generic contracts part of the first causal/evidence lens;
+6. trigger B118 only after repeated consumer demand, then B119 after B117/B118;
+7. accumulate verifier-qualified real workload trajectories before any
    adaptive-harness training work.
 
 ## 13. Governing Existing Decisions
@@ -385,6 +392,10 @@ This discussion is constrained by existing locks rather than replacing them:
 - D718: accepted topology is stable while high-cardinality workload and model
   proposals flow as DATA; model output cannot mutate accepted topology or grant
   execution authority.
+- D785: resource observations, replaceable cost-model policy and optimization
+  authority remain separate; automatic optimization is not promised.
+- D786: verified-result substitution and reusable-insight context are distinct
+  reuse classes with separate compatibility and use admission.
 
 ## 14. Non-Goals Captured by This Session
 
@@ -419,14 +430,19 @@ This discussion is constrained by existing locks rather than replacing them:
    replaceable task-centric executors?
 8. When does CSP-11 provide enough stable, diverse trajectory data to justify
    SFT or later RL/RFT experiments without training against a moving harness?
+9. Which resource dimensions and default cost-policy outputs are useful across
+   two real consumers without pretending provider units or user priorities are
+   universally comparable?
+10. Which compatibility coordinates are exact, equivalence-classed or irrelevant
+    for the first Data Agent verified-result family?
 
 ## 16. Related Canonical Records
 
 - `sessions/active/SESSION-clean-slate-redesign.md`
-- `plan/backlog.jsonl`: B106, B112, B117, B118, B119
+- `plan/backlog.jsonl`: B106, B112, B116-B119, B131-B133
 - `decisions/decisions.jsonl`: D189, D202, D207, D218, D221,
   D234, D283, D359, D571, D572, D583, D640, D643, D683, D687,
-  D689, D718, D772
+  D689, D718, D772, D785, D786
 - `../graphrefly-ts/packages/ts/src/solutions/work-item/execution.ts`
 - `../graphrefly-ts/packages/ts/src/executors/tool-provider.ts`
 - `../graphrefly-ts/packages/ts/src/solutions/agentic-memory/admission-policy-source.ts`
@@ -453,3 +469,88 @@ evidence remain recorded, while stable business stages, policy gates,
 verification boundaries and causal dependencies remain topology. CSP-14 may
 freeze one exact executor configuration for reproducibility, but single-agent
 versus multi-agent performance is not part of its required proof axis.
+
+## 18. Systems-Engineering Follow-Up
+
+The follow-up discussion treated the Jeff Dean systems-engineering notes as a
+constraint-placement signal rather than evidence that GraphReFly should become
+a universal agent harness. GraphReFly should absorb recurring causal execution
+complexity that is durable across model generations: explicit requests and
+outcomes, attempts, external effects, evidence, evaluation, checkpoint and
+recovery semantics. Model-specific reasoning strategy, task decomposition,
+context choice and candidate generation remain replaceable producers whose
+outputs are proposals rather than hidden runtime authority.
+
+The strongest applicable patterns are:
+
+- provide the correct bounded data at the correct causal point rather than
+  attributing every failure to model capability;
+- use evaluator-backed candidate exploration without making agent count an
+  ontology or proof axis;
+- expect individual executors to fail and preserve retries, alternatives,
+  verification and recovery as explicit policies and facts;
+- expose measurements and user-replaceable cost policy before attempting an
+  automatic optimizer;
+- reuse prior verified work only through explicit compatibility and exact-use
+  admission, while keeping broader lessons advisory.
+
+## 19. D785 — Measurement First, Optimizer Optional
+
+D785 rejects both a hidden harness-owned cost callback and one universal cost
+scalar. Context, request, attempt, executor usage, external calls and opt-in
+graph profiling become causally attributed resource evidence with exact units,
+measurement source, estimated/measured posture, pricing or profile revision,
+currentness and evidence refs. A named default cost-model graph may calculate a
+multidimensional assessment, and users may replace or compose that graph with
+their own policy.
+
+Cost assessment remains separate from budget, route, admission and optimization
+authority. A later optimizer, if justified, can only propose through D772 and
+the relevant owning policy gates. GraphReFly therefore promises cost visibility
+and policy replaceability before it promises automatic cost optimization.
+
+B131 owns the deferred public-contract and evaluation work. It follows B120's
+causal/evidence contract and waits for real consumer measurements so CSP-14 and
+Canvas's first read-only lens are not delayed by speculative cost ontology.
+
+## 20. D786 — Verified Results and Reusable Insights
+
+D786 defines two semantic reuse classes without freezing their future exported
+TypeScript names:
+
+1. verified-result substitution may avoid execution only after a narrow current
+   compatibility and exact-use policy admits the immutable prior result and its
+   evidence for the new consequence;
+2. a reusable insight is provenance-bound advisory material that may enter a
+   later context after fresh use admission but cannot establish a result,
+   verdict, permission, mutation, route or other authority.
+
+This extends AgenticMemory's admission/exact-use precedent rather than turning
+AgenticMemory into a generic result store. Large result bodies may stay in an
+external authority behind exact refs. When reuse changes a durable managed
+consequence, the compatibility and use decision must be reconstructable under
+the claimed assurance. B132 owns the later public-contract and adversarial
+qualification work.
+
+## 21. Data Agent Candidate Search and Canvas Projection
+
+The first intended private consumer is Data Agent. When its wedge is explicitly
+activated, one admitted agentic request may propose several sibling
+`AgentRequestProposal` values through the existing `AgentDecisionContinue.next`
+array. Each proposal is admitted and routed separately, potentially to a
+different executor or model profile. An app-private candidate-set contract binds
+membership, completion policy, evaluator revision and budget; a separately
+admitted aggregator proposes a selection over eligible terminal outcomes, and
+an independent verifier plus the owning authority decide publication.
+
+This is dynamic DATA over stable fork/admission/aggregate/verify topology, not
+hidden agent spawning or runtime topology mutation. B133 owns the private recipe
+qualification; B116 remains the only gate for public Data Agent solution
+extraction after a second independent scenario.
+
+Canvas sequencing remains read-first. Its initial Coordination/Topology lens
+continues to project exact causal and evidence truth. Candidate requests,
+attempts, outcomes and aggregation appear only when present in the real runtime
+records. Cost and context overlays follow later as derived projections over the
+same exact coordinates, and write interactions remain typed proposals to the
+owning authority.
