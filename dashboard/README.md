@@ -35,7 +35,19 @@ spec/conformance/formal obligations fail the authority gate.
 ledger and generate the complete current-product set grouped by owner. A root-only build never claims
 that set is complete while relocated bodies are unavailable.
 
-### `plan/phases.jsonl` (single canonical sequencer)
+### Federated sequencers
+
+`authority/work-ledgers.jsonl` locates owner-local canonical planning surfaces. Root
+`plan/phases.jsonl` is only the root program sequencer; Canvas, Stack and runtime implementation
+work remain in their owning repositories. `authority/work-federation.mjs` normalizes the available
+sources into a generated dependency view and validates D787 without copying work bodies.
+
+The generated payload is explicitly `read-only-generated-view-not-execution-authority`. It may
+derive readiness, dependents, aggregate completion, stale/missing evidence and critical-path
+position, but none of those grants implementation, provider, charged-action or cross-repository
+write authority. Missing sibling sources are shown as unavailable rather than complete or blocked.
+
+### `plan/phases.jsonl` (root program sequencer)
 ```
 { id:"CSP-1", title, status:"design"|"impl"|"done", deps:[id], sessions:[DS#], gap:bool, note? }
 ```
@@ -93,6 +105,14 @@ provide the current protocol constitution, authority ownership/migration state, 
 graph, unresolved conflicts and machine-verifiable metrics. They are generated artifacts, never
 hand-maintained authority.
 
+The embedded `workFederation` payload additionally reports registered owner-local work sources,
+qualified identities, dependency edges, cursors, cycles, orphan strict records, legacy migration
+diagnostics and checkout availability. Its `generated` projection and the **Sequencer** tab show the
+single-cursor critical-path candidate, per-owner next candidates, ready-but-not-authorized work,
+waiting/unavailable work, integration milestones and stale/missing evidence. These fields are derived
+from owner records on every build, are never written back, and explicitly grant no implementation,
+provider, charged-action or cross-repository write authority.
+
 ### CSP-8 Workbench Tab
 
 The **Workbench** view is generated dashboard-private fixture data, not a new jsonl
@@ -126,6 +146,10 @@ runtime APIs, WorkspaceGraph ownership, or protocol behavior.
 - every `flowcharts.explains` id resolves (rule or D#)
 - gap: current rules with no forward-covering conformance scenario
 - orphan: decision referenced by no session/phase; session producing no decision
+- no duplicate qualified work identity or versioned artifact producer, dependency or
+  supersession cycle, broken strict work reference, evidence-free strict completion, duplicate
+  canonical body, wrong integration owner or consumer artifact schema/revision; exact outcome-text
+  matches across owners remain explicit review warnings rather than guessed duplicates
 
 ## Run
 
@@ -133,5 +157,7 @@ runtime APIs, WorkspaceGraph ownership, or protocol behavior.
 node dashboard/build.mjs            # → dashboard/dashboard.html (+ prints consistency report)
 node dashboard/build.mjs --check    # consistency report only, non-zero exit on broken links
 npm run authority:check             # focused authority/ref/current-view gate
+npm run work:check                  # focused federated work contract gate
+npm run work:check:workspace        # include available sibling owner-local planning surfaces
 npm run test:authority              # resolver regression tests
 ```

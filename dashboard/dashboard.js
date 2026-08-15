@@ -4,7 +4,7 @@
 (function () {
   "use strict";
   var payload = JSON.parse(document.getElementById("payload").textContent);
-  var M = payload.model, G = payload.gaps, C = payload.counts, A = payload.authority;
+  var M = payload.model, G = payload.gaps, C = payload.counts, A = payload.authority, W = payload.workFederation || {};
   var gapTotal = Object.keys(G).reduce(function (n, k) { return n + G[k].length; }, 0);
   var $ = function (id) { return document.getElementById(id); };
   var dogfoodFacts = (payload.dogfood && payload.dogfood.facts ? payload.dogfood.facts : []).slice();
@@ -74,7 +74,7 @@
         h("div", { class: "num" }, [String(num)]), h("div", { class: "lbl" }, [lbl]), total ? ticks(on, total) : null,
       ]);
     }
-    var doneP = M.phases.filter(function (p) { return p.status === "done"; }).length;
+    var doneP = M.phases.filter(function (p) { return p.status === "done" || p.status === "complete"; }).length;
     var passC = M.conformance.filter(function (c) { return Object.values(c.runtimes || {}).every(function (v) { return v === "pass"; }); }).length;
     var g = $("gauges");
     fill(g, [
@@ -92,6 +92,7 @@
   var TABS = [
     { id: "dashboard", label: "Dashboard" },
     { id: "authority", label: "Authority", cnt: A.unresolvedConflicts.length },
+    { id: "sequencer", label: "Sequencer", cnt: W.metrics ? W.metrics.strict_records : 0 },
     { id: "dogfood", label: "Workbench" },
     { id: "gaps", label: "Gaps", cnt: gapTotal },
     { id: "structure", label: "Structure" },
@@ -123,8 +124,8 @@
     M.phases.forEach(function (p) {
       rows.appendChild(h("div", { class: "phase" }, [
         h("span", { class: "id" }, [p.id]),
-        h("div", { class: "meta" }, [h("div", { class: "ttl", title: p.title }, [p.title]),
-          h("div", { class: "deps" }, [p.deps && p.deps.length ? "← " + p.deps.join(", ") : "root"])]),
+        h("div", { class: "meta" }, [h("div", { class: "ttl", title: p.title || p.outcome }, [p.title || p.outcome]),
+          h("div", { class: "deps" }, [(p.deps || (p.prerequisites || []).map(function (item) { return item.work_ref || item; })).length ? "← " + (p.deps || (p.prerequisites || []).map(function (item) { return item.work_ref || item; })).join(", ") : "root"])]),
         h("span", { class: "st st-" + p.status }, [p.status]),
       ]));
     });
@@ -138,6 +139,42 @@
       ]));
     });
     fill(v, [sectionH("Mission status", "clean-slate · DS-1"), h("div", { class: "grid cols" }, [phaseCard, decCard])]);
+  })();
+
+  // ===== FEDERATED SEQUENCER (generated, read-only, never execution authority) =====
+  (function () {
+    var v = $("view-sequencer");
+    var D = W.generated || { critical_path: [], owner_next_candidates: [], ready_but_not_authorized: [], waiting_on_prerequisite: [], genuinely_blocked: [], integration_milestones: [], stale_or_missing_evidence: [] };
+    function listCard(title, values, empty) {
+      var card = h("div", { class: "card" }, [h("h3", {}, [title])]);
+      if (!values.length) card.appendChild(h("div", { class: "rec" }, [h("span", { class: "rid" }, [empty || "none"])]));
+      values.forEach(function (value) {
+        card.appendChild(h("div", { class: "rec" }, [h("span", { class: "rid" }, [typeof value === "string" ? value : value.work_ref || value.owner]),
+          typeof value === "object" ? h("div", { class: "rbody" }, [h("div", { class: "rd" }, [value.owner + " · " + value.selection_basis + " · execution authority: false"])]) : null]));
+      });
+      return card;
+    }
+    var metrics = h("div", { class: "gaptiles" }, [
+      h("div", { class: "gaptile" }, [h("b", {}, [String((W.metrics || {}).records || 0)]), h("span", {}, ["projected work"])]),
+      h("div", { class: "gaptile" }, [h("b", {}, [String((W.metrics || {}).strict_records || 0)]), h("span", {}, ["strict records"])]),
+      h("div", { class: "gaptile" }, [h("b", {}, [String((W.dependencyCycles || []).length)]), h("span", {}, ["dependency cycles"])]),
+      h("div", { class: "gaptile" }, [h("b", {}, [String((W.orphans || []).length)]), h("span", {}, ["strict orphans"])]),
+    ]);
+    var critical = listCard("cursor-anchored critical-path candidate", D.critical_path || [], "no single cursor anchor");
+    critical.appendChild(h("div", { class: "rec" }, [h("div", { class: "rbody" }, [h("div", { class: "rd" }, [(D.critical_path_basis || "unknown") + ". This is a dependency projection, not dispatch approval."])])]));
+    fill(v, [
+      sectionH("Federated sequencer", "read-only generated view · not execution authority"),
+      metrics,
+      h("div", { class: "grid cols" }, [
+        critical,
+        listCard("per-owner next candidate", D.owner_next_candidates || [], "none"),
+        listCard("ready but not authorized", D.ready_but_not_authorized || [], "none"),
+        listCard("waiting on prerequisite", D.waiting_on_prerequisite || [], "none"),
+        listCard("genuinely blocked", D.genuinely_blocked || [], "none; waiting is kept separate"),
+        listCard("integration milestones", D.integration_milestones || [], "none"),
+        listCard("stale or missing evidence", D.stale_or_missing_evidence || [], "none"),
+      ]),
+    ]);
   })();
 
   // ===== AUTHORITY (D783 / D784 generated views) =====
@@ -2330,7 +2367,7 @@
     var idx = [];
     Object.keys(M).forEach(function (type) {
       M[type].forEach(function (r) {
-        var text = [r.id, r.title, r.question, r.decision, r.statement, r.rationale, r.name, r.pattern, r.instead, r.note, r.layer, (r.covers || []).join(" "), (r.locks || []).join(" ")].filter(Boolean).join("  ");
+        var text = [r.id, r.title, r.outcome, r.question, r.decision, r.statement, r.rationale, r.name, r.pattern, r.instead, r.note, r.layer, r.status, (r.covers || []).join(" "), (r.locks || []).join(" "), (r.governing_refs || []).join(" ")].filter(Boolean).join("  ");
         idx.push({ type: type, id: r.id || "—", text: text });
       });
     });

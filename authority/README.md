@@ -64,3 +64,37 @@ change kinds may not smuggle in a supersession edge.
 Ledgers marked `historical_only` accept no unlocated record: every body must match a relocation
 locator. This makes the history files immutable destinations rather than alternate authoring
 surfaces.
+
+## Federated work authority
+
+D787 applies the same single-body ownership discipline to sequencing without mixing work records
+into decision ledgers. `work-ledgers.jsonl` is a locator for owner-local planning surfaces and their
+read-only adapters; it contains no copied work body. `work-relocations.jsonl` preserves only a
+qualified identity, canonical locator, owner and SHA-256 when a later approved batch moves a work
+record. A relocation marker also binds the former owner, former adapter and body digest plus its
+origin-qualified migration decision; supported moves are JSONL-to-JSONL so old-body duplication
+can be checked mechanically. `work-federation.mjs` derives the workspace work graph and validates the strict
+`graphrefly-work-v1` contract.
+
+Strict interoperable records use one origin-qualified identity and canonical owner, one of the
+closed lifecycle states `proposed`, `planned`, `in-progress`, `complete`, `superseded`, `deferred`
+or `cancelled`, qualified prerequisites, acceptance criteria and full-commit- or SHA-256-bound
+completion evidence. Cross-origin prerequisites also name the exact artifact, schema and revision;
+an in-progress implementation requires a separately resolved execution approval. `ready`, readiness reasons, dependents, aggregate status and
+critical-path position are generated and are rejected if persisted. Exact outcome-text matches
+across owners are review warnings rather than automatic ownership decisions; duplicate qualified
+identities and duplicate versioned artifact producers fail the gate. Integration milestones name
+their own canonical owner as `integration_owner`; producers expose versioned artifacts and the
+consumer alone completes the integration.
+
+Strict active implementation and integration work with no prerequisite, dependent or cursor anchor
+fails as orphaned; roadmap, program and backlog roots may remain independent. The legacy adapters make current root, Canvas and Stack surfaces visible without declaring them
+migrated; rows explicitly marked `work_contract:"graphrefly-work-v1"` use strict validation inside
+those owner-local files without forcing an all-file schema rewrite. A legacy owner schema that reserves
+`status` may expose the canonical lifecycle as `canonical_status`; any compatibility `deps` array must
+mechanically match the structured canonical prerequisites. Their remaining missing evidence coordinates and prose-only dependencies are diagnostics, not
+fabricated truth. Missing optional sibling ledgers remain `unavailable`; they are never inferred
+complete or blocked. Run `npm run work:check:workspace` for the complete checkout view. The result
+includes derived readiness, dependents, per-owner candidates and a cursor-anchored critical-path
+candidate. All are a read-only planning projection and grant no implementation, provider,
+charged-action or cross-repository write authority.

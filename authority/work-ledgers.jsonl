@@ -1,0 +1,10 @@
+{"origin":"graphrefly","owner":"graphrefly","work_class":"program-phase","path":"plan/phases.jsonl","adapter":"phase-jsonl-v0","availability":"required"}
+{"origin":"graphrefly","owner":"graphrefly","work_class":"backlog-item","path":"plan/backlog.jsonl","adapter":"backlog-jsonl-v0","availability":"required"}
+{"origin":"graphrefly-ts","owner":"graphrefly-ts","work_class":"implementation-slice","path":"../graphrefly-ts/plan/work.jsonl","adapter":"work-jsonl-v1","availability":"workspace-optional"}
+{"origin":"graphrefly-rs","owner":"graphrefly-rs","work_class":"implementation-slice","path":"../graphrefly-rs/plan/work.jsonl","adapter":"work-jsonl-v1","availability":"workspace-optional"}
+{"origin":"graphrefly-py","owner":"graphrefly-py","work_class":"implementation-slice","path":"../graphrefly-py/plan/work.jsonl","adapter":"work-jsonl-v1","availability":"workspace-optional"}
+{"origin":"graphrefly-canvas","owner":"graphrefly-canvas","work_class":"roadmap","path":"../graphrefly-canvas/plan/product-roadmap.md","adapter":"canvas-roadmap-md-v1","availability":"workspace-optional"}
+{"origin":"graphrefly-canvas","owner":"graphrefly-canvas","work_class":"cursor","path":"../graphrefly-canvas/plan/program-state.json","adapter":"canvas-program-state-v1","availability":"workspace-optional"}
+{"origin":"graphrefly-canvas","owner":"graphrefly-canvas","work_class":"completion-trace","path":"../graphrefly-canvas/plan/slices.jsonl","adapter":"canvas-slices-jsonl-v2","availability":"workspace-optional"}
+{"origin":"graphrefly-stack","owner":"graphrefly-stack","work_class":"program-phase","path":"../graphrefly-stack/docs/plan/phases.jsonl","adapter":"phase-jsonl-v0","availability":"workspace-optional"}
+{"origin":"graphrefly-stack","owner":"graphrefly-stack","work_class":"backlog-item","path":"../graphrefly-stack/docs/plan/backlog.jsonl","adapter":"backlog-jsonl-v0","availability":"workspace-optional"}

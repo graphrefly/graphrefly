@@ -10,11 +10,13 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { buildAuthorityViews, loadFormalArtifacts } from "../authority/model.mjs";
 import { loadFederation } from "../authority/federation.mjs";
+import { loadWorkFederation } from "../authority/work-federation.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const checkOnly = process.argv.includes("--check");
 const workspace = process.argv.includes("--workspace");
 const federation = loadFederation(ROOT, { includeExternal: workspace });
+const workFederation = loadWorkFederation(ROOT, { includeExternal: workspace, decisionIndex: federation.qualifiedIndex });
 
 function loadJsonl(rel) {
   const p = join(ROOT, rel);
@@ -1036,6 +1038,8 @@ for (const error of authority.errors)
   if (!broken.includes(error)) broken.push(error);
 for (const error of federation.errors)
   if (!broken.includes(error)) broken.push(error);
+for (const error of workFederation.errors)
+  if (!broken.includes(error)) broken.push(error);
 
 const referencedDecisions = new Set([
   ...model.sessions.flatMap((s) => s.locks ?? []),
@@ -1045,9 +1049,9 @@ for (const d of model.decisions)
 
 // ---- gaps ----
 const gaps = {
-  designPhases: model.phases.filter((p) => p.gap || p.status === "design").map((p) => p.id),
+  designPhases: model.phases.filter((p) => p.gap || p.status === "design" || (p.work_contract === "graphrefly-work-v1" && p.status === "proposed")).map((p) => p.id),
   openDecisions: model.decisions.filter((d) => d.status === "open").map((d) => d.id),
-  deferredBacklog: model.backlog.filter((b) => b.state === "deferred").map((b) => b.id),
+  deferredBacklog: model.backlog.filter((b) => b.state === "deferred" || b.status === "deferred").map((b) => b.id),
   uncoveredRules: authority.uncoveredCurrentRules,
   todoConformance: model.conformance
     .filter((c) => Object.values(c.runtimes ?? {}).some((v) => v === "todo"))
@@ -1060,9 +1064,19 @@ console.log("=== GraphReFly dashboard build ===");
 console.log("counts:", counts);
 console.log("gaps:", Object.fromEntries(Object.entries(gaps).map(([k, v]) => [k, v.length])));
 console.log("authority metrics:", authority.metrics);
+console.log("work federation:", {
+  contract: workFederation.contract,
+  authority: workFederation.authority,
+  metrics: workFederation.metrics,
+  dependencyEdges: workFederation.dependencyEdges.length,
+  dependencyCycles: workFederation.dependencyCycles.length,
+  supersessionCycles: workFederation.supersessionCycles.length,
+  orphans: workFederation.orphans.length,
+});
 if (broken.length) console.error("BROKEN LINKS:\n  " + broken.join("\n  "));
 if (orphans.length) console.warn("orphans:\n  " + orphans.join("\n  "));
 if (legacyRefs.length) console.log("legacy external refs (ok):\n  " + legacyRefs.join("\n  "));
+if (workFederation.warnings.length) console.warn("work federation warnings:\n  " + workFederation.warnings.join("\n  "));
 
 if (checkOnly) {
   if (broken.length) process.exit(1);
@@ -1082,6 +1096,7 @@ const payload = {
   gateOk: broken.length === 0,
   authority,
   federation: authority.federation,
+  workFederation,
   model,
   dogfood: createDogfoodPayload(),
 };
@@ -1099,7 +1114,7 @@ const head = [
   `<link rel="stylesheet" href="./dashboard.css?v=${stamp}">`,
 ].join("\n  ");
 
-const viewSections = ["dashboard", "authority", "dogfood", "gaps", "structure", "search"]
+const viewSections = ["dashboard", "authority", "sequencer", "dogfood", "gaps", "structure", "search"]
   .map(
     (id, i) =>
       `    <section class="view${i === 0 ? " active" : ""}" id="view-${id}" role="tabpanel" aria-labelledby="tab-${id}"></section>`,
