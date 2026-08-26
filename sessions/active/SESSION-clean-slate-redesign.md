@@ -8496,3 +8496,15 @@ authority itself.
 - Semantic near-duplicates stop for `/spec-amend` review instead of being guessed. D784 changes no protocol behavior and
   authorizes no schema, rule, conformance, formal, website, dashboard, CI or repo implementation without a separately
   approved batch.
+
+## D788 — Construction terminology and user-land business vocabulary
+
+- D788 supersedes D4's terminology while preserving its closed eight-entry construction surface: `node`, `graph`,
+  `batch`, `state`, `producer`, `derived`, `effect` and `mount` are GraphReFly construction primitives, not business
+  verbs or enterprise vocabulary.
+- Business nouns, verbs, operation names, SOP language, policies and domain semantics remain open-ended user/domain-land
+  authority. GraphReFly supplies reactive reduction and inspectable causal execution within a declared managed scope;
+  it does not become the vocabulary or ontology owner.
+- D6 remains substantively current: operators are node sugar outside the cross-runtime construction set. D788 changes no
+  symbol, public API, construction behavior or protocol semantics and authorizes no rename, compatibility layer,
+  documentation sweep, roadmap change or implementation.
