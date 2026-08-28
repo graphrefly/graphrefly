@@ -61,6 +61,39 @@ evidence may appear in the read-only trajectory projection, while cost/context a
 the same exact coordinates. Nothing in this follow-up activates the parked wedge, changes the current Canvas
 cursor, grants Canvas write/execution authority, approves model/provider calls or authorizes a public solution.
 
+## 2026-08-27 Wedge Direction Follow-Up
+
+The user confirmed the following product/research direction after reviewing a real Data Agent evolution from
+tool-calling through governed metrics and statistical-domain grounding. This confirmation refines the intended
+private wedge but does not mint a durable decision, admit implementation work, activate B116/B133, approve a
+provider call, define a public API, or grant Canvas mutation or execution authority.
+
+1. **A trustworthy report is the baseline, not the differentiator.** Exact numeric, tabular, comparison,
+   ranking and chart material should come from deterministic typed result blocks or exact evidence references;
+   an LLM-authored narrative may explain or cite those blocks but should not become the authority that recopies
+   or recomputes their values. The wedge must prove a useful verified answer before claiming an operational
+   Data Agent.
+2. **Canvas should ultimately enable user-defined downstream action after a metric anomaly.** The intended
+   differentiated loop is not merely anomaly explanation. A user should be able to define, inspect, simulate,
+   review and govern the causal path from an admitted anomaly or verification finding through diagnosis,
+   policy/admission and an eventual bounded downstream action. Stable semantic, verification, review and action
+   stages belong in real topology; metric occurrences, incidents, candidate causes, requests, attempts,
+   outcomes and evidence remain bounded DATA or refs. External effects still require their separate host and
+   authority boundaries.
+3. **Do not make statistical nouns into a universal GraphReFly ontology.** Metric, population/statistical
+   domain, partition and lineage vocabulary may be useful inside the private Data Agent solution, but external
+   systems remain noun authorities and exact public names or types are not selected here. The product value to
+   test is governed reuse, shorter context and inspectable causal action, not ownership of enterprise nouns.
+4. **Use the existing ClickHouse direction for the first proof.** Prefer the current coordinate-only
+   ClickHouse trusted-query profile plus a small app-private semantic manifest over making the first wedge
+   depend on dbt MetricFlow or Cube. The manifest remains a hypothesis for later design review: this note does
+   not select its schema, revision lifecycle, metric/population algebra, export boundary or implementation.
+5. **Sequence the proof from trust to action.** First prove the connected-loopback trustworthy-report path.
+   Then use a distinct metric-anomaly/data-quality scenario to prove lineage or prerequisite checks and a
+   user-defined downstream-action proposal/admission path. This is directionally compatible with B116's
+   two-independent-scenario gate; public extraction still depends on the retained evidence rather than this
+   preference alone.
+
 ---
 
 ## Positioning
@@ -262,8 +295,12 @@ The design bias should be **dynamic data, stable topology**: route changing work
 
 - After the app-private Canvas wedge and B116's second independent scenario, does evidence justify a public `solutions/data-agent` preset, or should the result remain a Canvas recipe/cookbook composition over existing public building blocks?
 - Is the primary builder persona a data engineer, analytics engineer, platform engineer, or application developer embedding analytics into a product?
-- Which runtime adapter should prove the privacy story first: Snowflake, ClickHouse, DuckDB/local lakehouse, dbt Semantic Layer, Cube, or a generic handle-returning warehouse adapter?
-- Should the first workflow end at a verified answer, a proposed topology diff, a dbt/semantic-layer PR, or a reverse-ETL activation handoff?
+- What exact private contract proves that every displayed number and comparison is rendered from deterministic
+  result material while LLM narrative remains ref-bound explanation rather than numeric authority?
+- What is the minimum app-private ClickHouse semantic manifest, and which definition, source, policy,
+  population and lineage revision coordinates must fail closed on drift?
+- Which first downstream action should the anomaly scenario exercise, and should its initial risk boundary be
+  read-only diagnosis, a reviewable external-action proposal, or one reversible admitted mutation?
 - How much agentic memory should be included in the preset versus left as an adapter contract?
 - Which candidate completion policy should the first private scenario freeze: all, quorum, or budget-bounded?
 - Which compatibility coordinates make the first verified data result safely substitutable, and which prior

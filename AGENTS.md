@@ -46,6 +46,15 @@ HTML view (progress / structure / gaps). Schema contract: `dashboard/README.md`.
 
 ## Workflow rules (clean-slate)
 
+Before decision admission, work admission, design review, implementation dispatch, QA, long-running
+goal progression, live/provider/spend authorization, retry, or stalled-work recovery, load and follow
+the personal `$project-governance` skill at
+`~/.codex/skills/project-governance/SKILL.md`. It is the cross-project classification and
+manual-authorization floor, not GraphReFly product authority. GraphReFly owns the concrete family
+mapping through proposed `graphrefly:B137`; until that contract is separately designed and approved,
+do not invent its schema or migrate history, and do not mint a D# merely for an attempt, rerun,
+receipt, incident, provider/model change, or additional-spend approval.
+
 - **spec-first** (F-NO-IMPL-DEFINED): any protocol change → `spec/rules.jsonl` + `formal/*.tla` + `spec/conformance.jsonl` **before** code (`/spec-amend`).
 - **decision-first and owner-first**: any architectural lock → resolve its unique owner/class through `authority/ledgers.jsonl`, then append an origin-qualified D# to that ledger before code. Protocol and cross-project locks remain root-owned.
 - **single canonical per concern**: one unique owner and one canonical body; D783 routes future local authority to Canvas, Stack or the language package while the root keeps language-neutral/cross-project authority. Never copy record text into an index or summary.
