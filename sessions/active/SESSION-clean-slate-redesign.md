@@ -8508,3 +8508,37 @@ authority itself.
 - D6 remains substantively current: operators are node sugar outside the cross-runtime construction set. D788 changes no
   symbol, public API, construction behavior or protocol semantics and authorizes no rename, compatibility layer,
   documentation sweep, roadmap change or implementation.
+
+## D790 — Language-neutral causal occurrence and retained-evidence contract
+
+- D790 locks `graphrefly/causal-occurrence-contract/v1` at `contract-v1`: immutable typed DATA uses an explicit
+  revision domain, occurrence id, domain-global monotonic revision, canonical digest, exact source refs, and a separate
+  revision-bound currentness attestation. Missing revisions block currentness and release until filled or become an
+  explicit retention gap.
+- Exact admission releases each occurrence once through a quiet hub-to-hub boundary. Rejected, unmatched, replayed,
+  stale, conflicting and skipped-revision paths do not preflight the downstream lifecycle. Keyed joins never borrow
+  another occurrence's latest material; batching, splitting and reordering preserve per-occurrence results.
+- Business terminals remain typed DATA on long-lived hubs. Keyed terminal fan-in, exact effect admission/outcome
+  conservation, causal quiescence and retained-evidence quiescence are separately observable. Bounded retention exposes
+  explicit coverage gaps rather than fabricating replay/currentness proof.
+- Runtime arms must have deletion-sensitive tests for every required occurrence/currentness, admission/release, join,
+  effect/outcome, terminal/conservation and evidence/coverage edge. Caller `partial:true`, manual `RESOLVED`, timing,
+  async splitting and caller queues cannot repair lifecycle semantics.
+- The contract uses existing DATA, pull-quiet release and substrate settlement. It changes no protocol rule, message,
+  tier, ctx, wave, graph-domain, restore or cross-wire behavior and grants no runtime implementation or external action.
+
+## D791 — Contract-v2 uses the shared DATA result vocabulary
+
+- D791 supersedes D790 with `graphrefly/causal-occurrence-contract/v1@contract-v2`. It preserves D790's occurrence,
+  currentness, quiet release, keyed lifecycle, fan-in, conservation, quiescence, retention, failure and mutation-test
+  contracts while correcting one omitted language-neutral dependency on D184.
+- Every terminal effect-outcome occurrence carries the shared passive `DataResult<T,E extends DataIssue>` as its
+  family-owned value. `kind:"ok"` is admitted success; `kind:"error"` carries a known failure, cancellation,
+  reconcile-required or unknown-state issue through a typed `DataIssue` extension. Lifecycle/accounting state remains
+  explicit and is not inferred from free-form text or adapter exceptions.
+- Protocol `ERROR` does not carry domain/effect results. New contract-v2 public surfaces preserve or extend the
+  `DataIssue` base instead of inventing a second issue vocabulary; status, audit and coverage remain distinct typed
+  DATA families.
+- Acceptance and mutation testing must fail if an effect outcome stops using `DataResult`/`DataIssue`, maps domain
+  failure to protocol `ERROR`, or bypasses its exact occurrence, admission or conservation edges. No wave-protocol or
+  runtime implementation authority is introduced.
