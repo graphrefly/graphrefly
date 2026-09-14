@@ -1,0 +1,45 @@
+{
+  "kind": "owner-evidence-intake",
+  "owner": "graphrefly",
+  "workRef": "graphrefly:B121",
+  "status": "partial-evidence-received-not-milestone-complete",
+  "tsCommit": "0f537d9eb4f84caceebe2afd7a66600def6677d1",
+  "inputs": [
+    {
+      "owner": "graphrefly-ts",
+      "path": "../graphrefly-ts/docs/design/causal-host-proof-preparation/receipt.json",
+      "digest": "sha256:673e62eaf2a762df1ee3706ff52eb4a1478fcb3767e569fb4b1ec8c598c8a1a2"
+    },
+    {
+      "owner": "graphrefly-ts",
+      "path": "../graphrefly-ts/docs/design/causal-host-proof-execution/receipt.json",
+      "digest": "sha256:e9c0a17fbdfa11413c1706b8ac4501215899994f78ff99cae90c5fe7e173cc78"
+    }
+  ],
+  "mechanicalChecks": {
+    "canonicalOwnerCheckoutAvailable": true,
+    "archiveDigestMatches": true,
+    "archivedExecutionReceiptDigestMatches": true,
+    "archivedFiles": 46,
+    "archivedBytes": 6338,
+    "fileDigestsMatchIndependentReadback": true
+  },
+  "interpretation": {
+    "implementedConsumerOwner": "graphrefly-ts",
+    "selectedConsumer": "examples/spending-alerts",
+    "preparedBy": "graphrefly-ts:CAUSAL-HOST-PROOF-PREPARATION-TS",
+    "actualRun": "Separate explicitly granted attempt retained by TS; not reclassified as preparation execution",
+    "rootIndependentBehavioralQualificationComplete": false,
+    "b121Complete": false,
+    "newConsumerExecutions": 0,
+    "newFileEffects": 0
+  },
+  "gaps": [
+    "CAUSAL-PRESET-ASSEMBLY-TS is planned; existing formal performance acceptance remains unmet",
+    "Supported assurance/diagnostics closure and legacy assembly-v1 owned-node manifest require explicit revision mapping; the new62-node full proof graph is not automatically the original53/54 owned-node contract.",
+    "Root intake checks hashes and archived bytes; it does not replace the frozen independent behavioral aggregate",
+    "Bounded human/agent packet, sealed-answer isolation and symmetric comparison remain unqualified",
+    "Implementation/source binding does not by itself authenticate a human/agent actor"
+  ],
+  "next": "Consolidate the human/agent packet and root scoring/isolation design for one review; no provider, participant, timing campaign or new real effect is dispatched."
+}
