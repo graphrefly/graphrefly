@@ -1,0 +1,1340 @@
+{
+  "kind": "exact-topology-projection",
+  "nodeCount": 62,
+  "displayUnits": 13,
+  "nodes": [
+    {
+      "id": "pack",
+      "factory": "node"
+    },
+    {
+      "id": "arrivals",
+      "factory": "node"
+    },
+    {
+      "id": "current",
+      "factory": "node"
+    },
+    {
+      "id": "verification",
+      "factory": "node"
+    },
+    {
+      "id": "local",
+      "factory": "node"
+    },
+    {
+      "id": "proof/startup",
+      "factory": "graphConstructionStartup"
+    },
+    {
+      "id": "proof/hostFacts",
+      "factory": "offlineSpendingHostFacts"
+    },
+    {
+      "id": "proof/evaluationSelections",
+      "factory": "spending/evaluationSelections"
+    },
+    {
+      "id": "proof/transaction",
+      "factory": "spending/transaction"
+    },
+    {
+      "id": "proof/vendorStats",
+      "factory": "spending/vendorStats"
+    },
+    {
+      "id": "proof/userProfile",
+      "factory": "spending/userProfile"
+    },
+    {
+      "id": "proof/policy",
+      "factory": "spending/policy"
+    },
+    {
+      "id": "proof/anomalyScore",
+      "factory": "spending/anomalyScore"
+    },
+    {
+      "id": "proof/thresholdGate",
+      "factory": "spending/thresholdGate"
+    },
+    {
+      "id": "proof/reasonFactors",
+      "factory": "spending/reasonFactors"
+    },
+    {
+      "id": "proof/alertMessage",
+      "factory": "spending/alertMessage"
+    },
+    {
+      "id": "proof/assessment",
+      "factory": "spending/assessment"
+    },
+    {
+      "id": "proof/requestMaterials",
+      "factory": "spending/requestMaterials"
+    },
+    {
+      "id": "proof/materialStore",
+      "factory": "spending/materialStore"
+    },
+    {
+      "id": "proof/materialSnapshot",
+      "factory": "spending/materialSnapshot"
+    },
+    {
+      "id": "proof/effectProposals",
+      "factory": "spending/effectProposals"
+    },
+    {
+      "id": "proof/currentFacts",
+      "factory": "spending/currentFacts"
+    },
+    {
+      "id": "proof/verificationFacts",
+      "factory": "spending/verificationFacts"
+    },
+    {
+      "id": "proof/localFacts",
+      "factory": "spending/localFacts"
+    },
+    {
+      "id": "proof/inboxFacts",
+      "factory": "spending/inboxFacts"
+    },
+    {
+      "id": "proof/publicationPolicy",
+      "factory": "spending/publicationPolicy"
+    },
+    {
+      "id": "proof/occurrences",
+      "factory": "spending/occurrences"
+    },
+    {
+      "id": "proof/occurrenceAdmissions",
+      "factory": "spending/occurrenceAdmissions"
+    },
+    {
+      "id": "proof/branchTerminals",
+      "factory": "spending/branchTerminals"
+    },
+    {
+      "id": "proof/effectAdmissions",
+      "factory": "spending/effectAdmissions"
+    },
+    {
+      "id": "proof/effectOutcomes",
+      "factory": "spending/effectOutcomes"
+    },
+    {
+      "id": "proof/evidence",
+      "factory": "spending/evidence"
+    },
+    {
+      "id": "proof/watermarks",
+      "factory": "spending/watermarks"
+    },
+    {
+      "id": "proof/causal/input/occurrences",
+      "factory": "causalOccurrenceInputLane"
+    },
+    {
+      "id": "proof/causal/input/admissions",
+      "factory": "causalOccurrenceInputLane"
+    },
+    {
+      "id": "proof/causal/input/branch-terminals",
+      "factory": "causalOccurrenceInputLane"
+    },
+    {
+      "id": "proof/causal/input/effect-proposals",
+      "factory": "causalOccurrenceInputLane"
+    },
+    {
+      "id": "proof/causal/input/effect-admissions",
+      "factory": "causalOccurrenceInputLane"
+    },
+    {
+      "id": "proof/causal/input/effect-outcomes",
+      "factory": "causalOccurrenceInputLane"
+    },
+    {
+      "id": "proof/causal/input/evidence",
+      "factory": "causalOccurrenceInputLane"
+    },
+    {
+      "id": "proof/causal/input/watermarks",
+      "factory": "causalOccurrenceInputLane"
+    },
+    {
+      "id": "proof/causal/arrivals",
+      "factory": "merge"
+    },
+    {
+      "id": "proof/causal/authority",
+      "factory": "causalOccurrenceAuthority"
+    },
+    {
+      "id": "proof/causal/release-candidates",
+      "factory": "causalOccurrenceFactProjection"
+    },
+    {
+      "id": "proof/causal/release-port",
+      "factory": "causalOccurrenceQuietReleasePort"
+    },
+    {
+      "id": "proof/causal/released",
+      "factory": "causalOccurrenceReleased"
+    },
+    {
+      "id": "proof/causal/release-events",
+      "factory": "merge"
+    },
+    {
+      "id": "proof/causal/release-controller",
+      "factory": "causalOccurrenceReleaseController"
+    },
+    {
+      "id": "proof/causal/currentness",
+      "factory": "causalOccurrenceFactProjection"
+    },
+    {
+      "id": "proof/causal/terminals",
+      "factory": "causalOccurrenceFactProjection"
+    },
+    {
+      "id": "proof/causal/conservation",
+      "factory": "causalOccurrenceFactProjection"
+    },
+    {
+      "id": "proof/causal/coverage",
+      "factory": "causalOccurrenceFactProjection"
+    },
+    {
+      "id": "proof/causal/quiescence",
+      "factory": "causalOccurrenceFactProjection"
+    },
+    {
+      "id": "proof/causal/issues",
+      "factory": "causalOccurrenceFactProjection"
+    },
+    {
+      "id": "proof/causal/committed-effects",
+      "factory": "causalCommittedEffectsProjection"
+    },
+    {
+      "id": "proof/causal/causal-quiescence",
+      "factory": "causalLifecycleQuiescence"
+    },
+    {
+      "id": "proof/requestMaterialJoin",
+      "factory": "spendingRequestMaterialJoin"
+    },
+    {
+      "id": "proof/publication",
+      "factory": "spendingPublication"
+    },
+    {
+      "id": "proof/consumerIssues",
+      "factory": "spending/consumerIssues"
+    },
+    {
+      "id": "proof/hostPackFacts",
+      "factory": "offlineSpendingHostPackFacts"
+    },
+    {
+      "id": "proof/hostGuard",
+      "factory": "offlineSpendingHostGuard"
+    },
+    {
+      "id": "proof/runEndReady",
+      "factory": "offlineSpendingRunEndReady"
+    }
+  ],
+  "edges": [
+    {
+      "from": "pack",
+      "to": "proof/evaluationSelections"
+    },
+    {
+      "from": "arrivals",
+      "to": "proof/evaluationSelections"
+    },
+    {
+      "from": "proof/evaluationSelections",
+      "to": "proof/transaction"
+    },
+    {
+      "from": "proof/evaluationSelections",
+      "to": "proof/vendorStats"
+    },
+    {
+      "from": "proof/evaluationSelections",
+      "to": "proof/userProfile"
+    },
+    {
+      "from": "proof/evaluationSelections",
+      "to": "proof/policy"
+    },
+    {
+      "from": "proof/transaction",
+      "to": "proof/anomalyScore"
+    },
+    {
+      "from": "proof/vendorStats",
+      "to": "proof/anomalyScore"
+    },
+    {
+      "from": "proof/userProfile",
+      "to": "proof/anomalyScore"
+    },
+    {
+      "from": "proof/anomalyScore",
+      "to": "proof/thresholdGate"
+    },
+    {
+      "from": "proof/policy",
+      "to": "proof/thresholdGate"
+    },
+    {
+      "from": "proof/thresholdGate",
+      "to": "proof/reasonFactors"
+    },
+    {
+      "from": "proof/policy",
+      "to": "proof/reasonFactors"
+    },
+    {
+      "from": "proof/reasonFactors",
+      "to": "proof/alertMessage"
+    },
+    {
+      "from": "proof/thresholdGate",
+      "to": "proof/assessment"
+    },
+    {
+      "from": "proof/reasonFactors",
+      "to": "proof/assessment"
+    },
+    {
+      "from": "proof/alertMessage",
+      "to": "proof/assessment"
+    },
+    {
+      "from": "proof/evaluationSelections",
+      "to": "proof/requestMaterials"
+    },
+    {
+      "from": "proof/thresholdGate",
+      "to": "proof/requestMaterials"
+    },
+    {
+      "from": "proof/alertMessage",
+      "to": "proof/requestMaterials"
+    },
+    {
+      "from": "proof/requestMaterials",
+      "to": "proof/materialStore"
+    },
+    {
+      "from": "proof/materialStore",
+      "to": "proof/materialSnapshot"
+    },
+    {
+      "from": "proof/materialStore",
+      "to": "proof/effectProposals"
+    },
+    {
+      "from": "current",
+      "to": "proof/currentFacts"
+    },
+    {
+      "from": "verification",
+      "to": "proof/verificationFacts"
+    },
+    {
+      "from": "local",
+      "to": "proof/localFacts"
+    },
+    {
+      "from": "proof/hostFacts",
+      "to": "proof/inboxFacts"
+    },
+    {
+      "from": "proof/evaluationSelections",
+      "to": "proof/publicationPolicy"
+    },
+    {
+      "from": "proof/thresholdGate",
+      "to": "proof/publicationPolicy"
+    },
+    {
+      "from": "proof/materialStore",
+      "to": "proof/publicationPolicy"
+    },
+    {
+      "from": "proof/currentFacts",
+      "to": "proof/publicationPolicy"
+    },
+    {
+      "from": "proof/verificationFacts",
+      "to": "proof/publicationPolicy"
+    },
+    {
+      "from": "proof/localFacts",
+      "to": "proof/publicationPolicy"
+    },
+    {
+      "from": "proof/inboxFacts",
+      "to": "proof/publicationPolicy"
+    },
+    {
+      "from": "proof/evaluationSelections",
+      "to": "proof/occurrences"
+    },
+    {
+      "from": "proof/evaluationSelections",
+      "to": "proof/occurrenceAdmissions"
+    },
+    {
+      "from": "proof/currentFacts",
+      "to": "proof/occurrenceAdmissions"
+    },
+    {
+      "from": "proof/assessment",
+      "to": "proof/branchTerminals"
+    },
+    {
+      "from": "proof/alertMessage",
+      "to": "proof/branchTerminals"
+    },
+    {
+      "from": "proof/publicationPolicy",
+      "to": "proof/branchTerminals"
+    },
+    {
+      "from": "proof/publicationPolicy",
+      "to": "proof/effectAdmissions"
+    },
+    {
+      "from": "proof/inboxFacts",
+      "to": "proof/effectOutcomes"
+    },
+    {
+      "from": "proof/evaluationSelections",
+      "to": "proof/evidence"
+    },
+    {
+      "from": "proof/materialStore",
+      "to": "proof/evidence"
+    },
+    {
+      "from": "proof/verificationFacts",
+      "to": "proof/evidence"
+    },
+    {
+      "from": "proof/currentFacts",
+      "to": "proof/watermarks"
+    },
+    {
+      "from": "proof/occurrences",
+      "to": "proof/causal/input/occurrences"
+    },
+    {
+      "from": "proof/occurrenceAdmissions",
+      "to": "proof/causal/input/admissions"
+    },
+    {
+      "from": "proof/branchTerminals",
+      "to": "proof/causal/input/branch-terminals"
+    },
+    {
+      "from": "proof/effectProposals",
+      "to": "proof/causal/input/effect-proposals"
+    },
+    {
+      "from": "proof/effectAdmissions",
+      "to": "proof/causal/input/effect-admissions"
+    },
+    {
+      "from": "proof/effectOutcomes",
+      "to": "proof/causal/input/effect-outcomes"
+    },
+    {
+      "from": "proof/evidence",
+      "to": "proof/causal/input/evidence"
+    },
+    {
+      "from": "proof/watermarks",
+      "to": "proof/causal/input/watermarks"
+    },
+    {
+      "from": "proof/causal/input/occurrences",
+      "to": "proof/causal/arrivals"
+    },
+    {
+      "from": "proof/causal/input/admissions",
+      "to": "proof/causal/arrivals"
+    },
+    {
+      "from": "proof/causal/input/branch-terminals",
+      "to": "proof/causal/arrivals"
+    },
+    {
+      "from": "proof/causal/input/effect-proposals",
+      "to": "proof/causal/arrivals"
+    },
+    {
+      "from": "proof/causal/input/effect-admissions",
+      "to": "proof/causal/arrivals"
+    },
+    {
+      "from": "proof/causal/input/effect-outcomes",
+      "to": "proof/causal/arrivals"
+    },
+    {
+      "from": "proof/causal/input/evidence",
+      "to": "proof/causal/arrivals"
+    },
+    {
+      "from": "proof/causal/input/watermarks",
+      "to": "proof/causal/arrivals"
+    },
+    {
+      "from": "proof/causal/arrivals",
+      "to": "proof/causal/authority"
+    },
+    {
+      "from": "proof/causal/authority",
+      "to": "proof/causal/release-candidates"
+    },
+    {
+      "from": "proof/causal/release-candidates",
+      "to": "proof/causal/release-port"
+    },
+    {
+      "from": "proof/causal/release-port",
+      "to": "proof/causal/released"
+    },
+    {
+      "from": "proof/causal/released",
+      "to": "proof/causal/release-events"
+    },
+    {
+      "from": "proof/causal/release-candidates",
+      "to": "proof/causal/release-events"
+    },
+    {
+      "from": "proof/causal/release-events",
+      "to": "proof/causal/release-controller"
+    },
+    {
+      "from": "proof/causal/authority",
+      "to": "proof/causal/currentness"
+    },
+    {
+      "from": "proof/causal/authority",
+      "to": "proof/causal/terminals"
+    },
+    {
+      "from": "proof/causal/authority",
+      "to": "proof/causal/conservation"
+    },
+    {
+      "from": "proof/causal/authority",
+      "to": "proof/causal/coverage"
+    },
+    {
+      "from": "proof/causal/authority",
+      "to": "proof/causal/quiescence"
+    },
+    {
+      "from": "proof/causal/authority",
+      "to": "proof/causal/issues"
+    },
+    {
+      "from": "proof/causal/authority",
+      "to": "proof/causal/committed-effects"
+    },
+    {
+      "from": "proof/causal/quiescence",
+      "to": "proof/causal/causal-quiescence"
+    },
+    {
+      "from": "proof/causal/committed-effects",
+      "to": "proof/requestMaterialJoin"
+    },
+    {
+      "from": "proof/materialSnapshot",
+      "to": "proof/requestMaterialJoin"
+    },
+    {
+      "from": "proof/requestMaterialJoin",
+      "to": "proof/publication"
+    },
+    {
+      "from": "proof/evaluationSelections",
+      "to": "proof/consumerIssues"
+    },
+    {
+      "from": "proof/currentFacts",
+      "to": "proof/consumerIssues"
+    },
+    {
+      "from": "proof/verificationFacts",
+      "to": "proof/consumerIssues"
+    },
+    {
+      "from": "proof/localFacts",
+      "to": "proof/consumerIssues"
+    },
+    {
+      "from": "proof/inboxFacts",
+      "to": "proof/consumerIssues"
+    },
+    {
+      "from": "proof/requestMaterials",
+      "to": "proof/consumerIssues"
+    },
+    {
+      "from": "proof/materialStore",
+      "to": "proof/consumerIssues"
+    },
+    {
+      "from": "proof/publicationPolicy",
+      "to": "proof/consumerIssues"
+    },
+    {
+      "from": "proof/causal/issues",
+      "to": "proof/consumerIssues"
+    },
+    {
+      "from": "pack",
+      "to": "proof/hostPackFacts"
+    },
+    {
+      "from": "proof/causal/committed-effects",
+      "to": "proof/hostGuard"
+    },
+    {
+      "from": "proof/materialSnapshot",
+      "to": "proof/hostGuard"
+    },
+    {
+      "from": "proof/currentFacts",
+      "to": "proof/hostGuard"
+    },
+    {
+      "from": "proof/verificationFacts",
+      "to": "proof/hostGuard"
+    },
+    {
+      "from": "proof/localFacts",
+      "to": "proof/hostGuard"
+    },
+    {
+      "from": "proof/inboxFacts",
+      "to": "proof/hostGuard"
+    },
+    {
+      "from": "proof/hostPackFacts",
+      "to": "proof/hostGuard"
+    },
+    {
+      "from": "proof/causal/quiescence",
+      "to": "proof/runEndReady"
+    },
+    {
+      "from": "proof/causal/committed-effects",
+      "to": "proof/runEndReady"
+    },
+    {
+      "from": "proof/localFacts",
+      "to": "proof/runEndReady"
+    },
+    {
+      "from": "proof/hostPackFacts",
+      "to": "proof/runEndReady"
+    }
+  ],
+  "groups": [
+    {
+      "id": "inputs",
+      "members": [
+        "pack",
+        "arrivals",
+        "current",
+        "verification",
+        "local"
+      ],
+      "internalEdges": []
+    },
+    {
+      "id": "startup",
+      "members": [
+        "proof/startup"
+      ],
+      "internalEdges": []
+    },
+    {
+      "id": "business",
+      "members": [
+        "proof/evaluationSelections",
+        "proof/transaction",
+        "proof/vendorStats",
+        "proof/userProfile",
+        "proof/policy",
+        "proof/anomalyScore",
+        "proof/thresholdGate",
+        "proof/reasonFactors",
+        "proof/alertMessage",
+        "proof/assessment"
+      ],
+      "internalEdges": [
+        {
+          "from": "proof/evaluationSelections",
+          "to": "proof/transaction"
+        },
+        {
+          "from": "proof/evaluationSelections",
+          "to": "proof/vendorStats"
+        },
+        {
+          "from": "proof/evaluationSelections",
+          "to": "proof/userProfile"
+        },
+        {
+          "from": "proof/evaluationSelections",
+          "to": "proof/policy"
+        },
+        {
+          "from": "proof/transaction",
+          "to": "proof/anomalyScore"
+        },
+        {
+          "from": "proof/vendorStats",
+          "to": "proof/anomalyScore"
+        },
+        {
+          "from": "proof/userProfile",
+          "to": "proof/anomalyScore"
+        },
+        {
+          "from": "proof/anomalyScore",
+          "to": "proof/thresholdGate"
+        },
+        {
+          "from": "proof/policy",
+          "to": "proof/thresholdGate"
+        },
+        {
+          "from": "proof/thresholdGate",
+          "to": "proof/reasonFactors"
+        },
+        {
+          "from": "proof/policy",
+          "to": "proof/reasonFactors"
+        },
+        {
+          "from": "proof/reasonFactors",
+          "to": "proof/alertMessage"
+        },
+        {
+          "from": "proof/thresholdGate",
+          "to": "proof/assessment"
+        },
+        {
+          "from": "proof/reasonFactors",
+          "to": "proof/assessment"
+        },
+        {
+          "from": "proof/alertMessage",
+          "to": "proof/assessment"
+        }
+      ]
+    },
+    {
+      "id": "material",
+      "members": [
+        "proof/requestMaterials",
+        "proof/materialStore",
+        "proof/materialSnapshot",
+        "proof/effectProposals",
+        "proof/requestMaterialJoin"
+      ],
+      "internalEdges": [
+        {
+          "from": "proof/requestMaterials",
+          "to": "proof/materialStore"
+        },
+        {
+          "from": "proof/materialStore",
+          "to": "proof/materialSnapshot"
+        },
+        {
+          "from": "proof/materialStore",
+          "to": "proof/effectProposals"
+        },
+        {
+          "from": "proof/materialSnapshot",
+          "to": "proof/requestMaterialJoin"
+        }
+      ]
+    },
+    {
+      "id": "facts",
+      "members": [
+        "proof/currentFacts",
+        "proof/verificationFacts",
+        "proof/localFacts",
+        "proof/inboxFacts",
+        "proof/publicationPolicy"
+      ],
+      "internalEdges": [
+        {
+          "from": "proof/currentFacts",
+          "to": "proof/publicationPolicy"
+        },
+        {
+          "from": "proof/verificationFacts",
+          "to": "proof/publicationPolicy"
+        },
+        {
+          "from": "proof/localFacts",
+          "to": "proof/publicationPolicy"
+        },
+        {
+          "from": "proof/inboxFacts",
+          "to": "proof/publicationPolicy"
+        }
+      ]
+    },
+    {
+      "id": "observations",
+      "members": [
+        "proof/occurrences",
+        "proof/occurrenceAdmissions",
+        "proof/branchTerminals",
+        "proof/effectAdmissions",
+        "proof/effectOutcomes",
+        "proof/evidence",
+        "proof/watermarks"
+      ],
+      "internalEdges": []
+    },
+    {
+      "id": "lanes",
+      "members": [
+        "proof/causal/input/occurrences",
+        "proof/causal/input/admissions",
+        "proof/causal/input/branch-terminals",
+        "proof/causal/input/effect-proposals",
+        "proof/causal/input/effect-admissions",
+        "proof/causal/input/effect-outcomes",
+        "proof/causal/input/evidence",
+        "proof/causal/input/watermarks",
+        "proof/causal/arrivals"
+      ],
+      "internalEdges": [
+        {
+          "from": "proof/causal/input/occurrences",
+          "to": "proof/causal/arrivals"
+        },
+        {
+          "from": "proof/causal/input/admissions",
+          "to": "proof/causal/arrivals"
+        },
+        {
+          "from": "proof/causal/input/branch-terminals",
+          "to": "proof/causal/arrivals"
+        },
+        {
+          "from": "proof/causal/input/effect-proposals",
+          "to": "proof/causal/arrivals"
+        },
+        {
+          "from": "proof/causal/input/effect-admissions",
+          "to": "proof/causal/arrivals"
+        },
+        {
+          "from": "proof/causal/input/effect-outcomes",
+          "to": "proof/causal/arrivals"
+        },
+        {
+          "from": "proof/causal/input/evidence",
+          "to": "proof/causal/arrivals"
+        },
+        {
+          "from": "proof/causal/input/watermarks",
+          "to": "proof/causal/arrivals"
+        }
+      ]
+    },
+    {
+      "id": "authority",
+      "members": [
+        "proof/causal/authority"
+      ],
+      "internalEdges": []
+    },
+    {
+      "id": "release",
+      "members": [
+        "proof/causal/release-candidates",
+        "proof/causal/release-port",
+        "proof/causal/released",
+        "proof/causal/release-events",
+        "proof/causal/release-controller"
+      ],
+      "internalEdges": [
+        {
+          "from": "proof/causal/release-candidates",
+          "to": "proof/causal/release-port"
+        },
+        {
+          "from": "proof/causal/release-port",
+          "to": "proof/causal/released"
+        },
+        {
+          "from": "proof/causal/released",
+          "to": "proof/causal/release-events"
+        },
+        {
+          "from": "proof/causal/release-candidates",
+          "to": "proof/causal/release-events"
+        },
+        {
+          "from": "proof/causal/release-events",
+          "to": "proof/causal/release-controller"
+        }
+      ]
+    },
+    {
+      "id": "evidence",
+      "members": [
+        "proof/causal/currentness",
+        "proof/causal/terminals",
+        "proof/causal/conservation",
+        "proof/causal/coverage",
+        "proof/causal/quiescence",
+        "proof/causal/issues",
+        "proof/causal/committed-effects",
+        "proof/causal/causal-quiescence"
+      ],
+      "internalEdges": [
+        {
+          "from": "proof/causal/quiescence",
+          "to": "proof/causal/causal-quiescence"
+        }
+      ]
+    },
+    {
+      "id": "publication",
+      "members": [
+        "proof/publication"
+      ],
+      "internalEdges": []
+    },
+    {
+      "id": "issues",
+      "members": [
+        "proof/consumerIssues"
+      ],
+      "internalEdges": []
+    },
+    {
+      "id": "host",
+      "members": [
+        "proof/hostFacts",
+        "proof/hostPackFacts",
+        "proof/hostGuard",
+        "proof/runEndReady"
+      ],
+      "internalEdges": [
+        {
+          "from": "proof/hostPackFacts",
+          "to": "proof/hostGuard"
+        },
+        {
+          "from": "proof/hostPackFacts",
+          "to": "proof/runEndReady"
+        }
+      ]
+    }
+  ],
+  "crossEdges": [
+    {
+      "from": "pack",
+      "to": "proof/evaluationSelections",
+      "fromGroup": "inputs",
+      "toGroup": "business"
+    },
+    {
+      "from": "arrivals",
+      "to": "proof/evaluationSelections",
+      "fromGroup": "inputs",
+      "toGroup": "business"
+    },
+    {
+      "from": "proof/evaluationSelections",
+      "to": "proof/requestMaterials",
+      "fromGroup": "business",
+      "toGroup": "material"
+    },
+    {
+      "from": "proof/thresholdGate",
+      "to": "proof/requestMaterials",
+      "fromGroup": "business",
+      "toGroup": "material"
+    },
+    {
+      "from": "proof/alertMessage",
+      "to": "proof/requestMaterials",
+      "fromGroup": "business",
+      "toGroup": "material"
+    },
+    {
+      "from": "current",
+      "to": "proof/currentFacts",
+      "fromGroup": "inputs",
+      "toGroup": "facts"
+    },
+    {
+      "from": "verification",
+      "to": "proof/verificationFacts",
+      "fromGroup": "inputs",
+      "toGroup": "facts"
+    },
+    {
+      "from": "local",
+      "to": "proof/localFacts",
+      "fromGroup": "inputs",
+      "toGroup": "facts"
+    },
+    {
+      "from": "proof/hostFacts",
+      "to": "proof/inboxFacts",
+      "fromGroup": "host",
+      "toGroup": "facts"
+    },
+    {
+      "from": "proof/evaluationSelections",
+      "to": "proof/publicationPolicy",
+      "fromGroup": "business",
+      "toGroup": "facts"
+    },
+    {
+      "from": "proof/thresholdGate",
+      "to": "proof/publicationPolicy",
+      "fromGroup": "business",
+      "toGroup": "facts"
+    },
+    {
+      "from": "proof/materialStore",
+      "to": "proof/publicationPolicy",
+      "fromGroup": "material",
+      "toGroup": "facts"
+    },
+    {
+      "from": "proof/evaluationSelections",
+      "to": "proof/occurrences",
+      "fromGroup": "business",
+      "toGroup": "observations"
+    },
+    {
+      "from": "proof/evaluationSelections",
+      "to": "proof/occurrenceAdmissions",
+      "fromGroup": "business",
+      "toGroup": "observations"
+    },
+    {
+      "from": "proof/currentFacts",
+      "to": "proof/occurrenceAdmissions",
+      "fromGroup": "facts",
+      "toGroup": "observations"
+    },
+    {
+      "from": "proof/assessment",
+      "to": "proof/branchTerminals",
+      "fromGroup": "business",
+      "toGroup": "observations"
+    },
+    {
+      "from": "proof/alertMessage",
+      "to": "proof/branchTerminals",
+      "fromGroup": "business",
+      "toGroup": "observations"
+    },
+    {
+      "from": "proof/publicationPolicy",
+      "to": "proof/branchTerminals",
+      "fromGroup": "facts",
+      "toGroup": "observations"
+    },
+    {
+      "from": "proof/publicationPolicy",
+      "to": "proof/effectAdmissions",
+      "fromGroup": "facts",
+      "toGroup": "observations"
+    },
+    {
+      "from": "proof/inboxFacts",
+      "to": "proof/effectOutcomes",
+      "fromGroup": "facts",
+      "toGroup": "observations"
+    },
+    {
+      "from": "proof/evaluationSelections",
+      "to": "proof/evidence",
+      "fromGroup": "business",
+      "toGroup": "observations"
+    },
+    {
+      "from": "proof/materialStore",
+      "to": "proof/evidence",
+      "fromGroup": "material",
+      "toGroup": "observations"
+    },
+    {
+      "from": "proof/verificationFacts",
+      "to": "proof/evidence",
+      "fromGroup": "facts",
+      "toGroup": "observations"
+    },
+    {
+      "from": "proof/currentFacts",
+      "to": "proof/watermarks",
+      "fromGroup": "facts",
+      "toGroup": "observations"
+    },
+    {
+      "from": "proof/occurrences",
+      "to": "proof/causal/input/occurrences",
+      "fromGroup": "observations",
+      "toGroup": "lanes"
+    },
+    {
+      "from": "proof/occurrenceAdmissions",
+      "to": "proof/causal/input/admissions",
+      "fromGroup": "observations",
+      "toGroup": "lanes"
+    },
+    {
+      "from": "proof/branchTerminals",
+      "to": "proof/causal/input/branch-terminals",
+      "fromGroup": "observations",
+      "toGroup": "lanes"
+    },
+    {
+      "from": "proof/effectProposals",
+      "to": "proof/causal/input/effect-proposals",
+      "fromGroup": "material",
+      "toGroup": "lanes"
+    },
+    {
+      "from": "proof/effectAdmissions",
+      "to": "proof/causal/input/effect-admissions",
+      "fromGroup": "observations",
+      "toGroup": "lanes"
+    },
+    {
+      "from": "proof/effectOutcomes",
+      "to": "proof/causal/input/effect-outcomes",
+      "fromGroup": "observations",
+      "toGroup": "lanes"
+    },
+    {
+      "from": "proof/evidence",
+      "to": "proof/causal/input/evidence",
+      "fromGroup": "observations",
+      "toGroup": "lanes"
+    },
+    {
+      "from": "proof/watermarks",
+      "to": "proof/causal/input/watermarks",
+      "fromGroup": "observations",
+      "toGroup": "lanes"
+    },
+    {
+      "from": "proof/causal/arrivals",
+      "to": "proof/causal/authority",
+      "fromGroup": "lanes",
+      "toGroup": "authority"
+    },
+    {
+      "from": "proof/causal/authority",
+      "to": "proof/causal/release-candidates",
+      "fromGroup": "authority",
+      "toGroup": "release"
+    },
+    {
+      "from": "proof/causal/authority",
+      "to": "proof/causal/currentness",
+      "fromGroup": "authority",
+      "toGroup": "evidence"
+    },
+    {
+      "from": "proof/causal/authority",
+      "to": "proof/causal/terminals",
+      "fromGroup": "authority",
+      "toGroup": "evidence"
+    },
+    {
+      "from": "proof/causal/authority",
+      "to": "proof/causal/conservation",
+      "fromGroup": "authority",
+      "toGroup": "evidence"
+    },
+    {
+      "from": "proof/causal/authority",
+      "to": "proof/causal/coverage",
+      "fromGroup": "authority",
+      "toGroup": "evidence"
+    },
+    {
+      "from": "proof/causal/authority",
+      "to": "proof/causal/quiescence",
+      "fromGroup": "authority",
+      "toGroup": "evidence"
+    },
+    {
+      "from": "proof/causal/authority",
+      "to": "proof/causal/issues",
+      "fromGroup": "authority",
+      "toGroup": "evidence"
+    },
+    {
+      "from": "proof/causal/authority",
+      "to": "proof/causal/committed-effects",
+      "fromGroup": "authority",
+      "toGroup": "evidence"
+    },
+    {
+      "from": "proof/causal/committed-effects",
+      "to": "proof/requestMaterialJoin",
+      "fromGroup": "evidence",
+      "toGroup": "material"
+    },
+    {
+      "from": "proof/requestMaterialJoin",
+      "to": "proof/publication",
+      "fromGroup": "material",
+      "toGroup": "publication"
+    },
+    {
+      "from": "proof/evaluationSelections",
+      "to": "proof/consumerIssues",
+      "fromGroup": "business",
+      "toGroup": "issues"
+    },
+    {
+      "from": "proof/currentFacts",
+      "to": "proof/consumerIssues",
+      "fromGroup": "facts",
+      "toGroup": "issues"
+    },
+    {
+      "from": "proof/verificationFacts",
+      "to": "proof/consumerIssues",
+      "fromGroup": "facts",
+      "toGroup": "issues"
+    },
+    {
+      "from": "proof/localFacts",
+      "to": "proof/consumerIssues",
+      "fromGroup": "facts",
+      "toGroup": "issues"
+    },
+    {
+      "from": "proof/inboxFacts",
+      "to": "proof/consumerIssues",
+      "fromGroup": "facts",
+      "toGroup": "issues"
+    },
+    {
+      "from": "proof/requestMaterials",
+      "to": "proof/consumerIssues",
+      "fromGroup": "material",
+      "toGroup": "issues"
+    },
+    {
+      "from": "proof/materialStore",
+      "to": "proof/consumerIssues",
+      "fromGroup": "material",
+      "toGroup": "issues"
+    },
+    {
+      "from": "proof/publicationPolicy",
+      "to": "proof/consumerIssues",
+      "fromGroup": "facts",
+      "toGroup": "issues"
+    },
+    {
+      "from": "proof/causal/issues",
+      "to": "proof/consumerIssues",
+      "fromGroup": "evidence",
+      "toGroup": "issues"
+    },
+    {
+      "from": "pack",
+      "to": "proof/hostPackFacts",
+      "fromGroup": "inputs",
+      "toGroup": "host"
+    },
+    {
+      "from": "proof/causal/committed-effects",
+      "to": "proof/hostGuard",
+      "fromGroup": "evidence",
+      "toGroup": "host"
+    },
+    {
+      "from": "proof/materialSnapshot",
+      "to": "proof/hostGuard",
+      "fromGroup": "material",
+      "toGroup": "host"
+    },
+    {
+      "from": "proof/currentFacts",
+      "to": "proof/hostGuard",
+      "fromGroup": "facts",
+      "toGroup": "host"
+    },
+    {
+      "from": "proof/verificationFacts",
+      "to": "proof/hostGuard",
+      "fromGroup": "facts",
+      "toGroup": "host"
+    },
+    {
+      "from": "proof/localFacts",
+      "to": "proof/hostGuard",
+      "fromGroup": "facts",
+      "toGroup": "host"
+    },
+    {
+      "from": "proof/inboxFacts",
+      "to": "proof/hostGuard",
+      "fromGroup": "facts",
+      "toGroup": "host"
+    },
+    {
+      "from": "proof/causal/quiescence",
+      "to": "proof/runEndReady",
+      "fromGroup": "evidence",
+      "toGroup": "host"
+    },
+    {
+      "from": "proof/causal/committed-effects",
+      "to": "proof/runEndReady",
+      "fromGroup": "evidence",
+      "toGroup": "host"
+    },
+    {
+      "from": "proof/localFacts",
+      "to": "proof/runEndReady",
+      "fromGroup": "facts",
+      "toGroup": "host"
+    }
+  ]
+}

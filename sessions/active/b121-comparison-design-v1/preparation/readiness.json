@@ -1,0 +1,51 @@
+{
+  "kind": "offline-preparation-incomplete",
+  "designRef": "../README.md",
+  "approvedScope": "User continued after design commit f049b99; offline preparation only.",
+  "sourceCatalogSha256": "b085f58c2baf4b832a2c69834b66a7676e8ed85f8050890c3526f9fdb64baa96",
+  "captureSha256": "31b781f8786f065b82fefd8b6f04791f3d2e8b3167fc2ca2a3733e9c24a4fa1b",
+  "observationArms": 6,
+  "projection": {
+    "nodes": 62,
+    "units": 13,
+    "edges": 101
+  },
+  "gateResults": [
+    {
+      "id": "case-phase-binding",
+      "ready": true,
+      "detail": "C2 actual equivalent-source Graph/plain writer-entry memory captures precede transport invocation. Permission here concerns the first physical transport, not another admission or replay. No real-file claim."
+    },
+    {
+      "id": "branch-coverage",
+      "ready": false,
+      "detail": "C3 new captures withhold external verification. They do not pause an internal synchronous business branch; approved branch wording needs resolution."
+    },
+    {
+      "id": "role-entry-parity",
+      "ready": false,
+      "detail": "Plain host exposes constructor/feed/observe/observations, not matched graded factory/capability entry. No invented APIs in participant snippets."
+    },
+    {
+      "id": "atomic-facts-and-goldens",
+      "ready": false,
+      "detail": "Candidate inventory is 12 facts, not a complete 40-fact participant packet or independently justified eight-case answer key. Source/diff/policy supporting material must pass independent semantic fact count."
+    },
+    {
+      "id": "participant-isolation",
+      "ready": false,
+      "detail": "In-memory broker denies unavailable paths and stage B before seal, but no tested participant process/provider with only this broker. Shared Codex tools cannot be counted as isolated."
+    },
+    {
+      "id": "execution-budget",
+      "ready": false,
+      "detail": "Model revision, price, consent and participant identities unavailable; zero participants and zero spend authorized."
+    }
+  ],
+  "qualifiedPacket": false,
+  "executionReady": false,
+  "participantRuns": 0,
+  "providerCalls": 0,
+  "realInboxIO": 0,
+  "formalPerformanceQualification": false
+}

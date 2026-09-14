@@ -1,0 +1,32 @@
+✔ canonical G/P facts, role rights, receipt staging, explicit unready entries, inventory (11.846708ms)
+✔ fact budgets reject overflow and non-atomic metadata instead of hiding policy (0.26775ms)
+✔ verdict/source leaks rejected, explicit evaluator-key stripping, unknown labels preserved as task facts (0.356791ms)
+✔ relation schema admits only exact topology and rejects nested receipt data (1.824ms)
+✔ seeded allocations balanced separately by population and role×arm (0.51625ms)
+✔ independent exact arithmetic distinguishes changed formulation and preserves equivalent rewrite (0.177458ms)
+✔ golden binds changed source, unchanged topology and live pre-write checkpoints (0.980292ms)
+✔ synthetic generator→broker→seal→grader contract, with receipt denied before A seal (5.782125ms)
+✔ exposure uses supplied observations and optional exploration is not forced work (0.24925ms)
+✔ actual graph edges survive grouping without DATA leakage (3.063ms)
+✔ missing node, dangling edge and dependency discrepancy fail closed (3.85075ms)
+✔ one absent deps array cannot disable the independent edge check (0.798417ms)
+✔ C6 capture retains real collection contents and unknown effect across display changes (0.273333ms)
+✔ B is inaccessible until all eight A records are sealed, including missing (2.653708ms)
+✔ canary paths, traversal, aliases and arbitrary tools cannot escape the file map (0.709125ms)
+✔ answers cannot be overwritten; seal, input and output mutations cannot change state (0.672291ms)
+✔ 80 calls includes rejections, exhaustion retains unfinished answers (3.197208ms)
+✔ external cumulative token/time meters enforce supplied limits and cannot roll back (0.361958ms)
+✔ grader rejects modified answers even with a recomputed untrusted hash (0.394333ms)
+✔ correct conclusions need applicable citations; cited wrong facts get no credit (0.46225ms)
+✔ all unknown earns only warranted unknown credit, with fixed denominator (1.163959ms)
+✔ goldens stay outside state; complete correct answers score full denominator (1.892583ms)
+✔ identical inputs generate deterministic audit hashes and invalid values count (1.04075ms)
+✔ canonical arrays reject getters, holes, subclasses and extra keys (0.190792ms)
+ℹ tests 24
+ℹ suites 0
+ℹ pass 24
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 80.852292

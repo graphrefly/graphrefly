@@ -1,0 +1,415 @@
+{
+  "seed": "b121-comparison-v1-offline-draft",
+  "human": [
+    {
+      "id": "human-01",
+      "population": "human",
+      "role": "user",
+      "arm": "G",
+      "order": "O2",
+      "cases": [
+        "C6",
+        "C5",
+        "C8",
+        "C3",
+        "C7",
+        "C2",
+        "C4",
+        "C1"
+      ]
+    },
+    {
+      "id": "human-02",
+      "population": "human",
+      "role": "user",
+      "arm": "P",
+      "order": "O1",
+      "cases": [
+        "C1",
+        "C4",
+        "C2",
+        "C7",
+        "C3",
+        "C8",
+        "C5",
+        "C6"
+      ]
+    },
+    {
+      "id": "human-03",
+      "population": "human",
+      "role": "user",
+      "arm": "G",
+      "order": "O1",
+      "cases": [
+        "C1",
+        "C4",
+        "C2",
+        "C7",
+        "C3",
+        "C8",
+        "C5",
+        "C6"
+      ]
+    },
+    {
+      "id": "human-04",
+      "population": "human",
+      "role": "framework",
+      "arm": "P",
+      "order": "O2",
+      "cases": [
+        "C6",
+        "C5",
+        "C8",
+        "C3",
+        "C7",
+        "C2",
+        "C4",
+        "C1"
+      ]
+    },
+    {
+      "id": "human-05",
+      "population": "human",
+      "role": "user",
+      "arm": "P",
+      "order": "O2",
+      "cases": [
+        "C6",
+        "C5",
+        "C8",
+        "C3",
+        "C7",
+        "C2",
+        "C4",
+        "C1"
+      ]
+    },
+    {
+      "id": "human-06",
+      "population": "human",
+      "role": "maintainer",
+      "arm": "P",
+      "order": "O1",
+      "cases": [
+        "C1",
+        "C4",
+        "C2",
+        "C7",
+        "C3",
+        "C8",
+        "C5",
+        "C6"
+      ]
+    },
+    {
+      "id": "human-07",
+      "population": "human",
+      "role": "maintainer",
+      "arm": "P",
+      "order": "O2",
+      "cases": [
+        "C6",
+        "C5",
+        "C8",
+        "C3",
+        "C7",
+        "C2",
+        "C4",
+        "C1"
+      ]
+    },
+    {
+      "id": "human-08",
+      "population": "human",
+      "role": "framework",
+      "arm": "P",
+      "order": "O1",
+      "cases": [
+        "C1",
+        "C4",
+        "C2",
+        "C7",
+        "C3",
+        "C8",
+        "C5",
+        "C6"
+      ]
+    },
+    {
+      "id": "human-09",
+      "population": "human",
+      "role": "maintainer",
+      "arm": "G",
+      "order": "O1",
+      "cases": [
+        "C1",
+        "C4",
+        "C2",
+        "C7",
+        "C3",
+        "C8",
+        "C5",
+        "C6"
+      ]
+    },
+    {
+      "id": "human-10",
+      "population": "human",
+      "role": "maintainer",
+      "arm": "G",
+      "order": "O2",
+      "cases": [
+        "C6",
+        "C5",
+        "C8",
+        "C3",
+        "C7",
+        "C2",
+        "C4",
+        "C1"
+      ]
+    },
+    {
+      "id": "human-11",
+      "population": "human",
+      "role": "framework",
+      "arm": "G",
+      "order": "O1",
+      "cases": [
+        "C1",
+        "C4",
+        "C2",
+        "C7",
+        "C3",
+        "C8",
+        "C5",
+        "C6"
+      ]
+    },
+    {
+      "id": "human-12",
+      "population": "human",
+      "role": "framework",
+      "arm": "G",
+      "order": "O2",
+      "cases": [
+        "C6",
+        "C5",
+        "C8",
+        "C3",
+        "C7",
+        "C2",
+        "C4",
+        "C1"
+      ]
+    }
+  ],
+  "agent": [
+    {
+      "id": "agent-01",
+      "population": "agent",
+      "role": "user",
+      "arm": "P",
+      "order": "O1",
+      "cases": [
+        "C1",
+        "C4",
+        "C2",
+        "C7",
+        "C3",
+        "C8",
+        "C5",
+        "C6"
+      ]
+    },
+    {
+      "id": "agent-02",
+      "population": "agent",
+      "role": "maintainer",
+      "arm": "G",
+      "order": "O1",
+      "cases": [
+        "C1",
+        "C4",
+        "C2",
+        "C7",
+        "C3",
+        "C8",
+        "C5",
+        "C6"
+      ]
+    },
+    {
+      "id": "agent-03",
+      "population": "agent",
+      "role": "framework",
+      "arm": "P",
+      "order": "O2",
+      "cases": [
+        "C6",
+        "C5",
+        "C8",
+        "C3",
+        "C7",
+        "C2",
+        "C4",
+        "C1"
+      ]
+    },
+    {
+      "id": "agent-04",
+      "population": "agent",
+      "role": "maintainer",
+      "arm": "G",
+      "order": "O2",
+      "cases": [
+        "C6",
+        "C5",
+        "C8",
+        "C3",
+        "C7",
+        "C2",
+        "C4",
+        "C1"
+      ]
+    },
+    {
+      "id": "agent-05",
+      "population": "agent",
+      "role": "framework",
+      "arm": "G",
+      "order": "O2",
+      "cases": [
+        "C6",
+        "C5",
+        "C8",
+        "C3",
+        "C7",
+        "C2",
+        "C4",
+        "C1"
+      ]
+    },
+    {
+      "id": "agent-06",
+      "population": "agent",
+      "role": "framework",
+      "arm": "P",
+      "order": "O1",
+      "cases": [
+        "C1",
+        "C4",
+        "C2",
+        "C7",
+        "C3",
+        "C8",
+        "C5",
+        "C6"
+      ]
+    },
+    {
+      "id": "agent-07",
+      "population": "agent",
+      "role": "maintainer",
+      "arm": "P",
+      "order": "O2",
+      "cases": [
+        "C6",
+        "C5",
+        "C8",
+        "C3",
+        "C7",
+        "C2",
+        "C4",
+        "C1"
+      ]
+    },
+    {
+      "id": "agent-08",
+      "population": "agent",
+      "role": "user",
+      "arm": "P",
+      "order": "O2",
+      "cases": [
+        "C6",
+        "C5",
+        "C8",
+        "C3",
+        "C7",
+        "C2",
+        "C4",
+        "C1"
+      ]
+    },
+    {
+      "id": "agent-09",
+      "population": "agent",
+      "role": "maintainer",
+      "arm": "P",
+      "order": "O1",
+      "cases": [
+        "C1",
+        "C4",
+        "C2",
+        "C7",
+        "C3",
+        "C8",
+        "C5",
+        "C6"
+      ]
+    },
+    {
+      "id": "agent-10",
+      "population": "agent",
+      "role": "user",
+      "arm": "G",
+      "order": "O2",
+      "cases": [
+        "C6",
+        "C5",
+        "C8",
+        "C3",
+        "C7",
+        "C2",
+        "C4",
+        "C1"
+      ]
+    },
+    {
+      "id": "agent-11",
+      "population": "agent",
+      "role": "user",
+      "arm": "G",
+      "order": "O1",
+      "cases": [
+        "C1",
+        "C4",
+        "C2",
+        "C7",
+        "C3",
+        "C8",
+        "C5",
+        "C6"
+      ]
+    },
+    {
+      "id": "agent-12",
+      "population": "agent",
+      "role": "framework",
+      "arm": "G",
+      "order": "O1",
+      "cases": [
+        "C1",
+        "C4",
+        "C2",
+        "C7",
+        "C3",
+        "C8",
+        "C5",
+        "C6"
+      ]
+    }
+  ]
+}
