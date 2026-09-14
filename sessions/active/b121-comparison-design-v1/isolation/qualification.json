@@ -1,0 +1,63 @@
+{
+  "kind": "B121 offline isolation qualification",
+  "owner": "graphrefly:B121",
+  "status": "synthetic-harness-qualified; execution-not-ready",
+  "checksPassed": 28,
+  "unitTestsPassed": 12,
+  "negativeControl": {
+    "change": "remove actual --read-only flag",
+    "outcome": "rejected with rootReadOnly=false",
+    "cleanupVerified": true
+  },
+  "qa": {
+    "blindAndEdge": "isolation_review: four reported findings fixed",
+    "verificationGap": "isolation_verification: both reported findings fixed",
+    "additionalIndependentCleanup": "unavailable: agent thread limit; local inspection"
+  },
+  "preservation": {
+    "preexistingFilesChecked": 2092,
+    "unchanged": true
+  },
+  "authorization": {
+    "providerCalls": 0,
+    "participantRuns": 0,
+    "spend": 0
+  },
+  "executionReady": false,
+  "sources": [
+    {
+      "ref": "scripts/b121-comparison/isolation.mjs",
+      "sha256": "cb579b69d3ea40d4688c3f2fc94e7354dc292c82ab4f93f8c2231a254692e4f9"
+    },
+    {
+      "ref": "scripts/b121-comparison/isolation-probe.py",
+      "sha256": "0788a55fb04e7dbd0e909d1b088bd8e57ff4a22a10bbd4ffdef78f30dcbe3115"
+    },
+    {
+      "ref": "scripts/b121-comparison/isolation.test.mjs",
+      "sha256": "89106754e34fc98ecbbe2c9f40bd984046f0f520624ba1dc8eff43480f9b91b3"
+    },
+    {
+      "ref": "scripts/b121-comparison/session.mjs",
+      "sha256": "6a75c042b61d2b03401e8c2106273aa7d7c62c0cfb881e5f0a95746669817f45"
+    }
+  ],
+  "artifacts": [
+    {
+      "ref": "sessions/active/b121-comparison-design-v1/isolation/README.md",
+      "sha256": "d1cdc13346c2a92aa1d1478d4fa636ee862061575aa3f4c47af99d377b9f5c9c"
+    },
+    {
+      "ref": "sessions/active/b121-comparison-design-v1/isolation/baseline.json",
+      "sha256": "2ec046688d19d91e993faf21c1a97745ff57c4964aa02130566e0add232c9230"
+    },
+    {
+      "ref": "sessions/active/b121-comparison-design-v1/isolation/execution-draft.json",
+      "sha256": "55a90eb2346fc2687cc1a87e71147928987078b6707a3b11aca4824be48522b1"
+    },
+    {
+      "ref": "sessions/active/b121-comparison-design-v1/isolation/probe-receipt.json",
+      "sha256": "5d9c82143c73e8567a16f185188c7c51874227b214ed7693a1754b3ba70d39b3"
+    }
+  ]
+}

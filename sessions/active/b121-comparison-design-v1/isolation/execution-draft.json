@@ -1,0 +1,484 @@
+{
+  "kind": "B121 execution checklist draft; no dispatch permission",
+  "owner": "graphrefly:B121",
+  "executionReady": false,
+  "authorization": {
+    "participantSessions": 0,
+    "providerCalls": 0,
+    "spend": 0,
+    "retries": 0
+  },
+  "method": "judgment-only-v2; Graph-only entry tasks after both stages close",
+  "materialBinding": {
+    "path": "sessions/active/b121-comparison-design-v1/revision-2/readiness.json",
+    "sha256": "b522aff45237c69d72627126329314e66b1a8bff20fe048869847d7331c11116"
+  },
+  "proposedSlots": {
+    "human": [
+      {
+        "id": "human-01",
+        "population": "human",
+        "role": "maintainer",
+        "arm": "G",
+        "order": "O1",
+        "cases": [
+          "C1",
+          "C4",
+          "C2",
+          "C7",
+          "C3",
+          "C8",
+          "C5",
+          "C6"
+        ]
+      },
+      {
+        "id": "human-02",
+        "population": "human",
+        "role": "user",
+        "arm": "P",
+        "order": "O2",
+        "cases": [
+          "C6",
+          "C5",
+          "C8",
+          "C3",
+          "C7",
+          "C2",
+          "C4",
+          "C1"
+        ]
+      },
+      {
+        "id": "human-03",
+        "population": "human",
+        "role": "maintainer",
+        "arm": "P",
+        "order": "O2",
+        "cases": [
+          "C6",
+          "C5",
+          "C8",
+          "C3",
+          "C7",
+          "C2",
+          "C4",
+          "C1"
+        ]
+      },
+      {
+        "id": "human-04",
+        "population": "human",
+        "role": "framework",
+        "arm": "P",
+        "order": "O2",
+        "cases": [
+          "C6",
+          "C5",
+          "C8",
+          "C3",
+          "C7",
+          "C2",
+          "C4",
+          "C1"
+        ]
+      },
+      {
+        "id": "human-05",
+        "population": "human",
+        "role": "framework",
+        "arm": "G",
+        "order": "O2",
+        "cases": [
+          "C6",
+          "C5",
+          "C8",
+          "C3",
+          "C7",
+          "C2",
+          "C4",
+          "C1"
+        ]
+      },
+      {
+        "id": "human-06",
+        "population": "human",
+        "role": "user",
+        "arm": "G",
+        "order": "O1",
+        "cases": [
+          "C1",
+          "C4",
+          "C2",
+          "C7",
+          "C3",
+          "C8",
+          "C5",
+          "C6"
+        ]
+      },
+      {
+        "id": "human-07",
+        "population": "human",
+        "role": "user",
+        "arm": "G",
+        "order": "O2",
+        "cases": [
+          "C6",
+          "C5",
+          "C8",
+          "C3",
+          "C7",
+          "C2",
+          "C4",
+          "C1"
+        ]
+      },
+      {
+        "id": "human-08",
+        "population": "human",
+        "role": "user",
+        "arm": "P",
+        "order": "O1",
+        "cases": [
+          "C1",
+          "C4",
+          "C2",
+          "C7",
+          "C3",
+          "C8",
+          "C5",
+          "C6"
+        ]
+      },
+      {
+        "id": "human-09",
+        "population": "human",
+        "role": "maintainer",
+        "arm": "P",
+        "order": "O1",
+        "cases": [
+          "C1",
+          "C4",
+          "C2",
+          "C7",
+          "C3",
+          "C8",
+          "C5",
+          "C6"
+        ]
+      },
+      {
+        "id": "human-10",
+        "population": "human",
+        "role": "framework",
+        "arm": "P",
+        "order": "O1",
+        "cases": [
+          "C1",
+          "C4",
+          "C2",
+          "C7",
+          "C3",
+          "C8",
+          "C5",
+          "C6"
+        ]
+      },
+      {
+        "id": "human-11",
+        "population": "human",
+        "role": "maintainer",
+        "arm": "G",
+        "order": "O2",
+        "cases": [
+          "C6",
+          "C5",
+          "C8",
+          "C3",
+          "C7",
+          "C2",
+          "C4",
+          "C1"
+        ]
+      },
+      {
+        "id": "human-12",
+        "population": "human",
+        "role": "framework",
+        "arm": "G",
+        "order": "O1",
+        "cases": [
+          "C1",
+          "C4",
+          "C2",
+          "C7",
+          "C3",
+          "C8",
+          "C5",
+          "C6"
+        ]
+      }
+    ],
+    "agent": [
+      {
+        "id": "agent-01",
+        "population": "agent",
+        "role": "user",
+        "arm": "G",
+        "order": "O2",
+        "cases": [
+          "C6",
+          "C5",
+          "C8",
+          "C3",
+          "C7",
+          "C2",
+          "C4",
+          "C1"
+        ]
+      },
+      {
+        "id": "agent-02",
+        "population": "agent",
+        "role": "framework",
+        "arm": "G",
+        "order": "O2",
+        "cases": [
+          "C6",
+          "C5",
+          "C8",
+          "C3",
+          "C7",
+          "C2",
+          "C4",
+          "C1"
+        ]
+      },
+      {
+        "id": "agent-03",
+        "population": "agent",
+        "role": "framework",
+        "arm": "G",
+        "order": "O1",
+        "cases": [
+          "C1",
+          "C4",
+          "C2",
+          "C7",
+          "C3",
+          "C8",
+          "C5",
+          "C6"
+        ]
+      },
+      {
+        "id": "agent-04",
+        "population": "agent",
+        "role": "framework",
+        "arm": "P",
+        "order": "O1",
+        "cases": [
+          "C1",
+          "C4",
+          "C2",
+          "C7",
+          "C3",
+          "C8",
+          "C5",
+          "C6"
+        ]
+      },
+      {
+        "id": "agent-05",
+        "population": "agent",
+        "role": "maintainer",
+        "arm": "P",
+        "order": "O2",
+        "cases": [
+          "C6",
+          "C5",
+          "C8",
+          "C3",
+          "C7",
+          "C2",
+          "C4",
+          "C1"
+        ]
+      },
+      {
+        "id": "agent-06",
+        "population": "agent",
+        "role": "user",
+        "arm": "G",
+        "order": "O1",
+        "cases": [
+          "C1",
+          "C4",
+          "C2",
+          "C7",
+          "C3",
+          "C8",
+          "C5",
+          "C6"
+        ]
+      },
+      {
+        "id": "agent-07",
+        "population": "agent",
+        "role": "user",
+        "arm": "P",
+        "order": "O2",
+        "cases": [
+          "C6",
+          "C5",
+          "C8",
+          "C3",
+          "C7",
+          "C2",
+          "C4",
+          "C1"
+        ]
+      },
+      {
+        "id": "agent-08",
+        "population": "agent",
+        "role": "user",
+        "arm": "P",
+        "order": "O1",
+        "cases": [
+          "C1",
+          "C4",
+          "C2",
+          "C7",
+          "C3",
+          "C8",
+          "C5",
+          "C6"
+        ]
+      },
+      {
+        "id": "agent-09",
+        "population": "agent",
+        "role": "maintainer",
+        "arm": "G",
+        "order": "O2",
+        "cases": [
+          "C6",
+          "C5",
+          "C8",
+          "C3",
+          "C7",
+          "C2",
+          "C4",
+          "C1"
+        ]
+      },
+      {
+        "id": "agent-10",
+        "population": "agent",
+        "role": "maintainer",
+        "arm": "P",
+        "order": "O1",
+        "cases": [
+          "C1",
+          "C4",
+          "C2",
+          "C7",
+          "C3",
+          "C8",
+          "C5",
+          "C6"
+        ]
+      },
+      {
+        "id": "agent-11",
+        "population": "agent",
+        "role": "maintainer",
+        "arm": "G",
+        "order": "O1",
+        "cases": [
+          "C1",
+          "C4",
+          "C2",
+          "C7",
+          "C3",
+          "C8",
+          "C5",
+          "C6"
+        ]
+      },
+      {
+        "id": "agent-12",
+        "population": "agent",
+        "role": "framework",
+        "arm": "P",
+        "order": "O2",
+        "cases": [
+          "C6",
+          "C5",
+          "C8",
+          "C3",
+          "C7",
+          "C2",
+          "C4",
+          "C1"
+        ]
+      }
+    ]
+  },
+  "proposedAgentLimits": {
+    "sessions": 12,
+    "perSessionInputTokens": 48000,
+    "perSessionOutputTokens": 8000,
+    "perSessionToolCalls": 80,
+    "perSessionMinutes": 75,
+    "totalInputTokens": 576000,
+    "totalOutputTokens": 96000,
+    "automaticRetries": 0
+  },
+  "provider": {
+    "channel": null,
+    "modelAliasProposal": "gpt-6-astra",
+    "immutableRevision": null,
+    "reasoningConfiguration": null,
+    "priceSource": null,
+    "totalCostCeiling": null,
+    "status": "not selected or authorized"
+  },
+  "human": {
+    "proposedCount": 12,
+    "identities": null,
+    "consent": null,
+    "schedule": null,
+    "roleQuestionnaire": null
+  },
+  "exposure": {
+    "judgment": [
+      "approved orientation",
+      "assigned arm/role packet A",
+      "packet B only after sealed A"
+    ],
+    "forbidden": [
+      "other arm",
+      "source repository",
+      "previous conversations",
+      "oracle/goldens",
+      "provider-native extra tools"
+    ],
+    "entry": "Graph tasks after A/B closure; source/rubric remain outside judgment file map"
+  },
+  "unresolvedBeforeExecution": [
+    "Choose actual human or agent channel and identities",
+    "Freeze provider adapter, returned model version and complete tool definitions",
+    "Verify fresh context and absence of extra tools in actual channel",
+    "Bind cumulative repeated-context token/time metering before dispatch",
+    "Freeze human role questionnaire, consent and two blinded free-text reviewers where applicable",
+    "Resolve quote and exact spend ceiling for selected provider, then explicit execution approval"
+  ],
+  "syntheticQualification": {
+    "path": "sessions/active/b121-comparison-design-v1/isolation/probe-receipt.json",
+    "sha256": "5d9c82143c73e8567a16f185188c7c51874227b214ed7693a1754b3ba70d39b3",
+    "doesNotQualifyProviderContext": true
+  }
+}

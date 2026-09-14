@@ -1,0 +1,2171 @@
+{
+  "kind": "synthetic-container-broker-qualification",
+  "image": "0c1b0dc4d863c5c9873aa4e92c2bf8e6e8db24b572f28a09d534d8f5fb6eeae3",
+  "command": [
+    "run",
+    "--pull=never",
+    "--rm",
+    "--name=b121-isolation-8cfe9c11-7c9e-4c22-becc-b89144646da1",
+    "--network=none",
+    "--read-only",
+    "--read-only-tmpfs=false",
+    "--cap-drop=all",
+    "--security-opt=no-new-privileges",
+    "--pids-limit=32",
+    "--memory=128m",
+    "--timeout=25",
+    "--user=65534:65534",
+    "--unsetenv-all",
+    "--workdir=/",
+    "--entrypoint=/opt/python/cp311-cp311/bin/python",
+    "-i",
+    "0c1b0dc4d863c5c9873aa4e92c2bf8e6e8db24b572f28a09d534d8f5fb6eeae3",
+    "-I",
+    "-S",
+    "-u",
+    "-c",
+    "<sha256:0788a55fb04e7dbd0e909d1b088bd8e57ff4a22a10bbd4ffdef78f30dcbe3115>"
+  ],
+  "probeSha256": "0788a55fb04e7dbd0e909d1b088bd8e57ff4a22a10bbd4ffdef78f30dcbe3115",
+  "materialSha256": "3e3533022a6e1f1f354a9b61553be00a7770fb5736896cbd1c337b3be69b291b",
+  "checks": {
+    "hostCanary": true,
+    "repository": true,
+    "oracle": true,
+    "dockerSocket": true,
+    "unprivileged": true,
+    "noIPv4Routes": true,
+    "rootReadOnly": true,
+    "externalConnectionDenied": true,
+    "onlyAListed": true,
+    "readA": true,
+    "earlyB": true,
+    "oracleTool": true,
+    "traversal": true,
+    "shellTool": true,
+    "clientSeal": true,
+    "submitA1": true,
+    "submitA2": true,
+    "submitA3": true,
+    "submitA4": true,
+    "submitA5": true,
+    "submitA6": true,
+    "submitA7": true,
+    "submitA8": true,
+    "overwriteDenied": true,
+    "sealedByController": true,
+    "BVisibleAfterSeal": true,
+    "oldPhaseDenied": true,
+    "budgetDenied": true
+  },
+  "audit": [
+    {
+      "data": {
+        "limits": {
+          "calls": 80,
+          "elapsedMs": 4500000,
+          "inputTokens": 48000,
+          "outputTokens": 8000
+        },
+        "packetHash": "5b505c20ef651d825cd584881e231aa51fe1fa0f7602329edc7cebcf7b8a59bd",
+        "sessionId": "synthetic-isolation-control"
+      },
+      "hash": "5f8326c06ca559095c3bbfa6c1338c4968771e488be363a69b655c37ec2fb9f8",
+      "index": 0,
+      "previous": null,
+      "type": "created"
+    },
+    {
+      "data": {
+        "call": 1,
+        "input": {
+          "op": "list"
+        },
+        "phase": "A",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json"
+          ]
+        }
+      },
+      "hash": "ddfc08c3ba042e280963283d7af53729340dd743bafeda67ad50677c854a471a",
+      "index": 1,
+      "previous": "5f8326c06ca559095c3bbfa6c1338c4968771e488be363a69b655c37ec2fb9f8",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 2,
+        "input": {
+          "op": "read",
+          "path": "A.json"
+        },
+        "phase": "A",
+        "result": {
+          "content": "{\"arm\":\"G\",\"role\":\"user\",\"stage\":\"A\",\"task\":{\"task\":\"Judge only the supplied evidence at the stated observation boundary. Entry exercises are unavailable until both stages close.\",\"objective\":\"same-facts judgment\",\"minutes\":32},\"entry\":null,\"commonFacts\":[{\"id\":\"F1\",\"subject\":\"numeric policy\",\"predicate\":\"required squared z-score\",\"value\":\"delta²(n−1)/(n*d); n=count, delta=n*x−sum(values), d=n*sum(values²)−sum(values)²\",\"stage\":\"A\",\"refs\":[\"EF1\"]},{\"id\":\"F2\",\"subject\":\"supplied source pairs\",\"predicate\":\"change graph topology or plain method-call relationships\",\"value\":false,\"stage\":\"A\",\"refs\":[\"EF2\"]},{\"id\":\"F3\",\"subject\":\"packet\",\"predicate\":\"contains authenticated author provenance\",\"value\":false,\"stage\":\"A\",\"refs\":[\"EF3\"]},{\"id\":\"F4\",\"subject\":\"packet\",\"predicate\":\"contains host lifecycle-end receipt\",\"value\":false,\"stage\":\"A\",\"refs\":[\"EF4\"]},{\"id\":\"F5\",\"subject\":\"first physical transport at the frozen observation\",\"predicate\":\"permitted by supplied evidence exactly when\",\"value\":\"a current successful final-guard record is supplied for that exact first request\",\"stage\":\"A\",\"refs\":[\"EF5\"]},{\"id\":\"F6\",\"subject\":\"confirmed identical effect\",\"predicate\":\"may be physically submitted a second time\",\"value\":false,\"stage\":\"A\",\"refs\":[\"EF6\"]},{\"id\":\"F7\",\"subject\":\"unknown physical result\",\"predicate\":\"permits normal host end\",\"value\":false,\"stage\":\"A\",\"refs\":[\"EF7\"]},{\"id\":\"F8\",\"subject\":\"implementation changes in this packet\",\"predicate\":\"case IDs\",\"value\":\"C1,C2\",\"stage\":\"A\",\"refs\":[\"EF8\"]}],\"cases\":[{\"id\":\"C1\",\"facts\":[{\"id\":\"C1F1\",\"subject\":\"numeric expression\",\"predicate\":\"replacement\",\"value\":\"delta*delta*(n-1n) → delta*delta*n\",\"stage\":\"A\",\"refs\":[\"EC1F1\"]},{\"id\":\"C1F2\",\"subject\":\"numeric input\",\"predicate\":\"values; current is last\",\"value\":\"[1,2,3]\",\"stage\":\"A\",\"refs\":[\"EC1F2\"]},{\"id\":\"C1F3\",\"subject\":\"target request\",\"predicate\":\"current final-guard record supplied at A\",\"value\":false,\"stage\":\"A\",\"refs\":[\"EC1F3\"]}]},{\"id\":\"C2\",\"facts\":[{\"id\":\"C2F1\",\"subject\":\"numeric expression\",\"predicate\":\"replacement\",\"value\":\"delta*delta*(n-1n) → delta*delta*n-delta*delta\",\"stage\":\"A\",\"refs\":[\"EC2F1\"]},{\"id\":\"C2F2\",\"subject\":\"numeric input\",\"predicate\":\"values; current is last\",\"value\":\"[1,2,3]\",\"stage\":\"A\",\"refs\":[\"EC2F2\"]},{\"id\":\"C2F3\",\"subject\":\"target request\",\"predicate\":\"current final-guard record supplied at A\",\"value\":false,\"stage\":\"A\",\"refs\":[\"EC2F3\"]}]},{\"id\":\"C3\",\"facts\":[{\"id\":\"C3F1\",\"subject\":\"target occurrence\",\"predicate\":\"revision\",\"value\":2,\"stage\":\"A\",\"refs\":[\"EC3F1\"]},{\"id\":\"C3F2\",\"subject\":\"completed verified occurrence\",\"predicate\":\"revision\",\"value\":1,\"stage\":\"A\",\"refs\":[\"EC3F2\"]},{\"id\":\"C3F3\",\"subject\":\"target occurrence\",\"predicate\":\"has final-guard success\",\"value\":false,\"stage\":\"A\",\"refs\":[\"EC3F3\"]}]},{\"id\":\"C4\",\"facts\":[{\"id\":\"C4F1\",\"subject\":\"current-policy input\",\"predicate\":\"digest\",\"value\":\"sha256:8863cd47420190bb2323e140d988a7c86edc7f2964d4725cf185bfe0fed7d6dc\",\"stage\":\"A\",\"refs\":[\"EC4F1\"]},{\"id\":\"C4F2\",\"subject\":\"target policy\",\"predicate\":\"digest\",\"value\":\"sha256:9da189cab72d0cb3897ce20b36420fe032d95b9825ddccce546f9a1cd9452940\",\"stage\":\"A\",\"refs\":[\"EC4F2\"]},{\"id\":\"C4F3\",\"subject\":\"target request\",\"predicate\":\"has final-guard success\",\"value\":false,\"stage\":\"A\",\"refs\":[\"EC4F3\"]}]},{\"id\":\"C5\",\"facts\":[{\"id\":\"C5F1\",\"subject\":\"earlier physical effect\",\"predicate\":\"outcome\",\"value\":\"succeeded\",\"stage\":\"A\",\"refs\":[\"EC5F1\"]},{\"id\":\"C5F2\",\"subject\":\"replayed proposal\",\"predicate\":\"identical to earlier proposal\",\"value\":true,\"stage\":\"A\",\"refs\":[\"EC5F2\"]},{\"id\":\"C5F3\",\"subject\":\"earlier physical effect\",\"predicate\":\"submission count\",\"value\":1,\"stage\":\"A\",\"refs\":[\"EC5F3\"]}]},{\"id\":\"C6\",\"facts\":[{\"id\":\"C6F1\",\"subject\":\"physical result\",\"predicate\":\"state\",\"value\":\"unknown\",\"stage\":\"A\",\"refs\":[\"EC6F1\"]},{\"id\":\"C6F2\",\"subject\":\"host\",\"predicate\":\"dispatch stopped\",\"value\":true,\"stage\":\"A\",\"refs\":[\"EC6F2\"]},{\"id\":\"C6F3\",\"subject\":\"after display detach\",\"predicate\":\"retained effect records\",\"value\":1,\"stage\":\"A\",\"refs\":[\"EC6F3\"]}]},{\"id\":\"C7\",\"facts\":[{\"id\":\"C7F1\",\"subject\":\"current verification\",\"predicate\":\"supplied\",\"value\":false,\"stage\":\"A\",\"refs\":[\"EC7F1\"]},{\"id\":\"C7F2\",\"subject\":\"target request\",\"predicate\":\"has final-guard success\",\"value\":false,\"stage\":\"A\",\"refs\":[\"EC7F2\"]}]},{\"id\":\"C8\",\"facts\":[{\"id\":\"C8F1\",\"subject\":\"first physical transport\",\"predicate\":\"exact final-guard success\",\"value\":true,\"stage\":\"A\",\"refs\":[\"EC8F1\"]},{\"id\":\"C8F2\",\"subject\":\"physical transport\",\"predicate\":\"calls before observation\",\"value\":0,\"stage\":\"A\",\"refs\":[\"EC8F2\"]}]}],\"questions\":{\"A\":[\"implementationChanged\",\"topologyChanged\",\"consequence\",\"uncertainty\",\"effectNow\",\"lifecycleEnded\",\"author\"],\"B\":[\"implementationChanged\",\"topologyChanged\",\"consequence\",\"uncertainty\",\"effectNow\",\"lifecycleEnded\",\"author\"],\"instructions\":\"For each field provide {value:string, citations:[fact IDs]}. Also explain possible consequences, independently supported invariants, unknowns, and which additional evidence would permit execution. B: explain what the receipt proves, does not prove, and any remaining obligation. Prediction is distinct from permission now. lifecycleEnded asks whether end is established by supplied evidence, not whether an unobserved end is impossible. B may provide independent checks of the same frozen observation, not necessarily a later runtime moment. Code formulas use the variables defined in F1. Numeric consequences are limited to this input; no whole-program equivalence claim. The uncertainty field asks for the primary remaining support gap: choose the first SUPPORTED label in this priority order: physical-outcome-unknown, current-policy-not-established, revision-2-verification-missing, verification-and-authorship-missing, none-for-duplicate-request, target-authorization-unestablished, authorship-unknown; otherwise unknown. More specific gaps take priority over generic missing authorization; duplicate requests need no new authorization. Author is also answered separately. Plain relationships show static possible calls and function references, not observed runtime calls; injected writer/listener implementations lie outside that source inventory.\"},\"evidence\":{\"EF1\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"numeric policy\",\"predicate\":\"required squared z-score\",\"value\":\"delta²(n−1)/(n*d); n=count, delta=n*x−sum(values), d=n*sum(values²)−sum(values)²\"}},\"EF2\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"supplied source pairs\",\"predicate\":\"change graph topology or plain method-call relationships\",\"value\":false}},\"EF3\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"packet\",\"predicate\":\"contains authenticated author provenance\",\"value\":false}},\"EF4\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"packet\",\"predicate\":\"contains host lifecycle-end receipt\",\"value\":false}},\"EF5\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"first physical transport at the frozen observation\",\"predicate\":\"permitted by supplied evidence exactly when\",\"value\":\"a current successful final-guard record is supplied for that exact first request\"}},\"EF6\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"confirmed identical effect\",\"predicate\":\"may be physically submitted a second time\",\"value\":false}},\"EF7\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"unknown physical result\",\"predicate\":\"permits normal host end\",\"value\":false}},\"EF8\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"implementation changes in this packet\",\"predicate\":\"case IDs\",\"value\":\"C1,C2\"}},\"EC1F1\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"numeric expression\",\"predicate\":\"replacement\",\"value\":\"delta*delta*(n-1n) → delta*delta*n\"}},\"EC1F2\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"numeric input\",\"predicate\":\"values; current is last\",\"value\":\"[1,2,3]\"}},\"EC1F3\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"target request\",\"predicate\":\"current final-guard record supplied at A\",\"value\":false}},\"EC2F1\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"numeric expression\",\"predicate\":\"replacement\",\"value\":\"delta*delta*(n-1n) → delta*delta*n-delta*delta\"}},\"EC2F2\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"numeric input\",\"predicate\":\"values; current is last\",\"value\":\"[1,2,3]\"}},\"EC2F3\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"target request\",\"predicate\":\"current final-guard record supplied at A\",\"value\":false}},\"EC3F1\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"target occurrence\",\"predicate\":\"revision\",\"value\":2}},\"EC3F2\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"completed verified occurrence\",\"predicate\":\"revision\",\"value\":1}},\"EC3F3\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"target occurrence\",\"predicate\":\"has final-guard success\",\"value\":false}},\"EC4F1\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"current-policy input\",\"predicate\":\"digest\",\"value\":\"sha256:8863cd47420190bb2323e140d988a7c86edc7f2964d4725cf185bfe0fed7d6dc\"}},\"EC4F2\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"target policy\",\"predicate\":\"digest\",\"value\":\"sha256:9da189cab72d0cb3897ce20b36420fe032d95b9825ddccce546f9a1cd9452940\"}},\"EC4F3\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"target request\",\"predicate\":\"has final-guard success\",\"value\":false}},\"EC5F1\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"earlier physical effect\",\"predicate\":\"outcome\",\"value\":\"succeeded\"}},\"EC5F2\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"replayed proposal\",\"predicate\":\"identical to earlier proposal\",\"value\":true}},\"EC5F3\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"earlier physical effect\",\"predicate\":\"submission count\",\"value\":1}},\"EC6F1\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"physical result\",\"predicate\":\"state\",\"value\":\"unknown\"}},\"EC6F2\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"host\",\"predicate\":\"dispatch stopped\",\"value\":true}},\"EC6F3\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"after display detach\",\"predicate\":\"retained effect records\",\"value\":1}},\"EC7F1\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"current verification\",\"predicate\":\"supplied\",\"value\":false}},\"EC7F2\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"target request\",\"predicate\":\"has final-guard success\",\"value\":false}},\"EC8F1\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"first physical transport\",\"predicate\":\"exact final-guard success\",\"value\":true}},\"EC8F2\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"physical transport\",\"predicate\":\"calls before observation\",\"value\":0}}},\"relations\":{\"kind\":\"graph\",\"nodeCount\":62,\"displayUnits\":13,\"nodes\":[{\"id\":\"pack\",\"factory\":\"node\"},{\"id\":\"arrivals\",\"factory\":\"node\"},{\"id\":\"current\",\"factory\":\"node\"},{\"id\":\"verification\",\"factory\":\"node\"},{\"id\":\"local\",\"factory\":\"node\"},{\"id\":\"proof/startup\",\"factory\":\"graphConstructionStartup\"},{\"id\":\"proof/hostFacts\",\"factory\":\"offlineSpendingHostFacts\"},{\"id\":\"proof/evaluationSelections\",\"factory\":\"spending/evaluationSelections\"},{\"id\":\"proof/transaction\",\"factory\":\"spending/transaction\"},{\"id\":\"proof/vendorStats\",\"factory\":\"spending/vendorStats\"},{\"id\":\"proof/userProfile\",\"factory\":\"spending/userProfile\"},{\"id\":\"proof/policy\",\"factory\":\"spending/policy\"},{\"id\":\"proof/anomalyScore\",\"factory\":\"spending/anomalyScore\"},{\"id\":\"proof/thresholdGate\",\"factory\":\"spending/thresholdGate\"},{\"id\":\"proof/reasonFactors\",\"factory\":\"spending/reasonFactors\"},{\"id\":\"proof/alertMessage\",\"factory\":\"spending/alertMessage\"},{\"id\":\"proof/assessment\",\"factory\":\"spending/assessment\"},{\"id\":\"proof/requestMaterials\",\"factory\":\"spending/requestMaterials\"},{\"id\":\"proof/materialStore\",\"factory\":\"spending/materialStore\"},{\"id\":\"proof/materialSnapshot\",\"factory\":\"spending/materialSnapshot\"},{\"id\":\"proof/effectProposals\",\"factory\":\"spending/effectProposals\"},{\"id\":\"proof/currentFacts\",\"factory\":\"spending/currentFacts\"},{\"id\":\"proof/verificationFacts\",\"factory\":\"spending/verificationFacts\"},{\"id\":\"proof/localFacts\",\"factory\":\"spending/localFacts\"},{\"id\":\"proof/inboxFacts\",\"factory\":\"spending/inboxFacts\"},{\"id\":\"proof/publicationPolicy\",\"factory\":\"spending/publicationPolicy\"},{\"id\":\"proof/occurrences\",\"factory\":\"spending/occurrences\"},{\"id\":\"proof/occurrenceAdmissions\",\"factory\":\"spending/occurrenceAdmissions\"},{\"id\":\"proof/branchTerminals\",\"factory\":\"spending/branchTerminals\"},{\"id\":\"proof/effectAdmissions\",\"factory\":\"spending/effectAdmissions\"},{\"id\":\"proof/effectOutcomes\",\"factory\":\"spending/effectOutcomes\"},{\"id\":\"proof/evidence\",\"factory\":\"spending/evidence\"},{\"id\":\"proof/watermarks\",\"factory\":\"spending/watermarks\"},{\"id\":\"proof/causal/input/occurrences\",\"factory\":\"causalOccurrenceInputLane\"},{\"id\":\"proof/causal/input/admissions\",\"factory\":\"causalOccurrenceInputLane\"},{\"id\":\"proof/causal/input/branch-terminals\",\"factory\":\"causalOccurrenceInputLane\"},{\"id\":\"proof/causal/input/effect-proposals\",\"factory\":\"causalOccurrenceInputLane\"},{\"id\":\"proof/causal/input/effect-admissions\",\"factory\":\"causalOccurrenceInputLane\"},{\"id\":\"proof/causal/input/effect-outcomes\",\"factory\":\"causalOccurrenceInputLane\"},{\"id\":\"proof/causal/input/evidence\",\"factory\":\"causalOccurrenceInputLane\"},{\"id\":\"proof/causal/input/watermarks\",\"factory\":\"causalOccurrenceInputLane\"},{\"id\":\"proof/causal/arrivals\",\"factory\":\"merge\"},{\"id\":\"proof/causal/authority\",\"factory\":\"causalOccurrenceAuthority\"},{\"id\":\"proof/causal/release-candidates\",\"factory\":\"causalOccurrenceFactProjection\"},{\"id\":\"proof/causal/release-port\",\"factory\":\"causalOccurrenceQuietReleasePort\"},{\"id\":\"proof/causal/released\",\"factory\":\"causalOccurrenceReleased\"},{\"id\":\"proof/causal/release-events\",\"factory\":\"merge\"},{\"id\":\"proof/causal/release-controller\",\"factory\":\"causalOccurrenceReleaseController\"},{\"id\":\"proof/causal/currentness\",\"factory\":\"causalOccurrenceFactProjection\"},{\"id\":\"proof/causal/terminals\",\"factory\":\"causalOccurrenceFactProjection\"},{\"id\":\"proof/causal/conservation\",\"factory\":\"causalOccurrenceFactProjection\"},{\"id\":\"proof/causal/coverage\",\"factory\":\"causalOccurrenceFactProjection\"},{\"id\":\"proof/causal/quiescence\",\"factory\":\"causalOccurrenceFactProjection\"},{\"id\":\"proof/causal/issues\",\"factory\":\"causalOccurrenceFactProjection\"},{\"id\":\"proof/causal/committed-effects\",\"factory\":\"causalCommittedEffectsProjection\"},{\"id\":\"proof/causal/causal-quiescence\",\"factory\":\"causalLifecycleQuiescence\"},{\"id\":\"proof/requestMaterialJoin\",\"factory\":\"spendingRequestMaterialJoin\"},{\"id\":\"proof/publication\",\"factory\":\"spendingPublication\"},{\"id\":\"proof/consumerIssues\",\"factory\":\"spending/consumerIssues\"},{\"id\":\"proof/hostPackFacts\",\"factory\":\"offlineSpendingHostPackFacts\"},{\"id\":\"proof/hostGuard\",\"factory\":\"offlineSpendingHostGuard\"},{\"id\":\"proof/runEndReady\",\"factory\":\"offlineSpendingRunEndReady\"}],\"edges\":[{\"from\":\"pack\",\"to\":\"proof/evaluationSelections\"},{\"from\":\"arrivals\",\"to\":\"proof/evaluationSelections\"},{\"from\":\"proof/evaluationSelections\",\"to\":\"proof/transaction\"},{\"from\":\"proof/evaluationSelections\",\"to\":\"proof/vendorStats\"},{\"from\":\"proof/evaluationSelections\",\"to\":\"proof/userProfile\"},{\"from\":\"proof/evaluationSelections\",\"to\":\"proof/policy\"},{\"from\":\"proof/transaction\",\"to\":\"proof/anomalyScore\"},{\"from\":\"proof/vendorStats\",\"to\":\"proof/anomalyScore\"},{\"from\":\"proof/userProfile\",\"to\":\"proof/anomalyScore\"},{\"from\":\"proof/anomalyScore\",\"to\":\"proof/thresholdGate\"},{\"from\":\"proof/policy\",\"to\":\"proof/thresholdGate\"},{\"from\":\"proof/thresholdGate\",\"to\":\"proof/reasonFactors\"},{\"from\":\"proof/policy\",\"to\":\"proof/reasonFactors\"},{\"from\":\"proof/reasonFactors\",\"to\":\"proof/alertMessage\"},{\"from\":\"proof/thresholdGate\",\"to\":\"proof/assessment\"},{\"from\":\"proof/reasonFactors\",\"to\":\"proof/assessment\"},{\"from\":\"proof/alertMessage\",\"to\":\"proof/assessment\"},{\"from\":\"proof/evaluationSelections\",\"to\":\"proof/requestMaterials\"},{\"from\":\"proof/thresholdGate\",\"to\":\"proof/requestMaterials\"},{\"from\":\"proof/alertMessage\",\"to\":\"proof/requestMaterials\"},{\"from\":\"proof/requestMaterials\",\"to\":\"proof/materialStore\"},{\"from\":\"proof/materialStore\",\"to\":\"proof/materialSnapshot\"},{\"from\":\"proof/materialStore\",\"to\":\"proof/effectProposals\"},{\"from\":\"current\",\"to\":\"proof/currentFacts\"},{\"from\":\"verification\",\"to\":\"proof/verificationFacts\"},{\"from\":\"local\",\"to\":\"proof/localFacts\"},{\"from\":\"proof/hostFacts\",\"to\":\"proof/inboxFacts\"},{\"from\":\"proof/evaluationSelections\",\"to\":\"proof/publicationPolicy\"},{\"from\":\"proof/thresholdGate\",\"to\":\"proof/publicationPolicy\"},{\"from\":\"proof/materialStore\",\"to\":\"proof/publicationPolicy\"},{\"from\":\"proof/currentFacts\",\"to\":\"proof/publicationPolicy\"},{\"from\":\"proof/verificationFacts\",\"to\":\"proof/publicationPolicy\"},{\"from\":\"proof/localFacts\",\"to\":\"proof/publicationPolicy\"},{\"from\":\"proof/inboxFacts\",\"to\":\"proof/publicationPolicy\"},{\"from\":\"proof/evaluationSelections\",\"to\":\"proof/occurrences\"},{\"from\":\"proof/evaluationSelections\",\"to\":\"proof/occurrenceAdmissions\"},{\"from\":\"proof/currentFacts\",\"to\":\"proof/occurrenceAdmissions\"},{\"from\":\"proof/assessment\",\"to\":\"proof/branchTerminals\"},{\"from\":\"proof/alertMessage\",\"to\":\"proof/branchTerminals\"},{\"from\":\"proof/publicationPolicy\",\"to\":\"proof/branchTerminals\"},{\"from\":\"proof/publicationPolicy\",\"to\":\"proof/effectAdmissions\"},{\"from\":\"proof/inboxFacts\",\"to\":\"proof/effectOutcomes\"},{\"from\":\"proof/evaluationSelections\",\"to\":\"proof/evidence\"},{\"from\":\"proof/materialStore\",\"to\":\"proof/evidence\"},{\"from\":\"proof/verificationFacts\",\"to\":\"proof/evidence\"},{\"from\":\"proof/currentFacts\",\"to\":\"proof/watermarks\"},{\"from\":\"proof/occurrences\",\"to\":\"proof/causal/input/occurrences\"},{\"from\":\"proof/occurrenceAdmissions\",\"to\":\"proof/causal/input/admissions\"},{\"from\":\"proof/branchTerminals\",\"to\":\"proof/causal/input/branch-terminals\"},{\"from\":\"proof/effectProposals\",\"to\":\"proof/causal/input/effect-proposals\"},{\"from\":\"proof/effectAdmissions\",\"to\":\"proof/causal/input/effect-admissions\"},{\"from\":\"proof/effectOutcomes\",\"to\":\"proof/causal/input/effect-outcomes\"},{\"from\":\"proof/evidence\",\"to\":\"proof/causal/input/evidence\"},{\"from\":\"proof/watermarks\",\"to\":\"proof/causal/input/watermarks\"},{\"from\":\"proof/causal/input/occurrences\",\"to\":\"proof/causal/arrivals\"},{\"from\":\"proof/causal/input/admissions\",\"to\":\"proof/causal/arrivals\"},{\"from\":\"proof/causal/input/branch-terminals\",\"to\":\"proof/causal/arrivals\"},{\"from\":\"proof/causal/input/effect-proposals\",\"to\":\"proof/causal/arrivals\"},{\"from\":\"proof/causal/input/effect-admissions\",\"to\":\"proof/causal/arrivals\"},{\"from\":\"proof/causal/input/effect-outcomes\",\"to\":\"proof/causal/arrivals\"},{\"from\":\"proof/causal/input/evidence\",\"to\":\"proof/causal/arrivals\"},{\"from\":\"proof/causal/input/watermarks\",\"to\":\"proof/causal/arrivals\"},{\"from\":\"proof/causal/arrivals\",\"to\":\"proof/causal/authority\"},{\"from\":\"proof/causal/authority\",\"to\":\"proof/causal/release-candidates\"},{\"from\":\"proof/causal/release-candidates\",\"to\":\"proof/causal/release-port\"},{\"from\":\"proof/causal/release-port\",\"to\":\"proof/causal/released\"},{\"from\":\"proof/causal/released\",\"to\":\"proof/causal/release-events\"},{\"from\":\"proof/causal/release-candidates\",\"to\":\"proof/causal/release-events\"},{\"from\":\"proof/causal/release-events\",\"to\":\"proof/causal/release-controller\"},{\"from\":\"proof/causal/authority\",\"to\":\"proof/causal/currentness\"},{\"from\":\"proof/causal/authority\",\"to\":\"proof/causal/terminals\"},{\"from\":\"proof/causal/authority\",\"to\":\"proof/causal/conservation\"},{\"from\":\"proof/causal/authority\",\"to\":\"proof/causal/coverage\"},{\"from\":\"proof/causal/authority\",\"to\":\"proof/causal/quiescence\"},{\"from\":\"proof/causal/authority\",\"to\":\"proof/causal/issues\"},{\"from\":\"proof/causal/authority\",\"to\":\"proof/causal/committed-effects\"},{\"from\":\"proof/causal/quiescence\",\"to\":\"proof/causal/causal-quiescence\"},{\"from\":\"proof/causal/committed-effects\",\"to\":\"proof/requestMaterialJoin\"},{\"from\":\"proof/materialSnapshot\",\"to\":\"proof/requestMaterialJoin\"},{\"from\":\"proof/requestMaterialJoin\",\"to\":\"proof/publication\"},{\"from\":\"proof/evaluationSelections\",\"to\":\"proof/consumerIssues\"},{\"from\":\"proof/currentFacts\",\"to\":\"proof/consumerIssues\"},{\"from\":\"proof/verificationFacts\",\"to\":\"proof/consumerIssues\"},{\"from\":\"proof/localFacts\",\"to\":\"proof/consumerIssues\"},{\"from\":\"proof/inboxFacts\",\"to\":\"proof/consumerIssues\"},{\"from\":\"proof/requestMaterials\",\"to\":\"proof/consumerIssues\"},{\"from\":\"proof/materialStore\",\"to\":\"proof/consumerIssues\"},{\"from\":\"proof/publicationPolicy\",\"to\":\"proof/consumerIssues\"},{\"from\":\"proof/causal/issues\",\"to\":\"proof/consumerIssues\"},{\"from\":\"pack\",\"to\":\"proof/hostPackFacts\"},{\"from\":\"proof/causal/committed-effects\",\"to\":\"proof/hostGuard\"},{\"from\":\"proof/materialSnapshot\",\"to\":\"proof/hostGuard\"},{\"from\":\"proof/currentFacts\",\"to\":\"proof/hostGuard\"},{\"from\":\"proof/verificationFacts\",\"to\":\"proof/hostGuard\"},{\"from\":\"proof/localFacts\",\"to\":\"proof/hostGuard\"},{\"from\":\"proof/inboxFacts\",\"to\":\"proof/hostGuard\"},{\"from\":\"proof/hostPackFacts\",\"to\":\"proof/hostGuard\"},{\"from\":\"proof/causal/quiescence\",\"to\":\"proof/runEndReady\"},{\"from\":\"proof/causal/committed-effects\",\"to\":\"proof/runEndReady\"},{\"from\":\"proof/localFacts\",\"to\":\"proof/runEndReady\"},{\"from\":\"proof/hostPackFacts\",\"to\":\"proof/runEndReady\"}],\"groups\":[{\"id\":\"inputs\",\"members\":[\"pack\",\"arrivals\",\"current\",\"verification\",\"local\"],\"internalEdges\":[]},{\"id\":\"startup\",\"members\":[\"proof/startup\"],\"internalEdges\":[]},{\"id\":\"business\",\"members\":[\"proof/evaluationSelections\",\"proof/transaction\",\"proof/vendorStats\",\"proof/userProfile\",\"proof/policy\",\"proof/anomalyScore\",\"proof/thresholdGate\",\"proof/reasonFactors\",\"proof/alertMessage\",\"proof/assessment\"],\"internalEdges\":[{\"from\":\"proof/evaluationSelections\",\"to\":\"proof/transaction\"},{\"from\":\"proof/evaluationSelections\",\"to\":\"proof/vendorStats\"},{\"from\":\"proof/evaluationSelections\",\"to\":\"proof/userProfile\"},{\"from\":\"proof/evaluationSelections\",\"to\":\"proof/policy\"},{\"from\":\"proof/transaction\",\"to\":\"proof/anomalyScore\"},{\"from\":\"proof/vendorStats\",\"to\":\"proof/anomalyScore\"},{\"from\":\"proof/userProfile\",\"to\":\"proof/anomalyScore\"},{\"from\":\"proof/anomalyScore\",\"to\":\"proof/thresholdGate\"},{\"from\":\"proof/policy\",\"to\":\"proof/thresholdGate\"},{\"from\":\"proof/thresholdGate\",\"to\":\"proof/reasonFactors\"},{\"from\":\"proof/policy\",\"to\":\"proof/reasonFactors\"},{\"from\":\"proof/reasonFactors\",\"to\":\"proof/alertMessage\"},{\"from\":\"proof/thresholdGate\",\"to\":\"proof/assessment\"},{\"from\":\"proof/reasonFactors\",\"to\":\"proof/assessment\"},{\"from\":\"proof/alertMessage\",\"to\":\"proof/assessment\"}]},{\"id\":\"material\",\"members\":[\"proof/requestMaterials\",\"proof/materialStore\",\"proof/materialSnapshot\",\"proof/effectProposals\",\"proof/requestMaterialJoin\"],\"internalEdges\":[{\"from\":\"proof/requestMaterials\",\"to\":\"proof/materialStore\"},{\"from\":\"proof/materialStore\",\"to\":\"proof/materialSnapshot\"},{\"from\":\"proof/materialStore\",\"to\":\"proof/effectProposals\"},{\"from\":\"proof/materialSnapshot\",\"to\":\"proof/requestMaterialJoin\"}]},{\"id\":\"facts\",\"members\":[\"proof/currentFacts\",\"proof/verificationFacts\",\"proof/localFacts\",\"proof/inboxFacts\",\"proof/publicationPolicy\"],\"internalEdges\":[{\"from\":\"proof/currentFacts\",\"to\":\"proof/publicationPolicy\"},{\"from\":\"proof/verificationFacts\",\"to\":\"proof/publicationPolicy\"},{\"from\":\"proof/localFacts\",\"to\":\"proof/publicationPolicy\"},{\"from\":\"proof/inboxFacts\",\"to\":\"proof/publicationPolicy\"}]},{\"id\":\"observations\",\"members\":[\"proof/occurrences\",\"proof/occurrenceAdmissions\",\"proof/branchTerminals\",\"proof/effectAdmissions\",\"proof/effectOutcomes\",\"proof/evidence\",\"proof/watermarks\"],\"internalEdges\":[]},{\"id\":\"lanes\",\"members\":[\"proof/causal/input/occurrences\",\"proof/causal/input/admissions\",\"proof/causal/input/branch-terminals\",\"proof/causal/input/effect-proposals\",\"proof/causal/input/effect-admissions\",\"proof/causal/input/effect-outcomes\",\"proof/causal/input/evidence\",\"proof/causal/input/watermarks\",\"proof/causal/arrivals\"],\"internalEdges\":[{\"from\":\"proof/causal/input/occurrences\",\"to\":\"proof/causal/arrivals\"},{\"from\":\"proof/causal/input/admissions\",\"to\":\"proof/causal/arrivals\"},{\"from\":\"proof/causal/input/branch-terminals\",\"to\":\"proof/causal/arrivals\"},{\"from\":\"proof/causal/input/effect-proposals\",\"to\":\"proof/causal/arrivals\"},{\"from\":\"proof/causal/input/effect-admissions\",\"to\":\"proof/causal/arrivals\"},{\"from\":\"proof/causal/input/effect-outcomes\",\"to\":\"proof/causal/arrivals\"},{\"from\":\"proof/causal/input/evidence\",\"to\":\"proof/causal/arrivals\"},{\"from\":\"proof/causal/input/watermarks\",\"to\":\"proof/causal/arrivals\"}]},{\"id\":\"authority\",\"members\":[\"proof/causal/authority\"],\"internalEdges\":[]},{\"id\":\"release\",\"members\":[\"proof/causal/release-candidates\",\"proof/causal/release-port\",\"proof/causal/released\",\"proof/causal/release-events\",\"proof/causal/release-controller\"],\"internalEdges\":[{\"from\":\"proof/causal/release-candidates\",\"to\":\"proof/causal/release-port\"},{\"from\":\"proof/causal/release-port\",\"to\":\"proof/causal/released\"},{\"from\":\"proof/causal/released\",\"to\":\"proof/causal/release-events\"},{\"from\":\"proof/causal/release-candidates\",\"to\":\"proof/causal/release-events\"},{\"from\":\"proof/causal/release-events\",\"to\":\"proof/causal/release-controller\"}]},{\"id\":\"evidence\",\"members\":[\"proof/causal/currentness\",\"proof/causal/terminals\",\"proof/causal/conservation\",\"proof/causal/coverage\",\"proof/causal/quiescence\",\"proof/causal/issues\",\"proof/causal/committed-effects\",\"proof/causal/causal-quiescence\"],\"internalEdges\":[{\"from\":\"proof/causal/quiescence\",\"to\":\"proof/causal/causal-quiescence\"}]},{\"id\":\"publication\",\"members\":[\"proof/publication\"],\"internalEdges\":[]},{\"id\":\"issues\",\"members\":[\"proof/consumerIssues\"],\"internalEdges\":[]},{\"id\":\"host\",\"members\":[\"proof/hostFacts\",\"proof/hostPackFacts\",\"proof/hostGuard\",\"proof/runEndReady\"],\"internalEdges\":[{\"from\":\"proof/hostPackFacts\",\"to\":\"proof/hostGuard\"},{\"from\":\"proof/hostPackFacts\",\"to\":\"proof/runEndReady\"}]}],\"crossEdges\":[{\"from\":\"pack\",\"to\":\"proof/evaluationSelections\",\"fromGroup\":\"inputs\",\"toGroup\":\"business\"},{\"from\":\"arrivals\",\"to\":\"proof/evaluationSelections\",\"fromGroup\":\"inputs\",\"toGroup\":\"business\"},{\"from\":\"proof/evaluationSelections\",\"to\":\"proof/requestMaterials\",\"fromGroup\":\"business\",\"toGroup\":\"material\"},{\"from\":\"proof/thresholdGate\",\"to\":\"proof/requestMaterials\",\"fromGroup\":\"business\",\"toGroup\":\"material\"},{\"from\":\"proof/alertMessage\",\"to\":\"proof/requestMaterials\",\"fromGroup\":\"business\",\"toGroup\":\"material\"},{\"from\":\"current\",\"to\":\"proof/currentFacts\",\"fromGroup\":\"inputs\",\"toGroup\":\"facts\"},{\"from\":\"verification\",\"to\":\"proof/verificationFacts\",\"fromGroup\":\"inputs\",\"toGroup\":\"facts\"},{\"from\":\"local\",\"to\":\"proof/localFacts\",\"fromGroup\":\"inputs\",\"toGroup\":\"facts\"},{\"from\":\"proof/hostFacts\",\"to\":\"proof/inboxFacts\",\"fromGroup\":\"host\",\"toGroup\":\"facts\"},{\"from\":\"proof/evaluationSelections\",\"to\":\"proof/publicationPolicy\",\"fromGroup\":\"business\",\"toGroup\":\"facts\"},{\"from\":\"proof/thresholdGate\",\"to\":\"proof/publicationPolicy\",\"fromGroup\":\"business\",\"toGroup\":\"facts\"},{\"from\":\"proof/materialStore\",\"to\":\"proof/publicationPolicy\",\"fromGroup\":\"material\",\"toGroup\":\"facts\"},{\"from\":\"proof/evaluationSelections\",\"to\":\"proof/occurrences\",\"fromGroup\":\"business\",\"toGroup\":\"observations\"},{\"from\":\"proof/evaluationSelections\",\"to\":\"proof/occurrenceAdmissions\",\"fromGroup\":\"business\",\"toGroup\":\"observations\"},{\"from\":\"proof/currentFacts\",\"to\":\"proof/occurrenceAdmissions\",\"fromGroup\":\"facts\",\"toGroup\":\"observations\"},{\"from\":\"proof/assessment\",\"to\":\"proof/branchTerminals\",\"fromGroup\":\"business\",\"toGroup\":\"observations\"},{\"from\":\"proof/alertMessage\",\"to\":\"proof/branchTerminals\",\"fromGroup\":\"business\",\"toGroup\":\"observations\"},{\"from\":\"proof/publicationPolicy\",\"to\":\"proof/branchTerminals\",\"fromGroup\":\"facts\",\"toGroup\":\"observations\"},{\"from\":\"proof/publicationPolicy\",\"to\":\"proof/effectAdmissions\",\"fromGroup\":\"facts\",\"toGroup\":\"observations\"},{\"from\":\"proof/inboxFacts\",\"to\":\"proof/effectOutcomes\",\"fromGroup\":\"facts\",\"toGroup\":\"observations\"},{\"from\":\"proof/evaluationSelections\",\"to\":\"proof/evidence\",\"fromGroup\":\"business\",\"toGroup\":\"observations\"},{\"from\":\"proof/materialStore\",\"to\":\"proof/evidence\",\"fromGroup\":\"material\",\"toGroup\":\"observations\"},{\"from\":\"proof/verificationFacts\",\"to\":\"proof/evidence\",\"fromGroup\":\"facts\",\"toGroup\":\"observations\"},{\"from\":\"proof/currentFacts\",\"to\":\"proof/watermarks\",\"fromGroup\":\"facts\",\"toGroup\":\"observations\"},{\"from\":\"proof/occurrences\",\"to\":\"proof/causal/input/occurrences\",\"fromGroup\":\"observations\",\"toGroup\":\"lanes\"},{\"from\":\"proof/occurrenceAdmissions\",\"to\":\"proof/causal/input/admissions\",\"fromGroup\":\"observations\",\"toGroup\":\"lanes\"},{\"from\":\"proof/branchTerminals\",\"to\":\"proof/causal/input/branch-terminals\",\"fromGroup\":\"observations\",\"toGroup\":\"lanes\"},{\"from\":\"proof/effectProposals\",\"to\":\"proof/causal/input/effect-proposals\",\"fromGroup\":\"material\",\"toGroup\":\"lanes\"},{\"from\":\"proof/effectAdmissions\",\"to\":\"proof/causal/input/effect-admissions\",\"fromGroup\":\"observations\",\"toGroup\":\"lanes\"},{\"from\":\"proof/effectOutcomes\",\"to\":\"proof/causal/input/effect-outcomes\",\"fromGroup\":\"observations\",\"toGroup\":\"lanes\"},{\"from\":\"proof/evidence\",\"to\":\"proof/causal/input/evidence\",\"fromGroup\":\"observations\",\"toGroup\":\"lanes\"},{\"from\":\"proof/watermarks\",\"to\":\"proof/causal/input/watermarks\",\"fromGroup\":\"observations\",\"toGroup\":\"lanes\"},{\"from\":\"proof/causal/arrivals\",\"to\":\"proof/causal/authority\",\"fromGroup\":\"lanes\",\"toGroup\":\"authority\"},{\"from\":\"proof/causal/authority\",\"to\":\"proof/causal/release-candidates\",\"fromGroup\":\"authority\",\"toGroup\":\"release\"},{\"from\":\"proof/causal/authority\",\"to\":\"proof/causal/currentness\",\"fromGroup\":\"authority\",\"toGroup\":\"evidence\"},{\"from\":\"proof/causal/authority\",\"to\":\"proof/causal/terminals\",\"fromGroup\":\"authority\",\"toGroup\":\"evidence\"},{\"from\":\"proof/causal/authority\",\"to\":\"proof/causal/conservation\",\"fromGroup\":\"authority\",\"toGroup\":\"evidence\"},{\"from\":\"proof/causal/authority\",\"to\":\"proof/causal/coverage\",\"fromGroup\":\"authority\",\"toGroup\":\"evidence\"},{\"from\":\"proof/causal/authority\",\"to\":\"proof/causal/quiescence\",\"fromGroup\":\"authority\",\"toGroup\":\"evidence\"},{\"from\":\"proof/causal/authority\",\"to\":\"proof/causal/issues\",\"fromGroup\":\"authority\",\"toGroup\":\"evidence\"},{\"from\":\"proof/causal/authority\",\"to\":\"proof/causal/committed-effects\",\"fromGroup\":\"authority\",\"toGroup\":\"evidence\"},{\"from\":\"proof/causal/committed-effects\",\"to\":\"proof/requestMaterialJoin\",\"fromGroup\":\"evidence\",\"toGroup\":\"material\"},{\"from\":\"proof/requestMaterialJoin\",\"to\":\"proof/publication\",\"fromGroup\":\"material\",\"toGroup\":\"publication\"},{\"from\":\"proof/evaluationSelections\",\"to\":\"proof/consumerIssues\",\"fromGroup\":\"business\",\"toGroup\":\"issues\"},{\"from\":\"proof/currentFacts\",\"to\":\"proof/consumerIssues\",\"fromGroup\":\"facts\",\"toGroup\":\"issues\"},{\"from\":\"proof/verificationFacts\",\"to\":\"proof/consumerIssues\",\"fromGroup\":\"facts\",\"toGroup\":\"issues\"},{\"from\":\"proof/localFacts\",\"to\":\"proof/consumerIssues\",\"fromGroup\":\"facts\",\"toGroup\":\"issues\"},{\"from\":\"proof/inboxFacts\",\"to\":\"proof/consumerIssues\",\"fromGroup\":\"facts\",\"toGroup\":\"issues\"},{\"from\":\"proof/requestMaterials\",\"to\":\"proof/consumerIssues\",\"fromGroup\":\"material\",\"toGroup\":\"issues\"},{\"from\":\"proof/materialStore\",\"to\":\"proof/consumerIssues\",\"fromGroup\":\"material\",\"toGroup\":\"issues\"},{\"from\":\"proof/publicationPolicy\",\"to\":\"proof/consumerIssues\",\"fromGroup\":\"facts\",\"toGroup\":\"issues\"},{\"from\":\"proof/causal/issues\",\"to\":\"proof/consumerIssues\",\"fromGroup\":\"evidence\",\"toGroup\":\"issues\"},{\"from\":\"pack\",\"to\":\"proof/hostPackFacts\",\"fromGroup\":\"inputs\",\"toGroup\":\"host\"},{\"from\":\"proof/causal/committed-effects\",\"to\":\"proof/hostGuard\",\"fromGroup\":\"evidence\",\"toGroup\":\"host\"},{\"from\":\"proof/materialSnapshot\",\"to\":\"proof/hostGuard\",\"fromGroup\":\"material\",\"toGroup\":\"host\"},{\"from\":\"proof/currentFacts\",\"to\":\"proof/hostGuard\",\"fromGroup\":\"facts\",\"toGroup\":\"host\"},{\"from\":\"proof/verificationFacts\",\"to\":\"proof/hostGuard\",\"fromGroup\":\"facts\",\"toGroup\":\"host\"},{\"from\":\"proof/localFacts\",\"to\":\"proof/hostGuard\",\"fromGroup\":\"facts\",\"toGroup\":\"host\"},{\"from\":\"proof/inboxFacts\",\"to\":\"proof/hostGuard\",\"fromGroup\":\"facts\",\"toGroup\":\"host\"},{\"from\":\"proof/causal/quiescence\",\"to\":\"proof/runEndReady\",\"fromGroup\":\"evidence\",\"toGroup\":\"host\"},{\"from\":\"proof/causal/committed-effects\",\"to\":\"proof/runEndReady\",\"fromGroup\":\"evidence\",\"toGroup\":\"host\"},{\"from\":\"proof/localFacts\",\"to\":\"proof/runEndReady\",\"fromGroup\":\"facts\",\"toGroup\":\"host\"}]},\"retrievalBudget\":{\"sameWithinArmAcrossRoles\":true},\"answerVocabulary\":{\"implementationChanged\":[\"changed\",\"unchanged\",\"unknown\"],\"topologyChanged\":[\"changed\",\"unchanged\",\"unknown\"],\"consequence\":[\"authorization-unestablished\",\"current-policy-mismatch\",\"different-for-supplied-input\",\"equivalent-for-supplied-input\",\"external-verification-pending\",\"no-additional-effect-on-replay\",\"normal-first-transport-supported\",\"unknown\",\"unknown-effect-retained\",\"verification-unavailable\"],\"uncertainty\":[\"authorship-unknown\",\"current-policy-not-established\",\"none-for-duplicate-request\",\"physical-outcome-unknown\",\"revision-2-verification-missing\",\"target-authorization-unestablished\",\"unknown\",\"verification-and-authorship-missing\"],\"effectNow\":[\"allow\",\"deny\",\"unknown\"],\"lifecycleEnded\":[\"ended\",\"not-established\",\"unknown\"],\"author\":[\"unknown\",\"authenticated-author\"]}}",
+          "ok": true
+        }
+      },
+      "hash": "f66beaab6b818f82cb470ec59d80f84bd9ab40322835b3e6c0d59ff5e05211f5",
+      "index": 2,
+      "previous": "ddfc08c3ba042e280963283d7af53729340dd743bafeda67ad50677c854a471a",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 3,
+        "input": {
+          "op": "read",
+          "path": "B.json"
+        },
+        "phase": "A",
+        "result": {
+          "error": "path unavailable",
+          "ok": false
+        }
+      },
+      "hash": "3f899ecd96a08bec8f2dfb136d9e94401b978b449079f17aaafaa0037d646beb",
+      "index": 3,
+      "previous": "f66beaab6b818f82cb470ec59d80f84bd9ab40322835b3e6c0d59ff5e05211f5",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 4,
+        "input": {
+          "op": "read",
+          "path": "goldens.json"
+        },
+        "phase": "A",
+        "result": {
+          "error": "path unavailable",
+          "ok": false
+        }
+      },
+      "hash": "3d940efcf1db2fd41b3ae93fe821cefd1f1d2715278e27abe91b636fa3b07820",
+      "index": 4,
+      "previous": "3f899ecd96a08bec8f2dfb136d9e94401b978b449079f17aaafaa0037d646beb",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 5,
+        "input": {
+          "op": "read",
+          "path": "../B.json"
+        },
+        "phase": "A",
+        "result": {
+          "error": "path unavailable",
+          "ok": false
+        }
+      },
+      "hash": "1cd9f49b42c5fbd1c8197682f1be1e0067bb507644557eca2f2fe0c0ccd39669",
+      "index": 5,
+      "previous": "3d940efcf1db2fd41b3ae93fe821cefd1f1d2715278e27abe91b636fa3b07820",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 6,
+        "input": {
+          "command": "not-executed",
+          "op": "exec"
+        },
+        "phase": "A",
+        "result": {
+          "error": "unsupported tool",
+          "ok": false
+        }
+      },
+      "hash": "79a7cdb3663ea5d041afed66084fabed354485980a8bf7a4d0f0e1570960aa9d",
+      "index": 6,
+      "previous": "1cd9f49b42c5fbd1c8197682f1be1e0067bb507644557eca2f2fe0c0ccd39669",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 7,
+        "input": {
+          "op": "sealA"
+        },
+        "phase": "A",
+        "result": {
+          "error": "unsupported tool",
+          "ok": false
+        }
+      },
+      "hash": "c7e03ab8e14740f76d04d782897c5a215b09587c1efaed3c5e8df14341fdc55d",
+      "index": 7,
+      "previous": "79a7cdb3663ea5d041afed66084fabed354485980a8bf7a4d0f0e1570960aa9d",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 8,
+        "input": {
+          "fields": {
+            "consequence": {
+              "citations": [],
+              "value": "unknown"
+            }
+          },
+          "op": "submit",
+          "phase": "A",
+          "scenario": "C1"
+        },
+        "phase": "A",
+        "result": {
+          "answerHash": "8090950f2ad678b0861360c391cf5f14c183da05e3332873939c72ebe995dcf5",
+          "ok": true
+        }
+      },
+      "hash": "f3effdb96828ebffb75173dee90d62399f48645c50cc9899d51a85d13422fb0c",
+      "index": 8,
+      "previous": "c7e03ab8e14740f76d04d782897c5a215b09587c1efaed3c5e8df14341fdc55d",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 9,
+        "input": {
+          "fields": {
+            "consequence": {
+              "citations": [],
+              "value": "unknown"
+            }
+          },
+          "op": "submit",
+          "phase": "A",
+          "scenario": "C2"
+        },
+        "phase": "A",
+        "result": {
+          "answerHash": "8090950f2ad678b0861360c391cf5f14c183da05e3332873939c72ebe995dcf5",
+          "ok": true
+        }
+      },
+      "hash": "6aaaed24a3e81a3cfb6ed5eafb601f1f33a1d17e6961819ffae84fc63c6dbb4f",
+      "index": 9,
+      "previous": "f3effdb96828ebffb75173dee90d62399f48645c50cc9899d51a85d13422fb0c",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 10,
+        "input": {
+          "fields": {
+            "consequence": {
+              "citations": [],
+              "value": "unknown"
+            }
+          },
+          "op": "submit",
+          "phase": "A",
+          "scenario": "C3"
+        },
+        "phase": "A",
+        "result": {
+          "answerHash": "8090950f2ad678b0861360c391cf5f14c183da05e3332873939c72ebe995dcf5",
+          "ok": true
+        }
+      },
+      "hash": "adeae08b3ff2dea46c7a37c0258ce0f67a392d5b2e3aed0a4fc3c1c64faffe7f",
+      "index": 10,
+      "previous": "6aaaed24a3e81a3cfb6ed5eafb601f1f33a1d17e6961819ffae84fc63c6dbb4f",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 11,
+        "input": {
+          "fields": {
+            "consequence": {
+              "citations": [],
+              "value": "unknown"
+            }
+          },
+          "op": "submit",
+          "phase": "A",
+          "scenario": "C4"
+        },
+        "phase": "A",
+        "result": {
+          "answerHash": "8090950f2ad678b0861360c391cf5f14c183da05e3332873939c72ebe995dcf5",
+          "ok": true
+        }
+      },
+      "hash": "34ece3e7aace075f8088dd007e7596a7dbae38bb79a18ec2d3886e08552ce90b",
+      "index": 11,
+      "previous": "adeae08b3ff2dea46c7a37c0258ce0f67a392d5b2e3aed0a4fc3c1c64faffe7f",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 12,
+        "input": {
+          "fields": {
+            "consequence": {
+              "citations": [],
+              "value": "unknown"
+            }
+          },
+          "op": "submit",
+          "phase": "A",
+          "scenario": "C5"
+        },
+        "phase": "A",
+        "result": {
+          "answerHash": "8090950f2ad678b0861360c391cf5f14c183da05e3332873939c72ebe995dcf5",
+          "ok": true
+        }
+      },
+      "hash": "8f38b019e21e594e8490b11ef0cd0d34dd0af3473dec40860b4d4ad599c8e487",
+      "index": 12,
+      "previous": "34ece3e7aace075f8088dd007e7596a7dbae38bb79a18ec2d3886e08552ce90b",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 13,
+        "input": {
+          "fields": {
+            "consequence": {
+              "citations": [],
+              "value": "unknown"
+            }
+          },
+          "op": "submit",
+          "phase": "A",
+          "scenario": "C6"
+        },
+        "phase": "A",
+        "result": {
+          "answerHash": "8090950f2ad678b0861360c391cf5f14c183da05e3332873939c72ebe995dcf5",
+          "ok": true
+        }
+      },
+      "hash": "8477b01222f05d518b84dc59ad4c2ee8114c388d62ff8d1644ca0dcf1d968a36",
+      "index": 13,
+      "previous": "8f38b019e21e594e8490b11ef0cd0d34dd0af3473dec40860b4d4ad599c8e487",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 14,
+        "input": {
+          "fields": {
+            "consequence": {
+              "citations": [],
+              "value": "unknown"
+            }
+          },
+          "op": "submit",
+          "phase": "A",
+          "scenario": "C7"
+        },
+        "phase": "A",
+        "result": {
+          "answerHash": "8090950f2ad678b0861360c391cf5f14c183da05e3332873939c72ebe995dcf5",
+          "ok": true
+        }
+      },
+      "hash": "b3595d6ba47b112d4b8841b36d7ca74abce1b263e13f5880134e49f6c3a80532",
+      "index": 14,
+      "previous": "8477b01222f05d518b84dc59ad4c2ee8114c388d62ff8d1644ca0dcf1d968a36",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 15,
+        "input": {
+          "fields": {
+            "consequence": {
+              "citations": [],
+              "value": "unknown"
+            }
+          },
+          "op": "submit",
+          "phase": "A",
+          "scenario": "C8"
+        },
+        "phase": "A",
+        "result": {
+          "answerHash": "8090950f2ad678b0861360c391cf5f14c183da05e3332873939c72ebe995dcf5",
+          "ok": true
+        }
+      },
+      "hash": "9064991356344978c4993a6d7aeb6a73cbe2992dba12373c63df2881537d8794",
+      "index": 15,
+      "previous": "b3595d6ba47b112d4b8841b36d7ca74abce1b263e13f5880134e49f6c3a80532",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 16,
+        "input": {
+          "fields": {
+            "consequence": {
+              "citations": [],
+              "value": "changed"
+            }
+          },
+          "op": "submit",
+          "phase": "A",
+          "scenario": "C1"
+        },
+        "phase": "A",
+        "result": {
+          "error": "answer already retained",
+          "ok": false
+        }
+      },
+      "hash": "a46534fd8101b4430040bcbaf7bff4c67ef724ea008cbe7892c24d81cda4e550",
+      "index": 16,
+      "previous": "9064991356344978c4993a6d7aeb6a73cbe2992dba12373c63df2881537d8794",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "answers": {
+          "C1": {
+            "fields": {
+              "consequence": {
+                "citations": [],
+                "value": "unknown"
+              }
+            },
+            "status": "submitted"
+          },
+          "C2": {
+            "fields": {
+              "consequence": {
+                "citations": [],
+                "value": "unknown"
+              }
+            },
+            "status": "submitted"
+          },
+          "C3": {
+            "fields": {
+              "consequence": {
+                "citations": [],
+                "value": "unknown"
+              }
+            },
+            "status": "submitted"
+          },
+          "C4": {
+            "fields": {
+              "consequence": {
+                "citations": [],
+                "value": "unknown"
+              }
+            },
+            "status": "submitted"
+          },
+          "C5": {
+            "fields": {
+              "consequence": {
+                "citations": [],
+                "value": "unknown"
+              }
+            },
+            "status": "submitted"
+          },
+          "C6": {
+            "fields": {
+              "consequence": {
+                "citations": [],
+                "value": "unknown"
+              }
+            },
+            "status": "submitted"
+          },
+          "C7": {
+            "fields": {
+              "consequence": {
+                "citations": [],
+                "value": "unknown"
+              }
+            },
+            "status": "submitted"
+          },
+          "C8": {
+            "fields": {
+              "consequence": {
+                "citations": [],
+                "value": "unknown"
+              }
+            },
+            "status": "submitted"
+          }
+        },
+        "hash": "77087a5773f7e46b2da349f83e1c0b3c3da2041459ac416039f6a4fba4c3a41c",
+        "sessionId": "synthetic-isolation-control"
+      },
+      "hash": "be86c0ca007c653798f0ac598d51c1293964fe583c8d4fa471bb89cf082148e7",
+      "index": 17,
+      "previous": "a46534fd8101b4430040bcbaf7bff4c67ef724ea008cbe7892c24d81cda4e550",
+      "type": "seal-A"
+    },
+    {
+      "data": {
+        "call": 17,
+        "input": {
+          "op": "read",
+          "path": "B.json"
+        },
+        "phase": "B",
+        "result": {
+          "content": "{\"arm\":\"G\",\"role\":\"user\",\"stage\":\"B\",\"task\":{\"task\":\"Judge only the supplied evidence at the stated observation boundary. Entry exercises are unavailable until both stages close.\",\"objective\":\"same-facts judgment\",\"minutes\":32},\"entry\":null,\"commonFacts\":[{\"id\":\"F1\",\"subject\":\"numeric policy\",\"predicate\":\"required squared z-score\",\"value\":\"delta²(n−1)/(n*d); n=count, delta=n*x−sum(values), d=n*sum(values²)−sum(values)²\",\"stage\":\"A\",\"refs\":[\"EF1\"]},{\"id\":\"F2\",\"subject\":\"supplied source pairs\",\"predicate\":\"change graph topology or plain method-call relationships\",\"value\":false,\"stage\":\"A\",\"refs\":[\"EF2\"]},{\"id\":\"F3\",\"subject\":\"packet\",\"predicate\":\"contains authenticated author provenance\",\"value\":false,\"stage\":\"A\",\"refs\":[\"EF3\"]},{\"id\":\"F4\",\"subject\":\"packet\",\"predicate\":\"contains host lifecycle-end receipt\",\"value\":false,\"stage\":\"A\",\"refs\":[\"EF4\"]},{\"id\":\"F5\",\"subject\":\"first physical transport at the frozen observation\",\"predicate\":\"permitted by supplied evidence exactly when\",\"value\":\"a current successful final-guard record is supplied for that exact first request\",\"stage\":\"A\",\"refs\":[\"EF5\"]},{\"id\":\"F6\",\"subject\":\"confirmed identical effect\",\"predicate\":\"may be physically submitted a second time\",\"value\":false,\"stage\":\"A\",\"refs\":[\"EF6\"]},{\"id\":\"F7\",\"subject\":\"unknown physical result\",\"predicate\":\"permits normal host end\",\"value\":false,\"stage\":\"A\",\"refs\":[\"EF7\"]},{\"id\":\"F8\",\"subject\":\"implementation changes in this packet\",\"predicate\":\"case IDs\",\"value\":\"C1,C2\",\"stage\":\"A\",\"refs\":[\"EF8\"]}],\"cases\":[{\"id\":\"C1\",\"facts\":[{\"id\":\"C1F1\",\"subject\":\"numeric expression\",\"predicate\":\"replacement\",\"value\":\"delta*delta*(n-1n) → delta*delta*n\",\"stage\":\"A\",\"refs\":[\"EC1F1\"]},{\"id\":\"C1F2\",\"subject\":\"numeric input\",\"predicate\":\"values; current is last\",\"value\":\"[1,2,3]\",\"stage\":\"A\",\"refs\":[\"EC1F2\"]},{\"id\":\"C1F3\",\"subject\":\"target request\",\"predicate\":\"current final-guard record supplied at A\",\"value\":false,\"stage\":\"A\",\"refs\":[\"EC1F3\"]},{\"id\":\"C1F4\",\"subject\":\"independent numerical comparison\",\"predicate\":\"candidate equals required result\",\"value\":false,\"stage\":\"B\",\"refs\":[\"EC1F4\"]}]},{\"id\":\"C2\",\"facts\":[{\"id\":\"C2F1\",\"subject\":\"numeric expression\",\"predicate\":\"replacement\",\"value\":\"delta*delta*(n-1n) → delta*delta*n-delta*delta\",\"stage\":\"A\",\"refs\":[\"EC2F1\"]},{\"id\":\"C2F2\",\"subject\":\"numeric input\",\"predicate\":\"values; current is last\",\"value\":\"[1,2,3]\",\"stage\":\"A\",\"refs\":[\"EC2F2\"]},{\"id\":\"C2F3\",\"subject\":\"target request\",\"predicate\":\"current final-guard record supplied at A\",\"value\":false,\"stage\":\"A\",\"refs\":[\"EC2F3\"]},{\"id\":\"C2F4\",\"subject\":\"first transport\",\"predicate\":\"exact final-guard success at B\",\"value\":true,\"stage\":\"B\",\"refs\":[\"EC2F4\"]}]},{\"id\":\"C3\",\"facts\":[{\"id\":\"C3F1\",\"subject\":\"target occurrence\",\"predicate\":\"revision\",\"value\":2,\"stage\":\"A\",\"refs\":[\"EC3F1\"]},{\"id\":\"C3F2\",\"subject\":\"completed verified occurrence\",\"predicate\":\"revision\",\"value\":1,\"stage\":\"A\",\"refs\":[\"EC3F2\"]},{\"id\":\"C3F3\",\"subject\":\"target occurrence\",\"predicate\":\"has final-guard success\",\"value\":false,\"stage\":\"A\",\"refs\":[\"EC3F3\"]},{\"id\":\"C3F4\",\"subject\":\"target occurrence\",\"predicate\":\"external verification delivered\",\"value\":false,\"stage\":\"B\",\"refs\":[\"EC3F4\"]}]},{\"id\":\"C4\",\"facts\":[{\"id\":\"C4F1\",\"subject\":\"current-policy input\",\"predicate\":\"digest\",\"value\":\"sha256:8863cd47420190bb2323e140d988a7c86edc7f2964d4725cf185bfe0fed7d6dc\",\"stage\":\"A\",\"refs\":[\"EC4F1\"]},{\"id\":\"C4F2\",\"subject\":\"target policy\",\"predicate\":\"digest\",\"value\":\"sha256:9da189cab72d0cb3897ce20b36420fe032d95b9825ddccce546f9a1cd9452940\",\"stage\":\"A\",\"refs\":[\"EC4F2\"]},{\"id\":\"C4F3\",\"subject\":\"target request\",\"predicate\":\"has final-guard success\",\"value\":false,\"stage\":\"A\",\"refs\":[\"EC4F3\"]},{\"id\":\"C4F4\",\"subject\":\"independent policy comparison\",\"predicate\":\"current digest matches target\",\"value\":false,\"stage\":\"B\",\"refs\":[\"EC4F4\"]}]},{\"id\":\"C5\",\"facts\":[{\"id\":\"C5F1\",\"subject\":\"earlier physical effect\",\"predicate\":\"outcome\",\"value\":\"succeeded\",\"stage\":\"A\",\"refs\":[\"EC5F1\"]},{\"id\":\"C5F2\",\"subject\":\"replayed proposal\",\"predicate\":\"identical to earlier proposal\",\"value\":true,\"stage\":\"A\",\"refs\":[\"EC5F2\"]},{\"id\":\"C5F3\",\"subject\":\"earlier physical effect\",\"predicate\":\"submission count\",\"value\":1,\"stage\":\"A\",\"refs\":[\"EC5F3\"]},{\"id\":\"C5F4\",\"subject\":\"exact replay\",\"predicate\":\"additional submissions\",\"value\":0,\"stage\":\"B\",\"refs\":[\"EC5F4\"]}]},{\"id\":\"C6\",\"facts\":[{\"id\":\"C6F1\",\"subject\":\"physical result\",\"predicate\":\"state\",\"value\":\"unknown\",\"stage\":\"A\",\"refs\":[\"EC6F1\"]},{\"id\":\"C6F2\",\"subject\":\"host\",\"predicate\":\"dispatch stopped\",\"value\":true,\"stage\":\"A\",\"refs\":[\"EC6F2\"]},{\"id\":\"C6F3\",\"subject\":\"after display detach\",\"predicate\":\"retained effect records\",\"value\":1,\"stage\":\"A\",\"refs\":[\"EC6F3\"]},{\"id\":\"C6F4\",\"subject\":\"display reconnect\",\"predicate\":\"preserves that record\",\"value\":true,\"stage\":\"B\",\"refs\":[\"EC6F4\"]}]},{\"id\":\"C7\",\"facts\":[{\"id\":\"C7F1\",\"subject\":\"current verification\",\"predicate\":\"supplied\",\"value\":false,\"stage\":\"A\",\"refs\":[\"EC7F1\"]},{\"id\":\"C7F2\",\"subject\":\"target request\",\"predicate\":\"has final-guard success\",\"value\":false,\"stage\":\"A\",\"refs\":[\"EC7F2\"]},{\"id\":\"C7F3\",\"subject\":\"assessment\",\"predicate\":\"produced\",\"value\":true,\"stage\":\"B\",\"refs\":[\"EC7F3\"]}]},{\"id\":\"C8\",\"facts\":[{\"id\":\"C8F1\",\"subject\":\"first physical transport\",\"predicate\":\"exact final-guard success\",\"value\":true,\"stage\":\"A\",\"refs\":[\"EC8F1\"]},{\"id\":\"C8F2\",\"subject\":\"physical transport\",\"predicate\":\"calls before observation\",\"value\":0,\"stage\":\"A\",\"refs\":[\"EC8F2\"]}]}],\"questions\":{\"A\":[\"implementationChanged\",\"topologyChanged\",\"consequence\",\"uncertainty\",\"effectNow\",\"lifecycleEnded\",\"author\"],\"B\":[\"implementationChanged\",\"topologyChanged\",\"consequence\",\"uncertainty\",\"effectNow\",\"lifecycleEnded\",\"author\"],\"instructions\":\"For each field provide {value:string, citations:[fact IDs]}. Also explain possible consequences, independently supported invariants, unknowns, and which additional evidence would permit execution. B: explain what the receipt proves, does not prove, and any remaining obligation. Prediction is distinct from permission now. lifecycleEnded asks whether end is established by supplied evidence, not whether an unobserved end is impossible. B may provide independent checks of the same frozen observation, not necessarily a later runtime moment. Code formulas use the variables defined in F1. Numeric consequences are limited to this input; no whole-program equivalence claim. The uncertainty field asks for the primary remaining support gap: choose the first SUPPORTED label in this priority order: physical-outcome-unknown, current-policy-not-established, revision-2-verification-missing, verification-and-authorship-missing, none-for-duplicate-request, target-authorization-unestablished, authorship-unknown; otherwise unknown. More specific gaps take priority over generic missing authorization; duplicate requests need no new authorization. Author is also answered separately. Plain relationships show static possible calls and function references, not observed runtime calls; injected writer/listener implementations lie outside that source inventory.\"},\"evidence\":{\"EF1\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"numeric policy\",\"predicate\":\"required squared z-score\",\"value\":\"delta²(n−1)/(n*d); n=count, delta=n*x−sum(values), d=n*sum(values²)−sum(values)²\"}},\"EF2\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"supplied source pairs\",\"predicate\":\"change graph topology or plain method-call relationships\",\"value\":false}},\"EF3\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"packet\",\"predicate\":\"contains authenticated author provenance\",\"value\":false}},\"EF4\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"packet\",\"predicate\":\"contains host lifecycle-end receipt\",\"value\":false}},\"EF5\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"first physical transport at the frozen observation\",\"predicate\":\"permitted by supplied evidence exactly when\",\"value\":\"a current successful final-guard record is supplied for that exact first request\"}},\"EF6\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"confirmed identical effect\",\"predicate\":\"may be physically submitted a second time\",\"value\":false}},\"EF7\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"unknown physical result\",\"predicate\":\"permits normal host end\",\"value\":false}},\"EF8\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"implementation changes in this packet\",\"predicate\":\"case IDs\",\"value\":\"C1,C2\"}},\"EC1F1\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"numeric expression\",\"predicate\":\"replacement\",\"value\":\"delta*delta*(n-1n) → delta*delta*n\"}},\"EC1F2\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"numeric input\",\"predicate\":\"values; current is last\",\"value\":\"[1,2,3]\"}},\"EC1F3\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"target request\",\"predicate\":\"current final-guard record supplied at A\",\"value\":false}},\"EC1F4\":{\"kind\":\"receipt\",\"stage\":\"B\",\"content\":{\"subject\":\"independent numerical comparison\",\"predicate\":\"candidate equals required result\",\"value\":false}},\"EC2F1\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"numeric expression\",\"predicate\":\"replacement\",\"value\":\"delta*delta*(n-1n) → delta*delta*n-delta*delta\"}},\"EC2F2\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"numeric input\",\"predicate\":\"values; current is last\",\"value\":\"[1,2,3]\"}},\"EC2F3\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"target request\",\"predicate\":\"current final-guard record supplied at A\",\"value\":false}},\"EC2F4\":{\"kind\":\"receipt\",\"stage\":\"B\",\"content\":{\"subject\":\"first transport\",\"predicate\":\"exact final-guard success at B\",\"value\":true}},\"EC3F1\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"target occurrence\",\"predicate\":\"revision\",\"value\":2}},\"EC3F2\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"completed verified occurrence\",\"predicate\":\"revision\",\"value\":1}},\"EC3F3\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"target occurrence\",\"predicate\":\"has final-guard success\",\"value\":false}},\"EC3F4\":{\"kind\":\"receipt\",\"stage\":\"B\",\"content\":{\"subject\":\"target occurrence\",\"predicate\":\"external verification delivered\",\"value\":false}},\"EC4F1\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"current-policy input\",\"predicate\":\"digest\",\"value\":\"sha256:8863cd47420190bb2323e140d988a7c86edc7f2964d4725cf185bfe0fed7d6dc\"}},\"EC4F2\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"target policy\",\"predicate\":\"digest\",\"value\":\"sha256:9da189cab72d0cb3897ce20b36420fe032d95b9825ddccce546f9a1cd9452940\"}},\"EC4F3\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"target request\",\"predicate\":\"has final-guard success\",\"value\":false}},\"EC4F4\":{\"kind\":\"receipt\",\"stage\":\"B\",\"content\":{\"subject\":\"independent policy comparison\",\"predicate\":\"current digest matches target\",\"value\":false}},\"EC5F1\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"earlier physical effect\",\"predicate\":\"outcome\",\"value\":\"succeeded\"}},\"EC5F2\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"replayed proposal\",\"predicate\":\"identical to earlier proposal\",\"value\":true}},\"EC5F3\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"earlier physical effect\",\"predicate\":\"submission count\",\"value\":1}},\"EC5F4\":{\"kind\":\"receipt\",\"stage\":\"B\",\"content\":{\"subject\":\"exact replay\",\"predicate\":\"additional submissions\",\"value\":0}},\"EC6F1\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"physical result\",\"predicate\":\"state\",\"value\":\"unknown\"}},\"EC6F2\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"host\",\"predicate\":\"dispatch stopped\",\"value\":true}},\"EC6F3\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"after display detach\",\"predicate\":\"retained effect records\",\"value\":1}},\"EC6F4\":{\"kind\":\"receipt\",\"stage\":\"B\",\"content\":{\"subject\":\"display reconnect\",\"predicate\":\"preserves that record\",\"value\":true}},\"EC7F1\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"current verification\",\"predicate\":\"supplied\",\"value\":false}},\"EC7F2\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"target request\",\"predicate\":\"has final-guard success\",\"value\":false}},\"EC7F3\":{\"kind\":\"receipt\",\"stage\":\"B\",\"content\":{\"subject\":\"assessment\",\"predicate\":\"produced\",\"value\":true}},\"EC8F1\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"first physical transport\",\"predicate\":\"exact final-guard success\",\"value\":true}},\"EC8F2\":{\"kind\":\"trace\",\"stage\":\"A\",\"content\":{\"subject\":\"physical transport\",\"predicate\":\"calls before observation\",\"value\":0}}},\"relations\":{\"kind\":\"graph\",\"nodeCount\":62,\"displayUnits\":13,\"nodes\":[{\"id\":\"pack\",\"factory\":\"node\"},{\"id\":\"arrivals\",\"factory\":\"node\"},{\"id\":\"current\",\"factory\":\"node\"},{\"id\":\"verification\",\"factory\":\"node\"},{\"id\":\"local\",\"factory\":\"node\"},{\"id\":\"proof/startup\",\"factory\":\"graphConstructionStartup\"},{\"id\":\"proof/hostFacts\",\"factory\":\"offlineSpendingHostFacts\"},{\"id\":\"proof/evaluationSelections\",\"factory\":\"spending/evaluationSelections\"},{\"id\":\"proof/transaction\",\"factory\":\"spending/transaction\"},{\"id\":\"proof/vendorStats\",\"factory\":\"spending/vendorStats\"},{\"id\":\"proof/userProfile\",\"factory\":\"spending/userProfile\"},{\"id\":\"proof/policy\",\"factory\":\"spending/policy\"},{\"id\":\"proof/anomalyScore\",\"factory\":\"spending/anomalyScore\"},{\"id\":\"proof/thresholdGate\",\"factory\":\"spending/thresholdGate\"},{\"id\":\"proof/reasonFactors\",\"factory\":\"spending/reasonFactors\"},{\"id\":\"proof/alertMessage\",\"factory\":\"spending/alertMessage\"},{\"id\":\"proof/assessment\",\"factory\":\"spending/assessment\"},{\"id\":\"proof/requestMaterials\",\"factory\":\"spending/requestMaterials\"},{\"id\":\"proof/materialStore\",\"factory\":\"spending/materialStore\"},{\"id\":\"proof/materialSnapshot\",\"factory\":\"spending/materialSnapshot\"},{\"id\":\"proof/effectProposals\",\"factory\":\"spending/effectProposals\"},{\"id\":\"proof/currentFacts\",\"factory\":\"spending/currentFacts\"},{\"id\":\"proof/verificationFacts\",\"factory\":\"spending/verificationFacts\"},{\"id\":\"proof/localFacts\",\"factory\":\"spending/localFacts\"},{\"id\":\"proof/inboxFacts\",\"factory\":\"spending/inboxFacts\"},{\"id\":\"proof/publicationPolicy\",\"factory\":\"spending/publicationPolicy\"},{\"id\":\"proof/occurrences\",\"factory\":\"spending/occurrences\"},{\"id\":\"proof/occurrenceAdmissions\",\"factory\":\"spending/occurrenceAdmissions\"},{\"id\":\"proof/branchTerminals\",\"factory\":\"spending/branchTerminals\"},{\"id\":\"proof/effectAdmissions\",\"factory\":\"spending/effectAdmissions\"},{\"id\":\"proof/effectOutcomes\",\"factory\":\"spending/effectOutcomes\"},{\"id\":\"proof/evidence\",\"factory\":\"spending/evidence\"},{\"id\":\"proof/watermarks\",\"factory\":\"spending/watermarks\"},{\"id\":\"proof/causal/input/occurrences\",\"factory\":\"causalOccurrenceInputLane\"},{\"id\":\"proof/causal/input/admissions\",\"factory\":\"causalOccurrenceInputLane\"},{\"id\":\"proof/causal/input/branch-terminals\",\"factory\":\"causalOccurrenceInputLane\"},{\"id\":\"proof/causal/input/effect-proposals\",\"factory\":\"causalOccurrenceInputLane\"},{\"id\":\"proof/causal/input/effect-admissions\",\"factory\":\"causalOccurrenceInputLane\"},{\"id\":\"proof/causal/input/effect-outcomes\",\"factory\":\"causalOccurrenceInputLane\"},{\"id\":\"proof/causal/input/evidence\",\"factory\":\"causalOccurrenceInputLane\"},{\"id\":\"proof/causal/input/watermarks\",\"factory\":\"causalOccurrenceInputLane\"},{\"id\":\"proof/causal/arrivals\",\"factory\":\"merge\"},{\"id\":\"proof/causal/authority\",\"factory\":\"causalOccurrenceAuthority\"},{\"id\":\"proof/causal/release-candidates\",\"factory\":\"causalOccurrenceFactProjection\"},{\"id\":\"proof/causal/release-port\",\"factory\":\"causalOccurrenceQuietReleasePort\"},{\"id\":\"proof/causal/released\",\"factory\":\"causalOccurrenceReleased\"},{\"id\":\"proof/causal/release-events\",\"factory\":\"merge\"},{\"id\":\"proof/causal/release-controller\",\"factory\":\"causalOccurrenceReleaseController\"},{\"id\":\"proof/causal/currentness\",\"factory\":\"causalOccurrenceFactProjection\"},{\"id\":\"proof/causal/terminals\",\"factory\":\"causalOccurrenceFactProjection\"},{\"id\":\"proof/causal/conservation\",\"factory\":\"causalOccurrenceFactProjection\"},{\"id\":\"proof/causal/coverage\",\"factory\":\"causalOccurrenceFactProjection\"},{\"id\":\"proof/causal/quiescence\",\"factory\":\"causalOccurrenceFactProjection\"},{\"id\":\"proof/causal/issues\",\"factory\":\"causalOccurrenceFactProjection\"},{\"id\":\"proof/causal/committed-effects\",\"factory\":\"causalCommittedEffectsProjection\"},{\"id\":\"proof/causal/causal-quiescence\",\"factory\":\"causalLifecycleQuiescence\"},{\"id\":\"proof/requestMaterialJoin\",\"factory\":\"spendingRequestMaterialJoin\"},{\"id\":\"proof/publication\",\"factory\":\"spendingPublication\"},{\"id\":\"proof/consumerIssues\",\"factory\":\"spending/consumerIssues\"},{\"id\":\"proof/hostPackFacts\",\"factory\":\"offlineSpendingHostPackFacts\"},{\"id\":\"proof/hostGuard\",\"factory\":\"offlineSpendingHostGuard\"},{\"id\":\"proof/runEndReady\",\"factory\":\"offlineSpendingRunEndReady\"}],\"edges\":[{\"from\":\"pack\",\"to\":\"proof/evaluationSelections\"},{\"from\":\"arrivals\",\"to\":\"proof/evaluationSelections\"},{\"from\":\"proof/evaluationSelections\",\"to\":\"proof/transaction\"},{\"from\":\"proof/evaluationSelections\",\"to\":\"proof/vendorStats\"},{\"from\":\"proof/evaluationSelections\",\"to\":\"proof/userProfile\"},{\"from\":\"proof/evaluationSelections\",\"to\":\"proof/policy\"},{\"from\":\"proof/transaction\",\"to\":\"proof/anomalyScore\"},{\"from\":\"proof/vendorStats\",\"to\":\"proof/anomalyScore\"},{\"from\":\"proof/userProfile\",\"to\":\"proof/anomalyScore\"},{\"from\":\"proof/anomalyScore\",\"to\":\"proof/thresholdGate\"},{\"from\":\"proof/policy\",\"to\":\"proof/thresholdGate\"},{\"from\":\"proof/thresholdGate\",\"to\":\"proof/reasonFactors\"},{\"from\":\"proof/policy\",\"to\":\"proof/reasonFactors\"},{\"from\":\"proof/reasonFactors\",\"to\":\"proof/alertMessage\"},{\"from\":\"proof/thresholdGate\",\"to\":\"proof/assessment\"},{\"from\":\"proof/reasonFactors\",\"to\":\"proof/assessment\"},{\"from\":\"proof/alertMessage\",\"to\":\"proof/assessment\"},{\"from\":\"proof/evaluationSelections\",\"to\":\"proof/requestMaterials\"},{\"from\":\"proof/thresholdGate\",\"to\":\"proof/requestMaterials\"},{\"from\":\"proof/alertMessage\",\"to\":\"proof/requestMaterials\"},{\"from\":\"proof/requestMaterials\",\"to\":\"proof/materialStore\"},{\"from\":\"proof/materialStore\",\"to\":\"proof/materialSnapshot\"},{\"from\":\"proof/materialStore\",\"to\":\"proof/effectProposals\"},{\"from\":\"current\",\"to\":\"proof/currentFacts\"},{\"from\":\"verification\",\"to\":\"proof/verificationFacts\"},{\"from\":\"local\",\"to\":\"proof/localFacts\"},{\"from\":\"proof/hostFacts\",\"to\":\"proof/inboxFacts\"},{\"from\":\"proof/evaluationSelections\",\"to\":\"proof/publicationPolicy\"},{\"from\":\"proof/thresholdGate\",\"to\":\"proof/publicationPolicy\"},{\"from\":\"proof/materialStore\",\"to\":\"proof/publicationPolicy\"},{\"from\":\"proof/currentFacts\",\"to\":\"proof/publicationPolicy\"},{\"from\":\"proof/verificationFacts\",\"to\":\"proof/publicationPolicy\"},{\"from\":\"proof/localFacts\",\"to\":\"proof/publicationPolicy\"},{\"from\":\"proof/inboxFacts\",\"to\":\"proof/publicationPolicy\"},{\"from\":\"proof/evaluationSelections\",\"to\":\"proof/occurrences\"},{\"from\":\"proof/evaluationSelections\",\"to\":\"proof/occurrenceAdmissions\"},{\"from\":\"proof/currentFacts\",\"to\":\"proof/occurrenceAdmissions\"},{\"from\":\"proof/assessment\",\"to\":\"proof/branchTerminals\"},{\"from\":\"proof/alertMessage\",\"to\":\"proof/branchTerminals\"},{\"from\":\"proof/publicationPolicy\",\"to\":\"proof/branchTerminals\"},{\"from\":\"proof/publicationPolicy\",\"to\":\"proof/effectAdmissions\"},{\"from\":\"proof/inboxFacts\",\"to\":\"proof/effectOutcomes\"},{\"from\":\"proof/evaluationSelections\",\"to\":\"proof/evidence\"},{\"from\":\"proof/materialStore\",\"to\":\"proof/evidence\"},{\"from\":\"proof/verificationFacts\",\"to\":\"proof/evidence\"},{\"from\":\"proof/currentFacts\",\"to\":\"proof/watermarks\"},{\"from\":\"proof/occurrences\",\"to\":\"proof/causal/input/occurrences\"},{\"from\":\"proof/occurrenceAdmissions\",\"to\":\"proof/causal/input/admissions\"},{\"from\":\"proof/branchTerminals\",\"to\":\"proof/causal/input/branch-terminals\"},{\"from\":\"proof/effectProposals\",\"to\":\"proof/causal/input/effect-proposals\"},{\"from\":\"proof/effectAdmissions\",\"to\":\"proof/causal/input/effect-admissions\"},{\"from\":\"proof/effectOutcomes\",\"to\":\"proof/causal/input/effect-outcomes\"},{\"from\":\"proof/evidence\",\"to\":\"proof/causal/input/evidence\"},{\"from\":\"proof/watermarks\",\"to\":\"proof/causal/input/watermarks\"},{\"from\":\"proof/causal/input/occurrences\",\"to\":\"proof/causal/arrivals\"},{\"from\":\"proof/causal/input/admissions\",\"to\":\"proof/causal/arrivals\"},{\"from\":\"proof/causal/input/branch-terminals\",\"to\":\"proof/causal/arrivals\"},{\"from\":\"proof/causal/input/effect-proposals\",\"to\":\"proof/causal/arrivals\"},{\"from\":\"proof/causal/input/effect-admissions\",\"to\":\"proof/causal/arrivals\"},{\"from\":\"proof/causal/input/effect-outcomes\",\"to\":\"proof/causal/arrivals\"},{\"from\":\"proof/causal/input/evidence\",\"to\":\"proof/causal/arrivals\"},{\"from\":\"proof/causal/input/watermarks\",\"to\":\"proof/causal/arrivals\"},{\"from\":\"proof/causal/arrivals\",\"to\":\"proof/causal/authority\"},{\"from\":\"proof/causal/authority\",\"to\":\"proof/causal/release-candidates\"},{\"from\":\"proof/causal/release-candidates\",\"to\":\"proof/causal/release-port\"},{\"from\":\"proof/causal/release-port\",\"to\":\"proof/causal/released\"},{\"from\":\"proof/causal/released\",\"to\":\"proof/causal/release-events\"},{\"from\":\"proof/causal/release-candidates\",\"to\":\"proof/causal/release-events\"},{\"from\":\"proof/causal/release-events\",\"to\":\"proof/causal/release-controller\"},{\"from\":\"proof/causal/authority\",\"to\":\"proof/causal/currentness\"},{\"from\":\"proof/causal/authority\",\"to\":\"proof/causal/terminals\"},{\"from\":\"proof/causal/authority\",\"to\":\"proof/causal/conservation\"},{\"from\":\"proof/causal/authority\",\"to\":\"proof/causal/coverage\"},{\"from\":\"proof/causal/authority\",\"to\":\"proof/causal/quiescence\"},{\"from\":\"proof/causal/authority\",\"to\":\"proof/causal/issues\"},{\"from\":\"proof/causal/authority\",\"to\":\"proof/causal/committed-effects\"},{\"from\":\"proof/causal/quiescence\",\"to\":\"proof/causal/causal-quiescence\"},{\"from\":\"proof/causal/committed-effects\",\"to\":\"proof/requestMaterialJoin\"},{\"from\":\"proof/materialSnapshot\",\"to\":\"proof/requestMaterialJoin\"},{\"from\":\"proof/requestMaterialJoin\",\"to\":\"proof/publication\"},{\"from\":\"proof/evaluationSelections\",\"to\":\"proof/consumerIssues\"},{\"from\":\"proof/currentFacts\",\"to\":\"proof/consumerIssues\"},{\"from\":\"proof/verificationFacts\",\"to\":\"proof/consumerIssues\"},{\"from\":\"proof/localFacts\",\"to\":\"proof/consumerIssues\"},{\"from\":\"proof/inboxFacts\",\"to\":\"proof/consumerIssues\"},{\"from\":\"proof/requestMaterials\",\"to\":\"proof/consumerIssues\"},{\"from\":\"proof/materialStore\",\"to\":\"proof/consumerIssues\"},{\"from\":\"proof/publicationPolicy\",\"to\":\"proof/consumerIssues\"},{\"from\":\"proof/causal/issues\",\"to\":\"proof/consumerIssues\"},{\"from\":\"pack\",\"to\":\"proof/hostPackFacts\"},{\"from\":\"proof/causal/committed-effects\",\"to\":\"proof/hostGuard\"},{\"from\":\"proof/materialSnapshot\",\"to\":\"proof/hostGuard\"},{\"from\":\"proof/currentFacts\",\"to\":\"proof/hostGuard\"},{\"from\":\"proof/verificationFacts\",\"to\":\"proof/hostGuard\"},{\"from\":\"proof/localFacts\",\"to\":\"proof/hostGuard\"},{\"from\":\"proof/inboxFacts\",\"to\":\"proof/hostGuard\"},{\"from\":\"proof/hostPackFacts\",\"to\":\"proof/hostGuard\"},{\"from\":\"proof/causal/quiescence\",\"to\":\"proof/runEndReady\"},{\"from\":\"proof/causal/committed-effects\",\"to\":\"proof/runEndReady\"},{\"from\":\"proof/localFacts\",\"to\":\"proof/runEndReady\"},{\"from\":\"proof/hostPackFacts\",\"to\":\"proof/runEndReady\"}],\"groups\":[{\"id\":\"inputs\",\"members\":[\"pack\",\"arrivals\",\"current\",\"verification\",\"local\"],\"internalEdges\":[]},{\"id\":\"startup\",\"members\":[\"proof/startup\"],\"internalEdges\":[]},{\"id\":\"business\",\"members\":[\"proof/evaluationSelections\",\"proof/transaction\",\"proof/vendorStats\",\"proof/userProfile\",\"proof/policy\",\"proof/anomalyScore\",\"proof/thresholdGate\",\"proof/reasonFactors\",\"proof/alertMessage\",\"proof/assessment\"],\"internalEdges\":[{\"from\":\"proof/evaluationSelections\",\"to\":\"proof/transaction\"},{\"from\":\"proof/evaluationSelections\",\"to\":\"proof/vendorStats\"},{\"from\":\"proof/evaluationSelections\",\"to\":\"proof/userProfile\"},{\"from\":\"proof/evaluationSelections\",\"to\":\"proof/policy\"},{\"from\":\"proof/transaction\",\"to\":\"proof/anomalyScore\"},{\"from\":\"proof/vendorStats\",\"to\":\"proof/anomalyScore\"},{\"from\":\"proof/userProfile\",\"to\":\"proof/anomalyScore\"},{\"from\":\"proof/anomalyScore\",\"to\":\"proof/thresholdGate\"},{\"from\":\"proof/policy\",\"to\":\"proof/thresholdGate\"},{\"from\":\"proof/thresholdGate\",\"to\":\"proof/reasonFactors\"},{\"from\":\"proof/policy\",\"to\":\"proof/reasonFactors\"},{\"from\":\"proof/reasonFactors\",\"to\":\"proof/alertMessage\"},{\"from\":\"proof/thresholdGate\",\"to\":\"proof/assessment\"},{\"from\":\"proof/reasonFactors\",\"to\":\"proof/assessment\"},{\"from\":\"proof/alertMessage\",\"to\":\"proof/assessment\"}]},{\"id\":\"material\",\"members\":[\"proof/requestMaterials\",\"proof/materialStore\",\"proof/materialSnapshot\",\"proof/effectProposals\",\"proof/requestMaterialJoin\"],\"internalEdges\":[{\"from\":\"proof/requestMaterials\",\"to\":\"proof/materialStore\"},{\"from\":\"proof/materialStore\",\"to\":\"proof/materialSnapshot\"},{\"from\":\"proof/materialStore\",\"to\":\"proof/effectProposals\"},{\"from\":\"proof/materialSnapshot\",\"to\":\"proof/requestMaterialJoin\"}]},{\"id\":\"facts\",\"members\":[\"proof/currentFacts\",\"proof/verificationFacts\",\"proof/localFacts\",\"proof/inboxFacts\",\"proof/publicationPolicy\"],\"internalEdges\":[{\"from\":\"proof/currentFacts\",\"to\":\"proof/publicationPolicy\"},{\"from\":\"proof/verificationFacts\",\"to\":\"proof/publicationPolicy\"},{\"from\":\"proof/localFacts\",\"to\":\"proof/publicationPolicy\"},{\"from\":\"proof/inboxFacts\",\"to\":\"proof/publicationPolicy\"}]},{\"id\":\"observations\",\"members\":[\"proof/occurrences\",\"proof/occurrenceAdmissions\",\"proof/branchTerminals\",\"proof/effectAdmissions\",\"proof/effectOutcomes\",\"proof/evidence\",\"proof/watermarks\"],\"internalEdges\":[]},{\"id\":\"lanes\",\"members\":[\"proof/causal/input/occurrences\",\"proof/causal/input/admissions\",\"proof/causal/input/branch-terminals\",\"proof/causal/input/effect-proposals\",\"proof/causal/input/effect-admissions\",\"proof/causal/input/effect-outcomes\",\"proof/causal/input/evidence\",\"proof/causal/input/watermarks\",\"proof/causal/arrivals\"],\"internalEdges\":[{\"from\":\"proof/causal/input/occurrences\",\"to\":\"proof/causal/arrivals\"},{\"from\":\"proof/causal/input/admissions\",\"to\":\"proof/causal/arrivals\"},{\"from\":\"proof/causal/input/branch-terminals\",\"to\":\"proof/causal/arrivals\"},{\"from\":\"proof/causal/input/effect-proposals\",\"to\":\"proof/causal/arrivals\"},{\"from\":\"proof/causal/input/effect-admissions\",\"to\":\"proof/causal/arrivals\"},{\"from\":\"proof/causal/input/effect-outcomes\",\"to\":\"proof/causal/arrivals\"},{\"from\":\"proof/causal/input/evidence\",\"to\":\"proof/causal/arrivals\"},{\"from\":\"proof/causal/input/watermarks\",\"to\":\"proof/causal/arrivals\"}]},{\"id\":\"authority\",\"members\":[\"proof/causal/authority\"],\"internalEdges\":[]},{\"id\":\"release\",\"members\":[\"proof/causal/release-candidates\",\"proof/causal/release-port\",\"proof/causal/released\",\"proof/causal/release-events\",\"proof/causal/release-controller\"],\"internalEdges\":[{\"from\":\"proof/causal/release-candidates\",\"to\":\"proof/causal/release-port\"},{\"from\":\"proof/causal/release-port\",\"to\":\"proof/causal/released\"},{\"from\":\"proof/causal/released\",\"to\":\"proof/causal/release-events\"},{\"from\":\"proof/causal/release-candidates\",\"to\":\"proof/causal/release-events\"},{\"from\":\"proof/causal/release-events\",\"to\":\"proof/causal/release-controller\"}]},{\"id\":\"evidence\",\"members\":[\"proof/causal/currentness\",\"proof/causal/terminals\",\"proof/causal/conservation\",\"proof/causal/coverage\",\"proof/causal/quiescence\",\"proof/causal/issues\",\"proof/causal/committed-effects\",\"proof/causal/causal-quiescence\"],\"internalEdges\":[{\"from\":\"proof/causal/quiescence\",\"to\":\"proof/causal/causal-quiescence\"}]},{\"id\":\"publication\",\"members\":[\"proof/publication\"],\"internalEdges\":[]},{\"id\":\"issues\",\"members\":[\"proof/consumerIssues\"],\"internalEdges\":[]},{\"id\":\"host\",\"members\":[\"proof/hostFacts\",\"proof/hostPackFacts\",\"proof/hostGuard\",\"proof/runEndReady\"],\"internalEdges\":[{\"from\":\"proof/hostPackFacts\",\"to\":\"proof/hostGuard\"},{\"from\":\"proof/hostPackFacts\",\"to\":\"proof/runEndReady\"}]}],\"crossEdges\":[{\"from\":\"pack\",\"to\":\"proof/evaluationSelections\",\"fromGroup\":\"inputs\",\"toGroup\":\"business\"},{\"from\":\"arrivals\",\"to\":\"proof/evaluationSelections\",\"fromGroup\":\"inputs\",\"toGroup\":\"business\"},{\"from\":\"proof/evaluationSelections\",\"to\":\"proof/requestMaterials\",\"fromGroup\":\"business\",\"toGroup\":\"material\"},{\"from\":\"proof/thresholdGate\",\"to\":\"proof/requestMaterials\",\"fromGroup\":\"business\",\"toGroup\":\"material\"},{\"from\":\"proof/alertMessage\",\"to\":\"proof/requestMaterials\",\"fromGroup\":\"business\",\"toGroup\":\"material\"},{\"from\":\"current\",\"to\":\"proof/currentFacts\",\"fromGroup\":\"inputs\",\"toGroup\":\"facts\"},{\"from\":\"verification\",\"to\":\"proof/verificationFacts\",\"fromGroup\":\"inputs\",\"toGroup\":\"facts\"},{\"from\":\"local\",\"to\":\"proof/localFacts\",\"fromGroup\":\"inputs\",\"toGroup\":\"facts\"},{\"from\":\"proof/hostFacts\",\"to\":\"proof/inboxFacts\",\"fromGroup\":\"host\",\"toGroup\":\"facts\"},{\"from\":\"proof/evaluationSelections\",\"to\":\"proof/publicationPolicy\",\"fromGroup\":\"business\",\"toGroup\":\"facts\"},{\"from\":\"proof/thresholdGate\",\"to\":\"proof/publicationPolicy\",\"fromGroup\":\"business\",\"toGroup\":\"facts\"},{\"from\":\"proof/materialStore\",\"to\":\"proof/publicationPolicy\",\"fromGroup\":\"material\",\"toGroup\":\"facts\"},{\"from\":\"proof/evaluationSelections\",\"to\":\"proof/occurrences\",\"fromGroup\":\"business\",\"toGroup\":\"observations\"},{\"from\":\"proof/evaluationSelections\",\"to\":\"proof/occurrenceAdmissions\",\"fromGroup\":\"business\",\"toGroup\":\"observations\"},{\"from\":\"proof/currentFacts\",\"to\":\"proof/occurrenceAdmissions\",\"fromGroup\":\"facts\",\"toGroup\":\"observations\"},{\"from\":\"proof/assessment\",\"to\":\"proof/branchTerminals\",\"fromGroup\":\"business\",\"toGroup\":\"observations\"},{\"from\":\"proof/alertMessage\",\"to\":\"proof/branchTerminals\",\"fromGroup\":\"business\",\"toGroup\":\"observations\"},{\"from\":\"proof/publicationPolicy\",\"to\":\"proof/branchTerminals\",\"fromGroup\":\"facts\",\"toGroup\":\"observations\"},{\"from\":\"proof/publicationPolicy\",\"to\":\"proof/effectAdmissions\",\"fromGroup\":\"facts\",\"toGroup\":\"observations\"},{\"from\":\"proof/inboxFacts\",\"to\":\"proof/effectOutcomes\",\"fromGroup\":\"facts\",\"toGroup\":\"observations\"},{\"from\":\"proof/evaluationSelections\",\"to\":\"proof/evidence\",\"fromGroup\":\"business\",\"toGroup\":\"observations\"},{\"from\":\"proof/materialStore\",\"to\":\"proof/evidence\",\"fromGroup\":\"material\",\"toGroup\":\"observations\"},{\"from\":\"proof/verificationFacts\",\"to\":\"proof/evidence\",\"fromGroup\":\"facts\",\"toGroup\":\"observations\"},{\"from\":\"proof/currentFacts\",\"to\":\"proof/watermarks\",\"fromGroup\":\"facts\",\"toGroup\":\"observations\"},{\"from\":\"proof/occurrences\",\"to\":\"proof/causal/input/occurrences\",\"fromGroup\":\"observations\",\"toGroup\":\"lanes\"},{\"from\":\"proof/occurrenceAdmissions\",\"to\":\"proof/causal/input/admissions\",\"fromGroup\":\"observations\",\"toGroup\":\"lanes\"},{\"from\":\"proof/branchTerminals\",\"to\":\"proof/causal/input/branch-terminals\",\"fromGroup\":\"observations\",\"toGroup\":\"lanes\"},{\"from\":\"proof/effectProposals\",\"to\":\"proof/causal/input/effect-proposals\",\"fromGroup\":\"material\",\"toGroup\":\"lanes\"},{\"from\":\"proof/effectAdmissions\",\"to\":\"proof/causal/input/effect-admissions\",\"fromGroup\":\"observations\",\"toGroup\":\"lanes\"},{\"from\":\"proof/effectOutcomes\",\"to\":\"proof/causal/input/effect-outcomes\",\"fromGroup\":\"observations\",\"toGroup\":\"lanes\"},{\"from\":\"proof/evidence\",\"to\":\"proof/causal/input/evidence\",\"fromGroup\":\"observations\",\"toGroup\":\"lanes\"},{\"from\":\"proof/watermarks\",\"to\":\"proof/causal/input/watermarks\",\"fromGroup\":\"observations\",\"toGroup\":\"lanes\"},{\"from\":\"proof/causal/arrivals\",\"to\":\"proof/causal/authority\",\"fromGroup\":\"lanes\",\"toGroup\":\"authority\"},{\"from\":\"proof/causal/authority\",\"to\":\"proof/causal/release-candidates\",\"fromGroup\":\"authority\",\"toGroup\":\"release\"},{\"from\":\"proof/causal/authority\",\"to\":\"proof/causal/currentness\",\"fromGroup\":\"authority\",\"toGroup\":\"evidence\"},{\"from\":\"proof/causal/authority\",\"to\":\"proof/causal/terminals\",\"fromGroup\":\"authority\",\"toGroup\":\"evidence\"},{\"from\":\"proof/causal/authority\",\"to\":\"proof/causal/conservation\",\"fromGroup\":\"authority\",\"toGroup\":\"evidence\"},{\"from\":\"proof/causal/authority\",\"to\":\"proof/causal/coverage\",\"fromGroup\":\"authority\",\"toGroup\":\"evidence\"},{\"from\":\"proof/causal/authority\",\"to\":\"proof/causal/quiescence\",\"fromGroup\":\"authority\",\"toGroup\":\"evidence\"},{\"from\":\"proof/causal/authority\",\"to\":\"proof/causal/issues\",\"fromGroup\":\"authority\",\"toGroup\":\"evidence\"},{\"from\":\"proof/causal/authority\",\"to\":\"proof/causal/committed-effects\",\"fromGroup\":\"authority\",\"toGroup\":\"evidence\"},{\"from\":\"proof/causal/committed-effects\",\"to\":\"proof/requestMaterialJoin\",\"fromGroup\":\"evidence\",\"toGroup\":\"material\"},{\"from\":\"proof/requestMaterialJoin\",\"to\":\"proof/publication\",\"fromGroup\":\"material\",\"toGroup\":\"publication\"},{\"from\":\"proof/evaluationSelections\",\"to\":\"proof/consumerIssues\",\"fromGroup\":\"business\",\"toGroup\":\"issues\"},{\"from\":\"proof/currentFacts\",\"to\":\"proof/consumerIssues\",\"fromGroup\":\"facts\",\"toGroup\":\"issues\"},{\"from\":\"proof/verificationFacts\",\"to\":\"proof/consumerIssues\",\"fromGroup\":\"facts\",\"toGroup\":\"issues\"},{\"from\":\"proof/localFacts\",\"to\":\"proof/consumerIssues\",\"fromGroup\":\"facts\",\"toGroup\":\"issues\"},{\"from\":\"proof/inboxFacts\",\"to\":\"proof/consumerIssues\",\"fromGroup\":\"facts\",\"toGroup\":\"issues\"},{\"from\":\"proof/requestMaterials\",\"to\":\"proof/consumerIssues\",\"fromGroup\":\"material\",\"toGroup\":\"issues\"},{\"from\":\"proof/materialStore\",\"to\":\"proof/consumerIssues\",\"fromGroup\":\"material\",\"toGroup\":\"issues\"},{\"from\":\"proof/publicationPolicy\",\"to\":\"proof/consumerIssues\",\"fromGroup\":\"facts\",\"toGroup\":\"issues\"},{\"from\":\"proof/causal/issues\",\"to\":\"proof/consumerIssues\",\"fromGroup\":\"evidence\",\"toGroup\":\"issues\"},{\"from\":\"pack\",\"to\":\"proof/hostPackFacts\",\"fromGroup\":\"inputs\",\"toGroup\":\"host\"},{\"from\":\"proof/causal/committed-effects\",\"to\":\"proof/hostGuard\",\"fromGroup\":\"evidence\",\"toGroup\":\"host\"},{\"from\":\"proof/materialSnapshot\",\"to\":\"proof/hostGuard\",\"fromGroup\":\"material\",\"toGroup\":\"host\"},{\"from\":\"proof/currentFacts\",\"to\":\"proof/hostGuard\",\"fromGroup\":\"facts\",\"toGroup\":\"host\"},{\"from\":\"proof/verificationFacts\",\"to\":\"proof/hostGuard\",\"fromGroup\":\"facts\",\"toGroup\":\"host\"},{\"from\":\"proof/localFacts\",\"to\":\"proof/hostGuard\",\"fromGroup\":\"facts\",\"toGroup\":\"host\"},{\"from\":\"proof/inboxFacts\",\"to\":\"proof/hostGuard\",\"fromGroup\":\"facts\",\"toGroup\":\"host\"},{\"from\":\"proof/causal/quiescence\",\"to\":\"proof/runEndReady\",\"fromGroup\":\"evidence\",\"toGroup\":\"host\"},{\"from\":\"proof/causal/committed-effects\",\"to\":\"proof/runEndReady\",\"fromGroup\":\"evidence\",\"toGroup\":\"host\"},{\"from\":\"proof/localFacts\",\"to\":\"proof/runEndReady\",\"fromGroup\":\"facts\",\"toGroup\":\"host\"}]},\"retrievalBudget\":{\"sameWithinArmAcrossRoles\":true},\"answerVocabulary\":{\"implementationChanged\":[\"changed\",\"unchanged\",\"unknown\"],\"topologyChanged\":[\"changed\",\"unchanged\",\"unknown\"],\"consequence\":[\"authorization-unestablished\",\"current-policy-mismatch\",\"different-for-supplied-input\",\"equivalent-for-supplied-input\",\"external-verification-pending\",\"no-additional-effect-on-replay\",\"normal-first-transport-supported\",\"unknown\",\"unknown-effect-retained\",\"verification-unavailable\"],\"uncertainty\":[\"authorship-unknown\",\"current-policy-not-established\",\"none-for-duplicate-request\",\"physical-outcome-unknown\",\"revision-2-verification-missing\",\"target-authorization-unestablished\",\"unknown\",\"verification-and-authorship-missing\"],\"effectNow\":[\"allow\",\"deny\",\"unknown\"],\"lifecycleEnded\":[\"ended\",\"not-established\",\"unknown\"],\"author\":[\"unknown\",\"authenticated-author\"]}}",
+          "ok": true
+        }
+      },
+      "hash": "b3a3d71319d88a9e0498a3f8550039e6a64c78f08f647951be8361b23ebebc90",
+      "index": 18,
+      "previous": "be86c0ca007c653798f0ac598d51c1293964fe583c8d4fa471bb89cf082148e7",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 18,
+        "input": {
+          "fields": {
+            "consequence": {
+              "citations": [],
+              "value": "unknown"
+            }
+          },
+          "op": "submit",
+          "phase": "A",
+          "scenario": "C2"
+        },
+        "phase": "B",
+        "result": {
+          "error": "invalid phase or scenario",
+          "ok": false
+        }
+      },
+      "hash": "88f388c026a5b08f39746ed34bf0a3e97c7654d3e226636d14f48363ea6ff4e4",
+      "index": 19,
+      "previous": "b3a3d71319d88a9e0498a3f8550039e6a64c78f08f647951be8361b23ebebc90",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 19,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "b8f797b225abac1e06298b75bf9e5bd6649cc8ad893b754a4be7240ff49e1e93",
+      "index": 20,
+      "previous": "88f388c026a5b08f39746ed34bf0a3e97c7654d3e226636d14f48363ea6ff4e4",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 20,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "e485bf4d8210f1e3990280a7d82c2a90de252aea0937c5f197ea4563acd03c94",
+      "index": 21,
+      "previous": "b8f797b225abac1e06298b75bf9e5bd6649cc8ad893b754a4be7240ff49e1e93",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 21,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "634dc75e0952a9af9b63abd19956503ad1c33148ab6f039d545b45b34e12924f",
+      "index": 22,
+      "previous": "e485bf4d8210f1e3990280a7d82c2a90de252aea0937c5f197ea4563acd03c94",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 22,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "24ab5ca2d98c91af0b8122d3337bad2a410c990ef59c15f243b4487786dcf0e7",
+      "index": 23,
+      "previous": "634dc75e0952a9af9b63abd19956503ad1c33148ab6f039d545b45b34e12924f",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 23,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "7c0e141c9a3aa70b2b6656c6714610a6b01a04c084436e8d708285a73debb9d1",
+      "index": 24,
+      "previous": "24ab5ca2d98c91af0b8122d3337bad2a410c990ef59c15f243b4487786dcf0e7",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 24,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "415e15b4ef320337108eff271583d70b2febff392c6656047123eff334c74009",
+      "index": 25,
+      "previous": "7c0e141c9a3aa70b2b6656c6714610a6b01a04c084436e8d708285a73debb9d1",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 25,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "f9b76c829ddb3bb4bb87d8435c9fcc93fcd7686df530d18a0448456dd6d509a1",
+      "index": 26,
+      "previous": "415e15b4ef320337108eff271583d70b2febff392c6656047123eff334c74009",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 26,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "f9207d3a0543869495c21a67b65324df763b3b8f8836da1b98418d7a4bc382c1",
+      "index": 27,
+      "previous": "f9b76c829ddb3bb4bb87d8435c9fcc93fcd7686df530d18a0448456dd6d509a1",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 27,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "3eecee9c0f18d1beeb64fc39186e8b39c6a5edf2c0336ec2f3a73c3374bedafd",
+      "index": 28,
+      "previous": "f9207d3a0543869495c21a67b65324df763b3b8f8836da1b98418d7a4bc382c1",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 28,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "a048e656134746f742585fd55aca3b22b3bcc0b30bd611c00ef7728ed56033a5",
+      "index": 29,
+      "previous": "3eecee9c0f18d1beeb64fc39186e8b39c6a5edf2c0336ec2f3a73c3374bedafd",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 29,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "9002a37ee379546ce12df219d572f622b89f01f8607ad4f6726f3f14f7de010d",
+      "index": 30,
+      "previous": "a048e656134746f742585fd55aca3b22b3bcc0b30bd611c00ef7728ed56033a5",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 30,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "a53b837369cd46ab8fd3a319fd0395d58efafeb9d2717e137ca02d3dd7f44a24",
+      "index": 31,
+      "previous": "9002a37ee379546ce12df219d572f622b89f01f8607ad4f6726f3f14f7de010d",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 31,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "6675ee2ccd46d911638981fd5a1c5799da0dfe4f2eb0cd5e9d308824cc2f1e7f",
+      "index": 32,
+      "previous": "a53b837369cd46ab8fd3a319fd0395d58efafeb9d2717e137ca02d3dd7f44a24",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 32,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "d6a00d9f82991ad732ec6d12f9ea6b6189525aeeb2ebcdc95059d54142a710c4",
+      "index": 33,
+      "previous": "6675ee2ccd46d911638981fd5a1c5799da0dfe4f2eb0cd5e9d308824cc2f1e7f",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 33,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "aefc445a43db98f4c8c8eae4d290cbc52e6028a106f603f5745b525c20c8400c",
+      "index": 34,
+      "previous": "d6a00d9f82991ad732ec6d12f9ea6b6189525aeeb2ebcdc95059d54142a710c4",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 34,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "00b7df14a20fc854a6670302bbe03dc74964782410d9312ccb6d5a2b371b843c",
+      "index": 35,
+      "previous": "aefc445a43db98f4c8c8eae4d290cbc52e6028a106f603f5745b525c20c8400c",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 35,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "564529b8ef0c1d7ee62d8cfbaa17dcfa04add01563dc29baa1870fcb04ea95c1",
+      "index": 36,
+      "previous": "00b7df14a20fc854a6670302bbe03dc74964782410d9312ccb6d5a2b371b843c",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 36,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "c9103efdbeb45981544d9deb9fd1acd025b22840f3b0729b2d47ab96ae875834",
+      "index": 37,
+      "previous": "564529b8ef0c1d7ee62d8cfbaa17dcfa04add01563dc29baa1870fcb04ea95c1",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 37,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "0b4713a4a15cd22eadc707968bb971afddd408a0ce7ad45328b4b7acdad7e525",
+      "index": 38,
+      "previous": "c9103efdbeb45981544d9deb9fd1acd025b22840f3b0729b2d47ab96ae875834",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 38,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "4eb6d91ca4446906674c061654fdabb022cdbb2d296f623ed92d45daab453ef7",
+      "index": 39,
+      "previous": "0b4713a4a15cd22eadc707968bb971afddd408a0ce7ad45328b4b7acdad7e525",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 39,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "e47ba9ece7c6701c0b263788e86871d17e5344b6707e8148412ec6e548c9ff20",
+      "index": 40,
+      "previous": "4eb6d91ca4446906674c061654fdabb022cdbb2d296f623ed92d45daab453ef7",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 40,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "8c44cb2fa077100b1869f2ff9883fc9ec8c2b59b61a8686b258bed72c28e020a",
+      "index": 41,
+      "previous": "e47ba9ece7c6701c0b263788e86871d17e5344b6707e8148412ec6e548c9ff20",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 41,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "accd829ff026754f41ff8c18c30d84ce88cb2afb291d3fdfebe944d1705510c6",
+      "index": 42,
+      "previous": "8c44cb2fa077100b1869f2ff9883fc9ec8c2b59b61a8686b258bed72c28e020a",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 42,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "9e31253064206b88a2a9e8e0996f78ae0fa743f1038fa77a51f2530ea67c766f",
+      "index": 43,
+      "previous": "accd829ff026754f41ff8c18c30d84ce88cb2afb291d3fdfebe944d1705510c6",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 43,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "24731298dc6246bbcec0e83b509bda1750f6426cab3cff30fd690a8262adf4cd",
+      "index": 44,
+      "previous": "9e31253064206b88a2a9e8e0996f78ae0fa743f1038fa77a51f2530ea67c766f",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 44,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "4f34e82fb4ccf159cfcbabf9a32e9bebbc798ee961b173fa4079c2592726a5e2",
+      "index": 45,
+      "previous": "24731298dc6246bbcec0e83b509bda1750f6426cab3cff30fd690a8262adf4cd",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 45,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "5773ba518bc8c93137f2e9db7edab64b5cc6ebc98c64771603c495cec0ed5b8d",
+      "index": 46,
+      "previous": "4f34e82fb4ccf159cfcbabf9a32e9bebbc798ee961b173fa4079c2592726a5e2",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 46,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "9b9af11a8d4b84e97a62f2767f544320c6bb84b5d438c9f9a70aa6c8414ea514",
+      "index": 47,
+      "previous": "5773ba518bc8c93137f2e9db7edab64b5cc6ebc98c64771603c495cec0ed5b8d",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 47,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "61235dd5061443388033232b6d5faf4ff1ecfad75e0cdbdd14bbb0c1ca10d630",
+      "index": 48,
+      "previous": "9b9af11a8d4b84e97a62f2767f544320c6bb84b5d438c9f9a70aa6c8414ea514",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 48,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "3780cc2f7ceda0daf3112207f9eda830eee4253e113b3e4d32b251c0d751e05f",
+      "index": 49,
+      "previous": "61235dd5061443388033232b6d5faf4ff1ecfad75e0cdbdd14bbb0c1ca10d630",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 49,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "3c5562a581e257f082e5a4beca462e07a79c118533bab4b7fdb611276e23be8f",
+      "index": 50,
+      "previous": "3780cc2f7ceda0daf3112207f9eda830eee4253e113b3e4d32b251c0d751e05f",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 50,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "47b1a4335a49858c1c525555324a0c7f652154fdb1836e023378520a2c3c4ac5",
+      "index": 51,
+      "previous": "3c5562a581e257f082e5a4beca462e07a79c118533bab4b7fdb611276e23be8f",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 51,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "fcba56763fcc6157f79f9dee0727d17e8fcdc88dfe5e77973d72e947c348a3ae",
+      "index": 52,
+      "previous": "47b1a4335a49858c1c525555324a0c7f652154fdb1836e023378520a2c3c4ac5",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 52,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "9e617dc1ca9b3ce3cb5fd5e10cc94177a77e786ba74fea9a2fff0f669958cac2",
+      "index": 53,
+      "previous": "fcba56763fcc6157f79f9dee0727d17e8fcdc88dfe5e77973d72e947c348a3ae",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 53,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "79cf545cc021c907e654cb0f5d1746212d928984ba3f48da1627ef5ca2153b4e",
+      "index": 54,
+      "previous": "9e617dc1ca9b3ce3cb5fd5e10cc94177a77e786ba74fea9a2fff0f669958cac2",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 54,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "93d60367f01539f6e8c1c79bd9ee9a06886658225882f424f301c0cf109179e1",
+      "index": 55,
+      "previous": "79cf545cc021c907e654cb0f5d1746212d928984ba3f48da1627ef5ca2153b4e",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 55,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "c232f52b0ab085db4d67c32f5c2ad41b117d0cf1d8e94b746dd6a66624ab94e7",
+      "index": 56,
+      "previous": "93d60367f01539f6e8c1c79bd9ee9a06886658225882f424f301c0cf109179e1",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 56,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "a503b705b4a95c4e7025f4c74b494767f90fee76948e053bf15ed3f71b5ce262",
+      "index": 57,
+      "previous": "c232f52b0ab085db4d67c32f5c2ad41b117d0cf1d8e94b746dd6a66624ab94e7",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 57,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "7647c8fd94a0df0ad68e4712074d65b571f9550bf77f5b75eb92b4254b2959e4",
+      "index": 58,
+      "previous": "a503b705b4a95c4e7025f4c74b494767f90fee76948e053bf15ed3f71b5ce262",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 58,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "b75a08255a4f1061b3507e1ea8141ada2db1a635f00959e62ac913eadfff5625",
+      "index": 59,
+      "previous": "7647c8fd94a0df0ad68e4712074d65b571f9550bf77f5b75eb92b4254b2959e4",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 59,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "d4815799fdca5663b8c75093cf27c1f8f3594acc26b5b9264ec2a707723e6c04",
+      "index": 60,
+      "previous": "b75a08255a4f1061b3507e1ea8141ada2db1a635f00959e62ac913eadfff5625",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 60,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "4349674439668a56305c04263d46ba8fb8553344d7b8d16db506592538222e84",
+      "index": 61,
+      "previous": "d4815799fdca5663b8c75093cf27c1f8f3594acc26b5b9264ec2a707723e6c04",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 61,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "620b5dbaf266fa4443040245677cbb993676ad07ec4e57278214c55de895e9a2",
+      "index": 62,
+      "previous": "4349674439668a56305c04263d46ba8fb8553344d7b8d16db506592538222e84",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 62,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "212c76f1774d1d53b6e23e0aa43747e3adbabedfb136276c549b5f8d3415256a",
+      "index": 63,
+      "previous": "620b5dbaf266fa4443040245677cbb993676ad07ec4e57278214c55de895e9a2",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 63,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "1bf3a5748f65a52aee91440fe22527561333142c548f5d3ab5369226e1cce6e3",
+      "index": 64,
+      "previous": "212c76f1774d1d53b6e23e0aa43747e3adbabedfb136276c549b5f8d3415256a",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 64,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "a7c769c2960397cb3ef576d8daefd25aeb6b45bd6376470047c8d841e2227887",
+      "index": 65,
+      "previous": "1bf3a5748f65a52aee91440fe22527561333142c548f5d3ab5369226e1cce6e3",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 65,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "6c2e0bc58c432751032469ba17e8ec6f7e30f5ee90b70517d8c4fd61316d08d3",
+      "index": 66,
+      "previous": "a7c769c2960397cb3ef576d8daefd25aeb6b45bd6376470047c8d841e2227887",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 66,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "d1f5029dbc0583ab03b3df0bb15b08752849e1189daf65a1ffa4dea3f1f737c7",
+      "index": 67,
+      "previous": "6c2e0bc58c432751032469ba17e8ec6f7e30f5ee90b70517d8c4fd61316d08d3",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 67,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "40f72d2590bc5badcfe44702541f3f3a835a06daa4ffe0c6a67fbbe30bdc00d2",
+      "index": 68,
+      "previous": "d1f5029dbc0583ab03b3df0bb15b08752849e1189daf65a1ffa4dea3f1f737c7",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 68,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "6ac30a43a46c0765dfdce8f97b999b724f8f0b884102f660399533f6a74a0a79",
+      "index": 69,
+      "previous": "40f72d2590bc5badcfe44702541f3f3a835a06daa4ffe0c6a67fbbe30bdc00d2",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 69,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "c82aa7297842081c0de2a77e12ef0701a56237c00bd5fb9ae10eafcdb1985d73",
+      "index": 70,
+      "previous": "6ac30a43a46c0765dfdce8f97b999b724f8f0b884102f660399533f6a74a0a79",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 70,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "d94a769d6de9e03e99d8a54f701784a7e0d7c633a78f04bf061bd08b13ab7676",
+      "index": 71,
+      "previous": "c82aa7297842081c0de2a77e12ef0701a56237c00bd5fb9ae10eafcdb1985d73",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 71,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "d634272709ec4d11270c4d641545bf69fa244c0b65deb023c60ac752e04ac00c",
+      "index": 72,
+      "previous": "d94a769d6de9e03e99d8a54f701784a7e0d7c633a78f04bf061bd08b13ab7676",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 72,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "2b1b9e77ea5cd6b4a726d8e970f625bd8622c425651611747f92aac6f7a28ec2",
+      "index": 73,
+      "previous": "d634272709ec4d11270c4d641545bf69fa244c0b65deb023c60ac752e04ac00c",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 73,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "ce6c9a9fc8f156b5e80fefe31945fff9e49eb737c6e4be430a4508beb2627048",
+      "index": 74,
+      "previous": "2b1b9e77ea5cd6b4a726d8e970f625bd8622c425651611747f92aac6f7a28ec2",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 74,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "c5dd17b637f410f91c3828f77e5e391b36c57879cb9914be78610d6eaa3b0ccc",
+      "index": 75,
+      "previous": "ce6c9a9fc8f156b5e80fefe31945fff9e49eb737c6e4be430a4508beb2627048",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 75,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "f0e40c2197f3582e73ab43bfbe63310511503b6c9c7dc582fd010b0a096426f7",
+      "index": 76,
+      "previous": "c5dd17b637f410f91c3828f77e5e391b36c57879cb9914be78610d6eaa3b0ccc",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 76,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "4b047e78f6c51066ced5f8731e0d0f0c87f52e44ceed84a5521080d7f03848d9",
+      "index": 77,
+      "previous": "f0e40c2197f3582e73ab43bfbe63310511503b6c9c7dc582fd010b0a096426f7",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 77,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "4cccf75d69fb7bf3da41723fe0cfa7927e49373483c84f4ae20451cb7eb1dbf6",
+      "index": 78,
+      "previous": "4b047e78f6c51066ced5f8731e0d0f0c87f52e44ceed84a5521080d7f03848d9",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 78,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "8e5ff0b10ca359f031c33037322c1ae73cd976449fa7469dc0e314159c74fa5b",
+      "index": 79,
+      "previous": "4cccf75d69fb7bf3da41723fe0cfa7927e49373483c84f4ae20451cb7eb1dbf6",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 79,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "c5766e1c40a3ae890331cfc6a98f4b983c379724264716119711c070617fedaf",
+      "index": 80,
+      "previous": "8e5ff0b10ca359f031c33037322c1ae73cd976449fa7469dc0e314159c74fa5b",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 80,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "ok": true,
+          "paths": [
+            "A.json",
+            "B.json"
+          ]
+        }
+      },
+      "hash": "3d209e588e76b4704258c79609a120c4524f9337114f1673695d2811b297bcd3",
+      "index": 81,
+      "previous": "c5766e1c40a3ae890331cfc6a98f4b983c379724264716119711c070617fedaf",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 81,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "error": "budget exhausted",
+          "ok": false
+        }
+      },
+      "hash": "ec7b80de6cd62dbe6b0ecb86ff3c563b03cb55f2a08a6d7b40a308c111669276",
+      "index": 82,
+      "previous": "3d209e588e76b4704258c79609a120c4524f9337114f1673695d2811b297bcd3",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 82,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "error": "budget exhausted",
+          "ok": false
+        }
+      },
+      "hash": "73652f5088a39b0c30b51a130b151f8752c2990a495226904874f74abfff80b2",
+      "index": 83,
+      "previous": "ec7b80de6cd62dbe6b0ecb86ff3c563b03cb55f2a08a6d7b40a308c111669276",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 83,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "error": "budget exhausted",
+          "ok": false
+        }
+      },
+      "hash": "7bd582a3941eb1226adc347f348bec0077e4a0509d0577479c02e5a593d0919f",
+      "index": 84,
+      "previous": "73652f5088a39b0c30b51a130b151f8752c2990a495226904874f74abfff80b2",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 84,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "error": "budget exhausted",
+          "ok": false
+        }
+      },
+      "hash": "20afdadb93adfb60af9ee3c6477ac6e545df028ce8e7f4816b7fc15a7fe1eba6",
+      "index": 85,
+      "previous": "7bd582a3941eb1226adc347f348bec0077e4a0509d0577479c02e5a593d0919f",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 85,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "error": "budget exhausted",
+          "ok": false
+        }
+      },
+      "hash": "d2bff9642bc73f5cfb35ca37cf8c46347876232be47078b00da78ea9f445ad08",
+      "index": 86,
+      "previous": "20afdadb93adfb60af9ee3c6477ac6e545df028ce8e7f4816b7fc15a7fe1eba6",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 86,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "error": "budget exhausted",
+          "ok": false
+        }
+      },
+      "hash": "ad8262dd55cfa1de2f1daba2288fe37ae09c57dae2cf644932ea1788bb412b32",
+      "index": 87,
+      "previous": "d2bff9642bc73f5cfb35ca37cf8c46347876232be47078b00da78ea9f445ad08",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 87,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "error": "budget exhausted",
+          "ok": false
+        }
+      },
+      "hash": "92a79192bdebac321c28c7823db18015a5f324f7355fb23d982a4869869ee399",
+      "index": 88,
+      "previous": "ad8262dd55cfa1de2f1daba2288fe37ae09c57dae2cf644932ea1788bb412b32",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 88,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "error": "budget exhausted",
+          "ok": false
+        }
+      },
+      "hash": "d2f607f51b2a423b1bcb48d2b31bb239f42c961c93a125b46adf88b50f5aa91c",
+      "index": 89,
+      "previous": "92a79192bdebac321c28c7823db18015a5f324f7355fb23d982a4869869ee399",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 89,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "error": "budget exhausted",
+          "ok": false
+        }
+      },
+      "hash": "015108cb5f44c9f748dce06dc885dc4b20e26a3796b4eea0af7711700a786f71",
+      "index": 90,
+      "previous": "d2f607f51b2a423b1bcb48d2b31bb239f42c961c93a125b46adf88b50f5aa91c",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 90,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "error": "budget exhausted",
+          "ok": false
+        }
+      },
+      "hash": "71ea4d490501ec009e29ee40ac8b0fb4fc2ac53940c7559683dbd8e84d6316da",
+      "index": 91,
+      "previous": "015108cb5f44c9f748dce06dc885dc4b20e26a3796b4eea0af7711700a786f71",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 91,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "error": "budget exhausted",
+          "ok": false
+        }
+      },
+      "hash": "ed09b90d06492f232ea2e67f38e299b706699d39abebfb4726b2fb9f6b5e1898",
+      "index": 92,
+      "previous": "71ea4d490501ec009e29ee40ac8b0fb4fc2ac53940c7559683dbd8e84d6316da",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 92,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "error": "budget exhausted",
+          "ok": false
+        }
+      },
+      "hash": "4f17d94476c5b0df8845fe9e9031a02fdfd78ebdb599a818fd6bd1ef08fc1a66",
+      "index": 93,
+      "previous": "ed09b90d06492f232ea2e67f38e299b706699d39abebfb4726b2fb9f6b5e1898",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 93,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "error": "budget exhausted",
+          "ok": false
+        }
+      },
+      "hash": "9b2ff502902ef533d3c34827ea4d1b5da166594693f5b0c43919f2bf18b6ab31",
+      "index": 94,
+      "previous": "4f17d94476c5b0df8845fe9e9031a02fdfd78ebdb599a818fd6bd1ef08fc1a66",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 94,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "error": "budget exhausted",
+          "ok": false
+        }
+      },
+      "hash": "475582aeaa6e10a8cb7f8c4b89170069f44d3cc83cb91c388cc0c9d3d2770702",
+      "index": 95,
+      "previous": "9b2ff502902ef533d3c34827ea4d1b5da166594693f5b0c43919f2bf18b6ab31",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 95,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "error": "budget exhausted",
+          "ok": false
+        }
+      },
+      "hash": "42fee08adee870eaa39e84c72924ec6b99382fa7003c25779b1e1c419d52f9ce",
+      "index": 96,
+      "previous": "475582aeaa6e10a8cb7f8c4b89170069f44d3cc83cb91c388cc0c9d3d2770702",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 96,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "error": "budget exhausted",
+          "ok": false
+        }
+      },
+      "hash": "343177e1622b2e4db44d80ed5e2fdf7b6f054a3c899a1d8d17bc30f27e3d1084",
+      "index": 97,
+      "previous": "42fee08adee870eaa39e84c72924ec6b99382fa7003c25779b1e1c419d52f9ce",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 97,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "error": "budget exhausted",
+          "ok": false
+        }
+      },
+      "hash": "28538148eec97b3f51c6a4b716b7bfb052a9278763df6f34f60206ed5b4f372a",
+      "index": 98,
+      "previous": "343177e1622b2e4db44d80ed5e2fdf7b6f054a3c899a1d8d17bc30f27e3d1084",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "call": 98,
+        "input": {
+          "op": "list"
+        },
+        "phase": "B",
+        "result": {
+          "error": "budget exhausted",
+          "ok": false
+        }
+      },
+      "hash": "8053dd25ff6ceb94e60152e22c87a293abe0a4ca07e60ab1b932d79946cdebf5",
+      "index": 99,
+      "previous": "28538148eec97b3f51c6a4b716b7bfb052a9278763df6f34f60206ed5b4f372a",
+      "type": "tool"
+    },
+    {
+      "data": {
+        "answers": {
+          "C1": {
+            "fields": {},
+            "status": "budget-exhausted"
+          },
+          "C2": {
+            "fields": {},
+            "status": "budget-exhausted"
+          },
+          "C3": {
+            "fields": {},
+            "status": "budget-exhausted"
+          },
+          "C4": {
+            "fields": {},
+            "status": "budget-exhausted"
+          },
+          "C5": {
+            "fields": {},
+            "status": "budget-exhausted"
+          },
+          "C6": {
+            "fields": {},
+            "status": "budget-exhausted"
+          },
+          "C7": {
+            "fields": {},
+            "status": "budget-exhausted"
+          },
+          "C8": {
+            "fields": {},
+            "status": "budget-exhausted"
+          }
+        },
+        "hash": "bbae6259323a455a2a650bb08463eb2687dc2d1b277dee8d317627dc9714b5ce",
+        "sessionId": "synthetic-isolation-control"
+      },
+      "hash": "8c91c09fa9b400ce4daeb322c3cd24b69f29251740368ca7c71b094a46eaf616",
+      "index": 100,
+      "previous": "8053dd25ff6ceb94e60152e22c87a293abe0a4ca07e60ab1b932d79946cdebf5",
+      "type": "seal-B"
+    },
+    {
+      "data": {
+        "answersHash": "9027d2e7dd345bb585dc4ec3e877cf53de0bfe6cc57291109e4b8f5cf8cc3db7"
+      },
+      "hash": "d38fedea1492c6e9c5993ae9499a55aba4aceced5f17350c5ee703d0e1196526",
+      "index": 101,
+      "previous": "8c91c09fa9b400ce4daeb322c3cd24b69f29251740368ca7c71b094a46eaf616",
+      "type": "closed"
+    }
+  ],
+  "closed": "closed",
+  "allMissingB": "budget-exhausted",
+  "stderr": "",
+  "scope": "Host filesystem/network separation and broker phase control for this fixed synthetic client only.",
+  "limitations": [
+    "Not a provider adapter or model context isolation test",
+    "No environment-variable inspection performed",
+    "Container interpreter exists; model-facing shell is not provided by broker",
+    "Host/controller/container engine are trusted",
+    "No participant, provider, human or runtime consumer execution"
+  ],
+  "executionReady": false,
+  "participantRuns": 0,
+  "providerCalls": 0,
+  "cleanupVerified": true
+}
