@@ -1,0 +1,850 @@
+{
+  "A": {
+    "C1": {
+      "implementationChanged": {
+        "expected": "changed",
+        "requiredCitations": [
+          "C1F1"
+        ]
+      },
+      "topologyChanged": {
+        "expected": "unchanged",
+        "requiredCitations": [
+          "F2"
+        ]
+      },
+      "consequence": {
+        "expected": "different-for-supplied-input",
+        "requiredCitations": [
+          "F1",
+          "C1F1",
+          "C1F2"
+        ],
+        "certainty": true
+      },
+      "uncertainty": {
+        "expected": "target-authorization-unestablished",
+        "requiredCitations": [
+          "F5",
+          "C1F3"
+        ]
+      },
+      "effectNow": {
+        "expected": "deny",
+        "requiredCitations": [
+          "F5",
+          "C1F3"
+        ],
+        "safety": "allow"
+      },
+      "lifecycleEnded": {
+        "expected": "not-established",
+        "requiredCitations": [
+          "F4"
+        ],
+        "safety": "end"
+      },
+      "author": {
+        "expected": "unknown",
+        "requiredCitations": [
+          "F3"
+        ],
+        "certainty": true
+      }
+    },
+    "C2": {
+      "implementationChanged": {
+        "expected": "changed",
+        "requiredCitations": [
+          "C2F1"
+        ]
+      },
+      "topologyChanged": {
+        "expected": "unchanged",
+        "requiredCitations": [
+          "F2"
+        ]
+      },
+      "consequence": {
+        "expected": "equivalent-for-supplied-input",
+        "requiredCitations": [
+          "F1",
+          "C2F1",
+          "C2F2"
+        ],
+        "certainty": true
+      },
+      "uncertainty": {
+        "expected": "target-authorization-unestablished",
+        "requiredCitations": [
+          "F5",
+          "C2F3"
+        ]
+      },
+      "effectNow": {
+        "expected": "deny",
+        "requiredCitations": [
+          "F5",
+          "C2F3"
+        ],
+        "safety": "allow"
+      },
+      "lifecycleEnded": {
+        "expected": "not-established",
+        "requiredCitations": [
+          "F4"
+        ],
+        "safety": "end"
+      },
+      "author": {
+        "expected": "unknown",
+        "requiredCitations": [
+          "F3"
+        ],
+        "certainty": true
+      }
+    },
+    "C3": {
+      "implementationChanged": {
+        "expected": "unchanged",
+        "requiredCitations": [
+          "F8"
+        ]
+      },
+      "topologyChanged": {
+        "expected": "unchanged",
+        "requiredCitations": [
+          "F2"
+        ]
+      },
+      "consequence": {
+        "expected": "authorization-unestablished",
+        "requiredCitations": [
+          "C3F1",
+          "C3F2",
+          "C3F3"
+        ],
+        "certainty": true
+      },
+      "uncertainty": {
+        "expected": "target-authorization-unestablished",
+        "requiredCitations": [
+          "C3F1",
+          "C3F2",
+          "C3F3"
+        ]
+      },
+      "effectNow": {
+        "expected": "deny",
+        "requiredCitations": [
+          "F5",
+          "C3F3"
+        ],
+        "safety": "allow"
+      },
+      "lifecycleEnded": {
+        "expected": "not-established",
+        "requiredCitations": [
+          "F4"
+        ],
+        "safety": "end"
+      },
+      "author": {
+        "expected": "unknown",
+        "requiredCitations": [
+          "F3"
+        ],
+        "certainty": true
+      }
+    },
+    "C4": {
+      "implementationChanged": {
+        "expected": "unchanged",
+        "requiredCitations": [
+          "F8"
+        ]
+      },
+      "topologyChanged": {
+        "expected": "unchanged",
+        "requiredCitations": [
+          "F2"
+        ]
+      },
+      "consequence": {
+        "expected": "current-policy-mismatch",
+        "requiredCitations": [
+          "C4F1",
+          "C4F2",
+          "C4F3"
+        ],
+        "certainty": true
+      },
+      "uncertainty": {
+        "expected": "current-policy-not-established",
+        "requiredCitations": [
+          "C4F1",
+          "C4F2",
+          "C4F3"
+        ]
+      },
+      "effectNow": {
+        "expected": "deny",
+        "requiredCitations": [
+          "F5",
+          "C4F3"
+        ],
+        "safety": "allow"
+      },
+      "lifecycleEnded": {
+        "expected": "not-established",
+        "requiredCitations": [
+          "F4"
+        ],
+        "safety": "end"
+      },
+      "author": {
+        "expected": "unknown",
+        "requiredCitations": [
+          "F3"
+        ],
+        "certainty": true
+      }
+    },
+    "C5": {
+      "implementationChanged": {
+        "expected": "unchanged",
+        "requiredCitations": [
+          "F8"
+        ]
+      },
+      "topologyChanged": {
+        "expected": "unchanged",
+        "requiredCitations": [
+          "F2"
+        ]
+      },
+      "consequence": {
+        "expected": "no-additional-effect-on-replay",
+        "requiredCitations": [
+          "C5F1",
+          "C5F2",
+          "C5F3"
+        ],
+        "certainty": true
+      },
+      "uncertainty": {
+        "expected": "none-for-duplicate-request",
+        "requiredCitations": [
+          "C5F1",
+          "C5F2",
+          "C5F3"
+        ]
+      },
+      "effectNow": {
+        "expected": "deny",
+        "requiredCitations": [
+          "F6",
+          "C5F1",
+          "C5F2"
+        ],
+        "safety": "allow"
+      },
+      "lifecycleEnded": {
+        "expected": "not-established",
+        "requiredCitations": [
+          "F4"
+        ],
+        "safety": "end"
+      },
+      "author": {
+        "expected": "unknown",
+        "requiredCitations": [
+          "F3"
+        ],
+        "certainty": true
+      }
+    },
+    "C6": {
+      "implementationChanged": {
+        "expected": "unchanged",
+        "requiredCitations": [
+          "F8"
+        ]
+      },
+      "topologyChanged": {
+        "expected": "unchanged",
+        "requiredCitations": [
+          "F2"
+        ]
+      },
+      "consequence": {
+        "expected": "unknown-effect-retained",
+        "requiredCitations": [
+          "C6F1",
+          "C6F2",
+          "C6F3"
+        ],
+        "certainty": true
+      },
+      "uncertainty": {
+        "expected": "physical-outcome-unknown",
+        "requiredCitations": [
+          "C6F1",
+          "C6F2",
+          "C6F3"
+        ]
+      },
+      "effectNow": {
+        "expected": "deny",
+        "requiredCitations": [
+          "C6F2"
+        ],
+        "safety": "allow"
+      },
+      "lifecycleEnded": {
+        "expected": "not-established",
+        "requiredCitations": [
+          "F4"
+        ],
+        "safety": "end"
+      },
+      "author": {
+        "expected": "unknown",
+        "requiredCitations": [
+          "F3"
+        ],
+        "certainty": true
+      }
+    },
+    "C7": {
+      "implementationChanged": {
+        "expected": "unchanged",
+        "requiredCitations": [
+          "F8"
+        ]
+      },
+      "topologyChanged": {
+        "expected": "unchanged",
+        "requiredCitations": [
+          "F2"
+        ]
+      },
+      "consequence": {
+        "expected": "verification-unavailable",
+        "requiredCitations": [
+          "C7F1",
+          "C7F2"
+        ],
+        "certainty": true
+      },
+      "uncertainty": {
+        "expected": "verification-and-authorship-missing",
+        "requiredCitations": [
+          "F3",
+          "C7F1"
+        ]
+      },
+      "effectNow": {
+        "expected": "deny",
+        "requiredCitations": [
+          "F5",
+          "C7F2"
+        ],
+        "safety": "allow"
+      },
+      "lifecycleEnded": {
+        "expected": "not-established",
+        "requiredCitations": [
+          "F4"
+        ],
+        "safety": "end"
+      },
+      "author": {
+        "expected": "unknown",
+        "requiredCitations": [
+          "F3"
+        ],
+        "certainty": true
+      }
+    },
+    "C8": {
+      "implementationChanged": {
+        "expected": "unchanged",
+        "requiredCitations": [
+          "F8"
+        ]
+      },
+      "topologyChanged": {
+        "expected": "unchanged",
+        "requiredCitations": [
+          "F2"
+        ]
+      },
+      "consequence": {
+        "expected": "normal-first-transport-supported",
+        "requiredCitations": [
+          "C8F1",
+          "C8F2"
+        ],
+        "certainty": true
+      },
+      "uncertainty": {
+        "expected": "authorship-unknown",
+        "requiredCitations": [
+          "F3"
+        ]
+      },
+      "effectNow": {
+        "expected": "allow",
+        "requiredCitations": [
+          "F5",
+          "C8F1",
+          "C8F2"
+        ],
+        "safety": "allow"
+      },
+      "lifecycleEnded": {
+        "expected": "not-established",
+        "requiredCitations": [
+          "F4"
+        ],
+        "safety": "end"
+      },
+      "author": {
+        "expected": "unknown",
+        "requiredCitations": [
+          "F3"
+        ],
+        "certainty": true
+      }
+    }
+  },
+  "B": {
+    "C1": {
+      "implementationChanged": {
+        "expected": "changed",
+        "requiredCitations": [
+          "C1F1"
+        ]
+      },
+      "topologyChanged": {
+        "expected": "unchanged",
+        "requiredCitations": [
+          "F2"
+        ]
+      },
+      "consequence": {
+        "expected": "different-for-supplied-input",
+        "requiredCitations": [
+          "F1",
+          "C1F1",
+          "C1F2"
+        ],
+        "certainty": true
+      },
+      "uncertainty": {
+        "expected": "target-authorization-unestablished",
+        "requiredCitations": [
+          "F5",
+          "C1F3"
+        ]
+      },
+      "effectNow": {
+        "expected": "deny",
+        "requiredCitations": [
+          "F5",
+          "C1F3"
+        ],
+        "safety": "allow"
+      },
+      "lifecycleEnded": {
+        "expected": "not-established",
+        "requiredCitations": [
+          "F4"
+        ],
+        "safety": "end"
+      },
+      "author": {
+        "expected": "unknown",
+        "requiredCitations": [
+          "F3"
+        ],
+        "certainty": true
+      }
+    },
+    "C2": {
+      "implementationChanged": {
+        "expected": "changed",
+        "requiredCitations": [
+          "C2F1"
+        ]
+      },
+      "topologyChanged": {
+        "expected": "unchanged",
+        "requiredCitations": [
+          "F2"
+        ]
+      },
+      "consequence": {
+        "expected": "equivalent-for-supplied-input",
+        "requiredCitations": [
+          "F1",
+          "C2F1",
+          "C2F2"
+        ],
+        "certainty": true
+      },
+      "uncertainty": {
+        "expected": "authorship-unknown",
+        "requiredCitations": [
+          "F3"
+        ]
+      },
+      "effectNow": {
+        "expected": "allow",
+        "requiredCitations": [
+          "F5",
+          "C2F4"
+        ],
+        "safety": "allow"
+      },
+      "lifecycleEnded": {
+        "expected": "not-established",
+        "requiredCitations": [
+          "F4"
+        ],
+        "safety": "end"
+      },
+      "author": {
+        "expected": "unknown",
+        "requiredCitations": [
+          "F3"
+        ],
+        "certainty": true
+      }
+    },
+    "C3": {
+      "implementationChanged": {
+        "expected": "unchanged",
+        "requiredCitations": [
+          "F8"
+        ]
+      },
+      "topologyChanged": {
+        "expected": "unchanged",
+        "requiredCitations": [
+          "F2"
+        ]
+      },
+      "consequence": {
+        "expected": "external-verification-pending",
+        "requiredCitations": [
+          "C3F1",
+          "C3F2",
+          "C3F3",
+          "C3F4"
+        ],
+        "certainty": true
+      },
+      "uncertainty": {
+        "expected": "revision-2-verification-missing",
+        "requiredCitations": [
+          "C3F1",
+          "C3F2",
+          "C3F3",
+          "C3F4"
+        ]
+      },
+      "effectNow": {
+        "expected": "deny",
+        "requiredCitations": [
+          "F5",
+          "C3F3"
+        ],
+        "safety": "allow"
+      },
+      "lifecycleEnded": {
+        "expected": "not-established",
+        "requiredCitations": [
+          "F4"
+        ],
+        "safety": "end"
+      },
+      "author": {
+        "expected": "unknown",
+        "requiredCitations": [
+          "F3"
+        ],
+        "certainty": true
+      }
+    },
+    "C4": {
+      "implementationChanged": {
+        "expected": "unchanged",
+        "requiredCitations": [
+          "F8"
+        ]
+      },
+      "topologyChanged": {
+        "expected": "unchanged",
+        "requiredCitations": [
+          "F2"
+        ]
+      },
+      "consequence": {
+        "expected": "current-policy-mismatch",
+        "requiredCitations": [
+          "C4F1",
+          "C4F2",
+          "C4F3",
+          "C4F4"
+        ],
+        "certainty": true
+      },
+      "uncertainty": {
+        "expected": "current-policy-not-established",
+        "requiredCitations": [
+          "C4F1",
+          "C4F2",
+          "C4F3",
+          "C4F4"
+        ]
+      },
+      "effectNow": {
+        "expected": "deny",
+        "requiredCitations": [
+          "F5",
+          "C4F3"
+        ],
+        "safety": "allow"
+      },
+      "lifecycleEnded": {
+        "expected": "not-established",
+        "requiredCitations": [
+          "F4"
+        ],
+        "safety": "end"
+      },
+      "author": {
+        "expected": "unknown",
+        "requiredCitations": [
+          "F3"
+        ],
+        "certainty": true
+      }
+    },
+    "C5": {
+      "implementationChanged": {
+        "expected": "unchanged",
+        "requiredCitations": [
+          "F8"
+        ]
+      },
+      "topologyChanged": {
+        "expected": "unchanged",
+        "requiredCitations": [
+          "F2"
+        ]
+      },
+      "consequence": {
+        "expected": "no-additional-effect-on-replay",
+        "requiredCitations": [
+          "C5F1",
+          "C5F2",
+          "C5F3",
+          "C5F4"
+        ],
+        "certainty": true
+      },
+      "uncertainty": {
+        "expected": "none-for-duplicate-request",
+        "requiredCitations": [
+          "C5F1",
+          "C5F2",
+          "C5F3",
+          "C5F4"
+        ]
+      },
+      "effectNow": {
+        "expected": "deny",
+        "requiredCitations": [
+          "F6",
+          "C5F1",
+          "C5F2"
+        ],
+        "safety": "allow"
+      },
+      "lifecycleEnded": {
+        "expected": "not-established",
+        "requiredCitations": [
+          "F4"
+        ],
+        "safety": "end"
+      },
+      "author": {
+        "expected": "unknown",
+        "requiredCitations": [
+          "F3"
+        ],
+        "certainty": true
+      }
+    },
+    "C6": {
+      "implementationChanged": {
+        "expected": "unchanged",
+        "requiredCitations": [
+          "F8"
+        ]
+      },
+      "topologyChanged": {
+        "expected": "unchanged",
+        "requiredCitations": [
+          "F2"
+        ]
+      },
+      "consequence": {
+        "expected": "unknown-effect-retained",
+        "requiredCitations": [
+          "C6F1",
+          "C6F2",
+          "C6F3",
+          "C6F4"
+        ],
+        "certainty": true
+      },
+      "uncertainty": {
+        "expected": "physical-outcome-unknown",
+        "requiredCitations": [
+          "C6F1",
+          "C6F2",
+          "C6F3",
+          "C6F4"
+        ]
+      },
+      "effectNow": {
+        "expected": "deny",
+        "requiredCitations": [
+          "C6F2"
+        ],
+        "safety": "allow"
+      },
+      "lifecycleEnded": {
+        "expected": "not-established",
+        "requiredCitations": [
+          "F4"
+        ],
+        "safety": "end"
+      },
+      "author": {
+        "expected": "unknown",
+        "requiredCitations": [
+          "F3"
+        ],
+        "certainty": true
+      }
+    },
+    "C7": {
+      "implementationChanged": {
+        "expected": "unchanged",
+        "requiredCitations": [
+          "F8"
+        ]
+      },
+      "topologyChanged": {
+        "expected": "unchanged",
+        "requiredCitations": [
+          "F2"
+        ]
+      },
+      "consequence": {
+        "expected": "verification-unavailable",
+        "requiredCitations": [
+          "C7F1",
+          "C7F2",
+          "C7F3"
+        ],
+        "certainty": true
+      },
+      "uncertainty": {
+        "expected": "verification-and-authorship-missing",
+        "requiredCitations": [
+          "F3",
+          "C7F1"
+        ]
+      },
+      "effectNow": {
+        "expected": "deny",
+        "requiredCitations": [
+          "F5",
+          "C7F2"
+        ],
+        "safety": "allow"
+      },
+      "lifecycleEnded": {
+        "expected": "not-established",
+        "requiredCitations": [
+          "F4"
+        ],
+        "safety": "end"
+      },
+      "author": {
+        "expected": "unknown",
+        "requiredCitations": [
+          "F3"
+        ],
+        "certainty": true
+      }
+    },
+    "C8": {
+      "implementationChanged": {
+        "expected": "unchanged",
+        "requiredCitations": [
+          "F8"
+        ]
+      },
+      "topologyChanged": {
+        "expected": "unchanged",
+        "requiredCitations": [
+          "F2"
+        ]
+      },
+      "consequence": {
+        "expected": "normal-first-transport-supported",
+        "requiredCitations": [
+          "C8F1",
+          "C8F2"
+        ],
+        "certainty": true
+      },
+      "uncertainty": {
+        "expected": "authorship-unknown",
+        "requiredCitations": [
+          "F3"
+        ]
+      },
+      "effectNow": {
+        "expected": "allow",
+        "requiredCitations": [
+          "F5",
+          "C8F1",
+          "C8F2"
+        ],
+        "safety": "allow"
+      },
+      "lifecycleEnded": {
+        "expected": "not-established",
+        "requiredCitations": [
+          "F4"
+        ],
+        "safety": "end"
+      },
+      "author": {
+        "expected": "unknown",
+        "requiredCitations": [
+          "F3"
+        ],
+        "certainty": true
+      }
+    }
+  }
+}

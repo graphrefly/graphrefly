@@ -1,0 +1,150 @@
+[
+  {
+    "factId": "F1",
+    "source": "sample policy; exact independent rational arithmetic"
+  },
+  {
+    "factId": "F2",
+    "source": "all bound graph snapshots and arithmetic-only source edits; AST plain calls"
+  },
+  {
+    "factId": "F3",
+    "source": "deliberate absence from participant packet; no claim about provenance available elsewhere"
+  },
+  {
+    "factId": "F4",
+    "source": "none supplied; readiness and end are distinct, absence does not prove alive"
+  },
+  {
+    "factId": "F5",
+    "source": "consumer host dispatch contract; request/admission/binding independently matched"
+  },
+  {
+    "factId": "F6",
+    "source": "frozen no-duplicate execution policy"
+  },
+  {
+    "factId": "F7",
+    "source": "host normal-end policy"
+  },
+  {
+    "factId": "F8",
+    "source": "bound source transforms; C3-C8 passive input/timing observations"
+  },
+  {
+    "factId": "C1F1",
+    "source": "both actual loaded source edits in archive"
+  },
+  {
+    "factId": "C1F2",
+    "source": "S1 frozen evaluation prefix"
+  },
+  {
+    "factId": "C1F3",
+    "source": "business-observed checkpoint before verification feed; no admitted host record"
+  },
+  {
+    "factId": "C1F4",
+    "source": "observed zScore versus independently computed sample/population rational"
+  },
+  {
+    "factId": "C2F1",
+    "source": "new equivalent source bindings; archived equivalent physical proof separate"
+  },
+  {
+    "factId": "C2F2",
+    "source": "bound equivalent evaluation prefix"
+  },
+  {
+    "factId": "C2F3",
+    "source": "before-verification-r1 checkpoint; no admitted host record"
+  },
+  {
+    "factId": "C2F4",
+    "source": "writer-entry-before-transport in both equivalent arms"
+  },
+  {
+    "factId": "C3F1",
+    "source": "second revision before-verification-r2"
+  },
+  {
+    "factId": "C3F2",
+    "source": "first revision successful request"
+  },
+  {
+    "factId": "C3F3",
+    "source": "records only contain revision1 at r2 checkpoint"
+  },
+  {
+    "factId": "C3F4",
+    "source": "bound worker captures before verification feed for revision2"
+  },
+  {
+    "factId": "C4F1",
+    "source": "frozen passive schedule current input"
+  },
+  {
+    "factId": "C4F2",
+    "source": "frozen evaluation policy"
+  },
+  {
+    "factId": "C4F3",
+    "source": "both traces have zero attempts"
+  },
+  {
+    "factId": "C4F4",
+    "source": "direct equality comparison of preceding two digests"
+  },
+  {
+    "factId": "C5F1",
+    "source": "archived host result and independent readback retained separately"
+  },
+  {
+    "factId": "C5F2",
+    "source": "two identical arrivals and immutable evaluation"
+  },
+  {
+    "factId": "C5F3",
+    "source": "prior host record"
+  },
+  {
+    "factId": "C5F4",
+    "source": "read-only-analysis-replay checkpoint and one total attempt"
+  },
+  {
+    "factId": "C6F1",
+    "source": "one-byte injected result and actual host outcome"
+  },
+  {
+    "factId": "C6F2",
+    "source": "short-result observation"
+  },
+  {
+    "factId": "C6F3",
+    "source": "display-detached snapshot"
+  },
+  {
+    "factId": "C6F4",
+    "source": "exact real Map/Set contents compared, not empty JSON objects"
+  },
+  {
+    "factId": "C7F1",
+    "source": "no verification feed in frozen schedule"
+  },
+  {
+    "factId": "C7F2",
+    "source": "zero attempts"
+  },
+  {
+    "factId": "C7F3",
+    "source": "candidate assessment present in both independent arms"
+  },
+  {
+    "factId": "C8F1",
+    "source": "base first revision writer-entry-before-transport, not an end-of-run receipt"
+  },
+  {
+    "factId": "C8F2",
+    "source": "outer injected writer count before transport"
+  }
+]

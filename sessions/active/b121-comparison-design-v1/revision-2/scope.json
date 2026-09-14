@@ -1,0 +1,9 @@
+{
+  "method": "judgment-only-v2",
+  "entryTasks": "Graph only after A and B closure",
+  "facts": 37,
+  "codeDiffs": 2,
+  "consumerExecutions": 0,
+  "participantRuns": 0,
+  "executionReady": false
+}

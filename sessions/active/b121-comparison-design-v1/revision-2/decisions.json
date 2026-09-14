@@ -1,0 +1,98 @@
+{
+  "C1": {
+    "sourceChanged": true,
+    "consequence": "different-for-supplied-input",
+    "allow": [
+      false,
+      false
+    ],
+    "uncertainty": [
+      "target-authorization-unestablished",
+      "target-authorization-unestablished"
+    ]
+  },
+  "C2": {
+    "sourceChanged": true,
+    "consequence": "equivalent-for-supplied-input",
+    "allow": [
+      false,
+      true
+    ],
+    "uncertainty": [
+      "target-authorization-unestablished",
+      "authorship-unknown"
+    ]
+  },
+  "C3": {
+    "sourceChanged": false,
+    "consequence": "external-verification-pending",
+    "allow": [
+      false,
+      false
+    ],
+    "uncertainty": [
+      "target-authorization-unestablished",
+      "revision-2-verification-missing"
+    ]
+  },
+  "C4": {
+    "sourceChanged": false,
+    "consequence": "current-policy-mismatch",
+    "allow": [
+      false,
+      false
+    ],
+    "uncertainty": [
+      "current-policy-not-established",
+      "current-policy-not-established"
+    ]
+  },
+  "C5": {
+    "sourceChanged": false,
+    "consequence": "no-additional-effect-on-replay",
+    "allow": [
+      false,
+      false
+    ],
+    "uncertainty": [
+      "none-for-duplicate-request",
+      "none-for-duplicate-request"
+    ]
+  },
+  "C6": {
+    "sourceChanged": false,
+    "consequence": "unknown-effect-retained",
+    "allow": [
+      false,
+      false
+    ],
+    "uncertainty": [
+      "physical-outcome-unknown",
+      "physical-outcome-unknown"
+    ]
+  },
+  "C7": {
+    "sourceChanged": false,
+    "consequence": "verification-unavailable",
+    "allow": [
+      false,
+      false
+    ],
+    "uncertainty": [
+      "verification-and-authorship-missing",
+      "verification-and-authorship-missing"
+    ]
+  },
+  "C8": {
+    "sourceChanged": false,
+    "consequence": "normal-first-transport-supported",
+    "allow": [
+      true,
+      true
+    ],
+    "uncertainty": [
+      "authorship-unknown",
+      "authorship-unknown"
+    ]
+  }
+}

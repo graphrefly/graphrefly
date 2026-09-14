@@ -1,0 +1,6 @@
+{
+  "preexistingFilesChecked": 2092,
+  "allUnchanged": true,
+  "baselineException": "entry-tasks.mjs was already being written by this turn agent before baseline capture; belongs to this batch.",
+  "beforeBacklogEvidenceUpdate": true
+}

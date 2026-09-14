@@ -1,0 +1,72 @@
+{
+  "kind": "offline-comparison-preparation-v2",
+  "owner": "graphrefly:B121",
+  "method": "judgment-only-v2",
+  "approvedScope": "User approved C3 external verification wording and separate Graph entry acceptance, then continued offline preparation.",
+  "qualifiedPacket": true,
+  "qualificationScope": "supplied-fact judgment packet semantic review and deterministic tooling; not runtime equivalence or participant usability",
+  "graphEntryPreparation": true,
+  "graphEntryUserAcceptance": false,
+  "executionReady": false,
+  "participantIsolationVerified": false,
+  "exactExecutionAuthorization": false,
+  "participantRuns": 0,
+  "providerCalls": 0,
+  "consumerRuns": 0,
+  "realInboxIO": 0,
+  "formalPerformanceQualification": false,
+  "b121Status": "proposed",
+  "facts": 37,
+  "sourceDiffs": 2,
+  "testsPassed": 34,
+  "artifacts": [
+    {
+      "ref": "README.md",
+      "sha256": "0d9d674613a6983b5ddd11bbd30602a15cc77d24947f975e2b27d9c4aeddd2e4"
+    },
+    {
+      "ref": "allocation.json",
+      "sha256": "03f6d8dd201a4f51ca2baa6e3f74aa90adfd3e71a33dab0910f9023f9d7d0427"
+    },
+    {
+      "ref": "baseline.json",
+      "sha256": "f3da46be2b816deaa63adfab0c858540a263a860d271259e8471668b0a276325"
+    },
+    {
+      "ref": "bindings.json",
+      "sha256": "4e85b81117e7eff57e9b2de3005bd94daa034f2c87a30062b7644a00d83aeb6a"
+    },
+    {
+      "ref": "decisions.json",
+      "sha256": "582a17b5740b8a3b3fdf09ec24a5446b55075c7219b5a395d4d0ead6f20b4225"
+    },
+    {
+      "ref": "goldens.json",
+      "sha256": "9ebcb0591d6261c25589bdf2bf697c86b3eb4eda89323a1fc1abdda1d4595b11"
+    },
+    {
+      "ref": "material.json",
+      "sha256": "3e3533022a6e1f1f354a9b61553be00a7770fb5736896cbd1c337b3be69b291b"
+    },
+    {
+      "ref": "preservation.json",
+      "sha256": "e92ba7b524ff7ae621ba210578fbc3271f1f59fd3183c6ae21488ba9877383b0"
+    },
+    {
+      "ref": "review.json",
+      "sha256": "1be68bdedf276a3baf9fef8f0870b6185954e86bbaf6a561f61eac79e92ef260"
+    },
+    {
+      "ref": "scope.json",
+      "sha256": "77b3557e64bd8fbc93f8fadbca6960507edf05a325827c0844f593e937eed9cb"
+    },
+    {
+      "ref": "source-edits.json",
+      "sha256": "d0884414521245e4d425032d90b374d7cd5bab750ff32e5871b24cadc01d134b"
+    },
+    {
+      "ref": "source-index.json",
+      "sha256": "767ca195e602769fa9f9233803f06b024b8f217feb930545079ef59031c5ad6c"
+    }
+  ]
+}

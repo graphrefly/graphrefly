@@ -60,7 +60,8 @@ function fact(row, ids, evidence) {
   sanitizeEvidence(row); return structuredClone(row);
 }
 /** Pure projection. Caller supplies only explicit frozen evidence, never verdict-bearing reports. */
-export function generateMaterials({ commonFacts, cases, evidence, entries = {}, relations = {} }) {
+export function generateMaterials({ commonFacts, cases, evidence, entries = {}, relations = {}, method = "paired-entry-v1" }) {
+  insist(['paired-entry-v1','judgment-only-v2'].includes(method), 'Unknown comparison method');
   insist(Array.isArray(commonFacts) && commonFacts.length <= 8, 'Fact budget exceeded: at most 8 common facts');
   insist(Array.isArray(cases) && cases.length === 8 && new Set(cases.map((c) => c.id)).size === 8 && cases.every((c) => CASE_IDS.includes(c.id)), 'Exactly C1-C8 required');
   insist(evidence && typeof evidence === 'object', 'Explicit source/topology/trace evidence required');
@@ -103,19 +104,19 @@ export function generateMaterials({ commonFacts, cases, evidence, entries = {}, 
     for (const role of ROLES) {
       const entry = entries[arm]?.[role];
       const valid = entry && Object.keys(entry).every((key) => ['snippet', 'refs'].includes(key)) && typeof entry.snippet === 'string' && entry.snippet.length > 0 && Array.isArray(entry.refs) && entry.refs.length > 0 && entry.refs.every((id) => evidence[id]?.kind === 'source');
-      if (!valid) gates.push({ gate: 'equivalent-entry', arm, role, passed: false, reason: 'Existing semantic-equivalent entry snippet and source references unavailable; do not invent public API.' });
+      if (!valid && method === 'paired-entry-v1') gates.push({ gate: 'equivalent-entry', arm, role, passed: false, reason: 'Existing semantic-equivalent entry snippet and source references unavailable; do not invent public API.' });
       if (valid) sanitizeEvidence(entry);
       packets[arm][role] = {};
       for (const stage of ['A', 'B']) {
         const included = (f) => stage === 'B' || f.stage === 'A';
-        const packet = { arm, role, stage, task: ROLE_TASKS[role], entry: valid ? structuredClone(entry) : null, commonFacts: common.filter(included), cases: scenarios.map((c) => ({ id: c.id, facts: c.facts.filter(included) })), questions: QUESTIONS, evidence: Object.fromEntries(Object.entries(evidence).filter(([, item]) => stage === 'B' || item.stage === 'A')), relations: relations[arm] ?? null, retrievalBudget: { sameWithinArmAcrossRoles: true } };
+        const packet = { arm, role, stage, task: method === 'judgment-only-v2' ? {task:'Judge only the supplied evidence at the stated observation boundary. Entry exercises are unavailable until both stages close.',objective:'same-facts judgment',minutes:32} : ROLE_TASKS[role], entry: method === 'judgment-only-v2' ? null : valid ? structuredClone(entry) : null, commonFacts: common.filter(included), cases: scenarios.map((c) => ({ id: c.id, facts: c.facts.filter(included) })), questions: QUESTIONS, evidence: Object.fromEntries(Object.entries(evidence).filter(([, item]) => stage === 'B' || item.stage === 'A')), relations: relations[arm] ?? null, retrievalBudget: { sameWithinArmAcrossRoles: true } };
         // Entries and relation projections may not smuggle stage-B references into A.
         if (stage === 'A' && valid) insist(entry.refs.every((id) => evidence[id].stage === 'A'), 'A entry exposes B evidence');
         packets[arm][role][stage] = sanitizeEvidence(packet);
       }
     }
   }
-  gates.push({ gate: 'entry-semantic-equivalence', passed: false, reason: 'Requires independent syntax/reference and semantic entry review; generator cannot self-certify equivalent APIs.' });
+  if (method === 'paired-entry-v1') gates.push({ gate: 'entry-semantic-equivalence', passed: false, reason: 'Requires independent syntax/reference and semantic entry review; generator cannot self-certify equivalent APIs.' });
   gates.push({ gate: 'atomic-fact-review', passed: false, reason: 'Independent reviewer must check each scalar proposition and ensure raw evidence introduces no unbudgeted key policy facts.' });
   const inventory = Object.fromEntries(['G', 'P'].map((arm) => [arm, Object.fromEntries(ROLES.map((role) => [role, Object.fromEntries(['A', 'B'].map((stage) => {
     const text = JSON.stringify(packets[arm][role][stage], null, 2) + '\n'; return [stage, { sha256: createHash('sha256').update(text).digest('hex'), bytes: Buffer.byteLength(text), lines: text.split('\n').length - 1 }];

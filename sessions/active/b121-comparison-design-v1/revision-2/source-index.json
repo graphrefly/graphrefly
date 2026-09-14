@@ -1,0 +1,77 @@
+[
+  {
+    "repository": "graphrefly-ts",
+    "path": "docs/design/causal-comparison-preparation/baseline.json",
+    "sha256": "3cb25309126555f964ce03c56703fe03c7fb998ba51258e2c20ae5f380a6e0d4"
+  },
+  {
+    "repository": "graphrefly-ts",
+    "path": "docs/design/causal-comparison-preparation/capture-binding.json",
+    "sha256": "af819dcd71549b62b89b532ab1868766dbbda325cc69dc929d46a88399fd57a9"
+  },
+  {
+    "repository": "graphrefly-ts",
+    "path": "docs/design/causal-comparison-preparation/equivalent-binding.json",
+    "sha256": "0c0ae4c24783d6dca68f443a6c208f821b9e11afb9aa6d4bc6816af7b3dc089d"
+  },
+  {
+    "repository": "graphrefly-ts",
+    "path": "docs/design/causal-comparison-preparation/equivalent-checkpoints.json",
+    "sha256": "ea661b6450bf2d1e4857f84c7504881f5bee68b98860c4f0c0feabb71b5ceb11"
+  },
+  {
+    "repository": "graphrefly-ts",
+    "path": "docs/design/causal-comparison-preparation/memory-checkpoints.json",
+    "sha256": "31b781f8786f065b82fefd8b6f04791f3d2e8b3167fc2ca2a3733e9c24a4fa1b"
+  },
+  {
+    "repository": "graphrefly-ts",
+    "path": "docs/design/causal-comparison-preparation/passive-facts.json",
+    "sha256": "0c0c52227b0fe17a5cbe1427ca6bae35d722bd2c046893c4e0bf327ddd37480a"
+  },
+  {
+    "repository": "graphrefly-ts",
+    "path": "docs/design/causal-comparison-preparation/source-catalog.json",
+    "sha256": "b085f58c2baf4b832a2c69834b66a7676e8ed85f8050890c3526f9fdb64baa96"
+  },
+  {
+    "repository": "graphrefly-ts",
+    "path": "scripts/export-spending-comparison-facts.mjs",
+    "sha256": "3c31f7d12197c96a76645a3cd7fba7ae9149b8a3688d82f513e9bb21fd54a491"
+  },
+  {
+    "repository": "graphrefly",
+    "path": "scripts/b121-comparison/entry-tasks.mjs",
+    "sha256": "da16b83d5e6b377363577bae2c8f292deafb36c6b1458a908235500f51208f5e"
+  },
+  {
+    "repository": "graphrefly",
+    "path": "scripts/b121-comparison/entry-tasks.test.mjs",
+    "sha256": "a3988b0989f36f00fc393a8b188d7da6428fdee66b4a5f5a79791cf4095ee385"
+  },
+  {
+    "repository": "graphrefly",
+    "path": "scripts/b121-comparison/materials.mjs",
+    "sha256": "67f083ac73fd567896241392b583dbe819c781687a2cda7ced864d9893a50d74"
+  },
+  {
+    "repository": "graphrefly",
+    "path": "scripts/b121-comparison/source-edits.py",
+    "sha256": "6dc9fef753460e9f410fbc685ada50e62ff31aeb12e28cd0342aec8fed8b7873"
+  },
+  {
+    "repository": "graphrefly",
+    "path": "scripts/b121-comparison/study-v2.mjs",
+    "sha256": "f053989208b96811227e97f26aec5dc1bc76bf85ab48d47ac0ccf99bd65fa324"
+  },
+  {
+    "repository": "graphrefly",
+    "path": "scripts/b121-comparison/study-v2.test.mjs",
+    "sha256": "c399c9498607fbc60184c85aa227fc61dd7aaab820e6c5003762ce28cb01c021"
+  },
+  {
+    "repository": "graphrefly",
+    "path": "scripts/b121-comparison/verify-study-v2.mjs",
+    "sha256": "661bcdd5993041b71095da09381fc3f541b3a47ee8e9e5f09453d09b04930f84"
+  }
+]
