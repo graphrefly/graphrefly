@@ -1,0 +1,64 @@
+{
+  "kind": "read-only-design-premise-audit",
+  "tsCommit": "d882729ddb9242e57b1e4b3c87b8bef5a15dca60",
+  "rootCommit": "5057b4b6a35b63e1bfddf13a71339bbc826d022d",
+  "sourceBindings": [
+    {
+      "path": "../../../../graphrefly-ts/examples/spending-alerts/causal-entry.ts",
+      "sha256": "3d802f8b01c27519dbcc7b0ed77ed151bc8fa4fd2e0337b7535879e3dbf9b792"
+    },
+    {
+      "path": "../../../../graphrefly-ts/examples/spending-alerts/causal-preset.ts",
+      "sha256": "71f801e17e95b2f7440017048dc08d3479a341d4e5e617be8eff9f513301dd50"
+    },
+    {
+      "path": "../../../../graphrefly-ts/examples/spending-alerts/causal-focused-host.ts",
+      "sha256": "a2988bfad5108f424cbf5347e0531ead939397ab0e725ed92461c05f38310819"
+    },
+    {
+      "path": "../../../../graphrefly-ts/packages/ts/src/solutions/causal-occurrence/construction.ts",
+      "sha256": "57a73dfa6eb9a685441403520f790447d63e13b5f221b8c7eba3c2c5dfae06c9"
+    },
+    {
+      "path": "../../../../graphrefly-ts/packages/ts/package.json",
+      "sha256": "0ca16a1fcc9602d6f8fa28725f35acf3d7a8be40adeb767fdb89312c6519575d"
+    },
+    {
+      "path": "../../../../graphrefly-ts/docs/design/causal-host-proof-execution/receipt.json",
+      "sha256": "e9c0a17fbdfa11413c1706b8ac4501215899994f78ff99cae90c5fe7e173cc78"
+    },
+    {
+      "path": "../../../../graphrefly-ts/docs/design/causal-layered-use-implementation/receipt.json",
+      "sha256": "c253623624cad3875a74190f1fde22b2a073c3498c0c14e53690b8457575e6aa"
+    }
+  ],
+  "counts": {
+    "baseOwnedOff": 53,
+    "baseOwnedSummaryDerivedFromManifest": 54,
+    "hostOwnedExtra": [
+      "proof/hostFacts",
+      "proof/hostGuard",
+      "proof/hostPackFacts",
+      "proof/runEndReady"
+    ],
+    "hostOwnedOff": 57,
+    "callerInputs": [
+      "arrivals",
+      "current",
+      "local",
+      "pack",
+      "verification"
+    ],
+    "observedWholeGraphOff": 62,
+    "graphArmsCompared": 23,
+    "exactNodeIdSetMatch": true
+  },
+  "claims": {
+    "newGraphsConstructed": 0,
+    "newRuntimeExecutions": 0,
+    "newMeasurements": 0,
+    "newHumanOrAgentParticipants": 0,
+    "designApproved": false
+  },
+  "scope": "Static source manifest plus archived23 Graph snapshots; summary count derived from declared extra node, not a new summary-mode runtime run. Numeric equality does not requalify original assembly performance or all lifecycle obligations."
+}

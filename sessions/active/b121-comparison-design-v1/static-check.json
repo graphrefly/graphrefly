@@ -1,0 +1,14 @@
+{
+  "kind": "design-static-check",
+  "sourceBindingsVerified": 7,
+  "localLinksVerified": 4,
+  "cases": 8,
+  "sourceDiffBudget": 2,
+  "participantsPerPopulation": 12,
+  "populations": 2,
+  "humanTimeMinutes": 73,
+  "keyFactBudget": 40,
+  "runtimeExecutions": 0,
+  "participantRuns": 0,
+  "scope": "Static proposal checks only; no behavioral, performance or study acceptance claim."
+}
