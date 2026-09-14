@@ -1,0 +1,384 @@
+{
+  "kind": "B121-agent-api-execution-proposal-v1",
+  "owner": "graphrefly:B121",
+  "date": "2026-09-14",
+  "executionReady": false,
+  "authorization": {
+    "providerCalls": 0,
+    "participantSessions": 0,
+    "spendUSD": 0,
+    "retries": 0
+  },
+  "human": "deferred; no recruitment",
+  "provider": {
+    "name": "OpenAI direct",
+    "endpoint": "https://api.openai.com/v1/responses",
+    "countEndpoint": "https://api.openai.com/v1/responses/input_tokens",
+    "model": "gpt-6-astra",
+    "reasoning": {
+      "effort": "medium"
+    },
+    "service_tier": "default",
+    "store": false,
+    "stream": false,
+    "background": false,
+    "truncation": "disabled",
+    "parallel_tool_calls": false,
+    "immutableRevision": null,
+    "returnedModelRequired": "gpt-6-astra",
+    "versionLimit": "Official current snapshot has only the undated gpt-6-astra identifier; preserve all response IDs, timestamps, returned model/config, request IDs and raw bodies. Same alias does not prove unchanged weights.",
+    "accountAccess": "unverified; no calls made"
+  },
+  "bindings": [
+    {
+      "path": "sessions/active/b121-comparison-design-v1/agent-api/provider-review.json",
+      "sha256": "688d8419009d826741d8bec6eefd3915eda45e547b9159732c1cefd6dce13409"
+    },
+    {
+      "path": "sessions/active/b121-comparison-design-v1/revision-2/material.json",
+      "sha256": "3e3533022a6e1f1f354a9b61553be00a7770fb5736896cbd1c337b3be69b291b"
+    },
+    {
+      "path": "sessions/active/b121-comparison-design-v1/revision-2/allocation.json",
+      "sha256": "03f6d8dd201a4f51ca2baa6e3f74aa90adfd3e71a33dab0910f9023f9d7d0427"
+    },
+    {
+      "path": "sessions/active/b121-comparison-design-v1/revision-2/goldens.json",
+      "sha256": "9ebcb0591d6261c25589bdf2bf697c86b3eb4eda89323a1fc1abdda1d4595b11"
+    },
+    {
+      "path": "sessions/active/b121-comparison-design-v1/revision-2/readiness.json",
+      "sha256": "b522aff45237c69d72627126329314e66b1a8bff20fe048869847d7331c11116"
+    },
+    {
+      "path": "sessions/active/b121-comparison-design-v1/isolation/qualification.json",
+      "sha256": "a5309d3b1ddc3b0729444c706e5302d70fa5260c6bb6b2379548f4dbe0594390"
+    },
+    {
+      "path": "sessions/active/b121-comparison-design-v1/isolation/probe-receipt.json",
+      "sha256": "5d9c82143c73e8567a16f185188c7c51874227b214ed7693a1754b3ba70d39b3"
+    },
+    {
+      "path": "scripts/b121-comparison/session.mjs",
+      "sha256": "6a75c042b61d2b03401e8c2106273aa7d7c62c0cfb881e5f0a95746669817f45"
+    },
+    {
+      "path": "scripts/b121-comparison/entry-tasks.mjs",
+      "sha256": "da16b83d5e6b377363577bae2c8f292deafb36c6b1458a908235500f51208f5e"
+    },
+    {
+      "path": "scripts/b121-comparison/api-runner.mjs",
+      "sha256": "4fc3cf67089b127e92b72c02e97e6b5a3389969a35a4db3766a3361f53a5b572"
+    },
+    {
+      "path": "scripts/b121-comparison/api-transport.mjs",
+      "sha256": "a44bd72975b722461e76fa5116539d02c59e05ae5011aa909c16752029715027"
+    },
+    {
+      "path": "scripts/b121-comparison/api-prepare.mjs",
+      "sha256": "7d4d9eca5b53a1e19bfe2d8904d40521b0e58f934605379e16448bfb49b134bb"
+    },
+    {
+      "path": "scripts/b121-comparison/api-campaign.mjs",
+      "sha256": "5446b9e918e763af21a1de9d71ef9b213bb4b51c633b82c9da3067ec631398c7"
+    }
+  ],
+  "bundleSHA": "fc8998e63ee247e572e8577592593518c40b2b984bd0bc015991bed7329d285a",
+  "sessions": [
+    {
+      "id": "agent-01",
+      "population": "agent",
+      "role": "user",
+      "arm": "G",
+      "order": "O2",
+      "cases": [
+        "C6",
+        "C5",
+        "C8",
+        "C3",
+        "C7",
+        "C2",
+        "C4",
+        "C1"
+      ],
+      "packetHash": "3c7bbb505e6dc1ae5aecf5182cc85c7c7f7f60ec6dda22ba5ab12918e1a027e6",
+      "entryHash": "3401779166ebc426b8b1a686ec60834748c02945e28a3a72433551007c02236b"
+    },
+    {
+      "id": "agent-02",
+      "population": "agent",
+      "role": "framework",
+      "arm": "G",
+      "order": "O2",
+      "cases": [
+        "C6",
+        "C5",
+        "C8",
+        "C3",
+        "C7",
+        "C2",
+        "C4",
+        "C1"
+      ],
+      "packetHash": "657ad1f69e80505748d9095c2d7510741b2a45540c0ae5f7dd2ab058f2374be4",
+      "entryHash": "302981e1c57b6257b590634d33600f95b192671e77e9319e8a37a55151ec716c"
+    },
+    {
+      "id": "agent-03",
+      "population": "agent",
+      "role": "framework",
+      "arm": "G",
+      "order": "O1",
+      "cases": [
+        "C1",
+        "C4",
+        "C2",
+        "C7",
+        "C3",
+        "C8",
+        "C5",
+        "C6"
+      ],
+      "packetHash": "51285d30b50e7463b70c4fb1378dc7a90265184b1ca1f02d04cdee5b3463bf56",
+      "entryHash": "302981e1c57b6257b590634d33600f95b192671e77e9319e8a37a55151ec716c"
+    },
+    {
+      "id": "agent-04",
+      "population": "agent",
+      "role": "framework",
+      "arm": "P",
+      "order": "O1",
+      "cases": [
+        "C1",
+        "C4",
+        "C2",
+        "C7",
+        "C3",
+        "C8",
+        "C5",
+        "C6"
+      ],
+      "packetHash": "31fb902acf94aaf8bdf601a10e6a28674b5b54d71be9e648f0779bfa598db2d0",
+      "entryHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    },
+    {
+      "id": "agent-05",
+      "population": "agent",
+      "role": "maintainer",
+      "arm": "P",
+      "order": "O2",
+      "cases": [
+        "C6",
+        "C5",
+        "C8",
+        "C3",
+        "C7",
+        "C2",
+        "C4",
+        "C1"
+      ],
+      "packetHash": "5c150ca189e55d735f5d4d3d33d9eececb37371d5e173dc2dc92c726f0c2666d",
+      "entryHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    },
+    {
+      "id": "agent-06",
+      "population": "agent",
+      "role": "user",
+      "arm": "G",
+      "order": "O1",
+      "cases": [
+        "C1",
+        "C4",
+        "C2",
+        "C7",
+        "C3",
+        "C8",
+        "C5",
+        "C6"
+      ],
+      "packetHash": "c5814e04af1a3b621d83d5adfff8a7d3b523a67cd62debc4eb57940f53da5605",
+      "entryHash": "3401779166ebc426b8b1a686ec60834748c02945e28a3a72433551007c02236b"
+    },
+    {
+      "id": "agent-07",
+      "population": "agent",
+      "role": "user",
+      "arm": "P",
+      "order": "O2",
+      "cases": [
+        "C6",
+        "C5",
+        "C8",
+        "C3",
+        "C7",
+        "C2",
+        "C4",
+        "C1"
+      ],
+      "packetHash": "9cb9c1d55dbcd3dcfaad418f2ece053ed2a67ad5bac72ec75886ddfa774acea0",
+      "entryHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    },
+    {
+      "id": "agent-08",
+      "population": "agent",
+      "role": "user",
+      "arm": "P",
+      "order": "O1",
+      "cases": [
+        "C1",
+        "C4",
+        "C2",
+        "C7",
+        "C3",
+        "C8",
+        "C5",
+        "C6"
+      ],
+      "packetHash": "42e0e5e8d1b8dae5c73c6c2e3044bbfbd120e05494a77456becc1743ca1badc0",
+      "entryHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    },
+    {
+      "id": "agent-09",
+      "population": "agent",
+      "role": "maintainer",
+      "arm": "G",
+      "order": "O2",
+      "cases": [
+        "C6",
+        "C5",
+        "C8",
+        "C3",
+        "C7",
+        "C2",
+        "C4",
+        "C1"
+      ],
+      "packetHash": "c96a748768d511ab9a8875288c867015f2666e56f2a160bfa1eb5471c564306e",
+      "entryHash": "2e51734e0e01bdedb57b4a525bfa84bd1f177eed35c1ae946b80b6ff81030b52"
+    },
+    {
+      "id": "agent-10",
+      "population": "agent",
+      "role": "maintainer",
+      "arm": "P",
+      "order": "O1",
+      "cases": [
+        "C1",
+        "C4",
+        "C2",
+        "C7",
+        "C3",
+        "C8",
+        "C5",
+        "C6"
+      ],
+      "packetHash": "00d41b33a2a2dfac71af9cd0edd53636dd701403160412883dfe4311314372bb",
+      "entryHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    },
+    {
+      "id": "agent-11",
+      "population": "agent",
+      "role": "maintainer",
+      "arm": "G",
+      "order": "O1",
+      "cases": [
+        "C1",
+        "C4",
+        "C2",
+        "C7",
+        "C3",
+        "C8",
+        "C5",
+        "C6"
+      ],
+      "packetHash": "45682141bb19cfd31eed4753a0c218f032285de13baf2a787d99fe233d3bab7b",
+      "entryHash": "2e51734e0e01bdedb57b4a525bfa84bd1f177eed35c1ae946b80b6ff81030b52"
+    },
+    {
+      "id": "agent-12",
+      "population": "agent",
+      "role": "framework",
+      "arm": "P",
+      "order": "O2",
+      "cases": [
+        "C6",
+        "C5",
+        "C8",
+        "C3",
+        "C7",
+        "C2",
+        "C4",
+        "C1"
+      ],
+      "packetHash": "dd24f30b79123426f192e6b3f3cacc588e4677e29151332858f0b605924300db",
+      "entryHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    }
+  ],
+  "limits": {
+    "perSession": {
+      "calls": 80,
+      "inputTokens": 48000,
+      "outputTokens": 8000,
+      "elapsedMs": 4500000
+    },
+    "totalStudyInputTokens": 576000,
+    "totalStudyOutputTokens": 96000,
+    "qualification": {
+      "freshRequests": 2,
+      "inputTokens": 4096,
+      "outputTokens": 1024
+    },
+    "generationCalls": 962,
+    "countCalls": 962,
+    "retries": 0,
+    "concurrency": 1,
+    "maxRequestMs": 60000,
+    "maxOutputPerRequest": 2048,
+    "noResume": true,
+    "anyFatalStopsCampaign": true
+  },
+  "price": {
+    "currency": "USD",
+    "standardInputPerMillion": 10,
+    "cachedInputPerMillion": 1,
+    "cacheWritePerMillion": 12.5,
+    "outputPerMillion": 50,
+    "studyMaximum": 12,
+    "qualificationMaximum": 0.1024,
+    "proposedTotalCeiling": 12.11,
+    "countEndpointPriceUSD": null,
+    "countTariff": "Not established by fetched official pages. Must confirm zero cost with an official/account billing source before any endpoint is called; otherwise revise proposal. No assumption of free service.",
+    "basis": "All generation input reserved at cache-write rate; reasoning and invisible formatting are output. Short context only. No built-in paid tools or regional endpoint. Taxes excluded; service charges only.",
+    "source": "https://developers.openai.com/api/docs/pricing"
+  },
+  "conditionsBeforeAnyCall": [
+    "Explicit approval bound to this exact manifest SHA and one-shot scope, expiry and zero retries",
+    "Accept undated model identifier reproducibility limit; no automatic replacement",
+    "Official/account evidence establishes count endpoint zero tariff",
+    "Explicit API credential supplied privately to trusted controller; no key lookup in preparation"
+  ],
+  "qualificationBeforeParticipants": [
+    "Two separately fresh synthetic requests, each <=2048 input /512 output; exact count, model, tier, tool and store/config validation; no study facts",
+    "Any mismatch, incomplete response, missing usage, timeout or uncertain billing stops entire campaign; no participant substitution",
+    "Outbound only one custom broker tool; no conversation/previous_response_id, repo, chat history, goldens or other arm; returned output types are restricted"
+  ],
+  "privacy": {
+    "transmitted": "Only selected role/arm judgment files, own session history, and assigned Graph entry source chunks after A/B closure go to OpenAI; credential stays in trusted HTTP header.",
+    "retention": "store=false does not mean zero retention. Official data guide describes default abuse-monitoring retention up to 30 days (exceptions apply); no ZDR account entitlement is asserted.",
+    "isolation": "Direct request construction and custom-tool allowlist, not the prior synthetic container qualification. Provider internals, hidden service instructions, training knowledge and immutable weights are not independently observable.",
+    "source": "https://developers.openai.com/api/docs/guides/your-data"
+  },
+  "analysis": {
+    "method": "judgment-only-v2",
+    "denominator": "12 assigned slots x 8 cases x 7 fields x 2 phases, including failed/unrun slots",
+    "entry": "6 G sessions receive assigned role task after their A/B seals; same cumulative budget; no P entry score",
+    "structured": "Existing frozen gradeSealed; value and required fact citations both required. Separate safety counts and role/arm rows.",
+    "freeText": "Frozen HUMAN_RUBRIC; two blinded human reviewers unavailable. Preserve explanations and concepts unscored. No agent self-score replaces them.",
+    "limitations": [
+      "agent-only single-model small sample; not human evidence",
+      "fixed caps may prevent full completion; never increase limits after exposure",
+      "no immutable model version proof or provider-internal isolation proof",
+      "no B121 completion or formal performance claim"
+    ]
+  }
+}

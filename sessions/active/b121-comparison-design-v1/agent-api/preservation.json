@@ -1,0 +1,7 @@
+{
+  "preexistingFilesChecked": 2092,
+  "unchangedBeforeB121EvidenceIndexUpdate": true,
+  "baselineSHA": "6c45a6e24abe85160e6031578b4b5e4fccf7000d753ba5e94275fd6946442792",
+  "expectedSubsequentChange": "Only B121 backlog evidence reference/note; all other records remain unchanged.",
+  "packetAndManifestDeterministic": true
+}

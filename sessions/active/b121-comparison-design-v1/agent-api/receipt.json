@@ -1,0 +1,93 @@
+{
+  "kind": "B121 offline agent API runner preparation",
+  "owner": "graphrefly:B121",
+  "rootBaseline": "b373b17a83e5be3943e9cbc1ee93128e45502672",
+  "tsBaseline": "84cab48f3871e59d91579a8283a073245d18b27e",
+  "classification": "attempt/evidence and unapproved execution proposal; no new durable decision",
+  "authorization": {
+    "providerCalls": 0,
+    "participantRuns": 0,
+    "spendUSD": 0,
+    "realInboxEffects": 0
+  },
+  "executionReady": false,
+  "b121Status": "proposed",
+  "tests": {
+    "allComparisonPassed": 72,
+    "finalAffectedAPIPassed": 37,
+    "failed": 0,
+    "skipped": 0,
+    "fakeTransportOnly": true,
+    "fullTSAndPerformanceRerun": false,
+    "existingContainerProbeRerun": false
+  },
+  "checks": {
+    "scopedBiome": "passed; five informational template-style suggestions",
+    "dashboard": "passed; pre-existing root-only/legacy warnings retained",
+    "workspaceAuthority": "passed; one existing legacy revision warning",
+    "deterministicBundleAndManifest": true,
+    "preservedExistingFiles": 2092
+  },
+  "qa": {
+    "blind": "api_blind_review; raw provider error/usage envelope loss repaired",
+    "edge": "api_edge_review; final-batch deadline and cross-session replay repaired; recheck clean",
+    "verification": "api_verification_review; real campaign/replay/fatal-stop, seeded canaries and billing boundary tests added; null count body retention repaired with regression test"
+  },
+  "unresolved": [
+    "Count endpoint zero tariff not established; no endpoint may be called before source confirmation",
+    "Astra account access/configuration remains unqualified; two proposed requests require authorization",
+    "Official snapshot has no dated immutable revision; explicit limitation acceptance required",
+    "Two blinded human free-text/concept reviewers unavailable; those outputs unscored",
+    "Human comparison deferred; no B121/performance/public API completion"
+  ],
+  "artifacts": [
+    {
+      "path": "sessions/active/b121-comparison-design-v1/agent-api/README.md",
+      "sha256": "be9a8a2e526d9ea44e02c82f4edcc1ab40a01b2da56b013f9d873bc86564f886"
+    },
+    {
+      "path": "sessions/active/b121-comparison-design-v1/agent-api/baseline.json",
+      "sha256": "6c45a6e24abe85160e6031578b4b5e4fccf7000d753ba5e94275fd6946442792"
+    },
+    {
+      "path": "sessions/active/b121-comparison-design-v1/agent-api/bundle.json",
+      "sha256": "fc8998e63ee247e572e8577592593518c40b2b984bd0bc015991bed7329d285a"
+    },
+    {
+      "path": "sessions/active/b121-comparison-design-v1/agent-api/manifest.json",
+      "sha256": "39986b15190d0a9e976e6c424fe562c18a877e9f1e21a9fbc6f08bb2ac31d57e"
+    },
+    {
+      "path": "sessions/active/b121-comparison-design-v1/agent-api/preservation.json",
+      "sha256": "bddfa38694d31316ec6a5ca7430b47392e87b69025beef4be3fd4be6cfe24a34"
+    },
+    {
+      "path": "sessions/active/b121-comparison-design-v1/agent-api/provider-review.json",
+      "sha256": "688d8419009d826741d8bec6eefd3915eda45e547b9159732c1cefd6dce13409"
+    },
+    {
+      "path": "scripts/b121-comparison/api-campaign.mjs",
+      "sha256": "5446b9e918e763af21a1de9d71ef9b213bb4b51c633b82c9da3067ec631398c7"
+    },
+    {
+      "path": "scripts/b121-comparison/api-campaign.test.mjs",
+      "sha256": "f03538cdee8c473ca06574aa474912554e2a3e24a05342545495507e46cb2400"
+    },
+    {
+      "path": "scripts/b121-comparison/api-prepare.mjs",
+      "sha256": "7d4d9eca5b53a1e19bfe2d8904d40521b0e58f934605379e16448bfb49b134bb"
+    },
+    {
+      "path": "scripts/b121-comparison/api-runner.mjs",
+      "sha256": "4fc3cf67089b127e92b72c02e97e6b5a3389969a35a4db3766a3361f53a5b572"
+    },
+    {
+      "path": "scripts/b121-comparison/api-runner.test.mjs",
+      "sha256": "a5a642ace3480d444e9380e5eda9c008b7bb6a83f7dd2af4888997d0e0d87992"
+    },
+    {
+      "path": "scripts/b121-comparison/api-transport.mjs",
+      "sha256": "a44bd72975b722461e76fa5116539d02c59e05ae5011aa909c16752029715027"
+    }
+  ]
+}

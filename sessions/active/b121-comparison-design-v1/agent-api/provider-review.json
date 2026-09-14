@@ -1,0 +1,41 @@
+{
+  "date": "2026-09-14",
+  "providerRequests": 0,
+  "credentialReads": 0,
+  "sources": [
+    {
+      "url": "https://developers.openai.com/api/docs/models/gpt-6-astra",
+      "finding": "API model and undated current snapshot gpt-6-astra; medium reasoning and function calling listed; account entitlement and immutable revision not established."
+    },
+    {
+      "url": "https://developers.openai.com/api/docs/pricing",
+      "finding": "Standard short-context USD/M: ordinary input10, cached1, cache-write12.5, output50; entire input reserved at12.5."
+    },
+    {
+      "url": "https://developers.openai.com/api/docs/guides/prompt-caching",
+      "finding": "input_tokens_details distinguishes cached_tokens and cache_write_tokens; input categories are exclusive, not additive rates."
+    },
+    {
+      "url": "https://developers.openai.com/api/docs/guides/token-counting",
+      "finding": "Exact input count includes request framing and tools. No independent endpoint tariff found in fetched guide/pricing sources; free status unverified."
+    },
+    {
+      "url": "https://developers.openai.com/api/reference/python/resources/responses/subresources/input_tokens/methods/count",
+      "finding": "POST /responses/input_tokens; input, instructions, model, tools, tool_choice, parallel_tool_calls, reasoning, truncation supported."
+    },
+    {
+      "url": "https://developers.openai.com/api/docs/guides/reasoning",
+      "finding": "Output usage and max_output_tokens include reasoning and nonvisible formatting. Stateless encrypted reasoning may be manually replayed within its own session."
+    },
+    {
+      "url": "https://developers.openai.com/api/docs/guides/your-data",
+      "finding": "store=false does not establish zero data retention. Default abuse monitoring may retain content up to30 days with exceptions."
+    }
+  ],
+  "unresolved": [
+    "Count endpoint tariff",
+    "Account/model access",
+    "Immutable model revision unavailable; requires acceptance of limitation"
+  ],
+  "recommendation": "Retain Astra with explicit reproducibility limitation; do not silently substitute another model. No actual endpoint call until exact approval and free-count evidence."
+}
