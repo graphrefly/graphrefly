@@ -87,7 +87,7 @@ export function validateResponse(body) {
 
 /** Caller supplies only one already-bound slot, its file map, and trusted append-only persistence.
  * estimate/create transports are trusted; they receive request JSON, never controller/files/goldens.
- * A thrown transport error has unknown billing and stops the campaign. No resume/retry API exists.
+ * Transport may recover infrastructure failures within its declared bound; an exhausted error stops the campaign. No session resume exists.
  */
 export async function runSession({
 	slot,
@@ -96,7 +96,7 @@ export async function runSession({
 	transport,
 	journal,
 	now = () => performance.now(),
-	requestTimeoutMs = 60000,
+	requestTimeoutMs = null,
 }) {
 	insist(
 		typeof journal === "function" &&
@@ -142,7 +142,10 @@ export async function runSession({
 		return n;
 	};
 	async function bounded(fn, payload) {
-		const remaining = Math.min(requestTimeoutMs, LIMITS.elapsedMs - elapsed());
+		const bound =
+			requestTimeoutMs ??
+			(fn === transport.create ? (transport.maxCreateMs ?? 60000) : 60000);
+		const remaining = Math.min(bound, LIMITS.elapsedMs - elapsed());
 		insist(remaining > 0, "session timeout");
 		const abort = new AbortController();
 		let timer, grace;

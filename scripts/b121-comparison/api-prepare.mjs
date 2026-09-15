@@ -6,7 +6,11 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { CEILING_USD, maximumCost, ROUTE } from "./api-provider.mjs";
 import { CONFIG, INSTRUCTIONS, TOOL } from "./api-runner.mjs";
-import { QUALIFICATION_PROMPTS } from "./api-transport.mjs";
+import {
+	MAX_CREATE_MS,
+	QUALIFICATION_PROMPTS,
+	RETRY_POLICY,
+} from "./api-transport.mjs";
 import { createEntryAcceptance } from "./entry-tasks.mjs";
 import { CONCEPTS, HUMAN_RUBRIC } from "./materials.mjs";
 import { createSession, hash, LIMITS } from "./session.mjs";
@@ -150,6 +154,7 @@ export function prepareManifest(bundle) {
 		"scripts/b121-comparison/materials.mjs",
 		"../graphrefly-ts/packages/ts/evals/graph-native-rerun-avoidance/openrouter-transport.mjs",
 		"scripts/b121-comparison/api-transport.mjs",
+		"../graphrefly-ts/packages/ts/evals/graph-native-rerun-avoidance/openrouter-recovery.mjs",
 		"scripts/b121-comparison/api-prepare.mjs",
 		"scripts/b121-comparison/api-campaign.mjs",
 	];
@@ -206,7 +211,8 @@ export function prepareManifest(bundle) {
 			},
 			generationCalls: 962,
 			countCalls: 0,
-			retries: 0,
+			retries: RETRY_POLICY,
+			maxCreateMs: MAX_CREATE_MS,
 			concurrency: 1,
 			maxRequestMs: 60000,
 			maxOutputPerRequest: 2048,
@@ -230,14 +236,14 @@ export function prepareManifest(bundle) {
 			source: ROUTE.source,
 		},
 		conditionsBeforeAnyCall: [
-			"Explicit one-shot grant bound to manifest SHA, Qwen/Makora route, USD 0.20, 962 maximum generation calls, expiry, zero retries",
+			"Explicit one-shot grant bound to manifest SHA, Qwen/Makora route, USD 0.20, 962 maximum generation calls, expiry, explicit CSP11 retry policy (capacity 3; availability 1); retries consume the same call/money ceilings",
 			"Accept model alias and local input estimate limitations; no automatic provider/model replacement",
 			"Confirm route metadata/price evidence remains current before approval; if changed, regenerate manifest",
 			"Explicit private credential injection; preparation never discovers keys",
 		],
 		qualificationBeforeParticipants: [
 			"Two fresh synthetic requests; <=4096 reported input and 512 output each; exact requested broker operation; returned model/provider, complete usage and pricing audit",
-			"Any mismatch, malformed response, overrun, timeout or billing uncertainty stops entire campaign; no substitutions or retries",
+			"Mismatches, malformed responses and overruns stop the campaign. CSP11 infrastructure recovery is bounded; unknown failed billing retains the full reservation. No substitutions or session resume.",
 			"Only one custom broker; all history is explicit messages; no server-side conversation, repository tool or hidden grading data",
 		],
 		privacy: {

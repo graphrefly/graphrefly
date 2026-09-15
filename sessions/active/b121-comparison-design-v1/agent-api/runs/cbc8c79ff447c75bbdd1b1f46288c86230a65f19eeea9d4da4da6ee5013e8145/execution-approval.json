@@ -1,0 +1,16 @@
+{
+  "manifestSHA": "cbc8c79ff447c75bbdd1b1f46288c86230a65f19eeea9d4da4da6ee5013e8145",
+  "action": "B121-agent-api-one-shot",
+  "acceptAliasLimitation": true,
+  "acceptInputEstimateLimitation": true,
+  "model": "qwen/qwen3.8-flash",
+  "providerTag": "makora/fp4",
+  "expiresAt": "2026-09-16T01:00:00.000Z",
+  "maxGenerationCalls": 962,
+  "maxUSD": 0.2,
+  "retries": {
+    "capacity": 3,
+    "availability": 1
+  },
+  "evidence": "User explicitly continued after delivery of shared CSP11 recovery repair, exact retry schedule, unchanged USD0.20 cap and offline verification. One campaign for current manifest; same dedicated key cumulative USD0.20 limit. Preflight usage USD0.00035325, remaining USD0.19964675. No provider/model fallback or later rerun authorized."
+}

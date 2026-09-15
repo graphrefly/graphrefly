@@ -1,0 +1,67 @@
+{
+  "kind": "B121-CSP11-recovery-repair-receipt-v1",
+  "owner": "graphrefly:B121",
+  "recordedAt": "2026-09-15T04:08:57.436096+00:00",
+  "classification": "implementation repair and offline verification evidence; no execution grant",
+  "request": "User asked to continue after identifying missing CSP11 retry reuse.",
+  "manifestSHA": "cbc8c79ff447c75bbdd1b1f46288c86230a65f19eeea9d4da4da6ee5013e8145",
+  "sharedPolicy": "../graphrefly-ts/packages/ts/evals/graph-native-rerun-avoidance/openrouter-recovery.mjs",
+  "behavior": {
+    "capacityRetries": 3,
+    "capacityMinimumWaitMs": [
+      60000,
+      120000,
+      240000
+    ],
+    "availabilityRetries": 1,
+    "availabilityMinimumWaitMs": 60000,
+    "maximumProviderWaitMs": 240000,
+    "samePayload": true,
+    "sameRoute": true,
+    "unknownFailureReservation": "retained in full; Makora has no imported provider-specific nonbillable exception",
+    "reportedErrorUsage": "terminal; retained without retry",
+    "perAttemptTimeoutMs": 60000,
+    "outerDeadline": "includes all allowed waits and attempts; capped by existing session elapsed budget",
+    "totalGenerationCeiling": 962,
+    "moneyCeilingUSD": 0.2
+  },
+  "verification": {
+    "comparisonSuite": {
+      "passed": 99,
+      "failed": 0,
+      "command": "node --test scripts/b121-comparison/*.test.mjs"
+    },
+    "sharedHelpersAndTransport": {
+      "passed": 15
+    },
+    "CSP11TopologyRecovery": {
+      "passed": 15,
+      "filtered": 74
+    },
+    "CSP11LegacyLiveOfflineFixtures": {
+      "passed": 7,
+      "filtered": 214
+    },
+    "independentReview": [
+      "blind",
+      "edge",
+      "verification-gap"
+    ],
+    "fixedReviewFindings": [
+      "non-JSON gateway error status recovery",
+      "mid-body transport failure recovery",
+      "known HTTP status precedence over interrupted error body"
+    ],
+    "scopedBiome": "passed; existing root useTemplate informational notices",
+    "dashboard": "exit 0; existing orphan/work-federation warnings",
+    "targetedTypecheck": "two pre-existing eval-topology Timeout union errors at6317,6656; no new diagnostics"
+  },
+  "newProviderCalls": 0,
+  "newSpendUSD": 0,
+  "executionReady": false,
+  "limitations": [
+    "Offline verification is not provider capacity or model-quality evidence.",
+    "Unknown failed charges can exhaust the money ceiling before all retries or study sessions finish.",
+    "Old frozen run directories and grants preserved; current manifest contains no live authorization."
+  ]
+}

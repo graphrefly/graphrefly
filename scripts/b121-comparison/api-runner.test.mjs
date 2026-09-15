@@ -579,3 +579,308 @@ test("reported input overrun retains actual charged usage but admits no answer",
 	assert.equal(result.costUSD, maximumCost(48001, 20));
 	assert.equal(result.pendingReservation, null);
 });
+
+const recoveryApproval = {
+	...approval,
+	retries: { capacity: 3, availability: 1 },
+};
+function recovering(responses, extra = {}) {
+	const seen = [],
+		waits = [],
+		events = [];
+	const t = createOpenRouterTransport({
+		apiKey: "fake",
+		approval: recoveryApproval,
+		manifestSHA: "test",
+		journal: (e) => events.push(e),
+		sleepImpl: async (ms) => {
+			waits.push(ms);
+		},
+		fetchImpl: async (_url, opts) => {
+			seen.push(opts.body);
+			const next = responses.shift();
+			if (next instanceof Error) throw next;
+			if (typeof next === "function") return next(opts);
+			return next ?? http(JSON.stringify(body(null, [{ op: "list" }])));
+		},
+		...extra,
+	});
+	return { t, seen, waits, events };
+}
+const busyResponse = (
+	status = 429,
+	retryAfter = "1",
+	value = { error: { code: status } },
+) => {
+	const r = http(JSON.stringify(value), status);
+	if (retryAfter !== null) r.headers.set("retry-after", retryAfter);
+	return r;
+};
+test("CSP11 recovery replays identical payload, separates failure evidence and retains unknown billing", async () => {
+	const f = recovering([
+		busyResponse(),
+		busyResponse(503),
+		busyResponse(),
+		busyResponse(),
+	]);
+	const p = payload();
+	await f.t.estimate(p);
+	const result = await f.t.create(p, options());
+	assert.deepEqual(f.waits, [60000, 60000, 120000, 240000]);
+	assert.equal(new Set(f.seen).size, 1);
+	assert.equal(result.attempts.length, 4);
+	assert.equal(f.t.snapshot().generationCalls, 5);
+	assert.ok(
+		Math.abs(
+			f.t.snapshot().reservedUSD -
+				(4 * maximumCost(ROUTE.contextTokens, 512) + maximumCost(100, 20)),
+		) < 1e-9,
+	);
+	assert.equal(
+		f.events.filter((e) => e.type === "provider-attempt-failed").length,
+		4,
+	);
+});
+test("recovery exhaustion and over-limit Retry-After stop without shortening waits", async () => {
+	for (const [responses, n, waits] of [
+		[
+			[busyResponse(), busyResponse(), busyResponse(), busyResponse()],
+			4,
+			[60000, 120000, 240000],
+		],
+		[[busyResponse(503), busyResponse(503)], 2, [60000]],
+		[[busyResponse(429, "241")], 1, []],
+	]) {
+		const f = recovering(responses);
+		const p = payload();
+		await f.t.estimate(p);
+		await assert.rejects(f.t.create(p, options()));
+		assert.equal(f.seen.length, n);
+		assert.deepEqual(f.waits, waits);
+		assert.equal(f.t.snapshot().stopped, true);
+	}
+});
+test("terminal HTTP, malformed JSON, reported usage and invalid successful output never retry", async () => {
+	for (const r of [
+		busyResponse(401),
+		busyResponse(500, null),
+		http("bad", 200),
+		busyResponse(429, "1", { error: { code: 429 }, usage: { cost: 0 } }),
+		http(JSON.stringify({ ...body(null, []), model: "other" })),
+	]) {
+		const f = recovering([r]);
+		const p = payload();
+		await f.t.estimate(p);
+		await assert.rejects(f.t.create(p, options()));
+		assert.equal(f.seen.length, 1);
+		assert.deepEqual(f.waits, []);
+	}
+});
+test("conditional 500 and network failures use availability budget", async () => {
+	for (const response of [
+		busyResponse(500, "90"),
+		new TypeError("fetch failed"),
+	]) {
+		const f = recovering([response]);
+		const p = payload();
+		await f.t.estimate(p);
+		await f.t.create(p, options());
+		assert.deepEqual(f.waits, [response instanceof Error ? 60000 : 90000]);
+	}
+});
+test("attempt timeout after partial body can recover; external abort cannot", async () => {
+	const stalled = () => {
+		const r = new Response(
+			new ReadableStream({
+				start(c) {
+					c.enqueue(new TextEncoder().encode('{"id":"partial"'));
+				},
+			}),
+		);
+		Object.defineProperty(r, "url", { value: ROUTE.endpoint });
+		return r;
+	};
+	const f = recovering([stalled], { attemptTimeoutMs: 5 });
+	const p = payload();
+	await f.t.estimate(p);
+	const out = await f.t.create(p, options());
+	assert.equal(f.seen.length, 2);
+	assert.equal(out.attempts[0].envelope.rawBody, '{"id":"partial"');
+	const abort = new AbortController();
+	const g = recovering([busyResponse()], {
+		sleepImpl: async () => abort.abort(),
+	});
+	await g.t.estimate(p);
+	await assert.rejects(g.t.create(p, { signal: abort.signal }));
+	assert.equal(g.seen.length, 1);
+});
+test("journal failure stops before retry and no spend on first journal failure", async () => {
+	for (const type of [
+		"provider-attempt-request",
+		"provider-attempt-failed",
+		"provider-retry-wait",
+	]) {
+		const f = recovering([busyResponse()], {
+			journal: (e) => {
+				if (e.type === type) throw new Error("disk failure");
+			},
+		});
+		const p = payload();
+		await f.t.estimate(p);
+		await assert.rejects(f.t.create(p, options()), /disk failure/);
+		assert.equal(f.seen.length, type === "provider-attempt-request" ? 0 : 1);
+		assert.equal(f.waits.length, 0);
+	}
+});
+test("recovery runs through real session controller without replaying a broker operation", async () => {
+	const f = recovering([
+		busyResponse(),
+		http(JSON.stringify(body(null, submits(p, "A"), 1))),
+		http(JSON.stringify(body(null, submits(p, "B"), 2))),
+	]);
+	const events = [];
+	const result = await runSession({
+		...p,
+		transport: f.t,
+		journal: (e) => events.push(e),
+	});
+	assert.equal(result.fatal, null);
+	assert.equal(f.seen.length, 3);
+	assert.equal(f.seen[0], f.seen[1]);
+	assert.ok(f.seen[2].includes('"role":"tool"'));
+});
+
+test("non-JSON HTTP gateway failures preserve raw evidence and recover by status", async () => {
+	for (const r of [http("<html>gateway down</html>", 502), http("", 429)]) {
+		const f = recovering([r]);
+		const p = payload();
+		await f.t.estimate(p);
+		const out = await f.t.create(p, options());
+		assert.equal(f.seen.length, 2);
+		assert.equal(out.attempts[0].envelope.httpStatus, r.status);
+		assert.ok(out.attempts[0].envelope.rawBodyBase64 !== null);
+	}
+});
+test("expiry while waiting and concurrent dispatch cannot create another request", async () => {
+	const grant = { ...recoveryApproval };
+	let release;
+	const f = recovering([busyResponse()], {
+		approval: grant,
+		sleepImpl: () =>
+			new Promise((r) => {
+				release = r;
+			}),
+	});
+	const p = payload();
+	await f.t.estimate(p);
+	const active = f.t.create(p, options());
+	while (!release) await new Promise((r) => setImmediate(r));
+	await assert.rejects(f.t.estimate(p), /stopped|expired/);
+	await assert.rejects(f.t.create(p, options()), /stopped|expired/);
+	const originalNow = Date.now;
+	try {
+		Date.now = () => Date.parse("2100-01-01");
+		release();
+		await assert.rejects(active, /expired/);
+	} finally {
+		Date.now = originalNow;
+	}
+	assert.equal(f.seen.length, 1);
+});
+
+test("mid-body socket disconnect recovers but streamed byte-limit violations do not", async () => {
+	for (const tooLarge of [false, true]) {
+		let reads = 0;
+		const r = new Response(
+			new ReadableStream({
+				pull(c) {
+					if (reads++ === 0)
+						c.enqueue(new TextEncoder().encode('{"id":"partial"'));
+					else if (tooLarge) {
+						c.enqueue(new Uint8Array(2 * 1024 * 1024));
+						c.close();
+					} else c.error(new TypeError("terminated: socket closed"));
+				},
+			}),
+		);
+		Object.defineProperty(r, "url", { value: ROUTE.endpoint });
+		const f = recovering([r]);
+		const p = payload();
+		await f.t.estimate(p);
+		if (tooLarge) {
+			await assert.rejects(f.t.create(p, options()));
+			assert.equal(f.seen.length, 1);
+		} else {
+			const out = await f.t.create(p, options());
+			assert.equal(f.seen.length, 2);
+			assert.equal(out.attempts[0].envelope.rawBody, '{"id":"partial"');
+			assert.deepEqual(f.waits, [60000]);
+		}
+	}
+});
+
+test("qualifications recover independently and preserve two fresh conversations", async () => {
+	const f = recovering([
+		busyResponse(),
+		http(JSON.stringify(body(null, [{ op: "read", path: "probe.json" }], 1))),
+		http(JSON.stringify(body(null, [{ op: "read", path: "probe.json" }], 2))),
+	]);
+	const result = await qualifyProvider({ transport: f.t, journal: () => {} });
+	assert.equal(result.qualified, true);
+	assert.equal(f.seen.length, 3);
+	assert.equal(f.seen[0], f.seen[1]);
+	assert.equal(JSON.parse(f.seen[2]).messages.length, 2);
+	assert.ok(!f.seen[2].includes("6f128b"));
+});
+test("remaining money can stop recovery before any wait or extra dispatch", async () => {
+	const f = recovering([
+		...Array.from({ length: 4 }, (_, i) =>
+			http(
+				JSON.stringify(
+					body(null, [{ op: "list" }], i, ROUTE.contextTokens, 512),
+				),
+			),
+		),
+		busyResponse(),
+	]);
+	const p = payload();
+	for (let i = 0; i < 4; i++) {
+		await f.t.estimate(p);
+		await f.t.create(p, options());
+	}
+	await f.t.estimate(p);
+	await assert.rejects(f.t.create(p, options()), /ceiling before retry/);
+	assert.equal(f.seen.length, 5);
+	assert.deepEqual(f.waits, []);
+});
+
+test("known HTTP status wins over interrupted error body", async () => {
+	for (const status of [401, 429]) {
+		const broken = () => {
+			let reads = 0;
+			const r = new Response(
+				new ReadableStream({
+					pull(c) {
+						if (reads++ === 0) c.enqueue(new TextEncoder().encode('{"error":'));
+						else c.error(new TypeError("socket closed"));
+					},
+				}),
+				{ status },
+			);
+			Object.defineProperty(r, "url", { value: ROUTE.endpoint });
+			return r;
+		};
+		const f = recovering([broken(), broken()]);
+		const p = payload();
+		await f.t.estimate(p);
+		if (status === 401) {
+			await assert.rejects(f.t.create(p, options()));
+			assert.equal(f.seen.length, 1);
+			assert.deepEqual(f.waits, []);
+		} else {
+			await f.t.create(p, options());
+			assert.equal(f.seen.length, 3);
+			assert.deepEqual(f.waits, [60000, 120000]);
+		}
+	}
+});

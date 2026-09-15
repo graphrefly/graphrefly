@@ -76,6 +76,7 @@ export async function runCampaign({ approval, apiKey }) {
 		apiKey,
 		approval,
 		manifestSHA,
+		journal: (event) => journal(event),
 	});
 	// Parent is created only on an explicitly authorized call; exact child is exclusive and persistent.
 	const parent = join(base, "agent-api/runs");
