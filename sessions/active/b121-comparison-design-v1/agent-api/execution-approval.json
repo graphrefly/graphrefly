@@ -1,0 +1,13 @@
+{
+  "manifestSHA": "6cf4fdf1f779054d03b73956c1907d156a266f0570715f947e5c02da693eb194",
+  "action": "B121-agent-api-one-shot",
+  "acceptAliasLimitation": true,
+  "acceptInputEstimateLimitation": true,
+  "model": "qwen/qwen3.8-flash",
+  "providerTag": "makora/fp4",
+  "expiresAt": "2026-09-16T01:00:00.000Z",
+  "maxGenerationCalls": 962,
+  "maxUSD": 0.2,
+  "retries": 0,
+  "evidence": "User approved single run at USD 0.20 in current task, requested dedicated key and provider configuration, then confirmed privately saved key. Key lifetime ends 2026-09-16 01:17 UTC; this grant expires earlier."
+}

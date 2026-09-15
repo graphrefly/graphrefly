@@ -1,0 +1,48 @@
+{
+  "schema": "graphrefly/causal-flagship-design-brief/v1",
+  "revision": "brief-v1",
+  "artifactRef": "graphrefly:causal-flagship-design-brief",
+  "workRef": "graphrefly:B139",
+  "owner": "graphrefly",
+  "body": {
+    "path": "sessions/archive/SESSION-b139-causal-flagship-brief-v1.md",
+    "digest": "sha256:1477c42a39903ea89c523c97ee82c7eb1c0e320f88c88738325e043c6d44dc8a"
+  },
+  "governingRef": "graphrefly:D793",
+  "approval": {
+    "kind": "design-selection",
+    "taskId": "01a077c7-55e6-7f11-9d4f-e7c51944afb4",
+    "date": "2026-09-06",
+    "userResponse": "同意",
+    "reviewedDraftDigest": "sha256:96385793cc550acb13658a1b10f380d2d56f17d8ffb8db7d39a2ad5f1e5b2b5f",
+    "scope": "Approve the reviewed B139 spending-alerts consumer selection, local inbox effect boundary, algorithm positive/negative controls and bounded verification brief; no package API, implementation or execution authorization."
+  },
+  "consumes": [
+    {
+      "artifactRef": "graphrefly:causal-occurrence-contract",
+      "schema": "graphrefly/causal-occurrence-contract/v1",
+      "revision": "contract-v2",
+      "governingRef": "graphrefly:D791"
+    },
+    {
+      "artifactRef": "graphrefly-ts:causal-occurrence-arm-evidence",
+      "schema": "graphrefly/conformance-arm-evidence/v1",
+      "revision": "ts-v3",
+      "receiptPath": "../graphrefly-ts/packages/ts/qualification/causal-occurrence/ts-v3-receipt.json",
+      "digest": "sha256:27d68650bf4d6575a616f776e59e806d0fa1e430b1096d4ac28882d778863690"
+    }
+  ],
+  "baselineCommits": {
+    "graphrefly": "a38b8311faf9a2e13cd18cc3ee89cd62796ed833",
+    "graphrefly-ts": "63d58eace38ac782155062284515eeeba68b1df8"
+  },
+  "nonClaims": [
+    "Consumer/runtime implementation complete",
+    "B121 complete",
+    "Public API or preset shape selected",
+    "Stack D59 replaced",
+    "Provider/live/spend or filesystem effect execution authorized",
+    "Third-party production adoption",
+    "Cross-process exactly-once or durable recovery"
+  ]
+}

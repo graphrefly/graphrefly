@@ -1,27 +1,37 @@
-/** Trusted, stateless Responses controller. No network, key lookup, eval or model code execution. */
+/** Trusted, fresh-session Chat Completions controller. No network, key lookup, eval or model code execution. */
+
+import { maximumCost, ROUTE, validateUsage } from "./api-provider.mjs";
+
+import { CONCEPTS } from "./materials.mjs";
 import { createSession, hash, LIMITS } from "./session.mjs";
 
+export { maximumCost, validateUsage } from "./api-provider.mjs";
 export const CONFIG = Object.freeze({
-	model: "gpt-6-astra",
-	reasoning: { effort: "medium" },
-	service_tier: "default",
-	store: false,
+	model: ROUTE.model,
 	stream: false,
-	background: false,
-	truncation: "disabled",
-	parallel_tool_calls: false,
+	reasoning: { effort: "medium" },
+	provider: {
+		only: [ROUTE.tag],
+		allow_fallbacks: false,
+		require_parameters: true,
+		max_price: {
+			prompt: ROUTE.inputPerMillion,
+			completion: ROUTE.outputPerMillion,
+		},
+	},
 });
 export const TOOL = Object.freeze({
 	type: "function",
-	name: "broker",
-	description:
-		"Read the allowed study files and retain answers. Supply a JSON array of 1–16 list/read/submit operations in requests. Only the controller can seal a phase.",
-	strict: true,
-	parameters: {
-		type: "object",
-		properties: { requests: { type: "string" } },
-		required: ["requests"],
-		additionalProperties: false,
+	function: {
+		name: "broker",
+		description:
+			'Read allowed study files and retain answers. requests is a JSON-encoded array of 1\u201316 operations. Exact shapes: list = {"op":"list"} (no path); read = {"op":"read","path":"orientation.json"}; judgment submit = {"op":"submit","phase":"A","scenario":"C1","fields":{},"explanation":"..."}, with complete fields defined in the visible packet. After both seals, Graph entry submit = {"op":"submit","snippet":"...","explanation":"...","concepts":{"read":[],"required":[],"firstExpansion":null}}. Use op, never action. No additional fields. The first call should read orientation.json. Only the controller seals phases.',
+		parameters: {
+			type: "object",
+			properties: { requests: { type: "string" } },
+			required: ["requests"],
+			additionalProperties: false,
+		},
 	},
 });
 export const INSTRUCTIONS =
@@ -36,81 +46,47 @@ const exact = (x, keys) =>
 	typeof x === "object" &&
 	!Array.isArray(x) &&
 	Object.keys(x).sort().join() === keys.sort().join();
-export const maximumCost = (input, output) =>
-	(input * 12.5 + output * 50) / 1e6;
-export function validateUsage(u, count, maxOutput) {
-	insist(
-		u &&
-			integer(u.input_tokens) &&
-			integer(u.output_tokens) &&
-			integer(u.total_tokens),
-		"missing/invalid usage",
-	);
-	insist(
-		u.input_tokens === count &&
-			u.output_tokens <= maxOutput &&
-			u.total_tokens === u.input_tokens + u.output_tokens,
-		"count/usage mismatch",
-	);
-	const c = u.input_tokens_details?.cached_tokens,
-		w = u.input_tokens_details?.cache_write_tokens,
-		r = u.output_tokens_details?.reasoning_tokens;
-	insist(
-		integer(c) &&
-			integer(w) &&
-			integer(r) &&
-			c + w <= u.input_tokens &&
-			r <= u.output_tokens,
-		"missing/invalid usage details",
-	);
-	return {
-		inputTokens: u.input_tokens,
-		outputTokens: u.output_tokens,
-		costUSD:
-			((u.input_tokens - c - w) * 10 + c + w * 12.5 + u.output_tokens * 50) /
-			1e6,
-	};
-}
-
 export function validateResponse(body) {
 	insist(
-		body?.model === CONFIG.model &&
-			body.service_tier === "default" &&
-			body.status === "completed",
-		"provider model/tier/status mismatch",
+		body?.model === ROUTE.model && body.provider === ROUTE.provider,
+		"provider model/route mismatch",
 	);
 	insist(
-		body.store === false && !body.previous_response_id && !body.conversation,
-		"provider context/store mismatch",
+		typeof body.id === "string" && body.id.length > 0,
+		"missing response identity",
 	);
 	insist(
-		body.reasoning?.effort === "medium" &&
-			hash(body.tools) === hash([TOOL]) &&
-			body.parallel_tool_calls === false,
-		"provider configuration/tools mismatch",
+		Array.isArray(body.choices) && body.choices.length === 1,
+		"unexpected choice count",
+	);
+	const choice = body.choices[0],
+		message = choice.message;
+	insist(
+		choice.finish_reason === "tool_calls",
+		"incomplete or missing tool response",
 	);
 	insist(
-		Array.isArray(body.output) &&
-			body.output.every(
-				(x) =>
-					x.type === "reasoning" ||
-					x.type === "function_call" ||
-					(x.type === "message" &&
-						x.role === "assistant" &&
-						Array.isArray(x.content) &&
-						x.content.every(
-							(c) =>
-								c.type === "output_text" &&
-								Array.isArray(c.annotations) &&
-								c.annotations.length === 0,
-						)),
-			),
+		message?.role === "assistant" && !message.refusal && !message.function_call,
 		"unexpected output capability",
+	);
+	insist(
+		message.content == null || typeof message.content === "string",
+		"unexpected assistant content",
+	);
+	insist(
+		Array.isArray(message.tool_calls) &&
+			message.tool_calls.length === 1 &&
+			message.tool_calls[0].type === "function" &&
+			message.tool_calls[0].function?.name === "broker" &&
+			typeof message.tool_calls[0].function.arguments === "string" &&
+			typeof message.tool_calls[0].id === "string" &&
+			message.tool_calls[0].id.length > 0,
+		"unexpected tool call",
 	);
 }
 
 /** Caller supplies only one already-bound slot, its file map, and trusted append-only persistence.
- * count/create transports are trusted; they receive request JSON, never controller/files/goldens.
+ * estimate/create transports are trusted; they receive request JSON, never controller/files/goldens.
  * A thrown transport error has unknown billing and stops the campaign. No resume/retry API exists.
  */
 export async function runSession({
@@ -124,12 +100,13 @@ export async function runSession({
 }) {
 	insist(
 		typeof journal === "function" &&
-			typeof transport?.count === "function" &&
+			typeof transport?.estimate === "function" &&
 			typeof transport?.create === "function",
 		"trusted transport and durable journal required",
 	);
 	const controller = createSession({ sessionId: slot.id, files });
 	const history = [
+		{ role: "system", content: INSTRUCTIONS },
 		{
 			role: "user",
 			content: JSON.stringify({
@@ -150,6 +127,9 @@ export async function runSession({
 		costUSD = 0,
 		entry = false,
 		entryAnswer = null,
+		entryStartedMs = null,
+		entrySubmittedMs = null,
+		firstSourceRead = null,
 		fatal = null,
 		pendingReservation = null;
 	const explanations = { A: {}, B: {} };
@@ -165,21 +145,40 @@ export async function runSession({
 		const remaining = Math.min(requestTimeoutMs, LIMITS.elapsedMs - elapsed());
 		insist(remaining > 0, "session timeout");
 		const abort = new AbortController();
-		let timer;
+		let timer, grace;
+		const task = Promise.resolve()
+			.then(() => fn(copy(payload), { signal: abort.signal }))
+			.then(
+				(value) => ({ value }),
+				(error) => ({ error }),
+			);
 		try {
-			return await Promise.race([
-				Promise.resolve().then(() =>
-					fn(copy(payload), { signal: abort.signal }),
-				),
-				new Promise((_, reject) => {
+			const outcome = await Promise.race([
+				task,
+				new Promise((resolve) => {
 					timer = setTimeout(() => {
 						abort.abort();
-						reject(new Error("request timeout; billing unknown"));
+						resolve({ timeout: true });
 					}, remaining);
 				}),
 			]);
+			if (outcome.timeout) {
+				// Allow cooperative abort to retain HTTP headers/partial body, never admit late output.
+				const settled = await Promise.race([
+					task,
+					new Promise((resolve) => {
+						grace = setTimeout(() => resolve(null), 100);
+					}),
+				]);
+				const error = new Error("request timeout; billing unknown");
+				error.envelope = settled?.error?.envelope ?? settled?.value ?? null;
+				throw error;
+			}
+			if (outcome.error) throw outcome.error;
+			return outcome.value;
 		} finally {
 			clearTimeout(timer);
+			clearTimeout(grace);
 		}
 	}
 	function readRequest(raw) {
@@ -252,34 +251,33 @@ export async function runSession({
 			insist(turns < 80, "generation call limit");
 			const payload = {
 				...copy(CONFIG),
-				instructions: INSTRUCTIONS,
 				tools: [copy(TOOL)],
-				tool_choice: { type: "function", name: "broker" },
-				input: copy(history),
-				max_output_tokens: Math.min(2048, 8000 - usage.outputTokens),
+				tool_choice: { type: "function", function: { name: "broker" } },
+				messages: copy(history),
+				max_tokens: Math.min(2048, 8000 - usage.outputTokens),
 			};
-			emit("count-request", {
+			emit("estimate-request", {
 				ordinal: ++counts,
 				requestHash: hash(payload),
 				payload,
 			});
-			const counted = await bounded(transport.count, payload);
-			emit("count-response", counted);
+			const counted = await bounded(transport.estimate, payload);
+			emit("estimate-response", counted);
 			insist(
-				counted.body?.object === "response.input_tokens" &&
-					integer(counted.body.input_tokens) &&
-					counted.body.input_tokens > 0,
-				"invalid input count",
+				counted.kind === "local-input-estimate" &&
+					integer(counted.inputTokens) &&
+					counted.inputTokens > 0,
+				"invalid input estimate",
 			);
-			const count = counted.body.input_tokens;
+			const count = counted.inputTokens;
 			if (usage.inputTokens + count > 48000) {
 				emit("budget-stop", { count, usage });
 				break;
 			}
 			pendingReservation = {
-				inputTokens: count,
-				outputTokens: payload.max_output_tokens,
-				costUSD: maximumCost(count, payload.max_output_tokens),
+				inputTokens: ROUTE.contextTokens,
+				outputTokens: payload.max_tokens,
+				costUSD: maximumCost(ROUTE.contextTokens, payload.max_tokens),
 			};
 			emit("generation-dispatch", {
 				ordinal: ++turns,
@@ -291,45 +289,28 @@ export async function runSession({
 			emit("generation-response", envelope);
 			const response = envelope.body;
 			const used = validateUsage(
-				response?.usage,
-				count,
-				payload.max_output_tokens,
+				response,
+				ROUTE.contextTokens,
+				payload.max_tokens,
 			);
 			usage.inputTokens += used.inputTokens;
 			usage.outputTokens += used.outputTokens;
 			costUSD += used.costUSD;
 			pendingReservation = null;
+			insist(
+				usage.inputTokens <= 48000 && usage.outputTokens <= 8000,
+				"reported usage exceeded admitted token budget; stop before accepting output",
+			);
 			elapsed();
 			validateResponse(response);
 			insist(usage.elapsedMs < LIMITS.elapsedMs, "session timeout");
-			insist(
-				response.model === CONFIG.model && response.service_tier === "default",
-				"model/tier drift",
-			);
-			insist(
-				response.status === "completed" &&
-					typeof response.id === "string" &&
-					!ids.has(response.id),
-				"incomplete/replayed response",
-			);
+			insist(!ids.has(response.id), "replayed response");
 			ids.add(response.id);
-			insist(
-				Array.isArray(response.output) &&
-					response.output.every((x) =>
-						["reasoning", "message", "function_call"].includes(x.type),
-					),
-				"unexpected provider tool",
-			);
-			const calls = response.output.filter((x) => x.type === "function_call");
-			insist(
-				calls.length === 1 &&
-					calls[0].name === "broker" &&
-					typeof calls[0].call_id === "string" &&
-					!callIds.has(calls[0].call_id),
-				"unexpected/replayed tool call",
-			);
-			callIds.add(calls[0].call_id);
-			const args = JSON.parse(calls[0].arguments);
+			const message = response.choices[0].message;
+			const call = message.tool_calls[0];
+			insist(!callIds.has(call.id), "replayed tool call");
+			callIds.add(call.id);
+			const args = JSON.parse(call.function.arguments);
 			insist(
 				exact(args, ["requests"]) && typeof args.requests === "string",
 				"invalid tool envelope",
@@ -364,6 +345,11 @@ export async function runSession({
 							Object.hasOwn(entryFiles, request.path),
 							"entry path unavailable",
 						);
+						if (!firstSourceRead && request.path.startsWith("entry/source"))
+							firstSourceRead = {
+								path: request.path,
+								elapsedMs: elapsed() - entryStartedMs,
+							};
 						results.push({ ok: true, content: entryFiles[request.path] });
 					} else {
 						insist(
@@ -384,13 +370,14 @@ export async function runSession({
 								["read", "required"].every(
 									(k) =>
 										Array.isArray(request.concepts[k]) &&
-										request.concepts[k].every((x) => typeof x === "string"),
+										request.concepts[k].every((x) => CONCEPTS.includes(x)),
 								) &&
 								(request.concepts.firstExpansion === null ||
 									typeof request.concepts.firstExpansion === "string"),
 							"invalid concept report",
 						);
 						entryAnswer = copy(request);
+						entrySubmittedMs = elapsed();
 						results.push({ ok: true, answerHash: hash(entryAnswer) });
 					}
 				}
@@ -403,11 +390,12 @@ export async function runSession({
 				elapsedMs: elapsed(),
 			});
 			insist(elapsed() < LIMITS.elapsedMs, "session timeout");
-			// Preserve provider reasoning/messages (including phase) within this session only.
-			history.push(...copy(response.output), {
-				type: "function_call_output",
-				call_id: calls[0].call_id,
-				output: JSON.stringify(results),
+			// Retain only the chosen assistant message and its matching tool result in this session.
+			// Preserve reasoning_details verbatim for providers that require reasoning replay.
+			history.push(copy(message), {
+				role: "tool",
+				tool_call_id: call.id,
+				content: JSON.stringify(results),
 			});
 			const snapshot = controller.snapshot();
 			if (
@@ -427,6 +415,7 @@ export async function runSession({
 					emit("seal-B", controller.snapshot());
 					if (slot.arm === "G") {
 						entry = true;
+						entryStartedMs = elapsed();
 						history.push({
 							role: "user",
 							content:
@@ -467,6 +456,13 @@ export async function runSession({
 		controller: controller.snapshot(),
 		explanations,
 		entryAnswer,
+		entryTiming: {
+			startedMs: entryStartedMs,
+			submittedMs: entrySubmittedMs,
+			elapsedMs:
+				entrySubmittedMs === null ? null : entrySubmittedMs - entryStartedMs,
+			firstSourceRead,
+		},
 		entryStatus:
 			slot.arm === "P"
 				? "not-applicable"

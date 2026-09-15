@@ -1,0 +1,13 @@
+{
+  "manifestSHA": "49d2043fd30e400496dfd4ba9e69af409818f99443422999724d67323ea8f85d",
+  "action": "B121-agent-api-one-shot",
+  "acceptAliasLimitation": true,
+  "acceptInputEstimateLimitation": true,
+  "model": "qwen/qwen3.8-flash",
+  "providerTag": "makora/fp4",
+  "expiresAt": "2026-09-16T01:00:00.000Z",
+  "maxGenerationCalls": 962,
+  "maxUSD": 0.2,
+  "retries": 0,
+  "evidence": "User explicitly continued after first-attempt failure, offline broker grammar repair and notice that a fresh one-shot authorization is required. Same dedicated key retains its cumulative USD 0.20 account-side limit; previous reported cost USD 0.00035325."
+}

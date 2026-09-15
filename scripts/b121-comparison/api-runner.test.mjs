@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { verifyFrozen } from "./api-campaign.mjs";
 import { prepareBundle, prepareManifest } from "./api-prepare.mjs";
+import { CEILING_USD, ROUTE } from "./api-provider.mjs";
 import {
 	CONFIG,
 	maximumCost,
@@ -9,7 +10,10 @@ import {
 	TOOL,
 	validateUsage,
 } from "./api-runner.mjs";
-import { createOpenAITransport, qualifyProvider } from "./api-transport.mjs";
+import {
+	createOpenRouterTransport,
+	qualifyProvider,
+} from "./api-transport.mjs";
 import { hash, verifyAudit } from "./session.mjs";
 
 const bundle = prepareBundle();
@@ -30,23 +34,39 @@ const submits = (subject, phase) =>
 	}));
 function body(_payload, requests, i = 1, count = 100, output = 20) {
 	return {
-		...CONFIG,
 		id: `resp_${i}`,
-		status: "completed",
-		tools: [TOOL],
+		model: ROUTE.model,
+		provider: ROUTE.provider,
 		usage: {
-			input_tokens: count,
-			output_tokens: output,
+			prompt_tokens: count,
+			completion_tokens: output,
 			total_tokens: count + output,
-			input_tokens_details: { cached_tokens: 0, cache_write_tokens: 0 },
-			output_tokens_details: { reasoning_tokens: 1 },
+			cost: maximumCost(count, output),
+			prompt_tokens_details: { cached_tokens: 0 },
+			completion_tokens_details: { reasoning_tokens: 1 },
 		},
-		output: [
+		choices: [
 			{
-				type: "function_call",
-				name: "broker",
-				call_id: `call_${i}`,
-				arguments: JSON.stringify({ requests: JSON.stringify(requests) }),
+				finish_reason: "tool_calls",
+				message: {
+					role: "assistant",
+					content: null,
+					reasoning_details: [
+						{ type: "reasoning.text", text: "synthetic reasoning" },
+					],
+					tool_calls: [
+						{
+							type: "function",
+							id: `call_${i}`,
+							function: {
+								name: "broker",
+								arguments: JSON.stringify({
+									requests: JSON.stringify(requests),
+								}),
+							},
+						},
+					],
+				},
 			},
 		],
 	};
@@ -56,9 +76,9 @@ function fake(batches, change = (x) => x, count = 100) {
 	const sent = [];
 	return {
 		sent,
-		count: async (payload) => {
+		estimate: async (payload) => {
 			sent.push(payload);
-			return { body: { object: "response.input_tokens", input_tokens: count } };
+			return { kind: "local-input-estimate", inputTokens: count };
 		},
 		create: async (payload) => ({
 			body: change(
@@ -83,8 +103,8 @@ async function run(transport, subject = p, extra = {}) {
 test("12 frozen allocations and one-arm maps bind without exposing rubric or other sessions", () => {
 	const m = prepareManifest(bundle);
 	assert.equal(m.sessions.length, 12);
-	assert.equal(m.price.studyMaximum, 12);
-	assert.equal(maximumCost(576000, 96000), 12);
+	assert.equal(m.price.studyMaximum, 0.13152);
+	assert.equal(maximumCost(576000, 96000), 0.13152);
 	for (const s of bundle.slots) {
 		assert.equal(Object.keys(s.files).length, 21);
 		assert.equal(JSON.parse(s.files["A/common.json"].content).arm, s.slot.arm);
@@ -119,7 +139,9 @@ test("controller seals all A before B; full repeated context metered and fixed d
 	assert.equal(result.operations, 18);
 	assert.equal(result.controller.calls, 18);
 	assert.ok(verifyAudit(result.controller.audit));
-	assert.ok(transport.sent[1].input.length > transport.sent[0].input.length);
+	assert.ok(
+		transport.sent[1].messages.length > transport.sent[0].messages.length,
+	);
 	assert.ok(JSON.stringify(transport.sent[3]).includes("A/common.json"));
 	assert.ok(
 		journal.findIndex((x) => x.type === "seal-A") <
@@ -134,7 +156,7 @@ test("fresh session context never inherits another session or hidden canary", as
 	await run(one);
 	const other = fake([submits(p, "A"), submits(p, "B")]);
 	await run(other);
-	assert.equal(other.sent[0].input.length, 1);
+	assert.equal(other.sent[0].messages.length, 2);
 	assert.ok(!JSON.stringify(other.sent).includes("GOLDEN_SECRET_974"));
 	assert.ok(!Object.hasOwn(other.sent[0], "previous_response_id"));
 	assert.ok(!Object.hasOwn(other.sent[0], "conversation"));
@@ -164,40 +186,48 @@ for (const [name, ops] of [
 for (const [name, change] of [
 	["missing usage", (b) => ({ ...b, usage: null })],
 	[
-		"count drift",
+		"input over budget",
 		(b) => ({
 			...b,
-			usage: { ...b.usage, input_tokens: 101, total_tokens: 121 },
+			usage: {
+				...b.usage,
+				prompt_tokens: 48001,
+				total_tokens: 48021,
+				cost: maximumCost(48001, 20),
+			},
 		}),
-	],
-	[
-		"extra tool",
-		(b) => ({ ...b, output: [...b.output, { type: "web_search_call" }] }),
 	],
 	["model drift", (b) => ({ ...b, model: "other" })],
+	["provider drift", (b) => ({ ...b, provider: "other" })],
 	[
-		"extra configured tool",
-		(b) => ({ ...b, tools: [TOOL, { type: "web_search" }] }),
+		"extra tool",
+		(b) => {
+			b.choices[0].message.tool_calls.push(b.choices[0].message.tool_calls[0]);
+			return b;
+		},
 	],
-	["stored context", (b) => ({ ...b, previous_response_id: "old" })],
-	["incomplete", (b) => ({ ...b, status: "incomplete" })],
-	["wrong reasoning", (b) => ({ ...b, reasoning: { effort: "high" } })],
 	[
-		"non-assistant output",
-		(b) => ({
-			...b,
-			output: [...b.output, { type: "message", role: "system", content: [] }],
-		}),
+		"incomplete",
+		(b) => {
+			b.choices[0].finish_reason = "length";
+			return b;
+		},
 	],
-]) {
+	[
+		"non-assistant",
+		(b) => {
+			b.choices[0].message.role = "system";
+			return b;
+		},
+	],
+])
 	test(`${name} is fatal and retained`, async () => {
 		const { result, journal } = await run(fake([[{ op: "list" }]], change));
 		assert.ok(result.fatal);
 		assert.equal(result.turns, 1);
-		assert.ok(journal.some((x) => x.type === "generation-response"));
 		assert.equal(result.operations, 0);
+		assert.ok(journal.some((x) => x.type === "generation-response"));
 	});
-}
 test("replayed response ID is rejected before second tool dispatch", async () => {
 	const { result } = await run(
 		fake([[{ op: "list" }], [{ op: "list" }]], (b) => ({ ...b, id: "same" })),
@@ -223,18 +253,23 @@ test("cumulative input cap blocks a request before generation and preserves eigh
 	assert.equal(result.usage.inputTokens, 30000);
 	assert.equal(Object.keys(result.controller.sealB.answers).length, 8);
 });
-test("output and reasoning accumulate; last max_output_tokens shrinks", async () => {
+test("output and reasoning accumulate; last max_tokens shrinks", async () => {
 	const f = fake([[{ op: "list" }]], (b, _i, payload) => {
-		const n = payload.max_output_tokens;
+		const n = payload.max_tokens;
 		return {
 			...b,
-			usage: { ...b.usage, output_tokens: n, total_tokens: 100 + n },
+			usage: {
+				...b.usage,
+				completion_tokens: n,
+				total_tokens: 100 + n,
+				cost: maximumCost(100, n),
+			},
 		};
 	});
 	const { result } = await run(f);
 	assert.equal(result.usage.outputTokens, 8000);
 	assert.deepEqual(
-		f.sent.map((x) => x.max_output_tokens),
+		f.sent.map((x) => x.max_tokens),
 		[2048, 2048, 2048, 1856],
 	);
 });
@@ -253,23 +288,13 @@ test("timeout aborts no-retry and retains worst-case unknown-charge reservation"
 	assert.equal(result.turns, 1);
 	assert.ok(result.pendingReservation.costUSD > 0);
 });
-test("usage detail omissions and impossible cached/write split reject", () => {
-	assert.throws(() =>
-		validateUsage({ input_tokens: 1, output_tokens: 0, total_tokens: 1 }, 1, 1),
-	);
-	assert.throws(() =>
-		validateUsage(
-			{
-				input_tokens: 1,
-				output_tokens: 0,
-				total_tokens: 1,
-				input_tokens_details: { cached_tokens: 1, cache_write_tokens: 1 },
-				output_tokens_details: { reasoning_tokens: 0 },
-			},
-			1,
-			1,
-		),
-	);
+test("inconsistent total and impossible cache reject", () => {
+	const b = body(null, []);
+	b.usage.total_tokens = 999;
+	assert.throws(() => validateUsage(b, 100, 20));
+	b.usage.total_tokens = 120;
+	b.usage.prompt_tokens_details.cached_tokens = 101;
+	assert.throws(() => validateUsage(b, 100, 20));
 });
 test("entry released only after both seals; single role task and answer share original limits", async () => {
 	const f = fake([
@@ -295,128 +320,6 @@ test("entry released only after both seals; single role task and answer share or
 				(x) => x.type === "broker-batch" && x.data.phase === "entry",
 			),
 	);
-});
-const approval = {
-	manifestSHA: "test",
-	action: "B121-agent-api-one-shot",
-	acceptAliasLimitation: true,
-	countEndpointPriceUSD: 0,
-	countPriceEvidence: "synthetic fixture only",
-	expiresAt: "2099-01-01",
-	maxGenerationCalls: 962,
-	maxCountCalls: 962,
-	maxUSD: 12.11,
-	retries: 0,
-};
-test("adapter denies zero grant, unknown count tariff and expired grant before fetch", () => {
-	let calls = 0;
-	for (const a of [
-		{},
-		{ ...approval, countEndpointPriceUSD: null },
-		{ ...approval, expiresAt: "2000-01-01" },
-		{ ...approval, retries: 1 },
-	])
-		assert.throws(() =>
-			createOpenAITransport({
-				apiKey: "fake-key",
-				approval: a,
-				manifestSHA: "test",
-				fetchImpl: () => {
-					calls++;
-				},
-			}),
-		);
-	assert.equal(calls, 0);
-});
-test("raw adapter has no retries, redirect following or endpoint substitution; raw error retained", async () => {
-	const seen = [];
-	const transport = createOpenAITransport({
-		apiKey: "synthetic",
-		approval,
-		manifestSHA: "test",
-		fetchImpl: async (url, request) => {
-			seen.push({ url, request });
-			return {
-				ok: false,
-				status: 429,
-				headers: new Headers({ "x-request-id": "req_fake" }),
-				text: async () => '{"error":"fake"}',
-			};
-		},
-	});
-	const f = fake([]);
-	await assert.rejects(
-		transport.count(
-			f.sent[0] ?? {
-				...CONFIG,
-				instructions: "x",
-				tools: [TOOL],
-				tool_choice: { type: "function", name: "broker" },
-				input: [],
-				max_output_tokens: 512,
-			},
-			{ signal: new AbortController().signal },
-		),
-		(e) => e.envelope?.requestId === "req_fake",
-	);
-	assert.equal(seen.length, 1);
-	assert.equal(seen[0].request.redirect, "error");
-	assert.equal(seen[0].url, "https://api.openai.com/v1/responses/input_tokens");
-});
-test("two qualification requests are fresh and use no study material", async () => {
-	const f = fake([
-		[{ op: "read", path: "probe.json" }],
-		[{ op: "read", path: "probe.json" }],
-	]);
-	const events = [];
-	assert.equal(
-		(await qualifyProvider({ transport: f, journal: (e) => events.push(e) }))
-			.qualified,
-		true,
-	);
-	assert.equal(f.sent.length, 2);
-	assert.ok(f.sent.every((r) => r.input.length === 1));
-	assert.ok(!JSON.stringify(f.sent[1]).includes("6f128b"));
-	assert.ok(!JSON.stringify(f.sent).includes("spending"));
-});
-test("real adapter boundary retains malformed HTTP and missing-usage raw receipts", async () => {
-	const payload = {
-		...CONFIG,
-		instructions: "x",
-		tools: [TOOL],
-		tool_choice: { type: "function", name: "broker" },
-		input: [],
-		max_output_tokens: 512,
-	};
-	for (const responseText of [
-		"<html>bad gateway</html>",
-		'{"id":"resp_broken","usage":null}',
-	]) {
-		let n = 0;
-		const transport = createOpenAITransport({
-			apiKey: "synthetic",
-			approval,
-			manifestSHA: "test",
-			fetchImpl: async () => ({
-				ok: true,
-				status: 200,
-				headers: new Headers({ "x-request-id": "req_evidence" }),
-				text: async () =>
-					++n === 1
-						? ' {"object":"response.input_tokens","input_tokens":100}'
-						: responseText,
-			}),
-		});
-		await transport.count(payload, { signal: new AbortController().signal });
-		await assert.rejects(
-			transport.create(payload, { signal: new AbortController().signal }),
-			(e) =>
-				e.envelope?.rawBody === responseText &&
-				e.envelope.requestId === "req_evidence",
-		);
-		assert.ok(transport.snapshot().reservedUSD > 0);
-		assert.equal(n, 2);
-	}
 });
 test("slow durable journal cannot accept final answers past deadline", async () => {
 	let clock = 0;
@@ -466,104 +369,213 @@ test("seeded hidden, other-arm and future-phase canaries never enter count or ge
 	assert.ok(!sent.includes("FUTURE_CANARY_974"));
 	assert.ok(other.files["A/C1.json"].content.includes("OTHER_ARM_CANARY_974"));
 });
-test("adapter reconciles cached/write charges, exact request binding, cost ceiling and campaign-wide replay", async () => {
-	const payload = {
-		...CONFIG,
-		instructions: "x",
-		tools: [TOOL],
-		tool_choice: { type: "function", name: "broker" },
-		input: [],
-		max_output_tokens: 512,
-	};
-	let creates = 0;
-	const transport = createOpenAITransport({
-		apiKey: "synthetic",
+const approval = {
+	manifestSHA: "test",
+	action: "B121-agent-api-one-shot",
+	acceptAliasLimitation: true,
+	acceptInputEstimateLimitation: true,
+	expiresAt: "2099-01-01",
+	maxGenerationCalls: 962,
+	maxUSD: CEILING_USD,
+	retries: 0,
+	model: ROUTE.model,
+	providerTag: ROUTE.tag,
+};
+const payload = () => ({
+	...structuredClone(CONFIG),
+	tools: [TOOL],
+	tool_choice: { type: "function", function: { name: "broker" } },
+	messages: [{ role: "user", content: "probe" }],
+	max_tokens: 512,
+});
+const options = () => ({ signal: new AbortController().signal });
+const http = (text, status = 200) => {
+	const r = new Response(text, {
+		status,
+		headers: { "x-request-id": "req_fixture" },
+	});
+	Object.defineProperty(r, "url", { value: ROUTE.endpoint });
+	return r;
+};
+test("OpenRouter transport rejects invalid authorization before fetch", () => {
+	let calls = 0;
+	for (const a of [
+		{},
+		{ ...approval, expiresAt: "2000-01-01" },
+		{ ...approval, retries: 1 },
+		{ ...approval, providerTag: "other" },
+		{ ...approval, acceptInputEstimateLimitation: false },
+	])
+		assert.throws(() =>
+			createOpenRouterTransport({
+				apiKey: "fake",
+				approval: a,
+				manifestSHA: "test",
+				fetchImpl: () => calls++,
+			}),
+		);
+	assert.equal(calls, 0);
+});
+test("OpenRouter uses one Chat request, local estimate only, preserves reasoning and exact config", async () => {
+	const seen = [];
+	const t = createOpenRouterTransport({
+		apiKey: "fake",
 		approval,
 		manifestSHA: "test",
-		fetchImpl: async (url) => ({
-			ok: true,
-			status: 200,
-			headers: new Headers(),
-			text: async () =>
-				JSON.stringify(
-					url.endsWith("input_tokens")
-						? { object: "response.input_tokens", input_tokens: 100 }
-						: {
-								id: "resp_recorded_shape",
-								model: "gpt-6-astra",
-								output: [
-									{ type: "function_call", call_id: "call_recorded_shape" },
-								],
-								usage: {
-									input_tokens: 100,
-									input_tokens_details: {
-										cached_tokens: 20,
-										cache_write_tokens: 30,
-									},
-									output_tokens: 40,
-									output_tokens_details: { reasoning_tokens: 10 },
-									total_tokens: 140,
-								},
-								fakeCreateOrdinal: ++creates,
-							},
-				),
-		}),
+		fetchImpl: async (url, opts) => {
+			seen.push({ url, opts });
+			return http(JSON.stringify(body(null, [{ op: "list" }])));
+		},
 	});
-	const options = { signal: new AbortController().signal };
-	await transport.count(payload, options);
+	const p = payload();
+	const e = await t.estimate(p);
+	assert.equal(seen.length, 0);
+	assert.equal(e.kind, "local-input-estimate");
 	await assert.rejects(
-		transport.create({ ...payload, input: "changed" }, options),
+		t.create({ ...p, messages: [] }, options()),
 		/same-request/,
 	);
-	await transport.create(payload, options);
-	assert.ok(Math.abs(transport.snapshot().reservedUSD - 0.002895) < 1e-10);
-	await transport.count(payload, options);
-	await assert.rejects(
-		transport.create(payload, options),
-		(e) => /replay/.test(e.message) && !!e.envelope,
+	const out = await t.create(p, options());
+	assert.equal(
+		out.body.choices[0].message.reasoning_details[0].text,
+		"synthetic reasoning",
 	);
-	assert.equal(creates, 2);
-	let fetched = 0;
-	const costly = createOpenAITransport({
-		apiKey: "synthetic",
+	assert.equal(seen.length, 1);
+	assert.equal(seen[0].url, ROUTE.endpoint);
+	assert.equal(seen[0].opts.redirect, "error");
+	assert.equal(t.snapshot().countCalls, 0);
+	assert.ok(Math.abs(t.snapshot().reservedUSD - maximumCost(100, 20)) < 1e-10);
+});
+test("HTTP errors, malformed bodies and missing usage retain raw evidence with reservation; no retries", async () => {
+	for (const [raw, status] of [
+		['{"error":"busy"}', 429],
+		["<html>bad</html>", 200],
+		[JSON.stringify({ ...body(null, []), usage: null }), 200],
+	]) {
+		let n = 0;
+		const t = createOpenRouterTransport({
+			apiKey: "fake",
+			approval,
+			manifestSHA: "test",
+			fetchImpl: async () => {
+				n++;
+				return http(raw, status);
+			},
+		});
+		const p = payload();
+		await t.estimate(p);
+		await assert.rejects(
+			t.create(p, options()),
+			(e) => e.envelope?.rawBody === raw,
+		);
+		assert.equal(n, 1);
+		assert.ok(
+			t.snapshot().reservedUSD >= maximumCost(ROUTE.contextTokens, 512),
+		);
+		await assert.rejects(t.estimate(p), /stopped/);
+		assert.equal(n, 1);
+	}
+});
+test("transport rejects campaign replay and retains full-context reservation on unknown outcome", async () => {
+	const t = createOpenRouterTransport({
+		apiKey: "fake",
+		approval,
+		manifestSHA: "test",
+		fetchImpl: async () => http(JSON.stringify(body(null, [{ op: "list" }]))),
+	});
+	const p = payload();
+	await t.estimate(p);
+	await t.create(p, options());
+	await t.estimate(p);
+	await assert.rejects(t.create(p, options()), /replay/);
+	assert.ok(t.snapshot().reservedUSD > maximumCost(ROUTE.contextTokens, 512));
+});
+test("full route context is reserved even for tiny estimates; cost ceiling blocks before fetch", async () => {
+	let n = 0;
+	const t = createOpenRouterTransport({
+		apiKey: "fake",
 		approval,
 		manifestSHA: "test",
 		fetchImpl: async () => {
-			fetched++;
-			return {
-				ok: true,
-				status: 200,
-				headers: new Headers(),
-				text: async () =>
-					'{"object":"response.input_tokens","input_tokens":2000000}',
-			};
+			n++;
+			return http(
+				JSON.stringify(
+					body(null, [{ op: "list" }], n, ROUTE.contextTokens, 512),
+				),
+			);
 		},
 	});
-	await costly.count(payload, options);
-	await assert.rejects(costly.create(payload, options), /ceiling/);
-	assert.equal(fetched, 1);
+	const p = payload();
+	for (let i = 0; i < 5; i++) {
+		await t.estimate(p);
+		await t.create(p, options());
+	}
+	await t.estimate(p);
+	await assert.rejects(t.create(p, options()), /ceiling/);
+	assert.equal(n, 5);
 });
-test("null count response is retained before controller rejection", async () => {
-	const transport = createOpenAITransport({
-		apiKey: "synthetic",
+test("two fresh qualifications use only synthetic material", async () => {
+	const f = fake([
+		[{ op: "read", path: "probe.json" }],
+		[{ op: "read", path: "probe.json" }],
+	]);
+	assert.equal(
+		(await qualifyProvider({ transport: f, journal: () => {} })).qualified,
+		true,
+	);
+	assert.equal(f.sent.length, 2);
+	assert.ok(f.sent.every((p) => p.messages.length === 2));
+	assert.ok(!JSON.stringify(f.sent[1]).includes("6f128b"));
+});
+test("assistant reasoning is replayed verbatim only within its own session", async () => {
+	const f = fake([submits(p, "A"), submits(p, "B")]);
+	await run(f);
+	assert.deepEqual(f.sent[1].messages[2].reasoning_details, [
+		{ type: "reasoning.text", text: "synthetic reasoning" },
+	]);
+	assert.equal(f.sent[1].messages[3].role, "tool");
+});
+test("stream deadline retains headers and partial raw body after bounded abort settlement", async () => {
+	const t = createOpenRouterTransport({
+		apiKey: "fake",
 		approval,
 		manifestSHA: "test",
-		fetchImpl: async () => ({
-			ok: true,
-			status: 200,
-			headers: new Headers({ "x-request-id": "req_null" }),
-			text: async () => "null",
-		}),
+		fetchImpl: async () => {
+			const r = new Response(
+				new ReadableStream({
+					start(c) {
+						c.enqueue(new TextEncoder().encode('{"id":"partial"'));
+					},
+				}),
+				{ headers: { "x-request-id": "receipt-known" } },
+			);
+			Object.defineProperty(r, "url", { value: ROUTE.endpoint });
+			return r;
+		},
 	});
-	const { result, journal } = await run(transport);
-	assert.ok(result.fatal);
-	assert.equal(result.turns, 0);
-	assert.ok(
-		journal.some(
-			(x) =>
-				x.type === "count-response" &&
-				x.data.rawBody === "null" &&
-				x.data.requestId === "req_null",
-		),
+	const { result, journal } = await run(t, p, { requestTimeoutMs: 30 });
+	assert.match(result.fatal, /timeout/);
+	assert.equal(result.operations, 0);
+	const evidence = journal.find((e) => e.type === "failed").data.envelope;
+	assert.equal(evidence.requestId, "receipt-known");
+	assert.equal(evidence.rawBody, '{"id":"partial"');
+	assert.ok(t.snapshot().reservedUSD > 0);
+});
+test("reported input overrun retains actual charged usage but admits no answer", async () => {
+	const { result } = await run(
+		fake([[{ op: "list" }]], (b) => ({
+			...b,
+			usage: {
+				...b.usage,
+				prompt_tokens: 48001,
+				total_tokens: 48021,
+				cost: maximumCost(48001, 20),
+			},
+		})),
 	);
+	assert.match(result.fatal, /token budget/);
+	assert.equal(result.operations, 0);
+	assert.equal(result.usage.inputTokens, 48001);
+	assert.equal(result.costUSD, maximumCost(48001, 20));
+	assert.equal(result.pendingReservation, null);
 });

@@ -1,0 +1,11 @@
+{
+  "kind": "B121-offline-broker-description-repair",
+  "priorAttempt": "runs/6cf4fdf1f779054d03b73956c1907d156a266f0570715f947e5c02da693eb194/summary.json",
+  "newManifestSHA": "49d2043fd30e400496dfd4ba9e69af409818f99443422999724d67323ea8f85d",
+  "change": "Document exact list/read/judgment-submit/entry-submit shapes in the initial broker tool description, including op discriminator and first read. Runtime parser, goldens and case facts unchanged.",
+  "newProviderCalls": 0,
+  "newSpendAuthorization": 0,
+  "retryAllowed": false,
+  "checks": "41 affected runner/campaign tests passed",
+  "qualificationLimitation": "Previous probes supplied exact op/read example and therefore did not expose the missing participant-facing bootstrap grammar."
+}

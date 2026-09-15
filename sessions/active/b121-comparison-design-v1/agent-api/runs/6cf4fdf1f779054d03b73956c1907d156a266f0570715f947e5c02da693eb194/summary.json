@@ -1,0 +1,103 @@
+{
+  "kind": "B121-first-live-attempt-summary",
+  "manifestSHA": "6cf4fdf1f779054d03b73956c1907d156a266f0570715f947e5c02da693eb194",
+  "qualificationPassed": true,
+  "generationCalls": 3,
+  "reportedCostUSD": 0.00035325,
+  "participantSessionsStarted": 1,
+  "participantSessionsCompleted": 0,
+  "judgmentAnswersSubmitted": 0,
+  "entryAnswersSubmitted": 0,
+  "unrunSlots": 11,
+  "failure": "invalid broker operation schema",
+  "rootCause": "Initial broker tool description omitted exact operation discriminator (op) and list/read shapes. Participant sent action:read and action:list with path instead. No study file was read.",
+  "classification": "harness onboarding defect; not model/API-usability comparative evidence",
+  "retryAllowed": false,
+  "note": "Independent one-shot grant consumed. Offline repair only; any new provider run requires a new exact manifest grant.",
+  "receipts": [
+    {
+      "id": "gen-1789439517-jpT2W4TxUck49Y6Ri9pp",
+      "provider": "Makora",
+      "model": "qwen/qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 368,
+        "completion_tokens": 53,
+        "total_tokens": 421,
+        "cost": 8.011e-05,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 8.011e-05,
+          "upstream_inference_prompt_cost": 5.52e-05,
+          "upstream_inference_completions_cost": 2.491e-05
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 20,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      }
+    },
+    {
+      "id": "gen-1789439517-Nw7sjycmg1nSvb8J2JJB",
+      "provider": "Makora",
+      "model": "qwen/qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 350,
+        "completion_tokens": 56,
+        "total_tokens": 406,
+        "cost": 7.882e-05,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 7.882e-05,
+          "upstream_inference_prompt_cost": 5.25e-05,
+          "upstream_inference_completions_cost": 2.632e-05
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 21,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      }
+    },
+    {
+      "id": "gen-1789439518-YOi3FjEKyM6DMP4jhSGg",
+      "provider": "Makora",
+      "model": "qwen/qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 509,
+        "completion_tokens": 251,
+        "total_tokens": 760,
+        "cost": 0.00019432,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00019432,
+          "upstream_inference_prompt_cost": 7.635e-05,
+          "upstream_inference_completions_cost": 0.00011797
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 247,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      }
+    }
+  ]
+}

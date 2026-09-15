@@ -11,8 +11,12 @@ import {
 } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { reviewEntry } from "./api-entry-review.mjs";
 import { runSession } from "./api-runner.mjs";
-import { createOpenAITransport, qualifyProvider } from "./api-transport.mjs";
+import {
+	createOpenRouterTransport,
+	qualifyProvider,
+} from "./api-transport.mjs";
 import { createSession, gradeSealed, hash } from "./session.mjs";
 
 const root = resolve(fileURLToPath(new URL("../../", import.meta.url)));
@@ -68,7 +72,11 @@ export async function runCampaign({ approval, apiKey }) {
 	);
 	insist(approval?.manifestSHA === manifestSHA, "approval manifest mismatch");
 	verifyFrozen(manifest, bundle);
-	const transport = createOpenAITransport({ apiKey, approval, manifestSHA });
+	const transport = createOpenRouterTransport({
+		apiKey,
+		approval,
+		manifestSHA,
+	});
 	// Parent is created only on an explicitly authorized call; exact child is exclusive and persistent.
 	const parent = join(base, "agent-api/runs");
 	mkdirSync(parent, { recursive: true, mode: 0o700 });
@@ -113,7 +121,22 @@ export async function runCampaign({ approval, apiKey }) {
 		const goldens = JSON.parse(
 			readFileSync(join(base, "revision-2/goldens.json"), "utf8"),
 		);
-		const rows = bundle.slots.map(({ slot }) => {
+		const entryResult = (actual, entryFiles) => {
+			try {
+				return reviewEntry({
+					result: actual,
+					entryFiles,
+					tsRoot: resolve(root, "../graphrefly-ts"),
+				});
+			} catch (error) {
+				return {
+					status: "validation-failed",
+					accepted: false,
+					error: error.message,
+				};
+			}
+		};
+		const rows = bundle.slots.map(({ slot, entryFiles }) => {
 			const actual = results.find((r) => r.slot.id === slot.id);
 			let s = actual?.controller;
 			if (!s) {
@@ -126,7 +149,12 @@ export async function runCampaign({ approval, apiKey }) {
 				status: actual ? (actual.fatal ? "failed" : "retained") : "unrun",
 				A: gradeSealed(s.seal, goldens.A, s.seal.hash),
 				B: gradeSealed(s.sealB, goldens.B, s.sealB.hash),
-				entry: actual?.entryStatus ?? "unrun",
+				entry: actual
+					? entryResult(actual, entryFiles)
+					: {
+							status: slot.arm === "P" ? "not-applicable" : "unrun",
+							accepted: false,
+						},
 				freeTextReview: "unscored: two blinded human reviewers unavailable",
 			};
 		});
@@ -150,4 +178,87 @@ export async function runCampaign({ approval, apiKey }) {
 		}
 	}
 	return { directory: dir, manifestSHA, failure, completed: results.length };
+}
+
+/** Offline trusted review of retained submissions. Does not instantiate a provider transport. */
+export function reviewCampaignEntries({
+	directory,
+	reviews,
+	tsRoot = resolve(root, "../graphrefly-ts"),
+}) {
+	const bytes = readFileSync(join(base, "agent-api/manifest.json"));
+	const manifestSHA = sha(bytes),
+		manifest = JSON.parse(bytes);
+	const bundle = JSON.parse(
+		readFileSync(join(base, "agent-api/bundle.json"), "utf8"),
+	);
+	verifyFrozen(manifest, bundle);
+	insist(
+		resolve(directory) === join(base, "agent-api/runs", manifestSHA),
+		"review run/manifest mismatch",
+	);
+	insist(
+		reviews &&
+			typeof reviews === "object" &&
+			!Array.isArray(reviews) &&
+			Object.keys(reviews).length > 0,
+		"explicit trusted reviews required",
+	);
+	const lines = readFileSync(join(directory, "journal.jsonl"), "utf8")
+		.trim()
+		.split("\n")
+		.map(JSON.parse);
+	let previous = null;
+	lines.forEach((row, index) => {
+		const { hash: claimed, ...event } = row;
+		insist(
+			row.index === index &&
+				row.previous === previous &&
+				hash(event) === claimed,
+			"review journal integrity mismatch",
+		);
+		previous = claimed;
+	});
+	insist(
+		lines[0]?.event.type === "claim" &&
+			lines[0].event.data.manifestSHA === manifestSHA &&
+			lines.at(-1)?.event.type === "campaign-finished",
+		"completed campaign journal required",
+	);
+	const entries = [];
+	for (const [sessionId, review] of Object.entries(reviews)) {
+		const subject = bundle.slots.find((p) => p.slot.id === sessionId);
+		const matches = lines.filter(
+			(r) => r.event.type === "finished" && r.event.data.slot.id === sessionId,
+		);
+		insist(
+			subject &&
+				matches.length === 1 &&
+				hash(matches[0].event.data.slot) === hash(subject.slot),
+			"review session not retained exactly once",
+		);
+		entries.push({
+			sessionId,
+			result: reviewEntry({
+				result: matches[0].event.data,
+				entryFiles: subject.entryFiles,
+				tsRoot,
+				review,
+			}),
+		});
+	}
+	const receipt = {
+		kind: "B121-offline-entry-review-v1",
+		manifestSHA,
+		journalHead: previous,
+		entries,
+		b121Complete: false,
+		providerCalls: 0,
+	};
+	const path = join(directory, `entry-review-${hash(receipt)}.json`);
+	writeFileSync(path, JSON.stringify(receipt, null, 2) + "\n", {
+		flag: "wx",
+		mode: 0o600,
+	});
+	return { path, ...receipt };
 }

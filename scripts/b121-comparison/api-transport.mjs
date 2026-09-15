@@ -1,18 +1,19 @@
-/** Prepared direct OpenAI adapter. Importing this module performs no I/O or key lookup. */
+/** Explicit one-shot OpenRouter adapter. Imports never perform I/O or credential lookup. */
+import { requestOpenRouter } from "../../../graphrefly-ts/packages/ts/evals/graph-native-rerun-avoidance/openrouter-transport.mjs";
 import {
-	CONFIG,
+	CEILING_USD,
+	estimateInput,
 	maximumCost,
-	TOOL,
-	validateResponse,
+	ROUTE,
 	validateUsage,
-} from "./api-runner.mjs";
+} from "./api-provider.mjs";
+import { CONFIG, TOOL, validateResponse } from "./api-runner.mjs";
 import { hash } from "./session.mjs";
 
 const insist = (v, m) => {
 	if (!v) throw new Error(m);
 };
-const clone = (x) => JSON.parse(JSON.stringify(x));
-export function createOpenAITransport({
+export function createOpenRouterTransport({
 	apiKey,
 	approval,
 	manifestSHA,
@@ -22,203 +23,178 @@ export function createOpenAITransport({
 		approval?.manifestSHA === manifestSHA &&
 			approval.action === "B121-agent-api-one-shot" &&
 			approval.acceptAliasLimitation === true &&
-			approval.countEndpointPriceUSD === 0 &&
-			typeof approval.countPriceEvidence === "string" &&
-			approval.countPriceEvidence.length > 0 &&
+			approval.acceptInputEstimateLimitation === true &&
 			Date.parse(approval.expiresAt) > Date.now(),
-		"exact current approval and verified zero count-endpoint tariff required",
+		"exact current approval and estimate/version limitations required",
 	);
 	insist(
 		approval.maxGenerationCalls === 962 &&
-			approval.maxCountCalls === 962 &&
-			approval.maxUSD === 12.11 &&
-			approval.retries === 0,
-		"approval limits mismatch",
+			approval.maxUSD === CEILING_USD &&
+			approval.retries === 0 &&
+			approval.model === ROUTE.model &&
+			approval.providerTag === ROUTE.tag,
+		"approval limits/route mismatch",
 	);
 	insist(
 		typeof apiKey === "string" && apiKey.length > 0,
-		"explicit key required; never read from participant input",
+		"explicit key required",
 	);
 	let generationCalls = 0,
-		countCalls = 0,
-		reservedUSD = 0;
-	async function post(path, body, { signal }) {
-		insist(Date.parse(approval.expiresAt) > Date.now(), "approval expired");
-		// Deliberately no SDK, redirect following, automatic retry, alternate endpoint or model fallback.
-		const response = await fetchImpl(`https://api.openai.com/v1/${path}`, {
-			method: "POST",
-			redirect: "error",
-			signal,
-			headers: {
-				Authorization: `Bearer ${apiKey}`,
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify(body),
-		});
-		const text = await response.text();
-		const envelope = {
-			httpStatus: response.status,
-			requestId: response.headers.get("x-request-id"),
-			rawBody: text,
-			body: null,
-		};
-		try {
-			envelope.body = JSON.parse(text);
-		} catch {
-			const error = new Error("provider non-JSON response; no retry");
-			error.envelope = envelope;
-			throw error;
-		}
-		if (!response.ok) {
-			const error = new Error(`provider HTTP ${response.status}; no retry`);
-			error.envelope = envelope;
-			throw error;
-		}
-		return envelope;
-	}
-	let pendingCount = null;
+		estimates = 0,
+		reservedUSD = 0,
+		pending = null,
+		stopped = false;
 	const responseIds = new Set(),
 		callIds = new Set();
+	const envelopeOf = (r) => ({
+		httpStatus: r.status,
+		requestId: r.headers?.["x-request-id"] ?? null,
+		rawBody: r.bodyText,
+		rawBodyBase64: r.bytes ? Buffer.from(r.bytes).toString("base64") : null,
+		body: r.json,
+		headers: r.headers,
+		url: r.url,
+	});
 	return Object.freeze({
-		async count(payload, options) {
-			insist(++countCalls <= approval.maxCountCalls, "count call ceiling");
+		async estimate(payload) {
 			insist(
-				hash({ ...payload, input: [], max_output_tokens: 0 }) ===
+				!stopped && Date.parse(approval.expiresAt) > Date.now(),
+				"transport stopped or approval expired",
+			);
+			insist(
+				hash({ ...payload, messages: [], max_tokens: 0 }) ===
 					hash({
 						...CONFIG,
-						instructions: payload.instructions,
 						tools: [TOOL],
-						tool_choice: { type: "function", name: "broker" },
-						input: [],
-						max_output_tokens: 0,
+						tool_choice: { type: "function", function: { name: "broker" } },
+						messages: [],
+						max_tokens: 0,
 					}),
 				"request config mismatch",
 			);
-			const {
-				model,
-				input,
-				instructions,
-				tools,
-				tool_choice,
-				parallel_tool_calls,
-				reasoning,
-				truncation,
-			} = payload;
-			const result = await post(
-				"responses/input_tokens",
-				{
-					model,
-					input,
-					instructions,
-					tools,
-					tool_choice,
-					parallel_tool_calls,
-					reasoning,
-					truncation,
-				},
-				options,
+			insist(
+				Array.isArray(payload.messages) &&
+					Number.isSafeInteger(payload.max_tokens) &&
+					payload.max_tokens > 0 &&
+					payload.max_tokens <= 2048,
+				"request bounds",
 			);
-			pendingCount = { hash: hash(payload), count: result.body?.input_tokens };
+			const result = estimateInput(payload);
+			pending = { hash: hash(payload), estimate: result.inputTokens };
+			estimates++;
 			return result;
 		},
-		async create(payload, options) {
+		async create(payload, { signal }) {
 			insist(
-				pendingCount?.hash === hash(payload) &&
-					Number.isSafeInteger(pendingCount.count) &&
-					pendingCount.count > 0,
-				"same-request count required",
+				!stopped && Date.parse(approval.expiresAt) > Date.now(),
+				"transport stopped or approval expired",
 			);
-			const count = pendingCount.count;
-			pendingCount = null;
-			const reserve = maximumCost(count, payload.max_output_tokens);
+			insist(pending?.hash === hash(payload), "same-request estimate required");
+			pending = null;
+			// Reserve full published context input plus output. Unknown outcome retains all reservation.
+			const reserve = maximumCost(ROUTE.contextTokens, payload.max_tokens);
 			insist(
-				++generationCalls <= approval.maxGenerationCalls &&
-					reservedUSD + reserve <= approval.maxUSD + 1e-9,
+				generationCalls < approval.maxGenerationCalls &&
+					reservedUSD + reserve <= approval.maxUSD,
 				"provider cost/call ceiling",
 			);
+			generationCalls++;
 			reservedUSD += reserve;
-			const result = await post("responses", payload, options);
-			// Keep reservation on failures; a timeout/disconnect may have incurred the full amount.
-			let used;
+			let envelope;
 			try {
+				const receipt = await requestOpenRouter({
+					endpoint: ROUTE.endpoint,
+					apiKey,
+					body: payload,
+					signal,
+					maxResponseBytes: 2 * 1024 * 1024,
+					fetchImpl,
+				});
+				envelope = envelopeOf(receipt);
 				insist(
-					typeof result.body.id === "string" &&
-						!responseIds.has(result.body.id),
-					"campaign response replay",
+					receipt.status >= 200 && receipt.status < 300,
+					`provider HTTP ${receipt.status}; no retry`,
 				);
-				responseIds.add(result.body.id);
-				for (const item of result.body.output ?? [])
-					if (item.type === "function_call") {
-						insist(
-							typeof item.call_id === "string" && !callIds.has(item.call_id),
-							"campaign call replay",
-						);
-						callIds.add(item.call_id);
-					}
-				used = validateUsage(
-					result.body.usage,
-					count,
-					payload.max_output_tokens,
+				const body = receipt.json;
+				validateResponse(body);
+				const call = body.choices[0].message.tool_calls[0];
+				insist(
+					!responseIds.has(body.id) && !callIds.has(call.id),
+					"campaign response/tool replay",
 				);
+				responseIds.add(body.id);
+				callIds.add(call.id);
+				const used = validateUsage(
+					body,
+					ROUTE.contextTokens,
+					payload.max_tokens,
+				);
+				insist(
+					used.costUSD <= reserve + 0.000001,
+					"reported cost exceeds reservation",
+				);
+				reservedUSD -= reserve - used.costUSD;
+				return envelope;
 			} catch (error) {
-				error.envelope = result;
+				stopped = true;
+				error.envelope =
+					envelope ?? (error.receipt ? envelopeOf(error.receipt) : null);
 				throw error;
 			}
-			reservedUSD -= reserve - used.costUSD;
-			return result;
 		},
-		snapshot: () => ({ generationCalls, countCalls, reservedUSD }),
+		snapshot: () => ({
+			generationCalls,
+			estimates,
+			countCalls: 0,
+			reservedUSD,
+			stopped,
+		}),
 	});
 }
-
 export const QUALIFICATION_PROMPTS = Object.freeze([
-	'This is a synthetic channel qualification, not a participant session. Call broker with requests equal to [{"op":"read","path":"probe.json"}]. Marker: B121-PROBE-ONLY-6f128b.',
-	'This is a fresh synthetic channel qualification, not a participant session. You have no prior conversation in this request. Call broker with requests equal to [{"op":"read","path":"probe.json"}].',
+	'Synthetic channel qualification, not a participant session. Call broker with requests equal to [{"op":"read","path":"probe.json"}]. Marker: B121-PROBE-ONLY-6f128b.',
+	'Fresh synthetic channel qualification. You have no prior conversation. Call broker with requests equal to [{"op":"read","path":"probe.json"}].',
 ]);
 export async function qualifyProvider({ transport, journal }) {
 	const receipts = [];
 	for (const prompt of QUALIFICATION_PROMPTS) {
 		const payload = {
-			...clone(CONFIG),
-			instructions: "Use only the broker function requested by the user.",
-			tools: [clone(TOOL)],
-			tool_choice: { type: "function", name: "broker" },
-			input: [{ role: "user", content: prompt }],
-			max_output_tokens: 512,
+			...structuredClone(CONFIG),
+			tools: [structuredClone(TOOL)],
+			tool_choice: { type: "function", function: { name: "broker" } },
+			messages: [
+				{
+					role: "system",
+					content: "Use only the broker function requested by the user.",
+				},
+				{ role: "user", content: prompt },
+			],
+			max_tokens: 512,
 		};
 		const signal = AbortSignal.timeout(60000);
-		journal({ type: "qualification-count-request", data: payload });
-		const count = await transport.count(payload, { signal });
-		journal({ type: "qualification-count-response", data: count });
-		insist(
-			count.body.object === "response.input_tokens" &&
-				Number.isSafeInteger(count.body.input_tokens) &&
-				count.body.input_tokens > 0 &&
-				count.body.input_tokens <= 2048,
-			"qualification input limit",
-		);
+		journal({ type: "qualification-estimate-request", data: payload });
+		const estimate = await transport.estimate(payload, { signal });
+		journal({ type: "qualification-estimate", data: estimate });
+		insist(estimate.inputTokens <= 4096, "qualification estimate limit");
 		journal({ type: "qualification-generation-request", data: payload });
 		const response = await transport.create(payload, { signal });
 		journal({ type: "qualification-generation-response", data: response });
-		validateUsage(response.body.usage, count.body.input_tokens, 512);
+		validateUsage(response.body, 4096, 512);
 		validateResponse(response.body);
-		const calls = response.body.output.filter(
-			(x) => x.type === "function_call",
+		const args = JSON.parse(
+			response.body.choices[0].message.tool_calls[0].function.arguments,
 		);
 		insist(
-			calls.length === 1 && calls[0].name === "broker",
-			"qualification tool mismatch",
-		);
-		const args = JSON.parse(calls[0].arguments);
-		insist(
-			hash(JSON.parse(args.requests)) ===
-				hash([{ op: "read", path: "probe.json" }]),
+			Object.keys(args).length === 1 &&
+				typeof args.requests === "string" &&
+				hash(JSON.parse(args.requests)) ===
+					hash([{ op: "read", path: "probe.json" }]),
 			"qualification operation mismatch",
 		);
 		if (receipts.length)
 			insist(
 				response.body.id !== receipts[0].body.id &&
-					!JSON.stringify(response.body.output).includes(
+					!JSON.stringify(response.body.choices).includes(
 						"B121-PROBE-ONLY-6f128b",
 					),
 				"qualification replay/context canary",
@@ -229,6 +205,6 @@ export async function qualifyProvider({ transport, journal }) {
 		qualified: true,
 		receipts,
 		scope:
-			"outbound fresh JSON and returned configuration; not provider-internal memory or immutable-version proof",
+			"fresh outbound Chat messages and reported model/provider; not proof of immutable weights or provider-internal memory",
 	};
 }

@@ -1,0 +1,23 @@
+{
+  "kind": "B121-second-live-attempt-summary",
+  "manifestSHA": "49d2043fd30e400496dfd4ba9e69af409818f99443422999724d67323ea8f85d",
+  "generationCalls": 1,
+  "participantSessionsStarted": 0,
+  "qualificationPassed": false,
+  "httpStatus": 429,
+  "provider": "Makora",
+  "providerErrorCode": "capacity",
+  "limitSource": "upstream_provider_shared_pool",
+  "retryAfterSeconds": 1,
+  "reportedRequestCostUSD": null,
+  "unknownOutcomeReservationUSD": 0.03956224,
+  "keyUsageObservation": {
+    "observedAt": "2026-09-15T03:39:36.712Z",
+    "usage": 0.00035325,
+    "limit": 0.2,
+    "limitRemaining": 0.19964675,
+    "expiresAt": "2026-09-16T01:17:11.542Z"
+  },
+  "note": "429 has no usage record. Reservation is not an invoice. Read-only key usage is a point-in-time observation, not guaranteed final settlement. No retry/provider substitution. No comparative evidence.",
+  "retryAllowed": false
+}

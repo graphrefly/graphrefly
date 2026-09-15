@@ -1,0 +1,19 @@
+{
+  "/Users/davidchenallio/src/graphrefly": {
+    "preservedPreexistingFiles": 11,
+    "changedPreexistingFiles": [],
+    "expectedScopedChanges": []
+  },
+  "/Users/davidchenallio/src/graphrefly-ts": {
+    "preservedPreexistingFiles": 2081,
+    "changedPreexistingFiles": [
+      "packages/ts/evals/graph-native-rerun-avoidance/root-eval-live.ts",
+      "packages/ts/evals/graph-native-rerun-avoidance/openrouter-transport.mjs"
+    ],
+    "expectedScopedChanges": [
+      "packages/ts/evals/graph-native-rerun-avoidance/root-eval-live.ts",
+      "packages/ts/evals/graph-native-rerun-avoidance/openrouter-transport.mjs"
+    ],
+    "snapshotTimingNote": "Parent snapshot captured after delegation began. root-eval-live.ts and openrouter-transport.mjs already contained in-progress task edits; these are expected scoped changes. Agent initial pre-edit git status /tmp/shared-openrouter-baseline.txt confirms root-eval-live.ts and implementation-manifest.ts were clean; original blobs a13b1717e0b943ac7d744d57e178e3f5316100f2 and 502e55f9c825418f42e65d0cfa78296a715b858b. All other parent-snapshot bytes preserved."
+  }
+}

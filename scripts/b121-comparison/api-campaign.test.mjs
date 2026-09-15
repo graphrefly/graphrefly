@@ -19,7 +19,9 @@ const base = "sessions/active/b121-comparison-design-v1";
 const digest = (x) => createHash("sha256").update(x).digest("hex");
 for (const qualificationFails of [true, false])
 	test(`real campaign: ${qualificationFails ? "qualification failure" : "first participant fatal"}, fixed denominator and exclusive restart`, async () => {
-		const dir = mkdtempSync(join(tmpdir(), "b121-offline-campaign-"));
+		const temp = mkdtempSync(join(tmpdir(), "b121-offline-campaign-"));
+		const dir = join(temp, "graphrefly");
+		mkdirSync(dir);
 		const oldFetch = globalThis.fetch;
 		let countCalls = 0,
 			creates = 0;
@@ -40,51 +42,51 @@ for (const qualificationFails of [true, false])
 			globalThis.fetch = async (url, options) => {
 				const payload = JSON.parse(options.body);
 				wire.push({ url, payload });
-				let b;
-				if (url.endsWith("/input_tokens")) {
-					countCalls++;
-					b = { object: "response.input_tokens", input_tokens: 100 };
-				} else {
-					creates++;
-					b = {
-						id: `response_fake_${creates}`,
-						model: "gpt-6-astra",
-						store: false,
-						status: qualificationFails ? "incomplete" : "completed",
-						service_tier: "default",
-						reasoning: { effort: "medium" },
-						tools: payload.tools,
-						parallel_tool_calls: false,
-						usage: {
-							input_tokens: 100,
-							output_tokens: 20,
-							total_tokens: 120,
-							input_tokens_details: { cached_tokens: 0, cache_write_tokens: 0 },
-							output_tokens_details: { reasoning_tokens: 1 },
-						},
-						output: [
-							{
-								type: "function_call",
-								name: "broker",
-								call_id: `call_fake_${creates}`,
-								arguments: JSON.stringify({
-									requests: JSON.stringify([
-										{
-											op: "read",
-											path: creates <= 2 ? "probe.json" : "../../oracle.json",
+				creates++;
+				const b = {
+					id: `response_fake_${creates}`,
+					model: "qwen/qwen3.8-flash",
+					provider: "Makora",
+					usage: {
+						prompt_tokens: 100,
+						completion_tokens: 20,
+						total_tokens: 120,
+						cost: 0.0000244,
+					},
+					choices: [
+						{
+							finish_reason: qualificationFails ? "length" : "tool_calls",
+							message: {
+								role: "assistant",
+								content: null,
+								tool_calls: [
+									{
+										type: "function",
+										id: `call_fake_${creates}`,
+										function: {
+											name: "broker",
+											arguments: JSON.stringify({
+												requests: JSON.stringify([
+													{
+														op: "read",
+														path:
+															creates <= 2 ? "probe.json" : "../../oracle.json",
+													},
+												]),
+											}),
 										},
-									]),
-								}),
+									},
+								],
 							},
-						],
-					};
-				}
-				return {
-					ok: true,
-					status: 200,
-					headers: new Headers({ "x-request-id": `req_fake_${wire.length}` }),
-					text: async () => JSON.stringify(b),
+						},
+					],
 				};
+				const response = new Response(JSON.stringify(b), {
+					status: 200,
+					headers: { "x-request-id": `req_${creates}` },
+				});
+				Object.defineProperty(response, "url", { value: url });
+				return response;
 			};
 			const { runCampaign } = await import(
 				pathToFileURL(join(dir, "scripts/b121-comparison/api-campaign.mjs"))
@@ -93,12 +95,12 @@ for (const qualificationFails of [true, false])
 				manifestSHA,
 				action: "B121-agent-api-one-shot",
 				acceptAliasLimitation: true,
-				countEndpointPriceUSD: 0,
-				countPriceEvidence: "FAKE OFFLINE TEST ONLY",
+				acceptInputEstimateLimitation: true,
+				model: "qwen/qwen3.8-flash",
+				providerTag: "makora/fp4",
 				expiresAt: "2099-01-01",
 				maxGenerationCalls: 962,
-				maxCountCalls: 962,
-				maxUSD: 12.11,
+				maxUSD: 0.2,
 				retries: 0,
 			};
 			const result = await runCampaign({
@@ -107,7 +109,7 @@ for (const qualificationFails of [true, false])
 			});
 			assert.ok(result.failure);
 			assert.equal(creates, qualificationFails ? 1 : 3);
-			assert.equal(countCalls, creates);
+			assert.equal(countCalls, 0);
 			const journal = readFileSync(
 				join(result.directory, "journal.jsonl"),
 				"utf8",
@@ -139,13 +141,13 @@ for (const qualificationFails of [true, false])
 				wire.every(
 					(w) =>
 						w.payload.tools.length === 1 &&
-						w.payload.tools[0].name === "broker" &&
+						w.payload.tools[0].function.name === "broker" &&
 						!w.payload.conversation &&
 						!w.payload.previous_response_id,
 				),
 			);
 		} finally {
 			globalThis.fetch = oldFetch;
-			rmSync(dir, { recursive: true, force: true });
+			rmSync(temp, { recursive: true, force: true });
 		}
 	});

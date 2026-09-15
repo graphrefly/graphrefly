@@ -4,6 +4,7 @@ import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { CEILING_USD, maximumCost, ROUTE } from "./api-provider.mjs";
 import { CONFIG, INSTRUCTIONS, TOOL } from "./api-runner.mjs";
 import { QUALIFICATION_PROMPTS } from "./api-transport.mjs";
 import { createEntryAcceptance } from "./entry-tasks.mjs";
@@ -144,6 +145,10 @@ export function prepareManifest(bundle) {
 		"scripts/b121-comparison/session.mjs",
 		"scripts/b121-comparison/entry-tasks.mjs",
 		"scripts/b121-comparison/api-runner.mjs",
+		"scripts/b121-comparison/api-provider.mjs",
+		"scripts/b121-comparison/api-entry-review.mjs",
+		"scripts/b121-comparison/materials.mjs",
+		"../graphrefly-ts/packages/ts/evals/graph-native-rerun-avoidance/openrouter-transport.mjs",
 		"scripts/b121-comparison/api-transport.mjs",
 		"scripts/b121-comparison/api-prepare.mjs",
 		"scripts/b121-comparison/api-campaign.mjs",
@@ -161,17 +166,26 @@ export function prepareManifest(bundle) {
 		},
 		human: "deferred; no recruitment",
 		provider: {
-			name: "OpenAI direct",
-			endpoint: "https://api.openai.com/v1/responses",
-			countEndpoint: "https://api.openai.com/v1/responses/input_tokens",
-			...CONFIG,
+			name: "OpenRouter",
+			...ROUTE,
+			config: CONFIG,
 			immutableRevision: null,
-			returnedModelRequired: "gpt-6-astra",
+			accountAccess: "unverified; no inference calls made",
 			versionLimit:
-				"Official current snapshot has only the undated gpt-6-astra identifier; preserve all response IDs, timestamps, returned model/config, request IDs and raw bodies. Same alias does not prove unchanged weights.",
-			accountAccess: "unverified; no calls made",
+				"Route metadata names 20260826 weights, but request/returned alias cannot independently prove immutable hosting.",
 		},
-		bindings: paths.map((path) => ({
+		bindings: [
+			...new Set([
+				...paths,
+				...bundle.slots
+					.filter((p) => p.slot.arm === "G")
+					.flatMap((p) =>
+						JSON.parse(p.entryFiles["entry/task.json"]).sourceIndex.map(
+							(s) => "../graphrefly-ts/" + s.path,
+						),
+					),
+			]),
+		].map((path) => ({
 			path,
 			sha256: sha(readFileSync(join(root, path))),
 		})),
@@ -187,11 +201,11 @@ export function prepareManifest(bundle) {
 			totalStudyOutputTokens: 96000,
 			qualification: {
 				freshRequests: 2,
-				inputTokens: 4096,
+				inputTokens: 8192,
 				outputTokens: 1024,
 			},
 			generationCalls: 962,
-			countCalls: 962,
+			countCalls: 0,
 			retries: 0,
 			concurrency: 1,
 			maxRequestMs: 60000,
@@ -201,46 +215,46 @@ export function prepareManifest(bundle) {
 		},
 		price: {
 			currency: "USD",
-			standardInputPerMillion: 10,
-			cachedInputPerMillion: 1,
-			cacheWritePerMillion: 12.5,
-			outputPerMillion: 50,
-			studyMaximum: 12,
-			qualificationMaximum: 0.1024,
-			proposedTotalCeiling: 12.11,
-			countEndpointPriceUSD: null,
-			countTariff:
-				"Not established by fetched official pages. Must confirm zero cost with an official/account billing source before any endpoint is called; otherwise revise proposal. No assumption of free service.",
+			standardInputPerMillion: ROUTE.inputPerMillion,
+			cachedInputPerMillion: ROUTE.cacheReadPerMillion,
+			outputPerMillion: ROUTE.outputPerMillion,
+			studyMaximum: maximumCost(576000, 96000),
+			qualificationMaximum: maximumCost(8192, 1024),
+			proposedTotalCeiling: CEILING_USD,
+			singleRequestReservation:
+				"Full published Makora context (262144 input tokens) plus requested output; no cache discount assumed",
+			inputPreflight:
+				"Local UTF-8 bytes + 2048 formatting allowance is a forecast, not exact tokenization. Actual reported input must fit the remaining 48000-token session allowance before answers are accepted. Overrun stops campaign; charged overrun remains visible.",
 			basis:
-				"All generation input reserved at cache-write rate; reasoning and invisible formatting are output. Short context only. No built-in paid tools or regional endpoint. Taxes excluded; service charges only.",
-			source: "https://developers.openai.com/api/docs/pricing",
+				"Service-only USD; taxes/top-up fees excluded. Hard local dispatch reservation depends on published route context/rates and honest complete provider billing; provider internals cannot be enforced locally.",
+			source: ROUTE.source,
 		},
 		conditionsBeforeAnyCall: [
-			"Explicit approval bound to this exact manifest SHA and one-shot scope, expiry and zero retries",
-			"Accept undated model identifier reproducibility limit; no automatic replacement",
-			"Official/account evidence establishes count endpoint zero tariff",
-			"Explicit API credential supplied privately to trusted controller; no key lookup in preparation",
+			"Explicit one-shot grant bound to manifest SHA, Qwen/Makora route, USD 0.20, 962 maximum generation calls, expiry, zero retries",
+			"Accept model alias and local input estimate limitations; no automatic provider/model replacement",
+			"Confirm route metadata/price evidence remains current before approval; if changed, regenerate manifest",
+			"Explicit private credential injection; preparation never discovers keys",
 		],
 		qualificationBeforeParticipants: [
-			"Two separately fresh synthetic requests, each <=2048 input /512 output; exact count, model, tier, tool and store/config validation; no study facts",
-			"Any mismatch, incomplete response, missing usage, timeout or uncertain billing stops entire campaign; no participant substitution",
-			"Outbound only one custom broker tool; no conversation/previous_response_id, repo, chat history, goldens or other arm; returned output types are restricted",
+			"Two fresh synthetic requests; <=4096 reported input and 512 output each; exact requested broker operation; returned model/provider, complete usage and pricing audit",
+			"Any mismatch, malformed response, overrun, timeout or billing uncertainty stops entire campaign; no substitutions or retries",
+			"Only one custom broker; all history is explicit messages; no server-side conversation, repository tool or hidden grading data",
 		],
 		privacy: {
 			transmitted:
-				"Only selected role/arm judgment files, own session history, and assigned Graph entry source chunks after A/B closure go to OpenAI; credential stays in trusted HTTP header.",
+				"Assigned role/arm materials, own session messages, and assigned Graph entry chunks after A/B closure go to OpenRouter and Makora; credential remains in HTTP header",
 			retention:
-				"store=false does not mean zero retention. Official data guide describes default abuse-monitoring retention up to 30 days (exceptions apply); no ZDR account entitlement is asserted.",
+				"No ZDR entitlement or no-retention guarantee asserted. OpenRouter and selected provider policies apply; no fabricated store=false promise.",
 			isolation:
-				"Direct request construction and custom-tool allowlist, not the prior synthetic container qualification. Provider internals, hidden service instructions, training knowledge and immutable weights are not independently observable.",
-			source: "https://developers.openai.com/api/docs/guides/your-data",
+				"Controller-owned file allowlist and fresh message arrays; not provider-internal memory isolation or immutable weights proof",
+			source: "https://openrouter.ai/docs/guides/privacy/provider-logging",
 		},
 		analysis: {
 			method: "judgment-only-v2",
 			denominator:
 				"12 assigned slots x 8 cases x 7 fields x 2 phases, including failed/unrun slots",
 			entry:
-				"6 G sessions receive assigned role task after their A/B seals; same cumulative budget; no P entry score",
+				"6 G sessions receive assigned role task after their A/B seals; same cumulative budget. Static compilation then bound trusted criterion review; pending review never accepted. No P entry score.",
 			structured:
 				"Existing frozen gradeSealed; value and required fact citations both required. Separate safety counts and role/arm rows.",
 			freeText:

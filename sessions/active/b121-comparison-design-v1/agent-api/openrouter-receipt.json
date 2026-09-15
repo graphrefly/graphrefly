@@ -1,0 +1,85 @@
+{
+  "kind": "B121-OpenRouter-offline-preparation-v1",
+  "owner": "graphrefly:B121",
+  "date": "2026-09-14",
+  "manifestSHA": "6cf4fdf1f779054d03b73956c1907d156a266f0570715f947e5c02da693eb194",
+  "implementationAuthorization": "User approved shared CSP11 OpenRouter extraction, Qwen3.8 Flash wiring and existing entry acceptance integration in current conversation. No live/spend grant.",
+  "providerInferenceCalls": 0,
+  "participantSessions": 0,
+  "spendUSD": 0,
+  "executionReady": false,
+  "b121Complete": false,
+  "checks": [
+    {
+      "cwd": "graphrefly",
+      "command": "node --test scripts/b121-comparison/*.test.mjs",
+      "passed": 85,
+      "failed": 0,
+      "note": "Full comparison suite before final actual-overrun accounting regression; affected rerun recorded separately."
+    },
+    {
+      "cwd": "graphrefly",
+      "command": "node --test scripts/b121-comparison/api-runner.test.mjs scripts/b121-comparison/api-campaign.test.mjs scripts/b121-comparison/api-campaign-entry.test.mjs",
+      "passed": 41,
+      "failed": 0,
+      "note": "Final affected rerun includes new actual-overrun accounting case."
+    },
+    {
+      "cwd": "graphrefly-ts",
+      "command": "pnpm --filter @graphrefly/ts exec vitest run src/__tests__/openrouter-shared-transport.test.ts src/__tests__/root-eval-d154-provider-cost.test.ts src/__tests__/root-eval-http-transport-leaf.test.ts src/__tests__/root-eval-settled-spend.test.ts",
+      "passed": 60,
+      "failed": 0
+    },
+    {
+      "cwd": "graphrefly-ts",
+      "command": "pnpm --filter @graphrefly/ts exec vitest run --config vitest.root-eval-soak.config.ts -t 'bounds external response bodies|pricing|usage|provider response'",
+      "passed": 4,
+      "filtered": 217,
+      "failed": 0
+    },
+    {
+      "cwd": "graphrefly-ts",
+      "command": "pnpm exec tsc --noEmit --skipLibCheck --strict --target ES2022 --module ESNext --moduleResolution bundler --types node packages/ts/src/__tests__/openrouter-shared-transport.test.ts",
+      "exitCode": 0
+    },
+    {
+      "cwd": "graphrefly",
+      "command": "node dashboard/build.mjs --check",
+      "exitCode": 0,
+      "note": "Existing orphan/legacy/unavailable-work warnings retained"
+    },
+    {
+      "cwd": "graphrefly",
+      "command": "npm run authority:check:workspace",
+      "exitCode": 0,
+      "note": "Existing legacy classification/work warnings retained"
+    },
+    {
+      "command": "Scoped Biome check and git diff --check",
+      "exitCode": 0,
+      "note": "Informational template-literal suggestions only"
+    }
+  ],
+  "limitations": [
+    "CSP11 consumer strict tsc includes unchanged eval-topology.ts errors (6334,6) and (6673,6): number | Timeout not assignable to Timeout | undefined; no full package build/test claim.",
+    "Local input prediction is not exact tokenization. Real usage overrun is retained and stops answer admission. Whole-route-context money reservation is separate.",
+    "No live Qwen/Makora account qualification, no immutable hosting proof, no real participant result.",
+    "Entry compilation is static only; semantic success requires bound trusted reviewer. Free-text dual-human review still unperformed."
+  ],
+  "review": {
+    "blind": "No actionable findings",
+    "edge": "Timeout lost partial envelope; fixed with 100ms bounded abort settlement and real streamed-response regression, recheck clean",
+    "verification": "Added pre-dispatch source bindings and actual campaign entry/compile/offline-review consumer tests, recheck clean",
+    "finalLocalFix": "Retain actual charged overrun usage in session result before refusing broker output"
+  },
+  "preservation": "openrouter-preservation.json",
+  "proposal": {
+    "model": "qwen/qwen3.8-flash",
+    "provider": "makora/fp4",
+    "sessions": 12,
+    "qualifications": 2,
+    "maxGenerationCalls": 962,
+    "maxUSD": 0.2,
+    "retries": 0
+  }
+}

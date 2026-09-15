@@ -1578,7 +1578,7 @@
     "type": "function",
     "function": {
       "name": "broker",
-      "description": "Read allowed study files and retain answers. requests is a JSON-encoded array of 1–16 operations. Exact shapes: list = {\"op\":\"list\"} (no path); read = {\"op\":\"read\",\"path\":\"orientation.json\"}; judgment submit = {\"op\":\"submit\",\"phase\":\"A\",\"scenario\":\"C1\",\"fields\":{},\"explanation\":\"...\"}, with complete fields defined in the visible packet. After both seals, Graph entry submit = {\"op\":\"submit\",\"snippet\":\"...\",\"explanation\":\"...\",\"concepts\":{\"read\":[],\"required\":[],\"firstExpansion\":null}}. Use op, never action. No additional fields. The first call should read orientation.json. Only the controller seals phases.",
+      "description": "Read the allowed study files and retain answers. Supply a JSON array of 1–16 list/read/submit operations in requests. Only the controller can seal a phase.",
       "parameters": {
         "type": "object",
         "properties": {
