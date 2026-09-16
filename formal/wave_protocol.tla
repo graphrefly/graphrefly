@@ -1931,8 +1931,8 @@ DeliverToExtraSink(n, i) ==
 ----------------------------------------------------------------------------
 (*            §1.4 INVALIDATE + cleanup-witness actions                      *)
 (*                                                                            *)
-(* `Invalidate(n)` models a user-originated `graph.signal([[INVALIDATE]])`   *)
-(* or an operator-originated cache-bust at node n. Records the PRE-reset    *)
+(* `Invalidate(n)` models an INVALIDATE input at node n; it does not       *)
+(* prescribe a graph-wide broadcast API (D794). Records the PRE-reset      *)
 (* `cache[n]` to `cleanupWitness[n]`, resets `cache[n]` to `DefaultInitial`, *)
 (* and enqueues an INVALIDATE message to every child of `n` (one-step       *)
 (* propagation). Full-graph propagation (grandchildren etc.) is deferred —  *)
