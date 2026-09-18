@@ -1,0 +1,18 @@
+{
+  "suite": {
+    "source": "../offline/qualification-completed.json",
+    "uniquePassed": 233,
+    "unresolvedFailures": 0,
+    "rerunThisTurn": true
+  },
+  "journalRowsVerified": 8925,
+  "codeBindingsVerified": 388,
+  "materialArtifactsVerified": 5,
+  "feedbackRequestsVerified": 48,
+  "plannedSamples": 4,
+  "startedSamples": 4,
+  "submissions": 4,
+  "providerAttemptFailures": 1,
+  "modelSessionReruns": 0,
+  "independentReview": false
+}

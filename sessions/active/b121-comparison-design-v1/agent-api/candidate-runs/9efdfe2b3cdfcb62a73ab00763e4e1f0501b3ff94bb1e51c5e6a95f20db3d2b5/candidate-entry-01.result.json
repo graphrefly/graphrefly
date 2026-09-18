@@ -1,0 +1,62 @@
+{
+  "slot": {
+    "id": "candidate-entry-01",
+    "arm": "G",
+    "role": "application-developer"
+  },
+  "controller": null,
+  "experiment": "entry",
+  "explanations": {
+    "A": {},
+    "B": {}
+  },
+  "entryAnswer": {
+    "op": "submit",
+    "snippet": "import { graph, filter, scan, type Graph, type Node } from \"@graphrefly/ts\";\n\ntype Payment = { accepted: boolean; cents: number };\n\n/**\n * Build a reusable graph pipeline over a caller-owned Graph and a caller-owned\n * Node of payment facts already registered in that Graph.\n *\n * Emits the running sum of `cents` after each accepted fact, seeded at 0.\n * Rejected facts are dropped by `filter` and therefore emit no new total.\n * The accumulator lives in the `scan` node's own graph-local state, not in a\n * host variable; no subscription, input push, second graph or raw node body is\n * created here. The caller owns activation and the graph/input lifetime.\n */\nexport function buildAcceptedTotal(\n  graph: Graph,\n  payments: Node<Payment>,\n): Node<number> {\n  const accepted = graph.initNode(\n    filter((p: Payment) => p.accepted),\n    [payments],\n    { name: \"acceptedPayments\" },\n  );\n\n  return graph.initNode(\n    scan((total: number, p: Payment) => total + p.cents, 0),\n    [accepted],\n    { name: \"acceptedTotal\" },\n  );\n}\n",
+    "explanation": "Imports come only from the published root entrypoint `@graphrefly/ts` (packages/ts/README.md:60-64 shows the root re-exports the common surface; packages/ts/src/index.ts:235-246 exports `graph`, `Graph`, `SugarOpts` from ./graph/graph.js and packages/ts/src/index.ts:270-302 re-exports `filter`, `scan`, `initNode`, `Operator` from ./graph/operators.js). No source-relative imports are used.\n\nShape: `buildAcceptedTotal(graph: Graph, payments: Node<Payment>): Node<number>` accepts the caller's Graph and Node directly and returns Node<number>, matching the consumer contract. `Graph` is the class owning one graph-local topology/lifecycle/inspection index (packages/ts/src/graph/graph.ts:155-170), and `Node<T>` is the substrate node type (packages/ts/src/index.ts:425).\n\nPipeline: `graph.initNode(op, deps, opts)` is the single graph-bound entry for the operator catalog; it type-checks deps against the operator input element type, flows the output type from the operator, and registers the real factory name for inspection (packages/ts/src/graph/graph.ts:513-543). `filter(pred)` passes through only upstream DATA values satisfying the predicate and stays quiet for non-matches (packages/ts/src/graph/operators.ts:291-316), so rejected facts produce no downstream emission. `scan(reducer, seed)` accumulates and emits each intermediate accumulator, keeping the accumulator in the node's own `ctx.state` rather than a host variable (packages/ts/src/graph/operators.ts:318-349). The README's own example composes exactly this way: `g.initNode(map(...), [count])` then `g.initNode(scan((acc, n) => acc + n, 0), [doubled])` (packages/ts/README.md:101-116).\n\nConstraints respected: no `subscribe`/`retain` call, no `set`/push of new input, no second `graph(...)` construction, no raw `graph.node(...)` body, and no host-variable accumulator. The caller owns activation and the supplied graph/input lifetime.\n\nDATA totals for the successive occurrences [{accepted:false,cents:50},{accepted:true,cents:0},{accepted:true,cents:7},{accepted:false,cents:90},{accepted:true,cents:-2}]: the first fact is rejected, so `filter` emits nothing and no total is emitted. The second fact is accepted with cents 0, so `scan` emits 0. The third is accepted with 7, emitting 7. The fourth is rejected, emitting nothing. The fifth is accepted with -2, emitting 5. So the emitted DATA sequence is 0, 7, 5 (three emissions for five occurrences).\n\nSeed vs initial emitted value: the seed is the `0` passed as `scan`'s second argument (packages/ts/src/graph/operators.ts:335-341), the accumulator's starting value. It is not itself an emitted value: `scan` emits only inside its per-value loop after applying the reducer (packages/ts/src/graph/operators.ts:342-345), so nothing is emitted until the first accepted fact arrives. Here the first accepted fact has cents 0, so the first emitted DATA happens to equal the seed numerically, but it is a distinct event produced by reducing that fact, not the seed being emitted. If the first accepted fact had cents 7, the first emission would be 7, not 0.\n\nThis is a static typecheck/source-based review; the snippet was not executed.",
+    "concepts": {
+      "read": [
+        "occurrence",
+        "admission",
+        "retained-evidence",
+        "identity",
+        "lifecycle",
+        "authority",
+        "revision",
+        "provenance"
+      ],
+      "required": [
+        "occurrence",
+        "admission",
+        "lifecycle",
+        "authority"
+      ],
+      "firstExpansion": null
+    }
+  },
+  "entryTiming": {
+    "startedMs": 0,
+    "submittedMs": 29471,
+    "elapsedMs": 29471,
+    "firstSourceRead": {
+      "path": "packages/ts/README.md",
+      "line": 1,
+      "operation": "read",
+      "elapsedMs": 2521
+    }
+  },
+  "entryStatus": "submitted",
+  "usage": {
+    "inputTokens": 622526,
+    "outputTokens": 3351,
+    "elapsedMs": 29478
+  },
+  "costUSD": 0.02312844,
+  "turns": 17,
+  "counts": 17,
+  "operations": 39,
+  "fatal": null,
+  "failureScope": null,
+  "pendingReservation": null,
+  "retryAllowed": false
+}

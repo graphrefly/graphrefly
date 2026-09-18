@@ -1,0 +1,3 @@
+fromPushNotification is a source factory; graph.initNode registers it, and source.subscribe activates it. DATA-only branching preserves zero and synchronous deliveries. stop releases this subscription once. If another subscriber remains, the source remains active. On final deactivation the source invokes the optional registration cleanup; that does not imply global transport or Graph termination. Source: packages/ts/src/graph/sources.ts (source and fromPushNotification), packages/ts/src/node/node.ts (subscribe).
+
+Source line references: packages/ts/src/graph/sources.ts:63–84 (activation/deactivation cleanup), 1210–1228 (push wrapper); packages/ts/src/node/node.ts:417–451 (subscription and final unsubscribe).

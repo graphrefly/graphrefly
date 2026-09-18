@@ -1,0 +1,62 @@
+{
+  "slot": {
+    "id": "candidate-entry-03",
+    "arm": "G",
+    "role": "diagnostic-tool-author"
+  },
+  "controller": null,
+  "experiment": "entry",
+  "explanations": {
+    "A": {},
+    "B": {}
+  },
+  "entryAnswer": {
+    "op": "submit",
+    "snippet": "import { reachable } from \"@graphrefly/ts/graph\";\nimport type { DescribeSnapshot, ReachableResult } from \"@graphrefly/ts/graph\";\n\n/**\n * Read-only downstream dependency reachability report over a caller-supplied\n * DescribeSnapshot. Delegates all traversal to the public `reachable` helper\n * (direction \"downstream\", withDetail: true) and returns its actual metadata.\n */\nexport function downstreamReport(\n\tsnapshot: DescribeSnapshot,\n\tstart: string,\n\tmaxDepth: number,\n): { paths: readonly string[]; depths: Readonly<Record<string, number>>; truncated: boolean } {\n\tconst result: ReachableResult = reachable(snapshot, start, \"downstream\", {\n\t\tmaxDepth,\n\t\twithDetail: true,\n\t});\n\treturn {\n\t\tpaths: result.paths,\n\t\tdepths: result.depths,\n\t\ttruncated: result.truncated,\n\t};\n}\n",
+    "explanation": "Implementation: `downstreamReport` accepts the public `DescribeSnapshot` directly and calls the published diagnostic helper `reachable(snapshot, start, \"downstream\", { maxDepth, withDetail: true })`, then returns the helper's own `paths`, `depths` and `truncated` fields unchanged. It never touches live Nodes, never mutates the snapshot, and implements no traversal of its own; the only import is the published `@graphrefly/ts/graph` entrypoint (packages/ts/src/graph/index.ts:67-80 re-exports `reachable` and the `ReachableResult`/`DescribeSnapshot` types; the root entry also re-exports them at packages/ts/src/index.ts:195-198).\n\nWhy this is the right helper: `reachable` is documented as pure over `DescribeSnapshot` and as never reading Nodes (packages/ts/src/graph/diagnostics.ts:172-176), and `downstream` follows reverse deps toward effects (diagnostics.ts:175). Its detailed result shape is exactly the required contract: `paths` are reachable ids excluding the start, sorted deterministically; `depths` maps id to hop depth; `truncated` is true when `maxDepth` cut off at least one still-expandable frontier node (diagnostics.ts:22-29). The overload with `withDetail: true` returns `ReachableResult` (diagnostics.ts:189-194), so the returned object is statically typed as required.\n\nSemantics from the source: the start id is seeded into `seen` and never added to `depths`, so it is excluded even through a cycle (diagnostics.ts:234-236, 245-251). `maxDepth === 0` returns empty paths/depths and sets `truncated` iff the start has any adjacent node in the chosen direction (diagnostics.ts:230-233). Otherwise BFS records each newly seen id at `cur.depth + 1` and marks `truncated` when a frontier node at the depth limit still has neighbors (diagnostics.ts:238-252). Paths are sorted by code unit (diagnostics.ts:98-100, 253) and depths are emitted in sorted key order (diagnostics.ts:257).\n\nWorked examples for edges A→B, B→A, B→C (downstream = reverse deps, so A→B means B is downstream of A):\n- (start=A, maxDepth=1): B is reached at depth 1; B's neighbors A (already seen) and C are not expanded because B sits at the depth limit, so C is not reported and `truncated` is true. Result: paths [\"B\"], depths {B:1}, truncated true.\n- (start=A, maxDepth=0): no expansion; A has an adjacent downstream node (B), so paths [], depths {}, truncated true.\n- (start=missing, maxDepth=2): the start id is not in the snapshot index, so the helper returns the empty result with `truncated` false (diagnostics.ts:228-229). Result: paths [], depths {}, truncated false.\n\nTruncation is not proof of unseen nodes: `truncated` only means the walk stopped at a still-expandable frontier (diagnostics.ts:27, 241-243). In a graph containing only A↔B, `reachable(snapshot, \"A\", \"downstream\", { maxDepth: 0, withDetail: true })` reports `truncated: true` because B is adjacent, yet B is the only other node and is already fully known; there is no additional unseen node. Reinterpreting the flag as evidence of more nodes would fabricate reachability the snapshot does not contain, so the flag must be preserved as a statement about the bounded walk, not about the graph.\n\nFinally, this report is a static, read-only projection of one frozen snapshot: it re-derives reachability from the snapshot's recorded deps/edges (diagnostics.ts:130-156) and reads no live Nodes (diagnostics.ts:176). It therefore proves only what that snapshot records about dependency structure. It does not prove that any future computation will run, that values will propagate, or that any physical effect will occur; those are runtime/lifecycle outcomes outside the snapshot's evidence.",
+    "concepts": {
+      "read": [
+        "occurrence",
+        "retained-evidence",
+        "identity",
+        "lifecycle",
+        "authority",
+        "provenance"
+      ],
+      "required": [
+        "occurrence",
+        "retained-evidence",
+        "identity",
+        "lifecycle",
+        "authority",
+        "provenance"
+      ],
+      "firstExpansion": null
+    }
+  },
+  "entryTiming": {
+    "startedMs": 0,
+    "submittedMs": 16926,
+    "elapsedMs": 16926,
+    "firstSourceRead": {
+      "path": "packages/ts/README.md",
+      "line": 1,
+      "operation": "read",
+      "elapsedMs": 2649
+    }
+  },
+  "entryStatus": "submitted",
+  "usage": {
+    "inputTokens": 261885,
+    "outputTokens": 2135,
+    "elapsedMs": 16932
+  },
+  "costUSD": 0.015120972000000002,
+  "turns": 9,
+  "counts": 9,
+  "operations": 17,
+  "fatal": null,
+  "failureScope": null,
+  "pendingReservation": null,
+  "retryAllowed": false
+}

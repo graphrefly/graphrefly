@@ -1,0 +1,35 @@
+{
+  "assessmentSHA256": "d15664101686931eaa3cd89b0cc783c1732d5013d2c98b96758156ea2a1d8046",
+  "binding": {
+    "materialSHA256": "77bfd6b0d99b0cb360cae284333840e9d523e05e8ac6aca8c44fad3cc9f80501",
+    "taskSHA256": "c67041b59fd114d20d751fbc1cef3a1dc2906e177adcd5037b17ca35b279feae",
+    "rubricSHA256": "2856cf48dfd03692617563619c6967b6c21a0f8e8ed91e6ac621d27a6688e3c1",
+    "environmentSHA256": "21f838eb2daf82a75fc12abe5a0c5b37ebad57c5fab77fba889afc23341275f2",
+    "runnerContractSHA256": "fa13bb24115b1b14508b2d1d61fca4159d1a45ff2342b29e5e21c91c57db9625"
+  },
+  "taskId": "report-bounded-downstream-impact",
+  "sampleId": "candidate-entry-03",
+  "formalReady": false,
+  "providerCalls": 0,
+  "accepted": false,
+  "status": "criteria-failed",
+  "compilerReceipt": "/Users/davidchenallio/src/graphrefly/sessions/active/b121-comparison-design-v1/agent-api/public-api-round-v1/live/review-compiler/adc1b4fc-ce8d-4903-8d5b-7151a73ce5cc",
+  "review": {
+    "reviewerId": "root-static-reviewer-harness-author-not-blind",
+    "criteria": {
+      "public-readonly-diagnostic": {
+        "pass": true,
+        "evidence": "Original snippet directly calls reachable(snapshot,start,\"downstream\",{maxDepth,withDetail:true}) from the public graph entrypoint. Caller snapshot/depth are preserved; no live node access, mutation, replacement snapshot or own traversal. Consumer compiles."
+      },
+      "preserve-detailed-result": {
+        "pass": true,
+        "evidence": "Copies result.paths, result.depths, result.truncated without recomputation or reinterpretation. Frozen diagnostics.ts234-258 excludes origin, sorts paths and returns detailed metadata; no array-only collapse."
+      },
+      "edge-cases-and-limits": {
+        "pass": false,
+        "evidence": "The three requested A/B/C cases and snapshot-versus-execution limit are correct. The two-node cycle explanation instead chooses maxDepth0 and claims there is no additional unseen node because B is already known. At depth0 the walk has returned no reachable nodes, so B is in fact unseen by the bounded traversal: this is not a valid counterexample to truncated implying unseen reachable nodes. The relevant source boundary at diagnostics.ts241-245 checks adjacency before seen: at A/depth1 on A<->B, B is already visited and its only neighbor is seen A, yet truncated remains true. The submitted explanation never gives that mechanism and conflates snapshot knowledge with traversal results. Failure is the incorrect counterexample/explanation required by the prompt and frozen criterion; not formatting, choice of variable names, or failure to copy the expected example verbatim."
+      }
+    },
+    "assessmentSHA256": "d15664101686931eaa3cd89b0cc783c1732d5013d2c98b96758156ea2a1d8046"
+  }
+}

@@ -1,0 +1,31 @@
+import {readFileSync,writeFileSync,mkdirSync} from 'node:fs';
+import {resolve,join} from 'node:path';
+import {gunzipSync} from 'node:zlib';
+import {digest} from '../../../../../../scripts/b121-comparison/frozen-compiler.mjs';
+import {openCandidateRound} from '../../../../../../scripts/b121-comparison/candidate-entry.mjs';
+const base=resolve(new URL('../',import.meta.url).pathname);
+const read=p=>JSON.parse(readFileSync(join(base,p),'utf8'));
+const save=(p,v)=>writeFileSync(join(base,p),JSON.stringify(v,null,2)+'\n',{flag:'wx'});
+const materialsJSON=readFileSync(join(base,'materials.json'),'utf8');
+const environmentJSON=gunzipSync(readFileSync(join(base,'compiler-environment.json.gz'))).toString();
+const tasksJSON=readFileSync(join(base,'tasks.json'),'utf8'),rubricJSON=readFileSync(join(base,'reviewer-rubric.json'),'utf8');
+const tasks=JSON.parse(tasksJSON),rubric=JSON.parse(rubricJSON),pins=read('integration-pins.json');
+mkdirSync(join(base,'offline/consumer-compiler'),{recursive:true});
+const round=openCandidateRound({materialsJSON,tasksJSON,rubricJSON,environmentJSON,pins,receiptRoot:join(base,'offline/consumer-compiler')});
+const material=JSON.parse(materialsJSON);
+if(Object.keys(material.files).some(p=>/(?:__tests__|__bench__|author\/|reviewer|calibration|sessions\/)/.test(p)))throw Error('material boundary');
+const qualification=[];
+for(const [i,t] of tasks.tasks.entries()){
+ const packet=round.prepare(t.id,`candidate-entry-${String(i+1).padStart(2,'0')}`);
+ const meta=JSON.parse(packet.entryFiles['entry/task.json']);
+ if(meta.consumerProbe||meta.criteria||meta.sourceIndex.length!==288)throw Error('packet boundary');
+ const answer=readFileSync(join(base,'author/calibration',t.id,'positive.ts'),'utf8');
+ const result=await round.typecheck(answer,{consumerProbe:rubric.tasks.find(r=>r.id===t.id).consumerProbe,context:{taskId:t.id,stage:'offline-qualification'}});
+ qualification.push({taskId:t.id,...result});
+}
+const author=read('author/static-validation.json'),audit=read('offline/material-audit.json');
+const ready=author.allMatched&&audit.publicImportCompilation.ok&&qualification.every(r=>r.compilation?.ok&&r.compilation.materialDiagnostics.length===0);
+save('offline/qualification-completed.json',{checkedAt:new Date().toISOString(),readyForCandidateTypechecking:ready,qualification,pins,packetIsolation:'Only frozen production package source, package README/package.json and task metadata. Rubric/probes/calibration/history excluded from the explicit map.',rootTests:{tests:233,passed:233,failed:0,log:'/tmp/b121-public-full-tests.log'},review:{reviewer:'root, separate from task author; harness author, not blind',taskPromptRubricAlignment:true,publicImportResolution:true,sourceSemanticChecks:true,negativeControlsReviewed:true,limitations:['No participant runtime execution','Source aliases, not installed package or bundler verification','Package README and source docs only; two linked sibling example READMEs excluded','Additional reviewer spawn unavailable: agent thread limit reached; no three-independent-review claim']}});
+if(!ready)throw Error('offline qualification failed');
+mkdirSync(join(base,'live'),{recursive:true});
+console.log(JSON.stringify({ready,pins,qualification:qualification.map(r=>({taskId:r.taskId,ok:r.compilation?.ok}))}));

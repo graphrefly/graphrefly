@@ -1,0 +1,110 @@
+[
+  {
+    "taskId": "build-filtered-running-total",
+    "case": "positive",
+    "snippet": "calibration/build-filtered-running-total/positive.ts",
+    "expectedCompilation": true,
+    "expectedFailedCriteria": []
+  },
+  {
+    "taskId": "build-filtered-running-total",
+    "case": "negative-zero-filter",
+    "snippet": "calibration/build-filtered-running-total/negative-zero-filter.ts",
+    "expectedCompilation": true,
+    "expectedFailedCriteria": [
+      "accepted-occurrence-semantics"
+    ],
+    "explanation": "This compiles but silently discards accepted zero-valued occurrences; the explanation cannot repair the code."
+  },
+  {
+    "taskId": "build-filtered-running-total",
+    "case": "negative-return-value",
+    "snippet": "calibration/build-filtered-running-total/negative-return-value.ts",
+    "expectedCompilation": false,
+    "expectedFailedCriteria": [
+      "public-graph-pipeline"
+    ],
+    "explanation": "Separate caller probe rejects a scalar result even though the implementation alone compiles."
+  },
+  {
+    "taskId": "adapt-host-push-lifetime",
+    "case": "positive",
+    "snippet": "calibration/adapt-host-push-lifetime/positive.ts",
+    "expectedCompilation": true,
+    "expectedFailedCriteria": []
+  },
+  {
+    "taskId": "adapt-host-push-lifetime",
+    "case": "negative-zero-drop",
+    "snippet": "calibration/adapt-host-push-lifetime/negative-zero-drop.ts",
+    "expectedCompilation": true,
+    "expectedFailedCriteria": [
+      "data-and-activation"
+    ],
+    "explanation": "Compiles but drops zero DATA."
+  },
+  {
+    "taskId": "adapt-host-push-lifetime",
+    "case": "negative-no-stop",
+    "snippet": "calibration/adapt-host-push-lifetime/negative-no-stop.ts",
+    "expectedCompilation": false,
+    "expectedFailedCriteria": [
+      "subscription-cleanup-scope"
+    ],
+    "explanation": "Wrong cleanup type is caught by consumer probe."
+  },
+  {
+    "taskId": "report-bounded-downstream-impact",
+    "case": "positive",
+    "snippet": "calibration/report-bounded-downstream-impact/positive.ts",
+    "expectedCompilation": true,
+    "expectedFailedCriteria": []
+  },
+  {
+    "taskId": "report-bounded-downstream-impact",
+    "case": "negative-upstream",
+    "snippet": "calibration/report-bounded-downstream-impact/negative-upstream.ts",
+    "expectedCompilation": true,
+    "expectedFailedCriteria": [
+      "public-readonly-diagnostic"
+    ],
+    "explanation": "Compiles but reverses direction; do not accept merely because a cyclic example shares a neighbor."
+  },
+  {
+    "taskId": "report-bounded-downstream-impact",
+    "case": "negative-array-only",
+    "snippet": "calibration/report-bounded-downstream-impact/negative-array-only.ts",
+    "expectedCompilation": false,
+    "expectedFailedCriteria": [
+      "preserve-detailed-result"
+    ],
+    "explanation": "Implementation compiles but consumer cannot access required metadata."
+  },
+  {
+    "taskId": "read-one-audit-page",
+    "case": "positive",
+    "snippet": "calibration/read-one-audit-page/positive.ts",
+    "expectedCompilation": true,
+    "expectedFailedCriteria": []
+  },
+  {
+    "taskId": "read-one-audit-page",
+    "case": "negative-zero-cursor",
+    "snippet": "calibration/read-one-audit-page/negative-zero-cursor.ts",
+    "expectedCompilation": true,
+    "expectedFailedCriteria": [
+      "record-and-cursor-preservation"
+    ],
+    "explanation": "Compiles but nextAfter=0 is replaced by previous after=-1."
+  },
+  {
+    "taskId": "read-one-audit-page",
+    "case": "negative-missing-metadata",
+    "snippet": "calibration/read-one-audit-page/negative-missing-metadata.ts",
+    "expectedCompilation": false,
+    "expectedFailedCriteria": [
+      "record-and-cursor-preservation"
+    ],
+    "explanation": "Consumer probe rejects missing continuation fields."
+  }
+]

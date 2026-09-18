@@ -1,0 +1,60 @@
+{
+  "checkedAt": "2026-09-18T22:52:51.466Z",
+  "readyForCandidateTypechecking": false,
+  "qualification": [
+    {
+      "taskId": "build-filtered-running-total",
+      "compilation": null,
+      "compilerFailure": "ENOENT: no such file or directory, mkdir '/Users/davidchenallio/src/graphrefly/sessions/active/b121-comparison-design-v1/agent-api/public-api-round-v1/offline/consumer-compiler/6309bb96-4574-4c42-81ac-08512dab2217'",
+      "receiptDirectory": "/Users/davidchenallio/src/graphrefly/sessions/active/b121-comparison-design-v1/agent-api/public-api-round-v1/offline/consumer-compiler/6309bb96-4574-4c42-81ac-08512dab2217",
+      "process": null
+    },
+    {
+      "taskId": "adapt-host-push-lifetime",
+      "compilation": null,
+      "compilerFailure": "ENOENT: no such file or directory, mkdir '/Users/davidchenallio/src/graphrefly/sessions/active/b121-comparison-design-v1/agent-api/public-api-round-v1/offline/consumer-compiler/e50e7775-a4e9-4498-8508-d8d060b9b4ab'",
+      "receiptDirectory": "/Users/davidchenallio/src/graphrefly/sessions/active/b121-comparison-design-v1/agent-api/public-api-round-v1/offline/consumer-compiler/e50e7775-a4e9-4498-8508-d8d060b9b4ab",
+      "process": null
+    },
+    {
+      "taskId": "report-bounded-downstream-impact",
+      "compilation": null,
+      "compilerFailure": "ENOENT: no such file or directory, mkdir '/Users/davidchenallio/src/graphrefly/sessions/active/b121-comparison-design-v1/agent-api/public-api-round-v1/offline/consumer-compiler/63343952-e7e5-4706-a656-0275f86baf09'",
+      "receiptDirectory": "/Users/davidchenallio/src/graphrefly/sessions/active/b121-comparison-design-v1/agent-api/public-api-round-v1/offline/consumer-compiler/63343952-e7e5-4706-a656-0275f86baf09",
+      "process": null
+    },
+    {
+      "taskId": "read-one-audit-page",
+      "compilation": null,
+      "compilerFailure": "ENOENT: no such file or directory, mkdir '/Users/davidchenallio/src/graphrefly/sessions/active/b121-comparison-design-v1/agent-api/public-api-round-v1/offline/consumer-compiler/752f1969-d631-4caf-a7ff-6b705057502b'",
+      "receiptDirectory": "/Users/davidchenallio/src/graphrefly/sessions/active/b121-comparison-design-v1/agent-api/public-api-round-v1/offline/consumer-compiler/752f1969-d631-4caf-a7ff-6b705057502b",
+      "process": null
+    }
+  ],
+  "pins": {
+    "materialSHA256": "77bfd6b0d99b0cb360cae284333840e9d523e05e8ac6aca8c44fad3cc9f80501",
+    "taskSHA256": "c67041b59fd114d20d751fbc1cef3a1dc2906e177adcd5037b17ca35b279feae",
+    "rubricSHA256": "2856cf48dfd03692617563619c6967b6c21a0f8e8ed91e6ac621d27a6688e3c1",
+    "environmentSHA256": "21f838eb2daf82a75fc12abe5a0c5b37ebad57c5fab77fba889afc23341275f2"
+  },
+  "packetIsolation": "Only frozen production package source, package README/package.json and task metadata. Rubric/probes/calibration/history excluded from the explicit map.",
+  "rootTests": {
+    "tests": 233,
+    "passed": 233,
+    "failed": 0,
+    "log": "/tmp/b121-public-full-tests.log"
+  },
+  "review": {
+    "reviewer": "root, separate from task author; harness author, not blind",
+    "taskPromptRubricAlignment": true,
+    "publicImportResolution": true,
+    "sourceSemanticChecks": true,
+    "negativeControlsReviewed": true,
+    "limitations": [
+      "No participant runtime execution",
+      "Source aliases, not installed package or bundler verification",
+      "Package README and source docs only; two linked sibling example READMEs excluded",
+      "Additional reviewer spawn unavailable: agent thread limit reached; no three-independent-review claim"
+    ]
+  }
+}

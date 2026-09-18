@@ -1,0 +1,119 @@
+{
+  "work": "graphrefly:B121",
+  "classification": "attempt-and-evidence",
+  "round": "public-api-round-v1",
+  "collectedAt": "2026-09-18T23:00:04.952900+00:00",
+  "completedFixedRound": true,
+  "completesB121": false,
+  "planned": 4,
+  "submitted": 4,
+  "consumerCompilePassed": 4,
+  "accepted": 2,
+  "criterionPassed": 10,
+  "criterionTotal": 12,
+  "incomplete": 0,
+  "notRun": 0,
+  "runtimeBehaviorVerified": false,
+  "blindIndependentReview": false,
+  "participantRepairs": 0,
+  "modelSessionReruns": 0,
+  "newReportedCostUSD": 0.07698878400000002,
+  "newUnknownReservationsUSD": 0.3178691999999999,
+  "authorization": "User explicitly approved all steps and required budget in the latest annotation; existing <=100percent increase authorization also retained.",
+  "budgetAdjustment": {
+    "keyBeforeUSD": 1.97,
+    "keyAfterUSD": 3.94,
+    "guardrailMonthlyBeforeUSD": 2,
+    "guardrailMonthlyAfterUSD": 4,
+    "internalCumulativeCapUSD": 11,
+    "UIVerified": true,
+    "keyMetadataVerified": true,
+    "credentialsOrRouteChanged": false
+  },
+  "files": [
+    {
+      "path": "PLAN.md",
+      "sha256": "e8503442f365880711be8614e1d1685f1008bf575645e2ed6fa19249c535f87d"
+    },
+    {
+      "path": "REPORT.md",
+      "sha256": "07ba492c81f2010ad55349b826bfd1c05b25ca5d3320693fa2b8761d589838d6"
+    },
+    {
+      "path": "tasks.json",
+      "sha256": "c67041b59fd114d20d751fbc1cef3a1dc2906e177adcd5037b17ca35b279feae"
+    },
+    {
+      "path": "reviewer-rubric.json",
+      "sha256": "2856cf48dfd03692617563619c6967b6c21a0f8e8ed91e6ac621d27a6688e3c1"
+    },
+    {
+      "path": "integration-pins.json",
+      "sha256": "c518830788257f56adaaae0b6780dcedfe9c4f5110bb891ecd1c8a97100d0554"
+    },
+    {
+      "path": "offline/qualification-completed.json",
+      "sha256": "fd5e8335891fe272ad2324b9ac561dba330d5dd014977cc92dc327764c57863b"
+    },
+    {
+      "path": "offline/isolation.json",
+      "sha256": "67ce9ac9a92cdf60624a751ed57504f14da66efb714d555333ba792ae0ae9b4e"
+    },
+    {
+      "path": "offline/qa.md",
+      "sha256": "2d8fb9b7fcb3700acbe0cb6de6af3f540066db2ab81e6aaf28f25f17283f7e72"
+    },
+    {
+      "path": "offline/baseline-verification.json",
+      "sha256": "13218f1971a016be4d57e79356cd0259515a70def66fdd8014482672f0903bb0"
+    },
+    {
+      "path": "offline/root-tests.log",
+      "sha256": "3807e45ddfbcc4642cbb1e759c2a119a03369d0433061e76dcdcbc744e54ee64"
+    },
+    {
+      "path": "author/static-validation.json",
+      "sha256": "4bb71afae7778f75b8b2d7136a86e2e68fe1a56964310b2c55a2400285d9471e"
+    },
+    {
+      "path": "live/manifest.json",
+      "sha256": "c4802022e060474c2da4004a36aa8099e116615176b3a5f76879850bec7a19e6"
+    },
+    {
+      "path": "live/execution-approval.json",
+      "sha256": "d791edb2235d198bfcb61344950db3e020893c36bc2fb397c6d71457e62ce798"
+    },
+    {
+      "path": "live/outcome.json",
+      "sha256": "32e74143174501caaf492dfcb57070fbd3f53301011282728af6c66575035824"
+    },
+    {
+      "path": "live/review-verified-summary.json",
+      "sha256": "2c02f0fadb3f68b9da5e3b9f48a1027f4eaf6e0e5284461c8b5ae6e34ad0dfd1"
+    },
+    {
+      "path": "live/billing.json",
+      "sha256": "f18eb1231a357a98693df507235413fb10e8aba14d7317819f6c543ea4d5e49d"
+    },
+    {
+      "path": "live/verification.json",
+      "sha256": "c4b2a1bdf62182cc2d1873dabe63d2c22dd71e39e090a8a11069b3fbbd2bf545"
+    },
+    {
+      "path": "live/candidate-entry-01.review-verified.json",
+      "sha256": "6e762cf3e5be8297e98ad0b7f63904e47e8fd01406eb1a6739c86bf4b2968b90"
+    },
+    {
+      "path": "live/candidate-entry-02.review-verified.json",
+      "sha256": "f5849b18aba97e71763a0b68db1383071ce42384f274e339719e151abea5f417"
+    },
+    {
+      "path": "live/candidate-entry-03.review-verified.json",
+      "sha256": "47bf8bccd376f1f80fa6c8ab96c18253961ef864a071f404ccb6820d17271956"
+    },
+    {
+      "path": "live/candidate-entry-04.review-verified.json",
+      "sha256": "a3945ed30d8a3c4cf2ddb73ce9c9319584144361291d6af163473fb6c9c87623"
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "checkedAt": "2026-09-18T23:00:35.377057+00:00",
+  "receiptFilesVerified": 21,
+  "workEvidenceDigestVerified": true,
+  "workStatus": "proposed",
+  "roundCompleted": true,
+  "dashboardCheckExitCode": 0,
+  "authorityWorkspaceExitCode": 0,
+  "warnings": [
+    "Root-only dashboard cannot load all sibling owner artifacts; workspace authority check includes available siblings.",
+    "Workspace check retains existing Canvas88 append-only legacy revisions without immutable coordinates."
+  ],
+  "gates": {
+    "dashboard.log": "1231f5970243cda13c347108668466d526d507d15933387b8a30c6c39a6a8651",
+    "authority.log": "82c3c57444014ad5930a52f3bf56f2c9d470546970292b0315321a2e9255c725"
+  },
+  "participantCodeExecuted": false,
+  "modelSessionReruns": 0,
+  "accepted": 2,
+  "denominator": 4
+}

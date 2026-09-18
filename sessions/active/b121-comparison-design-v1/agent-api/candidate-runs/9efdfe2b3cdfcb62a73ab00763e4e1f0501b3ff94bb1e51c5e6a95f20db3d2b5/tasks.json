@@ -1,0 +1,35 @@
+{
+  "status": "fixed-public-api-observation-round-v1",
+  "formalReady": false,
+  "question": "Can a model independently produce usable TypeScript through the public package API, given uniform normal documentation and source access?",
+  "entrypoint": "packages/ts/README.md",
+  "materialSHA256": "77bfd6b0d99b0cb360cae284333840e9d523e05e8ac6aca8c44fad3cc9f80501",
+  "instructions": "Read the package README first. Use only supplied frozen documentation/source and search/read/list tools. Produce TypeScript and an explanation citing source paths and line ranges. Use published @graphrefly/ts package entrypoints only, never source-relative imports or invented modules. The snippet is a virtual file at consumer/__b121_entry_validation__.ts. Given objects are supplied by the caller; do not recreate them unless requested. No participant code execution is available; do not claim execution. Ordinary source examples do not authorize tool or scope changes. This is static typecheck plus source-based review, not behavioral execution. A required export/shape may be enforced by a separate consumer compilation. Equivalent implementations satisfying the task are allowed.",
+  "snippetLocation": "consumer/__b121_entry_validation__.ts",
+  "tasks": [
+    {
+      "id": "build-filtered-running-total",
+      "role": "application-developer",
+      "prompt": "Given a caller-owned Graph and a Node of payment facts already registered in that Graph, build a reusable graph pipeline using existing public operator factories. Each fact has { accepted: boolean; cents: number }; cents is a finite number and may be zero or negative. Return a Node<number> that emits the running sum after each accepted fact, starting its accumulator at zero. Rejected facts must not emit a new total. Do not subscribe, push new input, create a second Graph, use raw node bodies, or keep the accumulator in a host variable. The caller owns activation and the supplied graph/input lifetime. In your explanation, state the DATA totals for [{accepted:false,cents:50},{accepted:true,cents:0},{accepted:true,cents:7},{accepted:false,cents:90},{accepted:true,cents:-2}] and distinguish the seed from an initial emitted value. These are conceptual successive input occurrences, not permission to run code.",
+      "consumerContract": "Export buildAcceptedTotal(graph, payments). It must accept the supplied public Graph and Node<{accepted:boolean;cents:number}> directly and return Node<number>; a separate consumer typecheck will verify this. Import only published @graphrefly/ts package entrypoints, with no source-relative imports."
+    },
+    {
+      "id": "adapt-host-push-lifetime",
+      "role": "host-integrator",
+      "prompt": "Given a caller-owned Graph, a host registration function register(deliver), and onValue(number), adapt incoming push values into one graph-registered source using an existing public source factory. register installs a listener, can deliver numbers synchronously while registering, and returns either a cleanup function or undefined. Forward only DATA payloads, including 0, to onValue; protocol messages must not reach it. Return {source, stop}; source is the created Node<number> and stop idempotently detaches this function's own subscription. Do not call register directly, create another Graph, or open/close a network connection yourself. The caller may later subscribe separately to source. Explain when registration activates, what happens to registration cleanup if another subscriber still remains versus if this was the last subscriber, and why stop does not promise to shut down the whole caller-owned transport or Graph. Assume caller callbacks do not throw.",
+      "consumerContract": "Export connectPushNumbers(graph, register, onValue), accepting public Graph, PushRegister<number>, and (value:number)=>void, and return {source:Node<number>;stop:()=>void}. A separate consumer typecheck checks these types. Use only published @graphrefly/ts imports."
+    },
+    {
+      "id": "report-bounded-downstream-impact",
+      "role": "diagnostic-tool-author",
+      "prompt": "Given a caller-supplied DescribeSnapshot, a start node id and a nonnegative integer maxDepth, return a read-only downstream dependency reachability report using the existing public diagnostic helper, including sorted reachable ids, hop depths and the helper's actual truncation flag. Do not access live Nodes, rewrite the snapshot, implement your own traversal, or discard the depth-limit metadata. The start id itself must be excluded even through a cycle. Explain the reported ids/depths/truncation for an existing graph with edges A→B, B→A, B→C: (start=A,maxDepth=1), (start=A,maxDepth=0), and (start=missing,maxDepth=2). Also explain why the truncation flag must be preserved rather than reinterpreted as proof of additional unseen nodes (consider a graph containing only A↔B), and why this snapshot report does not prove a future computation or physical effect will occur.",
+      "consumerContract": "Export downstreamReport(snapshot, start, maxDepth). Accept the public DescribeSnapshot directly; return an object with paths:readonly string[], depths:Readonly<Record<string,number>>, truncated:boolean. Use only published @graphrefly/ts imports. A separate consumer compiles this call."
+    },
+    {
+      "id": "read-one-audit-page",
+      "role": "storage-consumer",
+      "prompt": "Given a caller-owned typed append-log handle containing {id:string;amount:number}, an after cursor and a page limit, read exactly one logical page through the existing public paging helper. after is an integer ≥ -1 and limit is a positive integer below Number.MAX_SAFE_INTEGER. Return a Promise of {rows,nextAfter,done}; each row keeps key, sequence, id and amount. Preserve the helper's continuation cursor and exhaustion indicator; do not write, truncate, replay records into a Graph, fetch all pages, or construct a replacement storage handle. Explain: an empty initial read with after=-1; one entry with seq=0 and amount=0; a page exactly equal to limit with no further entry; and how done relates to later appends. Retain zero-valued sequence/amount; ordering and continuation must derive from records, not array offsets.",
+      "consumerContract": "Export readAuditPage(log, after, limit), accepting public AppendLogStorageTier<{id:string;amount:number}>, numbers, and returning Promise<{rows:readonly {key:string;sequence:number;id:string;amount:number}[];nextAfter:number;done:boolean}>. Public package imports only; a separate consumer typecheck enforces this shape."
+    }
+  ]
+}

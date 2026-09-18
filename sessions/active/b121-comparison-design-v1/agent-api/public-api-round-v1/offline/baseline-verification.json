@@ -1,0 +1,15 @@
+{
+  "graphrefly": {
+    "originalUntrackedChanged": [
+      "scripts/b121-comparison/frozen-compiler.mjs"
+    ],
+    "stagedUnchanged": true,
+    "trackedUnstagedUnchanged": true
+  },
+  "graphrefly-ts": {
+    "originalUntrackedChanged": [],
+    "stagedUnchanged": true,
+    "trackedUnstagedUnchanged": true
+  },
+  "aliasOnlyChangeVerifiedAgainstBaseline": true
+}

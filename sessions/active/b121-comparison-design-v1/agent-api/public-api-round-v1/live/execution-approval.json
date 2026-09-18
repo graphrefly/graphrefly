@@ -1,0 +1,17 @@
+{
+  "manifestSHA": "9efdfe2b3cdfcb62a73ab00763e4e1f0501b3ff94bb1e51c5e6a95f20db3d2b5",
+  "action": "B121-agent-api-one-shot",
+  "acceptAliasLimitation": true,
+  "acceptInputEstimateLimitation": true,
+  "expiresAt": "2026-09-19T04:54:18.437Z",
+  "maxGenerationCalls": 1444,
+  "maxUSD": 11,
+  "retries": {
+    "capacity": 3,
+    "availability": 1
+  },
+  "model": "deepseek/deepseek-v4.1-flash",
+  "providerTag": "together",
+  "priorUsageUSD": 5.550115528000002,
+  "authorizationSource": "User annotation: 好的，就按这个来做，我批准这里面的步骤和所需的预算。继续. Scope: freeze normal package materials, four fresh tasks and static criteria; run each once with bounded transport retries; preserve all failures and not-run samples, then report library feedback. Standing budget increases up to100percent approved. External eval key1.97to3.94 and monthly guardrail2to4; internal cumulative11 unchanged. No success-driven resampling or answer repair."
+}

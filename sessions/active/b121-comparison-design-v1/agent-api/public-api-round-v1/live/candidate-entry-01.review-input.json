@@ -1,0 +1,18 @@
+{
+  "reviewerId": "root-static-reviewer-harness-author-not-blind",
+  "criteria": {
+    "public-graph-pipeline": {
+      "pass": true,
+      "evidence": "Original snippet imports root public exports, instantiates filter then scan through the supplied graph.initNode, dependencies [payments] then [accepted], returns Node<number>. No graph construction, subscription, raw node body or host accumulator. The unused imported graph factory is not called and is not a frozen rejection criterion. Frozen consumer compilation passes."
+    },
+    "accepted-occurrence-semantics": {
+      "pass": true,
+      "evidence": "Predicate is p.accepted, preserving cents 0 and negatives. scan reducer adds p.cents once per accepted occurrence with seed 0, matching frozen operators.ts:307-315 and335-348. No final-only reduction or truthiness shortcut."
+    },
+    "seed-and-ownership": {
+      "pass": true,
+      "evidence": "Explanation explicitly gives DATA0,7,5, distinguishes numeric seed0 from a emitted accepted-zero occurrence and says nothing emits until a fact arrives. Leaves activation and graph/input lifetime to caller."
+    }
+  },
+  "assessmentSHA256": "8807afca531536c4b2de84bdac920d77ce8d60a9d919d61dd00c80dbb2b9e365"
+}

@@ -1,0 +1,62 @@
+{
+  "slot": {
+    "id": "candidate-entry-02",
+    "arm": "G",
+    "role": "host-integrator"
+  },
+  "controller": null,
+  "experiment": "entry",
+  "explanations": {
+    "A": {},
+    "B": {}
+  },
+  "entryAnswer": {
+    "op": "submit",
+    "snippet": "import { fromPushNotification } from \"@graphrefly/ts/sources\";\nimport type { Graph } from \"@graphrefly/ts/graph\";\nimport type { Node } from \"@graphrefly/ts/core\";\nimport type { PushRegister } from \"@graphrefly/ts/sources\";\n\nexport function connectPushNumbers(\n  graph: Graph,\n  register: PushRegister<number>,\n  onValue: (value: number) => void,\n): { source: Node<number>; stop: () => void } {\n  // Adapt the caller's push registration into a graph-registered source node.\n  // fromPushNotification owns delivery + teardown only; the host owns the transport.\n  const source = graph.initNode(fromPushNotification<number>(register), [], {\n    name: \"pushNumbers\",\n  });\n\n  // Our own subscription: it activates the source (register runs once on activation)\n  // and forwards only DATA payloads (0 included) to onValue.\n  const detach = source.subscribe((msg) => {\n    if (msg[0] === \"DATA\") onValue(msg[1] as number);\n  });\n\n  let stopped = false;\n  const stop = (): void => {\n    if (stopped) return;\n    stopped = true;\n    detach();\n  };\n\n  return { source, stop };\n}\n",
+    "explanation": "Design: connectPushNumbers builds exactly one graph-registered source with the existing public factory fromPushNotification and returns {source, stop}.\n\n1) Source creation. `graph.initNode(fromPushNotification<number>(register), [], { name: \"pushNumbers\" })` is the graph-bound operator/source funnel (packages/ts/src/graph/graph.ts:513-543, esp. 528-542); it delegates to the free initNode (packages/ts/src/graph/operators.ts:185-191, 204-222) and records the real factory name in the inspection index. fromPushNotification is a published source factory: packages/ts/src/graph/sources.ts:1210-1229, exported from @graphrefly/ts/sources (packages/ts/src/sources/index.ts:32) and the root (packages/ts/src/index.ts:373). It accepts PushRegister<T> = (deliver) => PushUnsubscribe | undefined (sources.ts:290-292) and returns Operator<never, T>, so the node is Node<number> and no deps are needed (a source is a depless operator; graph.ts:523-526).\n\n2) When registration activates. The factory body runs ONCE on activation (sources.ts:4-9, 58-84): the source spec's setup is invoked by the node's activation path, and only then is `register(deliver)` called (sources.ts:1216-1221). Activation is subscriber-driven: Node.subscribe adds the sink, then calls _activate if not yet activated (packages/ts/src/node/node.ts:417-465, esp. 440-460). So `register` is not called at connectPushNumbers time; it runs when the first subscriber attaches — here our own forwarding subscription, or a caller subscription that happens first. Because register may deliver synchronously while registering, the factory's `deliver` closure is already installed and forwards via ctx.down([[\"DATA\", payload]]) (sources.ts:1218-1220); those synchronous values are delivered as DATA waves and reach our sink, so 0 is forwarded like any other number. Protocol messages are filtered by the `msg[0] === \"DATA\"` guard: the closed message set includes START/DIRTY/RESOLVED/INVALIDATE/COMPLETE/ERROR/TEARDOWN/PAUSE/RESUME/PULL (packages/ts/src/protocol/messages.ts:21-32), and only DATA carries a value (messages.ts:24).\n\n3) Cleanup semantics. The factory registers its teardown through ctx.onDeactivation (sources.ts:75-81): on deactivation it sets `done = true` (so late pushes are dropped) and calls the host's unsubscribe if register returned one (sources.ts:1222-1225). Deactivation happens when the node's subscriber set becomes empty: Node.subscribe's unsubscribe deletes the sink and calls _deactivate only when subscribers.size === 0 (node.ts:441-444), and nodeDeactivate runs the onDeactivation hooks (packages/ts/src/node/node-lifecycle-runtime.ts:76-83). Therefore: if another subscriber still remains (e.g. the caller later subscribed separately to `source`), our stop() removes only our sink, the subscriber set is non-empty, the node stays active, and the host registration cleanup is NOT run — the transport keeps delivering to the remaining subscriber. If ours was the last subscriber, the set becomes empty, the node deactivates, and the factory's cleanup runs: `done` flips and the host unsubscribe (when provided) is invoked, detaching the host listener.\n\n4) Why stop is not a transport/Graph shutdown. stop() is idempotent (a `stopped` flag guards the single detach) and only calls the unsubscribe handle returned by our own subscribe (node.ts:417-419, 441-444). It detaches this function's own subscription; it does not call register, does not create another Graph, and does not open/close any connection. The factory's own contract says the host owns network/native setup and the factory owns reactive delivery and teardown only (sources.ts:1199-1204), and cleanup is best-effort deactivation, not a global shutdown. The caller-owned Graph and transport may have other subscribers, other nodes, or other registrations; stop cannot promise to shut them down, and the caller may later subscribe separately to `source` (which would re-activate it and re-run register).\n\n5) Scope/authority. Only published entrypoints are used: @graphrefly/ts/sources for fromPushNotification and PushRegister, @graphrefly/ts/graph for Graph, @graphrefly/ts/core for Node. No source-relative imports, no invented modules, no direct register call, no extra Graph, no connection management. Caller callbacks are assumed not to throw. This is a static typecheck/source review; the snippet was not executed.",
+    "concepts": {
+      "read": [
+        "occurrence",
+        "admission",
+        "retained-evidence",
+        "identity",
+        "lifecycle",
+        "authority",
+        "revision",
+        "provenance"
+      ],
+      "required": [
+        "occurrence",
+        "admission",
+        "lifecycle",
+        "authority"
+      ],
+      "firstExpansion": "lifecycle"
+    }
+  },
+  "entryTiming": {
+    "startedMs": 0,
+    "submittedMs": 89296,
+    "elapsedMs": 89296,
+    "firstSourceRead": {
+      "path": "packages/ts/README.md",
+      "line": 1,
+      "operation": "read",
+      "elapsedMs": 2635
+    }
+  },
+  "entryStatus": "submitted",
+  "usage": {
+    "inputTokens": 579366,
+    "outputTokens": 3531,
+    "elapsedMs": 89312
+  },
+  "costUSD": 0.024169751999999996,
+  "turns": 15,
+  "counts": 15,
+  "operations": 39,
+  "fatal": null,
+  "failureScope": null,
+  "pendingReservation": null,
+  "retryAllowed": false
+}

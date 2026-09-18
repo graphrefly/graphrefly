@@ -1,0 +1,19 @@
+{
+  "kind": "frozen-typecheck",
+  "environmentSHA256": "21f838eb2daf82a75fc12abe5a0c5b37ebad57c5fab77fba889afc23341275f2",
+  "snippetSHA256": "fd9ab51be9e4fe903a580a7a60100898f96c2175f2aa56ea80be125eb04d2ec5",
+  "consumerProbeSHA256": "8ee8a0c59e4de8c1aa3232d14def127257be05f0d04d26d158ef2b40feaeaf21",
+  "context": {
+    "taskId": "read-one-audit-page",
+    "stage": "offline-qualification"
+  },
+  "policy": {
+    "timeoutMs": 60000,
+    "heapMiB": 512,
+    "maxOutputBytes": 4194304,
+    "retries": 0
+  },
+  "nodeVersion": "v24.18.0",
+  "executableSHA256": "ee6fb0e015284d83a91e8ec5213f43a157f8a392b58555301682892ba928c04a",
+  "workerSHA256": "b1d6e51d9522eeb96258cec5bf07aab722d52c5029a108329c311a19cfc74326"
+}

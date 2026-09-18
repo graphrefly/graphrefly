@@ -1,0 +1,111 @@
+{
+  "status": "frozen-reviewer-only",
+  "formalReady": false,
+  "taskSHA256": "c67041b59fd114d20d751fbc1cef3a1dc2906e177adcd5037b17ca35b279feae",
+  "authorExposure": "Four new capability tasks authored against current public package source. Author knows earlier task titles and evaluation history but did not use failed participant answers as templates. Author-created calibration snippets and consumer probes are reviewer-only, excluded from participant materials. These are fresh to the participant model, not blind to maintainers/authors; no population-level or unseen-library claim.",
+  "scoring": {
+    "submission": "One initial submitted answer per predeclared sample. Transport retry/budget policy fixed before launch. No grader hints or participant repair after scoring.",
+    "acceptance": "Nonempty submission AND snippet+separate consumer probe compile in frozen compiler AND every frozen static criterion passes trusted source review. No participant code execution.",
+    "basis": "Static typecheck plus trusted source/rubric assessment, not runtime behavioral verification.",
+    "missing": "Preserve every planned sample including missing/invalid submissions and interruptions; no replacement-until-pass or best-answer pooling.",
+    "ambiguity": "Ambiguous/conflicting criteria invalidate the affected assessment pending review, rather than counting as participant failure. A changed criterion requires a new round version."
+  },
+  "tasks": [
+    {
+      "id": "build-filtered-running-total",
+      "criteria": [
+        {
+          "id": "public-graph-pipeline",
+          "rule": "Uses public imports and existing operator factories instantiated in the supplied Graph, with actual dependency edges from the supplied input. Returns the resulting Node<number>, without a second Graph, raw custom node body, eager subscription or host accumulator. Equivalent factory compositions accepted.",
+          "evidencePath": "packages/ts/src/graph/graph.ts",
+          "evidenceSHA256": "54b3644e0de855533f9ac91621b9e4eceb0368d11a953fe0d793dfd22e8b72fe"
+        },
+        {
+          "id": "accepted-occurrence-semantics",
+          "rule": "Only accepted facts reach accumulation; preserves zero and negative cents, adds each accepted occurrence exactly once in order, and produces each intermediate total. A one-value final reduction or a truthiness filter is insufficient.",
+          "evidencePath": "packages/ts/src/graph/operators.ts",
+          "evidenceSHA256": "01dcdfe15269da8fede4e3a0057e668f7c3e6e40c1fbad6d3779c6e5bdf715f3"
+        },
+        {
+          "id": "seed-and-ownership",
+          "rule": "Explains conceptual totals [0,7,5]; seed 0 initializes accumulation but does not alone emit DATA. Leaves activation and all supplied graph/input lifetimes with caller. Do not infer that the returned pipeline is already running.",
+          "evidencePath": "packages/ts/src/graph/operators.ts",
+          "evidenceSHA256": "01dcdfe15269da8fede4e3a0057e668f7c3e6e40c1fbad6d3779c6e5bdf715f3"
+        }
+      ],
+      "consumerProbe": "import { buildAcceptedTotal } from \"./__b121_entry_validation__.js\";\nimport type { Graph } from \"@graphrefly/ts/graph\";\nimport type { Node } from \"@graphrefly/ts/core\";\ndeclare const graph: Graph;\ndeclare const payments: Node<{ accepted: boolean; cents: number }>;\nconst total: Node<number> = buildAcceptedTotal(graph, payments);\nvoid total;\n"
+    },
+    {
+      "id": "adapt-host-push-lifetime",
+      "criteria": [
+        {
+          "id": "registered-push-boundary",
+          "rule": "Uses the supplied Graph to instantiate the existing host-push source factory with the supplied registrar; does not call register manually, invent a source state writer, open a resource, or construct a replacement Graph. The source is returned for caller composition.",
+          "evidencePath": "packages/ts/src/graph/sources.ts",
+          "evidenceSHA256": "eec749f0239492723f02e89d2777d2568a9e4dc6a0030f4d160a1a5249fd3f76"
+        },
+        {
+          "id": "data-and-activation",
+          "rule": "Attaches its subscription and forwards actual DATA payloads exactly once, including zero and synchronous registration deliveries, without forwarding START/COMPLETE/ERROR or synthesizing values. Explains activation occurs on subscription, not merely construction of the source factory. Equivalent value adapter accepted if it preserves these semantics.",
+          "evidencePath": "packages/ts/src/graph/sources.ts",
+          "evidenceSHA256": "eec749f0239492723f02e89d2777d2568a9e4dc6a0030f4d160a1a5249fd3f76"
+        },
+        {
+          "id": "subscription-cleanup-scope",
+          "rule": "Returns idempotent stop of only its own subscription. Source deactivation invokes the optional registrar cleanup once the last active subscription is removed; another remaining subscriber keeps source registration alive. Does not invoke the registrar cleanup directly, tear down another subscriber, release the Graph, or claim whole transport termination.",
+          "evidencePath": "packages/ts/src/graph/sources.ts",
+          "evidenceSHA256": "eec749f0239492723f02e89d2777d2568a9e4dc6a0030f4d160a1a5249fd3f76"
+        }
+      ],
+      "consumerProbe": "import { connectPushNumbers } from \"./__b121_entry_validation__.js\";\nimport type { Graph } from \"@graphrefly/ts/graph\";\nimport type { Node } from \"@graphrefly/ts/core\";\nimport type { PushRegister } from \"@graphrefly/ts/sources\";\ndeclare const graph: Graph;\ndeclare const register: PushRegister<number>;\nconst connected = connectPushNumbers(graph, register, (value: number) => { void value; });\nconst source: Node<number> = connected.source;\nconst cleanup: () => void = connected.stop;\nvoid source; void cleanup;\n"
+    },
+    {
+      "id": "report-bounded-downstream-impact",
+      "criteria": [
+        {
+          "id": "public-readonly-diagnostic",
+          "rule": "Uses the public existing reachable diagnostic over the original supplied DescribeSnapshot in downstream direction, forwards caller maxDepth and requests detailed metadata. Does not traverse live nodes, mutate or replace the snapshot, hardcode test-case answers or implement another traversal.",
+          "evidencePath": "packages/ts/src/graph/diagnostics.ts",
+          "evidenceSHA256": "50989bb14c32bc2d5eb791acacb1035e3581d43efce383ab21cc27791a9fd2ce"
+        },
+        {
+          "id": "preserve-detailed-result",
+          "rule": "Returns actual sorted paths, depths and unmodified truncated flag; excludes the origin via helper semantics even in cycles. Does not collapse result to a path array or infer the flag from the number of returned nodes.",
+          "evidencePath": "packages/ts/src/graph/diagnostics.ts",
+          "evidenceSHA256": "50989bb14c32bc2d5eb791acacb1035e3581d43efce383ab21cc27791a9fd2ce"
+        },
+        {
+          "id": "edge-cases-and-limits",
+          "rule": "Explanation gives A/depth1: paths [B], depths {B:1}, truncated true; A/depth0: [], {}, true; missing/depth2: [], {}, false. For only A↔B at depth1, truncated remains true because the boundary frontier has adjacency, even though it points at already-seen A. Treats report as snapshot reachability only, not runtime scheduling or physical-effect proof.",
+          "evidencePath": "packages/ts/src/graph/diagnostics.ts",
+          "evidenceSHA256": "50989bb14c32bc2d5eb791acacb1035e3581d43efce383ab21cc27791a9fd2ce"
+        }
+      ],
+      "consumerProbe": "import { downstreamReport } from \"./__b121_entry_validation__.js\";\nimport type { DescribeSnapshot } from \"@graphrefly/ts/graph\";\ndeclare const snapshot: DescribeSnapshot;\nconst report = downstreamReport(snapshot, \"caller/path\", 2);\nconst paths: readonly string[] = report.paths;\nconst depths: Readonly<Record<string, number>> = report.depths;\nconst truncated: boolean = report.truncated;\nvoid paths; void depths; void truncated;\n"
+    },
+    {
+      "id": "read-one-audit-page",
+      "criteria": [
+        {
+          "id": "one-public-readonly-page",
+          "rule": "Calls existing public readAppendLogPage on the original typed log, forwarding caller after and limit once; helper lookahead is permitted. Does not loop over pages, instantiate replacement storage, write/truncate, or replay records into the Graph.",
+          "evidencePath": "packages/ts/src/storage/append-log.ts",
+          "evidenceSHA256": "ec9b27f501c400718c9cce37f9f0b55a456488a14041f8b8b29cf001240fd7b1"
+        },
+        {
+          "id": "record-and-cursor-preservation",
+          "rule": "Maps each actual visible entry to key/sequence/id/amount without filtering zero values or using array position as sequence. Returns helper nextAfter and done unchanged. Does not substitute lastIndex, row count or truthiness fallback for the cursor.",
+          "evidencePath": "packages/ts/src/storage/append-log.ts",
+          "evidenceSHA256": "ec9b27f501c400718c9cce37f9f0b55a456488a14041f8b8b29cf001240fd7b1"
+        },
+        {
+          "id": "page-boundary-interpretation",
+          "rule": "Explains empty initial page retains nextAfter=-1 and done=true; lone seq0/amount0 remains present with nextAfter=0 (done=true if no lookahead); a full page with no further lookahead has done=true. done describes absence of further entries in this read, not a promise no records may be appended later.",
+          "evidencePath": "packages/ts/src/storage/append-log.ts",
+          "evidenceSHA256": "ec9b27f501c400718c9cce37f9f0b55a456488a14041f8b8b29cf001240fd7b1"
+        }
+      ],
+      "consumerProbe": "import { readAuditPage } from \"./__b121_entry_validation__.js\";\nimport type { AppendLogStorageTier } from \"@graphrefly/ts/storage\";\ndeclare const log: AppendLogStorageTier<{ id: string; amount: number }>;\nconst pending: Promise<{ rows: readonly { key: string; sequence: number; id: string; amount: number }[]; nextAfter: number; done: boolean }> = readAuditPage(log, -1, 2);\nvoid pending;\n"
+    }
+  ]
+}

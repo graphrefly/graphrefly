@@ -1,0 +1,35 @@
+{
+  "createdAt": "2026-09-18T22:54:18.425Z",
+  "manifestSHA": "9efdfe2b3cdfcb62a73ab00763e4e1f0501b3ff94bb1e51c5e6a95f20db3d2b5",
+  "samples": [
+    {
+      "sampleId": "candidate-entry-01",
+      "taskId": "build-filtered-running-total",
+      "role": "application-developer",
+      "packetSHA256": "f2471488f03d9ec069e716a796f6f6a8d14271d9f204bdee46eaf936fc9dc8f9"
+    },
+    {
+      "sampleId": "candidate-entry-02",
+      "taskId": "adapt-host-push-lifetime",
+      "role": "host-integrator",
+      "packetSHA256": "957475c1c14d4e8be1d034c6e85f2b567111081de03f779a632ae2d7defcdcca"
+    },
+    {
+      "sampleId": "candidate-entry-03",
+      "taskId": "report-bounded-downstream-impact",
+      "role": "diagnostic-tool-author",
+      "packetSHA256": "8ca15da182c9d76c5f09c5cae0630508a18ae8011fbd35448d02e74d9df98b5f"
+    },
+    {
+      "sampleId": "candidate-entry-04",
+      "taskId": "read-one-audit-page",
+      "role": "storage-consumer",
+      "packetSHA256": "7b9314ce21f0c5a66cc918be16dd74ab68b8db5f6fccc0dc00d85d1bb1daee3e"
+    }
+  ],
+  "harnessCondition": "Graph-led fixed four-task public API round, one fresh context per task; no participant task exposure before this round",
+  "keyLimitChanged": true,
+  "externalKeyLimitUSD": 3.94,
+  "externalKeyRemainingUSD": 2.232930088,
+  "guardrailMonthlyLimitUSD": 4
+}

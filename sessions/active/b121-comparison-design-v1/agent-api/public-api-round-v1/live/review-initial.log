@@ -1,0 +1,10 @@
+file:///Users/davidchenallio/src/graphrefly/scripts/b121-comparison/candidate-entry.mjs:24
+	if (!v) throw Error(m);
+	              ^
+
+Error: assessment digest mismatch
+    at check (file:///Users/davidchenallio/src/graphrefly/scripts/b121-comparison/candidate-entry.mjs:24:16)
+    at Object.review (file:///Users/davidchenallio/src/graphrefly/scripts/b121-comparison/candidate-entry.mjs:298:4)
+    at file:///Users/davidchenallio/src/graphrefly/sessions/active/b121-comparison-design-v1/agent-api/public-api-round-v1/live/review.mjs:17:27
+
+Node.js v24.18.0

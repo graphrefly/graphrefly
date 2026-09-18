@@ -1,0 +1,10 @@
+✔ frozen compiler resolves public root and nested package aliases with actual consumer typechecking (906.240667ms)
+✔ public aliases reject malformed names, escaping targets and absent material (0.59625ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 969.905166

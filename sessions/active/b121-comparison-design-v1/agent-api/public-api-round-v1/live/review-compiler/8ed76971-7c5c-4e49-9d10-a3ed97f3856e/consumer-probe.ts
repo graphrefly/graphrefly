@@ -1,0 +1,10 @@
+import { connectPushNumbers } from "./__b121_entry_validation__.js";
+import type { Graph } from "@graphrefly/ts/graph";
+import type { Node } from "@graphrefly/ts/core";
+import type { PushRegister } from "@graphrefly/ts/sources";
+declare const graph: Graph;
+declare const register: PushRegister<number>;
+const connected = connectPushNumbers(graph, register, (value: number) => { void value; });
+const source: Node<number> = connected.source;
+const cleanup: () => void = connected.stop;
+void source; void cleanup;

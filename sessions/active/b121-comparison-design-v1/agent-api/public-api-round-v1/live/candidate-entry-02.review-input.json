@@ -1,0 +1,18 @@
+{
+  "reviewerId": "root-static-reviewer-harness-author-not-blind",
+  "criteria": {
+    "registered-push-boundary": {
+      "pass": true,
+      "evidence": "Original snippet uses graph.initNode(fromPushNotification<number>(register),[]), returns its source and uses published subpaths. It never calls register directly, constructs a new Graph or opens a transport. Frozen source factory matches sources.ts1210-1229 and consumer compilation passes."
+    },
+    "data-and-activation": {
+      "pass": false,
+      "evidence": "The code correctly installs a DATA-only subscriber and preserves0/synchronous delivery. The explanation nevertheless states \"So register is not called at connectPushNumbers time\", then says activation occurs on the first subscriber, \"here our own forwarding subscription\". These statements conflict: connectPushNumbers itself synchronously invokes source.subscribe before returning; frozen node.ts440-460 adds the sink then activates, and sources.ts1216-1221 calls register during that activation. Thus register/onValue can run before connectPushNumbers returns. The frozen criterion explicitly requires an accurate activation explanation; this is an interpretation failure, not a compiler or generated-code failure. Nearby correct subscription statements were considered and do not make the explicit timing claim true. No new criterion or repair hint was introduced."
+    },
+    "subscription-cleanup-scope": {
+      "pass": true,
+      "evidence": "stop guards detach with stopped and owns exactly its returned subscription. Explanation distinguishes another remaining subscriber from the last subscriber, optional registrar cleanup, and whole transport/Graph shutdown. Matches frozen node.ts441-444 and node-lifecycle-runtime.ts76-83; no direct host cleanup or Graph teardown."
+    }
+  },
+  "assessmentSHA256": "17c89785c37713b91576219caa08d5df8f9f2d506038d9ed8ffb106021f6bd3f"
+}

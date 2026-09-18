@@ -1,0 +1,18 @@
+{
+  "reviewerId": "root-static-reviewer-harness-author-not-blind",
+  "criteria": {
+    "public-readonly-diagnostic": {
+      "pass": true,
+      "evidence": "Original snippet directly calls reachable(snapshot,start,\"downstream\",{maxDepth,withDetail:true}) from the public graph entrypoint. Caller snapshot/depth are preserved; no live node access, mutation, replacement snapshot or own traversal. Consumer compiles."
+    },
+    "preserve-detailed-result": {
+      "pass": true,
+      "evidence": "Copies result.paths, result.depths, result.truncated without recomputation or reinterpretation. Frozen diagnostics.ts234-258 excludes origin, sorts paths and returns detailed metadata; no array-only collapse."
+    },
+    "edge-cases-and-limits": {
+      "pass": false,
+      "evidence": "The three requested A/B/C cases and snapshot-versus-execution limit are correct. The two-node cycle explanation instead chooses maxDepth0 and claims there is no additional unseen node because B is already known. At depth0 the walk has returned no reachable nodes, so B is in fact unseen by the bounded traversal: this is not a valid counterexample to truncated implying unseen reachable nodes. The relevant source boundary at diagnostics.ts241-245 checks adjacency before seen: at A/depth1 on A<->B, B is already visited and its only neighbor is seen A, yet truncated remains true. The submitted explanation never gives that mechanism and conflates snapshot knowledge with traversal results. Failure is the incorrect counterexample/explanation required by the prompt and frozen criterion; not formatting, choice of variable names, or failure to copy the expected example verbatim."
+    }
+  },
+  "assessmentSHA256": "d15664101686931eaa3cd89b0cc783c1732d5013d2c98b96758156ea2a1d8046"
+}

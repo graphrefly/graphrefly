@@ -1,0 +1,35 @@
+{
+  "assessmentSHA256": "8807afca531536c4b2de84bdac920d77ce8d60a9d919d61dd00c80dbb2b9e365",
+  "binding": {
+    "materialSHA256": "77bfd6b0d99b0cb360cae284333840e9d523e05e8ac6aca8c44fad3cc9f80501",
+    "taskSHA256": "c67041b59fd114d20d751fbc1cef3a1dc2906e177adcd5037b17ca35b279feae",
+    "rubricSHA256": "2856cf48dfd03692617563619c6967b6c21a0f8e8ed91e6ac621d27a6688e3c1",
+    "environmentSHA256": "21f838eb2daf82a75fc12abe5a0c5b37ebad57c5fab77fba889afc23341275f2",
+    "runnerContractSHA256": "fa13bb24115b1b14508b2d1d61fca4159d1a45ff2342b29e5e21c91c57db9625"
+  },
+  "taskId": "build-filtered-running-total",
+  "sampleId": "candidate-entry-01",
+  "formalReady": false,
+  "providerCalls": 0,
+  "accepted": true,
+  "status": "accepted-candidate-session",
+  "compilerReceipt": "/Users/davidchenallio/src/graphrefly/sessions/active/b121-comparison-design-v1/agent-api/public-api-round-v1/live/review-compiler/48afc4ff-7c03-41a8-a6ae-8281ce3b24b2",
+  "review": {
+    "reviewerId": "root-static-reviewer-harness-author-not-blind",
+    "criteria": {
+      "public-graph-pipeline": {
+        "pass": true,
+        "evidence": "Original snippet imports root public exports, instantiates filter then scan through the supplied graph.initNode, dependencies [payments] then [accepted], returns Node<number>. No graph construction, subscription, raw node body or host accumulator. The unused imported graph factory is not called and is not a frozen rejection criterion. Frozen consumer compilation passes."
+      },
+      "accepted-occurrence-semantics": {
+        "pass": true,
+        "evidence": "Predicate is p.accepted, preserving cents 0 and negatives. scan reducer adds p.cents once per accepted occurrence with seed 0, matching frozen operators.ts:307-315 and335-348. No final-only reduction or truthiness shortcut."
+      },
+      "seed-and-ownership": {
+        "pass": true,
+        "evidence": "Explanation explicitly gives DATA0,7,5, distinguishes numeric seed0 from a emitted accepted-zero occurrence and says nothing emits until a fact arrives. Leaves activation and graph/input lifetime to caller."
+      }
+    },
+    "assessmentSHA256": "8807afca531536c4b2de84bdac920d77ce8d60a9d919d61dd00c80dbb2b9e365"
+  }
+}

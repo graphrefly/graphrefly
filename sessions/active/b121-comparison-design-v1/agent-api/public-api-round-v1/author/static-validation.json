@@ -1,0 +1,323 @@
+{
+  "schema": "b121-public-api-author-static-calibration-v1",
+  "createdAt": "2026-09-18T22:49:11.869Z",
+  "materialSHA256": "77bfd6b0d99b0cb360cae284333840e9d523e05e8ac6aca8c44fad3cc9f80501",
+  "environmentSHA256": "21f838eb2daf82a75fc12abe5a0c5b37ebad57c5fab77fba889afc23341275f2",
+  "compilerVersion": "5.9.3",
+  "executedParticipantCode": false,
+  "sourceEvidence": [
+    {
+      "taskId": "build-filtered-running-total",
+      "criterion": "public-graph-pipeline",
+      "path": "packages/ts/src/graph/graph.ts",
+      "match": true
+    },
+    {
+      "taskId": "build-filtered-running-total",
+      "criterion": "accepted-occurrence-semantics",
+      "path": "packages/ts/src/graph/operators.ts",
+      "match": true
+    },
+    {
+      "taskId": "build-filtered-running-total",
+      "criterion": "seed-and-ownership",
+      "path": "packages/ts/src/graph/operators.ts",
+      "match": true
+    },
+    {
+      "taskId": "adapt-host-push-lifetime",
+      "criterion": "registered-push-boundary",
+      "path": "packages/ts/src/graph/sources.ts",
+      "match": true
+    },
+    {
+      "taskId": "adapt-host-push-lifetime",
+      "criterion": "data-and-activation",
+      "path": "packages/ts/src/graph/sources.ts",
+      "match": true
+    },
+    {
+      "taskId": "adapt-host-push-lifetime",
+      "criterion": "subscription-cleanup-scope",
+      "path": "packages/ts/src/graph/sources.ts",
+      "match": true
+    },
+    {
+      "taskId": "report-bounded-downstream-impact",
+      "criterion": "public-readonly-diagnostic",
+      "path": "packages/ts/src/graph/diagnostics.ts",
+      "match": true
+    },
+    {
+      "taskId": "report-bounded-downstream-impact",
+      "criterion": "preserve-detailed-result",
+      "path": "packages/ts/src/graph/diagnostics.ts",
+      "match": true
+    },
+    {
+      "taskId": "report-bounded-downstream-impact",
+      "criterion": "edge-cases-and-limits",
+      "path": "packages/ts/src/graph/diagnostics.ts",
+      "match": true
+    },
+    {
+      "taskId": "read-one-audit-page",
+      "criterion": "one-public-readonly-page",
+      "path": "packages/ts/src/storage/append-log.ts",
+      "match": true
+    },
+    {
+      "taskId": "read-one-audit-page",
+      "criterion": "record-and-cursor-preservation",
+      "path": "packages/ts/src/storage/append-log.ts",
+      "match": true
+    },
+    {
+      "taskId": "read-one-audit-page",
+      "criterion": "page-boundary-interpretation",
+      "path": "packages/ts/src/storage/append-log.ts",
+      "match": true
+    }
+  ],
+  "results": [
+    {
+      "taskId": "build-filtered-running-total",
+      "case": "positive",
+      "snippet": "calibration/build-filtered-running-total/positive.ts",
+      "expectedCompilation": true,
+      "expectedFailedCriteria": [],
+      "snippetSHA256": "69b72318f5851ee8791657dd51ebc8448debf71efda79eb98441d10a50a7c8f3",
+      "consumerProbeSHA256": "92ede571c417e8907f8cfda83cd989002003b786fc646e79da66d2a3dc1c2d02",
+      "actualCompilation": true,
+      "matched": true,
+      "materialDiagnostics": [],
+      "diagnostics": [],
+      "checkedFiles": 262
+    },
+    {
+      "taskId": "build-filtered-running-total",
+      "case": "negative-zero-filter",
+      "snippet": "calibration/build-filtered-running-total/negative-zero-filter.ts",
+      "expectedCompilation": true,
+      "expectedFailedCriteria": [
+        "accepted-occurrence-semantics"
+      ],
+      "explanation": "This compiles but silently discards accepted zero-valued occurrences; the explanation cannot repair the code.",
+      "snippetSHA256": "ff21147b0d53ef682123d2fa12eb771f8ff3619b3bf66664dc2e15a376ffebc3",
+      "consumerProbeSHA256": "92ede571c417e8907f8cfda83cd989002003b786fc646e79da66d2a3dc1c2d02",
+      "actualCompilation": true,
+      "matched": true,
+      "materialDiagnostics": [],
+      "diagnostics": [],
+      "checkedFiles": 262
+    },
+    {
+      "taskId": "build-filtered-running-total",
+      "case": "negative-return-value",
+      "snippet": "calibration/build-filtered-running-total/negative-return-value.ts",
+      "expectedCompilation": false,
+      "expectedFailedCriteria": [
+        "public-graph-pipeline"
+      ],
+      "explanation": "Separate caller probe rejects a scalar result even though the implementation alone compiles.",
+      "snippetSHA256": "4f7ad0e8bc95dfa5cea4becc905d2059f666d7d98308ebb781ee4f52c65e856d",
+      "consumerProbeSHA256": "92ede571c417e8907f8cfda83cd989002003b786fc646e79da66d2a3dc1c2d02",
+      "actualCompilation": false,
+      "matched": true,
+      "materialDiagnostics": [],
+      "diagnostics": [
+        {
+          "code": 2322,
+          "category": "Error",
+          "path": "/b121-frozen/consumer/__b121_consumer_probe__.ts",
+          "line": 6,
+          "message": "Type 'number' is not assignable to type 'Node<number>'."
+        }
+      ],
+      "checkedFiles": 262
+    },
+    {
+      "taskId": "adapt-host-push-lifetime",
+      "case": "positive",
+      "snippet": "calibration/adapt-host-push-lifetime/positive.ts",
+      "expectedCompilation": true,
+      "expectedFailedCriteria": [],
+      "snippetSHA256": "5cda3a691cb605a97521ca0b732fed6cd1a5bd816ba87a597055af15df89541c",
+      "consumerProbeSHA256": "3690c7c0d5490e5915647e438460cd0a1996efbcb5f0c3ccac43868cf1b000e9",
+      "actualCompilation": true,
+      "matched": true,
+      "materialDiagnostics": [],
+      "diagnostics": [],
+      "checkedFiles": 259
+    },
+    {
+      "taskId": "adapt-host-push-lifetime",
+      "case": "negative-zero-drop",
+      "snippet": "calibration/adapt-host-push-lifetime/negative-zero-drop.ts",
+      "expectedCompilation": true,
+      "expectedFailedCriteria": [
+        "data-and-activation"
+      ],
+      "explanation": "Compiles but drops zero DATA.",
+      "snippetSHA256": "b74084e364b9aaa86b09cbe88c1734eb6743a390a4bd4851c76dc474e5a6d092",
+      "consumerProbeSHA256": "3690c7c0d5490e5915647e438460cd0a1996efbcb5f0c3ccac43868cf1b000e9",
+      "actualCompilation": true,
+      "matched": true,
+      "materialDiagnostics": [],
+      "diagnostics": [],
+      "checkedFiles": 259
+    },
+    {
+      "taskId": "adapt-host-push-lifetime",
+      "case": "negative-no-stop",
+      "snippet": "calibration/adapt-host-push-lifetime/negative-no-stop.ts",
+      "expectedCompilation": false,
+      "expectedFailedCriteria": [
+        "subscription-cleanup-scope"
+      ],
+      "explanation": "Wrong cleanup type is caught by consumer probe.",
+      "snippetSHA256": "2e46979e1fa714b9f4a4a17477937b7a77138d54f79af24eb3640e2a17837322",
+      "consumerProbeSHA256": "3690c7c0d5490e5915647e438460cd0a1996efbcb5f0c3ccac43868cf1b000e9",
+      "actualCompilation": false,
+      "matched": true,
+      "materialDiagnostics": [],
+      "diagnostics": [
+        {
+          "code": 2322,
+          "category": "Error",
+          "path": "/b121-frozen/consumer/__b121_consumer_probe__.ts",
+          "line": 9,
+          "message": "Type 'number' is not assignable to type '() => void'."
+        }
+      ],
+      "checkedFiles": 259
+    },
+    {
+      "taskId": "report-bounded-downstream-impact",
+      "case": "positive",
+      "snippet": "calibration/report-bounded-downstream-impact/positive.ts",
+      "expectedCompilation": true,
+      "expectedFailedCriteria": [],
+      "snippetSHA256": "3022f39827cde862a746300ded0fea821f82f1d89320bb9924caef9f10815dd2",
+      "consumerProbeSHA256": "648ee7249bb0ae4373b0f78358f8ce6272e640df3eab6e5e82745e844a070d56",
+      "actualCompilation": true,
+      "matched": true,
+      "materialDiagnostics": [],
+      "diagnostics": [],
+      "checkedFiles": 257
+    },
+    {
+      "taskId": "report-bounded-downstream-impact",
+      "case": "negative-upstream",
+      "snippet": "calibration/report-bounded-downstream-impact/negative-upstream.ts",
+      "expectedCompilation": true,
+      "expectedFailedCriteria": [
+        "public-readonly-diagnostic"
+      ],
+      "explanation": "Compiles but reverses direction; do not accept merely because a cyclic example shares a neighbor.",
+      "snippetSHA256": "fe1ef88a358fe5d6e1a10ef92cf95183cc1500ad1c01455fd2389381e3dd9a82",
+      "consumerProbeSHA256": "648ee7249bb0ae4373b0f78358f8ce6272e640df3eab6e5e82745e844a070d56",
+      "actualCompilation": true,
+      "matched": true,
+      "materialDiagnostics": [],
+      "diagnostics": [],
+      "checkedFiles": 257
+    },
+    {
+      "taskId": "report-bounded-downstream-impact",
+      "case": "negative-array-only",
+      "snippet": "calibration/report-bounded-downstream-impact/negative-array-only.ts",
+      "expectedCompilation": false,
+      "expectedFailedCriteria": [
+        "preserve-detailed-result"
+      ],
+      "explanation": "Implementation compiles but consumer cannot access required metadata.",
+      "snippetSHA256": "8794a3bf53c558485de767eedd64be8c8bb7e23cb1470959cc4f799fbba43d59",
+      "consumerProbeSHA256": "648ee7249bb0ae4373b0f78358f8ce6272e640df3eab6e5e82745e844a070d56",
+      "actualCompilation": false,
+      "matched": true,
+      "materialDiagnostics": [],
+      "diagnostics": [
+        {
+          "code": 2339,
+          "category": "Error",
+          "path": "/b121-frozen/consumer/__b121_consumer_probe__.ts",
+          "line": 5,
+          "message": "Property 'paths' does not exist on type 'readonly string[]'."
+        },
+        {
+          "code": 2339,
+          "category": "Error",
+          "path": "/b121-frozen/consumer/__b121_consumer_probe__.ts",
+          "line": 6,
+          "message": "Property 'depths' does not exist on type 'readonly string[]'."
+        },
+        {
+          "code": 2339,
+          "category": "Error",
+          "path": "/b121-frozen/consumer/__b121_consumer_probe__.ts",
+          "line": 7,
+          "message": "Property 'truncated' does not exist on type 'readonly string[]'."
+        }
+      ],
+      "checkedFiles": 257
+    },
+    {
+      "taskId": "read-one-audit-page",
+      "case": "positive",
+      "snippet": "calibration/read-one-audit-page/positive.ts",
+      "expectedCompilation": true,
+      "expectedFailedCriteria": [],
+      "snippetSHA256": "fd9ab51be9e4fe903a580a7a60100898f96c2175f2aa56ea80be125eb04d2ec5",
+      "consumerProbeSHA256": "8ee8a0c59e4de8c1aa3232d14def127257be05f0d04d26d158ef2b40feaeaf21",
+      "actualCompilation": true,
+      "matched": true,
+      "materialDiagnostics": [],
+      "diagnostics": [],
+      "checkedFiles": 245
+    },
+    {
+      "taskId": "read-one-audit-page",
+      "case": "negative-zero-cursor",
+      "snippet": "calibration/read-one-audit-page/negative-zero-cursor.ts",
+      "expectedCompilation": true,
+      "expectedFailedCriteria": [
+        "record-and-cursor-preservation"
+      ],
+      "explanation": "Compiles but nextAfter=0 is replaced by previous after=-1.",
+      "snippetSHA256": "cbaafeb85d452e6b19f4e68f41750aaafa70fafa0a1064967745cde8c72a25c7",
+      "consumerProbeSHA256": "8ee8a0c59e4de8c1aa3232d14def127257be05f0d04d26d158ef2b40feaeaf21",
+      "actualCompilation": true,
+      "matched": true,
+      "materialDiagnostics": [],
+      "diagnostics": [],
+      "checkedFiles": 245
+    },
+    {
+      "taskId": "read-one-audit-page",
+      "case": "negative-missing-metadata",
+      "snippet": "calibration/read-one-audit-page/negative-missing-metadata.ts",
+      "expectedCompilation": false,
+      "expectedFailedCriteria": [
+        "record-and-cursor-preservation"
+      ],
+      "explanation": "Consumer probe rejects missing continuation fields.",
+      "snippetSHA256": "08c57e3ccd59291cd633fc9dfcbe31f392285e3e3baa64294e3bb6a3ddaa7f5e",
+      "consumerProbeSHA256": "8ee8a0c59e4de8c1aa3232d14def127257be05f0d04d26d158ef2b40feaeaf21",
+      "actualCompilation": false,
+      "matched": true,
+      "materialDiagnostics": [],
+      "diagnostics": [
+        {
+          "code": 2322,
+          "category": "Error",
+          "path": "/b121-frozen/consumer/__b121_consumer_probe__.ts",
+          "line": 4,
+          "message": "Type 'Promise<{ rows: { key: string; sequence: number; id: string; amount: number; }[]; }>' is not assignable to type 'Promise<{ rows: readonly { key: string; sequence: number; id: string; amount: number; }[]; nextAfter: number; done: boolean; }>'.\n  Type '{ rows: { key: string; sequence: number; id: string; amount: number; }[]; }' is missing the following properties from type '{ rows: readonly { key: string; sequence: number; id: string; amount: number; }[]; nextAfter: number; done: boolean; }': nextAfter, done"
+        }
+      ],
+      "checkedFiles": 245
+    }
+  ],
+  "allMatched": true
+}
