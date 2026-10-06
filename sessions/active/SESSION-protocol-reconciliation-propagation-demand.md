@@ -2259,3 +2259,18 @@ do not force/reset an unrelated working tree. Verify the selected package pins a
 AGENTS.md, DS-15 and this continuation, and resume the bounded next cursor. The runtime proposals remain
 review-only, despite the Git branches containing their discussion. Install dependencies/personal skills
 on that host as needed; the remote computer itself has not been contacted by this local handoff.
+
+### Publication verification receipt (2026-10-05)
+
+The six authorized non-force branch pushes completed successfully. Fresh `git ls-remote --heads`
+queries verified exact equality for all six selected branch tips: root review payload commit
+`5d2c521637482f1cc288d7f4f17ceb35b0cfb937`, and the other five exact commits in the table above.
+All six remote main branch tips remained equal to their pre-publication values. This receipt is
+recorded in a subsequent root docs commit, so the final root handoff tip includes this receipt as a
+normal fast-forward descendant of the verified review payload; it is not a self-referential hash.
+The final source-task verification records that descendant tip after its push.
+
+Only review notes, their existing session index, bounded diagnostic probes and related root/TS
+workflow pointers were newly committed. No new Rules, D#, formal/conformance or package runtime
+behavior was admitted. Other worktree edits/stashes and unrelated uncommitted tasks were not pushed.
+The remote computer must still clone/fetch the named branches and prepare its local dependencies.
