@@ -663,3 +663,20 @@ test("K6: onInvalidate hooks stay registered; a later effective INVALIDATE witho
   x.down([["INVALIDATE"]]); // ineffective: no value
   assert.deepEqual([runs, hooks], [1, 2]);
 });
+
+test("H6: a quiet node's arrays from one settlement go out together, as one later wave", () => {
+  const g = createGraph();
+  g.state("a", 0);
+  g.node("q", ["a"], (ctx) => { for (const v of ctx.deps[0].waves.flat()) { ctx.down([["DATA", v]]); ctx.down([["DATA", v + 1]]); } }, { quiet: true });
+  const seen = [];
+  g.node("y", ["q"], (ctx) => { seen.push(ctx.deps[0].waves); });
+  g.subscribe("sq", "q");
+  g.subscribe("sy", "y");
+  seen.length = 0;
+  assert.deepEqual(during(g, () => g.set("a", 5)), [
+    "sq <- q: [DIRTY, DATA(5)]",
+    "sq <- q: [DIRTY, DATA(6)]",
+    "sy <- y: [DIRTY, RESOLVED]",
+  ]);
+  assert.deepEqual(seen, [[[5], [6]]], "y runs once on both arrays");
+});

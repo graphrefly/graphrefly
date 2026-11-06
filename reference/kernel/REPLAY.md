@@ -22,7 +22,7 @@ Labels:
 | C-29 rollback and notification ownership | — | all (O3 and O11): no notification outlives its wave | — | — |
 | C-30 pause gates and resumeAll | — | — | re-pause between held arrays | 4 clauses: pause module |
 | C-31 intrinsic state and locks | 3 clauses | — | — | 2 clauses: pause module; value evidence: revision observer |
-| C-32 PULL demand | — | — | — | demand module |
+| C-32 PULL demand | — | routed diamond (no routing) | — | 5 clauses: demand module |
 | C-33 lifecycle and cleanup | 5 clauses | close during an unwinding invocation (K8) | — | public `node.down`, native listener failure |
 | C-34 terminal fanout and acquisition | 3 clauses | — | — | next execution: restart owner (O7); acquisition failure |
 | C-35 partial wiring | — | — | — | partial first-run gate, rewire, acquisition failure |
@@ -123,7 +123,16 @@ Pause module (replay tests in `../modules/pause.replay.test.mjs`):
 
 ### C-32
 
-Every clause is the demand module (PULL holder on H6).
+Demand module (tests in `../modules/demand.test.mjs`, 2026-11-06):
+
+| Clause | Label | Where |
+|---|---|---|
+| Inactive demand neither activates nor banks | Module | "a pull at an inactive holder..." |
+| Active blocked requests retain only params2 | Module (a batch of pulls) | "C-32: several pulls before one service..." |
+| Backlog waits for the outer batch and publishes outside its fate | Module | "C-32: a pull inside a batch..." |
+| Latest demand is consumed only at actual service | Module | same tests |
+| No demand means no holder invocation on RESUME; RESUME does not flush the backlog | Module | "C-32: with a pausable before the holder..." |
+| Routed diamond duplicates service only once per routed request | Decided away: a pull travels through a declared control pair, not by routing | |
 
 ### C-33
 

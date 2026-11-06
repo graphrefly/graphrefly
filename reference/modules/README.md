@@ -136,3 +136,56 @@ Not discussed before, kept, with the reason:
 | While open, the pausable forwards every occurrence | P2: pause must not merge DATA when it is not paused |
 | The `control` option of `pausable` | Lets several pausables share one lock state, so one resume releases them in one wave (finding 8, C-36). Without it there is no way to pause a node at several inputs and get one invocation |
 | `${id}.pauseLog` and its value, the queue of arrays held since the last INVALIDATE | The only way to see every INVALIDATE without a kernel change (finding 3). Only `id` reads the queue; downstream never sees that shape |
+
+## Demand ([demand.mjs](demand.mjs), [demand.test.mjs](demand.test.mjs))
+
+Second module, 2026-11-06, for DS-17 O2 and R-pull. Decided with the user: the request travels
+through a declared control pair, as pause does, not through upward routing.
+
+`pullable(g, id, inputId, serve)` places a holder `id` after `inputId` and returns a bundle with
+`pull(params)`. Between pulls the holder holds what arrives and shows nothing downstream, not even
+DIRTY. A pull runs `serve(ctx)` once, with `ctx.deps[0].waves` the arrays held since the last
+INVALIDATE and `ctx.pull.params` the params, even when nothing changed; what it sends goes out as a
+later wave. `pull` only writes the bundle's state node; it creates nothing.
+
+```text
+inputId ──► id.pullLog ──► id
+id.pullDemand ──┘
+```
+
+| R-pull@2 / C-32 | Here |
+|---|---|
+| Quiet outside service | The holder is a quiet node (H6); between pulls its subscribers receive nothing |
+| A matching PULL at an inactive holder drops without activation or banking | `pull` writes the demand state, which keeps its value; on activation the log records that request as seen and serves only later ones |
+| Only the latest unserved params are kept | A batch of pulls is one wave; the log serves the newest request in it |
+| Invoke once even without changed dependencies | The demand state's DATA is input to the log |
+| Backlog waits for the outer batch and publishes outside its fate | A pull in a batch is staged; the service is a later wave after commit; a throwing batch serves nothing |
+| RESUME alone creates no demand and flushes no backlog | A pausable in front of the holder releases into the log, which holds |
+| Routed diamond serves once per routed request | Decided away: no routing; one `pull` is one write and one service |
+| Subscription is START-only | **Not here.** A later subscriber gets the last served value in its START, because the kernel puts the retained value in every START. Making a node START-only is DS-17 H2, a kernel option; left out until a real case needs it |
+| Output carries no ACK or guaranteed DATA | Same: `serve` may stay silent, and then nothing goes out |
+
+An INVALIDATE discards what was held before it and reaches subscribers as a later wave (the
+holder is quiet). TS passes a pull node's INVALIDATE on at once.
+
+The log works like `${id}.pauseLog`: it republishes its queue on every arrival so that it always has
+a value while holding anything, which is how its own `onInvalidate` sees every INVALIDATE.
+
+Mutations checked, each failing at least one of the 14 tests: an old request served on activation;
+the log without its invalidate hook; the holder not quiet; the log silent while holding; the oldest
+request served instead of the latest; the log keeping its queue after a service; the holder serving
+on a record that is not a service; the log swallowing COMPLETE.
+
+Kernel fix found while building it: a quiet node that sent several arrays in one settlement published
+each as its own later wave; they now go out together as one later wave (kernel test "H6: a quiet
+node's arrays...").
+
+### New things this module introduces
+
+| Kept | Why |
+|---|---|
+| `pullable(g, id, inputId, serve)` returning `{ pull }` | The bundle holds the author's function, as a TS pull node holds its fn; `pull` is the controller side of the pair |
+| `${id}.pullDemand` and `${id}.pullLog` | The declared control edge, and the holder of what arrived, as in pause |
+| The demand record `{ seq, params }` | A fresh value per pull, so every pull is DATA, and a sequence so the log can tell an old request (there before activation) from a new one |
+| `serve` gets a view of ctx: the holder's own ctx with `deps` replaced by the held input and `pull` added | Keeps the TS shape (`ctx.deps` input, `ctx.pull.params`); `down`, `state` and the hooks are the holder's own |
+

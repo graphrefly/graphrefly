@@ -98,7 +98,7 @@ The kernel does not know or care whether a late `ctx.down` came from async work.
   the work runs. Results arrive in arrival order and combine with whatever the other inputs hold then.
 - H6: `{ quiet: true }` records its own dirty inputs but does not pass DIRTY on, so its dependents do
   not wait for it. Everything it outputs, including an invalidation or an inherited ERROR, is a later
-  wave from it. Silence needs no RESOLVED.
+  wave from it; the arrays of one settlement go out together in that wave. Silence needs no RESOLVED.
 
 Mutations checked on 2026-11-06 for O13 and array boundaries, each failing at least one test: no
 split at INVALIDATE; tier sort restored; a run's `ctx.down` calls merged; `waves` flattened; a
@@ -148,8 +148,8 @@ Each of these is left out rather than approximated:
 - K9 control routing and declared control pairs; K10 node interface and status; START snapshots of an
   unsettled node.
 - Upward INVALIDATE (R-up-at-source); INVALIDATE before a node's first invocation (R-first-run-gate).
-- Modules: demand (the PULL holder built on H6, with its START-only subscription), replay,
-  checkpoint, rewire, restart owners. Pause is in [../modules/](../modules/README.md).
+- Modules: replay, checkpoint, rewire, restart owners. Pause and demand are in
+  [../modules/](../modules/README.md).
 
 ## Observations so far
 

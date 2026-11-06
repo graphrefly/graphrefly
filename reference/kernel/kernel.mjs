@@ -305,9 +305,14 @@ export function createGraph({ report: hostReport } = {}) {
   // Output that is not part of the current wave: sent after an invocation returned
   // (P9), or anything a quiet node emits (H6). It becomes its own wave from n.
   // priorHooks: see settle.
-  function publishLater(n, life, msgs, priorHooks = null) {
+  function publishLater(n, life, msgs) {
     if (staging && life.open) { stage(n, life, msgs); return; }
-    const frames = prepare(msgs);
+    publishFramesLater(n, life, prepare(msgs));
+  }
+
+  // Several arrays as one later wave from n (a quiet node's output of one settlement).
+  function publishFramesLater(n, life, frames, priorHooks = null) {
+    if (!frames.length) return;
     request(() => {
       if (!life.open || n.life !== life) return; // R-ctx-lifetime: old output is dropped
       runWave([{ node: n, frames, priorHooks }]);
@@ -459,8 +464,9 @@ export function createGraph({ report: hostReport } = {}) {
     if (m.quiet) {
       // H6: everything a quiet node outputs is a later wave; nothing downstream waits
       // on it, so silence needs no RESOLVED.
-      for (const frame of [...lead, ...out]) publishLater(m, m.life, frame, frame === lead[0] ? priorHooks : null);
-      if (postlude.length) publishLater(m, m.life, postlude);
+      // Its arrays of this settlement stay together, as one later wave.
+      publishFramesLater(m, m.life, [...lead, ...out], priorHooks);
+      if (postlude.length) publishFramesLater(m, m.life, [postlude]);
       return;
     }
     const frames = [...lead, ...out];
