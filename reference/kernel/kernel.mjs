@@ -4,12 +4,10 @@
 // sessions/active/SESSION-kernel-module-classification.md (DS-17); see README.md for
 // what is covered and what is not. Comments cite the DS-17 principles (P1-P10).
 //
-// The interpreter is deterministic and has no dependencies. Node functions receive an
-// invocation view and return { down, state }; work that finishes later goes through
-// ctx (P9). Every delivery to a sink is appended to graph.trace, which is the
-// observable behavior under test. A sink may also have a callback; callbacks and node
-// functions that call back into the graph anyway (through a captured graph reference)
-// are handled by K8 below.
+// The interpreter is deterministic and has no dependencies. A node function has the
+// TS baseline's shape, (ctx) => void (R-fn-contract): it reads ctx.deps and ctx.state
+// and emits only through ctx.down. Every delivery to a sink is appended to
+// graph.trace, which is the observable behavior under test.
 
 export const TIER = Object.freeze({
   START: 0,
@@ -28,6 +26,7 @@ const isTerminal = (m) => m[0] === "COMPLETE" || m[0] === "ERROR";
 // K2/K6: each of these releases a connection's dirty membership.
 const settles = (m) => isValue(m) || isTerminal(m) || m[0] === "INVALIDATE";
 const messageOf = (e) => (e instanceof Error ? e.message : e);
+const freshInput = () => ({ has: false, value: undefined, ended: null, wave: [] });
 
 // P2/K1: stable sort by tier; order within a tier and every DATA occurrence are kept.
 function normalize(msgs) {
@@ -59,10 +58,6 @@ export function createGraph() {
   let busy = false;     // K8: the kernel is running a request (wave, activation, release)
   const queue = [];     // K8: requests that arrived while busy, run in arrival order
   const running = [];   // node functions currently executing (innermost last)
-  let inWave = false;
-  let touched = [];
-  let settledThisWave = new Set();
-  let lifeSeq = 0;
 
   const nodeOf = (id) => {
     const n = nodes.get(id);
@@ -76,9 +71,9 @@ export function createGraph() {
   function makeNode(id, kind, deps, fn, opts, initial) {
     if (nodes.has(id)) throw new KernelError(`duplicate node ${id}`);
     for (const d of deps) nodeOf(d); // P1: dependencies are declared and must exist
-    const terminal = { complete: "auto", error: "auto", ...(opts?.terminal ?? {}) };
     const n = {
-      id, kind, deps, fn, terminal,
+      id, kind, deps, fn,
+      terminal: { complete: "auto", error: "auto", ...(opts?.terminal ?? {}) }, // O6
       quiet: Boolean(opts?.quiet), // H6: consumes input waves without forwarding DIRTY
       subs: [],            // ordered: { kind: "sink", id, cb } | { kind: "node", id, dep }
       active: false,
@@ -89,10 +84,8 @@ export function createGraph() {
       privateState: undefined,
       announced: false,    // P3: this node announced DIRTY in the current wave
       dirtyDeps: new Set(),
-      pending: deps.map(() => ({ data: [], resolved: false, invalidated: false, terminal: null })),
-      received: deps.map(() => ({ has: false, value: undefined, ended: null })),
-      invocations: 0,
-      dropped: 0,          // later output that arrived after its lifetime closed
+      // Per dependency: the latest value and terminal received, and this wave's messages.
+      inputs: deps.map(freshInput),
     };
     nodes.set(id, n);
     return n;
@@ -100,10 +93,11 @@ export function createGraph() {
 
   // ---- Out-of-wave requests (P7, K8) --------------------------------------
   //
-  // A request that arrives while the kernel is busy (from a sink callback, or from a
-  // node function that reaches the graph through a closure) is not run inside the
-  // current wave. It waits and runs afterwards as its own request, in arrival order.
-  // Running it immediately would let one wave's cone grow after parts of it settled.
+  // A request that arrives while the kernel is busy (from a sink callback, from output a
+  // node sends after its invocation returned, or from a node function that reaches the
+  // graph through a closure) is not run inside the current wave. It waits and runs
+  // afterwards as its own request, in arrival order. Running it immediately would let
+  // one wave's cone grow after parts of it settled.
 
   function request(op) {
     if (busy) { queue.push(op); return; }
@@ -123,13 +117,13 @@ export function createGraph() {
   // ---- Lifetimes (P6, K7) -------------------------------------------------
   //
   // A computed node gets a new lifetime on each activation. Everything a function gets
-  // through ctx (later output, the cancellation signal, cleanup hooks) belongs to the
-  // lifetime of the invocation that received it. Closing a lifetime (last release or
-  // terminal) aborts its signal, releases dependencies in declaration order, then runs
-  // its deactivation cleanups in registration order. Later output is dropped.
+  // through ctx belongs to the lifetime of the invocation that received it. Closing a
+  // lifetime (last release or terminal) aborts its signal, releases dependencies in
+  // declaration order, then runs its deactivation cleanups in registration order.
+  // Output sent through a closed lifetime's ctx is dropped.
 
   function openLife(n) {
-    n.life = { id: ++lifeSeq, open: true, controller: null, hooks: { deactivation: [], invalidate: [] } };
+    n.life = { open: true, controller: null, hooks: { deactivation: [], invalidate: [] } };
   }
 
   function runCleanup(n, f) {
@@ -163,21 +157,18 @@ export function createGraph() {
       const dep = nodeOf(depId);
       if (!dep.active) activate(dep);
       dep.subs.push({ kind: "node", id: n.id, dep: i });
-      // K3: the dependency's initialization snapshot becomes this node's received input.
-      n.received[i] = { has: dep.has, value: dep.cache, ended: dep.ended };
+      // K3: the dependency's START snapshot is this node's first received input.
+      n.inputs[i] = { has: dep.has, value: dep.cache, ended: dep.ended, wave: [] };
+      if (dep.has) n.inputs[i].wave.push(["DATA", dep.cache]);
+      if (dep.ended) n.inputs[i].wave.push(dep.ended);
     });
-    // Activation invocation: the function sees each dependency's retained value once.
-    // Waiting for every dependency to have a value is a sugar policy, not a kernel gate.
-    const view = n.deps.map((_, i) => ({
-      data: n.received[i].has ? [n.received[i].value] : [],
-      resolved: false,
-      invalidated: false,
-      terminal: n.received[i].ended,
-      ...n.received[i],
-    }));
-    // Nothing subscribes to this node yet, so its output only sets the retained value
-    // that the new subscriber's START snapshot will carry. It is not a live wave.
-    for (const m of normalize(invoke(n, view, true))) {
+    // The activation invocation sees each snapshot as this wave's input. Waiting for
+    // every dependency to have a value is a sugar policy, not a kernel gate. Nothing
+    // subscribes to this node yet, so its output only sets the retained value that the
+    // new subscriber's START snapshot will carry.
+    const out = invoke(n);
+    n.inputs.forEach((input) => { input.wave = []; });
+    for (const m of normalize(out)) {
       if (m[0] === "DATA") { n.has = true; n.cache = m[1]; }
       if (isTerminal(m)) n.ended = m;
     }
@@ -203,7 +194,7 @@ export function createGraph() {
     if (n.kind === "state") return; // K7: plain state keeps its value across disconnect
     closeLife(n);
     n.privateState = undefined;
-    n.received = n.deps.map(() => ({ has: false, value: undefined, ended: null }));
+    n.inputs = n.deps.map(freshInput);
     if (!n.ended) {
       // K7: a computed node clears its output for a fresh activation.
       n.has = false;
@@ -212,25 +203,41 @@ export function createGraph() {
   }
 
   // ---- Invocation (K4, P4, P9, P10) ---------------------------------------
+  //
+  // ctx.down called while the function runs is this invocation's output. Called after
+  // the function returned, it is a new wave from this node (P9): the kernel neither
+  // knows nor cares that the caller was async. Called after the lifetime closed, it is
+  // dropped (R-ctx-lifetime).
 
-  function makeCtx(n, life, hooks) {
+  function invoke(n) {
+    const life = n.life;
+    // R-cleanup-hooks: this run's registrations replace the previous run's, which are
+    // dropped without being called.
+    const hooks = { deactivation: [], invalidate: [] };
+    life.hooks = hooks;
+    const out = [];
     let invoking = true;
     const register = (kind, f) => {
       if (invoking) { hooks[kind].push(f); return; }
-      // R-cleanup-hooks: a registration that comes back after its lifetime closed is
-      // attempted once, now. Registering later into a live lifetime is refused here.
+      // A registration that comes back after its lifetime closed is attempted once,
+      // now. Registering later into a live lifetime is refused here.
       if (!life.open) { runCleanup(n, f); return; }
       throw new KernelError(`${n.id} registered cleanup after its invocation returned`);
     };
     const ctx = {
-      // P9: returns a function that publishes later output as a new wave from this
-      // node. Output after this lifetime closed is dropped.
-      later() {
-        if (!life.open) throw new KernelError(`${n.id}: lifetime has closed`);
-        return (msgs) => request(() => {
-          if (!life.open || n.life !== life) { n.dropped += 1; return; }
-          runWave([{ node: n, msgs: checkOutput(msgs) }]);
-        });
+      // K4: per dependency, this wave's DATA occurrences, whether it settled with
+      // RESOLVED, its terminal this wave, and the latest value received.
+      deps: n.inputs.map((input) => ({
+        data: input.wave.filter((m) => m[0] === "DATA").map((m) => m[1]),
+        resolved: input.wave.some((m) => m[0] === "RESOLVED"),
+        terminal: input.wave.find(isTerminal) ?? null,
+        has: input.has,
+        value: input.value,
+      })),
+      state: { get: () => n.privateState, set: (v) => { n.privateState = v; } },
+      down(msgs) {
+        if (invoking) { out.push(...msgs); return; }
+        publishLater(n, life, msgs);
       },
       // Aborted when this lifetime closes; not by INVALIDATE or by a rerun. Created on
       // first access; first access after close returns an already aborted signal.
@@ -244,28 +251,25 @@ export function createGraph() {
       onDeactivation(f) { register("deactivation", f); },
       onInvalidate(f) { register("invalidate", f); },
     };
-    return { ctx, done: () => { invoking = false; } };
-  }
-
-  function invoke(n, view, activation) {
-    n.invocations += 1;
-    // R-cleanup-hooks: this run's registrations replace the previous run's, which are
-    // dropped without being called.
-    const hooks = { deactivation: [], invalidate: [] };
-    n.life.hooks = hooks;
-    const { ctx, done } = makeCtx(n, n.life, hooks);
-    let result;
     running.push(n);
     try {
-      result = n.fn({ deps: view, state: n.privateState, activation, ctx }) ?? {};
+      n.fn(ctx);
     } catch (e) {
       return [["ERROR", messageOf(e)]]; // P10
     } finally {
       running.pop();
-      done();
+      invoking = false;
     }
-    if ("state" in result) n.privateState = result.state;
-    return checkOutput(result.down ?? []);
+    return checkOutput(out);
+  }
+
+  // Output that is not part of the current wave: sent after an invocation returned
+  // (P9), or anything a quiet node emits (H6). It becomes its own wave from n.
+  function publishLater(n, life, msgs) {
+    request(() => {
+      if (!life.open || n.life !== life) return; // R-ctx-lifetime: old output is dropped
+      runWave([{ node: n, msgs: checkOutput(msgs) }]);
+    });
   }
 
   // ---- Waves (P3, K2, K6, H6) ---------------------------------------------
@@ -281,7 +285,6 @@ export function createGraph() {
       m.dirtyDeps.add(sub.dep);
       if (!m.announced) {
         m.announced = true;
-        touched.push(m);
         if (!m.quiet) announce(m);
       }
     }
@@ -322,12 +325,10 @@ export function createGraph() {
         // A node emitting a value without having announced (a source, later output,
         // or a node answering a terminal-only wave) announces its own cone first (P3).
         n.announced = true;
-        touched.push(n);
         announce(n);
       }
       if (out[0][0] !== "DIRTY") out.unshift(["DIRTY"]); // K2: leading DIRTY
     }
-    if (out.some(settles)) settledThisWave.add(n);
     if (invalidated && n.life) {
       // R-invalidate-idempotent: the value is already absent when these run.
       const hooks = n.life.hooks.invalidate;
@@ -344,101 +345,73 @@ export function createGraph() {
 
   function receive(m, i, msgs) {
     if (m.ended) return;
-    let settled = false;
+    const input = m.inputs[i];
     for (const msg of msgs) {
-      if (msg[0] === "DATA") {
-        m.pending[i].data.push(msg[1]); // P2: every occurrence reaches the function
-        m.received[i] = { ...m.received[i], has: true, value: msg[1] };
-      } else if (msg[0] === "RESOLVED") {
-        m.pending[i].resolved = true;
-      } else if (msg[0] === "INVALIDATE") {
-        m.pending[i].invalidated = true;
-        m.received[i] = { ...m.received[i], has: false, value: undefined };
-      } else if (isTerminal(msg)) {
-        m.pending[i].terminal = msg;
-        m.received[i] = { ...m.received[i], ended: msg };
-      }
-      if (settles(msg)) settled = true;
+      if (msg[0] === "DIRTY") continue;
+      input.wave.push(msg); // P2: every occurrence reaches the function
+      if (msg[0] === "DATA") { input.has = true; input.value = msg[1]; }
+      if (msg[0] === "INVALIDATE") { input.has = false; input.value = undefined; }
+      if (isTerminal(msg)) input.ended = msg;
     }
-    if (settled) m.dirtyDeps.delete(i);
+    if (msgs.some(settles)) m.dirtyDeps.delete(i);
     if (m.dirtyDeps.size === 0) settle(m);
   }
 
-  // H6: everything a quiet node outputs is a new wave from that node, after the
-  // current one. Its dependents were never told to wait for it.
-  function laterWave(n, msgs) {
-    const life = n.life;
-    request(() => {
-      if (!life?.open || n.life !== life) { n.dropped += 1; return; }
-      runWave([{ node: n, msgs }]);
-    });
-  }
-
   function settle(m) {
-    const pending = m.pending;
-    m.pending = m.deps.map(() => ({ data: [], resolved: false, invalidated: false, terminal: null }));
-    const anyInput = pending.some((p) => p.data.length || p.resolved || p.invalidated || p.terminal);
-    if (!anyInput) return;
-    const emit = (msgs) => (m.quiet ? laterWave(m, msgs) : publish(m, msgs));
+    const waves = m.inputs.map((input) => input.wave);
+    if (!waves.some((w) => w.length)) return;
+    // H6: everything a quiet node outputs is a later wave; nothing downstream waits on
+    // it, so silence needs no RESOLVED.
+    const emit = (msgs) => (m.quiet ? msgs.length && publishLater(m, m.life, msgs) : publish(m, msgs));
 
     // K5, error=auto: a dependency ERROR ends this node without running its function.
-    const depError = pending.find((p) => p.terminal?.[0] === "ERROR");
+    const depError = waves.flat().find((x) => x[0] === "ERROR");
     if (depError && m.terminal.error === "auto") {
-      emit([depError.terminal]);
+      m.inputs.forEach((input) => { input.wave = []; });
+      emit([depError]);
       return;
     }
 
     // K6: an invalidated input invalidates this node's value; the function does not
     // run for this wave. It runs again when the input has a value again.
-    if (pending.some((p) => p.invalidated)) {
+    if (waves.flat().some((x) => x[0] === "INVALIDATE")) {
+      m.inputs.forEach((input) => { input.wave = []; });
       emit([["INVALIDATE"]]);
       return;
     }
 
-    const manualTerminal = pending.some((p) =>
-      p.terminal && (p.terminal[0] === "COMPLETE" ? m.terminal.complete : m.terminal.error) === "manual");
-    let out = [];
-    if (pending.some((p) => p.data.length || p.resolved) || manualTerminal) {
-      const view = pending.map((p, i) => ({ ...p, ...m.received[i], terminal: p.terminal }));
-      out = invoke(m, view, false);
-    }
+    const manualTerminal = waves.flat().some((x) =>
+      isTerminal(x) && (x[0] === "COMPLETE" ? m.terminal.complete : m.terminal.error) === "manual");
+    const runs = waves.flat().some(isValue) || manualTerminal;
+    const out = runs ? invoke(m) : [];
+    m.inputs.forEach((input) => { input.wave = []; });
 
     // K5, complete=auto: a separate postlude once every dependency has ended.
-    const allEnded = m.received.every((r) => r.ended);
-    const postlude = m.terminal.complete === "auto" && allEnded && !out.some(isTerminal);
+    const allEnded = m.inputs.every((input) => input.ended);
+    const postlude = m.terminal.complete === "auto" && allEnded && !out.some(isTerminal) ? [["COMPLETE"]] : [];
 
     if (m.quiet) {
-      // Nothing downstream waits on a quiet node, so silence needs no RESOLVED.
-      if (out.length) laterWave(m, out);
-      if (postlude) laterWave(m, [["COMPLETE"]]);
+      emit([...out, ...postlude]);
       return;
     }
-    if (out.some(settles)) publish(m, out);
-    else if (m.announced && !postlude) publish(m, [...out, ["RESOLVED"]]); // P4
-    else if (out.length) publish(m, out);
-    if (postlude) publish(m, [["COMPLETE"]]);
+    if (out.length || !postlude.length) publish(m, out); // P4: publish adds RESOLVED if silent
+    if (postlude.length) publish(m, postlude);
   }
 
   function runWave(entries) {
     entries = entries.filter(({ node }) => !node.ended); // P5: input to an ended source is dropped
     if (!entries.length) return;
-    inWave = true;
-    touched = [];
-    settledThisWave = new Set();
     try {
       // P3: announce every source of the wave before any settlement (batch, K2).
       for (const { node, msgs } of entries) {
         if (msgs.some(isValue) && !node.announced) {
           node.announced = true;
-          touched.push(node);
           announce(node);
         }
       }
       for (const { node, msgs } of entries) publish(node, msgs);
     } finally {
-      for (const n of touched) { n.announced = false; n.dirtyDeps.clear(); }
-      settledThisWave = new Set();
-      inWave = false;
+      for (const n of nodes.values()) { n.announced = false; n.dirtyDeps.clear(); }
     }
   }
 
@@ -464,14 +437,6 @@ export function createGraph() {
       if (n.ended) throw new KernelError(`${id} has ended`);
       runWave([{ node: n, msgs: [msg] }]);
     });
-  }
-
-  // Pending: this node will receive or publish something before the current wave or the
-  // open batch finishes, so its retained value is about to change or be confirmed.
-  function isPending(n) {
-    if (inWave) return n.announced && !settledThisWave.has(n);
-    if (staging) return [...staging.keys()].some((s) => s === n.id || dependsOn(n, s));
-    return false;
   }
 
   return {
@@ -530,18 +495,11 @@ export function createGraph() {
       // Commit announces DIRTY to the whole cone, then publishes (O3).
       request(() => runWave([...staged].map(([id, msgs]) => ({ node: nodeOf(id), msgs }))));
     },
-    // The retained value as of now, and whether the current wave or open batch will
-    // still change or confirm it. Reading never computes.
+    // The retained value as of now. Reading never computes; whether a node is about to
+    // change is node status (K10), not covered yet.
     get(id) {
       const n = nodeOf(id);
-      return { has: n.has, value: n.cache, pending: isPending(n) };
-    },
-    inspect(id) {
-      const n = nodeOf(id);
-      return {
-        active: n.active, has: n.has, cache: n.cache, ended: n.ended,
-        invocations: n.invocations, dropped: n.dropped,
-      };
+      return { active: n.active, has: n.has, value: n.cache, ended: n.ended };
     },
   };
 }

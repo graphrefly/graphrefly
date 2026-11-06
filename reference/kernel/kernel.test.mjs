@@ -10,6 +10,13 @@ function during(g, body) {
   return g.trace.slice(start).map(format);
 }
 
+// Wraps a node function to count its invocations; the kernel itself keeps no counter.
+function counted(fn) {
+  const wrapped = (ctx) => { wrapped.calls += 1; fn(ctx); };
+  wrapped.calls = 0;
+  return wrapped;
+}
+
 test("K3: subscription starts with a START snapshot of the retained value", () => {
   const g = createGraph();
   g.state("a", 1);
@@ -43,24 +50,26 @@ test("P3/K2: a diamond runs its fan-in once per wave with consistent inputs", ()
   g.state("a", 1);
   g.node("b", ["a"], map((v) => v + 1));
   g.node("c", ["a"], map((v) => v * 2));
-  g.node("d", ["b", "c"], derived((b, c) => b + c));
+  const d = counted(derived((b, c) => b + c));
+  g.node("d", ["b", "c"], d);
   assert.deepEqual(during(g, () => g.subscribe("s", "d")), ["s <- d: [START, DATA(4)]"]);
   assert.deepEqual(during(g, () => g.set("a", 2)), ["s <- d: [DIRTY, DATA(7)]"]);
-  assert.equal(g.inspect("d").invocations, 2, "activation plus one wave");
+  assert.equal(d.calls, 2, "activation plus one wave");
 });
 
 test("P4: a filter that drops settles with RESOLVED; the fan-in still runs once", () => {
   const g = createGraph();
   g.state("a", 2);
   g.node("f", ["a"], filter((v) => v % 2 === 0));
-  g.node("d", ["a", "f"], derived((a, f) => `${a}/${f}`));
+  const d = counted(derived((a, f) => `${a}/${f}`));
+  g.node("d", ["a", "f"], d);
   g.subscribe("sf", "f");
   g.subscribe("sd", "d");
   assert.deepEqual(during(g, () => g.set("a", 3)), [
     "sf <- f: [DIRTY, RESOLVED]",
     "sd <- d: [DIRTY, DATA(\"3/2\")]",
   ]);
-  assert.equal(g.inspect("d").invocations, 2);
+  assert.equal(d.calls, 2);
 });
 
 test("P8: all-RESOLVED settlement still invokes the raw function; silence becomes RESOLVED", () => {
@@ -69,20 +78,20 @@ test("P8: all-RESOLVED settlement still invokes the raw function; silence become
   g.node("f1", ["a"], filter((v) => v % 2 === 0));
   g.node("f2", ["a"], filter((v) => v % 2 === 0));
   const seen = [];
-  g.node("d", ["f1", "f2"], ({ deps, activation }) => {
-    if (!activation) seen.push(deps.map((x) => (x.resolved ? "R" : x.data.join())));
-    return {};
+  g.node("d", ["f1", "f2"], (ctx) => {
+    seen.push(ctx.deps.map((x) => (x.resolved ? "R" : x.data.join())));
   });
   g.subscribe("s", "d");
   assert.deepEqual(during(g, () => g.set("a", 3)), ["s <- d: [DIRTY, RESOLVED]"]);
-  assert.deepEqual(seen, [["R", "R"]]);
+  assert.deepEqual(seen, [["2", "2"], ["R", "R"]], "activation sees the snapshots, then the wave");
 });
 
 test("K2: a host batch is one wave; every occurrence is kept", () => {
   const g = createGraph();
   g.state("a", 1);
   g.state("b", 1);
-  g.node("sum", ["a", "b"], derived((a, b) => a + b));
+  const sum = counted(derived((a, b) => a + b));
+  g.node("sum", ["a", "b"], sum);
   g.node("tens", ["a"], map((v) => v * 10));
   g.subscribe("s", "sum");
   g.subscribe("t", "tens");
@@ -91,7 +100,7 @@ test("K2: a host batch is one wave; every occurrence is kept", () => {
     "t <- tens: [DIRTY, DATA(20), DATA(30)]",
     "s <- sum: [DIRTY, DATA(8)]",
   ]);
-  assert.equal(g.inspect("sum").invocations, 2);
+  assert.equal(sum.calls, 2);
 });
 
 test("K2: a throwing batch body publishes nothing, so there is nothing to roll back", () => {
@@ -102,7 +111,7 @@ test("K2: a throwing batch body publishes nothing, so there is nothing to roll b
     assert.throws(() => g.batch(() => { g.set("a", 9); throw new Error("stop"); }), /stop/);
   });
   assert.deepEqual(out, []);
-  assert.equal(g.inspect("a").cache, 1);
+  assert.equal(g.get("a").value, 1);
 });
 
 test("K5 auto: COMPLETE once every dependency has completed, without a balancing RESOLVED", () => {
@@ -129,9 +138,8 @@ test("K5/P10: a dependency ERROR propagates; a throw becomes this node's ERROR",
   const g = createGraph();
   g.state("a", 1);
   g.node("d", ["a"], map((v) => v));
-  g.node("t", ["a"], ({ deps: [x] }) => {
-    if (x.data.includes(13)) throw new Error("bad");
-    return {};
+  g.node("t", ["a"], (ctx) => {
+    if (ctx.deps[0].data.includes(13)) throw new Error("bad");
   });
   g.subscribe("sd", "d");
   g.subscribe("st", "t");
@@ -145,7 +153,7 @@ test("K5/P10: a dependency ERROR propagates; a throw becomes this node's ERROR",
 test("K2: DATA and RESOLVED in one output array is rejected as a computation failure", () => {
   const g = createGraph();
   g.state("a", 1);
-  g.node("x", ["a"], ({ activation }) => (activation ? {} : { down: [["DATA", 1], ["RESOLVED"]] }));
+  g.node("x", ["a"], (ctx) => { if (ctx.deps[0].value === 2) ctx.down([["DATA", 1], ["RESOLVED"]]); });
   g.subscribe("s", "x");
   assert.deepEqual(during(g, () => g.set("a", 2)), ["s <- x: [ERROR(\"DATA and RESOLVED in one array\")]"]);
 });
@@ -156,9 +164,9 @@ test("K7: a computed node clears on last release; plain state keeps its value", 
   g.node("d", ["a"], map((v) => v * 2));
   g.subscribe("s", "d");
   g.unsubscribe("s", "d");
-  assert.deepEqual(g.inspect("d"), { active: false, has: false, cache: undefined, ended: null, invocations: 1, dropped: 0 });
+  assert.deepEqual(g.get("d"), { active: false, has: false, value: undefined, ended: null });
   g.set("a", 4);
-  assert.equal(g.inspect("a").cache, 4);
+  assert.equal(g.get("a").value, 4);
   assert.deepEqual(during(g, () => g.subscribe("s", "d")), ["s <- d: [START, DATA(8)]"]);
 });
 
@@ -182,9 +190,9 @@ function sideWriteGraph(dFirst) {
   g.state("a", 1);
   g.state("e", 0);
   g.node("b", ["a"], map((v) => v));
-  g.node("d", ["a"], ({ deps: [x], activation }) => {
-    if (!activation) g.set("e", x.value);
-    return {};
+  g.node("d", ["a"], (ctx) => {
+    const x = ctx.deps[0];
+    if (x.value > 1) g.set("e", x.value); // skips the activation run, where a is 1
   });
   g.node("f", ["b", "e"], derived((b, e) => `${b}/${e}`));
   const order = dFirst ? ["d", "f"] : ["f", "d"];
@@ -207,13 +215,12 @@ test("K8/P7: a function's write to another node waits for the next wave, in eith
 test("K8: a function writing its own upstream is rejected, and the throw becomes its ERROR", () => {
   const g = createGraph();
   g.state("a", 1);
-  g.node("x", ["a"], ({ activation }) => {
-    if (!activation) g.set("a", 0);
-    return {};
+  g.node("x", ["a"], (ctx) => {
+    if (ctx.deps[0].value === 2) g.set("a", 0);
   });
   g.subscribe("s", "x");
   assert.deepEqual(during(g, () => g.set("a", 2)), ["s <- x: [ERROR(\"x wrote its upstream a\")]"]);
-  assert.equal(g.inspect("a").cache, 2);
+  assert.equal(g.get("a").value, 2);
 });
 
 test("K8: a batch opened by a function during a wave commits later as one wave", () => {
@@ -221,15 +228,16 @@ test("K8: a batch opened by a function during a wave commits later as one wave",
   g.state("a", 1);
   g.state("p", 0);
   g.state("q", 0);
-  g.node("w", ["a"], ({ deps: [x], activation }) => {
-    if (!activation) g.batch(() => { g.set("p", x.value); g.set("q", x.value); });
-    return {};
+  g.node("w", ["a"], (ctx) => {
+    const x = ctx.deps[0];
+    if (x.value > 1) g.batch(() => { g.set("p", x.value); g.set("q", x.value); });
   });
-  g.node("pq", ["p", "q"], derived((p, q) => p + q));
+  const pq = counted(derived((p, q) => p + q));
+  g.node("pq", ["p", "q"], pq);
   g.subscribe("s", "pq");
   g.subscribe("sw", "w");
   assert.deepEqual(during(g, () => g.set("a", 2)), ["sw <- w: [DIRTY, RESOLVED]", "s <- pq: [DIRTY, DATA(4)]"]);
-  assert.equal(g.inspect("pq").invocations, 2, "activation plus one wave, not one per write");
+  assert.equal(pq.calls, 2, "activation plus one wave, not one per write");
 });
 
 test("K8/K3: a sink callback's write waits until every sink has the current wave", () => {
@@ -269,7 +277,7 @@ test("P10: a failing sink goes to the host reporter; the other sinks still recei
   assert.deepEqual(g.reports, [{ source: "sink s1", error: "ui broke" }]);
 });
 
-test("K8: a read during a wave returns the retained value and says it has not settled", () => {
+test("K8: a read during a wave returns the retained value; reading never computes", () => {
   const g = createGraph();
   g.state("a", 1);
   g.node("b", ["a"], map((v) => v + 1));
@@ -278,24 +286,22 @@ test("K8: a read during a wave returns the retained value and says it has not se
   g.subscribe("sb", "b", (msgs) => { if (msgs[0][0] === "DIRTY") seen = g.get("c"); });
   g.subscribe("sc", "c");
   g.set("a", 2);
-  assert.deepEqual(seen, { has: true, value: 3, pending: true });
-  assert.deepEqual(g.get("c"), { has: true, value: 4, pending: false });
+  assert.equal(seen.value, 3, "c has not settled yet when b's sink reads it");
+  assert.equal(g.get("c").value, 4);
 });
 
-test("O3: a read inside a batch body returns the retained value and says it is pending", () => {
+test("O3: a read inside a batch body returns the retained value; nothing applies before commit", () => {
   const g = createGraph();
   g.state("a", 1);
-  g.state("z", 0);
   g.node("d", ["a"], map((v) => v * 2));
   g.subscribe("s", "d");
-  let seen, other;
+  let seenA, seenD;
   const out = during(g, () => g.batch(() => {
     g.set("a", 5);
-    seen = g.get("d");
-    other = g.get("z");
+    seenA = g.get("a").value;
+    seenD = g.get("d").value;
   }));
-  assert.deepEqual(seen, { has: true, value: 2, pending: true }, "batch delivers nothing before commit");
-  assert.equal(other.pending, false, "z is outside the staged cone");
+  assert.deepEqual([seenA, seenD], [1, 2], "batch delivers nothing before commit");
   assert.deepEqual(out, ["s <- d: [DIRTY, DATA(10)]"]);
 });
 
@@ -344,13 +350,12 @@ function deferred() {
   return { promise, resolve, reject };
 }
 
-test("P9: later output is a new wave; the starting wave closes now, and results are not paired", () => {
+test("P9: ctx.down after the function returned is a new wave; the starting wave closes now; nothing is paired", () => {
   const g = createGraph();
   g.state("a", 1);
   const sends = [];
-  g.node("q", ["a"], ({ deps: [x], activation, ctx }) => {
-    if (!activation) sends.push(ctx.later());
-    return {};
+  g.node("q", ["a"], (ctx) => {
+    if (ctx.deps[0].value > 1) sends.push(ctx); // keep ctx to call down later
   });
   g.node("d", ["q", "a"], derived((q, a) => `${q}@${a}`));
   g.subscribe("sq", "q");
@@ -358,8 +363,8 @@ test("P9: later output is a new wave; the starting wave closes now, and results 
   const out = during(g, () => {
     g.set("a", 2);
     g.set("a", 3);
-    sends[1]([["DATA", "r3"]]);
-    sends[0]([["DATA", "r2"]]); // the older request finishes last
+    sends[1].down([["DATA", "r3"]]);
+    sends[0].down([["DATA", "r2"]]); // the older request finishes last
   });
   assert.deepEqual(out, [
     // No DIRTY stays open while the work runs: each wave settles with RESOLVED.
@@ -396,32 +401,25 @@ test("P9 sugar: latestAsync publishes only the newest request and aborts the res
   assert.equal(calls[2].signal.aborted, true, "closing the lifetime aborts the request in flight");
 });
 
-test("K7: later output after the lifetime closed is dropped; the signal and late cleanup follow the old life", () => {
+test("K7: output through a closed lifetime's ctx is dropped; the signal and late cleanup follow the old life", () => {
   const g = createGraph();
   g.state("a", 1);
   const ctxs = [];
-  const sends = [];
-  g.node("q", ["a"], ({ ctx }) => {
-    ctxs.push(ctx);
-    sends.push(ctx.later());
-    return {};
-  });
+  g.node("q", ["a"], (ctx) => { ctxs.push(ctx); });
   g.subscribe("s", "q");
   assert.throws(() => ctxs[0].onDeactivation(() => {}), KernelError, "live lifetime, invocation returned");
   g.unsubscribe("s", "q");
   assert.equal(ctxs[0].signal.aborted, true, "first access after close is already aborted");
-  assert.throws(() => ctxs[0].later(), KernelError);
   let late = 0;
   ctxs[0].onDeactivation(() => { late += 1; });
   assert.equal(late, 1, "a registration after close runs once, now");
 
   g.subscribe("s2", "q"); // a new lifetime
   const out = during(g, () => {
-    sends[0]([["DATA", "old"]]);
-    sends[1]([["DATA", "new"]]);
+    ctxs[0].down([["DATA", "old"]]);
+    ctxs[1].down([["DATA", "new"]]);
   });
   assert.deepEqual(out, ["s2 <- q: [DIRTY, DATA(\"new\")]"]);
-  assert.equal(g.inspect("q").dropped, 1);
   assert.equal(ctxs[1].signal.aborted, false);
 });
 
@@ -429,16 +427,16 @@ test("K7: each run replaces the previous run's cleanup; close releases dependenc
   const g = createGraph();
   const log = [];
   g.state("a", 1);
-  g.node("p", ["a"], ({ deps: [x], ctx }) => {
+  g.node("p", ["a"], (ctx) => {
     ctx.onDeactivation(() => log.push("close p"));
-    return { down: x.data.map((v) => ["DATA", v]) };
+    ctx.down(ctx.deps[0].data.map((v) => ["DATA", v]));
   });
-  g.node("q", ["p"], ({ deps: [x], ctx }) => {
-    const v = x.value;
+  g.node("q", ["p"], (ctx) => {
+    const v = ctx.deps[0].value;
     ctx.onDeactivation(() => log.push(`close q${v} first`));
     ctx.onDeactivation(() => { log.push(`close q${v} second`); throw new Error("leak"); });
     ctx.onDeactivation(() => log.push(`close q${v} third`));
-    return { down: [["DATA", v]] };
+    ctx.down([["DATA", v]]);
   });
   g.subscribe("s", "q");
   g.set("a", 2);
@@ -452,12 +450,13 @@ test("K6: INVALIDATE clears values down the cone once, without DIRTY and without
   const g = createGraph();
   const log = [];
   g.state("a", 1);
-  g.node("b", ["a"], ({ deps: [x], ctx }) => {
+  g.node("b", ["a"], (ctx) => {
     ctx.onInvalidate(() => log.push(`b invalidated, has=${g.get("b").has}`));
-    return { down: x.data.map((v) => ["DATA", v * 10]) };
+    ctx.down(ctx.deps[0].data.map((v) => ["DATA", v * 10]));
   });
   g.node("c", ["a"], map((v) => v + 1));
-  g.node("d", ["b", "c"], derived((b, c) => b + c));
+  const d = counted(derived((b, c) => b + c));
+  g.node("d", ["b", "c"], d);
   g.subscribe("sd", "d");
   g.subscribe("sb", "b");
   // d hears it from b and from c; the second arrives after d's value is gone, so it is
@@ -466,7 +465,7 @@ test("K6: INVALIDATE clears values down the cone once, without DIRTY and without
   assert.deepEqual(log, ["b invalidated, has=false"]);
   assert.deepEqual(during(g, () => g.invalidate("a")), [], "repeat is ineffective");
   assert.deepEqual(during(g, () => g.set("a", 2)), ["sb <- b: [DIRTY, DATA(20)]", "sd <- d: [DIRTY, DATA(23)]"]);
-  assert.equal(g.inspect("d").invocations, 2, "activation plus the recompute; invalidation ran nothing");
+  assert.equal(d.calls, 2, "activation plus the recompute; invalidation ran nothing");
 });
 
 test("K6/P4: an announced node whose invalidation is a no-op still settles with RESOLVED", () => {

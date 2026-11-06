@@ -190,4 +190,6 @@ rewire、resubscription 和 dynamic 节点。简报也不要求 batch；batch �
    第三版加上 P9（异步结果作为新 wave）、K6、K7 的生命周期和 cleanup、H6 安静节点，共 32 个 trace 测试。
    结论之一：DIRTY 只存在于一个同步 wave 之内，异步工作不会让 DIRTY 悬着，R-async-paused@2 里
    "deferred-result author 最终必须发 DATA、RESOLVED 或终止"这一义务在这个模型里不需要了。
+   之后做了一轮精简：节点函数改成 TS 基线的 `(ctx) => void`，输出只走 `ctx.down`（去掉了 `later()`、返回值和
+   `activation` 标志），读取不再带 `pending`（留给 K10），README 列出了保留下来但之前没讨论过的东西。
 3. 然后根据结果恢复、修订或取代 B140。
