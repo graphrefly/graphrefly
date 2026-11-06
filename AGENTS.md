@@ -46,6 +46,37 @@ HTML view (progress / structure / gaps). Schema contract: `dashboard/README.md`.
 
 ## Workflow rules (clean-slate)
 
+### Rules, decisions, and work
+
+For contract review, changes, and walkthrough records, read
+`~/.codex/skills/project-governance/references/rules-decisions-work.md`.
+The root owns current protocol rules and the protocol reconciliation workflow. Keep three outputs
+distinct: current rules for users/agents, maintainer decisions explaining and constraining evolution,
+and work tracking delivery/verification. Decisions and work must not carry hidden protocol requirements.
+Reconcile current rules for correctness, concision, completeness, duplication and contradiction;
+preserve history through the revision mechanics in `authority/README.md`.
+
+The maintained GraphReFly workflow skills live in this repository's `.agents/skills/`:
+
+| Workflow | Entrypoint |
+|---|---|
+| Current contract and decision history | [decision-guard](.agents/skills/decision-guard/SKILL.md) |
+| Protocol revisions | [spec-amend](.agents/skills/spec-amend/SKILL.md) |
+| Behavioral evidence | [conformance](.agents/skills/conformance/SKILL.md) |
+| Generated authority/work views | [dashboard](.agents/skills/dashboard/SKILL.md) |
+| Root design, implementation and QA | [design-review](.agents/skills/design-review/SKILL.md), [dev-dispatch](.agents/skills/dev-dispatch/SKILL.md), [qa](.agents/skills/qa/SKILL.md) |
+| Research and protocol teaching | [research](.agents/skills/research/SKILL.md), [graph-animation](.agents/skills/graph-animation/SKILL.md) |
+| Shared build, review and walkthrough adapters | [bmad-build](.agents/skills/bmad-build/SKILL.md), [bmad-qa](.agents/skills/bmad-qa/SKILL.md), [bmad-checkpoint-preview](.agents/skills/bmad-checkpoint-preview/SKILL.md) |
+
+Package entrypoints for shared workflows point here. Package-specific implementation and QA skills
+retain their local gates; they do not define protocol semantics. `CLAUDE.md` forwards to this index.
+Claude's `.claude/skills/` entries forward to the same maintained `.agents/skills/` bodies.
+Protocol walkthroughs start here, using runtime repositories as implementation evidence. Keep rule
+findings, rationale/decision questions, and work/evidence separately in the existing indexed review
+or session surface. An interactive walkthrough follows the user's selected topic and pacing.
+
+### Authority and execution boundaries
+
 When changing authority records or resolving an execution, spend, retry, or stalled-work
 authorization boundary, load and follow the personal `$project-governance` skill at
 `~/.codex/skills/project-governance/SKILL.md`. It is the cross-project classification and
