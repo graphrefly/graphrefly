@@ -164,6 +164,7 @@ rewire、resubscription 和 dynamic 节点。简报也不要求 batch；batch �
 | O10 | Saying "not required for the first kernel" conflicts with L0.5 and F-NO-WEDGE-CUT. Revisit them? | Yes, as a separate decision |
 | O11 | May a node send DIRTY itself, alone, and settle it later? Found in the C-28/C-29 replay. **Decided by the user 2026-11-06:** no. DIRTY is sent by the kernel only, as the prefix of a value array; node output containing DIRTY is rejected. The original reason for standalone DIRTY (announce once, compute or wait, then send DATA without repeated DIRTY) is covered by batch, and async results already get their DIRTY from the DATA they carry. The interval between DIRTY and its settlement should be as short as possible. Kernel developers may change this later. Consequences when the draft is revisited: C-29 is retired; the C-28 per-prefix clauses lose their standalone case; R-dirty-before-data@2 drops "including after an earlier standalone DIRTY"; R-resolved-undirty@2 drops the deferred-result author's settlement duty; R-output-ownership@1 keeps only its non-notification parts; R-undirty-settle-timing@2 leaves the kernel and is rechecked for the pause module, where resumeAll can hold a balancing RESOLVED. | Resolved: kernel-only DIRTY |
 | O12 | Reject a public batch opened from an observer, initialization or lifecycle callback before its body runs (C-28)? Found in the replay. **Decided by the user 2026-11-06:** no special clause. Such a batch stages its writes and commits later as one wave, like any other request made during a wave (K8); with no DIRTY before commit there is nothing for it to disturb. | Resolved: allowed, no extra rule |
+| O13 | Does the kernel reorder one array by tier (R-tier@1/@2 "ordinary live output is stably normalized by tier"; TS sorts every `_down`)? Found while making resumeAll keep array boundaries: `[1, INV, 2, 3]` became `[1, 2, 3, INV]` and the author's final value 3 became absent. **Decided by the user 2026-11-06:** no tier sort. Messages keep their written order; a terminal must be last; DATA and RESOLVED still cannot share an array; an array is split at its last INVALIDATE, what came before it is dropped, and the INVALIDATE goes out as its own array: `[1, INV, 2, 3]` is published as `[INV]` then `[2, 3]`. So INVALIDATE never shares an array with a value, K6 ("runs no function") has no exception, and the waveData absence marker is not needed. Same day, the reference kernel was brought back to R-wave-boundary@2 and TS: each `ctx.down` call is its own array, and `ctx.deps[i].waves` keeps the per-array boundaries like TS `waveData` (the kernel had merged a run's calls and flattened the view without saying so). | Resolved: in written order, split at INVALIDATE |
 
 ## 分类时发现的不一致
 
@@ -197,4 +198,18 @@ rewire、resubscription 和 dynamic 节点。简报也不要求 batch；batch �
    第一次回放 C-28 到 C-39 见 [REPLAY.md](../../reference/kernel/REPLAY.md)：内核负责的条款没有失败；
    发现并修了 batch 的两个 bug；由此产生的两个问题由用户定为 O11（DIRTY 只由内核发出）和 O12（回调里开 batch
    照常允许，不加特殊条款）。
+   第一个模块 pause 在 [reference/modules/](../../reference/modules/README.md)：声明的控制对就是一条普通依赖边
+   （`${id}.pauseLocks` state 节点），不改内核，不用类别 1 消息，也不用 H1、H3。O8 的问题由此得到回答。
+   resumeAll 遇到 INVALIDATE：内核不让函数看到它，它当场传给下游；用户 2026-11-06 定为每个 INVALIDATE 都丢弃
+   它之前扣住的值，下游不会收到比已收到的 INVALIDATE 更旧的值。为了察觉每个 INVALIDATE，resumeAll 由两个节点
+   组成：`${id}.pauseLog`（值是自上次 INVALIDATE 以来扣住的列表）和 `${id}`（恢复时放出）。
+   同日用 pause 模块回放了 C-30、C-31、C-36 里属于 pause 的条款（[pause.replay.test.mjs](../../reference/modules/pause.replay.test.mjs)，
+   9 个测试）：全部能复现。C-36 的多输入节点需要几个 pausable 共用一个锁 state（新增 `control` 选项）。
+   之后内核改成每次 `ctx.down` 各成一个数组、`deps[i].waves` 保留数组分界（R-wave-boundary@2、TS），并按 O13
+   不再按 tier 重排；resumeAll 因此保留扣住的数组分界（`[1]`、`[INV]`、`[2, 3]`、`[4, 5]` 恢复后是 `[2, 3]`、
+   `[4, 5]`）。剩下的差异：恢复时所有数组在同一个 wave 里发出，中途的 re-pause 要等这个 wave 结束才生效。
+   查 TS 后发现 `latest` 模式是参考实现自己发明的（TS 默认 pause 是被暂停节点的函数暂停期间不运行、恢复时运行一次，
+   看到 waveData 里缓冲的全部数组）。用户 2026-11-06 决定去掉 mode：只有一种 pausable，TS 的两种模式变成放置位置
+   （放在节点前面＝默认 pause，放在节点后面＝resumeAll）。每次 pause/resume 让下游多收一次 [DIRTY, RESOLVED]，用户接受。TLA+ 的 TerminalClearsPauseState 冲突在模块模型里按
+   R-pause-lockset 解决：终止后锁还在控制 state 里。
 3. 然后根据结果恢复、修订或取代 B140。

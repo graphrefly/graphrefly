@@ -79,11 +79,11 @@ test("P8: all-RESOLVED settlement still invokes the raw function; silence become
   g.node("f2", ["a"], filter((v) => v % 2 === 0));
   const seen = [];
   g.node("d", ["f1", "f2"], (ctx) => {
-    seen.push(ctx.deps.map((x) => (x.resolved ? "R" : x.data.join())));
+    seen.push(ctx.deps.map((x) => JSON.stringify(x.waves)));
   });
   g.subscribe("s", "d");
   assert.deepEqual(during(g, () => g.set("a", 3)), ["s <- d: [DIRTY, RESOLVED]"]);
-  assert.deepEqual(seen, [["2", "2"], ["R", "R"]], "activation sees the snapshots, then the wave");
+  assert.deepEqual(seen, [["[[2]]", "[[2]]"], ["[[]]", "[[]]"]], "activation sees the snapshots, then one RESOLVED array per dependency");
 });
 
 test("K2: a host batch is one wave; every occurrence is kept", () => {
@@ -139,7 +139,7 @@ test("K5/P10: a dependency ERROR propagates; a throw becomes this node's ERROR",
   g.state("a", 1);
   g.node("d", ["a"], map((v) => v));
   g.node("t", ["a"], (ctx) => {
-    if (ctx.deps[0].data.includes(13)) throw new Error("bad");
+    if (ctx.deps[0].waves.flat().includes(13)) throw new Error("bad");
   });
   g.subscribe("sd", "d");
   g.subscribe("st", "t");
@@ -433,8 +433,10 @@ test("K7: output through a closed lifetime's ctx is dropped; the signal and late
   const ctxs = [];
   g.node("q", ["a"], (ctx) => { ctxs.push(ctx); });
   g.subscribe("s", "q");
-  assert.throws(() => ctxs[0].onDeactivation(() => {}), KernelError, "live lifetime, invocation returned");
+  let joined = 0;
+  ctxs[0].onDeactivation(() => { joined += 1; }); // live lifetime, invocation returned: accepted, as in TS
   g.unsubscribe("s", "q");
+  assert.equal(joined, 1, "it joined the current run's cleanups and ran at close");
   assert.equal(ctxs[0].signal.aborted, true, "first access after close is already aborted");
   let late = 0;
   ctxs[0].onDeactivation(() => { late += 1; });
@@ -456,7 +458,7 @@ test("K7: each run replaces the previous run's cleanup; close releases dependenc
   g.state("a", 1);
   g.node("p", ["a"], (ctx) => {
     ctx.onDeactivation(() => log.push("close p"));
-    ctx.down(ctx.deps[0].data.map((v) => ["DATA", v]));
+    ctx.down(ctx.deps[0].waves.flat().map((v) => ["DATA", v]));
   });
   g.node("q", ["p"], (ctx) => {
     const v = ctx.deps[0].value;
@@ -479,7 +481,7 @@ test("K6: INVALIDATE clears values down the cone once, without DIRTY and without
   g.state("a", 1);
   g.node("b", ["a"], (ctx) => {
     ctx.onInvalidate(() => log.push(`b invalidated, has=${g.get("b").has}`));
-    ctx.down(ctx.deps[0].data.map((v) => ["DATA", v * 10]));
+    ctx.down(ctx.deps[0].waves.flat().map((v) => ["DATA", v * 10]));
   });
   g.node("c", ["a"], map((v) => v + 1));
   const d = counted(derived((b, c) => b + c));
@@ -530,4 +532,134 @@ test("H6: a quiet node's invalidation and inherited ERROR are later waves too", 
   assert.deepEqual(during(g, () => g.invalidate("a")), ["sf <- f: [INVALIDATE]", "sq <- q: [INVALIDATE]"]);
   g.set("a", 2);
   assert.deepEqual(during(g, () => g.error("a", "down")), ["sf <- f: [ERROR(\"down\")]", "sq <- q: [ERROR(\"down\")]"]);
+});
+
+test("R-wave-boundary: each ctx.down call is its own array; a dependent sees them as waves and runs once", () => {
+  const g = createGraph();
+  g.state("a", 0);
+  g.node("x", ["a"], (ctx) => {
+    for (const v of ctx.deps[0].waves.flat()) { ctx.down([["DATA", v]]); ctx.down([["DATA", v + 1], ["DATA", v + 2]]); }
+  });
+  const seen = [];
+  g.node("y", ["x"], (ctx) => { seen.push(ctx.deps[0].waves); });
+  g.subscribe("sx", "x");
+  g.subscribe("sy", "y");
+  seen.length = 0;
+  assert.deepEqual(during(g, () => g.set("a", 10)), [
+    "sx <- x: [DIRTY, DATA(10)]",
+    "sx <- x: [DIRTY, DATA(11), DATA(12)]",
+    "sy <- y: [DIRTY, RESOLVED]",
+  ]);
+  assert.deepEqual(seen, [[[10], [11, 12]]], "one invocation, both arrays, boundaries kept");
+});
+
+test("O13: messages keep their written order; an array is split at its INVALIDATE and what came before is dropped", () => {
+  const g = createGraph();
+  const src = {};
+  g.node("src", [], (ctx) => { src.ctx = ctx; ctx.down([["DATA", 0]]); });
+  const seen = [];
+  g.node("y", ["src"], (ctx) => { seen.push(ctx.deps[0].waves); ctx.down([["DATA", ctx.deps[0].value]]); });
+  g.subscribe("s", "src");
+  g.subscribe("sy", "y");
+  seen.length = 0;
+  assert.deepEqual(during(g, () => src.ctx.down([["DATA", 1], ["INVALIDATE"], ["DATA", 2], ["DATA", 3]])), [
+    "s <- src: [INVALIDATE]",
+    "s <- src: [DIRTY, DATA(2), DATA(3)]",
+    "sy <- y: [INVALIDATE]",
+    "sy <- y: [DIRTY, DATA(3)]",
+  ]);
+  assert.deepEqual(seen, [[[2, 3]]], "the function sees only what came after the INVALIDATE");
+  assert.equal(g.get("src").value, 3);
+});
+
+test("O13: a terminal must be last in its array; DATA and RESOLVED still cannot share one", () => {
+  const g = createGraph();
+  const src = {};
+  g.node("src", [], (ctx) => { src.ctx = ctx; });
+  g.subscribe("s", "src");
+  assert.throws(() => src.ctx.down([["COMPLETE"], ["DATA", 1]]), KernelError);
+  assert.throws(() => src.ctx.down([["DATA", 1], ["RESOLVED"]]), KernelError);
+  assert.deepEqual(during(g, () => src.ctx.down([["DATA", 1], ["INVALIDATE"], ["RESOLVED"]])), ["s <- src: [DIRTY, RESOLVED]"],
+    "the INVALIDATE finds no value and is dropped; the RESOLVED after it is its own array");
+});
+
+test("O13: in one wave an input that is invalidated and then gets a value runs the previous run's invalidate hooks, then the function", () => {
+  const g = createGraph();
+  const src = {};
+  g.node("src", [], (ctx) => { src.ctx = ctx; ctx.down([["DATA", 1]]); });
+  const log = [];
+  g.node("y", ["src"], (ctx) => {
+    const v = ctx.deps[0].value;
+    log.push(`run ${v}`);
+    ctx.onInvalidate(() => log.push(`invalidated, registered by run ${v}`));
+    ctx.down([["DATA", v]]);
+  });
+  g.subscribe("sy", "y");
+  log.length = 0;
+  src.ctx.down([["INVALIDATE"], ["DATA", 2]]);
+  assert.deepEqual(log, ["invalidated, registered by run 1", "run 2"]);
+});
+
+test("O13: a batch is one accumulated array per node, split at its INVALIDATE at commit", () => {
+  const g = createGraph();
+  g.state("a", 0);
+  g.subscribe("s", "a");
+  assert.deepEqual(during(g, () => g.batch(() => { g.set("a", 1); g.invalidate("a"); g.set("a", 2); })), [
+    "s <- a: [INVALIDATE]",
+    "s <- a: [DIRTY, DATA(2)]",
+  ]);
+});
+
+test("O13: across separate arrays in one wave, a dependent drops what came before an INVALIDATE", () => {
+  const g = createGraph();
+  g.state("a", 0);
+  g.node("x", ["a"], (ctx) => {
+    const v = ctx.deps[0].value;
+    ctx.down([["DATA", v]]);
+    if (v === 1) ctx.down([["INVALIDATE"]]);
+  });
+  const seen = [];
+  g.node("y", ["x"], (ctx) => { seen.push(ctx.deps[0].waves); ctx.down([["DATA", "y"]]); });
+  g.subscribe("sx", "x");
+  g.subscribe("sy", "y");
+  seen.length = 0;
+  assert.deepEqual(during(g, () => g.set("a", 1)), [
+    "sx <- x: [DIRTY, DATA(1)]",
+    "sx <- x: [INVALIDATE]",
+    "sy <- y: [INVALIDATE]",
+  ]);
+  assert.deepEqual(seen, [], "DATA(1) was before the INVALIDATE, so the function does not run for it");
+});
+
+test("K6/O13: one input invalidated and another with DATA in one wave: the node invalidates, then its function runs", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  g.state("b", 1);
+  const seen = [];
+  g.node("d", ["a", "b"], (ctx) => {
+    seen.push(ctx.deps.map((x) => [x.has, x.waves]));
+    ctx.down([["DATA", "d"]]);
+  });
+  g.subscribe("s", "d");
+  seen.length = 0;
+  assert.deepEqual(during(g, () => g.batch(() => { g.invalidate("a"); g.set("b", 2); })), [
+    "s <- d: [INVALIDATE]",
+    's <- d: [DIRTY, DATA("d")]',
+  ]);
+  assert.deepEqual(seen, [[[false, []], [true, [[2]]]]], "a is absent; b delivered one array");
+});
+
+test("K6: onInvalidate hooks stay registered; a later effective INVALIDATE without a rerun runs them again (as TS)", () => {
+  const g = createGraph();
+  let x;
+  let runs = 0;
+  let hooks = 0;
+  g.node("x", [], (ctx) => { x = ctx; runs++; ctx.onInvalidate(() => { hooks++; }); });
+  g.subscribe("s", "x");
+  x.down([["DATA", 1]]);
+  x.down([["INVALIDATE"]]);
+  x.down([["DATA", 2]]);
+  x.down([["INVALIDATE"]]);
+  x.down([["INVALIDATE"]]); // ineffective: no value
+  assert.deepEqual([runs, hooks], [1, 2]);
 });

@@ -28,32 +28,62 @@ The graph: `createGraph({ report })` takes an optional host reporter. Then `stat
 
 A node function has the TS baseline's shape, `(ctx) => void` (R-fn-contract, D8):
 
-| ctx member | Meaning | TS baseline |
+| ctx member | Meaning |
+|---|---|
+| `deps[i].waves` | The value arrays dependency `i` delivered to this invocation, each its DATA payloads in order; a RESOLVED array is `[]`; no arrays is `[]` |
+| `deps[i].terminal` | Its COMPLETE/ERROR this invocation, or `null` |
+| `deps[i].has`, `deps[i].value` | The latest value received from it |
+| `state.get()`/`state.set(v)` | Private state of this lifetime |
+| `down(msgs)` | During the run: one array of this invocation's output; each call is its own array (R-wave-boundary). After the run returned: a new wave from this node (P9). After the lifetime closed: dropped. DIRTY is not accepted: only the kernel sends it (O11) |
+| `signal` | Aborted when the lifetime closes |
+| `onDeactivation(f)`, `onInvalidate(f)` | Cleanup for this run (R-cleanup-hooks) |
+
+An array keeps the order its author wrote (DS-17 O13): a terminal must be last, DATA and RESOLVED
+cannot share one, and an array is split at its last INVALIDATE, dropping what came before it:
+`[1, INV, 2, 3]` is published as `[INV]` then `[2, 3]`.
+
+### Differences from the TS baseline (`dafc5ae`)
+
+Audited on 2026-11-06 against `packages/ts/src/node/node-context-runtime.ts` and its callers, after
+two differences turned out to be unstated (a run's `ctx.down` calls were merged into one array, and
+`deps[i].data` flattened the array boundaries; both now follow TS and R-wave-boundary@2). Two more
+found in the audit were the interpreter's own and now follow TS on the user's decision: a late
+registration while the lifetime is open is accepted, and `onInvalidate` hooks are not consumed.
+
+| Here | TS | Source of the difference |
 |---|---|---|
-| `deps[i]` | This wave's `data` occurrences, `resolved`, `terminal`, and the latest received `has`/`value` | `waveData`, `terminal`, and the dependency cache sugar reads |
-| `state.get()`/`state.set(v)` | Private state of this lifetime | `ctx.state`, without `persist` |
-| `down(msgs)` | During the run: this invocation's output. After the run returned: a new wave from this node (P9). After the lifetime closed: dropped. DIRTY is not accepted: only the kernel sends it (O11) | `ctx.down` (which still accepts DIRTY) |
-| `signal` | Aborted when the lifetime closes | lifecycle signal (R-ctx-lifetime) |
-| `onDeactivation(f)`, `onInvalidate(f)` | Cleanup for this run | same (R-cleanup-hooks) |
+| `deps[i].waves` | `ctx.waveData[i]`, which also carries an INVALIDATE absence marker inside an array | O13: INVALIDATE never shares an array with a value, so no marker is needed |
+| `deps[i].terminal` is the message or `null` | `ctx.terminal[i]` is `false`, `true` (COMPLETE) or the ERROR payload | Interpreter shape, same information |
+| `deps[i].has`/`value` are public | The dependency cache sugar reads sits behind a symbol (`CTX_DEP_CACHE`) | Interpreter shape |
+| Arrays keep written order | Every `_down` array is sorted by tier | O13 |
+| A dependent runs once on all arrays a dependency sent in the wave; they reach each subscriber after the function returned, all arrays to one subscriber, then the next | Each `_down` call is delivered to all subscribers at once, while the function runs | Delivering after the run comes from P9; one delivery per subscriber keeps a dependent from settling between two arrays of the same dependency |
+| `signal` | No signal on ctx | R-fn-contract@2 and R-ctx-lifetime (draft) |
+| A registration after close runs once at once | Ignored | R-cleanup-hooks@2 (draft) |
+| No `up`, `upNext`, `rewireNext`, `pull`, `environment`, `track`, `persist` | Present | Not covered yet (K9, modules) |
 
 The kernel does not know or care whether a late `ctx.down` came from async work.
 
 ## Covered so far
 
-- K1 tier normalization; K2 waves, DIRTY prepass, leading DIRTY, kernel RESOLVED, batch as one wave
-  with every occurrence kept, DATA/RESOLVED exclusivity.
+- K1 the closed message set, in written order with the O13 split at INVALIDATE; K2 waves, DIRTY
+  prepass, one leading DIRTY per value array, kernel RESOLVED, separate arrays per `ctx.down` call,
+  batch as one accumulated array per node with every occurrence kept, DATA/RESOLVED exclusivity.
 - K3 START snapshot with the retained value; idempotent subscription. A new node's activation run
   sees its dependencies' snapshots as that run's input.
 - K4 invocation view and private state; a throw becomes ERROR (P10).
 - K5 terminal policy as auto or manual per kind (DS-17 O6); ended output cannot be acquired (P5).
 - K6: `invalidate` on a state, and an invalidated input, clear the retained value down the cone and
-  run `onInvalidate` hooks after the value is gone. No DIRTY, no function run. A repeat, or a node
-  with no value, is a no-op; an announced node then settles with RESOLVED.
+  run `onInvalidate` hooks after the value is gone. No DIRTY, no function run for the INVALIDATE. A
+  repeat, or a node with no value, is a no-op; an announced node then settles with RESOLVED. What an
+  input sent before its INVALIDATE in the wave is dropped; what it or another input sent after is
+  ordinary input, and the function runs for it after the invalidation (and its hooks) took effect.
 - K7 lifetimes: each activation opens one. Closing it (last release or terminal) aborts `signal`,
   releases dependencies in declaration order, then runs this lifetime's deactivation cleanups in
   registration order; a failing cleanup goes to the host reporter and the rest still run. Each run's
-  registrations replace the previous run's without calling them. A cleanup registered after close
-  runs once at once. Computed nodes clear on last release; plain state keeps its value.
+  registrations replace the previous run's without calling them. A registration after the run
+  returned joins the current run's registrations, as in TS; one after close runs once at once
+  (R-cleanup-hooks@2). `onInvalidate` hooks stay registered after they run, as in TS, so a later
+  effective INVALIDATE without a rerun runs them again. Computed nodes clear on last release; plain state keeps its value.
 - K8: a request that arrives while the kernel is busy waits and runs afterwards in arrival order: a
   late `ctx.down`, and `set`, `batch`, `subscribe`, `unsubscribe` reached through a captured graph
   reference. A function writing its own upstream is rejected, and the throw becomes its ERROR. A
@@ -69,6 +99,13 @@ The kernel does not know or care whether a late `ctx.down` came from async work.
 - H6: `{ quiet: true }` records its own dirty inputs but does not pass DIRTY on, so its dependents do
   not wait for it. Everything it outputs, including an invalidation or an inherited ERROR, is a later
   wave from it. Silence needs no RESOLVED.
+
+Mutations checked on 2026-11-06 for O13 and array boundaries, each failing at least one test: no
+split at INVALIDATE; tier sort restored; a run's `ctx.down` calls merged; `waves` flattened; a
+dependency's arrays delivered to a dependent one by one; the invalidation applied after the run;
+a terminal allowed anywhere; a dependent keeping what came before an INVALIDATE; resumeAll merging
+its held arrays. After aligning hooks with TS: invalidate hooks consumed after running; a late
+registration rejected; a late registration ignored.
 
 Mutations checked on 2026-11-06 after the simplification pass, each failing at least one test: no
 batch-wide DIRTY prepass; no kernel RESOLVED; requests run immediately; a quiet node forwarding DIRTY,
@@ -97,10 +134,9 @@ Kept although not discussed before, with the reason:
 
 | Kept | Why |
 |---|---|
-| `ctx.deps[i]` as one record instead of TS's `waveData`/`terminal`/dependency cache | Same information; the shape is the interpreter's, not a proposal |
-| Refusing `onDeactivation`/`onInvalidate` after the run returned while the lifetime is still open | The draft only says what happens after close; without a rule, a late registration in a live lifetime would attach to a run that may already be replaced |
-| An invalidated input wins over DATA from another input in the same wave; the function does not run | Needed to decide something; the draft does not say |
-| A DATA+RESOLVED output array becomes the producer's ERROR | Same; DS-17 does not settle the routing |
+| `ctx.deps[i]` as one record instead of TS's `waveData`/`terminal`/dependency cache | Same information, including the per-array boundaries since 2026-11-06; the shape is the interpreter's, not a proposal |
+| An invalidated input and DATA from another input in one wave: the node invalidates, then its function runs | Changed 2026-11-06 with O13; it was "the function does not run". This matches TS, which invalidates and then runs |
+| An invalid output array (DATA with RESOLVED, a terminal not last) throws from `ctx.down`; uncaught, the throw is the producer's ERROR | DS-17 does not settle the routing. Before 2026-11-06 a DATA+RESOLVED array was turned into ERROR without throwing |
 | The host reporter as an optional `report` callback | The draft's host reporter (R-operation-failure). It was a growing array until 2026-11-06, which kept the failure history the rule says the kernel must not keep by default |
 | Ignoring a reporter that throws | Its failure has nowhere else to go, and throwing would break the wave it reports on |
 | Sink ids and `trace` | Test instrumentation, not kernel behavior |
@@ -112,8 +148,8 @@ Each of these is left out rather than approximated:
 - K9 control routing and declared control pairs; K10 node interface and status; START snapshots of an
   unsettled node.
 - Upward INVALIDATE (R-up-at-source); INVALIDATE before a node's first invocation (R-first-run-gate).
-- Modules: pause, demand (the PULL holder built on H6, with its START-only subscription), replay,
-  checkpoint, rewire, restart owners.
+- Modules: demand (the PULL holder built on H6, with its START-only subscription), replay,
+  checkpoint, rewire, restart owners. Pause is in [../modules/](../modules/README.md).
 
 ## Observations so far
 

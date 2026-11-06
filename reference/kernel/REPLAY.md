@@ -20,13 +20,13 @@ Labels:
 |---|---|---|---|---|
 | C-28 intact arrays, early notification | 6 clauses | early-DIRTY observer requests, rollback (O3) | standalone DIRTY prefixes (O11); callback batch rejection (O12) | — |
 | C-29 rollback and notification ownership | — | all (O3 and O11): no notification outlives its wave | — | — |
-| C-30 pause gates and resumeAll | — | — | — | pause module |
-| C-31 intrinsic state and locks | 3 clauses | — | — | lock survival, resumeAll hold: pause module |
+| C-30 pause gates and resumeAll | — | — | re-pause between held arrays | 4 clauses: pause module |
+| C-31 intrinsic state and locks | 3 clauses | — | — | 2 clauses: pause module; value evidence: revision observer |
 | C-32 PULL demand | — | — | — | demand module |
 | C-33 lifecycle and cleanup | 5 clauses | close during an unwinding invocation (K8) | — | public `node.down`, native listener failure |
 | C-34 terminal fanout and acquisition | 3 clauses | — | — | next execution: restart owner (O7); acquisition failure |
 | C-35 partial wiring | — | — | — | partial first-run gate, rewire, acquisition failure |
-| C-36 input frames and terminal admission | 3 clauses | — | — | paused supersession and resume: pause module |
+| C-36 input frames and terminal admission | 3 clauses | — | resumeAll INVALIDATE hold (decided) | 3 clauses: pause module |
 | C-37 upstream routing | — | — | — | K9 routing, rewire |
 | C-38 restore and replay | — | — | — | checkpoint, replay modules |
 | C-39 revision evidence | — | — | — | revision observer (O9) |
@@ -34,6 +34,9 @@ Labels:
 No clause that the kernel covers failed. What the replay found instead were two kernel bugs in
 batch, now fixed, and two places where the kernel and the draft part ways; the user settled both
 as DS-17 O11 and O12 on 2026-11-06.
+
+The pause clauses were replayed on 2026-11-06 against the [pause module](../modules/README.md), in
+[pause.replay.test.mjs](../modules/pause.replay.test.mjs) (9 tests); see "Pause module" below.
 
 ## Found and fixed
 
@@ -97,8 +100,15 @@ to keep it allowed rather than add a special clause.
 
 ### C-30
 
-Every clause (default pause gating first and new calls, resumeAll holding publication, FIFO drain,
-queued re-pause) is the pause module. "Earlier started deferred work may emit" matches P9 already.
+Pause module (replay tests in `../modules/pause.replay.test.mjs`):
+
+| Clause | Label | Where |
+|---|---|---|
+| Default pause starts no new fn, including activation | Module, with a difference: a self-stopping source's function runs to read the lock and does no work; a raw function behind a pausable runs on RESOLVED only | "a source paused before its first activation starts no work..." |
+| Earlier started deferred work may emit | Module (P9: the lifetime stays open across pause) | "earlier started deferred work may still publish while paused" |
+| resumeAll allows computation and holds publication | Module | "resumeAll lets upstream compute while paused..." |
+| Resume drains held arrays FIFO; a queued re-pause stops before the next array | Changed: the held arrays go out in order, each as it arrived, but all in the resume wave; a re-pause is a request and applies after that wave (K8) | "resumeAll releases the held arrays in one wave; a re-pause..." |
+| No rerun of consumed input or invalidation hooks | Module | "resumeAll lets upstream compute..." (no rerun), "resume does not rerun invalidation hooks" |
 
 ### C-31
 
@@ -107,7 +117,8 @@ queued re-pause) is the pause module. "Earlier started deferred work may emit" m
 | Nonterminal close keeps the intrinsic value and adopts it into the retained cache | Kernel | replay: "ordinary last-off keeps the state's intrinsic value..." |
 | Ordinary last-off preserves an admitted manual write | Kernel | same test |
 | Terminal keeps its sealed cache; a queued write after it is dropped before mutation | Kernel | replay: "a terminal seals the state..." |
-| External lock survives close; resumeAll discards held DATA in a terminal array | Module (pause) |  |
+| External lock survives close; new admission respects it | Module (pause) | pause replay: "under resumeAll the lock survives close..." |
+| resumeAll discards held DATA in a terminal-containing array; resume never leaks it | Module (pause) | pause replay: "under resumeAll, DATA in the same array as a terminal..." |
 | "Advances represented value evidence without live DATA" | Module (revision observer, O9) |  |
 
 ### C-32
@@ -146,8 +157,11 @@ clauses about early partial work and abandoned wiring are Not modeled; rewire is
 |---|---|---|
 | One invocation sees admitted DATA and terminal metadata (complete=input) | Kernel | replay: "one invocation sees the admitted DATA and the terminal..." |
 | Automatic terminal adds no balancing RESOLVED | Kernel | replay: "under complete=auto the terminal ends the node..." |
-| Full-array gate sees absence after a trailing INVALIDATE | Kernel | replay: "a trailing INVALIDATE in the same array..." |
-| Paused supersession, transfer at actual invocation, INVALIDATE under default pause | Module (pause) |  |
+| Full-array gate sees absence after a trailing INVALIDATE | Kernel; since O13 the DATA before the INVALIDATE is dropped, so the published array is `[INVALIDATE]` | replay: "a trailing INVALIDATE in the same array..." |
+| Paused A DATA superseded; INV, A40 and B input survive in order; one invocation on resume | Module (pause, with one lock shared by both inputs) | pause replay: "D paused at both inputs..." |
+| Throw after resume does not reinsert consumed input | Module | pause replay: "a throw in the invocation after resume..." |
+| Effective INVALIDATE proceeds under default pause without waiting | Module | pause replay: "D paused at both inputs..." |
+| resumeAll holds INVALIDATE publication | Changed (decided 2026-11-06): INVALIDATE goes out at once and discards what was held before it | `../modules/README.md` finding 3 |
 
 ### C-37, C-38, C-39
 

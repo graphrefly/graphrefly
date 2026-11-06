@@ -6,8 +6,12 @@
 //
 // The interpreter is deterministic and has no dependencies. A node function has the
 // TS baseline's shape, (ctx) => void (R-fn-contract): it reads ctx.deps and ctx.state
-// and emits only through ctx.down. Every delivery to a sink is appended to
+// and emits only through ctx.down. Every array delivered to a sink is appended to
 // graph.trace, which is the observable behavior under test.
+//
+// Arrays keep their boundaries (R-wave-boundary): each ctx.down call is its own array,
+// and a node may publish several arrays in one wave. Subscribers receive each array;
+// a dependent function sees them per dependency as ctx.deps[i].waves, like TS waveData.
 
 export const TIER = Object.freeze({
   START: 0,
@@ -26,23 +30,29 @@ const isTerminal = (m) => m[0] === "COMPLETE" || m[0] === "ERROR";
 // K2/K6: each of these releases a connection's dirty membership.
 const settles = (m) => isValue(m) || isTerminal(m) || m[0] === "INVALIDATE";
 const messageOf = (e) => (e instanceof Error ? e.message : e);
-const freshInput = () => ({ has: false, value: undefined, ended: null, wave: [] });
+const freshInput = () => ({ has: false, value: undefined, ended: null, frames: [] });
+const hasValue = (frames) => frames.some((f) => f.some(isValue));
 
-// P2/K1: stable sort by tier; order within a tier and every DATA occurrence are kept.
-function normalize(msgs) {
+// One submitted array, checked and split into the arrays that are published. Messages
+// keep the order the author wrote; nothing is sorted by tier (DS-17 O13). A terminal
+// must come last. An INVALIDATE removes everything before it in the same array, and
+// goes out as an array of its own, so INVALIDATE never shares an array with a value:
+// [1, INV, 2, 3] is published as [INV] then [2, 3]. Rejections throw, before anything
+// is accepted (K2: DATA and RESOLVED cannot share one array).
+function prepare(msgs) {
   for (const m of msgs) {
     if (!(m[0] in TIER)) throw new KernelError(`unknown message type ${m[0]}`);
   }
-  return msgs.map((m, i) => [m, i]).sort((a, b) => TIER[a[0][0]] - TIER[b[0][0]] || a[1] - b[1]).map(([m]) => m);
-}
-
-// K2: DATA and RESOLVED cannot share one array. Treated here as a computation failure
-// of the producing node; DS-17 does not yet fix this routing.
-function checkOutput(down) {
-  if (down.some((m) => m[0] === "DATA") && down.some((m) => m[0] === "RESOLVED")) {
-    return [["ERROR", "DATA and RESOLVED in one array"]];
+  const end = msgs.findIndex(isTerminal);
+  if (end >= 0 && end < msgs.length - 1) throw new KernelError("a terminal must be the last message of its array");
+  const cut = msgs.map((m) => m[0]).lastIndexOf("INVALIDATE");
+  const rest = msgs.slice(cut + 1);
+  if (rest.some((m) => m[0] === "DATA") && rest.some((m) => m[0] === "RESOLVED")) {
+    throw new KernelError("DATA and RESOLVED in one array");
   }
-  return down;
+  const frames = cut >= 0 ? [[["INVALIDATE"]]] : [];
+  if (rest.length) frames.push(rest);
+  return frames;
 }
 
 export function format(entry) {
@@ -90,7 +100,7 @@ export function createGraph({ report: hostReport } = {}) {
       privateState: undefined,
       announced: false,    // P3: this node announced DIRTY in the current wave
       dirtyDeps: new Set(),
-      // Per dependency: the latest value and terminal received, and this wave's messages.
+      // Per dependency: the latest value and terminal received, and this wave's arrays.
       inputs: deps.map(freshInput),
     };
     nodes.set(id, n);
@@ -98,15 +108,14 @@ export function createGraph({ report: hostReport } = {}) {
   }
 
   // O3: inside a batch body every input is staged, whether it comes from the host or
-  // from a node's late ctx.down, and the whole batch commits as one wave. A submission
-  // that would put DATA and RESOLVED into one node's accumulated array is rejected and
-  // leaves the earlier staging as it was (K2).
+  // from a node's late ctx.down, and the whole batch commits as one wave, one
+  // accumulated array per node (R-wave-boundary). A submission that would make that
+  // array invalid (DATA and RESOLVED together, K2) is rejected and leaves the earlier
+  // staging as it was.
   function stage(n, life, msgs) {
     const entry = staging.get(n.id) ?? { msgs: [], life };
     const all = [...entry.msgs, ...msgs];
-    if (all.some((m) => m[0] === "DATA") && all.some((m) => m[0] === "RESOLVED")) {
-      throw new KernelError(`${n.id}: DATA and RESOLVED in one batch`);
-    }
+    try { prepare(all); } catch (e) { throw new KernelError(`${n.id}: ${messageOf(e)} (batch)`); }
     entry.msgs = all;
     staging.set(n.id, entry);
   }
@@ -178,18 +187,21 @@ export function createGraph({ report: hostReport } = {}) {
       if (!dep.active) activate(dep);
       dep.subs.push({ kind: "node", id: n.id, dep: i });
       // K3: the dependency's START snapshot is this node's first received input.
-      n.inputs[i] = { has: dep.has, value: dep.cache, ended: dep.ended, wave: [] };
-      if (dep.has) n.inputs[i].wave.push(["DATA", dep.cache]);
-      if (dep.ended) n.inputs[i].wave.push(dep.ended);
+      const snapshot = [];
+      if (dep.has) snapshot.push(["DATA", dep.cache]);
+      if (dep.ended) snapshot.push(dep.ended);
+      n.inputs[i] = { has: dep.has, value: dep.cache, ended: dep.ended, frames: snapshot.length ? [snapshot] : [] };
     });
     // The activation invocation sees each snapshot as this wave's input. Waiting for
     // every dependency to have a value is a sugar policy, not a kernel gate. Nothing
     // subscribes to this node yet, so its output only sets the retained value that the
     // new subscriber's START snapshot will carry.
     const out = invoke(n);
-    n.inputs.forEach((input) => { input.wave = []; });
-    for (const m of normalize(out)) {
+    n.inputs.forEach((input) => { input.frames = []; });
+    for (const m of out.flat()) {
+      if (n.ended) break;
       if (m[0] === "DATA") { n.has = true; n.cache = m[1]; }
+      if (m[0] === "INVALIDATE") { n.has = false; n.cache = undefined; }
       if (isTerminal(m)) n.ended = m;
     }
     if (n.ended) closeLife(n);
@@ -224,10 +236,10 @@ export function createGraph({ report: hostReport } = {}) {
 
   // ---- Invocation (K4, P4, P9, P10) ---------------------------------------
   //
-  // ctx.down called while the function runs is this invocation's output. Called after
-  // the function returned, it is a new wave from this node (P9): the kernel neither
-  // knows nor cares that the caller was async. Called after the lifetime closed, it is
-  // dropped (R-ctx-lifetime).
+  // ctx.down called while the function runs is this invocation's output; each call is
+  // its own array (R-wave-boundary). Called after the function returned, it is a new
+  // wave from this node (P9): the kernel neither knows nor cares that the caller was
+  // async. Called after the lifetime closed, it is dropped (R-ctx-lifetime).
 
   function invoke(n) {
     const life = n.life;
@@ -238,19 +250,20 @@ export function createGraph({ report: hostReport } = {}) {
     const out = [];
     let invoking = true;
     const register = (kind, f) => {
-      if (invoking) { hooks[kind].push(f); return; }
-      // A registration that comes back after its lifetime closed is attempted once,
-      // now. Registering later into a live lifetime is refused here.
+      // A registration that comes back after its lifetime closed is attempted once, now
+      // (R-cleanup-hooks@2). Otherwise, during or after the run, it joins the current
+      // run's registrations, as in TS.
       if (!life.open) { runCleanup(n, f); return; }
-      throw new KernelError(`${n.id} registered cleanup after its invocation returned`);
+      life.hooks[kind].push(f);
     };
     const ctx = {
-      // K4: per dependency, this wave's DATA occurrences, whether it settled with
-      // RESOLVED, its terminal this wave, and the latest value received.
+      // K4: per dependency, this wave's value arrays as TS waveData does it (each array
+      // its DATA payloads in order; a RESOLVED array is []), its terminal this wave, and
+      // the latest value received.
       deps: n.inputs.map((input) => ({
-        data: input.wave.filter((m) => m[0] === "DATA").map((m) => m[1]),
-        resolved: input.wave.some((m) => m[0] === "RESOLVED"),
-        terminal: input.wave.find(isTerminal) ?? null,
+        waves: input.frames.filter((f) => f.some(isValue))
+          .map((f) => f.filter((m) => m[0] === "DATA").map((m) => m[1])),
+        terminal: input.frames.flat().find(isTerminal) ?? null,
         has: input.has,
         value: input.value,
       })),
@@ -261,7 +274,8 @@ export function createGraph({ report: hostReport } = {}) {
         if (msgs.some((m) => m[0] === "DIRTY")) {
           throw new KernelError(`${n.id}: DIRTY is sent by the kernel, not by node output`);
         }
-        if (invoking) { out.push(...msgs); return; }
+        const frames = prepare(msgs);
+        if (invoking) { out.push(...frames); return; }
         publishLater(n, life, msgs);
       },
       // Aborted when this lifetime closes; not by INVALIDATE or by a rerun. Created on
@@ -280,21 +294,23 @@ export function createGraph({ report: hostReport } = {}) {
     try {
       n.fn(ctx);
     } catch (e) {
-      return [["ERROR", messageOf(e)]]; // P10
+      return [[["ERROR", messageOf(e)]]]; // P10: what it sent before the throw is dropped
     } finally {
       running.pop();
       invoking = false;
     }
-    return checkOutput(out);
+    return out;
   }
 
   // Output that is not part of the current wave: sent after an invocation returned
   // (P9), or anything a quiet node emits (H6). It becomes its own wave from n.
-  function publishLater(n, life, msgs) {
+  // priorHooks: see settle.
+  function publishLater(n, life, msgs, priorHooks = null) {
     if (staging && life.open) { stage(n, life, msgs); return; }
+    const frames = prepare(msgs);
     request(() => {
       if (!life.open || n.life !== life) return; // R-ctx-lifetime: old output is dropped
-      runWave([{ node: n, msgs: checkOutput(msgs) }]);
+      runWave([{ node: n, frames, priorHooks }]);
     });
   }
 
@@ -326,102 +342,130 @@ export function createGraph({ report: hostReport } = {}) {
     }
   }
 
-  function publish(n, msgs) {
+  // The current run's invalidate hooks. They stay registered after they run, as in TS:
+  // a later effective INVALIDATE without a rerun runs them again.
+  const invalidateHooks = (n) => [...(n.life?.hooks.invalidate ?? [])];
+
+  // Publishes this node's arrays for the wave, in order, to each subscriber. All of them
+  // go out in one call so that a dependent settles once on all of them.
+  // priorHooks: invalidate hooks to run for the first effective INVALIDATE instead of the
+  // current ones (a quiet node, see settle). applied: the first array is an INVALIDATE
+  // that settle already applied.
+  function publish(n, frames, { priorHooks = null, applied = false } = {}) {
     if (n.ended) return;
     const out = [];
-    let invalidated = false;
-    for (const m of normalize(msgs)) {
-      if (m[0] === "DATA") { n.has = true; n.cache = m[1]; }
-      if (m[0] === "INVALIDATE") {
-        // K6: effective only while a value is retained; a repeat is a no-op. This is
-        // also why a diamond invalidates its fan-in once without any DIRTY.
-        if (!n.has) continue;
-        n.has = false;
-        n.cache = undefined;
-        invalidated = true;
+    for (const [k, frame] of frames.entries()) {
+      if (n.ended) break; // P5: nothing after a terminal
+      if (k === 0 && applied) { out.push(frame); continue; }
+      const f = [];
+      for (const m of frame) {
+        if (m[0] === "DATA") { n.has = true; n.cache = m[1]; }
+        if (m[0] === "INVALIDATE") {
+          // K6: effective only while a value is retained; a repeat is a no-op. This is
+          // also why a diamond invalidates its fan-in once without any DIRTY.
+          if (!n.has) continue;
+          n.has = false;
+          n.cache = undefined;
+          // R-invalidate-idempotent: the value is already absent when these run.
+          const hooks = priorHooks ?? invalidateHooks(n);
+          priorHooks = null;
+          for (const h of hooks) runCleanup(n, h);
+        }
+        if (isTerminal(m)) n.ended = m;
+        f.push(m);
       }
-      if (isTerminal(m)) n.ended = m;
-      out.push(m);
+      if (f.length) out.push(f);
     }
     // P4: an announced node that ends up with nothing settling still settles.
-    if (n.announced && !out.some(settles)) out.push(["RESOLVED"]);
+    if (n.announced && !out.some((f) => f.some(settles))) out.push([["RESOLVED"]]);
     if (!out.length) return;
-    if (out.some(isValue)) {
-      if (!n.announced) {
-        // A node emitting a value without having announced (a source, later output,
-        // or a node answering a terminal-only wave) announces its own cone first (P3).
-        n.announced = true;
-        announce(n);
-      }
-      out.unshift(["DIRTY"]); // K2: the kernel's leading DIRTY
+    if (hasValue(out) && !n.announced) {
+      // A node emitting a value without having announced (a source, later output, or a
+      // node answering a terminal-only wave) announces its own cone first (P3).
+      n.announced = true;
+      announce(n);
     }
-    if (invalidated && n.life) {
-      // R-invalidate-idempotent: the value is already absent when these run.
-      const hooks = n.life.hooks.invalidate;
-      n.life.hooks.invalidate = [];
-      for (const f of hooks) runCleanup(n, f);
-    }
+    for (const f of out) if (f.some(isValue)) f.unshift(["DIRTY"]); // K2: one per value array
     // K3: deliver to the subscriber list as it was when publication began.
     for (const sub of [...n.subs]) {
-      if (sub.kind === "sink") deliverToSink(sub, n.id, out);
+      if (sub.kind === "sink") for (const f of out) deliverToSink(sub, n.id, f);
       else receive(nodeOf(sub.id), sub.dep, out);
     }
     if (n.ended) closeLife(n); // K5/K7: an ended node closes its lifetime
   }
 
-  function receive(m, i, msgs) {
+  function receive(m, i, frames) {
     if (m.ended) return;
     const input = m.inputs[i];
-    for (const msg of msgs) {
-      if (msg[0] === "DIRTY") continue;
-      input.wave.push(msg); // P2: every occurrence reaches the function
-      if (msg[0] === "DATA") { input.has = true; input.value = msg[1]; }
-      if (msg[0] === "INVALIDATE") { input.has = false; input.value = undefined; }
-      if (isTerminal(msg)) input.ended = msg;
+    for (const frame of frames) {
+      const f = frame.filter((msg) => msg[0] !== "DIRTY");
+      for (const msg of f) {
+        if (msg[0] === "DATA") { input.has = true; input.value = msg[1]; }
+        if (msg[0] === "INVALIDATE") { input.has = false; input.value = undefined; }
+        if (isTerminal(msg)) input.ended = msg;
+      }
+      input.frames.push(f); // P2: every occurrence and every array boundary is kept
     }
-    if (msgs.some(settles)) m.dirtyDeps.delete(i);
+    if (frames.some((f) => f.some(settles))) m.dirtyDeps.delete(i);
     if (m.dirtyDeps.size === 0) settle(m);
   }
 
   function settle(m) {
-    const waves = m.inputs.map((input) => input.wave);
-    if (!waves.some((w) => w.length)) return;
-    // H6: everything a quiet node outputs is a later wave; nothing downstream waits on
-    // it, so silence needs no RESOLVED.
-    const emit = (msgs) => (m.quiet ? msgs.length && publishLater(m, m.life, msgs) : publish(m, msgs));
+    if (!m.inputs.some((input) => input.frames.length)) return;
+    const clear = () => m.inputs.forEach((input) => { input.frames = []; });
 
     // K5, error=auto: a dependency ERROR ends this node without running its function.
-    const depError = waves.flat().find((x) => x[0] === "ERROR");
+    const depError = m.inputs.flatMap((input) => input.frames.flat()).find((x) => x[0] === "ERROR");
     if (depError && m.terminal.error === "auto") {
-      m.inputs.forEach((input) => { input.wave = []; });
-      emit([depError]);
+      clear();
+      if (m.quiet) publishLater(m, m.life, [depError]);
+      else publish(m, [[depError]]);
       return;
     }
 
-    // K6: an invalidated input invalidates this node's value; the function does not
-    // run for this wave. It runs again when the input has a value again.
-    if (waves.flat().some((x) => x[0] === "INVALIDATE")) {
-      m.inputs.forEach((input) => { input.wave = []; });
-      emit([["INVALIDATE"]]);
-      return;
+    // K6: an invalidated input invalidates this node's value without running the
+    // function for it. What came before the INVALIDATE on that input is gone; what came
+    // after it is ordinary input, for which the function runs below. The invalidation
+    // is applied first, so its hooks (registered by the previous run) run before the
+    // new run replaces them. A quiet node's value changes only in its later wave (H6),
+    // so its hooks are taken now and run then.
+    const isInvalidate = (f) => f[0]?.[0] === "INVALIDATE";
+    const invalidated = m.inputs.some((input) => input.frames.some(isInvalidate));
+    let priorHooks = null;
+    let applied = false;
+    if (invalidated) {
+      for (const input of m.inputs) input.frames = input.frames.slice(input.frames.findLastIndex(isInvalidate) + 1);
+      if (m.has && m.quiet) priorHooks = invalidateHooks(m);
+      else if (m.has) {
+        m.has = false;
+        m.cache = undefined;
+        for (const h of invalidateHooks(m)) runCleanup(m, h); // R-invalidate-idempotent
+        applied = true;
+      }
     }
+    const lead = applied || (invalidated && m.quiet) ? [[["INVALIDATE"]]] : [];
 
-    const manualTerminal = waves.flat().some((x) =>
+    const rest = m.inputs.flatMap((input) => input.frames.flat());
+    const manualTerminal = rest.some((x) =>
       isTerminal(x) && (x[0] === "COMPLETE" ? m.terminal.complete : m.terminal.error) === "manual");
-    const runs = waves.flat().some(isValue) || manualTerminal;
+    const runs = rest.some(isValue) || manualTerminal;
     const out = runs ? invoke(m) : [];
-    m.inputs.forEach((input) => { input.wave = []; });
+    clear();
 
     // K5, complete=auto: a separate postlude once every dependency has ended.
     const allEnded = m.inputs.every((input) => input.ended);
-    const postlude = m.terminal.complete === "auto" && allEnded && !out.some(isTerminal) ? [["COMPLETE"]] : [];
+    const postlude = m.terminal.complete === "auto" && allEnded && !out.flat().some(isTerminal) ? [["COMPLETE"]] : [];
 
     if (m.quiet) {
-      emit([...out, ...postlude]);
+      // H6: everything a quiet node outputs is a later wave; nothing downstream waits
+      // on it, so silence needs no RESOLVED.
+      for (const frame of [...lead, ...out]) publishLater(m, m.life, frame, frame === lead[0] ? priorHooks : null);
+      if (postlude.length) publishLater(m, m.life, postlude);
       return;
     }
-    if (out.length || !postlude.length) publish(m, out); // P4: publish adds RESOLVED if silent
-    if (postlude.length) publish(m, postlude);
+    const frames = [...lead, ...out];
+    if (frames.length || !postlude.length) publish(m, frames, { applied }); // P4: adds RESOLVED if silent
+    if (postlude.length) publish(m, [postlude]);
   }
 
   function runWave(entries) {
@@ -429,13 +473,13 @@ export function createGraph({ report: hostReport } = {}) {
     if (!entries.length) return;
     try {
       // P3: announce every source of the wave before any settlement (batch, K2).
-      for (const { node, msgs } of entries) {
-        if (msgs.some(isValue) && !node.announced) {
+      for (const { node, frames } of entries) {
+        if (hasValue(frames) && !node.announced) {
           node.announced = true;
           announce(node);
         }
       }
-      for (const { node, msgs } of entries) publish(node, msgs);
+      for (const { node, frames, priorHooks } of entries) publish(node, frames, { priorHooks });
     } finally {
       for (const n of nodes.values()) { n.announced = false; n.dirtyDeps.clear(); }
     }
@@ -457,7 +501,7 @@ export function createGraph({ report: hostReport } = {}) {
     request(() => {
       // Checked again: a queued input may find its node ended by an earlier request.
       if (n.ended) throw new KernelError(`${id} has ended`);
-      runWave([{ node: n, msgs: [msg] }]);
+      runWave([{ node: n, frames: [[msg]] }]);
     });
   }
 
@@ -515,7 +559,7 @@ export function createGraph({ report: hostReport } = {}) {
       // Nothing was delivered before commit, so a throwing body leaves nothing to undo.
       // Commit announces DIRTY to the whole cone, then publishes (O3).
       request(() => runWave([...staged]
-        .map(([id, { msgs, life }]) => ({ node: nodeOf(id), msgs, life }))
+        .map(([id, { msgs, life }]) => ({ node: nodeOf(id), frames: prepare(msgs), life }))
         // R-ctx-lifetime: a node's staged late output is dropped if its lifetime closed.
         .filter(({ node, life }) => !life || (life.open && node.life === life))));
     },

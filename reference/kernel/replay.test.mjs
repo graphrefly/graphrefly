@@ -28,7 +28,7 @@ test("C-28: one array of three occurrences stays intact, and the diamond fan-in 
   g.node("B", ["A"], map((v) => v));
   g.node("C", ["A"], map((v) => v));
   const seen = [];
-  g.node("D", ["B", "C"], (ctx) => { seen.push(ctx.deps.map((d) => d.data)); });
+  g.node("D", ["B", "C"], (ctx) => { seen.push(ctx.deps.map((d) => d.waves)); });
   g.subscribe("o1", "A");
   g.subscribe("o2", "A");
   g.subscribe("sd", "D");
@@ -38,7 +38,7 @@ test("C-28: one array of three occurrences stays intact, and the diamond fan-in 
     "o2 <- A: [DIRTY, DATA(23), DATA(23), DATA(30)]",
     "sd <- D: [DIRTY, RESOLVED]",
   ]);
-  assert.deepEqual(seen, [[[23, 23, 30], [23, 23, 30]]], "one invocation, every occurrence");
+  assert.deepEqual(seen, [[[[23, 23, 30]], [[23, 23, 30]]]], "one invocation, every occurrence, one array per dependency");
 });
 
 test("C-28: separate explicit calls stay separate waves; a batch is its declared accumulation", () => {
@@ -190,15 +190,15 @@ test("C-36: one invocation sees the admitted DATA and the terminal of the same a
   const views = [];
   g.node("r", ["A"], (ctx) => {
     const [d] = ctx.deps;
-    views.push([d.data, d.terminal]);
-    if (d.terminal) ctx.down([["DATA", d.data.length], ["COMPLETE"]]);
+    views.push([d.waves, d.terminal]);
+    if (d.terminal) ctx.down([["DATA", d.waves.flat().length], ["COMPLETE"]]);
   }, { terminal: { complete: "manual" } });
   g.subscribe("s", "r");
   views.length = 0;
   assert.deepEqual(during(g, () => A.ctx.down([["DATA", 5], ["DATA", 6], ["COMPLETE"]])), [
     "s <- r: [DIRTY, DATA(2), COMPLETE]",
   ]);
-  assert.deepEqual(views, [[[5, 6], ["COMPLETE"]]]);
+  assert.deepEqual(views, [[[[5, 6]], ["COMPLETE"]]]);
 });
 
 test("C-36: under complete=auto the terminal ends the node after its run, with no balancing RESOLVED", () => {
@@ -216,13 +216,15 @@ test("C-36: a trailing INVALIDATE in the same array leaves the value absent for 
   const g = createGraph();
   const A = producer(g, "A");
   const runs = [];
-  g.node("d", ["A"], (ctx) => { runs.push(ctx.deps[0].has); });
+  g.node("d", ["A"], (ctx) => { runs.push(ctx.deps[0].waves); ctx.down([["DATA", "d"]]); });
   g.subscribe("sa", "A");
   g.subscribe("sd", "d");
+  A.ctx.down([["DATA", 5]]);
   runs.length = 0;
+  // O13: DATA(7) comes before the INVALIDATE in its array, so it is removed (DS-17 O13).
   assert.deepEqual(during(g, () => A.ctx.down([["DATA", 7], ["INVALIDATE"]])), [
-    "sa <- A: [DIRTY, DATA(7), INVALIDATE]",
-    "sd <- d: [DIRTY, RESOLVED]",
+    "sa <- A: [INVALIDATE]",
+    "sd <- d: [INVALIDATE]",
   ]);
   assert.deepEqual(runs, [], "the function does not run on an invalidated input");
   assert.equal(g.get("A").has, false);
