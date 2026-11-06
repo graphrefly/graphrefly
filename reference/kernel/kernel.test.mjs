@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createGraph, format, KernelError } from "./kernel.mjs";
-import { derived, filter, map, reduce } from "./sugar.mjs";
+import { derived, filter, latestAsync, map, reduce } from "./sugar.mjs";
 
 // Returns the trace entries appended while `body` runs, formatted as strings.
 function during(g, body) {
@@ -156,7 +156,7 @@ test("K7: a computed node clears on last release; plain state keeps its value", 
   g.node("d", ["a"], map((v) => v * 2));
   g.subscribe("s", "d");
   g.unsubscribe("s", "d");
-  assert.deepEqual(g.inspect("d"), { active: false, has: false, cache: undefined, ended: null, invocations: 1 });
+  assert.deepEqual(g.inspect("d"), { active: false, has: false, cache: undefined, ended: null, invocations: 1, dropped: 0 });
   g.set("a", 4);
   assert.equal(g.inspect("a").cache, 4);
   assert.deepEqual(during(g, () => g.subscribe("s", "d")), ["s <- d: [START, DATA(8)]"]);
@@ -334,4 +334,174 @@ test("O3: a plain body that returns a promise commits its synchronous part and i
   assert.deepEqual(g.trace.slice(start).map(format), ["s <- ab: [DIRTY, DATA(\"1/0\")]", "s <- ab: [DIRTY, DATA(\"1/2\")]"]);
   assert.equal(g.reports.length, 1);
   assert.equal(g.reports[0].source, "batch");
+});
+
+// ---- P9 async, K7 lifetimes and cleanup, K6 invalidation, H6 quiet ---------
+
+function deferred() {
+  let resolve, reject;
+  const promise = new Promise((res, rej) => { resolve = res; reject = rej; });
+  return { promise, resolve, reject };
+}
+
+test("P9: later output is a new wave; the starting wave closes now, and results are not paired", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  const sends = [];
+  g.node("q", ["a"], ({ deps: [x], activation, ctx }) => {
+    if (!activation) sends.push(ctx.later());
+    return {};
+  });
+  g.node("d", ["q", "a"], derived((q, a) => `${q}@${a}`));
+  g.subscribe("sq", "q");
+  g.subscribe("sd", "d");
+  const out = during(g, () => {
+    g.set("a", 2);
+    g.set("a", 3);
+    sends[1]([["DATA", "r3"]]);
+    sends[0]([["DATA", "r2"]]); // the older request finishes last
+  });
+  assert.deepEqual(out, [
+    // No DIRTY stays open while the work runs: each wave settles with RESOLVED.
+    "sq <- q: [DIRTY, RESOLVED]", "sd <- d: [DIRTY, RESOLVED]",
+    "sq <- q: [DIRTY, RESOLVED]", "sd <- d: [DIRTY, RESOLVED]",
+    "sq <- q: [DIRTY, DATA(\"r3\")]", "sd <- d: [DIRTY, DATA(\"r3@3\")]",
+    // Arrival order, combined with a's current value: the kernel pairs nothing.
+    "sq <- q: [DIRTY, DATA(\"r2\")]", "sd <- d: [DIRTY, DATA(\"r2@3\")]",
+  ]);
+});
+
+test("P9 sugar: latestAsync publishes only the newest request and aborts the rest", async () => {
+  const g = createGraph();
+  g.state("a", 1);
+  const calls = [];
+  g.node("q", ["a"], latestAsync((v, signal) => {
+    const d = deferred();
+    calls.push({ v, signal, ...d });
+    return d.promise;
+  }));
+  g.subscribe("s", "q");
+  await tick();
+  assert.deepEqual(during(g, () => g.set("a", 2)), ["s <- q: [DIRTY, RESOLVED]"]);
+  await tick();
+  assert.deepEqual(calls.map((c) => [c.v, c.signal.aborted]), [[1, true], [2, false]]);
+  const start = g.trace.length;
+  calls[1].resolve("r2");
+  calls[0].resolve("r1");
+  await tick();
+  assert.deepEqual(g.trace.slice(start).map(format), ["s <- q: [DIRTY, DATA(\"r2\")]"]);
+  g.set("a", 3);
+  await tick();
+  g.unsubscribe("s", "q");
+  assert.equal(calls[2].signal.aborted, true, "closing the lifetime aborts the request in flight");
+});
+
+test("K7: later output after the lifetime closed is dropped; the signal and late cleanup follow the old life", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  const ctxs = [];
+  const sends = [];
+  g.node("q", ["a"], ({ ctx }) => {
+    ctxs.push(ctx);
+    sends.push(ctx.later());
+    return {};
+  });
+  g.subscribe("s", "q");
+  assert.throws(() => ctxs[0].onDeactivation(() => {}), KernelError, "live lifetime, invocation returned");
+  g.unsubscribe("s", "q");
+  assert.equal(ctxs[0].signal.aborted, true, "first access after close is already aborted");
+  assert.throws(() => ctxs[0].later(), KernelError);
+  let late = 0;
+  ctxs[0].onDeactivation(() => { late += 1; });
+  assert.equal(late, 1, "a registration after close runs once, now");
+
+  g.subscribe("s2", "q"); // a new lifetime
+  const out = during(g, () => {
+    sends[0]([["DATA", "old"]]);
+    sends[1]([["DATA", "new"]]);
+  });
+  assert.deepEqual(out, ["s2 <- q: [DIRTY, DATA(\"new\")]"]);
+  assert.equal(g.inspect("q").dropped, 1);
+  assert.equal(ctxs[1].signal.aborted, false);
+});
+
+test("K7: each run replaces the previous run's cleanup; close releases dependencies first, then runs hooks in order", () => {
+  const g = createGraph();
+  const log = [];
+  g.state("a", 1);
+  g.node("p", ["a"], ({ deps: [x], ctx }) => {
+    ctx.onDeactivation(() => log.push("close p"));
+    return { down: x.data.map((v) => ["DATA", v]) };
+  });
+  g.node("q", ["p"], ({ deps: [x], ctx }) => {
+    const v = x.value;
+    ctx.onDeactivation(() => log.push(`close q${v} first`));
+    ctx.onDeactivation(() => { log.push(`close q${v} second`); throw new Error("leak"); });
+    ctx.onDeactivation(() => log.push(`close q${v} third`));
+    return { down: [["DATA", v]] };
+  });
+  g.subscribe("s", "q");
+  g.set("a", 2);
+  assert.deepEqual(log, [], "replaced registrations are dropped without running");
+  g.unsubscribe("s", "q");
+  assert.deepEqual(log, ["close p", "close q2 first", "close q2 second", "close q2 third"]);
+  assert.deepEqual(g.reports, [{ source: "cleanup q", error: "leak" }]);
+});
+
+test("K6: INVALIDATE clears values down the cone once, without DIRTY and without running functions", () => {
+  const g = createGraph();
+  const log = [];
+  g.state("a", 1);
+  g.node("b", ["a"], ({ deps: [x], ctx }) => {
+    ctx.onInvalidate(() => log.push(`b invalidated, has=${g.get("b").has}`));
+    return { down: x.data.map((v) => ["DATA", v * 10]) };
+  });
+  g.node("c", ["a"], map((v) => v + 1));
+  g.node("d", ["b", "c"], derived((b, c) => b + c));
+  g.subscribe("sd", "d");
+  g.subscribe("sb", "b");
+  // d hears it from b and from c; the second arrives after d's value is gone, so it is
+  // a no-op. That is what keeps the diamond glitch-free here.
+  assert.deepEqual(during(g, () => g.invalidate("a")), ["sd <- d: [INVALIDATE]", "sb <- b: [INVALIDATE]"]);
+  assert.deepEqual(log, ["b invalidated, has=false"]);
+  assert.deepEqual(during(g, () => g.invalidate("a")), [], "repeat is ineffective");
+  assert.deepEqual(during(g, () => g.set("a", 2)), ["sb <- b: [DIRTY, DATA(20)]", "sd <- d: [DIRTY, DATA(23)]"]);
+  assert.equal(g.inspect("d").invocations, 2, "activation plus the recompute; invalidation ran nothing");
+});
+
+test("K6/P4: an announced node whose invalidation is a no-op still settles with RESOLVED", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  g.state("x");
+  g.node("d", ["a", "x"], derived((a, x) => a + x)); // no value yet: x is empty
+  g.subscribe("s", "d");
+  assert.deepEqual(during(g, () => g.batch(() => { g.invalidate("a"); g.set("x", 5); })), ["s <- d: [DIRTY, RESOLVED]"]);
+});
+
+test("H6: a quiet node does not make its dependents wait; its output is a later wave and silence costs nothing", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  g.node("q", ["a"], map((v) => v * 10), { quiet: true });
+  g.node("f", ["q", "a"], derived((q, a) => `${q}/${a}`));
+  g.node("z", ["a"], filter((v) => v > 100), { quiet: true });
+  g.subscribe("sf", "f");
+  g.subscribe("sq", "q");
+  g.subscribe("sz", "z");
+  assert.deepEqual(during(g, () => g.set("a", 2)), [
+    "sf <- f: [DIRTY, DATA(\"10/2\")]",  // f settles from a alone
+    "sf <- f: [DIRTY, DATA(\"20/2\")]",  // q's result arrives as its own wave
+    "sq <- q: [DIRTY, DATA(20)]",
+  ]);
+});
+
+test("H6: a quiet node's invalidation and inherited ERROR are later waves too", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  g.node("q", ["a"], map((v) => v * 10), { quiet: true });
+  g.node("f", ["q", "a"], derived((q, a) => `${q}/${a}`));
+  g.subscribe("sq", "q"); // q's own sink comes first in q's delivery order
+  g.subscribe("sf", "f");
+  assert.deepEqual(during(g, () => g.invalidate("a")), ["sf <- f: [INVALIDATE]", "sq <- q: [INVALIDATE]"]);
+  g.set("a", 2);
+  assert.deepEqual(during(g, () => g.error("a", "down")), ["sf <- f: [ERROR(\"down\")]", "sq <- q: [ERROR(\"down\")]"]);
 });

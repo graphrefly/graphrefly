@@ -186,5 +186,8 @@ rewire、resubscription 和 dynamic 节点。简报也不要求 batch；batch �
    每条已接受的 trace，应当能由单独的内核、或内核加模块复现。
    2026-11-06 已开始：[graphrefly:B143](../../plan/backlog.jsonl) 的第一版在
    [reference/kernel/](../../reference/kernel/README.md)，覆盖 K1–K5、K7 的一部分，README 列出了尚未覆盖的部分。
-   同日第二版加上 K8（wave 期间到达的请求排队）和 O3 的决定（batch 在 commit 前不投递 DIRTY），共 23 个 trace 测试。
+   同日第二版加上 K8（wave 期间到达的请求排队）和 O3 的决定（batch 在 commit 前不投递 DIRTY）。
+   第三版加上 P9（异步结果作为新 wave）、K6、K7 的生命周期和 cleanup、H6 安静节点，共 32 个 trace 测试。
+   结论之一：DIRTY 只存在于一个同步 wave 之内，异步工作不会让 DIRTY 悬着，R-async-paused@2 里
+   "deferred-result author 最终必须发 DATA、RESOLVED 或终止"这一义务在这个模型里不需要了。
 3. 然后根据结果恢复、修订或取代 B140。

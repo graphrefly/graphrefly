@@ -13,15 +13,16 @@ npm run test:reference
 
 | File | Contents |
 |---|---|
-| [kernel.mjs](kernel.mjs) | The kernel. Pure node functions take an invocation view and return `{ down, state }`; every delivery to a sink is appended to `graph.trace` |
-| [sugar.mjs](sugar.mjs) | `derived`, `map`, `filter`, `reduce` as ordinary node functions. First-run gating lives here, not in the kernel |
+| [kernel.mjs](kernel.mjs) | The kernel. Node functions take an invocation view and return `{ down, state }`; work that finishes later goes through `ctx`. Every delivery to a sink is appended to `graph.trace` |
+| [sugar.mjs](sugar.mjs) | `derived`, `map`, `filter`, `reduce`, `latestAsync` as ordinary node functions. First-run gating and the latest-only async policy live here, not in the kernel |
 | [kernel.test.mjs](kernel.test.mjs) | One trace test per implemented behavior |
 
-The graph exposes `state`, `node`, `subscribe(sinkId, id, callback?)`, `unsubscribe`, `set`, `complete`,
-`error`, `batch`, `get` (retained value plus `pending`), `inspect`, `trace` and `reports` (failures with no
-caller, P10).
+The graph exposes `state`, `node(id, deps, fn, { terminal, quiet })`, `subscribe(sinkId, id, callback?)`,
+`unsubscribe`, `set`, `invalidate`, `complete`, `error`, `batch`, `get` (retained value plus `pending`),
+`inspect`, `trace` and `reports` (failures with no caller, P10). A node function receives
+`{ deps, state, activation, ctx }`; `ctx` has `later()`, `signal`, `onDeactivation` and `onInvalidate`.
 
-## Covered in this slice
+## Covered so far
 
 - K1 tier normalization; K2 waves, DIRTY prepass, leading DIRTY, kernel RESOLVED, batch as one wave
   with every occurrence kept, DATA/RESOLVED exclusivity.
@@ -39,6 +40,22 @@ caller, P10).
   or during a wave returns the retained value with `pending: true`. A body declared `async` is refused
   before any of it runs. A plain body that returns a promise commits its synchronous part, and a
   report says that writes after its first await are separate waves.
+- P9 (third slice, 2026-11-06): `ctx.later()` returns a function that publishes as a new wave from
+  the node. The invocation that started the work settles its wave at once (RESOLVED if silent), so no
+  DIRTY stays open while work runs. Results arrive in arrival order and combine with whatever the
+  other inputs hold then; the kernel pairs nothing. `latestAsync` in sugar shows a latest-only policy
+  built from private state, `later`, an AbortController and a cleanup hook.
+- K7 lifetimes: each activation opens a new lifetime. Closing it (last release or terminal) aborts
+  `ctx.signal`, releases dependencies in declaration order, then runs this lifetime's deactivation
+  cleanups in registration order; a failing cleanup goes to `reports` and the rest still run. Each run's
+  registrations replace the previous run's without calling them. Later output from a closed lifetime is
+  dropped and counted; a cleanup registered after close runs once at once.
+- K6: `invalidate` on a state, and an invalidated input, clear the retained value down the cone and
+  run `onInvalidate` hooks after the value is gone. No DIRTY, no function invocation. A repeat, or a
+  node with no value, is a no-op; an announced node then settles with RESOLVED.
+- H6: `{ quiet: true }` records its own dirty inputs but does not pass DIRTY on, so its dependents do
+  not wait for it. Everything it outputs, including an invalidation or an inherited ERROR, is a later
+  wave from it. Silence needs no RESOLVED.
 
 Mutations checked on 2026-11-06: removing the batch-wide DIRTY prepass fails four tests; removing the
 kernel RESOLVED fails two; running requests immediately instead of queueing fails three; never
@@ -46,14 +63,21 @@ reporting pending during a wave or during a batch fails one each. The unsubscrib
 still passes without the queue, because delivery already uses the subscriber list as it was when
 publication began (K3).
 
+Third-slice mutations: forwarding DIRTY through a quiet node, publishing its output or its
+invalidation and ERROR in the current wave, making INVALIDATE always effective, running the function
+for an invalidated input, never dropping later output, accumulating cleanups across runs, and running
+own cleanups before releasing dependencies each fail at least one test. Publishing a quiet node's
+invalidation and ERROR in the current wave first survived; a test now covers it.
+
 ## Not covered yet
 
 Each of these is left out rather than approximated:
 
-- K6 INVALIDATE; K9 control routing and declared control pairs; cleanup hooks and
-  lifetime-bound ctx revocation (K7); START snapshots of an unsettled node.
-- P9 async: work that finishes later as a new wave.
-- Modules: pause, demand, replay, checkpoint, rewire, restart owners.
+- K9 control routing and declared control pairs; START snapshots of an unsettled node; K10 node
+  interface and status.
+- Upward INVALIDATE (R-up-at-source); INVALIDATE before a node's first invocation (R-first-run-gate).
+- Modules: pause, demand (the PULL holder built on H6, with its START-only subscription), replay,
+  checkpoint, rewire, restart owners.
 - Replaying C-28 to C-39.
 
 ## Observations so far
@@ -76,5 +100,17 @@ Each of these is left out rather than approximated:
   falls into the promise-returning case.
 - Delivery order across sinks follows settlement order, not subscription order: in a batch, a node
   that depends only on the first input settles before one that waits for a second input.
+- No DIRTY spans time. Async work cannot hold a wave open: the starting wave settles now and the
+  result is a fresh wave with its own DIRTY. R-async-paused@2 says a raw deferred-result author "must
+  eventually send DATA, RESOLVED or terminal"; under this model the author owes the protocol nothing,
+  because there is no open notification to settle. Together with O3, DIRTY now lives only inside one
+  synchronous wave.
+- INVALIDATE needs no DIRTY to stay glitch-free in a diamond, because the second arrival at the fan-in
+  finds no value and is a no-op. In a mixed batch where one input is invalidated and another delivers
+  DATA, invalidation wins and the function does not run; that precedence is this interpreter's choice.
+- Refusing `onDeactivation` and `onInvalidate` after the invocation returned, while the lifetime is
+  still open, is this interpreter's choice; the draft only says what happens after close.
+- `latestAsync` shows that switch-style cancellation needs no kernel help: private state holds the
+  previous request's controller, and a cleanup hook covers close.
 - Routing a DATA+RESOLVED output array to the producing node's ERROR is this interpreter's choice;
   DS-17 does not settle it yet.

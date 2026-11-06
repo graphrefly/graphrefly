@@ -27,3 +27,22 @@ export const reduce = (f, seed) => ({ deps: [d], state }) => {
   if (d.terminal?.[0] === "COMPLETE") return { state: acc, down: [["DATA", acc], ["COMPLETE"]] };
   return { state: acc };
 };
+
+// latestAsync: starts f(value, signal) for the latest input occurrence and publishes
+// its result later as a new wave (P9). Only the newest request may publish: the
+// previous one is aborted when a newer input arrives or when the node's lifetime
+// closes. The kernel pairs nothing; this policy lives entirely here.
+export const latestAsync = (f) => ({ deps: [d], state, ctx }) => {
+  if (!d.data.length) return {};
+  state?.abort(); // a newer input makes the older request obsolete
+  const ctrl = new AbortController();
+  ctx.onDeactivation(() => ctrl.abort());
+  const send = ctx.later();
+  Promise.resolve()
+    .then(() => f(d.data[d.data.length - 1], ctrl.signal))
+    .then(
+      (v) => { if (!ctrl.signal.aborted) send([["DATA", v]]); },
+      (e) => { if (!ctrl.signal.aborted) send([["ERROR", e instanceof Error ? e.message : e]]); },
+    );
+  return { state: ctrl };
+};
