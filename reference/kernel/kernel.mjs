@@ -50,10 +50,16 @@ export function format(entry) {
   return `${entry.to} <- ${entry.from}: [${body}]`;
 }
 
-export function createGraph() {
+export function createGraph({ report: hostReport } = {}) {
   const nodes = new Map();
   const trace = [];
-  const reports = [];   // P10: failures with no caller to return to (host reporter)
+  // P10/R-operation-failure: a failure with no caller to return to goes to the host
+  // reporter if the host configured one. Without one the kernel keeps no failure
+  // history. A reporter that throws is ignored, so it cannot break the wave it reports.
+  const report = (entry) => {
+    if (!hostReport) return;
+    try { hostReport(entry); } catch { /* the reporter's own failure has nowhere to go */ }
+  };
   let staging = null;   // Map<nodeId, msgs[]> while a batch body runs
   let busy = false;     // K8: the kernel is running a request (wave, activation, release)
   const queue = [];     // K8: requests that arrived while busy, run in arrival order
@@ -108,7 +114,7 @@ export function createGraph() {
       const next = queue.shift();
       busy = true;
       try { next(); } catch (e) {
-        reports.push({ source: "queued request", error: messageOf(e) }); // its caller has returned
+        report({ source: "queued request", error: messageOf(e) }); // its caller has returned
       } finally { busy = false; }
     }
     if (failure) throw failure;
@@ -128,7 +134,7 @@ export function createGraph() {
 
   function runCleanup(n, f) {
     try { f(); } catch (e) {
-      reports.push({ source: `cleanup ${n.id}`, error: messageOf(e) }); // P10: not n's ERROR
+      report({ source: `cleanup ${n.id}`, error: messageOf(e) }); // P10: not n's ERROR
     }
   }
 
@@ -296,7 +302,7 @@ export function createGraph() {
     try { sub.cb(msgs); } catch (e) {
       // P10: a sink failure has no node to end; it goes to the host reporter and the
       // remaining deliveries of the wave continue.
-      reports.push({ source: `sink ${sub.id}`, error: messageOf(e) });
+      report({ source: `sink ${sub.id}`, error: messageOf(e) });
     }
   }
 
@@ -441,7 +447,6 @@ export function createGraph() {
 
   return {
     trace,
-    reports,
     state(id, initial) { makeNode(id, "state", [], null, {}, initial); return id; },
     node(id, deps, fn, opts) { makeNode(id, "node", deps, fn, opts, undefined); return id; },
     subscribe(sinkId, id, cb) {
@@ -482,7 +487,7 @@ export function createGraph() {
         // synchronous part has really run and is committed; writes after its first
         // await happen later as separate waves, which the host is told about.
         if (typeof result?.then === "function") {
-          reports.push({ source: "batch", error: "batch body returned a promise; writes after its first await are separate waves" });
+          report({ source: "batch", error: "batch body returned a promise; writes after its first await are separate waves" });
         }
         return result;
       };

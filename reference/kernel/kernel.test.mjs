@@ -269,12 +269,24 @@ test("K8/K3: unsubscribing during a wave takes effect after it", () => {
 });
 
 test("P10: a failing sink goes to the host reporter; the other sinks still receive the wave", () => {
-  const g = createGraph();
+  const reports = [];
+  const g = createGraph({ report: (r) => reports.push(r) });
   g.state("a", 1);
   g.subscribe("s1", "a", (msgs) => { if (msgs[0][0] === "DIRTY") throw new Error("ui broke"); });
   g.subscribe("s2", "a");
   assert.deepEqual(during(g, () => g.set("a", 2)), ["s1 <- a: [DIRTY, DATA(2)]", "s2 <- a: [DIRTY, DATA(2)]"]);
-  assert.deepEqual(g.reports, [{ source: "sink s1", error: "ui broke" }]);
+  assert.deepEqual(reports, [{ source: "sink s1", error: "ui broke" }]);
+});
+
+test("P10: without a host reporter nothing is kept, and a throwing reporter cannot break the wave", () => {
+  for (const options of [{}, { report: () => { throw new Error("reporter down"); } }]) {
+    const g = createGraph(options);
+    g.state("a", 1);
+    g.subscribe("s1", "a", (msgs) => { if (msgs[0][0] === "DIRTY") throw new Error("ui broke"); });
+    g.subscribe("s2", "a");
+    assert.deepEqual(during(g, () => g.set("a", 2)), ["s1 <- a: [DIRTY, DATA(2)]", "s2 <- a: [DIRTY, DATA(2)]"]);
+    assert.equal("reports" in g, false, "the graph exposes no failure history");
+  }
 });
 
 test("K8: a read during a wave returns the retained value; reading never computes", () => {
@@ -325,7 +337,8 @@ test("O3: an async batch body is refused before any of it runs, including after 
 });
 
 test("O3: a plain body that returns a promise commits its synchronous part and is reported", async () => {
-  const g = createGraph();
+  const reports = [];
+  const g = createGraph({ report: (r) => reports.push(r) });
   g.state("a", 0);
   g.state("b", 0);
   g.node("ab", ["a", "b"], derived((a, b) => `${a}/${b}`));
@@ -338,8 +351,8 @@ test("O3: a plain body that returns a promise commits its synchronous part and i
   await tick();
   // The write after the await is a separate wave, so observers see the half state 1/0.
   assert.deepEqual(g.trace.slice(start).map(format), ["s <- ab: [DIRTY, DATA(\"1/0\")]", "s <- ab: [DIRTY, DATA(\"1/2\")]"]);
-  assert.equal(g.reports.length, 1);
-  assert.equal(g.reports[0].source, "batch");
+  assert.equal(reports.length, 1);
+  assert.equal(reports[0].source, "batch");
 });
 
 // ---- P9 async, K7 lifetimes and cleanup, K6 invalidation, H6 quiet ---------
@@ -424,7 +437,8 @@ test("K7: output through a closed lifetime's ctx is dropped; the signal and late
 });
 
 test("K7: each run replaces the previous run's cleanup; close releases dependencies first, then runs hooks in order", () => {
-  const g = createGraph();
+  const reports = [];
+  const g = createGraph({ report: (r) => reports.push(r) });
   const log = [];
   g.state("a", 1);
   g.node("p", ["a"], (ctx) => {
@@ -443,7 +457,7 @@ test("K7: each run replaces the previous run's cleanup; close releases dependenc
   assert.deepEqual(log, [], "replaced registrations are dropped without running");
   g.unsubscribe("s", "q");
   assert.deepEqual(log, ["close p", "close q2 first", "close q2 second", "close q2 third"]);
-  assert.deepEqual(g.reports, [{ source: "cleanup q", error: "leak" }]);
+  assert.deepEqual(reports, [{ source: "cleanup q", error: "leak" }]);
 });
 
 test("K6: INVALIDATE clears values down the cone once, without DIRTY and without running functions", () => {

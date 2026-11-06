@@ -21,9 +21,9 @@ npm run test:reference
 
 ## Surface
 
-The graph: `state(id, initial)`, `node(id, deps, fn, { terminal, quiet })`,
+The graph: `createGraph({ report })` takes an optional host reporter. Then `state(id, initial)`, `node(id, deps, fn, { terminal, quiet })`,
 `subscribe(sinkId, id, callback?)`, `unsubscribe`, `set`, `invalidate`, `complete`, `error`, `batch`,
-`get(id)` (`active`, `has`, `value`, `ended`), `trace`, and `reports` (failures with no caller, P10).
+`get(id)` (`active`, `has`, `value`, `ended`) and `trace`.
 
 A node function has the TS baseline's shape, `(ctx) => void` (R-fn-contract, D8):
 
@@ -50,13 +50,14 @@ The kernel does not know or care whether a late `ctx.down` came from async work.
   with no value, is a no-op; an announced node then settles with RESOLVED.
 - K7 lifetimes: each activation opens one. Closing it (last release or terminal) aborts `signal`,
   releases dependencies in declaration order, then runs this lifetime's deactivation cleanups in
-  registration order; a failing cleanup goes to `reports` and the rest still run. Each run's
+  registration order; a failing cleanup goes to the host reporter and the rest still run. Each run's
   registrations replace the previous run's without calling them. A cleanup registered after close
   runs once at once. Computed nodes clear on last release; plain state keeps its value.
 - K8: a request that arrives while the kernel is busy waits and runs afterwards in arrival order: a
   late `ctx.down`, and `set`, `batch`, `subscribe`, `unsubscribe` reached through a captured graph
   reference. A function writing its own upstream is rejected, and the throw becomes its ERROR. A
-  failing sink or queued request goes to `reports`.
+  failing sink or queued request goes to the host reporter. Without a reporter the kernel keeps no
+  failure history (R-operation-failure); a reporter that throws is ignored.
 - O3 as decided on 2026-11-06: batch delivers no DIRTY before commit. A body declared `async` is
   refused before any of it runs; a plain body that returns a promise commits its synchronous part,
   and a report says that writes after its first await are separate waves.
@@ -97,7 +98,8 @@ Kept although not discussed before, with the reason:
 | Refusing `onDeactivation`/`onInvalidate` after the run returned while the lifetime is still open | The draft only says what happens after close; without a rule, a late registration in a live lifetime would attach to a run that may already be replaced |
 | An invalidated input wins over DATA from another input in the same wave; the function does not run | Needed to decide something; the draft does not say |
 | A DATA+RESOLVED output array becomes the producer's ERROR | Same; DS-17 does not settle the routing |
-| `reports` | The draft's host reporter (R-operation-failure) |
+| The host reporter as an optional `report` callback | The draft's host reporter (R-operation-failure). It was a growing array until 2026-11-06, which kept the failure history the rule says the kernel must not keep by default |
+| Ignoring a reporter that throws | Its failure has nowhere else to go, and throwing would break the wave it reports on |
 | Sink ids and `trace` | Test instrumentation, not kernel behavior |
 
 ## Not covered yet
