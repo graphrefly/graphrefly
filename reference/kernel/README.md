@@ -18,6 +18,7 @@ npm run test:reference
 | [kernel.mjs](kernel.mjs) | The kernel. Every delivery to a sink is appended to `graph.trace` |
 | [sugar.mjs](sugar.mjs) | `derived`, `map`, `filter`, `reduce`, `latestAsync` as ordinary node functions. They show that a policy can live outside the kernel; they are not a chosen operator set |
 | [kernel.test.mjs](kernel.test.mjs) | One trace test per implemented behavior |
+| [replay.test.mjs](replay.test.mjs), [REPLAY.md](REPLAY.md) | The kernel-applicable clauses of C-28 to C-39, and where every other clause belongs |
 
 ## Surface
 
@@ -31,7 +32,7 @@ A node function has the TS baseline's shape, `(ctx) => void` (R-fn-contract, D8)
 |---|---|---|
 | `deps[i]` | This wave's `data` occurrences, `resolved`, `terminal`, and the latest received `has`/`value` | `waveData`, `terminal`, and the dependency cache sugar reads |
 | `state.get()`/`state.set(v)` | Private state of this lifetime | `ctx.state`, without `persist` |
-| `down(msgs)` | During the run: this invocation's output. After the run returned: a new wave from this node (P9). After the lifetime closed: dropped | `ctx.down` |
+| `down(msgs)` | During the run: this invocation's output. After the run returned: a new wave from this node (P9). After the lifetime closed: dropped. DIRTY is not accepted: only the kernel sends it (O11) | `ctx.down` (which still accepts DIRTY) |
 | `signal` | Aborted when the lifetime closes | lifecycle signal (R-ctx-lifetime) |
 | `onDeactivation(f)`, `onInvalidate(f)` | Cleanup for this run | same (R-cleanup-hooks) |
 
@@ -58,7 +59,9 @@ The kernel does not know or care whether a late `ctx.down` came from async work.
   reference. A function writing its own upstream is rejected, and the throw becomes its ERROR. A
   failing sink or queued request goes to the host reporter. Without a reporter the kernel keeps no
   failure history (R-operation-failure); a reporter that throws is ignored.
-- O3 as decided on 2026-11-06: batch delivers no DIRTY before commit. A body declared `async` is
+- O3 as decided on 2026-11-06: batch delivers no DIRTY before commit. Inside a batch body a node's
+  late `ctx.down` is staged with host inputs; a submission that would mix DATA and RESOLVED for one
+  node is rejected and earlier staging kept; staged output of a lifetime that closed is dropped. A body declared `async` is
   refused before any of it runs; a plain body that returns a promise commits its synchronous part,
   and a report says that writes after its first await are separate waves.
 - P9: the invocation that started async work settles its wave at once, so no DIRTY stays open while
@@ -111,11 +114,15 @@ Each of these is left out rather than approximated:
 - Upward INVALIDATE (R-up-at-source); INVALIDATE before a node's first invocation (R-first-run-gate).
 - Modules: pause, demand (the PULL holder built on H6, with its START-only subscription), replay,
   checkpoint, rewire, restart owners.
-- Replaying C-28 to C-39.
 
 ## Observations so far
 
-- No DIRTY spans time. Batch announces only at commit (O3), and async work cannot hold a wave open:
+- First replay of C-28 to C-39 (REPLAY.md): no kernel clause failed; two batch bugs were found and
+  fixed. The two disagreements with the draft became DS-17 O11 (DIRTY is sent by the kernel only,
+  which retires C-29) and O12 (batch from a callback stays allowed, no extra rule).
+
+- No DIRTY spans time. Batch announces only at commit (O3), node output cannot contain DIRTY (O11),
+  and async work cannot hold a wave open:
   the starting wave settles now and the result is a fresh wave with its own DIRTY. R-async-paused@2
   says a raw deferred-result author "must eventually send DATA, RESOLVED or terminal"; under this
   model the author owes the protocol nothing.

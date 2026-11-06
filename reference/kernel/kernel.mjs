@@ -60,7 +60,7 @@ export function createGraph({ report: hostReport } = {}) {
     if (!hostReport) return;
     try { hostReport(entry); } catch { /* the reporter's own failure has nowhere to go */ }
   };
-  let staging = null;   // Map<nodeId, msgs[]> while a batch body runs
+  let staging = null;   // Map<nodeId, { msgs, life }> while a batch body runs
   let busy = false;     // K8: the kernel is running a request (wave, activation, release)
   const queue = [];     // K8: requests that arrived while busy, run in arrival order
   const running = [];   // node functions currently executing (innermost last)
@@ -95,6 +95,20 @@ export function createGraph({ report: hostReport } = {}) {
     };
     nodes.set(id, n);
     return n;
+  }
+
+  // O3: inside a batch body every input is staged, whether it comes from the host or
+  // from a node's late ctx.down, and the whole batch commits as one wave. A submission
+  // that would put DATA and RESOLVED into one node's accumulated array is rejected and
+  // leaves the earlier staging as it was (K2).
+  function stage(n, life, msgs) {
+    const entry = staging.get(n.id) ?? { msgs: [], life };
+    const all = [...entry.msgs, ...msgs];
+    if (all.some((m) => m[0] === "DATA") && all.some((m) => m[0] === "RESOLVED")) {
+      throw new KernelError(`${n.id}: DATA and RESOLVED in one batch`);
+    }
+    entry.msgs = all;
+    staging.set(n.id, entry);
   }
 
   // ---- Out-of-wave requests (P7, K8) --------------------------------------
@@ -242,6 +256,11 @@ export function createGraph({ report: hostReport } = {}) {
       })),
       state: { get: () => n.privateState, set: (v) => { n.privateState = v; } },
       down(msgs) {
+        // DS-17 O11: DIRTY is sent by the kernel only, as the prefix of a value array.
+        // A node cannot open a notification and settle it later, so none spans time.
+        if (msgs.some((m) => m[0] === "DIRTY")) {
+          throw new KernelError(`${n.id}: DIRTY is sent by the kernel, not by node output`);
+        }
         if (invoking) { out.push(...msgs); return; }
         publishLater(n, life, msgs);
       },
@@ -272,6 +291,7 @@ export function createGraph({ report: hostReport } = {}) {
   // Output that is not part of the current wave: sent after an invocation returned
   // (P9), or anything a quiet node emits (H6). It becomes its own wave from n.
   function publishLater(n, life, msgs) {
+    if (staging && life.open) { stage(n, life, msgs); return; }
     request(() => {
       if (!life.open || n.life !== life) return; // R-ctx-lifetime: old output is dropped
       runWave([{ node: n, msgs: checkOutput(msgs) }]);
@@ -333,7 +353,7 @@ export function createGraph({ report: hostReport } = {}) {
         n.announced = true;
         announce(n);
       }
-      if (out[0][0] !== "DIRTY") out.unshift(["DIRTY"]); // K2: leading DIRTY
+      out.unshift(["DIRTY"]); // K2: the kernel's leading DIRTY
     }
     if (invalidated && n.life) {
       // R-invalidate-idempotent: the value is already absent when these run.
@@ -433,11 +453,7 @@ export function createGraph({ report: hostReport } = {}) {
       throw new KernelError(`${fn.id} wrote its upstream ${id}`);
     }
     if (n.ended) throw new KernelError(`${id} has ended`);
-    if (staging) {
-      if (!staging.has(id)) staging.set(id, []);
-      staging.get(id).push(msg);
-      return;
-    }
+    if (staging) { stage(n, null, [msg]); return; }
     request(() => {
       // Checked again: a queued input may find its node ended by an earlier request.
       if (n.ended) throw new KernelError(`${id} has ended`);
@@ -498,7 +514,10 @@ export function createGraph({ report: hostReport } = {}) {
       reportPromise(result);
       // Nothing was delivered before commit, so a throwing body leaves nothing to undo.
       // Commit announces DIRTY to the whole cone, then publishes (O3).
-      request(() => runWave([...staged].map(([id, msgs]) => ({ node: nodeOf(id), msgs }))));
+      request(() => runWave([...staged]
+        .map(([id, { msgs, life }]) => ({ node: nodeOf(id), msgs, life }))
+        // R-ctx-lifetime: a node's staged late output is dropped if its lifetime closed.
+        .filter(({ node, life }) => !life || (life.open && node.life === life))));
     },
     // The retained value as of now. Reading never computes; whether a node is about to
     // change is node status (K10), not covered yet.

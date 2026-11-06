@@ -158,6 +158,19 @@ test("K2: DATA and RESOLVED in one output array is rejected as a computation fai
   assert.deepEqual(during(g, () => g.set("a", 2)), ["s <- x: [ERROR(\"DATA and RESOLVED in one array\")]"]);
 });
 
+test("O11: DIRTY in node output is rejected: during the run it becomes ERROR, after the run the caller gets it", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  let kept;
+  g.node("x", ["a"], (ctx) => {
+    kept = ctx;
+    if (ctx.deps[0].value === 2) ctx.down([["DIRTY"]]);
+  });
+  g.subscribe("s", "x");
+  assert.throws(() => kept.down([["DIRTY"], ["DATA", 5]]), /DIRTY is sent by the kernel/);
+  assert.deepEqual(during(g, () => g.set("a", 2)), ["s <- x: [ERROR(\"x: DIRTY is sent by the kernel, not by node output\")]"]);
+});
+
 test("K7: a computed node clears on last release; plain state keeps its value", () => {
   const g = createGraph();
   g.state("a", 1);
