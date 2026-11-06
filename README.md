@@ -1,48 +1,53 @@
 # GraphReFly
 
-> The reactive graph protocol authority for clean-slate GraphReFly.
+The language-neutral authority for the clean-slate reactive graph protocol.
+Language packages and product repositories own their implementations and local work.
 
-This repo is the **language-neutral authority** for GraphReFly: protocol rules, root/cross-project decisions, conformance scenarios, formal models, guides, and generated authority views. D783 routes Canvas, Stack, package-local, execution and receipt authority to owner/class ledgers as those migration batches are approved. Language-specific implementations live in their own repos:
+## Where things are
 
-| Repo | Language | Package |
-|------|----------|---------|
-| [graphrefly-ts](https://github.com/graphrefly/graphrefly-ts) | TypeScript | `@graphrefly/ts` |
-| [graphrefly-py](https://github.com/graphrefly/graphrefly-py) | Python | `graphrefly` |
-| [graphrefly-rs](https://github.com/graphrefly/graphrefly-rs) | Rust | `graphrefly` crates |
+| Path | Contents |
+|---|---|
+| [Documentation map](docs/README.md) | Rules, drafts, decisions, work, evidence, guides and history |
+| [authority/](authority/README.md) | Owner locators, revision contract and generated-view resolver |
+| [spec/](spec/) | Protocol revisions, behavioral scenarios and teaching flowcharts |
+| [formal/](formal/) | TLA+ models and model-checking configurations |
+| [guide/](guide/guide.jsonl) | Structured guides and documentation policy |
+| [sessions/](sessions/sessions.jsonl) | Indexed design discussions and historical evidence |
+| [website/](website/) | Shared graphrefly.dev developer site |
+| [dashboard/](dashboard/README.md) | Internal generated authority and work views |
 
-## Authority
+## Where things stand
 
-- **[`spec/rules.jsonl`](./spec/rules.jsonl)** — append-only protocol rule revisions.
-- **[`spec/conformance.jsonl`](./spec/conformance.jsonl)** — forward behavioral conformance scenarios.
-- **[`formal/`](./formal/)** — TLA+ models.
-- **[`decisions/decisions.jsonl`](./decisions/decisions.jsonl)** — root decisions plus legacy rows awaiting approved D783 relocation.
-- **[`decisions/execution.jsonl`](./decisions/execution.jsonl)** — root-owned evaluation/execution history, hidden from the default product constitution.
-- **[`authority/`](./authority/)** — generated-view resolver and fail-closed authority gates; no copied authority text.
-- **[`guide/guide.jsonl`](./guide/guide.jsonl)** — guide index.
-- **[`dashboard/`](./dashboard/)** — generated searchable view over the authority records.
+- **Current protocol:** [revision contract](authority/README.md#protocol-revision-contract)
+  and the generated [public protocol view](https://graphrefly.dev/protocol/).
+- **Work and order:** [owner locator](authority/work-ledgers.jsonl),
+  [phases](plan/phases.jsonl) and [backlog](plan/backlog.jsonl).
+- **Current review:** resolve B141, B140 and B142 in the backlog rather than infer
+  their status from a design discussion or an old check.
+- **Decisions and evidence:** follow the [documentation map](docs/README.md).
+- **Package docs:** [TypeScript](https://ts.graphrefly.dev/),
+  [Python](https://py.graphrefly.dev/) and [Rust](https://rs.graphrefly.dev/).
 
-Legacy prose docs such as `GRAPHREFLY-SPEC.md` and `COMPOSITION-GUIDE*.md` are retained as migration material. Treat the structured records above as canonical.
+## Start locally
 
-## Website
+Use Node.js to inspect and build the local views:
 
-The shared website shell lives in [`website/`](./website/). `graphrefly.dev` is the curated external developer docs site: learn, concepts, composition, examples, package entry points, selected public reference/guarantees, and the D784-generated current protocol specification at `/protocol/` plus `/protocol/spec.json`.
-
-The generated dashboard remains the internal authority/control view over decisions, full rules, conformance, backlog, phases, sessions, and gaps.
-
-Package API docs, examples, demos, and release material remain owned by the language repos and are linked through https://ts.graphrefly.dev/, https://py.graphrefly.dev/, and https://rs.graphrefly.dev/.
-
-```bash
-npm run website:build
-npm run authority:check
-npm run authority:check:workspace
-npm run test:authority
-npm run dashboard:check
-npm run docs:public:check
-```
-
-## Dashboard
-
-```bash
+```sh
 node dashboard/build.mjs
-node dashboard/build.mjs --check
+npm run website:build
 ```
+
+Open `dashboard/dashboard.html` for the internal view. The website build writes
+`website/dist/`; it does not publish. Contributor workflow and shell notes live in
+[the internal contributor records](guide/contribute.jsonl).
+
+| Command | What it checks or builds |
+|---|---|
+| `npm run authority:check` | Root authority references and current-rule projection |
+| `npm run authority:check:workspace` | Also verify available sibling owner ledgers |
+| `npm run work:check` | Work identities, dependencies and evidence |
+| `npm run test:authority` | Authority and work resolver regression tests |
+| `node dashboard/build.mjs --check` | Structured reference consistency without writing the dashboard |
+| `npm run docs:public:check` | Local public-site build and content checks |
+
+Agent routing starts in [AGENTS.md](AGENTS.md).

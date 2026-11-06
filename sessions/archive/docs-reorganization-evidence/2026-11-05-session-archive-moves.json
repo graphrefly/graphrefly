@@ -1,0 +1,137 @@
+[
+  {
+    "from": "sessions/active/SESSION-docs-reorganization.md",
+    "to": "sessions/archive/SESSION-docs-reorganization.md",
+    "date": "2026-11-05",
+    "reason": "B142 session and retained execution history archived at closeout",
+    "replacement": "graphrefly:B142 completion receipt",
+    "before_sha256": "d037dc8baf545fe08334ccfd8491c754d565c83edb3f5cc895fa59fc73c9d4f2",
+    "after_sha256": "d037dc8baf545fe08334ccfd8491c754d565c83edb3f5cc895fa59fc73c9d4f2"
+  },
+  {
+    "from": "sessions/active/docs-reorganization-evidence/2026-11-05-root.md",
+    "to": "sessions/archive/docs-reorganization-evidence/2026-11-05-root.md",
+    "date": "2026-11-05",
+    "reason": "B142 session and retained execution history archived at closeout",
+    "replacement": "graphrefly:B142 completion receipt",
+    "before_sha256": "9da2819efc0126e458218769718a281c91801c1c7c444381df9f6c2374e83156",
+    "after_sha256": "9da2819efc0126e458218769718a281c91801c1c7c444381df9f6c2374e83156"
+  },
+  {
+    "from": "sessions/active/docs-reorganization-evidence/2026-11-05-ts.md",
+    "to": "sessions/archive/docs-reorganization-evidence/2026-11-05-ts.md",
+    "date": "2026-11-05",
+    "reason": "B142 session and retained execution history archived at closeout",
+    "replacement": "graphrefly:B142 completion receipt",
+    "before_sha256": "f7a1c8f8e3a8761bf419c1b74c87abc20bcab4f309c95e94b069f46f4b70f56a",
+    "after_sha256": "f7a1c8f8e3a8761bf419c1b74c87abc20bcab4f309c95e94b069f46f4b70f56a"
+  },
+  {
+    "from": "sessions/active/docs-reorganization-evidence/2026-11-05-ts-moves.json",
+    "to": "sessions/archive/docs-reorganization-evidence/2026-11-05-ts-moves.json",
+    "date": "2026-11-05",
+    "reason": "B142 session and retained execution history archived at closeout",
+    "replacement": "graphrefly:B142 completion receipt",
+    "before_sha256": "a81f55935a3cb48cd1b81b04257935e56c1f4464fb9ee9f11887c04fa270c245",
+    "after_sha256": "a81f55935a3cb48cd1b81b04257935e56c1f4464fb9ee9f11887c04fa270c245"
+  },
+  {
+    "from": "sessions/active/docs-reorganization-evidence/2026-11-05-canvas.md",
+    "to": "sessions/archive/docs-reorganization-evidence/2026-11-05-canvas.md",
+    "date": "2026-11-05",
+    "reason": "B142 session and retained execution history archived at closeout",
+    "replacement": "graphrefly:B142 completion receipt",
+    "before_sha256": "1924d2e5c5353b72b5fb8a2ec36f91502c4f4616f1e33ac3b3342f977d244aaf",
+    "after_sha256": "1924d2e5c5353b72b5fb8a2ec36f91502c4f4616f1e33ac3b3342f977d244aaf"
+  },
+  {
+    "from": "sessions/active/docs-reorganization-evidence/2026-11-05-rs.md",
+    "to": "sessions/archive/docs-reorganization-evidence/2026-11-05-rs.md",
+    "date": "2026-11-05",
+    "reason": "B142 session and retained execution history archived at closeout",
+    "replacement": "graphrefly:B142 completion receipt",
+    "before_sha256": "ca36cbf55ba2e8b64c9af2e5c73f23372da46f607511b02178861ab4d6e0fe52",
+    "after_sha256": "ca36cbf55ba2e8b64c9af2e5c73f23372da46f607511b02178861ab4d6e0fe52"
+  },
+  {
+    "from": "sessions/active/docs-reorganization-evidence/2026-11-05-py.md",
+    "to": "sessions/archive/docs-reorganization-evidence/2026-11-05-py.md",
+    "date": "2026-11-05",
+    "reason": "B142 session and retained execution history archived at closeout",
+    "replacement": "graphrefly:B142 completion receipt",
+    "before_sha256": "c22fd006ce08bd90a746728fd62cd126f909e4bd4b20f37f96e5d49fda8b74af",
+    "after_sha256": "c22fd006ce08bd90a746728fd62cd126f909e4bd4b20f37f96e5d49fda8b74af"
+  },
+  {
+    "from": "sessions/active/docs-reorganization-evidence/2026-11-05-react.md",
+    "to": "sessions/archive/docs-reorganization-evidence/2026-11-05-react.md",
+    "date": "2026-11-05",
+    "reason": "B142 session and retained execution history archived at closeout",
+    "replacement": "graphrefly:B142 completion receipt",
+    "before_sha256": "7663d15389fdfc9dc508676b2442fc35e58301ef475fc33b0a53fd9e72d45480",
+    "after_sha256": "7663d15389fdfc9dc508676b2442fc35e58301ef475fc33b0a53fd9e72d45480"
+  },
+  {
+    "from": "sessions/active/docs-reorganization-evidence/2026-11-05-vue.md",
+    "to": "sessions/archive/docs-reorganization-evidence/2026-11-05-vue.md",
+    "date": "2026-11-05",
+    "reason": "B142 session and retained execution history archived at closeout",
+    "replacement": "graphrefly:B142 completion receipt",
+    "before_sha256": "065f12c639dbded1fe487bcbc57b563e41271ccf87e8c2e96b52db1988694c47",
+    "after_sha256": "065f12c639dbded1fe487bcbc57b563e41271ccf87e8c2e96b52db1988694c47"
+  },
+  {
+    "from": "sessions/active/docs-reorganization-evidence/2026-11-05-solid.md",
+    "to": "sessions/archive/docs-reorganization-evidence/2026-11-05-solid.md",
+    "date": "2026-11-05",
+    "reason": "B142 session and retained execution history archived at closeout",
+    "replacement": "graphrefly:B142 completion receipt",
+    "before_sha256": "708acc03bd899a23c26eb32f519de18812be9eea5ed325497c6001f7cd6cc13b",
+    "after_sha256": "708acc03bd899a23c26eb32f519de18812be9eea5ed325497c6001f7cd6cc13b"
+  },
+  {
+    "from": "sessions/active/docs-reorganization-evidence/2026-11-05-svelte.md",
+    "to": "sessions/archive/docs-reorganization-evidence/2026-11-05-svelte.md",
+    "date": "2026-11-05",
+    "reason": "B142 session and retained execution history archived at closeout",
+    "replacement": "graphrefly:B142 completion receipt",
+    "before_sha256": "d21ff7f9686ff143b6dadb8a8ecf094f36a3a2ad4866ae4d6299e3ec6e21b0fc",
+    "after_sha256": "d21ff7f9686ff143b6dadb8a8ecf094f36a3a2ad4866ae4d6299e3ec6e21b0fc"
+  },
+  {
+    "from": "sessions/active/docs-reorganization-evidence/2026-11-05-nest.md",
+    "to": "sessions/archive/docs-reorganization-evidence/2026-11-05-nest.md",
+    "date": "2026-11-05",
+    "reason": "B142 session and retained execution history archived at closeout",
+    "replacement": "graphrefly:B142 completion receipt",
+    "before_sha256": "fa1091a9a3371905ce8adf1925cda68f568f900ccadc4344cd3284c162d3a4a4",
+    "after_sha256": "fa1091a9a3371905ce8adf1925cda68f568f900ccadc4344cd3284c162d3a4a4"
+  },
+  {
+    "from": "sessions/active/docs-reorganization-evidence/2026-11-05-reactive-layout-node-canvas.md",
+    "to": "sessions/archive/docs-reorganization-evidence/2026-11-05-reactive-layout-node-canvas.md",
+    "date": "2026-11-05",
+    "reason": "B142 session and retained execution history archived at closeout",
+    "replacement": "graphrefly:B142 completion receipt",
+    "before_sha256": "7697e6be970c2ce66cf2f461311fbf9adb85f288d97e158d4c37d8b59d45f4fb",
+    "after_sha256": "7697e6be970c2ce66cf2f461311fbf9adb85f288d97e158d4c37d8b59d45f4fb"
+  },
+  {
+    "from": "sessions/active/docs-reorganization-evidence/2026-11-05-canvas-followup.md",
+    "to": "sessions/archive/docs-reorganization-evidence/2026-11-05-canvas-followup.md",
+    "date": "2026-11-05",
+    "reason": "B142 session and retained execution history archived at closeout",
+    "replacement": "graphrefly:B142 completion receipt",
+    "before_sha256": "418a556ccba726f6edf772f4214e29c2ce1c42daf48be0a0c5c3fa25d7dd0519",
+    "after_sha256": "418a556ccba726f6edf772f4214e29c2ce1c42daf48be0a0c5c3fa25d7dd0519"
+  },
+  {
+    "from": "sessions/active/docs-reorganization-evidence/2026-11-05-summary.md",
+    "to": "sessions/archive/docs-reorganization-evidence/2026-11-05-summary.md",
+    "date": "2026-11-05",
+    "reason": "B142 session and retained execution history archived at closeout",
+    "replacement": "graphrefly:B142 completion receipt",
+    "before_sha256": "d8b0a00b2e5f9269214a5c866960418650fad9a5652403bf8c62c7624ef9c958",
+    "after_sha256": "d8b0a00b2e5f9269214a5c866960418650fad9a5652403bf8c62c7624ef9c958"
+  }
+]

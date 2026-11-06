@@ -1,0 +1,79 @@
+[
+  {
+    "repository": "graphrefly-canvas",
+    "command": "pnpm test",
+    "exit_code": 0,
+    "seconds": 30.0,
+    "log_sha256": "e4c05c5f387e591e14cc2b16a4305e7dd47caa47ec45759b9bb4ba7dda3e3de6"
+  },
+  {
+    "repository": "graphrefly-canvas",
+    "command": "pnpm run lint",
+    "exit_code": 0,
+    "seconds": 6.31,
+    "log_sha256": "09ab9c7265bff716eb7c4a2099764ca8a5b38a1325b908d32bc044c971e789a0"
+  },
+  {
+    "repository": "graphrefly-canvas",
+    "command": "pnpm run typecheck",
+    "exit_code": 0,
+    "seconds": 24.9,
+    "log_sha256": "976e4a33bc099ede41a5636fdacfe6c4d4da7b75d4003e3f3650d1ca2db0be03"
+  },
+  {
+    "repository": "graphrefly-canvas",
+    "command": "pnpm run build",
+    "exit_code": 0,
+    "seconds": 7.59,
+    "log_sha256": "945076a7a4ea263bc0643d46aec05c5dfb0e6abf266f26f6a456e30477d350cc"
+  },
+  {
+    "repository": "graphrefly-canvas",
+    "command": "pnpm run dashboard:check",
+    "exit_code": 0,
+    "seconds": 0.32,
+    "log_sha256": "0e887607eb10be0b9b03625b7867b0f53a47f79c6f8addb5369fbe73c1e9e384"
+  },
+  {
+    "repository": "graphrefly",
+    "command": "npm run authority:check",
+    "exit_code": 0,
+    "seconds": 0.84,
+    "log_sha256": "8f760ec8d7f593307ed36031e0b6e875eacc4d7def93da3af4bf71f01fa60c6c"
+  },
+  {
+    "repository": "graphrefly",
+    "command": "npm run work:check",
+    "exit_code": 0,
+    "seconds": 0.77,
+    "log_sha256": "70098654df62dffafb22159e5497b0dec8883dffcb827b7ea57435edad8c2fc7"
+  },
+  {
+    "repository": "graphrefly",
+    "command": "npm run test:authority",
+    "exit_code": 0,
+    "seconds": 0.3,
+    "log_sha256": "7a976465c5bddfa83e51b41b70a1bb3432293c6fb23e8ca72f19305c876fc0fb"
+  },
+  {
+    "repository": "graphrefly",
+    "command": "node dashboard/build.mjs --check",
+    "exit_code": 0,
+    "seconds": 0.63,
+    "log_sha256": "dced931be67326c3361ded395e41cea3e68fba392cbc479c54a8a885fe6680dd"
+  },
+  {
+    "repository": "graphrefly",
+    "command": "npm run docs:public:check",
+    "exit_code": 0,
+    "seconds": 0.89,
+    "log_sha256": "9b9a533ca6601ad652655861c28b81a74ab7361b4ac58a1fc31bfce2b6869686"
+  },
+  {
+    "repository": "graphrefly",
+    "command": "npm run authority:check:workspace",
+    "exit_code": 0,
+    "seconds": 1.79,
+    "log_sha256": "91c6aacdc3e3869c5c5042a9ac508ad106f8fdf6dcbcbf65622f65cfee56c6d6"
+  }
+]
