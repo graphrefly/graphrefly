@@ -1,0 +1,33 @@
+{
+  "reviewer": "v6_verification",
+  "scope": "Read-only pin, participant-access, rubric and calibration verification-gap review; no network, model calls, submitted-code execution, or expected-verdict access",
+  "findings": [
+    {
+      "priority": "P2",
+      "file": "reviewer-rubric.json",
+      "criterion": "inspect-with-detached-display/read-only-full-inspection",
+      "problem": "The inspection prompt explicitly requires returning target retained quiescence, but none of the six criteria explicitly requires returning this value. A correctly targeted publication/authority/host/fullGraph result that omits retainedQuiescence can pass the stated rubric.",
+      "fix": "Add target retained-quiescence output to an existing criterion or a new criterion, and add an omission calibration case; update rubric and integration pins before any live run."
+    },
+    {
+      "priority": "P2",
+      "file": "offline/calibration-cases.json",
+      "case": "C07/C08",
+      "problem": "Both composition cases carry the snippet JSDoc claim that distinct names yield distinct input Nodes and resource bindings. C07 therefore contradicts its correct explanation and fails the new name-resource-boundary criterion. The current composition calibration has no unambiguously correct positive control.",
+      "fix": "Preserve C07 as a contradiction case if intended, and add a separate positive control removing the false JSDoc claim. Do not silently classify contradictory commentary as a fully correct solution."
+    }
+  ],
+  "checks": {
+    "openCandidateRoundPinAndCrossBindingValidation": "pass",
+    "allParticipantSourceFilesMatchCompilerEnvironment": true,
+    "sourceCount": 98,
+    "participantPathsIncludingTask": 99,
+    "v5ToV6MaterialDifferences": ["examples/spending-alerts/README.md"],
+    "v5ToV6CompilerDifferences": ["materialSHA256", "files./b121-frozen/examples/spending-alerts/README.md"],
+    "compilerJSOptionsDeclarationsUnchanged": true,
+    "participantRubricCalibrationOracleFixtureTestPaths": [],
+    "rubricCalibrationAndTraversalReadsDeniedForAllFourPackets": true,
+    "calibrationExpectedRead": false
+  },
+  "limits": "Static verification only; this does not establish runtime behavior or generalization. Existing material examples are intentionally participant-visible."
+}

@@ -1,0 +1,266 @@
+Scope: all 20 workspace projects
+✓ Lockfile passes supply-chain policies (verified 4d ago)
+Lockfile is up to date, resolution step is skipped
+Already up to date
+
+   ╭──────────────────────────────────────────────╮
+   │                                              │
+   │      Update available! 11.7.0 → 12.4.2.      │
+   │     Changelog: https://pnpm.io/v/12.4.2      │
+   │   To update, run: corepack use pnpm@12.4.2   │
+   │                                              │
+   ╰──────────────────────────────────────────────╯
+
+
+Done in 1.3s using pnpm v11.7.0
+$ vitest run
+
+ RUN  v3.2.4 /Users/davidchenallio/src/graphrefly-ts/packages/ts
+
+ ✓ src/__tests__/local-container-postgresql-docker-engine-api-v0-node.test.ts (59 tests) 700ms
+ ✓ src/__tests__/spending-alerts-causal-preset.test.ts (100 tests) 1009ms
+   ✓ D165 exact request evidence and private authorization > all 64 declared evaluations survive two DATA frames including exact duplicate arrivals  389ms
+ ✓ src/__tests__/spending-alerts-causal-publication.test.ts (110 tests) 870ms
+ ✓ src/__tests__/managed-untrusted-js-compute.test.ts (37 tests) 1061ms
+   ✓ managed untrusted JS compute runtime (D612) > bounds hanging kill, destroy, and allocation-fence provider work as unverifiable  313ms
+ ✓ src/__tests__/solutions-agentic-memory.part-02.test.ts (166 tests) 1471ms
+   ✓ AgenticMemory D641 journal specialization restart coverage > reads and materializes raw memory plus insight records in a separate cold process  1073ms
+ ✓ src/__tests__/provider-qualification.test.ts (20 tests) 680ms
+   ✓ D155 independent provider qualification > runs injected HTTP leaf, atomically settles receipt, and cannot execute twice  385ms
+ ✓ src/__tests__/causal-focused-host-failures.test.ts (12 tests) 3390ms
+   ✓ 64-request burst retains bounded outcomes but reports pending overload and cannot end  764ms
+   ✓ 64 sequential writes within original pending bound retain lifetime records and end normally  2528ms
+ ✓ src/__tests__/tool-provider-adapters.test.ts (16 tests) 371ms
+ ✓ src/__tests__/local-untrusted-js-compute-node.test.ts (12 tests) 3724ms
+   ✓ D667 Node rootless-Podman broker lifecycle > keeps an aborted create unverifiable while reconciling a delayed allocation  397ms
+   ✓ D667 Node rootless-Podman broker lifecycle > uses the full cleanup window when delayed create reconciliation has transient control failures  441ms
+   ✓ D667 Node rootless-Podman broker lifecycle > refuses an unrelated ID even when an ignored filter returns matching labels and name  1017ms
+   ✓ D667 Node rootless-Podman broker lifecycle > fails closed on bounded log overflow and strict exit-code parsing  843ms
+ ✓ src/__tests__/managed-cloud-postgresql.test.ts (37 tests) 287ms
+ ✓ src/__tests__/work-item-execution-default.d687.test.ts (5 tests) 320ms
+ ✓ src/__tests__/root-eval-historical-integrity.test.ts (5 tests) 380ms
+ ✓ src/__tests__/causal-focused-host.test.ts (17 tests) 378ms
+ ✓ src/__tests__/keyed-rate-limit-lifecycle.d651.test.ts (18 tests) 410ms
+ ✓ src/__tests__/local-container-postgresql.test.ts (13 tests) 256ms
+ ✓ src/__tests__/causal-evidence-terminal.test.ts (3 tests) 217ms
+ ✓ src/__tests__/work-item-workspace-proposals-d430-family-applications.test.ts (61 tests) 387ms
+ ✓ src/__tests__/causal-focused-host-authorization.test.ts (12 tests) 217ms
+ ✓ src/__tests__/postgresql-tool-provider.test.ts (18 tests) 137ms
+ ✓ src/__tests__/solutions-causal-occurrence.d791.test.ts (43 tests) 256ms
+ ✓ src/__tests__/work-item-execution-project-fit.d686.test.ts (5 tests) 195ms
+ ✓ src/__tests__/spending-proof-verifier.test.ts (13 tests) 404ms
+ ✓ src/__tests__/causal-graded-entry.test.ts (25 tests) 251ms
+ ✓ src/__tests__/sources-node.test.ts (11 tests) 4557ms
+   ✓ node-only process sources > nodeProcessDriver cancellation terminates a long-running child  355ms
+   ✓ node-only process sources > fromSpawn escalates teardown when a child ignores SIGTERM  363ms
+   ✓ node-only git sources > fromGitPoll records the first poll as baseline and emits later commits  3450ms
+ ✓ src/__tests__/solutions-causal-ref-comparison.test.ts (2 tests) 73ms
+ ✓ src/__tests__/causal-cold-assembly.d162.test.ts (18 tests) 42ms
+ ✓ src/__tests__/solutions-agentic-memory-record-use.d643.test.ts (39 tests) 148ms
+ ✓ src/__tests__/graph-construction.d161.test.ts (28 tests) 51ms
+ ✓ src/__tests__/reactive-cascading-cache.test.ts (10 tests) 78ms
+ ✓ src/__tests__/committed-facts.d641.test.ts (15 tests) 66ms
+ ✓ src/__tests__/agent-runtime.part-04.test.ts (5 tests) 95ms
+ ✓ src/__tests__/causal-focused-host-construction.test.ts (7 tests) 158ms
+ ✓ src/__tests__/data-structures.part-02.test.ts (41 tests) 48ms
+ ✓ src/__tests__/wire-bridge.wire-bridge-envelopes-d134.test.ts (34 tests) 86ms
+ ✓ src/__tests__/model-harness-profile-current.test.ts (3 tests) 88ms
+ ✓ src/__tests__/causal-view-binding.test.ts (7 tests) 102ms
+ ✓ src/__tests__/clickhouse-trusted-query-evaluation.test.ts (11 tests) 131ms
+ ✓ src/__tests__/local-untrusted-js-compute.test.ts (11 tests) 134ms
+ ✓ src/__tests__/production-evaluation-authority.test.ts (7 tests) 49ms
+ ✓ src/__tests__/causal-admission-capacity-feasibility.test.ts (2 tests) 99ms
+ ✓ src/__tests__/spending-alerts-audience.test.ts (4 tests) 140ms
+ ✓ src/__tests__/keyed-rate-limit-algorithms.d650.test.ts (29 tests) 143ms
+ ✓ src/__tests__/solutions-agentic-work-item-memory-application.test.ts (11 tests) 101ms
+ ✓ src/__tests__/agent-runtime.part-02.test.ts (12 tests) 54ms
+ ✓ src/__tests__/causal-resource.test.ts (11 tests) 47ms
+ ✓ src/__tests__/keyed-rate-limit.d649.test.ts (24 tests) 107ms
+ ✓ src/__tests__/agent-runtime.part-13.test.ts (9 tests) 88ms
+ ✓ src/__tests__/graph.restoregraph-fresh-graph-restore-r-restore-d94-d95.test.ts (30 tests) 127ms
+ ✓ src/__tests__/sources.part-02.test.ts (33 tests) 76ms
+ ✓ src/__tests__/agent-runtime.part-05.test.ts (6 tests) 59ms
+ ✓ src/__tests__/work-item-scheduling.workitem-authoring-verification-and-scheduling-surface-d333-d343-part-02.test.ts (16 tests) 100ms
+ ✓ src/__tests__/causal-committed-view.d163.test.ts (18 tests) 168ms
+ ✓ src/__tests__/customer-hosted-postgresql.test.ts (9 tests) 127ms
+ ✓ src/__tests__/storage.d82-storage-substrate-helpers-part-02.test.ts (37 tests) 72ms
+ ✓ src/__tests__/tool-provider-run-retry.test.ts (15 tests) 48ms
+ ✓ src/__tests__/time.test.ts (18 tests) 45ms
+ ✓ src/__tests__/execution-environment.test.ts (8 tests) 79ms
+ ✓ src/__tests__/storage.d82-storage-substrate-helpers-part-01.sub-01.test.ts (35 tests) 71ms
+ ✓ src/__tests__/work-queue.test.ts (15 tests) 27ms
+ ✓ src/__tests__/local-container-postgresql-podman-libpod-api-v0-rootless.test.ts (4 tests) 46ms
+ ✓ src/__tests__/wire-bridge.protobuf-d497.test.ts (55 tests) 95ms
+ ✓ src/__tests__/agent-runtime.part-03.test.ts (9 tests) 42ms
+ ✓ src/__tests__/agent-runtime.part-06.test.ts (7 tests) 45ms
+ ✓ src/__tests__/agent-runtime.part-07.test.ts (8 tests) 34ms
+ ✓ src/__tests__/cqrs.test.ts (15 tests) 22ms
+ ✓ src/__tests__/local-container-postgresql-docker-engine-api-v0.test.ts (14 tests) 33ms
+ ✓ src/__tests__/conformance.part-02.test.ts (29 tests) 16ms
+ ✓ src/__tests__/sources.part-01.test.ts (29 tests) 39ms
+ ✓ src/__tests__/graph.part-02.test.ts (33 tests) 32ms
+ ✓ src/__tests__/data-structures.part-01.test.ts (42 tests) 53ms
+ ✓ src/__tests__/wire-bridge.remote-dispatcher-helpers-over-wirebridge-facts-d147.test.ts (14 tests) 22ms
+ ✓ src/__tests__/reactive-collection-storage.d161-persistreactivecollection-and-openpersistentreactive.test.ts (12 tests) 17ms
+ ✓ src/__tests__/spending-proof-plain-host.test.ts (18 tests) 10780ms
+   ✓ 64 sequential writes retain lifetime capacity; changed pack cannot add a 65th  10658ms
+ ✓ src/__tests__/postgresql-run-operations.test.ts (8 tests) 25ms
+ ✓ src/__tests__/shared-control-panel-memory-persistence.test.ts (9 tests) 28ms
+ ✓ src/__tests__/work-queue-scheduled-readiness.test.ts (19 tests) 28ms
+ ✓ src/__tests__/graph-construction-incoming.d161.test.ts (12 tests) 30ms
+ ✓ src/__tests__/core.test.ts (32 tests) 47ms
+ ✓ src/__tests__/scheduled-readiness.test.ts (12 tests) 22ms
+ ✓ src/__tests__/agent-runtime.part-01.test.ts (5 tests) 133ms
+ ✓ src/__tests__/orchestration.test.ts (16 tests) 169ms
+ ✓ src/__tests__/event-flow.test.ts (6 tests) 21ms
+ ✓ src/__tests__/work-item-actions.workitem-domain-action-admission-and-application-d239-d333-d343-part-01.sub-01.test.ts (7 tests) 63ms
+ ✓ src/__tests__/conformance.part-03.test.ts (19 tests) 70ms
+ ✓ src/__tests__/reactive-collection-storage.part-01.test.ts (16 tests) 33ms
+ ✓ src/__tests__/registration.d167.test.ts (32 tests) 73ms
+ ✓ src/__tests__/operators.test.ts (45 tests) 90ms
+ ✓ src/__tests__/work-item-scheduling.workitem-authoring-verification-and-scheduling-surface-d333-d343-part-01.sub-02.test.ts (8 tests) 35ms
+ ✓ src/__tests__/tool-provider-run-admission.test.ts (7 tests) 50ms
+ ✓ src/__tests__/tool-provider-recipes.test.ts (1 test) 14ms
+ ✓ src/__tests__/solutions-agentic-work-item-memory.part-01.test.ts (2 tests) 53ms
+ ✓ src/__tests__/higher-order.test.ts (28 tests) 53ms
+ ✓ src/__tests__/blueprint-evidence.test.ts (6 tests) 74ms
+ ✓ src/__tests__/solutions-reactive-layout.reactive-layout-solution-d181-part-02.test.ts (12 tests) 52ms
+ ✓ src/__tests__/conformance.part-01.test.ts (29 tests) 58ms
+ ✓ src/__tests__/storage.d82-storage-substrate-helpers-part-01.sub-02.test.ts (14 tests) 79ms
+ ✓ src/__tests__/work-item-actions.workitem-domain-action-admission-and-application-d239-d333-d343-part-02.test.ts (9 tests) 60ms
+ ✓ src/__tests__/graph.part-01.test.ts (24 tests) 28ms
+ ✓ src/__tests__/work-item-actions.workitem-domain-action-admission-and-application-d239-d333-d343-part-01.sub-02.test.ts (8 tests) 93ms
+ ✓ src/__tests__/patterns-admission-handoff.test.ts (13 tests) 31ms
+ ✓ src/__tests__/solutions-reactive-layout.reactive-layout-solution-d181-part-01.test.ts (15 tests) 88ms
+ ✓ src/__tests__/solutions-occurrence.d151.test.ts (13 tests) 63ms
+ ✓ src/__tests__/subpaths.test.ts (12 tests) 23ms
+ ✓ src/__tests__/agent-runtime.part-10.test.ts (8 tests) 53ms
+ ✓ src/__tests__/solutions-agentic-memory.part-01.test.ts (13 tests) 16ms
+ ✓ src/__tests__/openrouter-shared-transport.test.ts (12 tests) 72ms
+ ✓ src/__tests__/agent-runtime.part-11.test.ts (9 tests) 85ms
+ ✓ src/__tests__/environment-adapters.test.ts (11 tests) 33ms
+ ✓ src/__tests__/work-item-scheduling.workitem-authoring-verification-and-scheduling-surface-d333-d343-part-01.sub-01.test.ts (14 tests) 34ms
+ ✓ src/__tests__/work-queue-recipes.test.ts (8 tests) 12ms
+ ✓ src/__tests__/composition.test.ts (15 tests) 45ms
+ ✓ src/__tests__/patterns-semantic-memory.test.ts (15 tests) 25ms
+ ✓ src/__tests__/agent-runtime.part-09.test.ts (11 tests) 107ms
+ ✓ src/__tests__/causal-flush-copy.test.ts (2 tests) 6ms
+ ✓ src/__tests__/root-eval-http-transport-leaf.test.ts (3 tests) 93ms
+ ✓ src/__tests__/messaging.test.ts (13 tests) 19ms
+ ✓ src/__tests__/shared-control-panel-authority.test.ts (6 tests) 10ms
+ ✓ src/__tests__/causal-host-completion-feasibility.test.ts (9 tests) 67ms
+ ✓ src/__tests__/work-item-workspace-proposals-d429.test.ts (11 tests) 54ms
+ ✓ src/__tests__/agent-runtime.part-08.test.ts (12 tests) 38ms
+ ✓ src/__tests__/solutions-agentic-work-item-memory.part-02.test.ts (10 tests) 9ms
+ ✓ src/__tests__/combinators.test.ts (19 tests) 11ms
+ ✓ src/__tests__/cqrs-work-queue-recipes.test.ts (6 tests) 7ms
+ ✓ src/__tests__/root-eval-d154-provider-cost.test.ts (42 tests) 10ms
+ ✓ src/__tests__/rewire-deferred.test.ts (10 tests) 9ms
+ ✓ src/__tests__/capability-admission.test.ts (4 tests) 8ms
+ ✓ src/__tests__/agent-runtime.part-12.test.ts (3 tests) 10ms
+ ✓ src/__tests__/pull.test.ts (11 tests) 8ms
+ ✓ src/__tests__/storage-browser.test.ts (14 tests) 8ms
+ ✓ src/__tests__/worker.test.ts (10 tests) 12ms
+ ✓ src/__tests__/causal-quiet-outcome-feasibility.test.ts (3 tests) 7ms
+ ✓ src/__tests__/graph-diagnostics.test.ts (5 tests) 6ms
+ ✓ src/__tests__/root-eval-quiet-data-boundary.test.ts (2 tests) 7ms
+ ✓ src/__tests__/rewire.test.ts (16 tests) 14ms
+ ✓ src/__tests__/messaging-recipes.test.ts (5 tests) 6ms
+ ✓ src/__tests__/render.test.ts (13 tests) 6ms
+ ✓ src/__tests__/storage.attachobservesink-observe-driven-storage-binding-d57-d74.test.ts (8 tests) 7ms
+ ✓ src/__tests__/causal-quiescence-evidence.test.ts (2 tests) 7ms
+ ✓ src/__tests__/framework-adapters.test.ts (4 tests) 5ms
+ ✓ src/__tests__/lifecycle.test.ts (16 tests) 7ms
+ ✓ src/__tests__/sources-browser.test.ts (6 tests) 5ms
+ ✓ src/__tests__/solutions-causal-authority.d160.test.ts (3 tests) 9ms
+ ✓ src/__tests__/causal-ingress-owner-feasibility.test.ts (1 test) 4ms
+ ✓ src/__tests__/inspect.test.ts (7 tests) 6ms
+ ✓ src/__tests__/storage.d82-storage-substrate-helpers-part-03.test.ts (2 tests) 7ms
+ ✓ src/__tests__/qa-fixes.test.ts (6 tests) 5ms
+ ✓ src/__tests__/control.test.ts (6 tests) 5ms
+ ✓ src/__tests__/scoring.test.ts (8 tests) 5ms
+ ✓ src/__tests__/orchestration-work-queue-recipes.test.ts (2 tests) 5ms
+ ✓ src/__tests__/operators-tap.test.ts (2 tests) 5ms
+ ✓ src/__tests__/up-source.test.ts (5 tests) 5ms
+ ✓ src/__tests__/batch-dynamic.test.ts (5 tests) 6ms
+ ✓ src/__tests__/dispatcher.test.ts (5 tests) 3ms
+ ✓ src/__tests__/testing.test.ts (8 tests) 4ms
+ ✓ src/__tests__/root-eval-focused-async-adapters.test.ts (2 tests) 3ms
+ ✓ src/__tests__/patterns.test.ts (1 test) 4ms
+ ✓ src/__tests__/reentrancy.test.ts (3 tests) 4ms
+ ✓ src/__tests__/solutions-causal-coverage-key.test.ts (2 tests) 5ms
+ ✓ src/__tests__/local-container-postgresql-podman-libpod-api-v0-rootless-node.live.test.ts (3 tests | 1 skipped) 3ms
+ ✓ src/__tests__/openrouter-shared-recovery.test.ts (3 tests) 3ms
+ ✓ src/__tests__/root-eval-private-diagnostic-sink.test.ts (2 tests) 3ms
+ ✓ src/__tests__/root-eval-settled-spend.test.ts (3 tests) 4ms
+ ✓ src/__tests__/identity.test.ts (2 tests) 2ms
+ ↓ src/__tests__/local-untrusted-js-compute-node.live.test.ts (3 tests | 3 skipped)
+ ✓ src/__tests__/spending-alerts-preset-reference.test.ts (51 tests) 24031ms
+   ✓ D164 reference off > matches P3 after every input stage  436ms
+   ✓ D164 reference off > matches P4 after every input stage  2104ms
+   ✓ D164 reference off > matches P5 after every input stage  4471ms
+   ✓ D164 reference off > matches P6 after every input stage  8158ms
+   ✓ D164 reference summary > matches P3 after every input stage  542ms
+   ✓ D164 reference summary > matches P4 after every input stage  2258ms
+   ✓ D164 reference summary > matches P5 after every input stage  2295ms
+   ✓ D164 reference summary > matches P6 after every input stage  2785ms
+ ✓ src/__tests__/solutions-agentic-memory-work-item-root-eval-topology.test.ts (89 tests) 57644ms
+   ✓ D140-qualified D122 one-root verification diagnostics > preserves every authored observation contribution at the full 175-call 140-retry bound  4959ms
+   ✓ D140-qualified D122 one-root verification diagnostics > keeps reordered exact observation replays quiet and rejects conflict revisions without changing spend  1399ms
+   ✓ D140-qualified D122 one-root verification diagnostics > keeps reordered exact observation replays quiet and rejects skipped revisions without changing spend  1939ms
+   ✓ D140-qualified D122 one-root verification diagnostics > publishes a finite schedule proof and occurrence-aware progress lease  1065ms
+   ✓ D140-qualified D122 one-root verification diagnostics > does not let provider pacing shorten an admitted exact-tool settlement lease  1825ms
+   ✓ D140-qualified D122 one-root verification diagnostics > cancels remaining Graph pacing timers when a campaign finding settles  1637ms
+   ✓ D140-qualified D122 one-root verification diagnostics > keeps duplicate-start pacing timer cleanup attached to the Graph lifecycle  1479ms
+   ✓ D140-qualified D122 one-root verification diagnostics > freezes D159 no-network qualification with live authority closed  669ms
+   ✓ D140-qualified D122 one-root verification diagnostics > reproduces raw describe, raw graph.observe envelopes, and the derived run summary  1601ms
+   ✓ D140-qualified D122 one-root verification diagnostics > rejects forged admission coordinates and invalid accounting before cleanup  2348ms
+   ✓ D140-qualified D122 one-root verification diagnostics > derives recovery class from the factual HTTP receipt instead of the caller label  786ms
+   ✓ D140-qualified D122 one-root verification diagnostics > fails closed for every removed or replaced required solution/node identity  357ms
+   ✓ D140-qualified D122 one-root verification diagnostics > fails closed for every critical edge, arm-order drift, or hidden Graph  509ms
+   ✓ D140-qualified D122 one-root verification diagnostics > runs five ordered replicates with six concurrent WorkItems and one paced provider slot  788ms
+   ✓ D140-qualified D122 one-root verification diagnostics > publishes atomic provider-admission cuts before projecting monotonic progress  905ms
+   ✓ D140-qualified D122 one-root verification diagnostics > runs one five-replicate development generation with Graph-owned qualification and partition state  776ms
+   ✓ D140-qualified D122 one-root verification diagnostics > counts only currently executing provider effects across a synchronous replicate barrier  821ms
+   ✓ D140-qualified D122 one-root verification diagnostics > observes an explicit empty retry lifecycle on the no-retry path  769ms
+   ✓ D140-qualified D122 one-root verification diagnostics > keeps provider, exact-tool, retry-delay, and billing admissions active until settlement  1440ms
+   ✓ D140-qualified D122 one-root verification diagnostics > keeps billing observation, bounded quiescence, and reconciliation inside the root Graph  778ms
+   ✓ D140-qualified D122 one-root verification diagnostics > reconciles the D103-shaped 23 microusd differential only through the exact D105 certificate  1550ms
+   ✓ D140-qualified D122 one-root verification diagnostics > counts explicit provider dispatches independently from admitted attempts and cost  1600ms
+   ✓ D140-qualified D122 one-root verification diagnostics > keeps a positive efficacy finding when the Graph-native billing audit rejects identity drift  772ms
+   ✓ D140-qualified D122 one-root verification diagnostics > does not fabricate efficacy when the Graph-native billing audit rejects  654ms
+   ✓ D140-qualified D122 one-root verification diagnostics > correlates one bounded retry without creating a second WorkItem  783ms
+   ✓ D140-qualified D122 one-root verification diagnostics > emits source retry observations only after the retry lifecycle reaches a stable cut  804ms
+   ✓ D140-qualified D122 one-root verification diagnostics > lets the Graph exhaust a repeated transport-availability candidate  777ms
+   ✓ D140-qualified D122 one-root verification diagnostics > conserves one full six-arm retryable replicate through dispatchOrdinal-two admission  840ms
+   ✓ D140-qualified D122 one-root verification diagnostics > conserves six retry proposals through the single paced provider lane  831ms
+   ✓ D140-qualified D122 one-root verification diagnostics > retains 429 capacity identity through three recoveries and terminal exhaustion  802ms
+   ✓ D140-qualified D122 one-root verification diagnostics > fails closed in the Graph when valid Retry-After exceeds the recovery envelope  804ms
+   ✓ D140-qualified D122 one-root verification diagnostics > lets the Graph retain capacity identity when a fourth recovery is requested  845ms
+   ✓ D140-qualified D122 one-root verification diagnostics > cleans up failed effects and keeps the finding deterministic across completion order  1591ms
+   ✓ D140-qualified D122 one-root verification diagnostics > reaches a terminal finding when every provider response exhausts its output ceiling  666ms
+   ✓ D140-qualified D122 one-root verification diagnostics > verification gates accept a behaviorally equivalent alternative  774ms
+   ✓ D140-qualified D122 one-root verification diagnostics > verification gates reject a missing diff  769ms
+   ✓ D140-qualified D122 one-root verification diagnostics > verification gates reject public semantic failure  772ms
+   ✓ D140-qualified D122 one-root verification diagnostics > verification gates reject hidden verifier failure  767ms
+   ✓ D140-qualified D122 one-root verification diagnostics > verification gates retain provider failure  754ms
+   ✓ D140-qualified D122 one-root verification diagnostics > verification gates reject success-looking evidence from a failed exact tool  768ms
+   ✓ D140-qualified D122 one-root verification diagnostics > verification gates prioritize exact-tool failure over no-change  770ms
+   ✓ D140-qualified D122 one-root verification diagnostics > verification gates reject wrong-scope changes  768ms
+   ✓ D140-qualified D122 one-root verification diagnostics > verification gates prioritize wrong scope over public semantic failure  768ms
+   ✓ D140-qualified D122 one-root verification diagnostics > verification gates prioritize public semantic failure over hidden verifier failure  771ms
+   ✓ D140-qualified D122 one-root verification diagnostics > verification gates prioritize incomplete cleanup over other failed stages  764ms
+   ✓ D140-qualified D122 one-root verification diagnostics > verification gates retain executor exceptions as failed cleanup  767ms
+   ✓ D140-qualified D122 one-root verification diagnostics > excludes technical failures only as whole matched replicates and becomes inconclusive below four  1472ms
+   ✓ D140-qualified D122 one-root verification diagnostics > continues unaffected replicates after a source technical exclusion without simulating target cleanup  471ms
+   ✓ D140-qualified D122 one-root verification diagnostics > persists idempotently and rejects replay/state drift through the atomic store boundary  1159ms
+   ✓ D154 adaptive route settlement and coherent terminal QA > conserves reported and unknown provider costs on the current Together route  766ms
+   ✓ D154 adaptive route settlement and coherent terminal QA > adapts 30/60/120/240 seconds and recovers only after three usable responses across Work Items  801ms
+   ✓ D154 adaptive route settlement and coherent terminal QA > retains response Retry-After after request exhaustion and applies route cooldown  799ms
+   ✓ D154 adaptive route settlement and coherent terminal QA > withholds the scientific finding when progress stalls during final billing  768ms
+
+ Test Files  165 passed | 1 skipped (166)
+      Tests  2727 passed | 4 skipped (2731)
+   Start at  15:15:17
+   Duration  60.21s (transform 6.63s, setup 0ms, collect 49.84s, tests 120.73s, environment 18ms, prepare 10.95s)
+

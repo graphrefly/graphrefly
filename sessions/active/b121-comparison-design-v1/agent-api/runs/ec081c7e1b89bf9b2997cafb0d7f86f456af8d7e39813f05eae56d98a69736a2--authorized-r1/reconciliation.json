@@ -1,0 +1,14 @@
+{
+  "checkedAt": "2026-09-16T07:21:59.681Z",
+  "keyUsage": 0.775756572,
+  "priorKeyUsage": 0.581919144,
+  "keyDelta": 0.19383742800000003,
+  "runReportedUSD": 0.19383742800000014,
+  "cumulativeUSD": 0.798574588,
+  "carriedUnknownReservedUSD": 0.3151872,
+  "currentUnknownReservedUSD": 0.6389759999999993,
+  "conservativeCommittedUSD": 1.7527377879999995,
+  "remainingUSD": 0.24726221200000054,
+  "journalRecords": 1867,
+  "journalVerified": true
+}

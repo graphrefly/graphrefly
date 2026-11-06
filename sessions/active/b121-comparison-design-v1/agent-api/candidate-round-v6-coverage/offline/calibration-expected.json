@@ -1,0 +1,33 @@
+{
+  "C01": [],
+  "C02": [
+    "target-instance-authority",
+    "missing-publication"
+  ],
+  "C03": [
+    "read-only-full-inspection"
+  ],
+  "C04": [
+    "missing-publication"
+  ],
+  "C05": [
+    "outcome-evidence-correlation"
+  ],
+  "C06": [
+    "missing-publication",
+    "unknown-outcome-conclusions"
+  ],
+  "C07": [],
+  "C08": [
+    "name-resource-boundary"
+  ],
+  "C09": [
+    "host-boundary-evidence"
+  ],
+  "C10": [
+    "host-boundary-evidence"
+  ],
+  "C11": [
+    "name-resource-boundary"
+  ]
+}

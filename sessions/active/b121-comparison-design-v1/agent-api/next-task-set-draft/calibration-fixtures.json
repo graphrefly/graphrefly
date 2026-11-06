@@ -1,0 +1,89 @@
+{
+  "kind": "author-written-offline-calibration-not-model-answers",
+  "providerCalls": 0,
+  "fixtures": [
+    {
+      "id": "export-structure-only-positive",
+      "taskId": "export-structure-only",
+      "snippet": "import type { Graph } from \"@graphrefly/ts/graph\";\nexport function captureStructure(graph: Graph) { return graph.topology(); }\n",
+      "explanation": "The existing topology API recursively preserves structural nodes, edges, subgraphs and static annotations. It excludes node runtime status/value/version. Pure topology does not prove equal implementation, equal business results or effect permission. Caller metadata is retained and is not security-redacted. Evidence: packages/ts/src/graph/graph.ts:660-664; packages/ts/src/graph/describe.ts:62-83; examples/spending-alerts/README.md:122-123,168-176.",
+      "expectedCompile": true,
+      "expectedStatic": true
+    },
+    {
+      "id": "export-structure-only-semantic-negative",
+      "taskId": "export-structure-only",
+      "snippet": "import type { Graph } from \"@graphrefly/ts/graph\";\nexport function captureStructure(graph: Graph) { return graph.describe(); }\n",
+      "explanation": "The existing topology API recursively preserves structural nodes, edges, subgraphs and static annotations. It excludes node runtime status/value/version. Pure topology does not prove equal implementation, equal business results or effect permission. Caller metadata is retained and is not security-redacted. Evidence: packages/ts/src/graph/graph.ts:660-664; packages/ts/src/graph/describe.ts:62-83; examples/spending-alerts/README.md:122-123,168-176.",
+      "expectedCompile": true,
+      "expectedStatic": false,
+      "violatedCriterion": "structural-api"
+    },
+    {
+      "id": "export-structure-only-missing-export",
+      "taskId": "export-structure-only",
+      "snippet": "import type { Graph } from \"@graphrefly/ts/graph\";\nfunction captureStructure(graph: Graph) { return graph.topology(); }\n",
+      "explanation": "The existing topology API recursively preserves structural nodes, edges, subgraphs and static annotations. It excludes node runtime status/value/version. Pure topology does not prove equal implementation, equal business results or effect permission. Caller metadata is retained and is not security-redacted. Evidence: packages/ts/src/graph/graph.ts:660-664; packages/ts/src/graph/describe.ts:62-83; examples/spending-alerts/README.md:122-123,168-176.",
+      "expectedCompile": false,
+      "expectedStatic": null
+    },
+    {
+      "id": "report-node-version-metadata-positive",
+      "taskId": "report-node-version-metadata",
+      "snippet": "import type { NodeVersion } from \"@graphrefly/ts/core\";\ntype Report = {kind: \"disabled\"} | {kind: \"counter\"; counter: number} | {kind: \"content\"; counter: number; cid: string; prev: string | null};\nexport function summarizeVersions(versions: readonly (NodeVersion | undefined)[]): Report[] {\n return versions.map(v => v === undefined ? {kind: \"disabled\"} : v.level === 0 ? {kind: \"counter\", counter: v.counter} : {kind: \"content\", counter: v.counter, cid: v.cid, prev: v.prev});\n}\n",
+      "explanation": "CID concerns DATA content under the configured hash, not source revision or I/O authorization. Equal CID proves neither implementation equality nor collision-free payload equality. advanceNodeVersion increments the counter even if the content hash stays equal. No missing field is manufactured. Evidence: packages/ts/src/node/versioning.ts:8-25,74-78,127-143.",
+      "expectedCompile": true,
+      "expectedStatic": true
+    },
+    {
+      "id": "report-node-version-metadata-semantic-negative",
+      "taskId": "report-node-version-metadata",
+      "snippet": "import type { NodeVersion } from \"@graphrefly/ts/core\";\ntype Report = {kind: \"disabled\"} | {kind: \"counter\"; counter: number} | {kind: \"content\"; counter: number; cid: string; prev: string | null};\nexport function summarizeVersions(versions: readonly (NodeVersion | undefined)[]): Report[] {\n return versions.map(v => v === undefined ? {kind: \"disabled\"} : v.level === 0 ? {kind: \"counter\", counter: v.counter} : {kind: \"content\", counter: v.counter, cid: v.cid, prev: v.prev ?? \"\"});\n}\n",
+      "explanation": "CID concerns DATA content under the configured hash, not source revision or I/O authorization. Equal CID proves neither implementation equality nor collision-free payload equality. advanceNodeVersion increments the counter even if the content hash stays equal. No missing field is manufactured. Evidence: packages/ts/src/node/versioning.ts:8-25,74-78,127-143.",
+      "expectedCompile": true,
+      "expectedStatic": false,
+      "violatedCriterion": "preserve-fields"
+    },
+    {
+      "id": "report-node-version-metadata-missing-export",
+      "taskId": "report-node-version-metadata",
+      "snippet": "import type { NodeVersion } from \"@graphrefly/ts/core\";\ntype Report = {kind: \"disabled\"} | {kind: \"counter\"; counter: number} | {kind: \"content\"; counter: number; cid: string; prev: string | null};\nfunction summarizeVersions(versions: readonly (NodeVersion | undefined)[]): Report[] {\n return versions.map(v => v === undefined ? {kind: \"disabled\"} : v.level === 0 ? {kind: \"counter\", counter: v.counter} : {kind: \"content\", counter: v.counter, cid: v.cid, prev: v.prev});\n}\n",
+      "explanation": "CID concerns DATA content under the configured hash, not source revision or I/O authorization. Equal CID proves neither implementation equality nor collision-free payload equality. advanceNodeVersion increments the counter even if the content hash stays equal. No missing field is manufactured. Evidence: packages/ts/src/node/versioning.ts:8-25,74-78,127-143.",
+      "expectedCompile": false,
+      "expectedStatic": null
+    },
+    {
+      "id": "consume-business-results-positive",
+      "taskId": "consume-business-results",
+      "snippet": "import type { DataResult, DataIssue } from \"../../packages/ts/src/data/index.js\";\nexport function collectBusinessResults<T>(results: readonly DataResult<T>[]): {values: readonly T[]; issues: readonly DataIssue[]} {\n const values: T[] = []; const issues: DataIssue[] = [];\n for (const result of results) {\n  if (result.kind === \"ok\") values.push(result.value);\n  else issues.push(result.error);\n  if (result.issues) issues.push(...result.issues);\n }\n return {values, issues};\n}\n",
+      "explanation": "These are passive DATA-level facts, not protocol ERROR or lifecycle termination. retryable metadata does not execute or authorize automatic retry. Values and issues retain their references, ordering and duplicates; empty input returns empty arrays. Evidence: packages/ts/src/data/index.ts:1-35.",
+      "expectedCompile": true,
+      "expectedStatic": true
+    },
+    {
+      "id": "consume-business-results-semantic-negative",
+      "taskId": "consume-business-results",
+      "snippet": "import type { DataResult, DataIssue } from \"../../packages/ts/src/data/index.js\";\nexport function collectBusinessResults<T>(results: readonly DataResult<T>[]): {values: readonly T[]; issues: readonly DataIssue[]} {\n const values: T[] = []; const issues: DataIssue[] = [];\n for (const result of results) {\n  if (result.kind === \"ok\") { if (!result.issues?.length) values.push(result.value); }\n  else issues.push(result.error);\n  if (result.issues) issues.push(...result.issues);\n }\n return {values, issues};\n}\n",
+      "explanation": "These are passive DATA-level facts, not protocol ERROR or lifecycle termination. retryable metadata does not execute or authorize automatic retry. Values and issues retain their references, ordering and duplicates; empty input returns empty arrays. Evidence: packages/ts/src/data/index.ts:1-35.",
+      "expectedCompile": true,
+      "expectedStatic": false,
+      "violatedCriterion": "result-branches"
+    },
+    {
+      "id": "consume-business-results-missing-export",
+      "taskId": "consume-business-results",
+      "snippet": "import type { DataResult, DataIssue } from \"../../packages/ts/src/data/index.js\";\nfunction collectBusinessResults<T>(results: readonly DataResult<T>[]): {values: readonly T[]; issues: readonly DataIssue[]} {\n const values: T[] = []; const issues: DataIssue[] = [];\n for (const result of results) {\n  if (result.kind === \"ok\") values.push(result.value);\n  else issues.push(result.error);\n  if (result.issues) issues.push(...result.issues);\n }\n return {values, issues};\n}\n",
+      "explanation": "These are passive DATA-level facts, not protocol ERROR or lifecycle termination. retryable metadata does not execute or authorize automatic retry. Values and issues retain their references, ordering and duplicates; empty input returns empty arrays. Evidence: packages/ts/src/data/index.ts:1-35.",
+      "expectedCompile": false,
+      "expectedStatic": null
+    },
+    {
+      "id": "export-structure-helper-positive",
+      "taskId": "export-structure-only",
+      "snippet": "import type { Graph } from \"@graphrefly/ts/graph\";\nimport { topologyFromDescribe } from \"../../packages/ts/src/graph/describe.js\";\nexport function captureStructure(graph: Graph) { return topologyFromDescribe(graph.describe()); }\n",
+      "explanation": "The existing topology API recursively preserves structural nodes, edges, subgraphs and static annotations. It excludes node runtime status/value/version. Pure topology does not prove equal implementation, equal business results or effect permission. Caller metadata is retained and is not security-redacted. Evidence: packages/ts/src/graph/graph.ts:660-664; packages/ts/src/graph/describe.ts:62-83; examples/spending-alerts/README.md:122-123,168-176.",
+      "expectedCompile": true,
+      "expectedStatic": true
+    }
+  ]
+}

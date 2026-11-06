@@ -1,0 +1,185 @@
+{
+  "readmeSHA256": "b6b25cfb5a5421255cb601e9ecdd7ba17d21de9e92c5d90621ddbd571197d75e",
+  "snippetSHA256": "e25cdfbabde2e9fd5fcd5717bd197922cf8d6a2633b002ea501a856eb8113425",
+  "compilerOK": true,
+  "compilerReceipt": "/Users/davidchenallio/src/graphrefly/sessions/active/b121-comparison-design-v1/agent-api/candidate-round-v5-submit/followup-evidence/compiler",
+  "localFileLinksChecked": 12,
+  "unchangedFrozenArtifacts": 5,
+  "unchangedCodeBindings": 33,
+  "providerCalls": 0,
+  "demoComposition": {
+    "sameGraph": true,
+    "independentOwners": [
+      "alerts",
+      "alerts-b"
+    ],
+    "aPendingAfterB": 1,
+    "bSucceededWhileAPending": "succeeded",
+    "writes": {
+      "a": 1,
+      "b": 1
+    },
+    "originalExecutionHandles": true,
+    "retainedLineages": true,
+    "bFinalDisplay": "\u79bb\u7ebf\u6a21\u62df \u00b7 \u4e0d\u6267\u884c\u771f\u5b9e inbox I/O\n\u542f\u52a8\u4e8b\u5b9e\uff1astarted\uff08\u4e0d\u4ee3\u8868\u8fd0\u884c\u7ed3\u675f\uff09\n\u8bc4\u4f30\uff1aevaluation-tea-0: \u89e6\u53d1\u544a\u8b66\u6761\u4ef6\uff08\u4ecd\u9700\u8bc1\u636e\u4e0e\u8bb8\u53ef\uff09\n\u53d1\u5e03\uff1aalert:evaluation-tea-0: succeeded\n\u8bc1\u636e\u8986\u76d6\uff1a{\"kind\":\"causal-evidence-coverage\",\"occurrence\":{\"digest\":\"sha256:469e8707977322ac17193f87ec00e2b43a4503c1b658193ca79b7c3bd1f32920\",\"occurrenceId\":\"evaluation-tea-0\",\"revision\":1,\"revisionDomain\":\"fixture-tea\",\"sourceRefs\":[{\"id\":\"evaluation-tea-0\",\"kind\":\"evaluation\"}]},\"complete\":true,\"entries\":[{\"coverage\":\"included\",\"evidenceDigest\":\"sha256:5aab989d117ef05d2daae38fc42447b8c6f3ab21c6b41689a4e3c5dbf5ef16c4\",\"evidenceId\":\"evaluation-tea-0:spending-input\",\"evidenceKind\":\"spending-input\",\"occurrence\":{\"digest\":\"sha256:469e8707977322ac17193f87ec00e2b43a4503c1b658193ca79b7c3bd1f32920\",\"occurrenceId\":\"evaluation-tea-0\",\"revision\":1,\"revisionDomain\":\"fixture-tea\",\"sourceRefs\":[{\"id\":\"evaluation-tea-0\",\"kind\":\"evaluation\"}]},\"refs\":[\"second-fixture\"]},{\"coverage\":\"included\",\"evidenceDigest\":\"sha256:00a32a674f0984c6e7bec42ad45c00c818e602b48ae793fd94a1cefda99838f7\",\"evidenceId\":\"evaluation-tea-0:spending-code-binding\",\"evidenceKind\":\"spending-code-binding\",\"occurrence\":{\"digest\":\"sha256:469e8707977322ac17193f87ec00e2b43a4503c1b658193ca79b7c3bd1f32920\",\"occurrenceId\":\"evaluation-tea-0\",\"revision\":1,\"revisionDomain\":\"fixture-tea\",\"sourceRefs\":[{\"id\":\"evaluation-tea-0\",\"kind\":\"evaluation\"}]},\"refs\":[\"second-fixture\"]},{\"coverage\":\"included\",\"evidenceDigest\":\"sha256:c12ab923d9057a1a015636b3877d3bd8cf47db6131b45ea74dcfbbbdca5dc7cb\",\"evidenceId\":\"sha256:7cb402121484927ecebff86a35d3c8cbc908d1f52968a2286cbbe001b355daed\",\"evidenceKind\":\"spending-verification\",\"occurrence\":{\"digest\":\"sha256:469e8707977322ac17193f87ec00e2b43a4503c1b658193ca79b7c3bd1f32920\",\"occurrenceId\":\"evaluation-tea-0\",\"revision\":1,\"revisionDomain\":\"fixture-tea\",\"sourceRefs\":[{\"id\":\"evaluation-tea-0\",\"kind\":\"evaluation\"}]},\"refs\":[\"sha256:93cbe091818e3122690bebe5063d6a887c4d64a23ecb53e5a8dfb67982ec12f2\"]}],\"missingKinds\":[],\"terminalGapKinds\":[]}\n\u95ee\u9898\uff1a\u5c1a\u65e0\u95ee\u9898\u4e8b\u5b9e\n\u5c1a\u65e0\u5f53\u524d\u503c\uff1aissues",
+    "evidenceNavigation": [
+      {
+        "authorityNode": "alerts/causal/authority",
+        "implementationNode": "alerts/vendorStats",
+        "affectedEdges": [
+          {
+            "from": "alerts/vendorStats",
+            "to": "alerts/anomalyScore"
+          }
+        ],
+        "occurrence": {
+          "digest": "sha256:972f69f08afb53408d1d151b0dfc74cb6f01525181a47012ca0eb678905d92f1",
+          "occurrenceId": "evaluation-coffee-0",
+          "revision": 1,
+          "revisionDomain": "fixture-coffee",
+          "sourceRefs": [
+            {
+              "id": "evaluation-coffee-0",
+              "kind": "evaluation"
+            }
+          ]
+        },
+        "requestRef": {
+          "id": "sha256:5605a8e4de69806871d1130a745f13c23ecc34fedbd701d268d1d1483827fc74",
+          "kind": "spending-alerts/request-material/v1"
+        },
+        "admissionRef": {
+          "id": "sha256:e2d9d5d097e576e9ba171e9b473eae86fa7b58339db734116cf376512f1ba99d",
+          "kind": "spending-admission"
+        },
+        "outcome": {
+          "occurrence": {
+            "digest": "sha256:972f69f08afb53408d1d151b0dfc74cb6f01525181a47012ca0eb678905d92f1",
+            "occurrenceId": "evaluation-coffee-0",
+            "revision": 1,
+            "revisionDomain": "fixture-coffee",
+            "sourceRefs": [
+              {
+                "id": "evaluation-coffee-0",
+                "kind": "evaluation"
+              }
+            ]
+          },
+          "effectId": "alert:evaluation-coffee-0",
+          "requestRef": {
+            "id": "sha256:5605a8e4de69806871d1130a745f13c23ecc34fedbd701d268d1d1483827fc74",
+            "kind": "spending-alerts/request-material/v1"
+          },
+          "proposalDigest": "sha256:5b8776ca92f526fd919c11997c2113bb3ae7238d3ee3878fd0e6133cbd7ed89f",
+          "admissionRef": {
+            "id": "sha256:e2d9d5d097e576e9ba171e9b473eae86fa7b58339db734116cf376512f1ba99d",
+            "kind": "spending-admission"
+          },
+          "state": "succeeded",
+          "result": {
+            "kind": "ok",
+            "value": {
+              "source": "offline-host",
+              "io": false
+            }
+          }
+        },
+        "verificationArtifact": {
+          "kind": "fixture-artifact",
+          "id": "sha256:52d3d18978c27b857d1c59bbb27785c2b22c9a07f834a97cf2bba85426b0ada7"
+        },
+        "implementationSource": "examples/spending-alerts/causal-business.ts",
+        "binding": {
+          "sourceDigest": "sha256:e83bda48a5980d48f89dfeebe15be295234653e454344c39343f3153837fbf5a",
+          "runtimeDigest": "sha256:e83bda48a5980d48f89dfeebe15be295234653e454344c39343f3153837fbf5a"
+        },
+        "coverage": "fixture binding only; current loaded-source implementation mapping is not attested",
+        "historicalSourceExperiment": "docs/design/causal-graded-entry-implementation/source-binding.json",
+        "historicalScope": "separate recorded experiment; not this A/B run's source attestation",
+        "modificationProvenance": "unknown for this run; recorded tool provenance belongs only to the separate experiment"
+      },
+      {
+        "authorityNode": "alerts-b/causal/authority",
+        "implementationNode": "alerts-b/vendorStats",
+        "affectedEdges": [
+          {
+            "from": "alerts-b/vendorStats",
+            "to": "alerts-b/anomalyScore"
+          }
+        ],
+        "occurrence": {
+          "digest": "sha256:469e8707977322ac17193f87ec00e2b43a4503c1b658193ca79b7c3bd1f32920",
+          "occurrenceId": "evaluation-tea-0",
+          "revision": 1,
+          "revisionDomain": "fixture-tea",
+          "sourceRefs": [
+            {
+              "id": "evaluation-tea-0",
+              "kind": "evaluation"
+            }
+          ]
+        },
+        "requestRef": {
+          "id": "sha256:a1c967e3691315bbdcf668f1ff6ea0e78b634548a242d9ca1b78bb59ef66c5b9",
+          "kind": "spending-alerts/request-material/v1"
+        },
+        "admissionRef": {
+          "id": "sha256:72b4864ca325ecff382934dbdb36e3153dd390f8412a50826ce6eb2eda4d631d",
+          "kind": "spending-admission"
+        },
+        "outcome": {
+          "occurrence": {
+            "digest": "sha256:469e8707977322ac17193f87ec00e2b43a4503c1b658193ca79b7c3bd1f32920",
+            "occurrenceId": "evaluation-tea-0",
+            "revision": 1,
+            "revisionDomain": "fixture-tea",
+            "sourceRefs": [
+              {
+                "id": "evaluation-tea-0",
+                "kind": "evaluation"
+              }
+            ]
+          },
+          "effectId": "alert:evaluation-tea-0",
+          "requestRef": {
+            "id": "sha256:a1c967e3691315bbdcf668f1ff6ea0e78b634548a242d9ca1b78bb59ef66c5b9",
+            "kind": "spending-alerts/request-material/v1"
+          },
+          "proposalDigest": "sha256:7bca319dfad75acfed68f4ee29748f75be1a0acb7a85a2ccaa6a6886d57e9264",
+          "admissionRef": {
+            "id": "sha256:72b4864ca325ecff382934dbdb36e3153dd390f8412a50826ce6eb2eda4d631d",
+            "kind": "spending-admission"
+          },
+          "state": "succeeded",
+          "result": {
+            "kind": "ok",
+            "value": {
+              "source": "offline-host",
+              "io": false
+            }
+          }
+        },
+        "verificationArtifact": {
+          "kind": "fixture-artifact",
+          "id": "sha256:93cbe091818e3122690bebe5063d6a887c4d64a23ecb53e5a8dfb67982ec12f2"
+        },
+        "implementationSource": "examples/spending-alerts/causal-business.ts",
+        "binding": {
+          "sourceDigest": "sha256:e83bda48a5980d48f89dfeebe15be295234653e454344c39343f3153837fbf5a",
+          "runtimeDigest": "sha256:e83bda48a5980d48f89dfeebe15be295234653e454344c39343f3153837fbf5a"
+        },
+        "coverage": "fixture binding only; current loaded-source implementation mapping is not attested",
+        "historicalSourceExperiment": "docs/design/causal-graded-entry-implementation/source-binding.json",
+        "historicalScope": "separate recorded experiment; not this A/B run's source attestation",
+        "modificationProvenance": "unknown for this run; recorded tool provenance belongs only to the separate experiment"
+      }
+    ]
+  },
+  "localAnchorsChecked": 2,
+  "review": {
+    "mode": "focused local three-lens review",
+    "independentAgents": false,
+    "changes": "README only; no API or runtime changes",
+    "gates": "frozen snippet compilation, existing offline demo, local links/anchors, frozen bindings, diff whitespace"
+  }
+}

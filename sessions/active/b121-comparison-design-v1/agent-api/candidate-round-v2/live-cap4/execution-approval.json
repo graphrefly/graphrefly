@@ -1,0 +1,17 @@
+{
+  "manifestSHA": "c52bed2fe6bf2f82a3d7590f3eb7822d853747169204c468ca8930a35154f8d9",
+  "action": "B121-agent-api-one-shot",
+  "acceptAliasLimitation": true,
+  "acceptInputEstimateLimitation": true,
+  "expiresAt": "2026-09-18T10:34:02.953Z",
+  "maxGenerationCalls": 1444,
+  "maxUSD": 4,
+  "retries": {
+    "capacity": 3,
+    "availability": 1
+  },
+  "model": "deepseek/deepseek-v4.1-flash",
+  "providerTag": "together",
+  "priorUsageUSD": 1.7527377880000001,
+  "authorizationSource": "Current task: assistant proposed cumulative $4 including prior fees and unresolved reservations, fixed four tasks, no replacement runs; user replied 是的，确认."
+}

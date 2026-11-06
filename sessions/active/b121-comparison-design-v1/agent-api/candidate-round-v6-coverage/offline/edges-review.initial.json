@@ -1,0 +1,46 @@
+{
+  "reviewer": "v6_edges",
+  "scope": "read-only task/rubric and selectively frozen-source review; calibration-expected.json not read; no participant code or network execution",
+  "findings": [
+    {
+      "priority": "P2",
+      "id": "required-return-fields-unscored",
+      "file": "reviewer-rubric.json",
+      "criterion": "inspect-with-detached-display/host-boundary-evidence",
+      "detail": "Task explicitly requires returning target host records/readiness and retained quiescence; criterion requires using observations/explaining boundaries but does not require these returned values. C01 with retainedQuiescence omitted from return still meets all six literal inspection criteria. Reading host without returning it similarly evades the required output.",
+      "recommendation": "Explicitly require returned target host records/readiness and retained quiescence; permit equivalent shapes and unavailable states."
+    },
+    {
+      "priority": "P2",
+      "id": "contradictory-calibration-comment",
+      "file": "offline/calibration-cases.json",
+      "case": "C07",
+      "detail": "Code comment says distinct names yield distinct input Nodes and resource bindings. Explanation says names do not clone/prepare resources. New name-resource-boundary rule prohibits the former claim; C07 is not an unambiguous positive. C08 inherits the same false comment as well as its explicit negative explanation.",
+      "recommendation": "If C07 is intended positive, correct its comment before freezing. Keep C08 negative by its deliberately false explanatory claim."
+    },
+    {
+      "priority": "P2",
+      "id": "code-only-vs-explanation",
+      "file": "tasks.json",
+      "task": "compose-two-instances",
+      "detail": "Prompt simultaneously requests explanations (including Explain separately) and says Submit code only. This is inherited from v5 but remains contradictory now that explanation is specifically scored by new name-resource-boundary criterion.",
+      "recommendation": "Replace Submit code only with Submit code and explanation; do not execute it."
+    }
+  ],
+  "sourceChecks": {
+    "multipleInstances": "Explicit target publication authorityId, absence guard and unfiltered graph snapshot supported by README 98-132, causal-publication.ts 71-79, causal-graded-demo.ts 207-230. No enumeration dependency.",
+    "resources": "causal-entry.ts 54-68 forwards prepared resource/binding and supplied input Nodes; naming does not rebind.",
+    "timing": "causal-focused-host.ts 155-185 records outcomes into a queued graph DATA frame; host diagnostics 558-575 can precede publication propagation. Separate-read timing requirement is justified.",
+    "nonretroactivity": "v6 uses separate artifact directory; exposure statement discloses prior tasks/answers and development scope. Diff does not purport to change v5 results."
+  },
+  "calibrationJudgments": {
+    "C01": "pass static criteria as written",
+    "C02": "fail target-instance-authority and missing-publication: first suffix authority can be wrong even with absent target publication",
+    "C03": "fail read-only-full-inspection: only counts returned",
+    "C04": "fail missing-publication: suffix fallback supplies other authority; target-instance-authority satisfied when target publication present",
+    "C05": "fail outcome-evidence-correlation: contradictory host-only outcomes claim",
+    "C06": "fail missing-publication and unknown-outcome-conclusions: absence treated as no-submit and replay-safe",
+    "C07": "fail name-resource-boundary as currently written due code comment contradicting explanation",
+    "C08": "fail name-resource-boundary in both comment and explanation"
+  }
+}

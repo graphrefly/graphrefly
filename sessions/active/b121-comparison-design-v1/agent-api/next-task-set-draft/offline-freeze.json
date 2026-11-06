@@ -1,0 +1,179 @@
+{
+  "work": "graphrefly:B121",
+  "formalReady": false,
+  "liveAuthorization": false,
+  "providerCalls": 0,
+  "manifestSHA256": "fb4aafb4e46c2937813395d8164f797473dc7bb1f58308c6073840a77a826ffb",
+  "artifactSHA256": {
+    "materials.json": "a7846d59bdc5d0ca359292dceb91ef3274991bfb4afd9ce28e18c867e7554e6d",
+    "tasks.json": "f0217735c7ab80bc16fbfae23190541dd3ebc696b8d7d1e4d7d1a7218aac898b",
+    "reviewer-rubric.json": "6e0bee1dfd58b4a48052b58df656bc0d0f78fbb7744ea34cd8d5ab63f9a2277c",
+    "integration-pins.json": "0da48881d731de421e74d794820716944e3d58c148944ab2af79f8547811de87",
+    "compiler-environment.json.gz": "2717c9e5009a281e226ac98f226d245773761f30fa6dcc2601fd0608be9cfe32"
+  },
+  "samples": [
+    {
+      "sampleId": "candidate-entry-01",
+      "taskId": "export-structure-only",
+      "role": "tooling-integrator",
+      "packetSHA256": "e8435fa9b3e8ad4dd175ca5ef6a9400468f0648c81c760916b3e160b748163de"
+    },
+    {
+      "sampleId": "candidate-entry-02",
+      "taskId": "report-node-version-metadata",
+      "role": "diagnostic-integrator",
+      "packetSHA256": "4720c6148cf9239437e8786c614b36799616dba7b9ed7e4f639b915aef71456b"
+    },
+    {
+      "sampleId": "candidate-entry-03",
+      "taskId": "consume-business-results",
+      "role": "application-boundary",
+      "packetSHA256": "461bfc41ca60c45bd134ed28de81b7026f8badca699533bc7ca05373d733c864"
+    }
+  ],
+  "policy": {
+    "qualificationCalls": 4,
+    "replicatesPerTask": 1,
+    "modelSessionRetries": 0,
+    "compilerRetries": 0,
+    "order": "task-array-order",
+    "denominator": 3,
+    "stop": "infrastructure/material/compiler failure stops remainder; participant failure remains and proceeds; no replacement",
+    "scoring": "Original rubric, frozen compilation, then trusted independent criterion review; no grader repair turn."
+  },
+  "budgetStatus": "Historical v11 close-out evidence only. Refresh before live; no budget increase or reservation release.",
+  "codeBindings": [
+    {
+      "path": "scripts/b121-comparison/api-campaign.mjs",
+      "sha256": "48c06f1f4a665b9c64216d22f104fd4f59434e5c6e00c3bab66c5459a3ac8510"
+    },
+    {
+      "path": "scripts/b121-comparison/api-diagnostics.mjs",
+      "sha256": "e4a3de6c2a4aa229838c7c0fe9040161e64fef40c22b3513795210863e8cb39c"
+    },
+    {
+      "path": "scripts/b121-comparison/api-entry-review.mjs",
+      "sha256": "1e12680c530628f8d0f4edad1ccb0f10bea21888759f3efceb1f42dcf0a5a1ba"
+    },
+    {
+      "path": "scripts/b121-comparison/api-feasibility.mjs",
+      "sha256": "1c96590c26c4e30bad721a4ea7b24e8241adc743dc841720a42ea37dc25ab71d"
+    },
+    {
+      "path": "scripts/b121-comparison/api-limits.mjs",
+      "sha256": "66308897515a919755884523dc4103a137940aa7877bf762a197d9ea9652fa35"
+    },
+    {
+      "path": "scripts/b121-comparison/api-prepare.mjs",
+      "sha256": "122370c37924209be015f0b83f3642369ef43c4075de76ffeea192ccb95d4e1c"
+    },
+    {
+      "path": "scripts/b121-comparison/api-provider.mjs",
+      "sha256": "ea8fc25581edcdd60df4061151800acdd31b7bb264c26b23117ae3e275a16ec3"
+    },
+    {
+      "path": "scripts/b121-comparison/api-runner.mjs",
+      "sha256": "c42b008221e818c9f9f9353a4dbd833e0f22b16030c7efd484ecaf06b9e85214"
+    },
+    {
+      "path": "scripts/b121-comparison/api-tool.mjs",
+      "sha256": "f3d2585cca25c57193a64fae5637bbfb52702723db78013610563bd3e3d29345"
+    },
+    {
+      "path": "scripts/b121-comparison/api-transport.mjs",
+      "sha256": "ba9d28067f885a4c34926b37ddd32111d7c9c6f2bce5f62e2d2bfa3eb12d1fac"
+    },
+    {
+      "path": "scripts/b121-comparison/budget-closure.mjs",
+      "sha256": "25bffb93219c39b41b400b6c05775a1612b9259f5756769d0104e57fa2729df8"
+    },
+    {
+      "path": "scripts/b121-comparison/candidate-campaign.mjs",
+      "sha256": "30dba4bef458a7e5163b67e7d09d234538bc0d4bfd8f536ad195c0f5f3a205b1"
+    },
+    {
+      "path": "scripts/b121-comparison/candidate-entry.mjs",
+      "sha256": "bbce9e3883e4f533e57e2d9e3c2a71833b9daf987aa6ff7edd3efa0864e97943"
+    },
+    {
+      "path": "scripts/b121-comparison/candidate-preflight.mjs",
+      "sha256": "e379a89fbc5d8e06d4b65ce7797c855117a3d2a97f9f3ee68abfb7ecbe94a147"
+    },
+    {
+      "path": "scripts/b121-comparison/compiler-process.mjs",
+      "sha256": "974540f2ce93c9c2bf65361c33bae11fbeee0be02abf8c6d893169285904af08"
+    },
+    {
+      "path": "scripts/b121-comparison/compiler-worker.mjs",
+      "sha256": "b1d6e51d9522eeb96258cec5bf07aab722d52c5029a108329c311a19cfc74326"
+    },
+    {
+      "path": "scripts/b121-comparison/entry-tasks.mjs",
+      "sha256": "547606cf03c89265b3d74cacbae7eb6ec5cbd4a78cd448f88d8dd0d7f5f65824"
+    },
+    {
+      "path": "scripts/b121-comparison/frozen-compiler.mjs",
+      "sha256": "ce603a472eee9232f24d68f5d3b77a412e8923eb9e5c69ea13764aace4fd8d8d"
+    },
+    {
+      "path": "scripts/b121-comparison/isolation.mjs",
+      "sha256": "cb579b69d3ea40d4688c3f2fc94e7354dc292c82ab4f93f8c2231a254692e4f9"
+    },
+    {
+      "path": "scripts/b121-comparison/material-coverage.mjs",
+      "sha256": "9ad3b5710fe5a8d694078eccc82d90579080262207ce4553e8a50310f7d407d1"
+    },
+    {
+      "path": "scripts/b121-comparison/materials.mjs",
+      "sha256": "67f083ac73fd567896241392b583dbe819c781687a2cda7ced864d9893a50d74"
+    },
+    {
+      "path": "scripts/b121-comparison/prepare.mjs",
+      "sha256": "e8ff5a12c38570359da4f1142938e73cebbb2d3b5ff32104c803f2304199ef8f"
+    },
+    {
+      "path": "scripts/b121-comparison/projection.mjs",
+      "sha256": "a0e1b0567273be3aa599728f449b2c73a78d0e1cc8209233b3e44495eb0a299b"
+    },
+    {
+      "path": "scripts/b121-comparison/recorded-process.mjs",
+      "sha256": "822e932af202e2e682cf6230f75f04f35197e49acf65dac40a73bb7af9350537"
+    },
+    {
+      "path": "scripts/b121-comparison/session.mjs",
+      "sha256": "b65828b9535c849c2cab92d820056164d66cc8523674b0cdf5591f8cb20b42d7"
+    },
+    {
+      "path": "scripts/b121-comparison/source-access.mjs",
+      "sha256": "4988db34ec9c214a71b305dfc2d498a3f31008af74c4f99587d2f0e07e6a04c8"
+    },
+    {
+      "path": "scripts/b121-comparison/source-navigation.mjs",
+      "sha256": "dfde73a515a64e4a98a0650ef179b2b20c068b9c2da68f3cee6e669d4963b3ce"
+    },
+    {
+      "path": "scripts/b121-comparison/study-v2.mjs",
+      "sha256": "f053989208b96811227e97f26aec5dc1bc76bf85ab48d47ac0ccf99bd65fa324"
+    },
+    {
+      "path": "scripts/b121-comparison/verify-study-v2.mjs",
+      "sha256": "661bcdd5993041b71095da09381fc3f541b3a47ee8e9e5f09453d09b04930f84"
+    },
+    {
+      "path": "../graphrefly-ts/packages/ts/evals/graph-native-rerun-avoidance/openrouter-recovery.mjs",
+      "sha256": "f3f2770996b72e5d0ccf479146e319195362df28a801d32db00612e11b63a507"
+    },
+    {
+      "path": "../graphrefly-ts/packages/ts/evals/graph-native-rerun-avoidance/openrouter-transport.mjs",
+      "sha256": "2b08a28f3a5b3cdb411c0ca252f36546080f9de122e722c7aa57d98ec4befb34"
+    },
+    {
+      "path": "../graphrefly-ts/packages/ts/evals/graph-native-rerun-avoidance/precredential-environment.mjs",
+      "sha256": "076820b5c2241e8784ab0e9c4715e42f394d432b9cbc53ea83ff79afe4131a5b"
+    },
+    {
+      "path": "../graphrefly-ts/packages/ts/evals/graph-native-rerun-avoidance/run-live-campaign-bootstrap.mjs",
+      "sha256": "168047bd78b3a31d7a6164d0321a6c10c7056f325a2953da92341da2a6fb6238"
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "passed": 206,
+  "failed": 0,
+  "skipped": 0,
+  "qualificationReused": "../../candidate-round-v9-consumer-contract/offline/verification.json",
+  "connectionEvidence": "../../connection-lifecycle/results.json",
+  "pricingMatches": true,
+  "review": "One independent connection-policy reviewer and local follow-up; only cap change since206-test qualification; consumer/compiler unchanged"
+}

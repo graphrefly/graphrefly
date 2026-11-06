@@ -1,0 +1,14 @@
+{
+  "work": "graphrefly:B121",
+  "kind": "approved-budget-adjustment-development-candidate",
+  "formalReady": false,
+  "liveAuthorization": false,
+  "generationCalls": 0,
+  "change": "Only cumulative money ceiling increases from 4 to 4.5 USD by explicit user approval; all historic unknown reservations retained. No task, session resource, acceptance, or retry changes.",
+  "sameFiveArtifactsAsV6": true,
+  "sameTaskAndSamplePacketsAsV6": true,
+  "changedExecutionFiles": [
+    "scripts/b121-comparison/api-provider.mjs"
+  ],
+  "exposure": "Same exposed development tasks and v6 rubric; not an unseen holdout."
+}

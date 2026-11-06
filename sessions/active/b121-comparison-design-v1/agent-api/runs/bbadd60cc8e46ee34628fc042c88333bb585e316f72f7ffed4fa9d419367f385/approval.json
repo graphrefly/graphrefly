@@ -1,0 +1,17 @@
+{
+  "manifestSHA": "bbadd60cc8e46ee34628fc042c88333bb585e316f72f7ffed4fa9d419367f385",
+  "action": "B121-agent-api-one-shot",
+  "acceptAliasLimitation": true,
+  "acceptInputEstimateLimitation": true,
+  "model": "deepseek/deepseek-v4.1-flash",
+  "providerTag": "together",
+  "expiresAt": "2026-09-16T01:00:00.000Z",
+  "maxGenerationCalls": 964,
+  "maxUSD": 2,
+  "priorUsageUSD": 0.002378032,
+  "retries": {
+    "capacity": 3,
+    "availability": 1
+  },
+  "evidence": "User explicitly agreed to increase this eval key cumulative ceiling and guardrail ceiling to USD2 and run one DeepSeek V4.1 Flash/Together campaign with bounded retries. No subsequent campaign or model/provider fallback authorized."
+}

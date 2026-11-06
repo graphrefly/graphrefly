@@ -1,0 +1,12 @@
+{
+  "checkedAt": "2026-09-18T21:38:12.456766+00:00",
+  "endpoint": "GET /api/v1/key",
+  "data": {
+    "usage": 1.657018632,
+    "limit": 1.97,
+    "limit_remaining": 0.312981368,
+    "limit_reset": null,
+    "byok_usage": 0,
+    "include_byok_in_limit": false
+  }
+}

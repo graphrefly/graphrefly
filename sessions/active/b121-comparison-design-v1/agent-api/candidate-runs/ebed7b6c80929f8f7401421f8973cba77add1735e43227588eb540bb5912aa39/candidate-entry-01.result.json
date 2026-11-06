@@ -1,0 +1,66 @@
+{
+  "slot": {
+    "id": "candidate-entry-01",
+    "arm": "G",
+    "role": "display-component"
+  },
+  "controller": null,
+  "experiment": "entry",
+  "explanations": {
+    "A": {},
+    "B": {}
+  },
+  "entryAnswer": {
+    "op": "submit",
+    "snippet": "/**\n * Display adapter for an already-created SpendingAlertsView.\n *\n * Renders the current available business values and explicitly names the ports\n * that have no usable value. Returns a cleanup function that ends observation\n * only; it does not stop, complete or release the running instance.\n *\n * Relative imports resolve to the provided .ts sources.\n */\nimport type { SpendingAlertsView } from \"./causal-preset.js\";\nimport {\n\tmountSpendingView,\n\ttype SpendingViewObservation,\n} from \"./causal-view-binding.js\";\n\n/** The five business ports the view exposes, in display order. */\nexport const DISPLAY_PORTS = [\n\t\"assessment\",\n\t\"publication\",\n\t\"coverage\",\n\t\"issues\",\n\t\"startup\",\n] as const;\n\nexport interface SpendingDisplay {\n\t/** Latest value per port; a port is absent when it has no current usable value. */\n\treadonly values: SpendingViewObservation[\"values\"];\n\t/** Ports with no current usable value; the old displayed value must not be kept. */\n\treadonly unavailable: readonly (keyof SpendingAlertsView)[];\n}\n\n/**\n * Render one observation. `values` holds only ports that currently have a\n * usable value; `unavailable` names the rest explicitly, so a missing port is\n * never silently rendered as a stale value.\n */\nexport function formatSpendingDisplay(observation: SpendingViewObservation): string {\n\tconst { values, unavailable } = observation;\n\tconst lines: string[] = [];\n\tfor (const port of DISPLAY_PORTS) {\n\t\tif (Object.hasOwn(values, port)) {\n\t\t\tlines.push(`${port}: ${JSON.stringify(values[port])}`);\n\t\t} else {\n\t\t\tlines.push(`${port}: unavailable`);\n\t\t}\n\t}\n\tlines.push(`unavailable ports: ${unavailable.join(\", \") || \"none\"}`);\n\treturn lines.join(\"\\n\");\n}\n\n/**\n * Mount the display over an existing view. The caller supplies the view and the\n * render callback; this adapter creates no instance and supplies no business\n * input facts. The returned function ends observation only.\n */\nexport function mountSpendingDisplay(\n\tview: SpendingAlertsView,\n\trender: (display: SpendingDisplay) => void,\n): () => void {\n\treturn mountSpendingView(view, (observation) => {\n\t\trender({\n\t\t\tvalues: observation.values,\n\t\t\tunavailable: observation.unavailable,\n\t\t});\n\t});\n}\n",
+    "explanation": "What the adapter does. `mountSpendingDisplay` takes the already-created `SpendingAlertsView` and a render callback and delegates to the example-local `mountSpendingView` (examples/spending-alerts/causal-view-binding.ts:17-56). That helper subscribes to the five view ports `assessment`, `publication`, `coverage`, `issues`, `startup` (causal-view-binding.ts:14), which are exactly the frozen view object built in causal-preset.ts:171-177. It keeps a per-port `values` record and, on each publish, emits `values` plus `unavailable = ports.filter((port) => !Object.hasOwn(values, port))` (causal-view-binding.ts:25-31). So the adapter renders current available business values and explicitly identifies ports without a usable value, matching the README contract for this role (README.md:34).\n\nValue lifecycle. On a `DATA` message the port's latest value is stored; on `INVALIDATE` or `ERROR` the port's entry is deleted (causal-view-binding.ts:42-43). A deleted port therefore reappears in `unavailable` on the next publish, and the README states the meaning: a missing value or ERROR/INVALIDATE means there is no current usable fact on that port and the old displayed value must not be retained (README.md:99). The adapter never caches a previous value itself, so it cannot resurrect a stale one. The observation is explicitly not an atomic multi-port snapshot or independent evidence (causal-view-binding.ts:10), and coverage/issues are facts for their own scope only (README.md:103).\n\nCleanup and unmounting. The returned function is the `stop` closure from `mountSpendingView` (causal-view-binding.ts:32-36, 51). It is idempotent (`if (closed) return`), unsubscribes every port subscription in reverse order, and marks the binding closed so later messages are ignored (causal-view-binding.ts:41). Its own doc comment says it \"ends observation only. Run ownership stays with the application\" (causal-view-binding.ts:16). For the running application this means: the panel detaches and observation stops, but the running instance retains outstanding obligations (README.md:104); business stop, node COMPLETE and run termination are distinct and there is no END message (README.md:115-116); retention stays bounded by the existing contract, not by whether someone is viewing the graph (README.md:116-117). Cleanup is not recovery: unknown or reconciliation-required outcomes must be preserved by the application rather than treated as resolved by panel cleanup (README.md:110-112).\n\nScope discipline. The adapter does not create a running instance or supply business input facts: instance creation belongs to `spendingAlertsFor(...).compose(inputs)` (causal-entry.ts:49-77, README.md:82-83), and display components receive only the original `.view` (README.md:88-89). It also does not reimplement the view's creation, and it does not use the public `subscribeNodeValues` adapter, which ignores INVALIDATE and is not a substitute for this view contract (README.md:120-122). No code was executed; this is a static adapter over the supplied sources.",
+    "concepts": {
+      "read": [
+        "occurrence",
+        "admission",
+        "retained-evidence",
+        "identity",
+        "lifecycle",
+        "authority",
+        "revision",
+        "provenance"
+      ],
+      "required": [
+        "occurrence",
+        "admission",
+        "retained-evidence",
+        "identity",
+        "lifecycle",
+        "authority",
+        "revision",
+        "provenance"
+      ],
+      "firstExpansion": null
+    }
+  },
+  "entryTiming": {
+    "startedMs": 0,
+    "submittedMs": 8141,
+    "elapsedMs": 8141,
+    "firstSourceRead": {
+      "path": "examples/spending-alerts/README.md",
+      "line": 1,
+      "operation": "read",
+      "elapsedMs": 1226
+    }
+  },
+  "entryStatus": "submitted",
+  "usage": {
+    "inputTokens": 78622,
+    "outputTokens": 1887,
+    "elapsedMs": 8144
+  },
+  "costUSD": 0.008841336,
+  "turns": 6,
+  "counts": 6,
+  "operations": 10,
+  "fatal": null,
+  "failureScope": null,
+  "pendingReservation": null,
+  "retryAllowed": false
+}

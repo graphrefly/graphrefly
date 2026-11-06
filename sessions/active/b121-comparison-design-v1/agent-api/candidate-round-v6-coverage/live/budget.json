@@ -1,0 +1,10 @@
+{
+  "ceilingUSD": 4,
+  "reportedUsageUSD": 1.196117224,
+  "unresolvedReservationsUSD": 1.9126272000000013,
+  "asOf": "2026-09-18T06:07:01.575275+00:00",
+  "receiptSHA256": "74a0a8090d7068c470e8b21118d589ea8744cfff93c5b46e57f4d84a7a691e3d",
+  "previousAuditSHA256": "0ffeb36e0e6b817ab535b1d447a6f846eb661756411c78ea884ecb86b974fa59",
+  "keySnapshotSHA256": "3ad2eac62e559da0e0d600b314902d955b9c6d040687d022929c08d2b266ecf1",
+  "priorUsageUSD": 3.108744424000001
+}

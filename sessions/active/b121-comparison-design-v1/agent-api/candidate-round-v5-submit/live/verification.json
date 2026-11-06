@@ -1,0 +1,20 @@
+{
+  "fullSuite": {
+    "command": "node --test scripts/b121-comparison/*.test.mjs",
+    "passed": 197,
+    "failed": 0,
+    "skipped": 0
+  },
+  "finalizationBoundaryCases": 8,
+  "independentReviewLenses": 3,
+  "fixedFinding": "Switch to submit-only before remaining retrieval output allowance falls to 1024 or less; test exact threshold and near-reserve cases",
+  "journalRowsVerified": 621,
+  "codeBindingsVerified": 33,
+  "materialArtifactsVerified": 5,
+  "feedbackRequestsVerified": 62,
+  "plannedSamples": 4,
+  "startedSamples": 4,
+  "submissions": 4,
+  "providerAttemptFailures": 0,
+  "modelSessionReruns": 0
+}

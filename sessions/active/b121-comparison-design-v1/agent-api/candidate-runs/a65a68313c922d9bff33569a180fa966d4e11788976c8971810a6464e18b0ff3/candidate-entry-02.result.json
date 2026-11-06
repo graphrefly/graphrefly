@@ -1,0 +1,66 @@
+{
+  "slot": {
+    "id": "candidate-entry-02",
+    "arm": "G",
+    "role": "application-boundary"
+  },
+  "controller": null,
+  "experiment": "entry",
+  "explanations": {
+    "A": {},
+    "B": {}
+  },
+  "entryAnswer": {
+    "op": "submit",
+    "snippet": "import type { DataIssue, DataResult } from \"../../../packages/ts/src/data/index.js\";\n\nexport interface CollectedBusinessResults<T> {\n\treadonly values: readonly T[];\n\treadonly issues: readonly DataIssue[];\n}\n\n/**\n * Collect the business payload facts carried by a readonly array of DATA-level\n * results, preserving input order, object identity and duplicates.\n *\n * - Every `ok` result contributes its `value`, even when it also carries issues.\n * - Every `error` result contributes its primary `error` first, then that\n *   result's additional `issues` (if present).\n * - Every `ok` result contributes its additional `issues` (if present).\n *\n * This is a pure payload projection: it does not mutate the inputs, does not\n * invent an error value, and performs no subscription, transport or graph\n * mutation. A DATA-level `error` payload (or `retryable: true` on an issue) is\n * an ordinary payload fact, not a protocol ERROR, not a run terminator and not\n * an authorization to retry.\n */\nexport function collectBusinessResults<T>(\n\tresults: readonly DataResult<T>[],\n): CollectedBusinessResults<T> {\n\tconst values: T[] = [];\n\tconst issues: DataIssue[] = [];\n\n\tfor (const result of results) {\n\t\tif (result.kind === \"ok\") {\n\t\t\tvalues.push(result.value);\n\t\t\tif (result.issues !== undefined) {\n\t\t\t\tfor (const issue of result.issues) issues.push(issue);\n\t\t\t}\n\t\t} else {\n\t\t\tissues.push(result.error);\n\t\t\tif (result.issues !== undefined) {\n\t\t\t\tfor (const issue of result.issues) issues.push(issue);\n\t\t\t}\n\t\t}\n\t}\n\n\treturn { values, issues };\n}\n",
+    "explanation": "The snippet is a virtual file at examples/spending-alerts/__b121_entry_validation__.ts. It imports the passive DATA vocabulary from the frozen source packages/ts/src/data/index.ts (relative specifier ../../../packages/ts/src/data/index.js resolves to that .ts file).\n\nShape of the vocabulary (packages/ts/src/data/index.ts:8-38): DataIssue is a plain payload record with kind:\"issue\", code, message and optional severity/source/subjectId/correlationId/causationId/path/refs/retryable/details/metadata (lines 8-22). DataOk<T> has kind:\"ok\", value:T and optional issues (lines 24-29). DataError<E> has kind:\"error\", error:E and optional issues (lines 31-36). DataResult<T,E> is the union DataOk<T> | DataError<E> (line 38). The file header states these shapes are \"ordinary payload facts. They are not protocol ERROR messages and carry no wave terminal or lifecycle semantics\" (lines 2-5).\n\nCollection rules implemented: for each result in input order, an ok result pushes result.value (line 26 of the source type) and then its optional issues; an error result pushes result.error first and then its optional issues. Because the arrays are built by pushing the original object references, value identity, issue identity, input order and duplicates are preserved; nothing is cloned, sorted, deduplicated or mutated, and no error value is synthesized for ok results. The return type is a readonly view of two mutable local arrays, so callers cannot mutate through the declared type while the function itself never writes to the caller's array or to any result object.\n\nError payload vs protocol ERROR / run end / retry: a DataError is a DATA-level fact only. packages/ts/src/data/index.ts:4-5 says these shapes are not protocol ERROR messages and carry no wave terminal or lifecycle semantics, and packages/ts/src/solutions/causal-occurrence/contracts.ts:67 states \"D184 passive DATA result. Failure never travels as protocol ERROR.\" So an error payload by itself does not send a protocol ERROR message, does not end a graph run, and does not authorize automatic retry. Likewise retryable?: boolean (packages/ts/src/data/index.ts:19) is only an optional hint field on an issue; it is not consulted by this collector and grants no retry authority. The README reinforces the separation: \"The protocol has no END message: business stop, node COMPLETE and run termination are distinct\" (examples/spending-alerts/README.md:154-155), and a busy/exhausted write budget yields \"an exact cancelled/no-submit result; there is no queue or automatic retry\" (README.md:147-149). Lifecycle readiness observations such as runEndReady are \"current graph/host readiness conditions, not proof that lifecycle termination or resource release occurred\" (README.md:144).\n\nScope: the function only collects payload facts. It performs no subscription, transport or graph mutation, and it does not reimplement creation of the supplied DataResult objects. The consumer contract (object-valued, number-valued and empty inputs without casts) is satisfied because the function is generic in T and only reads the discriminated kind/value/error/issues fields; an empty readonly array yields {values: [], issues: []}. No code was executed; this is a static reading of the frozen sources.",
+    "concepts": {
+      "read": [
+        "occurrence",
+        "admission",
+        "retained-evidence",
+        "identity",
+        "lifecycle",
+        "authority",
+        "revision",
+        "provenance"
+      ],
+      "required": [
+        "occurrence",
+        "admission",
+        "retained-evidence",
+        "identity",
+        "lifecycle",
+        "authority",
+        "revision",
+        "provenance"
+      ],
+      "firstExpansion": null
+    }
+  },
+  "entryTiming": {
+    "startedMs": 0,
+    "submittedMs": 11485,
+    "elapsedMs": 11485,
+    "firstSourceRead": {
+      "path": "examples/spending-alerts/README.md",
+      "line": 1,
+      "operation": "read",
+      "elapsedMs": 2617
+    }
+  },
+  "entryStatus": "submitted",
+  "usage": {
+    "inputTokens": 91047,
+    "outputTokens": 1973,
+    "elapsedMs": 11495
+  },
+  "costUSD": 0.008419620000000001,
+  "turns": 7,
+  "counts": 7,
+  "operations": 14,
+  "fatal": null,
+  "failureScope": null,
+  "pendingReservation": null,
+  "retryAllowed": false
+}

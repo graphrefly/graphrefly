@@ -1,0 +1,47 @@
+{
+  "manifestSHA": "2817a2182d07b8b8181335cb93ae257789429c6dab974a787b31098afb7b947d",
+  "denominator": 3,
+  "rows": [
+    {
+      "sampleId": "candidate-entry-01",
+      "taskId": "export-structure-only",
+      "role": "tooling-integrator",
+      "packetSHA256": "e8435fa9b3e8ad4dd175ca5ef6a9400468f0648c81c760916b3e160b748163de",
+      "status": "pending-review",
+      "reason": null,
+      "assessmentSHA256": "2295b86fae2ec63e2602be1700d2e362945abd478a774bb6a7948f1cd48be280"
+    },
+    {
+      "sampleId": "candidate-entry-02",
+      "taskId": "report-node-version-metadata",
+      "role": "diagnostic-integrator",
+      "packetSHA256": "4720c6148cf9239437e8786c614b36799616dba7b9ed7e4f639b915aef71456b",
+      "status": "incomplete",
+      "reason": null,
+      "assessmentSHA256": "970b919d69dcc8c3178182ac29f0fe44284b5803528ab67e22e2293c11e94821"
+    },
+    {
+      "sampleId": "candidate-entry-03",
+      "taskId": "consume-business-results",
+      "role": "application-boundary",
+      "packetSHA256": "461bfc41ca60c45bd134ed28de81b7026f8badca699533bc7ca05373d733c864",
+      "status": "not-run",
+      "reason": "provider cost/call ceiling",
+      "assessmentSHA256": null
+    }
+  ],
+  "failure": "provider cost/call ceiling",
+  "transport": {
+    "generationCalls": 26,
+    "estimates": 26,
+    "countCalls": 0,
+    "reservedUSD": 0.34390268399999996,
+    "reportedCostUSD": 0.026349084000000002,
+    "unknownReservedUSD": 0.31755359999999994,
+    "priorUsageUSD": 4.839011164000002,
+    "stopped": true
+  },
+  "completedCollection": false,
+  "scoresPending": true,
+  "retryAllowed": false
+}

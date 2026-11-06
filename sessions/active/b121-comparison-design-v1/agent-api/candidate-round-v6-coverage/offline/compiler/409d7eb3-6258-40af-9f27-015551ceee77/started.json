@@ -1,0 +1,19 @@
+{
+  "kind": "frozen-typecheck",
+  "environmentSHA256": "25c512ca2d3dd5c501f470bd4e6f63994ffbe635c402622b02180226b7302687",
+  "snippetSHA256": "bff0e4ba1dd99a4a04e83c09a6562112085e7c25f8aa64e2ed15418db8c3e9c0",
+  "context": {
+    "kind": "reviewer-calibration",
+    "caseId": "C09",
+    "providerCalls": 0
+  },
+  "policy": {
+    "timeoutMs": 60000,
+    "heapMiB": 512,
+    "maxOutputBytes": 4194304,
+    "retries": 0
+  },
+  "nodeVersion": "v24.18.0",
+  "executableSHA256": "ee6fb0e015284d83a91e8ec5213f43a157f8a392b58555301682892ba928c04a",
+  "workerSHA256": "16a148b663600a36d2b7922ec094c9928c8377fde93f1b52c40037cbd1285b43"
+}

@@ -1,0 +1,1321 @@
+{
+  "interpretation": "Observed frozen-run traces, not causal attribution or usability generalization",
+  "sessions": [
+    {
+      "sampleId": "candidate-entry-01",
+      "startIndex": 26,
+      "reads": [
+        {
+          "journalIndex": 35,
+          "op": "read",
+          "path": "entry/task.json"
+        },
+        {
+          "journalIndex": 43,
+          "op": "read",
+          "path": "examples/spending-alerts/README.md"
+        },
+        {
+          "journalIndex": 43,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-view-binding.ts"
+        },
+        {
+          "journalIndex": 43,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-entry.ts"
+        },
+        {
+          "journalIndex": 51,
+          "op": "read",
+          "path": "examples/spending-alerts/README.md",
+          "startLine": 80,
+          "endLine": 128
+        },
+        {
+          "journalIndex": 51,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-ordinary-panel.ts"
+        },
+        {
+          "journalIndex": 51,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-preset.ts"
+        },
+        {
+          "journalIndex": 59,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-preset.ts",
+          "startLine": 80,
+          "endLine": 160
+        },
+        {
+          "journalIndex": 67,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-preset.ts",
+          "startLine": 160,
+          "endLine": 207
+        },
+        {
+          "journalIndex": 67,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-audience.examples.ts"
+        },
+        {
+          "journalIndex": 91,
+          "op": "read",
+          "path": "packages/ts/src/node/node.ts",
+          "startLine": 400,
+          "endLine": 470
+        },
+        {
+          "journalIndex": 107,
+          "op": "read",
+          "path": "packages/ts/src/ctx/types.ts",
+          "startLine": 1,
+          "endLine": 60
+        },
+        {
+          "journalIndex": 115,
+          "op": "read",
+          "path": "packages/ts/src/protocol/messages.ts",
+          "startLine": 1,
+          "endLine": 80
+        },
+        {
+          "journalIndex": 131,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-focused-host.ts",
+          "startLine": 1,
+          "endLine": 80
+        },
+        {
+          "journalIndex": 139,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-focused-host.ts",
+          "startLine": 80,
+          "endLine": 160
+        },
+        {
+          "journalIndex": 155,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-focused-host.ts",
+          "startLine": 500,
+          "endLine": 579
+        },
+        {
+          "journalIndex": 163,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-focused-host.ts",
+          "startLine": 400,
+          "endLine": 500
+        },
+        {
+          "journalIndex": 171,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-focused-host.ts",
+          "startLine": 300,
+          "endLine": 400
+        },
+        {
+          "journalIndex": 179,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-focused-host.ts",
+          "startLine": 160,
+          "endLine": 300
+        },
+        {
+          "journalIndex": 187,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-focused-host.ts",
+          "startLine": 240,
+          "endLine": 300
+        },
+        {
+          "journalIndex": 203,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-publication.ts",
+          "startLine": 60,
+          "endLine": 120
+        },
+        {
+          "journalIndex": 203,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-publication.ts",
+          "startLine": 350,
+          "endLine": 400
+        },
+        {
+          "journalIndex": 211,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-publication.ts",
+          "startLine": 400,
+          "endLine": 484
+        },
+        {
+          "journalIndex": 219,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-publication.ts",
+          "startLine": 480,
+          "endLine": 484
+        },
+        {
+          "journalIndex": 235,
+          "op": "read",
+          "path": "packages/ts/src/solutions/causal-occurrence/capabilities.ts",
+          "startLine": 60,
+          "endLine": 140
+        },
+        {
+          "journalIndex": 243,
+          "op": "read",
+          "path": "packages/ts/src/solutions/causal-occurrence/capabilities.ts",
+          "startLine": 1,
+          "endLine": 60
+        },
+        {
+          "journalIndex": 259,
+          "op": "read",
+          "path": "packages/ts/src/graph/construction-scope.ts",
+          "startLine": 14,
+          "endLine": 30
+        },
+        {
+          "journalIndex": 259,
+          "op": "read",
+          "path": "packages/ts/src/solutions/causal-occurrence/contracts.ts",
+          "startLine": 60,
+          "endLine": 145
+        },
+        {
+          "journalIndex": 267,
+          "op": "read",
+          "path": "packages/ts/src/solutions/causal-occurrence/contracts.ts",
+          "startLine": 140,
+          "endLine": 200
+        }
+      ],
+      "searches": [
+        {
+          "journalIndex": 59,
+          "op": "search",
+          "query": "SpendingAlertsView",
+          "pathPrefix": "examples/spending-alerts",
+          "caseSensitive": true,
+          "offset": 0,
+          "limit": 20
+        },
+        {
+          "journalIndex": 75,
+          "op": "search",
+          "query": "subscribeNodeValues",
+          "pathPrefix": "",
+          "caseSensitive": true,
+          "offset": 0,
+          "limit": 20
+        },
+        {
+          "journalIndex": 75,
+          "op": "search",
+          "query": "INVALIDATE",
+          "pathPrefix": "packages/ts/src/node",
+          "caseSensitive": true,
+          "offset": 0,
+          "limit": 20
+        },
+        {
+          "journalIndex": 83,
+          "op": "search",
+          "query": "subscribe",
+          "pathPrefix": "packages/ts/src/node/node.ts",
+          "caseSensitive": true,
+          "offset": 0,
+          "limit": 20
+        },
+        {
+          "journalIndex": 83,
+          "op": "search",
+          "query": "subscribe",
+          "pathPrefix": "packages/ts/src/graph/render.ts",
+          "caseSensitive": true,
+          "offset": 0,
+          "limit": 20
+        },
+        {
+          "journalIndex": 91,
+          "op": "search",
+          "query": "Sink",
+          "pathPrefix": "packages/ts/src/node/types.ts",
+          "caseSensitive": true,
+          "offset": 0,
+          "limit": 20
+        },
+        {
+          "journalIndex": 99,
+          "op": "search",
+          "query": "type Sink",
+          "pathPrefix": "packages/ts/src",
+          "caseSensitive": true,
+          "offset": 0,
+          "limit": 20
+        },
+        {
+          "journalIndex": 99,
+          "op": "search",
+          "query": "Message",
+          "pathPrefix": "packages/ts/src/node/types.ts",
+          "caseSensitive": true,
+          "offset": 0,
+          "limit": 20
+        },
+        {
+          "journalIndex": 123,
+          "op": "search",
+          "query": "unavailable",
+          "pathPrefix": "examples/spending-alerts",
+          "caseSensitive": true,
+          "offset": 0,
+          "limit": 20
+        },
+        {
+          "journalIndex": 123,
+          "op": "search",
+          "query": "mountSpendingView",
+          "pathPrefix": "examples/spending-alerts",
+          "caseSensitive": true,
+          "offset": 0,
+          "limit": 20
+        },
+        {
+          "journalIndex": 147,
+          "op": "search",
+          "query": "consume",
+          "pathPrefix": "examples/spending-alerts/causal-focused-host.ts",
+          "caseSensitive": true,
+          "offset": 0,
+          "limit": 20
+        },
+        {
+          "journalIndex": 195,
+          "op": "search",
+          "query": "publication",
+          "pathPrefix": "examples/spending-alerts/causal-publication.ts",
+          "caseSensitive": true,
+          "offset": 0,
+          "limit": 20
+        },
+        {
+          "journalIndex": 195,
+          "op": "search",
+          "query": "coverage",
+          "pathPrefix": "examples/spending-alerts/causal-publication.ts",
+          "caseSensitive": true,
+          "offset": 0,
+          "limit": 20
+        },
+        {
+          "journalIndex": 219,
+          "op": "search",
+          "query": "ports",
+          "pathPrefix": "packages/ts/src/solutions/causal-occurrence/committed-view.ts",
+          "caseSensitive": true,
+          "offset": 0,
+          "limit": 20
+        },
+        {
+          "journalIndex": 227,
+          "op": "search",
+          "query": "ports",
+          "pathPrefix": "packages/ts/src/solutions/causal-occurrence",
+          "caseSensitive": true,
+          "offset": 0,
+          "limit": 20
+        },
+        {
+          "journalIndex": 251,
+          "op": "search",
+          "query": "CausalEvidenceCoverage",
+          "pathPrefix": "packages/ts/src/solutions/causal-occurrence/contracts.ts",
+          "caseSensitive": true,
+          "offset": 0,
+          "limit": 20
+        },
+        {
+          "journalIndex": 251,
+          "op": "search",
+          "query": "StartupFact",
+          "pathPrefix": "packages/ts/src/graph/construction-scope.ts",
+          "caseSensitive": true,
+          "offset": 0,
+          "limit": 20
+        }
+      ],
+      "toolErrors": [],
+      "stop": {
+        "journalIndex": 270,
+        "reason": "input-estimate-exceeds-remaining",
+        "estimatedNextInputTokens": 62625,
+        "remainingInputTokens": 55201,
+        "count": 62625,
+        "usage": {
+          "inputTokens": 944799,
+          "outputTokens": 2871,
+          "elapsedMs": 18914
+        }
+      },
+      "inputPerRequest": [
+        1518,
+        8432,
+        12769,
+        16090,
+        18271,
+        20210,
+        21491,
+        22559,
+        24268,
+        24497,
+        25704,
+        27207,
+        28235,
+        29727,
+        31242,
+        31487,
+        33250,
+        35090,
+        36887,
+        38598,
+        39882,
+        40670,
+        43158,
+        44971,
+        45299,
+        45941,
+        47566,
+        48768,
+        49552,
+        51460
+      ],
+      "endIndex": 274,
+      "taskId": "display-current-values",
+      "status": "incomplete",
+      "usage": {
+        "inputTokens": 944799,
+        "outputTokens": 2871,
+        "elapsedMs": 18914
+      },
+      "turns": 30,
+      "operations": 46,
+      "costUSD": 0.023987748000000003,
+      "submissionPresent": false,
+      "maxActualRequestInputTokens": 51460
+    },
+    {
+      "sampleId": "candidate-entry-02",
+      "startIndex": 275,
+      "reads": [
+        {
+          "journalIndex": 284,
+          "op": "read",
+          "path": "entry/task.json"
+        },
+        {
+          "journalIndex": 292,
+          "op": "read",
+          "path": "examples/spending-alerts/README.md"
+        },
+        {
+          "journalIndex": 292,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-entry.ts"
+        },
+        {
+          "journalIndex": 292,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-inputs.ts"
+        },
+        {
+          "journalIndex": 300,
+          "op": "read",
+          "path": "examples/spending-alerts/README.md",
+          "startLine": 80,
+          "endLine": 128
+        },
+        {
+          "journalIndex": 300,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-focused-host.ts"
+        },
+        {
+          "journalIndex": 308,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-focused-host.ts",
+          "startLine": 80,
+          "endLine": 200
+        },
+        {
+          "journalIndex": 316,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-focused-host.ts",
+          "startLine": 160,
+          "endLine": 300
+        },
+        {
+          "journalIndex": 324,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-focused-host.ts",
+          "startLine": 240,
+          "endLine": 400
+        },
+        {
+          "journalIndex": 332,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-focused-host.ts",
+          "startLine": 320,
+          "endLine": 460
+        },
+        {
+          "journalIndex": 340,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-focused-host.ts",
+          "startLine": 400,
+          "endLine": 520
+        },
+        {
+          "journalIndex": 348,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-focused-host.ts",
+          "startLine": 480,
+          "endLine": 579
+        },
+        {
+          "journalIndex": 356,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-focused-host.ts",
+          "startLine": 559,
+          "endLine": 579
+        },
+        {
+          "journalIndex": 356,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-graded-demo.ts"
+        },
+        {
+          "journalIndex": 364,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-graded-demo.ts",
+          "startLine": 80,
+          "endLine": 200
+        },
+        {
+          "journalIndex": 372,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-graded-demo.ts",
+          "startLine": 160,
+          "endLine": 280
+        },
+        {
+          "journalIndex": 380,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-graded-demo.ts",
+          "startLine": 240,
+          "endLine": 326
+        },
+        {
+          "journalIndex": 380,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-ordinary-panel.ts"
+        },
+        {
+          "journalIndex": 388,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-view-binding.ts"
+        },
+        {
+          "journalIndex": 388,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-audience.examples.ts"
+        },
+        {
+          "journalIndex": 396,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-preset.ts"
+        },
+        {
+          "journalIndex": 404,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-preset.ts",
+          "startLine": 80,
+          "endLine": 207
+        },
+        {
+          "journalIndex": 412,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-preset.ts",
+          "startLine": 159,
+          "endLine": 207
+        },
+        {
+          "journalIndex": 420,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-resource.ts"
+        },
+        {
+          "journalIndex": 428,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-resource.ts",
+          "startLine": 80,
+          "endLine": 200
+        },
+        {
+          "journalIndex": 436,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-inputs.ts",
+          "startLine": 80,
+          "endLine": 200
+        },
+        {
+          "journalIndex": 444,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-inputs.ts",
+          "startLine": 160,
+          "endLine": 280
+        },
+        {
+          "journalIndex": 452,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-inputs.ts",
+          "startLine": 240,
+          "endLine": 360
+        },
+        {
+          "journalIndex": 460,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-inputs.ts",
+          "startLine": 320,
+          "endLine": 439
+        },
+        {
+          "journalIndex": 468,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-inputs.ts",
+          "startLine": 400,
+          "endLine": 439
+        },
+        {
+          "journalIndex": 476,
+          "op": "read",
+          "path": "packages/ts/src/graph/construction-scope.ts"
+        },
+        {
+          "journalIndex": 484,
+          "op": "read",
+          "path": "packages/ts/src/graph/construction-scope.ts",
+          "startLine": 80,
+          "endLine": 200
+        },
+        {
+          "journalIndex": 492,
+          "op": "read",
+          "path": "packages/ts/src/graph/construction-scope.ts",
+          "startLine": 200,
+          "endLine": 320
+        },
+        {
+          "journalIndex": 500,
+          "op": "read",
+          "path": "packages/ts/src/graph/construction-scope.ts",
+          "startLine": 280,
+          "endLine": 373
+        }
+      ],
+      "searches": [],
+      "toolErrors": [],
+      "stop": {
+        "journalIndex": 503,
+        "reason": "input-estimate-exceeds-remaining",
+        "estimatedNextInputTokens": 68067,
+        "remainingInputTokens": 56470,
+        "count": 68067,
+        "usage": {
+          "inputTokens": 943530,
+          "outputTokens": 2105,
+          "elapsedMs": 18050
+        }
+      },
+      "inputPerRequest": [
+        1521,
+        8488,
+        13147,
+        15703,
+        17218,
+        18929,
+        20624,
+        22504,
+        24344,
+        26110,
+        28307,
+        30118,
+        32094,
+        34616,
+        36583,
+        38150,
+        39780,
+        40934,
+        42543,
+        44030,
+        45538,
+        47136,
+        48760,
+        50569,
+        51533,
+        53090,
+        54706,
+        56455
+      ],
+      "endIndex": 507,
+      "taskId": "compose-two-instances",
+      "status": "incomplete",
+      "usage": {
+        "inputTokens": 943530,
+        "outputTokens": 2105,
+        "elapsedMs": 18050
+      },
+      "turns": 28,
+      "operations": 34,
+      "costUSD": 0.024268392000000003,
+      "submissionPresent": false,
+      "maxActualRequestInputTokens": 56455
+    },
+    {
+      "sampleId": "candidate-entry-03",
+      "startIndex": 508,
+      "reads": [
+        {
+          "journalIndex": 517,
+          "op": "read",
+          "path": "entry/task.json"
+        },
+        {
+          "journalIndex": 525,
+          "op": "read",
+          "path": "examples/spending-alerts/README.md"
+        },
+        {
+          "journalIndex": 525,
+          "op": "read",
+          "path": "packages/ts/src/solutions/causal-occurrence/capabilities.ts"
+        },
+        {
+          "journalIndex": 525,
+          "op": "read",
+          "path": "packages/ts/src/solutions/causal-occurrence/contracts.ts"
+        },
+        {
+          "journalIndex": 533,
+          "op": "read",
+          "path": "packages/ts/src/solutions/causal-occurrence/capabilities.ts",
+          "startLine": 80,
+          "endLine": 149
+        },
+        {
+          "journalIndex": 533,
+          "op": "read",
+          "path": "examples/spending-alerts/README.md",
+          "startLine": 80,
+          "endLine": 128
+        },
+        {
+          "journalIndex": 533,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-entry.ts"
+        },
+        {
+          "journalIndex": 549,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-audience.examples.ts"
+        },
+        {
+          "journalIndex": 549,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-preset.ts"
+        },
+        {
+          "journalIndex": 557,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-preset.ts",
+          "startLine": 80,
+          "endLine": 207
+        },
+        {
+          "journalIndex": 565,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-preset.ts",
+          "startLine": 160,
+          "endLine": 207
+        },
+        {
+          "journalIndex": 565,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-focused-host.ts"
+        },
+        {
+          "journalIndex": 573,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-focused-host.ts",
+          "startLine": 80,
+          "endLine": 159
+        },
+        {
+          "journalIndex": 589,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-focused-host.ts",
+          "startLine": 500,
+          "endLine": 579
+        },
+        {
+          "journalIndex": 605,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-focused-host.ts",
+          "startLine": 220,
+          "endLine": 300
+        },
+        {
+          "journalIndex": 613,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-graded-demo.ts"
+        },
+        {
+          "journalIndex": 621,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-graded-demo.ts",
+          "startLine": 80,
+          "endLine": 159
+        },
+        {
+          "journalIndex": 629,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-graded-demo.ts",
+          "startLine": 160,
+          "endLine": 239
+        },
+        {
+          "journalIndex": 637,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-graded-demo.ts",
+          "startLine": 240,
+          "endLine": 326
+        },
+        {
+          "journalIndex": 645,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-graded-demo.ts",
+          "startLine": 320,
+          "endLine": 326
+        },
+        {
+          "journalIndex": 645,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-view-binding.ts"
+        },
+        {
+          "journalIndex": 653,
+          "op": "read",
+          "path": "packages/ts/src/solutions/causal-occurrence/construction.ts",
+          "startLine": 1,
+          "endLine": 80
+        },
+        {
+          "journalIndex": 661,
+          "op": "read",
+          "path": "packages/ts/src/solutions/causal-occurrence/construction.ts",
+          "startLine": 120,
+          "endLine": 199
+        },
+        {
+          "journalIndex": 669,
+          "op": "read",
+          "path": "packages/ts/src/solutions/causal-occurrence/construction.ts",
+          "startLine": 200,
+          "endLine": 279
+        },
+        {
+          "journalIndex": 677,
+          "op": "read",
+          "path": "packages/ts/src/solutions/causal-occurrence/construction.ts",
+          "startLine": 280,
+          "endLine": 359
+        },
+        {
+          "journalIndex": 685,
+          "op": "read",
+          "path": "packages/ts/src/solutions/causal-occurrence/construction.ts",
+          "startLine": 360,
+          "endLine": 420
+        },
+        {
+          "journalIndex": 693,
+          "op": "read",
+          "path": "packages/ts/src/solutions/causal-occurrence/identity.ts",
+          "startLine": 1,
+          "endLine": 80
+        },
+        {
+          "journalIndex": 709,
+          "op": "read",
+          "path": "packages/ts/src/solutions/causal-occurrence/identity.ts",
+          "startLine": 100,
+          "endLine": 200
+        },
+        {
+          "journalIndex": 717,
+          "op": "read",
+          "path": "packages/ts/src/solutions/causal-occurrence/identity.ts",
+          "startLine": 180,
+          "endLine": 260
+        },
+        {
+          "journalIndex": 725,
+          "op": "read",
+          "path": "packages/ts/src/solutions/causal-occurrence/identity.ts",
+          "startLine": 260,
+          "endLine": 340
+        },
+        {
+          "journalIndex": 733,
+          "op": "read",
+          "path": "packages/ts/src/solutions/causal-occurrence/identity.ts",
+          "startLine": 340,
+          "endLine": 420
+        },
+        {
+          "journalIndex": 741,
+          "op": "read",
+          "path": "packages/ts/src/solutions/causal-occurrence/identity.ts",
+          "startLine": 420,
+          "endLine": 500
+        }
+      ],
+      "searches": [
+        {
+          "journalIndex": 541,
+          "op": "search",
+          "query": "assertCausalCapabilities",
+          "pathPrefix": "",
+          "caseSensitive": true,
+          "offset": 0,
+          "limit": 20
+        },
+        {
+          "journalIndex": 541,
+          "op": "search",
+          "query": "FullCausalCapability",
+          "pathPrefix": "",
+          "caseSensitive": true,
+          "offset": 0,
+          "limit": 20
+        },
+        {
+          "journalIndex": 581,
+          "op": "search",
+          "query": "consume",
+          "pathPrefix": "examples/spending-alerts/causal-focused-host.ts",
+          "caseSensitive": true,
+          "offset": 0,
+          "limit": 20
+        },
+        {
+          "journalIndex": 581,
+          "op": "search",
+          "query": "capabilities",
+          "pathPrefix": "examples/spending-alerts/causal-focused-host.ts",
+          "caseSensitive": true,
+          "offset": 0,
+          "limit": 20
+        },
+        {
+          "journalIndex": 597,
+          "op": "search",
+          "query": "built",
+          "pathPrefix": "examples/spending-alerts/causal-focused-host.ts",
+          "caseSensitive": true,
+          "offset": 0,
+          "limit": 20
+        },
+        {
+          "journalIndex": 597,
+          "op": "search",
+          "query": "buildSpendingPresetNodes",
+          "pathPrefix": "examples/spending-alerts/causal-focused-host.ts",
+          "caseSensitive": true,
+          "offset": 0,
+          "limit": 20
+        },
+        {
+          "journalIndex": 701,
+          "op": "search",
+          "query": "occurrenceId",
+          "pathPrefix": "packages/ts/src/solutions/causal-occurrence/identity.ts",
+          "caseSensitive": true,
+          "offset": 0,
+          "limit": 20
+        },
+        {
+          "journalIndex": 701,
+          "op": "search",
+          "query": "revisionDomain",
+          "pathPrefix": "packages/ts/src/solutions/causal-occurrence/identity.ts",
+          "caseSensitive": true,
+          "offset": 0,
+          "limit": 20
+        }
+      ],
+      "toolErrors": [],
+      "stop": {
+        "journalIndex": 744,
+        "reason": "input-estimate-exceeds-remaining",
+        "estimatedNextInputTokens": 68944,
+        "remainingInputTokens": 17229,
+        "count": 68944,
+        "usage": {
+          "inputTokens": 982771,
+          "outputTokens": 2531,
+          "elapsedMs": 18872
+        }
+      },
+      "inputPerRequest": [
+        1521,
+        8457,
+        12918,
+        17064,
+        17739,
+        20104,
+        21734,
+        24303,
+        25818,
+        26134,
+        27897,
+        28966,
+        30557,
+        32278,
+        34089,
+        36065,
+        37909,
+        39311,
+        40831,
+        42565,
+        44150,
+        45896,
+        47140,
+        49298,
+        50876,
+        52479,
+        54022,
+        55544,
+        57106
+      ],
+      "endIndex": 748,
+      "taskId": "validate-before-handoff",
+      "status": "incomplete",
+      "usage": {
+        "inputTokens": 982771,
+        "outputTokens": 2531,
+        "elapsedMs": 18872
+      },
+      "turns": 29,
+      "operations": 40,
+      "costUSD": 0.025149396,
+      "submissionPresent": false,
+      "maxActualRequestInputTokens": 57106
+    },
+    {
+      "sampleId": "candidate-entry-04",
+      "startIndex": 749,
+      "reads": [
+        {
+          "journalIndex": 758,
+          "op": "read",
+          "path": "entry/task.json"
+        },
+        {
+          "journalIndex": 766,
+          "op": "read",
+          "path": "examples/spending-alerts/README.md"
+        },
+        {
+          "journalIndex": 766,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-entry.ts"
+        },
+        {
+          "journalIndex": 774,
+          "op": "read",
+          "path": "examples/spending-alerts/README.md",
+          "startLine": 80,
+          "endLine": 128
+        },
+        {
+          "journalIndex": 774,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-focused-host.ts"
+        },
+        {
+          "journalIndex": 782,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-focused-host.ts",
+          "startLine": 80,
+          "endLine": 200
+        },
+        {
+          "journalIndex": 790,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-focused-host.ts",
+          "startLine": 160,
+          "endLine": 300
+        },
+        {
+          "journalIndex": 798,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-focused-host.ts",
+          "startLine": 240,
+          "endLine": 400
+        },
+        {
+          "journalIndex": 806,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-focused-host.ts",
+          "startLine": 320,
+          "endLine": 460
+        },
+        {
+          "journalIndex": 814,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-focused-host.ts",
+          "startLine": 400,
+          "endLine": 520
+        },
+        {
+          "journalIndex": 822,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-focused-host.ts",
+          "startLine": 480,
+          "endLine": 579
+        },
+        {
+          "journalIndex": 830,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-focused-host.ts",
+          "startLine": 559,
+          "endLine": 579
+        },
+        {
+          "journalIndex": 838,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-graded-demo.ts"
+        },
+        {
+          "journalIndex": 846,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-graded-demo.ts",
+          "startLine": 80,
+          "endLine": 200
+        },
+        {
+          "journalIndex": 854,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-graded-demo.ts",
+          "startLine": 160,
+          "endLine": 280
+        },
+        {
+          "journalIndex": 862,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-graded-demo.ts",
+          "startLine": 240,
+          "endLine": 326
+        },
+        {
+          "journalIndex": 870,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-graded-demo.ts",
+          "startLine": 320,
+          "endLine": 326
+        },
+        {
+          "journalIndex": 870,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-audience.examples.ts"
+        },
+        {
+          "journalIndex": 878,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-preset.ts"
+        },
+        {
+          "journalIndex": 886,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-preset.ts",
+          "startLine": 80,
+          "endLine": 207
+        },
+        {
+          "journalIndex": 894,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-preset.ts",
+          "startLine": 160,
+          "endLine": 207
+        },
+        {
+          "journalIndex": 902,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-publication.ts"
+        },
+        {
+          "journalIndex": 910,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-publication.ts",
+          "startLine": 80,
+          "endLine": 200
+        },
+        {
+          "journalIndex": 918,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-publication.ts",
+          "startLine": 160,
+          "endLine": 300
+        },
+        {
+          "journalIndex": 926,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-publication.ts",
+          "startLine": 240,
+          "endLine": 380
+        },
+        {
+          "journalIndex": 934,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-publication.ts",
+          "startLine": 320,
+          "endLine": 484
+        },
+        {
+          "journalIndex": 942,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-publication.ts",
+          "startLine": 400,
+          "endLine": 484
+        },
+        {
+          "journalIndex": 950,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-publication.ts",
+          "startLine": 479,
+          "endLine": 484
+        },
+        {
+          "journalIndex": 950,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-resource.ts"
+        },
+        {
+          "journalIndex": 958,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-resource.ts",
+          "startLine": 80,
+          "endLine": 200
+        },
+        {
+          "journalIndex": 966,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-resource.ts",
+          "startLine": 160,
+          "endLine": 263
+        },
+        {
+          "journalIndex": 974,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-resource.ts",
+          "startLine": 239,
+          "endLine": 263
+        },
+        {
+          "journalIndex": 974,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-inputs.ts"
+        },
+        {
+          "journalIndex": 982,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-inputs.ts",
+          "startLine": 80,
+          "endLine": 200
+        },
+        {
+          "journalIndex": 990,
+          "op": "read",
+          "path": "examples/spending-alerts/causal-inputs.ts",
+          "startLine": 160,
+          "endLine": 300
+        }
+      ],
+      "searches": [],
+      "toolErrors": [],
+      "stop": {
+        "journalIndex": 993,
+        "reason": "input-estimate-exceeds-remaining",
+        "estimatedNextInputTokens": 68403,
+        "remainingInputTokens": 26703,
+        "count": 68403,
+        "usage": {
+          "inputTokens": 973297,
+          "outputTokens": 2236,
+          "elapsedMs": 18454
+        }
+      },
+      "inputPerRequest": [
+        1519,
+        8464,
+        11683,
+        14239,
+        15754,
+        17465,
+        19160,
+        21040,
+        22880,
+        24646,
+        25172,
+        26893,
+        28704,
+        30680,
+        32524,
+        33606,
+        35173,
+        36803,
+        37943,
+        39529,
+        41327,
+        42898,
+        44651,
+        46294,
+        48107,
+        49931,
+        51418,
+        53080,
+        55103,
+        56611
+      ],
+      "endIndex": 997,
+      "taskId": "inspect-with-detached-display",
+      "status": "incomplete",
+      "usage": {
+        "inputTokens": 973297,
+        "outputTokens": 2236,
+        "elapsedMs": 18454
+      },
+      "turns": 30,
+      "operations": 35,
+      "costUSD": 0.024625067999999996,
+      "submissionPresent": false,
+      "maxActualRequestInputTokens": 56611
+    }
+  ]
+}

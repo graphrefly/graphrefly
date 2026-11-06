@@ -1,0 +1,26 @@
+{
+  "kind": "B121-agent-api-attempt-summary",
+  "manifestSHA": "0b0809270a7a914097df623b19f0ca8f9573ca84a0cbd415badc67b6635b93d2",
+  "startedAt": "2026-09-15T04:34:40.457Z",
+  "finishedAt": "2026-09-15T04:41:41.982Z",
+  "qualificationPassed": false,
+  "participantSessionsStarted": 0,
+  "participantSessionsCompleted": 0,
+  "participantSessionsUnrun": 12,
+  "submittedAnswers": 0,
+  "submittedEntries": 0,
+  "generationCalls": 4,
+  "providerReportedCostUSD": 0,
+  "priorUsageUSD": 0.002378032,
+  "reservedUSD": 0.15824896,
+  "unknownReservedUSD": 0.15824896,
+  "failure": "OpenRouter HTTP response failed",
+  "lastResponse": {
+    "status": 429,
+    "finishReason": null,
+    "usage": null
+  },
+  "denominator": 1344,
+  "b121Complete": false,
+  "journalHead": "ccd8a6b5bf779136f05a72016e136696a6c5d793625a348c9cce9232d58312b9"
+}

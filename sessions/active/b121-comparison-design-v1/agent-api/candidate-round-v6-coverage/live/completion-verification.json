@@ -1,0 +1,14 @@
+{
+  "frozenArtifactsVerified": 12,
+  "codeBindingsVerified": 33,
+  "reviewedSubmissions": 2,
+  "independentlyAuditedFailures": 2,
+  "accepted": 2,
+  "denominator": 4,
+  "modelSessionReruns": 0,
+  "participantCodeExecuted": false,
+  "answerEdits": 0,
+  "postHocScoringChanges": 0,
+  "priorTestEvidenceReused": true,
+  "formalReady": false
+}

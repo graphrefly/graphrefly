@@ -1,0 +1,331 @@
+{
+  "ok": true,
+  "path": "examples/spending-alerts/README.md",
+  "sha256": "b4d58ed95252f93bd9ba09b110398eb523d261272e8f1ba427b28dd2b37a6c08",
+  "totalLines": 145,
+  "startLine": 1,
+  "endLine": 80,
+  "lines": [
+    {
+      "line": 1,
+      "text": "# spending-alerts"
+    },
+    {
+      "line": 2,
+      "text": ""
+    },
+    {
+      "line": 3,
+      "text": "This directory contains two different examples. The original five-hop pipeline"
+    },
+    {
+      "line": 4,
+      "text": "explains how an anomalous transaction produces an alert message. The private Causal"
+    },
+    {
+      "line": 5,
+      "text": "integration demonstrates admission, retained obligations and graded consumption"
+    },
+    {
+      "line": 6,
+      "text": "with an **offline simulated writer**. Neither command writes a real inbox."
+    },
+    {
+      "line": 7,
+      "text": ""
+    },
+    {
+      "line": 8,
+      "text": "## Original five-hop pipeline"
+    },
+    {
+      "line": 9,
+      "text": ""
+    },
+    {
+      "line": 10,
+      "text": "```sh"
+    },
+    {
+      "line": 11,
+      "text": "pnpm --filter @graphrefly-examples/spending-alerts start"
+    },
+    {
+      "line": 12,
+      "text": "```"
+    },
+    {
+      "line": 13,
+      "text": ""
+    },
+    {
+      "line": 14,
+      "text": "```text"
+    },
+    {
+      "line": 15,
+      "text": "txFeed → anomalyScore → thresholdGate → reasonFactors → alertMessage"
+    },
+    {
+      "line": 16,
+      "text": "             ↑"
+    },
+    {
+      "line": 17,
+      "text": "      vendorStats + userProfile"
+    },
+    {
+      "line": 18,
+      "text": "```"
+    },
+    {
+      "line": 19,
+      "text": ""
+    },
+    {
+      "line": 20,
+      "text": "The original [pipeline](pipeline.ts) uses"
+    },
+    {
+      "line": 21,
+      "text": "`graph.describe({ explain: { from: \"txFeed\", to: \"alertMessage\" } })` to explain"
+    },
+    {
+      "line": 22,
+      "text": "its dependency chain. It does not provide the complete Causal admission and host"
+    },
+    {
+      "line": 23,
+      "text": "lifecycle proof described below."
+    },
+    {
+      "line": 24,
+      "text": ""
+    },
+    {
+      "line": 25,
+      "text": "## Private Causal integration"
+    },
+    {
+      "line": 26,
+      "text": ""
+    },
+    {
+      "line": 27,
+      "text": "### Choose the boundary you already have"
+    },
+    {
+      "line": 28,
+      "text": ""
+    },
+    {
+      "line": 29,
+      "text": "These helpers are consumer-private source imports, **not published package"
+    },
+    {
+      "line": 30,
+      "text": "subpaths**. Start with the object supplied to your component:"
+    },
+    {
+      "line": 31,
+      "text": ""
+    },
+    {
+      "line": 32,
+      "text": "| You already have | Read this contract first | Read implementation details when |"
+    },
+    {
+      "line": 33,
+      "text": "|---|---|---|"
+    },
+    {
+      "line": 34,
+      "text": "| An existing `SpendingAlertsView` and a render callback | [`mountSpendingView`](causal-view-binding.ts): five latest port values, explicit `unavailable` ports, observation cleanup | You need a different observation policy; the [ordinary panel](causal-ordinary-panel.ts) shows a consumer |"
+    },
+    {
+      "line": 35,
+      "text": "| A Graph and prepared creation inputs | [`spendingAlertsFor`](causal-entry.ts): immutable defaults, per-compose overrides and returned view/capabilities | You also own input preparation or the executing host; follow [inputs](causal-inputs.ts) or [host](causal-focused-host.ts) for those responsibilities |"
+    },
+    {
+      "line": 36,
+      "text": "| Issued capabilities, their owning Graph and expected binding | [`assertCausalCapabilities`](../../packages/ts/src/solutions/causal-occurrence/capabilities.ts): issued-object, Graph, binding and lineage validation | You implement capability construction; the [role examples](causal-audience.examples.ts) show consumption |"
+    },
+    {
+      "line": 37,
+      "text": "| The owning Graph and a running instance | `graph.describe()` for graph structure; the instance's `inspect()` for host state, documented in [host](causal-focused-host.ts) | You are tracing a specific readiness, admission or outcome dependency |"
+    },
+    {
+      "line": 38,
+      "text": ""
+    },
+    {
+      "line": 39,
+      "text": "Using an existing view does not require reconstructing its input facts, permission"
+    },
+    {
+      "line": 40,
+      "text": "sources or host. Using prepared inputs does not require implementing their"
+    },
+    {
+      "line": 41,
+      "text": "creation. A capability validation failure must be handled before passing the"
+    },
+    {
+      "line": 42,
+      "text": "capabilities to a recipient; a structural copy is not an issued object. The"
+    },
+    {
+      "line": 43,
+      "text": "[observation meanings below](#interpret-observations-accurately) apply to all of"
+    },
+    {
+      "line": 44,
+      "text": "these roles, including unavailable values and the limits of lifecycle readiness."
+    },
+    {
+      "line": 45,
+      "text": ""
+    },
+    {
+      "line": 46,
+      "text": "The complete demo below is for application ownership and lifecycle tracing. Its"
+    },
+    {
+      "line": 47,
+      "text": "fixture setup and simulated writer are not prerequisites for displaying a view"
+    },
+    {
+      "line": 48,
+      "text": "or consuming already-issued capabilities."
+    },
+    {
+      "line": 49,
+      "text": ""
+    },
+    {
+      "line": 50,
+      "text": "### Run the complete application demo"
+    },
+    {
+      "line": 51,
+      "text": ""
+    },
+    {
+      "line": 52,
+      "text": "Run from the repository root:"
+    },
+    {
+      "line": 53,
+      "text": ""
+    },
+    {
+      "line": 54,
+      "text": "```sh"
+    },
+    {
+      "line": 55,
+      "text": "node --import tsx examples/spending-alerts/causal-graded-demo.ts"
+    },
+    {
+      "line": 56,
+      "text": "```"
+    },
+    {
+      "line": 57,
+      "text": ""
+    },
+    {
+      "line": 58,
+      "text": "The output contains the complete graph plus a `composition` summary. It runs two"
+    },
+    {
+      "line": 59,
+      "text": "instances, A and B, in the same Graph: A waits for its simulated result while the"
+    },
+    {
+      "line": 60,
+      "text": "panel switches to B; B succeeds without settling A; A then completes while its"
+    },
+    {
+      "line": 61,
+      "text": "panel is detached, and reconnecting does not write again. Expect"
+    },
+    {
+      "line": 62,
+      "text": "`aPendingAfterB: 1`, `bSucceededWhileAPending: \"succeeded\"` and"
+    },
+    {
+      "line": 63,
+      "text": "`writes: { \"a\": 1, \"b\": 1 }`. `evidenceNavigation` connects each actual publication"
+    },
+    {
+      "line": 64,
+      "text": "to its request, admission, outcome and fixture verification reference. These are"
+    },
+    {
+      "line": 65,
+      "text": "executed assertions, not a human usability experiment."
+    },
+    {
+      "line": 66,
+      "text": ""
+    },
+    {
+      "line": 67,
+      "text": "These are consumer-private source imports, **not published package subpaths**."
+    },
+    {
+      "line": 68,
+      "text": "The fixture oracle supplies independent expected results for this finite example;"
+    },
+    {
+      "line": 69,
+      "text": "it is not a production verification service. The writer simulates completion in"
+    },
+    {
+      "line": 70,
+      "text": "memory. Input messages in the demo are test-boundary facts, not new public"
+    },
+    {
+      "line": 71,
+      "text": "feed/publish/approve methods."
+    },
+    {
+      "line": 72,
+      "text": ""
+    },
+    {
+      "line": 73,
+      "text": "The application creates five actual input Nodes in four groups:"
+    },
+    {
+      "line": 74,
+      "text": ""
+    },
+    {
+      "line": 75,
+      "text": "| Input group | Explicit source responsibility |"
+    },
+    {
+      "line": 76,
+      "text": "|---|---|"
+    },
+    {
+      "line": 77,
+      "text": "| evaluations | Immutable evaluation pack, arrivals and current input/policy facts |"
+    },
+    {
+      "line": 78,
+      "text": "| verification | Receipt from the independent fixture verifier, bound to the evaluated material |"
+    },
+    {
+      "line": 79,
+      "text": "| localAuthority | Permission grants, logical tick and stop facts; no default approval |"
+    },
+    {
+      "line": 80,
+      "text": "| inbox | The separately prepared `OfflineAlertResource` with its exact binding |"
+    }
+  ],
+  "nextLine": 81
+}

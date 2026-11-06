@@ -1,0 +1,27 @@
+{
+  "kind": "frozen-typecheck",
+  "environmentSHA256": "673b4cbe49396dd17e67a5a7d704afd7dd263d301d36e3fadc06dcc528530f87",
+  "snippetSHA256": "e93f1aef2e9c1c48defcceaa366f937bb0ce59f82086f0b2545b402253385088",
+  "context": {
+    "taskId": "display-current-values",
+    "sampleId": "candidate-entry-01",
+    "stage": "review",
+    "assessmentSHA256": "b958115203dc37d4622c26e60cba67cc8c497249407801780e5162aef919ae5b",
+    "binding": {
+      "materialSHA256": "d6c54e73f9de7ad0f2dbac12107ba3550bb792d0d3fc5f8e4be5e43ad773113e",
+      "taskSHA256": "e499fdc9d9ee8cda3918d50eb643cc7355cefeaa70e7eff359594a0dd857ef5c",
+      "rubricSHA256": "e079e5c3b27d8c3cc4c775d5e893f7597bc28f25701e07c869c993cf0efb9ccd",
+      "environmentSHA256": "673b4cbe49396dd17e67a5a7d704afd7dd263d301d36e3fadc06dcc528530f87",
+      "runnerContractSHA256": "5c3b79e5f5f7a37737b3b4661f516c6236a777690fe105f8285a720461d8d4db"
+    }
+  },
+  "policy": {
+    "timeoutMs": 60000,
+    "heapMiB": 512,
+    "maxOutputBytes": 4194304,
+    "retries": 0
+  },
+  "nodeVersion": "v24.18.0",
+  "executableSHA256": "ee6fb0e015284d83a91e8ec5213f43a157f8a392b58555301682892ba928c04a",
+  "workerSHA256": "16a148b663600a36d2b7922ec094c9928c8377fde93f1b52c40037cbd1285b43"
+}

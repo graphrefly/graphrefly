@@ -1,0 +1,18 @@
+{
+  "assessmentSHA256": "ecf6b4603e1801efe7f272e92cce9aefc230c2f2ef24e6f3ae26d42b42744a88",
+  "reviewerId": "v6-sample03-independent-frozen-source-review",
+  "criteria": {
+    "reject-before-recipient": {
+      "pass": true,
+      "evidence": "The submitted handoffCausalCapabilities calls assertCausalCapabilities(graph, capabilities, expected) before constructing the recipient envelope or calling recipient(levels); there is no catch/finally bypass. Frozen packages/ts/src/solutions/causal-occurrence/capabilities.ts:67-89 checks the private issued WeakMap, owning Graph, all four binding fields, lower-handle registration and nesting. Structural copies and mismatches throw before recipient effects."
+    },
+    "preserve-issued-lineage": {
+      "pass": true,
+      "evidence": "The submitted levels envelope references capabilities.identity, capabilities.execution and capabilities.retained directly. Object.freeze applies only to the envelope, without copying or replacing any issued handle. The explicit execution.identity/retained.execution checks preserve the nesting shown in frozen packages/ts/src/solutions/causal-occurrence/capabilities.ts:88-89 and 122-146; no new registry or minted handle appears."
+    },
+    "execution-boundary": {
+      "pass": true,
+      "evidence": "The snippet calls only the validation helper, Object.freeze and recipient; it invokes no transport. Explanation item 4 explicitly says possession of execution grants neither arbitrary I/O nor per-request permission, and distinguishes owning-host guards and resource lease writes. Frozen packages/ts/src/solutions/causal-occurrence/capabilities.ts:27-32 exposes identity and observation Nodes without an I/O method, matching this explanation."
+    }
+  }
+}

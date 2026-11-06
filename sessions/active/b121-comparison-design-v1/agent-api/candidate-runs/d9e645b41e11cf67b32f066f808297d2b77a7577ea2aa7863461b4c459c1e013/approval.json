@@ -1,0 +1,17 @@
+{
+  "manifestSHA": "d9e645b41e11cf67b32f066f808297d2b77a7577ea2aa7863461b4c459c1e013",
+  "action": "B121-agent-api-one-shot",
+  "acceptAliasLimitation": true,
+  "acceptInputEstimateLimitation": true,
+  "expiresAt": "2026-09-18T23:51:38.999Z",
+  "maxGenerationCalls": 1444,
+  "maxUSD": 5,
+  "retries": {
+    "capacity": 3,
+    "availability": 1
+  },
+  "model": "deepseek/deepseek-v4.1-flash",
+  "providerTag": "together",
+  "priorUsageUSD": 4.3710352000000015,
+  "authorizationSource": "User explicitly approved cumulative USD5 including all prior reported usage and unknown reservations, and one complete four-task run with new diagnostic logging, by 同意，继续. External key lifetime cap1.97 unchanged; no recharge/reset. Frozen v9 tasks, materials, consumer contract, model/provider, session budgets and retry policy unchanged. No automatic replacement or rerun."
+}

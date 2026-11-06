@@ -1,0 +1,41 @@
+{
+  "checkedAt": "2026-09-18T16:56:23.383Z",
+  "journals": [
+    {
+      "path": "sessions/active/b121-comparison-design-v1/agent-api/runs/a47fc6f9b79f50d6348eb8787afcf5e15d364f58cdf401661dd5b860f5294c30/journal.jsonl",
+      "rows": 258,
+      "finalHash": "86ddbce78bffe405b3cfd6dc5dbc2d59ee9beaa3ffcf762d4d710386d1b1ea9f"
+    },
+    {
+      "path": "sessions/active/b121-comparison-design-v1/agent-api/runs/ec081c7e1b89bf9b2997cafb0d7f86f456af8d7e39813f05eae56d98a69736a2--authorized-r1/journal.jsonl",
+      "rows": 1867,
+      "finalHash": "d91c6e047cfa0d251213ab7ecfbdb6ea6ed7f79ebbfb00c15160c71340363ae5"
+    },
+    {
+      "path": "sessions/active/b121-comparison-design-v1/agent-api/candidate-runs/d981286b1cd6cf1fe9004c79fbbc62011174b9e1a7e245b44e4f714c1011009f/journal.jsonl",
+      "rows": 1013,
+      "finalHash": "b0d5cdbeed10a9a4a7e3cf24df7ba59b8eb6570a9802ff567069723e212e3d72"
+    },
+    {
+      "path": "sessions/active/b121-comparison-design-v1/agent-api/candidate-runs/f2da45f8e012b9b48444d3eac861a5e685ba6286d633ce43c79591abe0538f0b/journal.jsonl",
+      "rows": 967,
+      "finalHash": "418552de99d26c3212b298fcd031cf807234423ce4a25cafc83fa727ee72b569"
+    },
+    {
+      "path": "sessions/active/b121-comparison-design-v1/agent-api/candidate-runs/62fdcba99df6d984465a2c9a43086eb2c0d38a52004bc8b449d2c9e11716d8a3/journal.jsonl",
+      "rows": 537,
+      "finalHash": "0b8c5219f001f37b20364a720ed16e3038132b46b6bbd0a68eef199d52e3e5e0"
+    }
+  ],
+  "uniqueReservations": 8,
+  "exactDecimalSumUSD": "2.5494420",
+  "generationCalls": 0,
+  "checks": [
+    "Full hash chains for all five referenced journals",
+    "Reservation event hashes match exact source rows",
+    "Decimal sum equals v7 billing unknown reservations",
+    "Both generation lookups return 404; no release",
+    "Current key usage matches previous snapshot"
+  ],
+  "codeTestsRerun": false
+}

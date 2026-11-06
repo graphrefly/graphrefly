@@ -1,0 +1,1697 @@
+{
+  "data": {
+    "id": "deepseek/deepseek-v4.1-flash",
+    "name": "DeepSeek: DeepSeek V4.1 Flash",
+    "created": 1789021285,
+    "description": "DeepSeek V4.1 Flash is a sparse mixture-of-experts model from DeepSeek, and the first built on the company's Causal Encoder-Decoder (CED) architecture. It activates 8B parameters on input and 16B on...",
+    "architecture": {
+      "tokenizer": "DeepSeek",
+      "instruct_type": null,
+      "modality": "text+image->text",
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "output_modalities": [
+        "text"
+      ]
+    },
+    "endpoints": [
+      {
+        "name": "Alibaba | deepseek/deepseek-v4.1-flash-20260910",
+        "model_id": "deepseek/deepseek-v4.1-flash",
+        "model_name": "DeepSeek: DeepSeek V4.1 Flash",
+        "context_length": 1000000,
+        "pricing": {
+          "prompt": "0.00000015",
+          "completion": "0.0000006",
+          "input_cache_read": "0.000000015",
+          "discount": 0,
+          "overrides": [
+            {
+              "utc_start": 0,
+              "utc_end": 1400,
+              "prompt": "0.0000003",
+              "completion": "0.0000012",
+              "input_cache_read": "0.00000003"
+            },
+            {
+              "utc_start": 1400,
+              "utc_end": 0,
+              "prompt": "0.00000015",
+              "completion": "0.0000006",
+              "input_cache_read": "0.000000015"
+            }
+          ]
+        },
+        "provider_name": "Alibaba",
+        "tag": "alibaba",
+        "quantization": "unknown",
+        "max_completion_tokens": 393216,
+        "max_prompt_tokens": null,
+        "supported_parameters": [
+          "reasoning",
+          "include_reasoning",
+          "max_tokens",
+          "temperature",
+          "top_p",
+          "seed",
+          "presence_penalty",
+          "response_format",
+          "top_k",
+          "frequency_penalty",
+          "stop",
+          "tools",
+          "tool_choice",
+          "reasoning_effort"
+        ],
+        "supports_tool_choice": {
+          "none": true,
+          "auto": true,
+          "required": true,
+          "function": true
+        },
+        "status": 0,
+        "uptime_last_30m": 99.95143155491877,
+        "uptime_last_5m": 99.95484647802529,
+        "uptime_last_1d": 99.63188593871232,
+        "supports_implicit_caching": false,
+        "supports_voice_cloning": false,
+        "latency_last_30m": {
+          "p50": 1715.5,
+          "p75": 3752.25,
+          "p90": 7512,
+          "p99": 24975.44000000003
+        },
+        "throughput_last_30m": {
+          "p50": 89,
+          "p75": 123,
+          "p90": 158,
+          "p99": 192
+        },
+        "perf_last_30m_by_workload": {
+          "text_generation": {
+            "latency": {
+              "p50": 1707,
+              "p75": 3701.5,
+              "p90": 7660.600000000008,
+              "p99": 25218.400000000038
+            },
+            "throughput": {
+              "p50": 89,
+              "p75": 123,
+              "p90": 157,
+              "p99": 192.09000000000015
+            },
+            "request_count": 42980
+          }
+        }
+      },
+      {
+        "name": "Relace | deepseek/deepseek-v4.1-flash-20260910",
+        "model_id": "deepseek/deepseek-v4.1-flash",
+        "model_name": "DeepSeek: DeepSeek V4.1 Flash",
+        "context_length": 1048576,
+        "pricing": {
+          "prompt": "0.00000015",
+          "completion": "0.0000006",
+          "input_cache_read": "0.000000015",
+          "discount": 0
+        },
+        "provider_name": "Relace",
+        "tag": "relace/fp4",
+        "quantization": "fp4",
+        "max_completion_tokens": 943718,
+        "max_prompt_tokens": null,
+        "supported_parameters": [
+          "reasoning",
+          "include_reasoning",
+          "temperature",
+          "top_p",
+          "top_k",
+          "min_p",
+          "stop",
+          "max_tokens",
+          "logit_bias",
+          "frequency_penalty",
+          "presence_penalty",
+          "repetition_penalty",
+          "tools",
+          "tool_choice",
+          "reasoning_effort"
+        ],
+        "supports_tool_choice": {
+          "none": false,
+          "auto": true,
+          "required": false,
+          "function": false
+        },
+        "status": 0,
+        "uptime_last_30m": 99.57823411463735,
+        "uptime_last_5m": 98.96039603960396,
+        "uptime_last_1d": 99.16830885668114,
+        "supports_implicit_caching": false,
+        "supports_voice_cloning": false,
+        "latency_last_30m": {
+          "p50": 3146,
+          "p75": 5495.25,
+          "p90": 8602,
+          "p99": 17240.54
+        },
+        "throughput_last_30m": {
+          "p50": 29,
+          "p75": 38,
+          "p90": 50,
+          "p99": 76
+        },
+        "perf_last_30m_by_workload": {
+          "text_generation": {
+            "latency": {
+              "p50": 3182.5,
+              "p75": 5517,
+              "p90": 8678.200000000004,
+              "p99": 17560.530000000002
+            },
+            "throughput": {
+              "p50": 29,
+              "p75": 38,
+              "p90": 49,
+              "p99": 75
+            },
+            "request_count": 14362
+          }
+        }
+      },
+      {
+        "name": "DeepSeek | deepseek/deepseek-v4.1-flash-20260910",
+        "model_id": "deepseek/deepseek-v4.1-flash",
+        "model_name": "DeepSeek: DeepSeek V4.1 Flash",
+        "context_length": 1048576,
+        "pricing": {
+          "prompt": "0.00000015",
+          "completion": "0.0000006",
+          "input_cache_read": "0.000000003",
+          "discount": 0,
+          "overrides": [
+            {
+              "utc_days": [
+                "saturday",
+                "sunday"
+              ],
+              "prompt": "0.00000015",
+              "completion": "0.0000006",
+              "input_cache_read": "0.000000003"
+            },
+            {
+              "utc_start": 0,
+              "utc_end": 100,
+              "utc_days": [
+                "monday",
+                "tuesday",
+                "wednesday",
+                "thursday",
+                "friday"
+              ],
+              "prompt": "0.00000015",
+              "completion": "0.0000006",
+              "input_cache_read": "0.000000003"
+            },
+            {
+              "utc_start": 100,
+              "utc_end": 400,
+              "utc_days": [
+                "monday",
+                "tuesday",
+                "wednesday",
+                "thursday",
+                "friday"
+              ],
+              "prompt": "0.0000003",
+              "completion": "0.0000012",
+              "input_cache_read": "0.000000006"
+            },
+            {
+              "utc_start": 400,
+              "utc_end": 600,
+              "utc_days": [
+                "monday",
+                "tuesday",
+                "wednesday",
+                "thursday",
+                "friday"
+              ],
+              "prompt": "0.00000015",
+              "completion": "0.0000006",
+              "input_cache_read": "0.000000003"
+            },
+            {
+              "utc_start": 600,
+              "utc_end": 1000,
+              "utc_days": [
+                "monday",
+                "tuesday",
+                "wednesday",
+                "thursday",
+                "friday"
+              ],
+              "prompt": "0.0000003",
+              "completion": "0.0000012",
+              "input_cache_read": "0.000000006"
+            },
+            {
+              "utc_start": 1000,
+              "utc_end": 0,
+              "utc_days": [
+                "monday",
+                "tuesday",
+                "wednesday",
+                "thursday",
+                "friday"
+              ],
+              "prompt": "0.00000015",
+              "completion": "0.0000006",
+              "input_cache_read": "0.000000003"
+            }
+          ]
+        },
+        "provider_name": "DeepSeek",
+        "tag": "deepseek",
+        "quantization": "unknown",
+        "max_completion_tokens": 384000,
+        "max_prompt_tokens": null,
+        "supported_parameters": [
+          "reasoning",
+          "include_reasoning",
+          "max_tokens",
+          "temperature",
+          "top_p",
+          "stop",
+          "frequency_penalty",
+          "presence_penalty",
+          "logprobs",
+          "top_logprobs",
+          "tools",
+          "tool_choice",
+          "response_format",
+          "reasoning_effort"
+        ],
+        "supports_tool_choice": {
+          "none": true,
+          "auto": true,
+          "required": false,
+          "function": false
+        },
+        "status": 0,
+        "uptime_last_30m": 99.99735634197039,
+        "uptime_last_5m": 99.99307447250565,
+        "uptime_last_1d": 99.98445842534757,
+        "supports_implicit_caching": true,
+        "supports_voice_cloning": false,
+        "latency_last_30m": {
+          "p50": 857,
+          "p75": 1112.25,
+          "p90": 1551,
+          "p99": 4127.620000000003
+        },
+        "throughput_last_30m": {
+          "p50": 124.5,
+          "p75": 195.25,
+          "p90": 247,
+          "p99": 348.09000000000015
+        },
+        "perf_last_30m_by_workload": {
+          "text_generation": {
+            "latency": {
+              "p50": 855,
+              "p75": 1103,
+              "p90": 1535,
+              "p99": 3993.6200000000026
+            },
+            "throughput": {
+              "p50": 123,
+              "p75": 195,
+              "p90": 245,
+              "p99": 349.09000000000015
+            },
+            "request_count": 407428
+          }
+        }
+      },
+      {
+        "name": "Wafer | deepseek/deepseek-v4.1-flash-20260910",
+        "model_id": "deepseek/deepseek-v4.1-flash",
+        "model_name": "DeepSeek: DeepSeek V4.1 Flash",
+        "context_length": 1048576,
+        "pricing": {
+          "prompt": "0.0000002",
+          "completion": "0.0000006",
+          "input_cache_read": "0.000000006",
+          "discount": 0
+        },
+        "provider_name": "Wafer",
+        "tag": "wafer",
+        "quantization": "unknown",
+        "max_completion_tokens": 943718,
+        "max_prompt_tokens": null,
+        "supported_parameters": [
+          "reasoning",
+          "include_reasoning",
+          "temperature",
+          "top_p",
+          "top_k",
+          "min_p",
+          "frequency_penalty",
+          "presence_penalty",
+          "repetition_penalty",
+          "stop",
+          "seed",
+          "max_tokens",
+          "logit_bias",
+          "response_format",
+          "structured_outputs",
+          "tools",
+          "tool_choice",
+          "logprobs",
+          "top_logprobs",
+          "reasoning_effort"
+        ],
+        "supports_tool_choice": {
+          "none": true,
+          "auto": true,
+          "required": true,
+          "function": true
+        },
+        "status": 0,
+        "uptime_last_30m": 98.40848806366049,
+        "uptime_last_5m": 98.0460572226099,
+        "uptime_last_1d": 98.82714680193777,
+        "supports_implicit_caching": false,
+        "supports_voice_cloning": false,
+        "latency_last_30m": {
+          "p50": 1806,
+          "p75": 5164.25,
+          "p90": 22780.100000000006,
+          "p99": 94559.45
+        },
+        "throughput_last_30m": {
+          "p50": 22,
+          "p75": 46,
+          "p90": 78,
+          "p99": 120
+        },
+        "perf_last_30m_by_workload": {
+          "text_generation": {
+            "latency": {
+              "p50": 1809.5,
+              "p75": 5206,
+              "p90": 22709.000000000015,
+              "p99": 95779.22000000003
+            },
+            "throughput": {
+              "p50": 22,
+              "p75": 46,
+              "p90": 78,
+              "p99": 121
+            },
+            "request_count": 11392
+          }
+        }
+      },
+      {
+        "name": "DeepInfra | deepseek/deepseek-v4.1-flash-20260910",
+        "model_id": "deepseek/deepseek-v4.1-flash",
+        "model_name": "DeepSeek: DeepSeek V4.1 Flash",
+        "context_length": 1048576,
+        "pricing": {
+          "prompt": "0.0000002",
+          "completion": "0.0000006",
+          "input_cache_read": "0.000000006",
+          "discount": 0
+        },
+        "provider_name": "DeepInfra",
+        "tag": "deepinfra/fp8",
+        "quantization": "fp8",
+        "max_completion_tokens": 131072,
+        "max_prompt_tokens": null,
+        "supported_parameters": [
+          "reasoning",
+          "include_reasoning",
+          "max_tokens",
+          "temperature",
+          "top_p",
+          "stop",
+          "frequency_penalty",
+          "presence_penalty",
+          "repetition_penalty",
+          "top_k",
+          "seed",
+          "min_p",
+          "logit_bias",
+          "structured_outputs",
+          "tools",
+          "tool_choice",
+          "response_format",
+          "reasoning_effort"
+        ],
+        "supports_tool_choice": {
+          "none": true,
+          "auto": true,
+          "required": true,
+          "function": true
+        },
+        "status": 0,
+        "uptime_last_30m": 99.80897250361794,
+        "uptime_last_5m": 99.71147478951849,
+        "uptime_last_1d": 99.77995872980479,
+        "supports_implicit_caching": false,
+        "supports_voice_cloning": false,
+        "latency_last_30m": {
+          "p50": 1596,
+          "p75": 2681.25,
+          "p90": 4704.700000000002,
+          "p99": 20799.620000000017
+        },
+        "throughput_last_30m": {
+          "p50": 43,
+          "p75": 53,
+          "p90": 62,
+          "p99": 80
+        },
+        "perf_last_30m_by_workload": {
+          "text_generation": {
+            "latency": {
+              "p50": 1606,
+              "p75": 2698.25,
+              "p90": 4723.800000000001,
+              "p99": 20200.84000000004
+            },
+            "throughput": {
+              "p50": 43,
+              "p75": 53,
+              "p90": 62,
+              "p99": 81
+            },
+            "request_count": 155036
+          }
+        }
+      },
+      {
+        "name": "Morph | deepseek/deepseek-v4.1-flash-20260910",
+        "model_id": "deepseek/deepseek-v4.1-flash",
+        "model_name": "DeepSeek: DeepSeek V4.1 Flash",
+        "context_length": 1048576,
+        "pricing": {
+          "prompt": "0.00000021327",
+          "completion": "0.00000085308",
+          "input_cache_read": "0.0000000063981",
+          "discount": 0.2891
+        },
+        "provider_name": "Morph",
+        "tag": "morph/fp8",
+        "quantization": "fp8",
+        "max_completion_tokens": 943718,
+        "max_prompt_tokens": null,
+        "supported_parameters": [
+          "reasoning",
+          "include_reasoning",
+          "max_tokens",
+          "temperature",
+          "stop",
+          "top_p",
+          "top_k",
+          "min_p",
+          "frequency_penalty",
+          "presence_penalty",
+          "repetition_penalty",
+          "seed",
+          "logit_bias",
+          "response_format",
+          "structured_outputs",
+          "tools",
+          "tool_choice",
+          "reasoning_effort"
+        ],
+        "supports_tool_choice": {
+          "none": true,
+          "auto": true,
+          "required": false,
+          "function": false
+        },
+        "status": 0,
+        "uptime_last_30m": 99.99158957106813,
+        "uptime_last_5m": 100,
+        "uptime_last_1d": 99.79714055768594,
+        "supports_implicit_caching": false,
+        "supports_voice_cloning": false,
+        "latency_last_30m": {
+          "p50": 1521,
+          "p75": 2211.25,
+          "p90": 3768.600000000002,
+          "p99": 18775.240000000078
+        },
+        "throughput_last_30m": {
+          "p50": 28,
+          "p75": 36,
+          "p90": 41,
+          "p99": 49
+        },
+        "perf_last_30m_by_workload": {
+          "text_generation": {
+            "latency": {
+              "p50": 1521,
+              "p75": 2201.25,
+              "p90": 3744.9000000000005,
+              "p99": 17596.57000000004
+            },
+            "throughput": {
+              "p50": 28,
+              "p75": 36,
+              "p90": 41,
+              "p99": 49
+            },
+            "request_count": 11869
+          }
+        }
+      },
+      {
+        "name": "Fireworks | deepseek/deepseek-v4.1-flash-20260910",
+        "model_id": "deepseek/deepseek-v4.1-flash",
+        "model_name": "DeepSeek: DeepSeek V4.1 Flash",
+        "context_length": 1048576,
+        "pricing": {
+          "prompt": "0.00000022",
+          "completion": "0.00000066",
+          "input_cache_read": "0.000000007",
+          "discount": 0
+        },
+        "provider_name": "Fireworks",
+        "tag": "fireworks",
+        "quantization": "unknown",
+        "max_completion_tokens": 943718,
+        "max_prompt_tokens": null,
+        "supported_parameters": [
+          "reasoning",
+          "include_reasoning",
+          "max_tokens",
+          "temperature",
+          "top_p",
+          "stop",
+          "frequency_penalty",
+          "presence_penalty",
+          "top_k",
+          "repetition_penalty",
+          "logit_bias",
+          "logprobs",
+          "top_logprobs",
+          "response_format",
+          "structured_outputs",
+          "tools",
+          "tool_choice",
+          "reasoning_effort"
+        ],
+        "supports_tool_choice": {
+          "none": true,
+          "auto": true,
+          "required": true,
+          "function": true
+        },
+        "status": 0,
+        "uptime_last_30m": 99.87603305785125,
+        "uptime_last_5m": 99.84610649430594,
+        "uptime_last_1d": 99.69619188268923,
+        "supports_implicit_caching": false,
+        "supports_voice_cloning": false,
+        "latency_last_30m": {
+          "p50": 1178,
+          "p75": 1851.5,
+          "p90": 3194.800000000001,
+          "p99": 11523.350000000002
+        },
+        "throughput_last_30m": {
+          "p50": 71,
+          "p75": 89,
+          "p90": 106,
+          "p99": 143
+        },
+        "perf_last_30m_by_workload": {
+          "text_generation": {
+            "latency": {
+              "p50": 1178.5,
+              "p75": 1848,
+              "p90": 3174.800000000001,
+              "p99": 10697.500000000007
+            },
+            "throughput": {
+              "p50": 71,
+              "p75": 89,
+              "p90": 105,
+              "p99": 144
+            },
+            "request_count": 35953
+          }
+        }
+      },
+      {
+        "name": "StreamLake | deepseek/deepseek-v4.1-flash-20260910",
+        "model_id": "deepseek/deepseek-v4.1-flash",
+        "model_name": "DeepSeek: DeepSeek V4.1 Flash",
+        "context_length": 1024000,
+        "pricing": {
+          "prompt": "0.000000282",
+          "completion": "0.000001128",
+          "input_cache_read": "0.00000000564",
+          "discount": 0.06
+        },
+        "provider_name": "StreamLake",
+        "tag": "streamlake/fp8",
+        "quantization": "fp8",
+        "max_completion_tokens": 384000,
+        "max_prompt_tokens": null,
+        "supported_parameters": [
+          "reasoning",
+          "include_reasoning",
+          "max_tokens",
+          "temperature",
+          "top_p",
+          "stop",
+          "logprobs",
+          "top_logprobs",
+          "response_format",
+          "tools",
+          "tool_choice",
+          "reasoning_effort"
+        ],
+        "supports_tool_choice": {
+          "none": true,
+          "auto": true,
+          "required": true,
+          "function": true
+        },
+        "status": 0,
+        "uptime_last_30m": 99.18105356352368,
+        "uptime_last_5m": 99.69788519637463,
+        "uptime_last_1d": 99.22259328880534,
+        "supports_implicit_caching": false,
+        "supports_voice_cloning": false,
+        "latency_last_30m": {
+          "p50": 3629,
+          "p75": 5917,
+          "p90": 9686.9,
+          "p99": 37120.65000000004
+        },
+        "throughput_last_30m": {
+          "p50": 64,
+          "p75": 93,
+          "p90": 114,
+          "p99": 153
+        },
+        "perf_last_30m_by_workload": {
+          "text_generation": {
+            "latency": {
+              "p50": 3631.5,
+              "p75": 5894.25,
+              "p90": 9668.500000000004,
+              "p99": 36604.30000000001
+            },
+            "throughput": {
+              "p50": 64,
+              "p75": 93,
+              "p90": 114,
+              "p99": 153
+            },
+            "request_count": 8940
+          }
+        }
+      },
+      {
+        "name": "GMICloud | deepseek/deepseek-v4.1-flash-20260910",
+        "model_id": "deepseek/deepseek-v4.1-flash",
+        "model_name": "DeepSeek: DeepSeek V4.1 Flash",
+        "context_length": 1048575,
+        "pricing": {
+          "prompt": "0.000000285",
+          "completion": "0.00000114",
+          "input_cache_read": "0.0000000057",
+          "discount": 0.05
+        },
+        "provider_name": "GMICloud",
+        "tag": "gmicloud/fp8",
+        "quantization": "fp8",
+        "max_completion_tokens": 943717,
+        "max_prompt_tokens": null,
+        "supported_parameters": [
+          "reasoning",
+          "include_reasoning",
+          "max_tokens",
+          "temperature",
+          "top_p",
+          "seed",
+          "response_format",
+          "tools",
+          "tool_choice",
+          "logprobs",
+          "top_logprobs",
+          "reasoning_effort"
+        ],
+        "supports_tool_choice": {
+          "none": true,
+          "auto": true,
+          "required": false,
+          "function": false
+        },
+        "status": 0,
+        "uptime_last_30m": 99.93017674012656,
+        "uptime_last_5m": 99.9618174875907,
+        "uptime_last_1d": 99.8471578224283,
+        "supports_implicit_caching": false,
+        "supports_voice_cloning": false,
+        "latency_last_30m": {
+          "p50": 4000.5,
+          "p75": 5120,
+          "p90": 6393,
+          "p99": 10951.150000000005
+        },
+        "throughput_last_30m": {
+          "p50": 74,
+          "p75": 129,
+          "p90": 178,
+          "p99": 243
+        },
+        "perf_last_30m_by_workload": {
+          "text_generation": {
+            "latency": {
+              "p50": 3995,
+              "p75": 5139,
+              "p90": 6439.900000000001,
+              "p99": 11456.890000000003
+            },
+            "throughput": {
+              "p50": 74,
+              "p75": 127,
+              "p90": 177,
+              "p99": 241
+            },
+            "request_count": 22861
+          }
+        }
+      },
+      {
+        "name": "Novita | deepseek/deepseek-v4.1-flash-20260910",
+        "model_id": "deepseek/deepseek-v4.1-flash",
+        "model_name": "DeepSeek: DeepSeek V4.1 Flash",
+        "context_length": 1048576,
+        "pricing": {
+          "prompt": "0.000000285",
+          "completion": "0.00000114",
+          "input_cache_read": "0.0000000057",
+          "discount": 0.05
+        },
+        "provider_name": "Novita",
+        "tag": "novita/fp8",
+        "quantization": "fp8",
+        "max_completion_tokens": 393216,
+        "max_prompt_tokens": null,
+        "supported_parameters": [
+          "reasoning",
+          "include_reasoning",
+          "max_tokens",
+          "temperature",
+          "top_p",
+          "stop",
+          "frequency_penalty",
+          "presence_penalty",
+          "seed",
+          "top_k",
+          "repetition_penalty",
+          "response_format",
+          "tools",
+          "tool_choice",
+          "logprobs",
+          "top_logprobs",
+          "reasoning_effort"
+        ],
+        "supports_tool_choice": {
+          "none": true,
+          "auto": true,
+          "required": false,
+          "function": false
+        },
+        "status": 0,
+        "uptime_last_30m": 99.9820892849147,
+        "uptime_last_5m": 99.9862618491551,
+        "uptime_last_1d": 99.96153665296143,
+        "supports_implicit_caching": false,
+        "supports_voice_cloning": false,
+        "latency_last_30m": {
+          "p50": 2476.5,
+          "p75": 3786.5,
+          "p90": 5762.800000000001,
+          "p99": 25414.790000000005
+        },
+        "throughput_last_30m": {
+          "p50": 89,
+          "p75": 132,
+          "p90": 181,
+          "p99": 270
+        },
+        "perf_last_30m_by_workload": {
+          "text_generation": {
+            "latency": {
+              "p50": 2486,
+              "p75": 3821.25,
+              "p90": 5853.200000000004,
+              "p99": 25207.250000000033
+            },
+            "throughput": {
+              "p50": 89,
+              "p75": 129,
+              "p90": 177,
+              "p99": 272
+            },
+            "request_count": 44838
+          }
+        }
+      },
+      {
+        "name": "AtlasCloud | deepseek/deepseek-v4.1-flash-20260910",
+        "model_id": "deepseek/deepseek-v4.1-flash",
+        "model_name": "DeepSeek: DeepSeek V4.1 Flash",
+        "context_length": 1048576,
+        "pricing": {
+          "prompt": "0.0000003",
+          "completion": "0.0000012",
+          "input_cache_read": "0.00000003",
+          "discount": 0
+        },
+        "provider_name": "AtlasCloud",
+        "tag": "atlas-cloud/fp8",
+        "quantization": "fp8",
+        "max_completion_tokens": 393216,
+        "max_prompt_tokens": null,
+        "supported_parameters": [
+          "reasoning",
+          "include_reasoning",
+          "max_tokens",
+          "temperature",
+          "top_p",
+          "top_k",
+          "min_p",
+          "frequency_penalty",
+          "presence_penalty",
+          "repetition_penalty",
+          "stop",
+          "seed",
+          "logit_bias",
+          "response_format",
+          "tools",
+          "tool_choice",
+          "structured_outputs",
+          "reasoning_effort"
+        ],
+        "supports_tool_choice": {
+          "none": true,
+          "auto": true,
+          "required": true,
+          "function": true
+        },
+        "status": 0,
+        "uptime_last_30m": 99.82227488151659,
+        "uptime_last_5m": 100,
+        "uptime_last_1d": 99.86515090156851,
+        "supports_implicit_caching": false,
+        "supports_voice_cloning": false,
+        "latency_last_30m": {
+          "p50": 1457,
+          "p75": 2235,
+          "p90": 4113,
+          "p99": 12844.39999999999
+        },
+        "throughput_last_30m": {
+          "p50": 73,
+          "p75": 95,
+          "p90": 117,
+          "p99": 158.5999999999999
+        },
+        "perf_last_30m_by_workload": {
+          "text_generation": {
+            "latency": {
+              "p50": 1457,
+              "p75": 2235,
+              "p90": 4112.400000000001,
+              "p99": 12842.219999999992
+            },
+            "throughput": {
+              "p50": 73,
+              "p75": 95,
+              "p90": 117,
+              "p99": 158.57999999999993
+            },
+            "request_count": 3343
+          }
+        }
+      },
+      {
+        "name": "BaseTen | deepseek/deepseek-v4.1-flash-20260910",
+        "model_id": "deepseek/deepseek-v4.1-flash",
+        "model_name": "DeepSeek: DeepSeek V4.1 Flash",
+        "context_length": 1048576,
+        "pricing": {
+          "prompt": "0.0000003",
+          "completion": "0.0000012",
+          "input_cache_read": "0.00000003",
+          "discount": 0
+        },
+        "provider_name": "BaseTen",
+        "tag": "baseten/fp8",
+        "quantization": "fp8",
+        "max_completion_tokens": 32768,
+        "max_prompt_tokens": null,
+        "supported_parameters": [
+          "reasoning",
+          "include_reasoning",
+          "max_tokens",
+          "temperature",
+          "top_p",
+          "stop",
+          "frequency_penalty",
+          "presence_penalty",
+          "tools",
+          "tool_choice",
+          "reasoning_effort"
+        ],
+        "supports_tool_choice": {
+          "none": true,
+          "auto": true,
+          "required": true,
+          "function": true
+        },
+        "status": 0,
+        "uptime_last_30m": 100,
+        "uptime_last_5m": 100,
+        "uptime_last_1d": 98.2769249737994,
+        "supports_implicit_caching": false,
+        "supports_voice_cloning": false,
+        "latency_last_30m": {
+          "p50": 539,
+          "p75": 895,
+          "p90": 1774,
+          "p99": 7224.199999999962
+        },
+        "throughput_last_30m": {
+          "p50": 53,
+          "p75": 117,
+          "p90": 196,
+          "p99": 308.59999999999945
+        },
+        "perf_last_30m_by_workload": {
+          "text_generation": {
+            "latency": {
+              "p50": 539.5,
+              "p75": 894.25,
+              "p90": 1768.0000000000055,
+              "p99": 7217.870000000015
+            },
+            "throughput": {
+              "p50": 53,
+              "p75": 116.25,
+              "p90": 196,
+              "p99": 308.5100000000002
+            },
+            "request_count": 2784
+          }
+        }
+      },
+      {
+        "name": "Makora | deepseek/deepseek-v4.1-flash-20260910",
+        "model_id": "deepseek/deepseek-v4.1-flash",
+        "model_name": "DeepSeek: DeepSeek V4.1 Flash",
+        "context_length": 1048576,
+        "pricing": {
+          "prompt": "0.0000003",
+          "completion": "0.0000012",
+          "input_cache_read": "0.000000006",
+          "discount": 0
+        },
+        "provider_name": "Makora",
+        "tag": "makora",
+        "quantization": "unknown",
+        "max_completion_tokens": 393216,
+        "max_prompt_tokens": null,
+        "supported_parameters": [
+          "reasoning",
+          "include_reasoning",
+          "temperature",
+          "top_p",
+          "top_k",
+          "frequency_penalty",
+          "presence_penalty",
+          "repetition_penalty",
+          "stop",
+          "max_tokens",
+          "seed",
+          "min_p",
+          "logit_bias",
+          "response_format",
+          "structured_outputs",
+          "tools",
+          "tool_choice",
+          "logprobs",
+          "top_logprobs",
+          "reasoning_effort"
+        ],
+        "supports_tool_choice": {
+          "none": true,
+          "auto": true,
+          "required": true,
+          "function": true
+        },
+        "status": 0,
+        "uptime_last_30m": 96.63767146202743,
+        "uptime_last_5m": 99.29328621908127,
+        "uptime_last_1d": 98.17249661288336,
+        "supports_implicit_caching": false,
+        "supports_voice_cloning": false,
+        "latency_last_30m": {
+          "p50": 848,
+          "p75": 1743,
+          "p90": 3790,
+          "p99": 20767.79999999991
+        },
+        "throughput_last_30m": {
+          "p50": 118,
+          "p75": 197,
+          "p90": 265,
+          "p99": 365
+        },
+        "perf_last_30m_by_workload": {
+          "text_generation": {
+            "latency": {
+              "p50": 847,
+              "p75": 1743.5,
+              "p90": 3794,
+              "p99": 20751.00000000005
+            },
+            "throughput": {
+              "p50": 118,
+              "p75": 197,
+              "p90": 265,
+              "p99": 365
+            },
+            "request_count": 5771
+          }
+        }
+      },
+      {
+        "name": "DigitalOcean | deepseek/deepseek-v4.1-flash-20260910",
+        "model_id": "deepseek/deepseek-v4.1-flash",
+        "model_name": "DeepSeek: DeepSeek V4.1 Flash",
+        "context_length": 1048576,
+        "pricing": {
+          "prompt": "0.0000003",
+          "completion": "0.0000012",
+          "input_cache_read": "0.000000006",
+          "discount": 0
+        },
+        "provider_name": "DigitalOcean",
+        "tag": "digitalocean",
+        "quantization": "unknown",
+        "max_completion_tokens": 943718,
+        "max_prompt_tokens": null,
+        "supported_parameters": [
+          "reasoning",
+          "include_reasoning",
+          "temperature",
+          "top_p",
+          "max_tokens",
+          "response_format",
+          "logprobs",
+          "top_logprobs",
+          "structured_outputs",
+          "tools",
+          "tool_choice",
+          "reasoning_effort"
+        ],
+        "supports_tool_choice": {
+          "none": true,
+          "auto": true,
+          "required": true,
+          "function": true
+        },
+        "status": 0,
+        "uptime_last_30m": 99.37012597480503,
+        "uptime_last_5m": 100,
+        "uptime_last_1d": 98.50495972947766,
+        "supports_implicit_caching": false,
+        "supports_voice_cloning": false,
+        "latency_last_30m": {
+          "p50": 1005,
+          "p75": 1890,
+          "p90": 3618,
+          "p99": 39722.04999999999
+        },
+        "throughput_last_30m": {
+          "p50": 33,
+          "p75": 39,
+          "p90": 45,
+          "p99": 53
+        },
+        "perf_last_30m_by_workload": {
+          "text_generation": {
+            "latency": {
+              "p50": 1006,
+              "p75": 1890,
+              "p90": 3618,
+              "p99": 39721.200000000004
+            },
+            "throughput": {
+              "p50": 33,
+              "p75": 39,
+              "p90": 45,
+              "p99": 53
+            },
+            "request_count": 3309
+          }
+        }
+      },
+      {
+        "name": "Together | deepseek/deepseek-v4.1-flash-20260910",
+        "model_id": "deepseek/deepseek-v4.1-flash",
+        "model_name": "DeepSeek: DeepSeek V4.1 Flash",
+        "context_length": 1048576,
+        "pricing": {
+          "prompt": "0.0000003",
+          "completion": "0.0000012",
+          "input_cache_read": "0.000000006",
+          "discount": 0
+        },
+        "provider_name": "Together",
+        "tag": "together",
+        "quantization": "unknown",
+        "max_completion_tokens": 943718,
+        "max_prompt_tokens": null,
+        "supported_parameters": [
+          "reasoning",
+          "include_reasoning",
+          "max_tokens",
+          "temperature",
+          "top_p",
+          "stop",
+          "frequency_penalty",
+          "presence_penalty",
+          "top_k",
+          "repetition_penalty",
+          "logit_bias",
+          "min_p",
+          "response_format",
+          "structured_outputs",
+          "tools",
+          "tool_choice",
+          "logprobs",
+          "top_logprobs",
+          "reasoning_effort"
+        ],
+        "supports_tool_choice": {
+          "none": true,
+          "auto": true,
+          "required": true,
+          "function": true
+        },
+        "status": 0,
+        "uptime_last_30m": 99.9885760416746,
+        "uptime_last_5m": 99.97456376863204,
+        "uptime_last_1d": 99.74765742293944,
+        "supports_implicit_caching": false,
+        "supports_voice_cloning": false,
+        "latency_last_30m": {
+          "p50": 433.5,
+          "p75": 847,
+          "p90": 2154,
+          "p99": 13023.280000000028
+        },
+        "throughput_last_30m": {
+          "p50": 145,
+          "p75": 195,
+          "p90": 244,
+          "p99": 364.1800000000003
+        },
+        "perf_last_30m_by_workload": {
+          "text_generation": {
+            "latency": {
+              "p50": 432,
+              "p75": 860.5,
+              "p90": 2109.9000000000005,
+              "p99": 14421.810000000001
+            },
+            "throughput": {
+              "p50": 144,
+              "p75": 195,
+              "p90": 244,
+              "p99": 362.09000000000015
+            },
+            "request_count": 131325
+          }
+        }
+      },
+      {
+        "name": "SiliconFlow | deepseek/deepseek-v4.1-flash-20260910",
+        "model_id": "deepseek/deepseek-v4.1-flash",
+        "model_name": "DeepSeek: DeepSeek V4.1 Flash",
+        "context_length": 1048576,
+        "pricing": {
+          "prompt": "0.0000003",
+          "completion": "0.0000012",
+          "input_cache_read": "0.000000006",
+          "discount": 0
+        },
+        "provider_name": "SiliconFlow",
+        "tag": "siliconflow/fp8",
+        "quantization": "fp8",
+        "max_completion_tokens": 393216,
+        "max_prompt_tokens": null,
+        "supported_parameters": [
+          "reasoning",
+          "include_reasoning",
+          "temperature",
+          "top_p",
+          "top_k",
+          "frequency_penalty",
+          "max_tokens",
+          "response_format",
+          "reasoning_effort"
+        ],
+        "supports_tool_choice": {
+          "none": true,
+          "auto": true,
+          "required": true,
+          "function": true
+        },
+        "status": 0,
+        "uptime_last_30m": 95.82913560346564,
+        "uptime_last_5m": 96.9270166453265,
+        "uptime_last_1d": 99.52099810627159,
+        "supports_implicit_caching": false,
+        "supports_voice_cloning": false,
+        "latency_last_30m": {
+          "p50": 1311.5,
+          "p75": 1983.5,
+          "p90": 3735.4000000000033,
+          "p99": 15162.239999999998
+        },
+        "throughput_last_30m": {
+          "p50": 79.5,
+          "p75": 127,
+          "p90": 180,
+          "p99": 291.78999999999996
+        },
+        "perf_last_30m_by_workload": {
+          "text_generation": {
+            "latency": {
+              "p50": 1312,
+              "p75": 1984,
+              "p90": 3733.600000000002,
+              "p99": 15160.560000000012
+            },
+            "throughput": {
+              "p50": 79,
+              "p75": 127,
+              "p90": 180,
+              "p99": 291.7600000000002
+            },
+            "request_count": 4725
+          }
+        }
+      },
+      {
+        "name": "Modal | deepseek/deepseek-v4.1-flash-20260910",
+        "model_id": "deepseek/deepseek-v4.1-flash",
+        "model_name": "DeepSeek: DeepSeek V4.1 Flash",
+        "context_length": 1048576,
+        "pricing": {
+          "prompt": "0.0000003",
+          "completion": "0.0000012",
+          "input_cache_read": "0.00000003",
+          "discount": 0
+        },
+        "provider_name": "Modal",
+        "tag": "modal",
+        "quantization": "unknown",
+        "max_completion_tokens": 943718,
+        "max_prompt_tokens": null,
+        "supported_parameters": [
+          "reasoning",
+          "include_reasoning",
+          "temperature",
+          "top_p",
+          "stop",
+          "max_tokens",
+          "response_format",
+          "structured_outputs",
+          "tools",
+          "tool_choice",
+          "reasoning_effort"
+        ],
+        "supports_tool_choice": {
+          "none": true,
+          "auto": true,
+          "required": true,
+          "function": true
+        },
+        "status": 0,
+        "uptime_last_30m": 99.89460124136316,
+        "uptime_last_5m": 99.88700564971752,
+        "uptime_last_1d": 98.16882600975414,
+        "supports_implicit_caching": false,
+        "supports_voice_cloning": false,
+        "latency_last_30m": {
+          "p50": 795,
+          "p75": 1337,
+          "p90": 2320.7000000000016,
+          "p99": 12686.45
+        },
+        "throughput_last_30m": {
+          "p50": 132,
+          "p75": 195,
+          "p90": 264,
+          "p99": 403.09000000000015
+        },
+        "perf_last_30m_by_workload": {
+          "text_generation": {
+            "latency": {
+              "p50": 795.5,
+              "p75": 1338,
+              "p90": 2349.9000000000005,
+              "p99": 12686.45
+            },
+            "throughput": {
+              "p50": 132,
+              "p75": 194,
+              "p90": 264,
+              "p99": 402
+            },
+            "request_count": 8522
+          }
+        }
+      },
+      {
+        "name": "BaseTen | deepseek/deepseek-v4.1-flash-20260910",
+        "model_id": "deepseek/deepseek-v4.1-flash",
+        "model_name": "DeepSeek: DeepSeek V4.1 Flash",
+        "context_length": 1048576,
+        "pricing": {
+          "prompt": "0.0000003",
+          "completion": "0.0000012",
+          "input_cache_read": "0.00000003",
+          "discount": 0
+        },
+        "provider_name": "BaseTen",
+        "tag": "baseten/fp8",
+        "quantization": "fp8",
+        "max_completion_tokens": 32768,
+        "max_prompt_tokens": null,
+        "supported_parameters": [
+          "reasoning",
+          "include_reasoning",
+          "max_tokens",
+          "temperature",
+          "top_p",
+          "stop",
+          "frequency_penalty",
+          "presence_penalty",
+          "tools",
+          "tool_choice",
+          "reasoning_effort"
+        ],
+        "supports_tool_choice": {
+          "none": true,
+          "auto": true,
+          "required": true,
+          "function": true
+        },
+        "status": 0,
+        "uptime_last_30m": 100,
+        "uptime_last_5m": 100,
+        "uptime_last_1d": 98.32433438838206,
+        "supports_implicit_caching": false,
+        "supports_voice_cloning": false,
+        "latency_last_30m": {
+          "p50": 509,
+          "p75": 790,
+          "p90": 1287,
+          "p99": 4188
+        },
+        "throughput_last_30m": {
+          "p50": 51,
+          "p75": 113,
+          "p90": 191,
+          "p99": 297
+        },
+        "perf_last_30m_by_workload": {
+          "text_generation": {
+            "latency": {
+              "p50": 509,
+              "p75": 789.75,
+              "p90": 1286.6000000000004,
+              "p99": 4187.99
+            },
+            "throughput": {
+              "p50": 51,
+              "p75": 113,
+              "p90": 191,
+              "p99": 297
+            },
+            "request_count": 2602
+          }
+        }
+      },
+      {
+        "name": "Parasail | deepseek/deepseek-v4.1-flash-20260910",
+        "model_id": "deepseek/deepseek-v4.1-flash",
+        "model_name": "DeepSeek: DeepSeek V4.1 Flash",
+        "context_length": 1048576,
+        "pricing": {
+          "prompt": "0.0000003",
+          "completion": "0.0000012",
+          "input_cache_read": "0.000000006",
+          "discount": 0
+        },
+        "provider_name": "Parasail",
+        "tag": "parasail/fp8",
+        "quantization": "fp8",
+        "max_completion_tokens": 943718,
+        "max_prompt_tokens": null,
+        "supported_parameters": [
+          "reasoning",
+          "include_reasoning",
+          "max_tokens",
+          "temperature",
+          "top_p",
+          "frequency_penalty",
+          "presence_penalty",
+          "repetition_penalty",
+          "seed",
+          "stop",
+          "top_k",
+          "logit_bias",
+          "response_format",
+          "structured_outputs",
+          "tools",
+          "tool_choice",
+          "reasoning_effort"
+        ],
+        "supports_tool_choice": {
+          "none": false,
+          "auto": true,
+          "required": false,
+          "function": false
+        },
+        "status": -2,
+        "uptime_last_30m": 91.83325207215992,
+        "uptime_last_5m": 90.52823315118397,
+        "uptime_last_1d": 96.45113573685002,
+        "supports_implicit_caching": false,
+        "supports_voice_cloning": false,
+        "latency_last_30m": {
+          "p50": 988.5,
+          "p75": 2094.5,
+          "p90": 6387.300000000002,
+          "p99": 35690.9199999998
+        },
+        "throughput_last_30m": {
+          "p50": 80,
+          "p75": 123.25,
+          "p90": 175,
+          "p99": 281
+        },
+        "perf_last_30m_by_workload": {
+          "text_generation": {
+            "latency": {
+              "p50": 988.5,
+              "p75": 2094.5,
+              "p90": 6387.300000000002,
+              "p99": 35690.9199999998
+            },
+            "throughput": {
+              "p50": 80,
+              "p75": 123.25,
+              "p90": 175,
+              "p99": 281
+            },
+            "request_count": 3748
+          }
+        }
+      },
+      {
+        "name": "Phala | deepseek/deepseek-v4.1-flash-20260910",
+        "model_id": "deepseek/deepseek-v4.1-flash",
+        "model_name": "DeepSeek: DeepSeek V4.1 Flash",
+        "context_length": 1048576,
+        "pricing": {
+          "prompt": "0.000000345",
+          "completion": "0.00000138",
+          "input_cache_read": "0.0000000069",
+          "discount": 0
+        },
+        "provider_name": "Phala",
+        "tag": "phala",
+        "quantization": "unknown",
+        "max_completion_tokens": 393216,
+        "max_prompt_tokens": null,
+        "supported_parameters": [
+          "reasoning",
+          "include_reasoning",
+          "max_tokens",
+          "temperature",
+          "top_p",
+          "stop",
+          "frequency_penalty",
+          "presence_penalty",
+          "seed",
+          "top_k",
+          "min_p",
+          "repetition_penalty",
+          "response_format",
+          "tools",
+          "tool_choice",
+          "logprobs",
+          "top_logprobs",
+          "reasoning_effort"
+        ],
+        "supports_tool_choice": {
+          "none": true,
+          "auto": true,
+          "required": false,
+          "function": false
+        },
+        "status": 0,
+        "uptime_last_30m": 99.59765910753475,
+        "uptime_last_5m": 100,
+        "uptime_last_1d": 99.753727707725,
+        "supports_implicit_caching": false,
+        "supports_voice_cloning": false,
+        "latency_last_30m": {
+          "p50": 1467,
+          "p75": 2827,
+          "p90": 3910.2000000000003,
+          "p99": 9050.320000000005
+        },
+        "throughput_last_30m": {
+          "p50": 102,
+          "p75": 155,
+          "p90": 194,
+          "p99": 272.7600000000002
+        },
+        "perf_last_30m_by_workload": {
+          "text_generation": {
+            "latency": {
+              "p50": 1466,
+              "p75": 2827,
+              "p90": 3910,
+              "p99": 9048.900000000007
+            },
+            "throughput": {
+              "p50": 102,
+              "p75": 155.5,
+              "p90": 194,
+              "p99": 272.7000000000003
+            },
+            "request_count": 2711
+          }
+        }
+      },
+      {
+        "name": "Venice | deepseek/deepseek-v4.1-flash-20260910",
+        "model_id": "deepseek/deepseek-v4.1-flash",
+        "model_name": "DeepSeek: DeepSeek V4.1 Flash",
+        "context_length": 1000000,
+        "pricing": {
+          "prompt": "0.000000375",
+          "completion": "0.0000015",
+          "input_cache_read": "0.0000000075",
+          "discount": 0
+        },
+        "provider_name": "Venice",
+        "tag": "venice/fp8",
+        "quantization": "fp8",
+        "max_completion_tokens": 131072,
+        "max_prompt_tokens": null,
+        "supported_parameters": [
+          "reasoning",
+          "include_reasoning",
+          "max_tokens",
+          "temperature",
+          "top_p",
+          "stop",
+          "frequency_penalty",
+          "presence_penalty",
+          "top_k",
+          "response_format",
+          "structured_outputs",
+          "tools",
+          "tool_choice",
+          "reasoning_effort"
+        ],
+        "supports_tool_choice": {
+          "none": true,
+          "auto": true,
+          "required": true,
+          "function": true
+        },
+        "status": 0,
+        "uptime_last_30m": 99.88925802879291,
+        "uptime_last_5m": 99.69604863221885,
+        "uptime_last_1d": 97.14520795801064,
+        "supports_implicit_caching": false,
+        "supports_voice_cloning": false,
+        "latency_last_30m": {
+          "p50": 976,
+          "p75": 1534.5,
+          "p90": 2810.8000000000006,
+          "p99": 10352.019999999906
+        },
+        "throughput_last_30m": {
+          "p50": 77,
+          "p75": 135,
+          "p90": 221,
+          "p99": 340.9399999999996
+        },
+        "perf_last_30m_by_workload": {
+          "text_generation": {
+            "latency": {
+              "p50": 976,
+              "p75": 1535.25,
+              "p90": 2810.1000000000013,
+              "p99": 10349.690000000068
+            },
+            "throughput": {
+              "p50": 77,
+              "p75": 135,
+              "p90": 221,
+              "p99": 340.9300000000003
+            },
+            "request_count": 4508
+          }
+        }
+      }
+    ]
+  }
+}

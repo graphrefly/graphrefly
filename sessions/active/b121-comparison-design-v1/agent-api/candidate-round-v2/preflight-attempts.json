@@ -1,0 +1,57 @@
+{
+  "providerCalls": 0,
+  "earlierAttempts": [
+    {
+      "phase": "v1 duplicate compiler initialization",
+      "exitCode": 139,
+      "reportBytes": 0
+    },
+    {
+      "phase": "v1 repeat",
+      "exitCode": 1,
+      "qualifiedTasks": 1
+    },
+    {
+      "phase": "v2 duplicate compiler initialization",
+      "exitCode": 139,
+      "reportBytes": 0
+    },
+    {
+      "phase": "v2 repeat",
+      "exitCode": 0,
+      "qualifiedTasks": 4
+    },
+    {
+      "phase": "v2 single compiler initialization",
+      "exitCode": 0,
+      "qualifiedTasks": 4
+    }
+  ],
+  "rootCause": "Two native process failures occurred; eliminating duplicate compiler initialization reduces unnecessary work but causal resolution is unproven. No participant or provider calls.",
+  "finalAttempts": [
+    {
+      "attempt": "v1-final",
+      "exitCode": 1,
+      "stdoutBytes": 83134,
+      "stderr": ""
+    },
+    {
+      "attempt": "v2-final-1",
+      "exitCode": 0,
+      "stdoutBytes": 75912,
+      "stderr": ""
+    },
+    {
+      "attempt": "v2-final-2",
+      "exitCode": 0,
+      "stdoutBytes": 75912,
+      "stderr": ""
+    },
+    {
+      "attempt": "v2-final-3",
+      "exitCode": 0,
+      "stdoutBytes": 75912,
+      "stderr": ""
+    }
+  ]
+}

@@ -1,0 +1,102 @@
+{
+  "kind": "B121-offline-harness-diagnostics",
+  "sessions": [
+    {
+      "id": "candidate-entry-01",
+      "arm": "G",
+      "requests": 33,
+      "estimatedInputTokens": 1152022,
+      "actualInputTokens": 981081,
+      "cumulativeHistoryBytes": 3273205,
+      "stops": [
+        {
+          "reason": "input-estimate-exceeds-remaining",
+          "contextTokens": null,
+          "maxOutputTokens": null,
+          "actualInputTokens": 981081,
+          "estimatedNextInputTokens": 58688,
+          "remainingInputTokens": 18919,
+          "hypotheticalNextActualInputTokens": null
+        }
+      ],
+      "failure": null,
+      "submittedAnswers": 0,
+      "entryStatus": "missing",
+      "estimateToActualRatio": 1.1742373973198952
+    },
+    {
+      "id": "candidate-entry-02",
+      "arm": "G",
+      "requests": 30,
+      "estimatedInputTokens": 1125589,
+      "actualInputTokens": 955541,
+      "cumulativeHistoryBytes": 3210383,
+      "stops": [
+        {
+          "reason": "input-estimate-exceeds-remaining",
+          "contextTokens": null,
+          "maxOutputTokens": null,
+          "actualInputTokens": 955541,
+          "estimatedNextInputTokens": 57782,
+          "remainingInputTokens": 44459,
+          "hypotheticalNextActualInputTokens": null
+        }
+      ],
+      "failure": null,
+      "submittedAnswers": 0,
+      "entryStatus": "missing",
+      "estimateToActualRatio": 1.1779599200871549
+    },
+    {
+      "id": "candidate-entry-03",
+      "arm": "G",
+      "requests": 27,
+      "estimatedInputTokens": 1106189,
+      "actualInputTokens": 948416,
+      "cumulativeHistoryBytes": 3168876,
+      "stops": [
+        {
+          "reason": "input-estimate-exceeds-remaining",
+          "contextTokens": null,
+          "maxOutputTokens": null,
+          "actualInputTokens": 948416,
+          "estimatedNextInputTokens": 69719,
+          "remainingInputTokens": 51584,
+          "hypotheticalNextActualInputTokens": null
+        }
+      ],
+      "failure": null,
+      "submittedAnswers": 0,
+      "entryStatus": "missing",
+      "estimateToActualRatio": 1.1663542158715163
+    },
+    {
+      "id": "candidate-entry-04",
+      "arm": "G",
+      "requests": 28,
+      "estimatedInputTokens": 1076721,
+      "actualInputTokens": 929958,
+      "cumulativeHistoryBytes": 3075214,
+      "stops": [
+        {
+          "reason": "input-estimate-exceeds-remaining",
+          "contextTokens": null,
+          "maxOutputTokens": null,
+          "actualInputTokens": 929958,
+          "estimatedNextInputTokens": 71340,
+          "remainingInputTokens": 70042,
+          "hypotheticalNextActualInputTokens": null
+        }
+      ],
+      "failure": null,
+      "submittedAnswers": 0,
+      "entryStatus": "missing",
+      "estimateToActualRatio": 1.1578168046298865
+    }
+  ],
+  "limitations": [
+    "Byte counts describe serialized history, not token counts.",
+    "Estimate ratios describe executed requests only; the actual cost of a blocked request is unknown.",
+    "A successful transport does not establish library usability."
+  ]
+}

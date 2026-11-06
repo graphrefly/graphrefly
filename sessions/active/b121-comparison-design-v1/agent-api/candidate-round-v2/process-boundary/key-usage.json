@@ -1,0 +1,16 @@
+{
+  "checkedAt": "2026-09-17T21:10:08.942487+00:00",
+  "endpoint": "GET /api/v1/key",
+  "generationCalls": 0,
+  "data": {
+    "limit": 1.97,
+    "limit_remaining": 1.194243428,
+    "limit_reset": null,
+    "usage": 0.775756572,
+    "usage_daily": 0,
+    "usage_weekly": 0.775756572,
+    "usage_monthly": 0.775756572,
+    "is_free_tier": false,
+    "is_management_key": false
+  }
+}

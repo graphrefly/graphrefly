@@ -1,0 +1,23 @@
+{
+  "tests": {
+    "command": "node --test scripts/b121-comparison/*.test.mjs",
+    "pass": 192,
+    "fail": 0,
+    "skipped": 0
+  },
+  "journalRowsVerified": 999,
+  "assessmentResultPairsVerified": 4,
+  "codeBindingsVerified": 33,
+  "frozenCandidateArtifactsUnchanged": 5,
+  "historicalRunFilesReverified": false,
+  "historicalVerificationNote": "Earlier temporary hash inventory is unavailable; old run evidence was not edited by this execution",
+  "modelSessionReruns": 0,
+  "providerAttemptFailures": 0,
+  "compilerInvocations": 0,
+  "reasonNoCompilation": "All four samples ended without a submission",
+  "qualified": true,
+  "collectionComplete": true,
+  "completedSubmissions": 0,
+  "plannedSamples": 4,
+  "interpretation": "Four incomplete observations. No rubric or library correctness verdict without submissions."
+}

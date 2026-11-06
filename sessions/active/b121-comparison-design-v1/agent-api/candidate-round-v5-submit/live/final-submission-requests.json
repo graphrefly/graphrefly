@@ -1,0 +1,76 @@
+[
+  {
+    "sampleId": "candidate-entry-03",
+    "journalIndex": 391,
+    "requestHash": "2a9aab4ffd95288c4a4588a6cb17207114563477425801ec66337a36af758e34",
+    "maxOutputTokens": 4096,
+    "status": {
+      "kind": "controller_budget_status",
+      "version": "entry-budget-status-v1",
+      "stage": "submit-only",
+      "finalizationPolicy": {
+        "version": "entry-reserved-submit-v1",
+        "outputTokensReserved": 4096,
+        "minimumRetrievalOutputTokens": 1024,
+        "operationThreshold": 16,
+        "projectedInputGrowthTokens": 65536,
+        "projection": "two current request estimates plus growth allowance; heuristic, not guaranteed admission",
+        "terminalRule": "submit-only accepts exactly one submit; no model repair or retrieval call afterward"
+      },
+      "sessionId": "candidate-entry-03",
+      "used": {
+        "inputTokens": 806794,
+        "outputTokens": 2238,
+        "elapsedMs": 14722,
+        "operations": 44,
+        "generationCalls": 21
+      },
+      "remaining": {
+        "inputTokens": 193206,
+        "outputTokens": 5762,
+        "operations": 36,
+        "generationCalls": 59,
+        "elapsedMs": 4485278
+      },
+      "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+      "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+    }
+  },
+  {
+    "sampleId": "candidate-entry-04",
+    "journalIndex": 609,
+    "requestHash": "a5cac45dddabb396159ac545d8835f76bf992760fa79634a22a6725684d669fa",
+    "maxOutputTokens": 4096,
+    "status": {
+      "kind": "controller_budget_status",
+      "version": "entry-budget-status-v1",
+      "stage": "submit-only",
+      "finalizationPolicy": {
+        "version": "entry-reserved-submit-v1",
+        "outputTokensReserved": 4096,
+        "minimumRetrievalOutputTokens": 1024,
+        "operationThreshold": 16,
+        "projectedInputGrowthTokens": 65536,
+        "projection": "two current request estimates plus growth allowance; heuristic, not guaranteed admission",
+        "terminalRule": "submit-only accepts exactly one submit; no model repair or retrieval call afterward"
+      },
+      "sessionId": "candidate-entry-04",
+      "used": {
+        "inputTokens": 839313,
+        "outputTokens": 2201,
+        "elapsedMs": 16653,
+        "operations": 44,
+        "generationCalls": 22
+      },
+      "remaining": {
+        "inputTokens": 160687,
+        "outputTokens": 5799,
+        "operations": 36,
+        "generationCalls": 58,
+        "elapsedMs": 4483347
+      },
+      "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+      "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+    }
+  }
+]

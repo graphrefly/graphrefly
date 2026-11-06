@@ -1,0 +1,35 @@
+{
+  "assessmentSHA256": "2295b86fae2ec63e2602be1700d2e362945abd478a774bb6a7948f1cd48be280",
+  "binding": {
+    "materialSHA256": "a7846d59bdc5d0ca359292dceb91ef3274991bfb4afd9ce28e18c867e7554e6d",
+    "taskSHA256": "f0217735c7ab80bc16fbfae23190541dd3ebc696b8d7d1e4d7d1a7218aac898b",
+    "rubricSHA256": "6e0bee1dfd58b4a48052b58df656bc0d0f78fbb7744ea34cd8d5ab63f9a2277c",
+    "environmentSHA256": "25c512ca2d3dd5c501f470bd4e6f63994ffbe635c402622b02180226b7302687",
+    "runnerContractSHA256": "8c304251aa7233fe97e4350d360f789312c1d72bf39054e48aa35e4b52e5809e"
+  },
+  "taskId": "export-structure-only",
+  "sampleId": "candidate-entry-01",
+  "formalReady": false,
+  "providerCalls": 0,
+  "accepted": true,
+  "status": "accepted-candidate-session",
+  "compilerReceipt": "/Users/davidchenallio/src/graphrefly/sessions/active/b121-comparison-design-v1/agent-api/next-task-set-draft/live/review-compiler/0a5b6120-1188-4e96-8671-b661ce708b1f",
+  "review": {
+    "assessmentSHA256": "2295b86fae2ec63e2602be1700d2e362945abd478a774bb6a7948f1cd48be280",
+    "reviewerId": "root-integrating-new_task_rubric_review",
+    "criteria": {
+      "structural-api": {
+        "evidence": "Independent source review: function calls only real graph.topology() on supplied Graph. Frozen graph.ts:663-665.",
+        "pass": true
+      },
+      "full-structure": {
+        "evidence": "Direct library snapshot retains recursive structure/metadata and excludes runtime node fields; frozen describe.ts:63-83 and graph/index.ts:58-66.",
+        "pass": true
+      },
+      "claim-boundary": {
+        "evidence": "Explicitly denies implementation/result equivalence and effect permission; preserves caller metadata and disclaims redaction. README:122-123,168-178. Citation/pure-read wording caveats recorded separately; no frozen criterion violation.",
+        "pass": true
+      }
+    }
+  }
+}

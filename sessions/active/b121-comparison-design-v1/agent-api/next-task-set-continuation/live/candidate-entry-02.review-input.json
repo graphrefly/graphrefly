@@ -1,0 +1,18 @@
+{
+  "assessmentSHA256": "79ddc92e305fb5da4f6d58094b688ebf5ced991033c2c8fbe2ba50e7890c7288",
+  "reviewerId": "root-integrating-new_task_rubric_review",
+  "criteria": {
+    "result-branches": {
+      "pass": false,
+      "evidence": "Branch logic is correct, but required library input types are imported from nonexistent core exports. Frozen core/index.ts lacks both; data/index.ts contains them. TS2305 twice at line1."
+    },
+    "preserve-order-identity": {
+      "pass": true,
+      "evidence": "Ordered loop forwards original value/issue references, preserves duplicates, uses fresh arrays and does not mutate inputs; empty input remains empty. Static review only."
+    },
+    "passive-facts": {
+      "pass": true,
+      "evidence": "Correct explanation: payload facts are not protocol ERROR, termination or retry authorization; data/index.ts:1-5,19 and causal contracts:67-68."
+    }
+  }
+}

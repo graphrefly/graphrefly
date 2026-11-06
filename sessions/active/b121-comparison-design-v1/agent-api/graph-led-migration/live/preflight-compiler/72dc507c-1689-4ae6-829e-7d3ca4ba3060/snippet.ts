@@ -1,0 +1,1 @@
+import * as p0 from "../../packages/ts/src/data/index.js"; export type Probe0 = typeof p0;

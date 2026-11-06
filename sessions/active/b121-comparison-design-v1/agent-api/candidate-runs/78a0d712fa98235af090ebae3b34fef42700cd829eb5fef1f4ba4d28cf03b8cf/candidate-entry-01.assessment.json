@@ -1,0 +1,61 @@
+{
+  "assessment": {
+    "kind": "candidate-session",
+    "formalReady": false,
+    "providerCalls": null,
+    "binding": {
+      "materialSHA256": "a7846d59bdc5d0ca359292dceb91ef3274991bfb4afd9ce28e18c867e7554e6d",
+      "taskSHA256": "c2e7319352a9d2e663336a9c38606dbd41a6e8af39c93b5d09c3b60a90f876d9",
+      "rubricSHA256": "34414fc3f59a9ed7d269d1de8321c01a7cdc3392cb9cfae67c3aed7c52da14d2",
+      "environmentSHA256": "25c512ca2d3dd5c501f470bd4e6f63994ffbe635c402622b02180226b7302687",
+      "runnerContractSHA256": "8c304251aa7233fe97e4350d360f789312c1d72bf39054e48aa35e4b52e5809e"
+    },
+    "taskId": "report-node-version-metadata",
+    "sampleId": "candidate-entry-01",
+    "packetSHA256": "4720c6148cf9239437e8786c614b36799616dba7b9ed7e4f639b915aef71456b",
+    "result": {
+      "slot": {
+        "id": "candidate-entry-01",
+        "arm": "G",
+        "role": "diagnostic-integrator"
+      },
+      "controller": null,
+      "experiment": "entry",
+      "explanations": {
+        "A": {},
+        "B": {}
+      },
+      "entryAnswer": null,
+      "entryTiming": {
+        "startedMs": 0,
+        "submittedMs": null,
+        "elapsedMs": null,
+        "firstSourceRead": {
+          "path": "examples/spending-alerts/README.md",
+          "line": 1,
+          "operation": "read",
+          "elapsedMs": 1670
+        }
+      },
+      "entryStatus": "missing",
+      "usage": {
+        "inputTokens": 367230,
+        "outputTokens": 3904,
+        "elapsedMs": 82568
+      },
+      "costUSD": 0.018177191999999995,
+      "turns": 17,
+      "counts": 17,
+      "operations": 49,
+      "fatal": "invalid tool envelope",
+      "failureScope": "participant",
+      "pendingReservation": null,
+      "retryAllowed": false
+    },
+    "compilation": null,
+    "compilerFailure": null,
+    "compilerReceipt": null,
+    "status": "incomplete"
+  },
+  "assessmentSHA256": "e0009e2394c46c3d1f02b144a645795c2a7dfe82dbd7e9f138b5d21ab1874e0f"
+}

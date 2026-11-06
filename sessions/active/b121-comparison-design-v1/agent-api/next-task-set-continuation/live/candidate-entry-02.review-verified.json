@@ -1,0 +1,35 @@
+{
+  "assessmentSHA256": "79ddc92e305fb5da4f6d58094b688ebf5ced991033c2c8fbe2ba50e7890c7288",
+  "binding": {
+    "materialSHA256": "a7846d59bdc5d0ca359292dceb91ef3274991bfb4afd9ce28e18c867e7554e6d",
+    "taskSHA256": "c2e7319352a9d2e663336a9c38606dbd41a6e8af39c93b5d09c3b60a90f876d9",
+    "rubricSHA256": "34414fc3f59a9ed7d269d1de8321c01a7cdc3392cb9cfae67c3aed7c52da14d2",
+    "environmentSHA256": "25c512ca2d3dd5c501f470bd4e6f63994ffbe635c402622b02180226b7302687",
+    "runnerContractSHA256": "8c304251aa7233fe97e4350d360f789312c1d72bf39054e48aa35e4b52e5809e"
+  },
+  "taskId": "consume-business-results",
+  "sampleId": "candidate-entry-02",
+  "formalReady": false,
+  "providerCalls": 0,
+  "accepted": false,
+  "status": "compile-failed",
+  "compilerReceipt": "/Users/davidchenallio/src/graphrefly/sessions/active/b121-comparison-design-v1/agent-api/next-task-set-continuation/live/review-compiler/7633fd6c-ff53-464f-bbaf-0b693b8ce4e1",
+  "review": {
+    "assessmentSHA256": "79ddc92e305fb5da4f6d58094b688ebf5ced991033c2c8fbe2ba50e7890c7288",
+    "reviewerId": "root-integrating-new_task_rubric_review",
+    "criteria": {
+      "result-branches": {
+        "pass": false,
+        "evidence": "Branch logic is correct, but required library input types are imported from nonexistent core exports. Frozen core/index.ts lacks both; data/index.ts contains them. TS2305 twice at line1."
+      },
+      "preserve-order-identity": {
+        "pass": true,
+        "evidence": "Ordered loop forwards original value/issue references, preserves duplicates, uses fresh arrays and does not mutate inputs; empty input remains empty. Static review only."
+      },
+      "passive-facts": {
+        "pass": true,
+        "evidence": "Correct explanation: payload facts are not protocol ERROR, termination or retry authorization; data/index.ts:1-5,19 and causal contracts:67-68."
+      }
+    }
+  }
+}

@@ -1,0 +1,159 @@
+{
+  "kind": "independent-read-only-failure-audit",
+  "reviewer": "v6_failure_audit",
+  "sampleId": "candidate-entry-01",
+  "runDirectory": "/Users/davidchenallio/src/graphrefly/sessions/active/b121-comparison-design-v1/agent-api/candidate-runs/f562ac9d68bd815e13885a0da3ea92ca1e059b58aa4d963540e93fd576fbcf93",
+  "journalIndices": {
+    "sampleStarted": 26,
+    "lastBudgetStatus": 208,
+    "lastEstimate": 210,
+    "lastDispatch": 211,
+    "lastResponse": 214,
+    "failed": 215,
+    "sampleFinished": 219
+  },
+  "result": {
+    "slot": {
+      "id": "candidate-entry-01",
+      "arm": "G",
+      "role": "display-component"
+    },
+    "controller": null,
+    "experiment": "entry",
+    "explanations": {
+      "A": {},
+      "B": {}
+    },
+    "entryAnswer": null,
+    "entryTiming": {
+      "startedMs": 0,
+      "submittedMs": null,
+      "elapsedMs": null,
+      "firstSourceRead": {
+        "path": "examples/spending-alerts/README.md",
+        "line": 1,
+        "operation": "read",
+        "elapsedMs": 1452
+      }
+    },
+    "entryStatus": "missing",
+    "usage": {
+      "inputTokens": 779434,
+      "outputTokens": 3904,
+      "elapsedMs": 25010
+    },
+    "costUSD": 0.03056056800000001,
+    "turns": 21,
+    "counts": 21,
+    "operations": 41,
+    "fatal": "invalid tool envelope",
+    "failureScope": "participant",
+    "pendingReservation": null,
+    "retryAllowed": false
+  },
+  "lastRequest": {
+    "ordinal": 21,
+    "max_tokens": 1802,
+    "requestHash": "3bba40888ce6a290e075e24127bda67eac049b16761248327972d521c0c23469",
+    "budgetStatus": {
+      "kind": "controller_budget_status",
+      "version": "entry-budget-status-v1",
+      "stage": "retrieve-or-submit",
+      "finalizationPolicy": {
+        "version": "entry-reserved-submit-v1",
+        "outputTokensReserved": 4096,
+        "minimumRetrievalOutputTokens": 1024,
+        "operationThreshold": 16,
+        "projectedInputGrowthTokens": 65536,
+        "projection": "two current request estimates plus growth allowance; heuristic, not guaranteed admission",
+        "terminalRule": "submit-only accepts exactly one submit; no model repair or retrieval call afterward"
+      },
+      "sessionId": "candidate-entry-01",
+      "used": {
+        "inputTokens": 713165,
+        "outputTokens": 2102,
+        "elapsedMs": 16505,
+        "operations": 41,
+        "generationCalls": 20
+      },
+      "remaining": {
+        "inputTokens": 286835,
+        "outputTokens": 5898,
+        "operations": 39,
+        "generationCalls": 60,
+        "elapsedMs": 4483495
+      },
+      "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+      "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+    },
+    "estimatedInputTokens": 77797
+  },
+  "lastResponse": {
+    "httpStatus": 200,
+    "generationId": "gen-1789711687-yuMMbN8Vt82UTfP6z4c3",
+    "finish_reason": "tool_calls",
+    "native_finish_reason": "length",
+    "content": null,
+    "toolCallCount": 1,
+    "functionName": "broker",
+    "arguments": "{}",
+    "usage": {
+      "prompt_tokens": 66269,
+      "completion_tokens": 1802,
+      "total_tokens": 68071,
+      "cost": 0.003377628,
+      "is_byok": false,
+      "prompt_tokens_details": {
+        "cached_tokens": 63488,
+        "cache_write_tokens": 0,
+        "audio_tokens": 0,
+        "video_tokens": 0
+      },
+      "cost_details": {
+        "upstream_inference_cost": 0.003377628,
+        "upstream_inference_prompt_cost": 0.001215228,
+        "upstream_inference_completions_cost": 0.0021624
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 0,
+        "image_tokens": 0,
+        "audio_tokens": 0
+      }
+    }
+  },
+  "exactDefect": "Arguments are valid JSON {} but lack the sole required requests array. parseBrokerArguments rejects this with ParticipantOutputError invalid tool envelope. This is not invalid JSON and not a compiler failure.",
+  "validationReferences": [
+    {
+      "path": "/Users/davidchenallio/src/graphrefly/scripts/b121-comparison/api-tool.mjs",
+      "line": 119,
+      "symbol": "parseBrokerArguments"
+    },
+    {
+      "path": "/Users/davidchenallio/src/graphrefly/scripts/b121-comparison/api-runner.mjs",
+      "line": 436,
+      "symbol": "parseBrokerArguments invocation after accounting and response validation"
+    }
+  ],
+  "finalization": {
+    "entered": false,
+    "stageOnLastRequest": "retrieve-or-submit",
+    "outputGateCalculation": "5898 remaining > 4096 reserved + 1024 minimum retrieval; retrieval allocation 5898 - 4096 = 1802",
+    "operationGateCalculation": "39 remaining > 16 threshold",
+    "inputGateCalculation": "286835 remaining > 2 * 77797 + 65536 = 221130",
+    "counterfactualNextIteration": "After the failed response 4096 output tokens remain, so the next loop would enter submit-only; no such loop occurs because malformed envelope is terminal under frozen rules."
+  },
+  "submissionText": {
+    "available": false,
+    "reason": "Returned message content is null and only broker arguments are {}. No snippet, explanation, requests array, or partial answer is available in the retained raw response.",
+    "salvageOrRegradeAttempted": false
+  },
+  "boundedConclusions": [
+    "Last response reports native length stop and uses exactly its 1802-token allocation. This documents output-length pressure in retrieve-or-submit stage.",
+    "The controller reserves a future submission budget but still allows early submission while a retrieval-stage call has a smaller output allocation; this sample exposes that practical limitation without establishing what operation was attempted.",
+    "The frozen failureScope participant is the harness classification, not proof that the base model alone caused the defect. The wire response does not identify whether upstream model, provider, or normalization produced empty arguments.",
+    "There is no evidence that a 1M context window was exhausted: cumulative input was779434 and the final request actual prompt was66269.",
+    "A larger output allocation or different finalization policy might change behavior, but success or causality cannot be inferred from this single sample. Preserve failure without repair, rerun, or hypothetical acceptance."
+  ],
+  "networkCalls": 0,
+  "runtimeChanges": false
+}

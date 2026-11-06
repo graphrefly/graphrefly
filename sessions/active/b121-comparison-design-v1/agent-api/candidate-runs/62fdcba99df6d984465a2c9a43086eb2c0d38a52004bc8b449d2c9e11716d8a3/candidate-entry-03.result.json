@@ -1,0 +1,38 @@
+{
+  "slot": {
+    "id": "candidate-entry-03",
+    "arm": "G",
+    "role": "framework-integrator"
+  },
+  "controller": null,
+  "experiment": "entry",
+  "explanations": {
+    "A": {},
+    "B": {}
+  },
+  "entryAnswer": null,
+  "entryTiming": {
+    "startedMs": 0,
+    "submittedMs": null,
+    "elapsedMs": null,
+    "firstSourceRead": null
+  },
+  "entryStatus": "missing",
+  "usage": {
+    "inputTokens": 2035,
+    "outputTokens": 54,
+    "elapsedMs": 971
+  },
+  "costUSD": 0.000186084,
+  "turns": 2,
+  "counts": 2,
+  "operations": 1,
+  "fatal": "provider cost/call ceiling before retry",
+  "failureScope": "campaign",
+  "pendingReservation": {
+    "inputTokens": 1048576,
+    "outputTokens": 3850,
+    "costUSD": 0.3191928
+  },
+  "retryAllowed": false
+}

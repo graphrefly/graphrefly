@@ -1,0 +1,19 @@
+{
+  "manifestSHA": "dc20a75fc7a9753637f761961e8bfb6c35be77627e1018bde34c6ea6d064865d",
+  "action": "B121-agent-api-one-shot",
+  "acceptAliasLimitation": true,
+  "acceptInputEstimateLimitation": true,
+  "model": "deepseek/deepseek-v4.1-flash",
+  "providerTag": "together",
+  "expiresAt": "2026-09-17T04:58:04.050Z",
+  "maxGenerationCalls": 1444,
+  "maxUSD": 2,
+  "priorUsageUSD": 0.022818016,
+  "retries": {
+    "capacity": 3,
+    "availability": 1
+  },
+  "evidence": "User explicitly confirmed v4 campaign (12 A/B plus 6 independent entry sessions) within cumulative USD2 with qualification and bounded retries, then replaced expired key and confirmed saved. Prior reconciled old-key spend is included; new key limit at most USD1.97. This is the previously authorized unstarted attempt, not a rerun.",
+  "priorRetiredKeyUsageUSD": 0.022818016,
+  "currentKeyStartingUsageUSD": 0
+}

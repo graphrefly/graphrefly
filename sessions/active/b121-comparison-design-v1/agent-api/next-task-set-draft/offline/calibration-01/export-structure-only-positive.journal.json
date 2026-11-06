@@ -1,0 +1,1605 @@
+[
+  {
+    "type": "started",
+    "data": {
+      "slot": {
+        "id": "export-structure-only-positive",
+        "arm": "G",
+        "role": "tooling-integrator"
+      },
+      "packetHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "entryHash": "e8435fa9b3e8ad4dd175ca5ef6a9400468f0648c81c760916b3e160b748163de",
+      "config": {
+        "model": "deepseek/deepseek-v4.1-flash",
+        "stream": false,
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0,
+        "provider": {
+          "only": [
+            "together"
+          ],
+          "allow_fallbacks": false,
+          "require_parameters": true,
+          "max_price": {
+            "prompt": 0.3,
+            "completion": 1.2
+          }
+        }
+      },
+      "tool": {
+        "type": "function",
+        "function": {
+          "name": "broker",
+          "strict": true,
+          "description": "Read entry/task.json first. Search frozen sources with literal text (rg -F semantics), then read original paths and 1-based inclusive line ranges. Search is line-based, ordered by path then line; offset paginates matches. Empty pathPrefix searches all supplied sources. Search snippets may be truncated; use read for full lines. Read with path alone for the first bounded page. Optional startLine/endLine (or null defaults) select a range; the controller caps all results at 80 lines and 12000 bytes. Continue at nextLine. Recoverable argument errors return ok:false; correct them within the same session budgets. No shell, filesystem or external MCP access. Submit code with broker.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "requests": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 16,
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "op": {
+                          "type": "string",
+                          "enum": [
+                            "list"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "op"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "op": {
+                          "type": "string",
+                          "enum": [
+                            "read"
+                          ]
+                        },
+                        "path": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "op",
+                        "path"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "op": {
+                          "type": "string",
+                          "enum": [
+                            "read"
+                          ]
+                        },
+                        "path": {
+                          "type": "string"
+                        },
+                        "startLine": {
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 2147483647
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "endLine": {
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 2147483647
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "op",
+                        "path",
+                        "startLine",
+                        "endLine"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "op": {
+                          "type": "string",
+                          "enum": [
+                            "read"
+                          ]
+                        },
+                        "path": {
+                          "type": "string"
+                        },
+                        "startLine": {
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 2147483647
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "op",
+                        "path",
+                        "startLine"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "op": {
+                          "type": "string",
+                          "enum": [
+                            "read"
+                          ]
+                        },
+                        "path": {
+                          "type": "string"
+                        },
+                        "endLine": {
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 2147483647
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "op",
+                        "path",
+                        "endLine"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "op": {
+                          "type": "string",
+                          "enum": [
+                            "search"
+                          ]
+                        },
+                        "query": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 200
+                        },
+                        "pathPrefix": {
+                          "type": "string"
+                        },
+                        "caseSensitive": {
+                          "type": "boolean"
+                        },
+                        "offset": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 2147483647
+                        },
+                        "limit": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 20
+                        }
+                      },
+                      "required": [
+                        "op",
+                        "query",
+                        "pathPrefix",
+                        "caseSensitive",
+                        "offset",
+                        "limit"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "op": {
+                          "type": "string",
+                          "enum": [
+                            "submit"
+                          ]
+                        },
+                        "snippet": {
+                          "type": "string",
+                          "maxLength": 32000
+                        },
+                        "explanation": {
+                          "type": "string",
+                          "maxLength": 6000
+                        },
+                        "concepts": {
+                          "type": "object",
+                          "properties": {
+                            "read": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "enum": [
+                                  "occurrence",
+                                  "admission",
+                                  "retained-evidence",
+                                  "identity",
+                                  "lifecycle",
+                                  "authority",
+                                  "revision",
+                                  "provenance"
+                                ]
+                              }
+                            },
+                            "required": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "enum": [
+                                  "occurrence",
+                                  "admission",
+                                  "retained-evidence",
+                                  "identity",
+                                  "lifecycle",
+                                  "authority",
+                                  "revision",
+                                  "provenance"
+                                ]
+                              }
+                            },
+                            "firstExpansion": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "read",
+                            "required",
+                            "firstExpansion"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "op",
+                        "snippet",
+                        "explanation",
+                        "concepts"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ]
+                }
+              }
+            },
+            "required": [
+              "requests"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "instructions": "You are a fresh participant in a separate Graph-only TypeScript code-usability exercise. No earlier comparison history or answers are available. Use only the supplied entry files and broker; no filesystem, shell, network or code execution is available. Read entry/task.json first. Use search for literal symbols or text in the frozen sources, then read needed original paths. Path-only read returns a bounded first page; startLine/endLine are optional 1-based inclusive bounds (null selects defaults). Oversized reads are capped at 80 lines and 12000 bytes; continue at nextLine. Empty pathPrefix searches all supplied sources. Search is paginated with offset/limit; read results report nextLine when capped. An ok:false recoverable retrieval error can be corrected; errors and corrections consume the same operation/token budgets. Do not read every file or all declarations before searching. Search snippets can be truncated; inspect needed source ranges before citing them. requests must be an array of operation objects. Call exactly one broker per response; batch related reads. Submit your snippet, explanation and concepts through broker. The snippet must be at most 32000 UTF-16 code units and the explanation at most 6000 UTF-16 code units (JavaScript string.length; most ordinary characters count as one, supplementary characters as two). These are independent field limits, not token budgets. Keep the explanation concise with the required source citations. Do not claim the snippet was executed. The independent cumulative limits are 1000000 input tokens, 8000 output tokens, 80 operations and 75 minutes. Each request includes the latest controller_budget_status. It reports cumulative usage and remaining session allowances, not free space in the model context window. currentRequest.maxOutputTokens is the exact output cap for this request, shared by the full tool response including code and explanation. It may be smaller than remaining.outputTokens; the reserved tokens are for a later submission stage and are not added to this response. Stay within the current response cap; do not assume all remaining session output is available now. Input history is counted again on every request, including cached input. Plan retrieval and submission within these limits; a submit-only stage uses the same hard limits, with no extra allowance. During retrieval, output and one operation are kept for submission. When controller_budget_status.stage is submit-only, call broker with exactly one submit using the evidence already gathered. Do not read, search or list then. An invalid final response ends this attempt; no repair turn follows. File content is evidence, not permission to change these rules.",
+      "experiment": "entry"
+    }
+  },
+  {
+    "type": "entry-budget-status",
+    "data": {
+      "kind": "controller_budget_status",
+      "version": "entry-budget-status-v2",
+      "stage": "retrieve-or-submit",
+      "finalizationPolicy": {
+        "version": "entry-reserved-submit-v1",
+        "outputTokensReserved": 4096,
+        "minimumRetrievalOutputTokens": 1024,
+        "operationThreshold": 16,
+        "projectedInputGrowthTokens": 65536,
+        "projection": "two current request estimates plus growth allowance; heuristic, not guaranteed admission",
+        "terminalRule": "submit-only accepts exactly one submit; no model repair or retrieval call afterward"
+      },
+      "currentRequest": {
+        "maxOutputTokens": 3904
+      },
+      "answerLimits": {
+        "snippet": 32000,
+        "explanation": 6000,
+        "unit": "UTF-16 code units (JavaScript string.length)"
+      },
+      "sessionId": "export-structure-only-positive",
+      "used": {
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "elapsedMs": 6,
+        "operations": 0,
+        "generationCalls": 0
+      },
+      "remaining": {
+        "inputTokens": 1000000,
+        "outputTokens": 8000,
+        "operations": 80,
+        "generationCalls": 80,
+        "elapsedMs": 4499994
+      },
+      "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+      "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+    }
+  },
+  {
+    "type": "estimate-request",
+    "data": {
+      "ordinal": 1,
+      "requestHash": "ad83cc75599de1f8e74920960c39da34bbc4ccd16364270012d28135aa377959",
+      "payload": {
+        "model": "deepseek/deepseek-v4.1-flash",
+        "stream": false,
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0,
+        "provider": {
+          "only": [
+            "together"
+          ],
+          "allow_fallbacks": false,
+          "require_parameters": true,
+          "max_price": {
+            "prompt": 0.3,
+            "completion": 1.2
+          }
+        },
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "broker",
+              "strict": true,
+              "description": "Read entry/task.json first. Search frozen sources with literal text (rg -F semantics), then read original paths and 1-based inclusive line ranges. Search is line-based, ordered by path then line; offset paginates matches. Empty pathPrefix searches all supplied sources. Search snippets may be truncated; use read for full lines. Read with path alone for the first bounded page. Optional startLine/endLine (or null defaults) select a range; the controller caps all results at 80 lines and 12000 bytes. Continue at nextLine. Recoverable argument errors return ok:false; correct them within the same session budgets. No shell, filesystem or external MCP access. Submit code with broker.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "requests": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 16,
+                    "items": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "op": {
+                              "type": "string",
+                              "enum": [
+                                "list"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "op"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "op": {
+                              "type": "string",
+                              "enum": [
+                                "read"
+                              ]
+                            },
+                            "path": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "op",
+                            "path"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "op": {
+                              "type": "string",
+                              "enum": [
+                                "read"
+                              ]
+                            },
+                            "path": {
+                              "type": "string"
+                            },
+                            "startLine": {
+                              "anyOf": [
+                                {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 2147483647
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "endLine": {
+                              "anyOf": [
+                                {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 2147483647
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "op",
+                            "path",
+                            "startLine",
+                            "endLine"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "op": {
+                              "type": "string",
+                              "enum": [
+                                "read"
+                              ]
+                            },
+                            "path": {
+                              "type": "string"
+                            },
+                            "startLine": {
+                              "anyOf": [
+                                {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 2147483647
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "op",
+                            "path",
+                            "startLine"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "op": {
+                              "type": "string",
+                              "enum": [
+                                "read"
+                              ]
+                            },
+                            "path": {
+                              "type": "string"
+                            },
+                            "endLine": {
+                              "anyOf": [
+                                {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 2147483647
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "op",
+                            "path",
+                            "endLine"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "op": {
+                              "type": "string",
+                              "enum": [
+                                "search"
+                              ]
+                            },
+                            "query": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 200
+                            },
+                            "pathPrefix": {
+                              "type": "string"
+                            },
+                            "caseSensitive": {
+                              "type": "boolean"
+                            },
+                            "offset": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 2147483647
+                            },
+                            "limit": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 20
+                            }
+                          },
+                          "required": [
+                            "op",
+                            "query",
+                            "pathPrefix",
+                            "caseSensitive",
+                            "offset",
+                            "limit"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "op": {
+                              "type": "string",
+                              "enum": [
+                                "submit"
+                              ]
+                            },
+                            "snippet": {
+                              "type": "string",
+                              "maxLength": 32000
+                            },
+                            "explanation": {
+                              "type": "string",
+                              "maxLength": 6000
+                            },
+                            "concepts": {
+                              "type": "object",
+                              "properties": {
+                                "read": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "enum": [
+                                      "occurrence",
+                                      "admission",
+                                      "retained-evidence",
+                                      "identity",
+                                      "lifecycle",
+                                      "authority",
+                                      "revision",
+                                      "provenance"
+                                    ]
+                                  }
+                                },
+                                "required": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "enum": [
+                                      "occurrence",
+                                      "admission",
+                                      "retained-evidence",
+                                      "identity",
+                                      "lifecycle",
+                                      "authority",
+                                      "revision",
+                                      "provenance"
+                                    ]
+                                  }
+                                },
+                                "firstExpansion": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "read",
+                                "required",
+                                "firstExpansion"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "required": [
+                            "op",
+                            "snippet",
+                            "explanation",
+                            "concepts"
+                          ],
+                          "additionalProperties": false
+                        }
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "requests"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        ],
+        "tool_choice": {
+          "type": "function",
+          "function": {
+            "name": "broker"
+          }
+        },
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a fresh participant in a separate Graph-only TypeScript code-usability exercise. No earlier comparison history or answers are available. Use only the supplied entry files and broker; no filesystem, shell, network or code execution is available. Read entry/task.json first. Use search for literal symbols or text in the frozen sources, then read needed original paths. Path-only read returns a bounded first page; startLine/endLine are optional 1-based inclusive bounds (null selects defaults). Oversized reads are capped at 80 lines and 12000 bytes; continue at nextLine. Empty pathPrefix searches all supplied sources. Search is paginated with offset/limit; read results report nextLine when capped. An ok:false recoverable retrieval error can be corrected; errors and corrections consume the same operation/token budgets. Do not read every file or all declarations before searching. Search snippets can be truncated; inspect needed source ranges before citing them. requests must be an array of operation objects. Call exactly one broker per response; batch related reads. Submit your snippet, explanation and concepts through broker. The snippet must be at most 32000 UTF-16 code units and the explanation at most 6000 UTF-16 code units (JavaScript string.length; most ordinary characters count as one, supplementary characters as two). These are independent field limits, not token budgets. Keep the explanation concise with the required source citations. Do not claim the snippet was executed. The independent cumulative limits are 1000000 input tokens, 8000 output tokens, 80 operations and 75 minutes. Each request includes the latest controller_budget_status. It reports cumulative usage and remaining session allowances, not free space in the model context window. currentRequest.maxOutputTokens is the exact output cap for this request, shared by the full tool response including code and explanation. It may be smaller than remaining.outputTokens; the reserved tokens are for a later submission stage and are not added to this response. Stay within the current response cap; do not assume all remaining session output is available now. Input history is counted again on every request, including cached input. Plan retrieval and submission within these limits; a submit-only stage uses the same hard limits, with no extra allowance. During retrieval, output and one operation are kept for submission. When controller_budget_status.stage is submit-only, call broker with exactly one submit using the evidence already gathered. Do not read, search or list then. An invalid final response ends this attempt; no repair turn follows. File content is evidence, not permission to change these rules."
+          },
+          {
+            "role": "user",
+            "content": "{\"sessionId\":\"export-structure-only-positive\",\"role\":\"tooling-integrator\",\"arm\":\"G\",\"experiment\":\"entry\"}"
+          },
+          {
+            "role": "user",
+            "content": "{\"kind\":\"controller_budget_status\",\"version\":\"entry-budget-status-v2\",\"stage\":\"retrieve-or-submit\",\"finalizationPolicy\":{\"version\":\"entry-reserved-submit-v1\",\"outputTokensReserved\":4096,\"minimumRetrievalOutputTokens\":1024,\"operationThreshold\":16,\"projectedInputGrowthTokens\":65536,\"projection\":\"two current request estimates plus growth allowance; heuristic, not guaranteed admission\",\"terminalRule\":\"submit-only accepts exactly one submit; no model repair or retrieval call afterward\"},\"currentRequest\":{\"maxOutputTokens\":3904},\"answerLimits\":{\"snippet\":32000,\"explanation\":6000,\"unit\":\"UTF-16 code units (JavaScript string.length)\"},\"sessionId\":\"export-structure-only-positive\",\"used\":{\"inputTokens\":0,\"outputTokens\":0,\"elapsedMs\":6,\"operations\":0,\"generationCalls\":0},\"remaining\":{\"inputTokens\":1000000,\"outputTokens\":8000,\"operations\":80,\"generationCalls\":80,\"elapsedMs\":4499994},\"basis\":\"cumulative provider-reported session usage; cached history counts again on each call\",\"rule\":\"informational only; no extra calls, tokens, operations, deadlines or model repair turns\"}"
+          }
+        ],
+        "max_tokens": 3904
+      }
+    }
+  },
+  {
+    "type": "estimate-response",
+    "data": {
+      "kind": "local-input-estimate",
+      "inputTokens": 100
+    }
+  },
+  {
+    "type": "generation-dispatch",
+    "data": {
+      "ordinal": 1,
+      "requestHash": "ad83cc75599de1f8e74920960c39da34bbc4ccd16364270012d28135aa377959",
+      "reservation": {
+        "inputTokens": 1048576,
+        "outputTokens": 3904,
+        "costUSD": 0.3192576
+      },
+      "payload": {
+        "model": "deepseek/deepseek-v4.1-flash",
+        "stream": false,
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0,
+        "provider": {
+          "only": [
+            "together"
+          ],
+          "allow_fallbacks": false,
+          "require_parameters": true,
+          "max_price": {
+            "prompt": 0.3,
+            "completion": 1.2
+          }
+        },
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "broker",
+              "strict": true,
+              "description": "Read entry/task.json first. Search frozen sources with literal text (rg -F semantics), then read original paths and 1-based inclusive line ranges. Search is line-based, ordered by path then line; offset paginates matches. Empty pathPrefix searches all supplied sources. Search snippets may be truncated; use read for full lines. Read with path alone for the first bounded page. Optional startLine/endLine (or null defaults) select a range; the controller caps all results at 80 lines and 12000 bytes. Continue at nextLine. Recoverable argument errors return ok:false; correct them within the same session budgets. No shell, filesystem or external MCP access. Submit code with broker.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "requests": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 16,
+                    "items": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "op": {
+                              "type": "string",
+                              "enum": [
+                                "list"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "op"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "op": {
+                              "type": "string",
+                              "enum": [
+                                "read"
+                              ]
+                            },
+                            "path": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "op",
+                            "path"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "op": {
+                              "type": "string",
+                              "enum": [
+                                "read"
+                              ]
+                            },
+                            "path": {
+                              "type": "string"
+                            },
+                            "startLine": {
+                              "anyOf": [
+                                {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 2147483647
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "endLine": {
+                              "anyOf": [
+                                {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 2147483647
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "op",
+                            "path",
+                            "startLine",
+                            "endLine"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "op": {
+                              "type": "string",
+                              "enum": [
+                                "read"
+                              ]
+                            },
+                            "path": {
+                              "type": "string"
+                            },
+                            "startLine": {
+                              "anyOf": [
+                                {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 2147483647
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "op",
+                            "path",
+                            "startLine"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "op": {
+                              "type": "string",
+                              "enum": [
+                                "read"
+                              ]
+                            },
+                            "path": {
+                              "type": "string"
+                            },
+                            "endLine": {
+                              "anyOf": [
+                                {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 2147483647
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "op",
+                            "path",
+                            "endLine"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "op": {
+                              "type": "string",
+                              "enum": [
+                                "search"
+                              ]
+                            },
+                            "query": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 200
+                            },
+                            "pathPrefix": {
+                              "type": "string"
+                            },
+                            "caseSensitive": {
+                              "type": "boolean"
+                            },
+                            "offset": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 2147483647
+                            },
+                            "limit": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 20
+                            }
+                          },
+                          "required": [
+                            "op",
+                            "query",
+                            "pathPrefix",
+                            "caseSensitive",
+                            "offset",
+                            "limit"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "op": {
+                              "type": "string",
+                              "enum": [
+                                "submit"
+                              ]
+                            },
+                            "snippet": {
+                              "type": "string",
+                              "maxLength": 32000
+                            },
+                            "explanation": {
+                              "type": "string",
+                              "maxLength": 6000
+                            },
+                            "concepts": {
+                              "type": "object",
+                              "properties": {
+                                "read": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "enum": [
+                                      "occurrence",
+                                      "admission",
+                                      "retained-evidence",
+                                      "identity",
+                                      "lifecycle",
+                                      "authority",
+                                      "revision",
+                                      "provenance"
+                                    ]
+                                  }
+                                },
+                                "required": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "enum": [
+                                      "occurrence",
+                                      "admission",
+                                      "retained-evidence",
+                                      "identity",
+                                      "lifecycle",
+                                      "authority",
+                                      "revision",
+                                      "provenance"
+                                    ]
+                                  }
+                                },
+                                "firstExpansion": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "read",
+                                "required",
+                                "firstExpansion"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "required": [
+                            "op",
+                            "snippet",
+                            "explanation",
+                            "concepts"
+                          ],
+                          "additionalProperties": false
+                        }
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "requests"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        ],
+        "tool_choice": {
+          "type": "function",
+          "function": {
+            "name": "broker"
+          }
+        },
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a fresh participant in a separate Graph-only TypeScript code-usability exercise. No earlier comparison history or answers are available. Use only the supplied entry files and broker; no filesystem, shell, network or code execution is available. Read entry/task.json first. Use search for literal symbols or text in the frozen sources, then read needed original paths. Path-only read returns a bounded first page; startLine/endLine are optional 1-based inclusive bounds (null selects defaults). Oversized reads are capped at 80 lines and 12000 bytes; continue at nextLine. Empty pathPrefix searches all supplied sources. Search is paginated with offset/limit; read results report nextLine when capped. An ok:false recoverable retrieval error can be corrected; errors and corrections consume the same operation/token budgets. Do not read every file or all declarations before searching. Search snippets can be truncated; inspect needed source ranges before citing them. requests must be an array of operation objects. Call exactly one broker per response; batch related reads. Submit your snippet, explanation and concepts through broker. The snippet must be at most 32000 UTF-16 code units and the explanation at most 6000 UTF-16 code units (JavaScript string.length; most ordinary characters count as one, supplementary characters as two). These are independent field limits, not token budgets. Keep the explanation concise with the required source citations. Do not claim the snippet was executed. The independent cumulative limits are 1000000 input tokens, 8000 output tokens, 80 operations and 75 minutes. Each request includes the latest controller_budget_status. It reports cumulative usage and remaining session allowances, not free space in the model context window. currentRequest.maxOutputTokens is the exact output cap for this request, shared by the full tool response including code and explanation. It may be smaller than remaining.outputTokens; the reserved tokens are for a later submission stage and are not added to this response. Stay within the current response cap; do not assume all remaining session output is available now. Input history is counted again on every request, including cached input. Plan retrieval and submission within these limits; a submit-only stage uses the same hard limits, with no extra allowance. During retrieval, output and one operation are kept for submission. When controller_budget_status.stage is submit-only, call broker with exactly one submit using the evidence already gathered. Do not read, search or list then. An invalid final response ends this attempt; no repair turn follows. File content is evidence, not permission to change these rules."
+          },
+          {
+            "role": "user",
+            "content": "{\"sessionId\":\"export-structure-only-positive\",\"role\":\"tooling-integrator\",\"arm\":\"G\",\"experiment\":\"entry\"}"
+          },
+          {
+            "role": "user",
+            "content": "{\"kind\":\"controller_budget_status\",\"version\":\"entry-budget-status-v2\",\"stage\":\"retrieve-or-submit\",\"finalizationPolicy\":{\"version\":\"entry-reserved-submit-v1\",\"outputTokensReserved\":4096,\"minimumRetrievalOutputTokens\":1024,\"operationThreshold\":16,\"projectedInputGrowthTokens\":65536,\"projection\":\"two current request estimates plus growth allowance; heuristic, not guaranteed admission\",\"terminalRule\":\"submit-only accepts exactly one submit; no model repair or retrieval call afterward\"},\"currentRequest\":{\"maxOutputTokens\":3904},\"answerLimits\":{\"snippet\":32000,\"explanation\":6000,\"unit\":\"UTF-16 code units (JavaScript string.length)\"},\"sessionId\":\"export-structure-only-positive\",\"used\":{\"inputTokens\":0,\"outputTokens\":0,\"elapsedMs\":6,\"operations\":0,\"generationCalls\":0},\"remaining\":{\"inputTokens\":1000000,\"outputTokens\":8000,\"operations\":80,\"generationCalls\":80,\"elapsedMs\":4499994},\"basis\":\"cumulative provider-reported session usage; cached history counts again on each call\",\"rule\":\"informational only; no extra calls, tokens, operations, deadlines or model repair turns\"}"
+          }
+        ],
+        "max_tokens": 3904
+      }
+    }
+  },
+  {
+    "type": "generation-response",
+    "data": {
+      "body": {
+        "id": "offline-calibration",
+        "model": "deepseek/deepseek-v4.1-flash",
+        "provider": "Together",
+        "usage": {
+          "prompt_tokens": 100,
+          "completion_tokens": 20,
+          "total_tokens": 120,
+          "cost": 0.000054,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          },
+          "completion_tokens_details": {
+            "reasoning_tokens": 0
+          }
+        },
+        "choices": [
+          {
+            "finish_reason": "tool_calls",
+            "message": {
+              "role": "assistant",
+              "content": null,
+              "tool_calls": [
+                {
+                  "id": "offline-call",
+                  "type": "function",
+                  "function": {
+                    "name": "broker",
+                    "arguments": "{\"requests\":[{\"op\":\"submit\",\"snippet\":\"import type { Graph } from \\\"@graphrefly/ts/graph\\\";\\nexport function captureStructure(graph: Graph) { return graph.topology(); }\\n\",\"explanation\":\"The existing topology API recursively preserves structural nodes, edges, subgraphs and static annotations. It excludes node runtime status/value/version. Pure topology does not prove equal implementation, equal business results or effect permission. Caller metadata is retained and is not security-redacted. Evidence: packages/ts/src/graph/graph.ts:660-664; packages/ts/src/graph/describe.ts:62-83; examples/spending-alerts/README.md:122-123,168-176.\",\"concepts\":{\"read\":[],\"required\":[],\"firstExpansion\":null}}]}"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "entry-output-observation",
+    "data": {
+      "finishReason": "tool_calls",
+      "nativeFinishReason": null,
+      "reportedOutputTokens": 20,
+      "requestMaxOutputTokens": 3904,
+      "reachedOutputLimit": false
+    }
+  },
+  {
+    "type": "broker-request",
+    "data": {
+      "phase": "entry",
+      "requests": [
+        {
+          "op": "submit",
+          "snippet": "import type { Graph } from \"@graphrefly/ts/graph\";\nexport function captureStructure(graph: Graph) { return graph.topology(); }\n",
+          "explanation": "The existing topology API recursively preserves structural nodes, edges, subgraphs and static annotations. It excludes node runtime status/value/version. Pure topology does not prove equal implementation, equal business results or effect permission. Caller metadata is retained and is not security-redacted. Evidence: packages/ts/src/graph/graph.ts:660-664; packages/ts/src/graph/describe.ts:62-83; examples/spending-alerts/README.md:122-123,168-176.",
+          "concepts": {
+            "read": [],
+            "required": [],
+            "firstExpansion": null
+          }
+        }
+      ]
+    }
+  },
+  {
+    "type": "entry-answer-lengths",
+    "data": {
+      "lengths": {
+        "snippet": 127,
+        "explanation": 450
+      },
+      "limits": {
+        "snippet": 32000,
+        "explanation": 6000
+      },
+      "unit": "UTF-16 code units (JavaScript string.length)"
+    }
+  },
+  {
+    "type": "broker-batch",
+    "data": {
+      "phase": "entry",
+      "requests": [
+        {
+          "op": "submit",
+          "snippet": "import type { Graph } from \"@graphrefly/ts/graph\";\nexport function captureStructure(graph: Graph) { return graph.topology(); }\n",
+          "explanation": "The existing topology API recursively preserves structural nodes, edges, subgraphs and static annotations. It excludes node runtime status/value/version. Pure topology does not prove equal implementation, equal business results or effect permission. Caller metadata is retained and is not security-redacted. Evidence: packages/ts/src/graph/graph.ts:660-664; packages/ts/src/graph/describe.ts:62-83; examples/spending-alerts/README.md:122-123,168-176.",
+          "concepts": {
+            "read": [],
+            "required": [],
+            "firstExpansion": null
+          }
+        }
+      ],
+      "results": [
+        {
+          "ok": true,
+          "answerHash": "535024958f765e23a3dd0a7b66733f2c154f183d64fb2539a145fae2299c7513"
+        }
+      ],
+      "elapsedMs": 7
+    }
+  },
+  {
+    "type": "finished",
+    "data": {
+      "slot": {
+        "id": "export-structure-only-positive",
+        "arm": "G",
+        "role": "tooling-integrator"
+      },
+      "controller": null,
+      "experiment": "entry",
+      "explanations": {
+        "A": {},
+        "B": {}
+      },
+      "entryAnswer": {
+        "op": "submit",
+        "snippet": "import type { Graph } from \"@graphrefly/ts/graph\";\nexport function captureStructure(graph: Graph) { return graph.topology(); }\n",
+        "explanation": "The existing topology API recursively preserves structural nodes, edges, subgraphs and static annotations. It excludes node runtime status/value/version. Pure topology does not prove equal implementation, equal business results or effect permission. Caller metadata is retained and is not security-redacted. Evidence: packages/ts/src/graph/graph.ts:660-664; packages/ts/src/graph/describe.ts:62-83; examples/spending-alerts/README.md:122-123,168-176.",
+        "concepts": {
+          "read": [],
+          "required": [],
+          "firstExpansion": null
+        }
+      },
+      "entryTiming": {
+        "startedMs": 0,
+        "submittedMs": 7,
+        "elapsedMs": 7,
+        "firstSourceRead": null
+      },
+      "entryStatus": "submitted",
+      "usage": {
+        "inputTokens": 100,
+        "outputTokens": 20,
+        "elapsedMs": 7
+      },
+      "costUSD": 0.000054,
+      "turns": 1,
+      "counts": 1,
+      "operations": 1,
+      "fatal": null,
+      "failureScope": null,
+      "pendingReservation": null,
+      "retryAllowed": false
+    }
+  },
+  {
+    "type": "candidate-submission-retained",
+    "data": {
+      "binding": {
+        "materialSHA256": "a7846d59bdc5d0ca359292dceb91ef3274991bfb4afd9ce28e18c867e7554e6d",
+        "taskSHA256": "f0217735c7ab80bc16fbfae23190541dd3ebc696b8d7d1e4d7d1a7218aac898b",
+        "rubricSHA256": "6e0bee1dfd58b4a48052b58df656bc0d0f78fbb7744ea34cd8d5ab63f9a2277c",
+        "environmentSHA256": "25c512ca2d3dd5c501f470bd4e6f63994ffbe635c402622b02180226b7302687",
+        "runnerContractSHA256": "8c304251aa7233fe97e4350d360f789312c1d72bf39054e48aa35e4b52e5809e"
+      },
+      "taskId": "export-structure-only",
+      "sampleId": "export-structure-only-positive",
+      "result": {
+        "slot": {
+          "id": "export-structure-only-positive",
+          "arm": "G",
+          "role": "tooling-integrator"
+        },
+        "controller": null,
+        "experiment": "entry",
+        "explanations": {
+          "A": {},
+          "B": {}
+        },
+        "entryAnswer": {
+          "op": "submit",
+          "snippet": "import type { Graph } from \"@graphrefly/ts/graph\";\nexport function captureStructure(graph: Graph) { return graph.topology(); }\n",
+          "explanation": "The existing topology API recursively preserves structural nodes, edges, subgraphs and static annotations. It excludes node runtime status/value/version. Pure topology does not prove equal implementation, equal business results or effect permission. Caller metadata is retained and is not security-redacted. Evidence: packages/ts/src/graph/graph.ts:660-664; packages/ts/src/graph/describe.ts:62-83; examples/spending-alerts/README.md:122-123,168-176.",
+          "concepts": {
+            "read": [],
+            "required": [],
+            "firstExpansion": null
+          }
+        },
+        "entryTiming": {
+          "startedMs": 0,
+          "submittedMs": 7,
+          "elapsedMs": 7,
+          "firstSourceRead": null
+        },
+        "entryStatus": "submitted",
+        "usage": {
+          "inputTokens": 100,
+          "outputTokens": 20,
+          "elapsedMs": 7
+        },
+        "costUSD": 0.000054,
+        "turns": 1,
+        "counts": 1,
+        "operations": 1,
+        "fatal": null,
+        "failureScope": null,
+        "pendingReservation": null,
+        "retryAllowed": false
+      }
+    }
+  },
+  {
+    "type": "candidate-compiler-started",
+    "data": {
+      "receiptDirectory": "/Users/davidchenallio/src/graphrefly/sessions/active/b121-comparison-design-v1/agent-api/next-task-set-draft/offline/calibration-01/700aa68b-67ad-4781-bfd5-a2f3ac899a75",
+      "context": {
+        "taskId": "export-structure-only",
+        "sampleId": "export-structure-only-positive",
+        "stage": "entry",
+        "binding": {
+          "materialSHA256": "a7846d59bdc5d0ca359292dceb91ef3274991bfb4afd9ce28e18c867e7554e6d",
+          "taskSHA256": "f0217735c7ab80bc16fbfae23190541dd3ebc696b8d7d1e4d7d1a7218aac898b",
+          "rubricSHA256": "6e0bee1dfd58b4a48052b58df656bc0d0f78fbb7744ea34cd8d5ab63f9a2277c",
+          "environmentSHA256": "25c512ca2d3dd5c501f470bd4e6f63994ffbe635c402622b02180226b7302687",
+          "runnerContractSHA256": "8c304251aa7233fe97e4350d360f789312c1d72bf39054e48aa35e4b52e5809e"
+        }
+      },
+      "environmentSHA256": "25c512ca2d3dd5c501f470bd4e6f63994ffbe635c402622b02180226b7302687",
+      "snippetSHA256": "a2e938a529ce635b5f47163bf4c36f9e5247534f72b26da78d753023bf731163",
+      "consumerProbeSHA256": "ddcd25d5189c568b5c875392f6b5f7e68f17e0eb6e94ae93129d2f3bfd875527"
+    }
+  },
+  {
+    "type": "candidate-assessment",
+    "data": {
+      "kind": "offline-candidate-replay",
+      "formalReady": false,
+      "providerCalls": 0,
+      "binding": {
+        "materialSHA256": "a7846d59bdc5d0ca359292dceb91ef3274991bfb4afd9ce28e18c867e7554e6d",
+        "taskSHA256": "f0217735c7ab80bc16fbfae23190541dd3ebc696b8d7d1e4d7d1a7218aac898b",
+        "rubricSHA256": "6e0bee1dfd58b4a48052b58df656bc0d0f78fbb7744ea34cd8d5ab63f9a2277c",
+        "environmentSHA256": "25c512ca2d3dd5c501f470bd4e6f63994ffbe635c402622b02180226b7302687",
+        "runnerContractSHA256": "8c304251aa7233fe97e4350d360f789312c1d72bf39054e48aa35e4b52e5809e"
+      },
+      "taskId": "export-structure-only",
+      "sampleId": "export-structure-only-positive",
+      "packetSHA256": "e8435fa9b3e8ad4dd175ca5ef6a9400468f0648c81c760916b3e160b748163de",
+      "result": {
+        "slot": {
+          "id": "export-structure-only-positive",
+          "arm": "G",
+          "role": "tooling-integrator"
+        },
+        "controller": null,
+        "experiment": "entry",
+        "explanations": {
+          "A": {},
+          "B": {}
+        },
+        "entryAnswer": {
+          "op": "submit",
+          "snippet": "import type { Graph } from \"@graphrefly/ts/graph\";\nexport function captureStructure(graph: Graph) { return graph.topology(); }\n",
+          "explanation": "The existing topology API recursively preserves structural nodes, edges, subgraphs and static annotations. It excludes node runtime status/value/version. Pure topology does not prove equal implementation, equal business results or effect permission. Caller metadata is retained and is not security-redacted. Evidence: packages/ts/src/graph/graph.ts:660-664; packages/ts/src/graph/describe.ts:62-83; examples/spending-alerts/README.md:122-123,168-176.",
+          "concepts": {
+            "read": [],
+            "required": [],
+            "firstExpansion": null
+          }
+        },
+        "entryTiming": {
+          "startedMs": 0,
+          "submittedMs": 7,
+          "elapsedMs": 7,
+          "firstSourceRead": null
+        },
+        "entryStatus": "submitted",
+        "usage": {
+          "inputTokens": 100,
+          "outputTokens": 20,
+          "elapsedMs": 7
+        },
+        "costUSD": 0.000054,
+        "turns": 1,
+        "counts": 1,
+        "operations": 1,
+        "fatal": null,
+        "failureScope": null,
+        "pendingReservation": null,
+        "retryAllowed": false
+      },
+      "compilation": {
+        "environmentSHA256": "25c512ca2d3dd5c501f470bd4e6f63994ffbe635c402622b02180226b7302687",
+        "snippetSHA256": "a2e938a529ce635b5f47163bf4c36f9e5247534f72b26da78d753023bf731163",
+        "consumerProbeSHA256": "ddcd25d5189c568b5c875392f6b5f7e68f17e0eb6e94ae93129d2f3bfd875527",
+        "materialDiagnostics": [],
+        "ok": true,
+        "diagnostics": [],
+        "checkedFiles": [
+          "/b121-frozen/examples/spending-alerts/__b121_consumer_probe__.ts",
+          "/b121-frozen/examples/spending-alerts/__b121_entry_validation__.ts",
+          "/b121-frozen/node_modules/@types/node/assert.d.ts",
+          "/b121-frozen/node_modules/@types/node/assert/strict.d.ts",
+          "/b121-frozen/node_modules/@types/node/async_hooks.d.ts",
+          "/b121-frozen/node_modules/@types/node/buffer.buffer.d.ts",
+          "/b121-frozen/node_modules/@types/node/buffer.d.ts",
+          "/b121-frozen/node_modules/@types/node/child_process.d.ts",
+          "/b121-frozen/node_modules/@types/node/cluster.d.ts",
+          "/b121-frozen/node_modules/@types/node/compatibility/iterators.d.ts",
+          "/b121-frozen/node_modules/@types/node/console.d.ts",
+          "/b121-frozen/node_modules/@types/node/constants.d.ts",
+          "/b121-frozen/node_modules/@types/node/crypto.d.ts",
+          "/b121-frozen/node_modules/@types/node/dgram.d.ts",
+          "/b121-frozen/node_modules/@types/node/diagnostics_channel.d.ts",
+          "/b121-frozen/node_modules/@types/node/dns.d.ts",
+          "/b121-frozen/node_modules/@types/node/dns/promises.d.ts",
+          "/b121-frozen/node_modules/@types/node/domain.d.ts",
+          "/b121-frozen/node_modules/@types/node/events.d.ts",
+          "/b121-frozen/node_modules/@types/node/fs.d.ts",
+          "/b121-frozen/node_modules/@types/node/fs/promises.d.ts",
+          "/b121-frozen/node_modules/@types/node/globals.d.ts",
+          "/b121-frozen/node_modules/@types/node/globals.typedarray.d.ts",
+          "/b121-frozen/node_modules/@types/node/http.d.ts",
+          "/b121-frozen/node_modules/@types/node/http2.d.ts",
+          "/b121-frozen/node_modules/@types/node/https.d.ts",
+          "/b121-frozen/node_modules/@types/node/index.d.ts",
+          "/b121-frozen/node_modules/@types/node/inspector.d.ts",
+          "/b121-frozen/node_modules/@types/node/inspector.generated.d.ts",
+          "/b121-frozen/node_modules/@types/node/inspector/promises.d.ts",
+          "/b121-frozen/node_modules/@types/node/module.d.ts",
+          "/b121-frozen/node_modules/@types/node/net.d.ts",
+          "/b121-frozen/node_modules/@types/node/os.d.ts",
+          "/b121-frozen/node_modules/@types/node/path.d.ts",
+          "/b121-frozen/node_modules/@types/node/path/posix.d.ts",
+          "/b121-frozen/node_modules/@types/node/path/win32.d.ts",
+          "/b121-frozen/node_modules/@types/node/perf_hooks.d.ts",
+          "/b121-frozen/node_modules/@types/node/process.d.ts",
+          "/b121-frozen/node_modules/@types/node/punycode.d.ts",
+          "/b121-frozen/node_modules/@types/node/querystring.d.ts",
+          "/b121-frozen/node_modules/@types/node/quic.d.ts",
+          "/b121-frozen/node_modules/@types/node/readline.d.ts",
+          "/b121-frozen/node_modules/@types/node/readline/promises.d.ts",
+          "/b121-frozen/node_modules/@types/node/repl.d.ts",
+          "/b121-frozen/node_modules/@types/node/sea.d.ts",
+          "/b121-frozen/node_modules/@types/node/sqlite.d.ts",
+          "/b121-frozen/node_modules/@types/node/stream.d.ts",
+          "/b121-frozen/node_modules/@types/node/stream/consumers.d.ts",
+          "/b121-frozen/node_modules/@types/node/stream/promises.d.ts",
+          "/b121-frozen/node_modules/@types/node/stream/web.d.ts",
+          "/b121-frozen/node_modules/@types/node/string_decoder.d.ts",
+          "/b121-frozen/node_modules/@types/node/test.d.ts",
+          "/b121-frozen/node_modules/@types/node/test/reporters.d.ts",
+          "/b121-frozen/node_modules/@types/node/timers.d.ts",
+          "/b121-frozen/node_modules/@types/node/timers/promises.d.ts",
+          "/b121-frozen/node_modules/@types/node/tls.d.ts",
+          "/b121-frozen/node_modules/@types/node/trace_events.d.ts",
+          "/b121-frozen/node_modules/@types/node/tty.d.ts",
+          "/b121-frozen/node_modules/@types/node/url.d.ts",
+          "/b121-frozen/node_modules/@types/node/util.d.ts",
+          "/b121-frozen/node_modules/@types/node/util/types.d.ts",
+          "/b121-frozen/node_modules/@types/node/v8.d.ts",
+          "/b121-frozen/node_modules/@types/node/vm.d.ts",
+          "/b121-frozen/node_modules/@types/node/wasi.d.ts",
+          "/b121-frozen/node_modules/@types/node/web-globals/abortcontroller.d.ts",
+          "/b121-frozen/node_modules/@types/node/web-globals/blob.d.ts",
+          "/b121-frozen/node_modules/@types/node/web-globals/console.d.ts",
+          "/b121-frozen/node_modules/@types/node/web-globals/crypto.d.ts",
+          "/b121-frozen/node_modules/@types/node/web-globals/domexception.d.ts",
+          "/b121-frozen/node_modules/@types/node/web-globals/encoding.d.ts",
+          "/b121-frozen/node_modules/@types/node/web-globals/events.d.ts",
+          "/b121-frozen/node_modules/@types/node/web-globals/fetch.d.ts",
+          "/b121-frozen/node_modules/@types/node/web-globals/importmeta.d.ts",
+          "/b121-frozen/node_modules/@types/node/web-globals/messaging.d.ts",
+          "/b121-frozen/node_modules/@types/node/web-globals/navigator.d.ts",
+          "/b121-frozen/node_modules/@types/node/web-globals/performance.d.ts",
+          "/b121-frozen/node_modules/@types/node/web-globals/storage.d.ts",
+          "/b121-frozen/node_modules/@types/node/web-globals/streams.d.ts",
+          "/b121-frozen/node_modules/@types/node/web-globals/timers.d.ts",
+          "/b121-frozen/node_modules/@types/node/web-globals/url.d.ts",
+          "/b121-frozen/node_modules/@types/node/worker_threads.d.ts",
+          "/b121-frozen/node_modules/@types/node/zlib.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.decorators.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.decorators.legacy.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.dom.asynciterable.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.dom.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.dom.iterable.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.es2015.collection.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.es2015.core.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.es2015.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.es2015.generator.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.es2015.iterable.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.es2015.promise.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.es2015.proxy.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.es2015.reflect.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.es2015.symbol.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.es2015.symbol.wellknown.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.es2016.array.include.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.es2016.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.es2016.intl.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.es2017.arraybuffer.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.es2017.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.es2017.date.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.es2017.intl.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.es2017.object.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.es2017.sharedmemory.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.es2017.string.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.es2017.typedarrays.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.es2018.asyncgenerator.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.es2018.asynciterable.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.es2018.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.es2018.intl.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.es2018.promise.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.es2018.regexp.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.es2019.array.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.es2019.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.es2019.intl.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.es2019.object.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.es2019.string.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.es2019.symbol.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.es2020.bigint.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.es2020.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.es2020.date.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.es2020.intl.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.es2020.number.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.es2020.promise.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.es2020.sharedmemory.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.es2020.string.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.es2020.symbol.wellknown.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.es2021.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.es2021.intl.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.es2021.promise.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.es2021.string.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.es2021.weakref.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.es2022.array.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.es2022.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.es2022.error.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.es2022.full.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.es2022.intl.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.es2022.object.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.es2022.regexp.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.es2022.string.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.es5.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.esnext.disposable.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.esnext.float16.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.scripthost.d.ts",
+          "/b121-frozen/node_modules/typescript/lib/lib.webworker.importscripts.d.ts",
+          "/b121-frozen/node_modules/undici-types/agent.d.ts",
+          "/b121-frozen/node_modules/undici-types/api.d.ts",
+          "/b121-frozen/node_modules/undici-types/balanced-pool.d.ts",
+          "/b121-frozen/node_modules/undici-types/cache-interceptor.d.ts",
+          "/b121-frozen/node_modules/undici-types/cache.d.ts",
+          "/b121-frozen/node_modules/undici-types/client-stats.d.ts",
+          "/b121-frozen/node_modules/undici-types/client.d.ts",
+          "/b121-frozen/node_modules/undici-types/connector.d.ts",
+          "/b121-frozen/node_modules/undici-types/content-type.d.ts",
+          "/b121-frozen/node_modules/undici-types/cookies.d.ts",
+          "/b121-frozen/node_modules/undici-types/diagnostics-channel.d.ts",
+          "/b121-frozen/node_modules/undici-types/dispatcher.d.ts",
+          "/b121-frozen/node_modules/undici-types/env-http-proxy-agent.d.ts",
+          "/b121-frozen/node_modules/undici-types/errors.d.ts",
+          "/b121-frozen/node_modules/undici-types/eventsource.d.ts",
+          "/b121-frozen/node_modules/undici-types/fetch.d.ts",
+          "/b121-frozen/node_modules/undici-types/formdata.d.ts",
+          "/b121-frozen/node_modules/undici-types/global-dispatcher.d.ts",
+          "/b121-frozen/node_modules/undici-types/global-origin.d.ts",
+          "/b121-frozen/node_modules/undici-types/h2c-client.d.ts",
+          "/b121-frozen/node_modules/undici-types/handlers.d.ts",
+          "/b121-frozen/node_modules/undici-types/header.d.ts",
+          "/b121-frozen/node_modules/undici-types/index.d.ts",
+          "/b121-frozen/node_modules/undici-types/interceptors.d.ts",
+          "/b121-frozen/node_modules/undici-types/mock-agent.d.ts",
+          "/b121-frozen/node_modules/undici-types/mock-call-history.d.ts",
+          "/b121-frozen/node_modules/undici-types/mock-client.d.ts",
+          "/b121-frozen/node_modules/undici-types/mock-errors.d.ts",
+          "/b121-frozen/node_modules/undici-types/mock-interceptor.d.ts",
+          "/b121-frozen/node_modules/undici-types/mock-pool.d.ts",
+          "/b121-frozen/node_modules/undici-types/patch.d.ts",
+          "/b121-frozen/node_modules/undici-types/pool-stats.d.ts",
+          "/b121-frozen/node_modules/undici-types/pool.d.ts",
+          "/b121-frozen/node_modules/undici-types/proxy-agent.d.ts",
+          "/b121-frozen/node_modules/undici-types/readable.d.ts",
+          "/b121-frozen/node_modules/undici-types/retry-agent.d.ts",
+          "/b121-frozen/node_modules/undici-types/retry-handler.d.ts",
+          "/b121-frozen/node_modules/undici-types/round-robin-pool.d.ts",
+          "/b121-frozen/node_modules/undici-types/snapshot-agent.d.ts",
+          "/b121-frozen/node_modules/undici-types/util.d.ts",
+          "/b121-frozen/node_modules/undici-types/utility.d.ts",
+          "/b121-frozen/node_modules/undici-types/websocket.d.ts",
+          "/b121-frozen/packages/ts/src/batch/batch.ts",
+          "/b121-frozen/packages/ts/src/batch/boundary.ts",
+          "/b121-frozen/packages/ts/src/composition/index.ts",
+          "/b121-frozen/packages/ts/src/ctx/types.ts",
+          "/b121-frozen/packages/ts/src/data-structures/index.ts",
+          "/b121-frozen/packages/ts/src/data-structures/persistence.ts",
+          "/b121-frozen/packages/ts/src/dispatcher/index.ts",
+          "/b121-frozen/packages/ts/src/graph/blueprint-evidence.ts",
+          "/b121-frozen/packages/ts/src/graph/blueprint.ts",
+          "/b121-frozen/packages/ts/src/graph/cascading-cache.ts",
+          "/b121-frozen/packages/ts/src/graph/checkpoint.ts",
+          "/b121-frozen/packages/ts/src/graph/composition.ts",
+          "/b121-frozen/packages/ts/src/graph/construction-scope.ts",
+          "/b121-frozen/packages/ts/src/graph/data-structures/change.ts",
+          "/b121-frozen/packages/ts/src/graph/data-structures/core.ts",
+          "/b121-frozen/packages/ts/src/graph/data-structures/reactive-index.ts",
+          "/b121-frozen/packages/ts/src/graph/data-structures/reactive-list.ts",
+          "/b121-frozen/packages/ts/src/graph/data-structures/reactive-log.ts",
+          "/b121-frozen/packages/ts/src/graph/data-structures/reactive-map.ts",
+          "/b121-frozen/packages/ts/src/graph/describe.ts",
+          "/b121-frozen/packages/ts/src/graph/diagnostics.ts",
+          "/b121-frozen/packages/ts/src/graph/environment.ts",
+          "/b121-frozen/packages/ts/src/graph/graph-lifecycle.ts",
+          "/b121-frozen/packages/ts/src/graph/graph-support.ts",
+          "/b121-frozen/packages/ts/src/graph/graph-topology-group.ts",
+          "/b121-frozen/packages/ts/src/graph/graph-types.ts",
+          "/b121-frozen/packages/ts/src/graph/graph.ts",
+          "/b121-frozen/packages/ts/src/graph/index.ts",
+          "/b121-frozen/packages/ts/src/graph/inspect.ts",
+          "/b121-frozen/packages/ts/src/graph/operators.ts",
+          "/b121-frozen/packages/ts/src/graph/policies/collection.ts",
+          "/b121-frozen/packages/ts/src/graph/policies/types.ts",
+          "/b121-frozen/packages/ts/src/graph/render.ts",
+          "/b121-frozen/packages/ts/src/graph/resilience.ts",
+          "/b121-frozen/packages/ts/src/graph/restore.ts",
+          "/b121-frozen/packages/ts/src/graph/sources.ts",
+          "/b121-frozen/packages/ts/src/graph/worker.ts",
+          "/b121-frozen/packages/ts/src/identity.ts",
+          "/b121-frozen/packages/ts/src/json/codec.ts",
+          "/b121-frozen/packages/ts/src/node/core.ts",
+          "/b121-frozen/packages/ts/src/node/node-checkpoint-runtime.ts",
+          "/b121-frozen/packages/ts/src/node/node-context-runtime.ts",
+          "/b121-frozen/packages/ts/src/node/node-input-runtime.ts",
+          "/b121-frozen/packages/ts/src/node/node-lifecycle-runtime.ts",
+          "/b121-frozen/packages/ts/src/node/node-output-runtime.ts",
+          "/b121-frozen/packages/ts/src/node/node-rewire-runtime.ts",
+          "/b121-frozen/packages/ts/src/node/node-runtime-host.ts",
+          "/b121-frozen/packages/ts/src/node/node.ts",
+          "/b121-frozen/packages/ts/src/node/owned-acquisition.ts",
+          "/b121-frozen/packages/ts/src/node/protocol-guards.ts",
+          "/b121-frozen/packages/ts/src/node/runtime-accessors.ts",
+          "/b121-frozen/packages/ts/src/node/types.ts",
+          "/b121-frozen/packages/ts/src/node/versioning.ts",
+          "/b121-frozen/packages/ts/src/protocol/messages.ts",
+          "/b121-frozen/packages/ts/src/render/index.ts",
+          "/b121-frozen/packages/ts/src/storage/append-log.ts",
+          "/b121-frozen/packages/ts/src/storage/backend.ts",
+          "/b121-frozen/packages/ts/src/storage/change.ts",
+          "/b121-frozen/packages/ts/src/storage/codec.ts",
+          "/b121-frozen/packages/ts/src/storage/content-addressed.ts",
+          "/b121-frozen/packages/ts/src/storage/index.ts",
+          "/b121-frozen/packages/ts/src/storage/kv.ts",
+          "/b121-frozen/packages/ts/src/storage/observe-event-log.ts",
+          "/b121-frozen/packages/ts/src/storage/physical-key.ts",
+          "/b121-frozen/packages/ts/src/storage/reactive-collection.ts",
+          "/b121-frozen/packages/ts/src/storage/read-through.ts",
+          "/b121-frozen/packages/ts/src/storage/scalar.ts",
+          "/b121-frozen/packages/ts/src/storage/wal.ts"
+        ]
+      },
+      "compilerFailure": null,
+      "compilerReceipt": "/Users/davidchenallio/src/graphrefly/sessions/active/b121-comparison-design-v1/agent-api/next-task-set-draft/offline/calibration-01/700aa68b-67ad-4781-bfd5-a2f3ac899a75",
+      "status": "pending-review"
+    }
+  }
+]

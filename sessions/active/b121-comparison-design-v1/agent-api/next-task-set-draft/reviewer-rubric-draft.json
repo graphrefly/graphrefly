@@ -1,0 +1,77 @@
+{
+  "status": "author-draft-not-calibrated",
+  "formalReady": false,
+  "taskSHA256": "f0217735c7ab80bc16fbfae23190541dd3ebc696b8d7d1e4d7d1a7218aac898b",
+  "acceptance": "Proposed: frozen standalone and consumer typechecks plus all task static criteria. Static evidence only; no runtime proof. Ambiguous criteria invalidate the affected score until a new version is frozen.",
+  "tasks": [
+    {
+      "id": "export-structure-only",
+      "criteria": [
+        {
+          "id": "structural-api",
+          "rule": "Calls the real Graph.topology() API on the supplied graph; does not manually filter describe(), reconstruct nodes or change the graph.",
+          "evidencePath": "packages/ts/src/graph/graph.ts",
+          "evidenceSHA256": "54b3644e0de855533f9ac91621b9e4eceb0368d11a953fe0d793dfd22e8b72fe"
+        },
+        {
+          "id": "full-structure",
+          "rule": "Retains the complete library topology including subgraphs and annotations, without adding runtime node fields. It may return the snapshot directly.",
+          "evidencePath": "packages/ts/src/graph/describe.ts",
+          "evidenceSHA256": "d43c3a67be7f7776bad9bffac8434343f5c6019fbdf9a1c691e5ca441a899fa4"
+        },
+        {
+          "id": "claim-boundary",
+          "rule": "Does not infer code equality, business-result equality or effect permission from pure topology; does not call this a privacy-safe export of arbitrary metadata.",
+          "evidencePath": "packages/ts/src/graph/describe.ts",
+          "evidenceSHA256": "d43c3a67be7f7776bad9bffac8434343f5c6019fbdf9a1c691e5ca441a899fa4"
+        }
+      ]
+    },
+    {
+      "id": "report-node-version-metadata",
+      "criteria": [
+        {
+          "id": "union-and-absence",
+          "rule": "Uses undefined and level discrimination; returns exactly one correctly tagged report per item; no truthiness test losing counter zero.",
+          "evidencePath": "packages/ts/src/node/versioning.ts",
+          "evidenceSHA256": "2e85ef63e93703ec3cda767dcd68e8e32b8f13f263c78d9d6b8ae551cbf8b27a"
+        },
+        {
+          "id": "preserve-fields",
+          "rule": "Preserves counter, cid and prev, including null; does not reinterpret cid as a source revision or invent a disabled hash.",
+          "evidencePath": "packages/ts/src/node/versioning.ts",
+          "evidenceSHA256": "2e85ef63e93703ec3cda767dcd68e8e32b8f13f263c78d9d6b8ae551cbf8b27a"
+        },
+        {
+          "id": "version-meaning",
+          "rule": "Explains content hash versus source/authorization; advanceNodeVersion can increment counter even when content hash remains equal. Does not claim any equality proves effect permission.",
+          "evidencePath": "packages/ts/src/node/versioning.ts",
+          "evidenceSHA256": "2e85ef63e93703ec3cda767dcd68e8e32b8f13f263c78d9d6b8ae551cbf8b27a"
+        }
+      ]
+    },
+    {
+      "id": "consume-business-results",
+      "criteria": [
+        {
+          "id": "result-branches",
+          "rule": "Collects values from ok results only, even if issues exist; error contributes its primary error before additional issues.",
+          "evidencePath": "packages/ts/src/data/index.ts",
+          "evidenceSHA256": "1fa509436fb94d44052365697566b652662170c616c4ebd30753b1525eb49aa2"
+        },
+        {
+          "id": "preserve-order-identity",
+          "rule": "Preserves ordering, duplicates and object references; does not mutate input arrays/objects or substitute fabricated facts. Empty input yields empty arrays.",
+          "evidencePath": "packages/ts/src/data/index.ts",
+          "evidenceSHA256": "1fa509436fb94d44052365697566b652662170c616c4ebd30753b1525eb49aa2"
+        },
+        {
+          "id": "passive-facts",
+          "rule": "Distinguishes passive result/issue facts from protocol ERROR and run termination; retryable metadata alone does not authorize retry or execute effects.",
+          "evidencePath": "packages/ts/src/data/index.ts",
+          "evidenceSHA256": "1fa509436fb94d44052365697566b652662170c616c4ebd30753b1525eb49aa2"
+        }
+      ]
+    }
+  ]
+}

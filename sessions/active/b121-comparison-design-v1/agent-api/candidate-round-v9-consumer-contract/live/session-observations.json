@@ -1,0 +1,270 @@
+{
+  "sessions": [
+    {
+      "sampleId": "candidate-entry-01",
+      "reads": 10,
+      "searches": 0,
+      "feedbacks": [
+        {
+          "journalIndex": 28,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v2",
+          "stage": "retrieve-or-submit",
+          "finalizationPolicy": {
+            "version": "entry-reserved-submit-v1",
+            "outputTokensReserved": 4096,
+            "minimumRetrievalOutputTokens": 1024,
+            "operationThreshold": 16,
+            "projectedInputGrowthTokens": 65536,
+            "projection": "two current request estimates plus growth allowance; heuristic, not guaranteed admission",
+            "terminalRule": "submit-only accepts exactly one submit; no model repair or retrieval call afterward"
+          },
+          "currentRequest": {
+            "maxOutputTokens": 3904
+          },
+          "answerLimits": {
+            "snippet": 32000,
+            "explanation": 6000,
+            "unit": "UTF-16 code units (JavaScript string.length)"
+          },
+          "sessionId": "candidate-entry-01",
+          "used": {
+            "inputTokens": 0,
+            "outputTokens": 0,
+            "elapsedMs": 10,
+            "operations": 0,
+            "generationCalls": 0
+          },
+          "remaining": {
+            "inputTokens": 1000000,
+            "outputTokens": 8000,
+            "operations": 80,
+            "generationCalls": 80,
+            "elapsedMs": 4499990
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 38,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v2",
+          "stage": "retrieve-or-submit",
+          "finalizationPolicy": {
+            "version": "entry-reserved-submit-v1",
+            "outputTokensReserved": 4096,
+            "minimumRetrievalOutputTokens": 1024,
+            "operationThreshold": 16,
+            "projectedInputGrowthTokens": 65536,
+            "projection": "two current request estimates plus growth allowance; heuristic, not guaranteed admission",
+            "terminalRule": "submit-only accepts exactly one submit; no model repair or retrieval call afterward"
+          },
+          "currentRequest": {
+            "maxOutputTokens": 3850
+          },
+          "answerLimits": {
+            "snippet": 32000,
+            "explanation": 6000,
+            "unit": "UTF-16 code units (JavaScript string.length)"
+          },
+          "sessionId": "candidate-entry-01",
+          "used": {
+            "inputTokens": 2032,
+            "outputTokens": 54,
+            "elapsedMs": 486,
+            "operations": 1,
+            "generationCalls": 1
+          },
+          "remaining": {
+            "inputTokens": 997968,
+            "outputTokens": 7946,
+            "operations": 79,
+            "generationCalls": 79,
+            "elapsedMs": 4499514
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 48,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v2",
+          "stage": "retrieve-or-submit",
+          "finalizationPolicy": {
+            "version": "entry-reserved-submit-v1",
+            "outputTokensReserved": 4096,
+            "minimumRetrievalOutputTokens": 1024,
+            "operationThreshold": 16,
+            "projectedInputGrowthTokens": 65536,
+            "projection": "two current request estimates plus growth allowance; heuristic, not guaranteed admission",
+            "terminalRule": "submit-only accepts exactly one submit; no model repair or retrieval call afterward"
+          },
+          "currentRequest": {
+            "maxOutputTokens": 3751
+          },
+          "answerLimits": {
+            "snippet": 32000,
+            "explanation": 6000,
+            "unit": "UTF-16 code units (JavaScript string.length)"
+          },
+          "sessionId": "candidate-entry-01",
+          "used": {
+            "inputTokens": 10979,
+            "outputTokens": 153,
+            "elapsedMs": 1247,
+            "operations": 4,
+            "generationCalls": 2
+          },
+          "remaining": {
+            "inputTokens": 989021,
+            "outputTokens": 7847,
+            "operations": 76,
+            "generationCalls": 78,
+            "elapsedMs": 4498753
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 58,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v2",
+          "stage": "retrieve-or-submit",
+          "finalizationPolicy": {
+            "version": "entry-reserved-submit-v1",
+            "outputTokensReserved": 4096,
+            "minimumRetrievalOutputTokens": 1024,
+            "operationThreshold": 16,
+            "projectedInputGrowthTokens": 65536,
+            "projection": "two current request estimates plus growth allowance; heuristic, not guaranteed admission",
+            "terminalRule": "submit-only accepts exactly one submit; no model repair or retrieval call afterward"
+          },
+          "currentRequest": {
+            "maxOutputTokens": 3659
+          },
+          "answerLimits": {
+            "snippet": 32000,
+            "explanation": 6000,
+            "unit": "UTF-16 code units (JavaScript string.length)"
+          },
+          "sessionId": "candidate-entry-01",
+          "used": {
+            "inputTokens": 24359,
+            "outputTokens": 245,
+            "elapsedMs": 2191,
+            "operations": 6,
+            "generationCalls": 3
+          },
+          "remaining": {
+            "inputTokens": 975641,
+            "outputTokens": 7755,
+            "operations": 74,
+            "generationCalls": 77,
+            "elapsedMs": 4497809
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 68,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v2",
+          "stage": "retrieve-or-submit",
+          "finalizationPolicy": {
+            "version": "entry-reserved-submit-v1",
+            "outputTokensReserved": 4096,
+            "minimumRetrievalOutputTokens": 1024,
+            "operationThreshold": 16,
+            "projectedInputGrowthTokens": 65536,
+            "projection": "two current request estimates plus growth allowance; heuristic, not guaranteed admission",
+            "terminalRule": "submit-only accepts exactly one submit; no model repair or retrieval call afterward"
+          },
+          "currentRequest": {
+            "maxOutputTokens": 3553
+          },
+          "answerLimits": {
+            "snippet": 32000,
+            "explanation": 6000,
+            "unit": "UTF-16 code units (JavaScript string.length)"
+          },
+          "sessionId": "candidate-entry-01",
+          "used": {
+            "inputTokens": 40992,
+            "outputTokens": 351,
+            "elapsedMs": 3193,
+            "operations": 8,
+            "generationCalls": 4
+          },
+          "remaining": {
+            "inputTokens": 959008,
+            "outputTokens": 7649,
+            "operations": 72,
+            "generationCalls": 76,
+            "elapsedMs": 4496807
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 78,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v2",
+          "stage": "retrieve-or-submit",
+          "finalizationPolicy": {
+            "version": "entry-reserved-submit-v1",
+            "outputTokensReserved": 4096,
+            "minimumRetrievalOutputTokens": 1024,
+            "operationThreshold": 16,
+            "projectedInputGrowthTokens": 65536,
+            "projection": "two current request estimates plus growth allowance; heuristic, not guaranteed admission",
+            "terminalRule": "submit-only accepts exactly one submit; no model repair or retrieval call afterward"
+          },
+          "currentRequest": {
+            "maxOutputTokens": 3456
+          },
+          "answerLimits": {
+            "snippet": 32000,
+            "explanation": 6000,
+            "unit": "UTF-16 code units (JavaScript string.length)"
+          },
+          "sessionId": "candidate-entry-01",
+          "used": {
+            "inputTokens": 59780,
+            "outputTokens": 448,
+            "elapsedMs": 5051,
+            "operations": 10,
+            "generationCalls": 5
+          },
+          "remaining": {
+            "inputTokens": 940220,
+            "outputTokens": 7552,
+            "operations": 70,
+            "generationCalls": 75,
+            "elapsedMs": 4494949
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        }
+      ],
+      "stops": [],
+      "toolErrors": [],
+      "maxRequestInputTokens": 18788,
+      "taskId": "display-current-values",
+      "status": "incomplete",
+      "submissionPresent": false,
+      "usage": {
+        "inputTokens": 59780,
+        "outputTokens": 448,
+        "elapsedMs": 5138
+      },
+      "turns": 6,
+      "operations": 10,
+      "costUSD": 0.001085616,
+      "fatal": "provider cost/call ceiling before retry",
+      "compilerFailure": null,
+      "compilationOK": null
+    }
+  ],
+  "dispatchedFeedbacksVerified": 6,
+  "interpretation": "V9 adds a disclosed task04 consumer contract and frozen probe; same source materials and original16 static criteria. Exposed development tasks, not an unseen holdout."
+}

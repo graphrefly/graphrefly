@@ -1,0 +1,8 @@
+{
+  "kind": "local-review-orchestration-failure",
+  "cause": "Review script supplied nonexistent receiptRoot; exclusive child directory claim failed before compiler subprocess launch. Campaign original compiler receipts succeeded.",
+  "action": "Preserve original four review harness-failure results and summary. Create parent directory and perform separately recorded offline review verification using identical snippets, frozen environment and rubric. No model calls or answer changes.",
+  "generationCalls": 0,
+  "originalArtifacts": "candidate-entry-*.review.json and review-summary.json",
+  "correctedArtifacts": "candidate-entry-*.review-verified.json and review-verified-summary.json"
+}

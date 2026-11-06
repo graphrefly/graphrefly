@@ -1,0 +1,24 @@
+{
+  "passed": 203,
+  "failed": 0,
+  "skipped": 0,
+  "modulesPassed": 4,
+  "consumerCalibrationsPassed": 4,
+  "generationCalls": 0,
+  "changedExecutionFiles": [
+    "scripts/b121-comparison/candidate-entry.mjs",
+    "scripts/b121-comparison/compiler-process.mjs",
+    "scripts/b121-comparison/compiler-worker.mjs",
+    "scripts/b121-comparison/frozen-compiler.mjs"
+  ],
+  "reviewLenses": {
+    "blind": "No concrete findings; static diff and callers",
+    "edges": "No defects; additional in-memory compiler checks including open comment, nocheck, null optional output",
+    "verification": "Real subprocess and review covered; task04 calibration retained to cover selection beyond first task"
+  },
+  "limitations": [
+    "Ordinary TypeScript assignability is not proof against any/assertions/module augmentation; static source review still required",
+    "Only task04 consumer contract added; other three task signatures remain flexible",
+    "Original v8 evidence unchanged; synthetic corrected control is not a model answer"
+  ]
+}

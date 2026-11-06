@@ -1,0 +1,11 @@
+{
+  "checkedAt": "2026-09-16T07:14:57.176Z",
+  "keyUsage": 0.581919144,
+  "priorKeyUsage": 0.560642988,
+  "keyDelta": 0.02127615599999999,
+  "reportedCostUSD": 0.021276156,
+  "cumulativeKnownUSD": 0.60473716,
+  "unknownReservedUSD": 0.3151872,
+  "conservativeCommittedUSD": 0.91992436,
+  "remainingDispatchUSD": 1.08007564
+}

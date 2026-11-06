@@ -1,0 +1,17 @@
+{
+  "manifestSHA": "3a20059c3e5b64a9a94aee785a3618583165ac99b4620b02224b6769b95b15ef",
+  "action": "B121-agent-api-one-shot",
+  "acceptAliasLimitation": true,
+  "acceptInputEstimateLimitation": true,
+  "expiresAt": "2026-09-18T23:11:04.281Z",
+  "maxGenerationCalls": 1444,
+  "maxUSD": 4.5,
+  "retries": {
+    "capacity": 3,
+    "availability": 1
+  },
+  "model": "deepseek/deepseek-v4.1-flash",
+  "providerTag": "together",
+  "priorUsageUSD": 3.941764660000002,
+  "authorizationSource": "User explicitly approved the proposed cumulative ceiling increase from USD4 to USD4.50 and one new complete four-task development run by saying 同意，继续. All historical reported fees and unknown reservations included. External key limit1.97 unchanged, no recharge, no reset. Same frozen v7 tasks, rubric, model, provider, session budgets and retry policy. This new single-use campaign does not resume or replace v7."
+}

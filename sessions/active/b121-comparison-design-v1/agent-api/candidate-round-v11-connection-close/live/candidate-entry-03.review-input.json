@@ -1,0 +1,18 @@
+{
+  "assessmentSHA256": "1273109260d324fee147870d184f62ce789f7da2528c5e14f71fb1c5f7dc199f",
+  "reviewerId": "codex-bmad-source-review-v11-sample03",
+  "criteria": {
+    "reject-before-recipient": {
+      "pass": true,
+      "evidence": "Submitted handoffCausalCapabilities calls assertCausalCapabilities(graph, capability, expected) before constructing the delivery container or calling recipient. It has no catch/finally bypass. Frozen capabilities.ts:66-89 verifies the module-private issued WeakMap identity, owning Graph, full level, all four binding fields, issued lower handles and nesting. A structural copy, foreign Graph or binding mismatch therefore throws before recipient effects."
+    },
+    "preserve-issued-lineage": {
+      "pass": true,
+      "evidence": "The submitted frozen levels container directly assigns capability.identity, capability.execution and capability.retained. It clones none of those handles and creates no registry or replacement capability. Frozen capabilities.ts:83-89 validates lineage and nesting before delivery; :122-147 shows the original frozen nested handles and issued-object registration. Thus execution.identity === identity and retained.execution === execution remain true."
+    },
+    "execution-boundary": {
+      "pass": true,
+      "evidence": "Submission only validates and invokes the given recipient; it calls no transport or resource operation. Its explanation explicitly says the execution level has no I/O method and does not authorize arbitrary I/O, identifying separate request grants/readiness and resource lease gates. This agrees with frozen capabilities.ts:27-32, README.md:91-96, causal-resource.ts:73-78 and causal-admission.ts:253-295."
+    }
+  }
+}

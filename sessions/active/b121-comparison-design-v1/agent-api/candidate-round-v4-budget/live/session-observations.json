@@ -1,0 +1,2407 @@
+{
+  "sessions": [
+    {
+      "sampleId": "candidate-entry-01",
+      "reads": 17,
+      "searches": 29,
+      "feedbacks": [
+        {
+          "journalIndex": 28,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-01",
+          "used": {
+            "inputTokens": 0,
+            "outputTokens": 0,
+            "elapsedMs": 10,
+            "operations": 0,
+            "generationCalls": 0
+          },
+          "remaining": {
+            "inputTokens": 1000000,
+            "outputTokens": 8000,
+            "operations": 80,
+            "generationCalls": 80,
+            "elapsedMs": 4499990
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 37,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-01",
+          "used": {
+            "inputTokens": 1705,
+            "outputTokens": 54,
+            "elapsedMs": 635,
+            "operations": 1,
+            "generationCalls": 1
+          },
+          "remaining": {
+            "inputTokens": 998295,
+            "outputTokens": 7946,
+            "operations": 79,
+            "generationCalls": 79,
+            "elapsedMs": 4499365
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 46,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-01",
+          "used": {
+            "inputTokens": 10324,
+            "outputTokens": 153,
+            "elapsedMs": 1315,
+            "operations": 4,
+            "generationCalls": 2
+          },
+          "remaining": {
+            "inputTokens": 989676,
+            "outputTokens": 7847,
+            "operations": 76,
+            "generationCalls": 78,
+            "elapsedMs": 4498685
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 55,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-01",
+          "used": {
+            "inputTokens": 23374,
+            "outputTokens": 268,
+            "elapsedMs": 2373,
+            "operations": 7,
+            "generationCalls": 3
+          },
+          "remaining": {
+            "inputTokens": 976626,
+            "outputTokens": 7732,
+            "operations": 73,
+            "generationCalls": 77,
+            "elapsedMs": 4497627
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 67,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-01",
+          "used": {
+            "inputTokens": 40027,
+            "outputTokens": 341,
+            "elapsedMs": 63465,
+            "operations": 8,
+            "generationCalls": 4
+          },
+          "remaining": {
+            "inputTokens": 959973,
+            "outputTokens": 7659,
+            "operations": 72,
+            "generationCalls": 76,
+            "elapsedMs": 4436535
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 76,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-01",
+          "used": {
+            "inputTokens": 58309,
+            "outputTokens": 414,
+            "elapsedMs": 64189,
+            "operations": 9,
+            "generationCalls": 5
+          },
+          "remaining": {
+            "inputTokens": 941691,
+            "outputTokens": 7586,
+            "operations": 71,
+            "generationCalls": 75,
+            "elapsedMs": 4435811
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 85,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-01",
+          "used": {
+            "inputTokens": 77704,
+            "outputTokens": 545,
+            "elapsedMs": 64989,
+            "operations": 11,
+            "generationCalls": 6
+          },
+          "remaining": {
+            "inputTokens": 922296,
+            "outputTokens": 7455,
+            "operations": 69,
+            "generationCalls": 74,
+            "elapsedMs": 4435011
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 94,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-01",
+          "used": {
+            "inputTokens": 97290,
+            "outputTokens": 672,
+            "elapsedMs": 65633,
+            "operations": 13,
+            "generationCalls": 7
+          },
+          "remaining": {
+            "inputTokens": 902710,
+            "outputTokens": 7328,
+            "operations": 67,
+            "generationCalls": 73,
+            "elapsedMs": 4434367
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 103,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-01",
+          "used": {
+            "inputTokens": 117555,
+            "outputTokens": 802,
+            "elapsedMs": 66567,
+            "operations": 15,
+            "generationCalls": 8
+          },
+          "remaining": {
+            "inputTokens": 882445,
+            "outputTokens": 7198,
+            "operations": 65,
+            "generationCalls": 72,
+            "elapsedMs": 4433433
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 112,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-01",
+          "used": {
+            "inputTokens": 138008,
+            "outputTokens": 932,
+            "elapsedMs": 67282,
+            "operations": 17,
+            "generationCalls": 9
+          },
+          "remaining": {
+            "inputTokens": 861992,
+            "outputTokens": 7068,
+            "operations": 63,
+            "generationCalls": 71,
+            "elapsedMs": 4432718
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 121,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-01",
+          "used": {
+            "inputTokens": 158649,
+            "outputTokens": 1062,
+            "elapsedMs": 68091,
+            "operations": 19,
+            "generationCalls": 10
+          },
+          "remaining": {
+            "inputTokens": 841351,
+            "outputTokens": 6938,
+            "operations": 61,
+            "generationCalls": 70,
+            "elapsedMs": 4431909
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 130,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-01",
+          "used": {
+            "inputTokens": 179479,
+            "outputTokens": 1192,
+            "elapsedMs": 68770,
+            "operations": 21,
+            "generationCalls": 11
+          },
+          "remaining": {
+            "inputTokens": 820521,
+            "outputTokens": 6808,
+            "operations": 59,
+            "generationCalls": 69,
+            "elapsedMs": 4431230
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 139,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-01",
+          "used": {
+            "inputTokens": 200497,
+            "outputTokens": 1322,
+            "elapsedMs": 69502,
+            "operations": 23,
+            "generationCalls": 12
+          },
+          "remaining": {
+            "inputTokens": 799503,
+            "outputTokens": 6678,
+            "operations": 57,
+            "generationCalls": 68,
+            "elapsedMs": 4430498
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 148,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-01",
+          "used": {
+            "inputTokens": 221703,
+            "outputTokens": 1452,
+            "elapsedMs": 70236,
+            "operations": 25,
+            "generationCalls": 13
+          },
+          "remaining": {
+            "inputTokens": 778297,
+            "outputTokens": 6548,
+            "operations": 55,
+            "generationCalls": 67,
+            "elapsedMs": 4429764
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 157,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-01",
+          "used": {
+            "inputTokens": 243097,
+            "outputTokens": 1582,
+            "elapsedMs": 70946,
+            "operations": 27,
+            "generationCalls": 14
+          },
+          "remaining": {
+            "inputTokens": 756903,
+            "outputTokens": 6418,
+            "operations": 53,
+            "generationCalls": 66,
+            "elapsedMs": 4429054
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 166,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-01",
+          "used": {
+            "inputTokens": 264679,
+            "outputTokens": 1712,
+            "elapsedMs": 71709,
+            "operations": 29,
+            "generationCalls": 15
+          },
+          "remaining": {
+            "inputTokens": 735321,
+            "outputTokens": 6288,
+            "operations": 51,
+            "generationCalls": 65,
+            "elapsedMs": 4428291
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 175,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-01",
+          "used": {
+            "inputTokens": 286449,
+            "outputTokens": 1842,
+            "elapsedMs": 72371,
+            "operations": 31,
+            "generationCalls": 16
+          },
+          "remaining": {
+            "inputTokens": 713551,
+            "outputTokens": 6158,
+            "operations": 49,
+            "generationCalls": 64,
+            "elapsedMs": 4427629
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 184,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-01",
+          "used": {
+            "inputTokens": 308407,
+            "outputTokens": 1972,
+            "elapsedMs": 73187,
+            "operations": 33,
+            "generationCalls": 17
+          },
+          "remaining": {
+            "inputTokens": 691593,
+            "outputTokens": 6028,
+            "operations": 47,
+            "generationCalls": 63,
+            "elapsedMs": 4426813
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 193,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-01",
+          "used": {
+            "inputTokens": 330553,
+            "outputTokens": 2102,
+            "elapsedMs": 73884,
+            "operations": 35,
+            "generationCalls": 18
+          },
+          "remaining": {
+            "inputTokens": 669447,
+            "outputTokens": 5898,
+            "operations": 45,
+            "generationCalls": 62,
+            "elapsedMs": 4426116
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 202,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-01",
+          "used": {
+            "inputTokens": 352887,
+            "outputTokens": 2175,
+            "elapsedMs": 74466,
+            "operations": 36,
+            "generationCalls": 19
+          },
+          "remaining": {
+            "inputTokens": 647113,
+            "outputTokens": 5825,
+            "operations": 44,
+            "generationCalls": 61,
+            "elapsedMs": 4425534
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 211,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-01",
+          "used": {
+            "inputTokens": 376274,
+            "outputTokens": 2300,
+            "elapsedMs": 75224,
+            "operations": 38,
+            "generationCalls": 20
+          },
+          "remaining": {
+            "inputTokens": 623726,
+            "outputTokens": 5700,
+            "operations": 42,
+            "generationCalls": 60,
+            "elapsedMs": 4424776
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 220,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-01",
+          "used": {
+            "inputTokens": 400299,
+            "outputTokens": 2408,
+            "elapsedMs": 75948,
+            "operations": 40,
+            "generationCalls": 21
+          },
+          "remaining": {
+            "inputTokens": 599701,
+            "outputTokens": 5592,
+            "operations": 40,
+            "generationCalls": 59,
+            "elapsedMs": 4424052
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 229,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-01",
+          "used": {
+            "inputTokens": 426490,
+            "outputTokens": 2525,
+            "elapsedMs": 76667,
+            "operations": 42,
+            "generationCalls": 22
+          },
+          "remaining": {
+            "inputTokens": 573510,
+            "outputTokens": 5475,
+            "operations": 38,
+            "generationCalls": 58,
+            "elapsedMs": 4423333
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 238,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-01",
+          "used": {
+            "inputTokens": 454375,
+            "outputTokens": 2632,
+            "elapsedMs": 77483,
+            "operations": 44,
+            "generationCalls": 23
+          },
+          "remaining": {
+            "inputTokens": 545625,
+            "outputTokens": 5368,
+            "operations": 36,
+            "generationCalls": 57,
+            "elapsedMs": 4422517
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 247,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-01",
+          "used": {
+            "inputTokens": 484187,
+            "outputTokens": 2736,
+            "elapsedMs": 78272,
+            "operations": 46,
+            "generationCalls": 24
+          },
+          "remaining": {
+            "inputTokens": 515813,
+            "outputTokens": 5264,
+            "operations": 34,
+            "generationCalls": 56,
+            "elapsedMs": 4421728
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        }
+      ],
+      "stops": [],
+      "toolErrors": [],
+      "maxRequestInputTokens": 32440,
+      "taskId": "display-current-values",
+      "status": "pending-review",
+      "submissionPresent": true,
+      "usage": {
+        "inputTokens": 516627,
+        "outputTokens": 4169,
+        "elapsedMs": 83361
+      },
+      "turns": 25,
+      "operations": 47,
+      "costUSD": 0.018983796,
+      "fatal": null,
+      "compilerFailure": null,
+      "compilationOK": true
+    },
+    {
+      "sampleId": "candidate-entry-02",
+      "reads": 37,
+      "searches": 0,
+      "feedbacks": [
+        {
+          "journalIndex": 263,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-02",
+          "used": {
+            "inputTokens": 0,
+            "outputTokens": 0,
+            "elapsedMs": 11,
+            "operations": 0,
+            "generationCalls": 0
+          },
+          "remaining": {
+            "inputTokens": 1000000,
+            "outputTokens": 8000,
+            "operations": 80,
+            "generationCalls": 80,
+            "elapsedMs": 4499989
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 272,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-02",
+          "used": {
+            "inputTokens": 1708,
+            "outputTokens": 54,
+            "elapsedMs": 509,
+            "operations": 1,
+            "generationCalls": 1
+          },
+          "remaining": {
+            "inputTokens": 998292,
+            "outputTokens": 7946,
+            "operations": 79,
+            "generationCalls": 79,
+            "elapsedMs": 4499491
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 281,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-02",
+          "used": {
+            "inputTokens": 10383,
+            "outputTokens": 153,
+            "elapsedMs": 1198,
+            "operations": 4,
+            "generationCalls": 2
+          },
+          "remaining": {
+            "inputTokens": 989617,
+            "outputTokens": 7847,
+            "operations": 76,
+            "generationCalls": 78,
+            "elapsedMs": 4498802
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 290,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-02",
+          "used": {
+            "inputTokens": 23811,
+            "outputTokens": 234,
+            "elapsedMs": 1861,
+            "operations": 6,
+            "generationCalls": 3
+          },
+          "remaining": {
+            "inputTokens": 976189,
+            "outputTokens": 7766,
+            "operations": 74,
+            "generationCalls": 77,
+            "elapsedMs": 4498139
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 299,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-02",
+          "used": {
+            "inputTokens": 39836,
+            "outputTokens": 307,
+            "elapsedMs": 2479,
+            "operations": 7,
+            "generationCalls": 4
+          },
+          "remaining": {
+            "inputTokens": 960164,
+            "outputTokens": 7693,
+            "operations": 73,
+            "generationCalls": 76,
+            "elapsedMs": 4497521
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 308,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-02",
+          "used": {
+            "inputTokens": 57376,
+            "outputTokens": 380,
+            "elapsedMs": 3443,
+            "operations": 8,
+            "generationCalls": 5
+          },
+          "remaining": {
+            "inputTokens": 942624,
+            "outputTokens": 7620,
+            "operations": 72,
+            "generationCalls": 75,
+            "elapsedMs": 4496557
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 317,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-02",
+          "used": {
+            "inputTokens": 76627,
+            "outputTokens": 453,
+            "elapsedMs": 4118,
+            "operations": 9,
+            "generationCalls": 6
+          },
+          "remaining": {
+            "inputTokens": 923373,
+            "outputTokens": 7547,
+            "operations": 71,
+            "generationCalls": 74,
+            "elapsedMs": 4495882
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 326,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-02",
+          "used": {
+            "inputTokens": 97573,
+            "outputTokens": 526,
+            "elapsedMs": 5032,
+            "operations": 10,
+            "generationCalls": 7
+          },
+          "remaining": {
+            "inputTokens": 902427,
+            "outputTokens": 7474,
+            "operations": 70,
+            "generationCalls": 73,
+            "elapsedMs": 4494968
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 335,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-02",
+          "used": {
+            "inputTokens": 120399,
+            "outputTokens": 599,
+            "elapsedMs": 5750,
+            "operations": 11,
+            "generationCalls": 8
+          },
+          "remaining": {
+            "inputTokens": 879601,
+            "outputTokens": 7401,
+            "operations": 69,
+            "generationCalls": 72,
+            "elapsedMs": 4494250
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 344,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-02",
+          "used": {
+            "inputTokens": 145065,
+            "outputTokens": 672,
+            "elapsedMs": 6600,
+            "operations": 12,
+            "generationCalls": 9
+          },
+          "remaining": {
+            "inputTokens": 854935,
+            "outputTokens": 7328,
+            "operations": 68,
+            "generationCalls": 71,
+            "elapsedMs": 4493400
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 353,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-02",
+          "used": {
+            "inputTokens": 171497,
+            "outputTokens": 767,
+            "elapsedMs": 7332,
+            "operations": 14,
+            "generationCalls": 10
+          },
+          "remaining": {
+            "inputTokens": 828503,
+            "outputTokens": 7233,
+            "operations": 66,
+            "generationCalls": 70,
+            "elapsedMs": 4492668
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 362,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-02",
+          "used": {
+            "inputTokens": 199972,
+            "outputTokens": 840,
+            "elapsedMs": 8017,
+            "operations": 15,
+            "generationCalls": 11
+          },
+          "remaining": {
+            "inputTokens": 800028,
+            "outputTokens": 7160,
+            "operations": 65,
+            "generationCalls": 69,
+            "elapsedMs": 4491983
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 371,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-02",
+          "used": {
+            "inputTokens": 230077,
+            "outputTokens": 937,
+            "elapsedMs": 8859,
+            "operations": 17,
+            "generationCalls": 12
+          },
+          "remaining": {
+            "inputTokens": 769923,
+            "outputTokens": 7063,
+            "operations": 63,
+            "generationCalls": 68,
+            "elapsedMs": 4491141
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 380,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-02",
+          "used": {
+            "inputTokens": 263007,
+            "outputTokens": 1012,
+            "elapsedMs": 9593,
+            "operations": 18,
+            "generationCalls": 13
+          },
+          "remaining": {
+            "inputTokens": 736993,
+            "outputTokens": 6988,
+            "operations": 62,
+            "generationCalls": 67,
+            "elapsedMs": 4490407
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 389,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-02",
+          "used": {
+            "inputTokens": 297749,
+            "outputTokens": 1087,
+            "elapsedMs": 10263,
+            "operations": 19,
+            "generationCalls": 14
+          },
+          "remaining": {
+            "inputTokens": 702251,
+            "outputTokens": 6913,
+            "operations": 61,
+            "generationCalls": 66,
+            "elapsedMs": 4489737
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 398,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-02",
+          "used": {
+            "inputTokens": 334467,
+            "outputTokens": 1186,
+            "elapsedMs": 11109,
+            "operations": 21,
+            "generationCalls": 15
+          },
+          "remaining": {
+            "inputTokens": 665533,
+            "outputTokens": 6814,
+            "operations": 59,
+            "generationCalls": 65,
+            "elapsedMs": 4488891
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 407,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-02",
+          "used": {
+            "inputTokens": 373707,
+            "outputTokens": 1283,
+            "elapsedMs": 11737,
+            "operations": 23,
+            "generationCalls": 16
+          },
+          "remaining": {
+            "inputTokens": 626293,
+            "outputTokens": 6717,
+            "operations": 57,
+            "generationCalls": 64,
+            "elapsedMs": 4488263
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 416,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-02",
+          "used": {
+            "inputTokens": 414819,
+            "outputTokens": 1356,
+            "elapsedMs": 12462,
+            "operations": 24,
+            "generationCalls": 17
+          },
+          "remaining": {
+            "inputTokens": 585181,
+            "outputTokens": 6644,
+            "operations": 56,
+            "generationCalls": 63,
+            "elapsedMs": 4487538
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 425,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-02",
+          "used": {
+            "inputTokens": 457418,
+            "outputTokens": 1429,
+            "elapsedMs": 13036,
+            "operations": 25,
+            "generationCalls": 18
+          },
+          "remaining": {
+            "inputTokens": 542582,
+            "outputTokens": 6571,
+            "operations": 55,
+            "generationCalls": 62,
+            "elapsedMs": 4486964
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 434,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-02",
+          "used": {
+            "inputTokens": 501525,
+            "outputTokens": 1502,
+            "elapsedMs": 13749,
+            "operations": 26,
+            "generationCalls": 19
+          },
+          "remaining": {
+            "inputTokens": 498475,
+            "outputTokens": 6498,
+            "operations": 54,
+            "generationCalls": 61,
+            "elapsedMs": 4486251
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 443,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-02",
+          "used": {
+            "inputTokens": 547230,
+            "outputTokens": 1575,
+            "elapsedMs": 14354,
+            "operations": 27,
+            "generationCalls": 20
+          },
+          "remaining": {
+            "inputTokens": 452770,
+            "outputTokens": 6425,
+            "operations": 53,
+            "generationCalls": 60,
+            "elapsedMs": 4485646
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 452,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-02",
+          "used": {
+            "inputTokens": 594634,
+            "outputTokens": 1673,
+            "elapsedMs": 15081,
+            "operations": 29,
+            "generationCalls": 21
+          },
+          "remaining": {
+            "inputTokens": 405366,
+            "outputTokens": 6327,
+            "operations": 51,
+            "generationCalls": 59,
+            "elapsedMs": 4484919
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 461,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-02",
+          "used": {
+            "inputTokens": 644272,
+            "outputTokens": 1746,
+            "elapsedMs": 15832,
+            "operations": 30,
+            "generationCalls": 22
+          },
+          "remaining": {
+            "inputTokens": 355728,
+            "outputTokens": 6254,
+            "operations": 50,
+            "generationCalls": 58,
+            "elapsedMs": 4484168
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 470,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-02",
+          "used": {
+            "inputTokens": 695509,
+            "outputTokens": 1819,
+            "elapsedMs": 16444,
+            "operations": 31,
+            "generationCalls": 23
+          },
+          "remaining": {
+            "inputTokens": 304491,
+            "outputTokens": 6181,
+            "operations": 49,
+            "generationCalls": 57,
+            "elapsedMs": 4483556
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 479,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-02",
+          "used": {
+            "inputTokens": 748544,
+            "outputTokens": 1892,
+            "elapsedMs": 17148,
+            "operations": 32,
+            "generationCalls": 24
+          },
+          "remaining": {
+            "inputTokens": 251456,
+            "outputTokens": 6108,
+            "operations": 48,
+            "generationCalls": 56,
+            "elapsedMs": 4482852
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 488,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-02",
+          "used": {
+            "inputTokens": 803150,
+            "outputTokens": 1965,
+            "elapsedMs": 17801,
+            "operations": 33,
+            "generationCalls": 25
+          },
+          "remaining": {
+            "inputTokens": 196850,
+            "outputTokens": 6035,
+            "operations": 47,
+            "generationCalls": 55,
+            "elapsedMs": 4482199
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 497,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-02",
+          "used": {
+            "inputTokens": 859509,
+            "outputTokens": 2038,
+            "elapsedMs": 18469,
+            "operations": 34,
+            "generationCalls": 26
+          },
+          "remaining": {
+            "inputTokens": 140491,
+            "outputTokens": 5962,
+            "operations": 46,
+            "generationCalls": 54,
+            "elapsedMs": 4481531
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 506,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-02",
+          "used": {
+            "inputTokens": 917511,
+            "outputTokens": 2111,
+            "elapsedMs": 19166,
+            "operations": 35,
+            "generationCalls": 27
+          },
+          "remaining": {
+            "inputTokens": 82489,
+            "outputTokens": 5889,
+            "operations": 45,
+            "generationCalls": 53,
+            "elapsedMs": 4480834
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 515,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-02",
+          "used": {
+            "inputTokens": 977326,
+            "outputTokens": 2207,
+            "elapsedMs": 20033,
+            "operations": 37,
+            "generationCalls": 28
+          },
+          "remaining": {
+            "inputTokens": 22674,
+            "outputTokens": 5793,
+            "operations": 43,
+            "generationCalls": 52,
+            "elapsedMs": 4479967
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        }
+      ],
+      "stops": [
+        {
+          "journalIndex": 518,
+          "reason": "input-estimate-exceeds-remaining",
+          "estimatedNextInputTokens": 71998,
+          "remainingInputTokens": 22674,
+          "count": 71998,
+          "usage": {
+            "inputTokens": 977326,
+            "outputTokens": 2207,
+            "elapsedMs": 20051
+          }
+        }
+      ],
+      "toolErrors": [],
+      "maxRequestInputTokens": 59815,
+      "taskId": "compose-two-instances",
+      "status": "incomplete",
+      "submissionPresent": false,
+      "usage": {
+        "inputTokens": 977326,
+        "outputTokens": 2207,
+        "elapsedMs": 20051
+      },
+      "turns": 28,
+      "operations": 37,
+      "costUSD": 0.027116087999999993,
+      "fatal": null,
+      "compilerFailure": null,
+      "compilationOK": null
+    },
+    {
+      "sampleId": "candidate-entry-03",
+      "reads": 49,
+      "searches": 0,
+      "feedbacks": [
+        {
+          "journalIndex": 525,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-03",
+          "used": {
+            "inputTokens": 0,
+            "outputTokens": 0,
+            "elapsedMs": 12,
+            "operations": 0,
+            "generationCalls": 0
+          },
+          "remaining": {
+            "inputTokens": 1000000,
+            "outputTokens": 8000,
+            "operations": 80,
+            "generationCalls": 80,
+            "elapsedMs": 4499988
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 534,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-03",
+          "used": {
+            "inputTokens": 1708,
+            "outputTokens": 54,
+            "elapsedMs": 469,
+            "operations": 1,
+            "generationCalls": 1
+          },
+          "remaining": {
+            "inputTokens": 998292,
+            "outputTokens": 7946,
+            "operations": 79,
+            "generationCalls": 79,
+            "elapsedMs": 4499531
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 543,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-03",
+          "used": {
+            "inputTokens": 10352,
+            "outputTokens": 164,
+            "elapsedMs": 1245,
+            "operations": 4,
+            "generationCalls": 2
+          },
+          "remaining": {
+            "inputTokens": 989648,
+            "outputTokens": 7836,
+            "operations": 76,
+            "generationCalls": 78,
+            "elapsedMs": 4498755
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 552,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-03",
+          "used": {
+            "inputTokens": 23551,
+            "outputTokens": 300,
+            "elapsedMs": 2001,
+            "operations": 7,
+            "generationCalls": 3
+          },
+          "remaining": {
+            "inputTokens": 976449,
+            "outputTokens": 7700,
+            "operations": 73,
+            "generationCalls": 77,
+            "elapsedMs": 4497999
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 561,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-03",
+          "used": {
+            "inputTokens": 40357,
+            "outputTokens": 380,
+            "elapsedMs": 2741,
+            "operations": 9,
+            "generationCalls": 4
+          },
+          "remaining": {
+            "inputTokens": 959643,
+            "outputTokens": 7620,
+            "operations": 71,
+            "generationCalls": 76,
+            "elapsedMs": 4497259
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 570,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-03",
+          "used": {
+            "inputTokens": 60350,
+            "outputTokens": 461,
+            "elapsedMs": 3399,
+            "operations": 11,
+            "generationCalls": 5
+          },
+          "remaining": {
+            "inputTokens": 939650,
+            "outputTokens": 7539,
+            "operations": 69,
+            "generationCalls": 75,
+            "elapsedMs": 4496601
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 579,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-03",
+          "used": {
+            "inputTokens": 82940,
+            "outputTokens": 534,
+            "elapsedMs": 3983,
+            "operations": 12,
+            "generationCalls": 6
+          },
+          "remaining": {
+            "inputTokens": 917060,
+            "outputTokens": 7466,
+            "operations": 68,
+            "generationCalls": 74,
+            "elapsedMs": 4496017
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 588,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-03",
+          "used": {
+            "inputTokens": 107160,
+            "outputTokens": 629,
+            "elapsedMs": 4684,
+            "operations": 14,
+            "generationCalls": 7
+          },
+          "remaining": {
+            "inputTokens": 892840,
+            "outputTokens": 7371,
+            "operations": 66,
+            "generationCalls": 73,
+            "elapsedMs": 4495316
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 597,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-03",
+          "used": {
+            "inputTokens": 134079,
+            "outputTokens": 737,
+            "elapsedMs": 5474,
+            "operations": 16,
+            "generationCalls": 8
+          },
+          "remaining": {
+            "inputTokens": 865921,
+            "outputTokens": 7263,
+            "operations": 64,
+            "generationCalls": 72,
+            "elapsedMs": 4494526
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 606,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-03",
+          "used": {
+            "inputTokens": 163939,
+            "outputTokens": 845,
+            "elapsedMs": 6185,
+            "operations": 18,
+            "generationCalls": 9
+          },
+          "remaining": {
+            "inputTokens": 836061,
+            "outputTokens": 7155,
+            "operations": 62,
+            "generationCalls": 71,
+            "elapsedMs": 4493815
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 615,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-03",
+          "used": {
+            "inputTokens": 196855,
+            "outputTokens": 953,
+            "elapsedMs": 7785,
+            "operations": 20,
+            "generationCalls": 10
+          },
+          "remaining": {
+            "inputTokens": 803145,
+            "outputTokens": 7047,
+            "operations": 60,
+            "generationCalls": 70,
+            "elapsedMs": 4492215
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 624,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-03",
+          "used": {
+            "inputTokens": 233154,
+            "outputTokens": 1061,
+            "elapsedMs": 8551,
+            "operations": 22,
+            "generationCalls": 11
+          },
+          "remaining": {
+            "inputTokens": 766846,
+            "outputTokens": 6939,
+            "operations": 58,
+            "generationCalls": 69,
+            "elapsedMs": 4491449
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 633,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-03",
+          "used": {
+            "inputTokens": 271967,
+            "outputTokens": 1169,
+            "elapsedMs": 9368,
+            "operations": 24,
+            "generationCalls": 12
+          },
+          "remaining": {
+            "inputTokens": 728033,
+            "outputTokens": 6831,
+            "operations": 56,
+            "generationCalls": 68,
+            "elapsedMs": 4490632
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 642,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-03",
+          "used": {
+            "inputTokens": 314099,
+            "outputTokens": 1277,
+            "elapsedMs": 10186,
+            "operations": 26,
+            "generationCalls": 13
+          },
+          "remaining": {
+            "inputTokens": 685901,
+            "outputTokens": 6723,
+            "operations": 54,
+            "generationCalls": 67,
+            "elapsedMs": 4489814
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 651,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-03",
+          "used": {
+            "inputTokens": 359577,
+            "outputTokens": 1390,
+            "elapsedMs": 10972,
+            "operations": 28,
+            "generationCalls": 14
+          },
+          "remaining": {
+            "inputTokens": 640423,
+            "outputTokens": 6610,
+            "operations": 52,
+            "generationCalls": 66,
+            "elapsedMs": 4489028
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 660,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-03",
+          "used": {
+            "inputTokens": 408317,
+            "outputTokens": 1507,
+            "elapsedMs": 11957,
+            "operations": 30,
+            "generationCalls": 15
+          },
+          "remaining": {
+            "inputTokens": 591683,
+            "outputTokens": 6493,
+            "operations": 50,
+            "generationCalls": 65,
+            "elapsedMs": 4488043
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 669,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-03",
+          "used": {
+            "inputTokens": 460913,
+            "outputTokens": 1624,
+            "elapsedMs": 12705,
+            "operations": 32,
+            "generationCalls": 16
+          },
+          "remaining": {
+            "inputTokens": 539087,
+            "outputTokens": 6376,
+            "operations": 48,
+            "generationCalls": 64,
+            "elapsedMs": 4487295
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 678,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-03",
+          "used": {
+            "inputTokens": 516080,
+            "outputTokens": 1740,
+            "elapsedMs": 13530,
+            "operations": 34,
+            "generationCalls": 17
+          },
+          "remaining": {
+            "inputTokens": 483920,
+            "outputTokens": 6260,
+            "operations": 46,
+            "generationCalls": 63,
+            "elapsedMs": 4486470
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 687,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-03",
+          "used": {
+            "inputTokens": 574536,
+            "outputTokens": 1856,
+            "elapsedMs": 14247,
+            "operations": 36,
+            "generationCalls": 18
+          },
+          "remaining": {
+            "inputTokens": 425464,
+            "outputTokens": 6144,
+            "operations": 44,
+            "generationCalls": 62,
+            "elapsedMs": 4485753
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 696,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-03",
+          "used": {
+            "inputTokens": 636295,
+            "outputTokens": 1999,
+            "elapsedMs": 15096,
+            "operations": 39,
+            "generationCalls": 19
+          },
+          "remaining": {
+            "inputTokens": 363705,
+            "outputTokens": 6001,
+            "operations": 41,
+            "generationCalls": 61,
+            "elapsedMs": 4484904
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 705,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-03",
+          "used": {
+            "inputTokens": 700622,
+            "outputTokens": 2116,
+            "elapsedMs": 15823,
+            "operations": 41,
+            "generationCalls": 20
+          },
+          "remaining": {
+            "inputTokens": 299378,
+            "outputTokens": 5884,
+            "operations": 39,
+            "generationCalls": 60,
+            "elapsedMs": 4484177
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 714,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-03",
+          "used": {
+            "inputTokens": 767114,
+            "outputTokens": 2232,
+            "elapsedMs": 16532,
+            "operations": 43,
+            "generationCalls": 21
+          },
+          "remaining": {
+            "inputTokens": 232886,
+            "outputTokens": 5768,
+            "operations": 37,
+            "generationCalls": 59,
+            "elapsedMs": 4483468
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 723,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-03",
+          "used": {
+            "inputTokens": 836907,
+            "outputTokens": 2348,
+            "elapsedMs": 17587,
+            "operations": 45,
+            "generationCalls": 22
+          },
+          "remaining": {
+            "inputTokens": 163093,
+            "outputTokens": 5652,
+            "operations": 35,
+            "generationCalls": 58,
+            "elapsedMs": 4482413
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 732,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-03",
+          "used": {
+            "inputTokens": 909681,
+            "outputTokens": 2464,
+            "elapsedMs": 18768,
+            "operations": 47,
+            "generationCalls": 23
+          },
+          "remaining": {
+            "inputTokens": 90319,
+            "outputTokens": 5536,
+            "operations": 33,
+            "generationCalls": 57,
+            "elapsedMs": 4481232
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 741,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-03",
+          "used": {
+            "inputTokens": 985805,
+            "outputTokens": 2580,
+            "elapsedMs": 19644,
+            "operations": 49,
+            "generationCalls": 24
+          },
+          "remaining": {
+            "inputTokens": 14195,
+            "outputTokens": 5420,
+            "operations": 31,
+            "generationCalls": 56,
+            "elapsedMs": 4480356
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        }
+      ],
+      "stops": [
+        {
+          "journalIndex": 744,
+          "reason": "input-estimate-exceeds-remaining",
+          "estimatedNextInputTokens": 91478,
+          "remainingInputTokens": 14195,
+          "count": 91478,
+          "usage": {
+            "inputTokens": 985805,
+            "outputTokens": 2580,
+            "elapsedMs": 19659
+          }
+        }
+      ],
+      "toolErrors": [],
+      "maxRequestInputTokens": 76124,
+      "taskId": "validate-before-handoff",
+      "status": "incomplete",
+      "submissionPresent": false,
+      "usage": {
+        "inputTokens": 985805,
+        "outputTokens": 2580,
+        "elapsedMs": 19659
+      },
+      "turns": 24,
+      "operations": 49,
+      "costUSD": 0.032177148,
+      "fatal": null,
+      "compilerFailure": null,
+      "compilationOK": null
+    },
+    {
+      "sampleId": "candidate-entry-04",
+      "reads": 46,
+      "searches": 3,
+      "feedbacks": [
+        {
+          "journalIndex": 751,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-04",
+          "used": {
+            "inputTokens": 0,
+            "outputTokens": 0,
+            "elapsedMs": 10,
+            "operations": 0,
+            "generationCalls": 0
+          },
+          "remaining": {
+            "inputTokens": 1000000,
+            "outputTokens": 8000,
+            "operations": 80,
+            "generationCalls": 80,
+            "elapsedMs": 4499990
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 760,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-04",
+          "used": {
+            "inputTokens": 1706,
+            "outputTokens": 54,
+            "elapsedMs": 1365,
+            "operations": 1,
+            "generationCalls": 1
+          },
+          "remaining": {
+            "inputTokens": 998294,
+            "outputTokens": 7946,
+            "operations": 79,
+            "generationCalls": 79,
+            "elapsedMs": 4498635
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 769,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-04",
+          "used": {
+            "inputTokens": 10358,
+            "outputTokens": 153,
+            "elapsedMs": 2893,
+            "operations": 4,
+            "generationCalls": 2
+          },
+          "remaining": {
+            "inputTokens": 989642,
+            "outputTokens": 7847,
+            "operations": 76,
+            "generationCalls": 78,
+            "elapsedMs": 4497107
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 778,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-04",
+          "used": {
+            "inputTokens": 23797,
+            "outputTokens": 280,
+            "elapsedMs": 3837,
+            "operations": 7,
+            "generationCalls": 3
+          },
+          "remaining": {
+            "inputTokens": 976203,
+            "outputTokens": 7720,
+            "operations": 73,
+            "generationCalls": 77,
+            "elapsedMs": 4496163
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 787,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-04",
+          "used": {
+            "inputTokens": 41181,
+            "outputTokens": 377,
+            "elapsedMs": 4648,
+            "operations": 9,
+            "generationCalls": 4
+          },
+          "remaining": {
+            "inputTokens": 958819,
+            "outputTokens": 7623,
+            "operations": 71,
+            "generationCalls": 76,
+            "elapsedMs": 4495352
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 796,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-04",
+          "used": {
+            "inputTokens": 61752,
+            "outputTokens": 487,
+            "elapsedMs": 5551,
+            "operations": 11,
+            "generationCalls": 5
+          },
+          "remaining": {
+            "inputTokens": 938248,
+            "outputTokens": 7513,
+            "operations": 69,
+            "generationCalls": 75,
+            "elapsedMs": 4494449
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 805,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-04",
+          "used": {
+            "inputTokens": 85801,
+            "outputTokens": 597,
+            "elapsedMs": 6356,
+            "operations": 13,
+            "generationCalls": 6
+          },
+          "remaining": {
+            "inputTokens": 914199,
+            "outputTokens": 7403,
+            "operations": 67,
+            "generationCalls": 74,
+            "elapsedMs": 4493644
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 814,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-04",
+          "used": {
+            "inputTokens": 113465,
+            "outputTokens": 707,
+            "elapsedMs": 7237,
+            "operations": 15,
+            "generationCalls": 7
+          },
+          "remaining": {
+            "inputTokens": 886535,
+            "outputTokens": 7293,
+            "operations": 65,
+            "generationCalls": 73,
+            "elapsedMs": 4492763
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 823,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-04",
+          "used": {
+            "inputTokens": 144795,
+            "outputTokens": 815,
+            "elapsedMs": 8128,
+            "operations": 17,
+            "generationCalls": 8
+          },
+          "remaining": {
+            "inputTokens": 855205,
+            "outputTokens": 7185,
+            "operations": 63,
+            "generationCalls": 72,
+            "elapsedMs": 4491872
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 832,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-04",
+          "used": {
+            "inputTokens": 179188,
+            "outputTokens": 936,
+            "elapsedMs": 9086,
+            "operations": 20,
+            "generationCalls": 9
+          },
+          "remaining": {
+            "inputTokens": 820812,
+            "outputTokens": 7064,
+            "operations": 60,
+            "generationCalls": 71,
+            "elapsedMs": 4490914
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 841,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-04",
+          "used": {
+            "inputTokens": 216045,
+            "outputTokens": 1017,
+            "elapsedMs": 9800,
+            "operations": 22,
+            "generationCalls": 10
+          },
+          "remaining": {
+            "inputTokens": 783955,
+            "outputTokens": 6983,
+            "operations": 58,
+            "generationCalls": 70,
+            "elapsedMs": 4490200
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 850,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-04",
+          "used": {
+            "inputTokens": 255588,
+            "outputTokens": 1125,
+            "elapsedMs": 10623,
+            "operations": 24,
+            "generationCalls": 11
+          },
+          "remaining": {
+            "inputTokens": 744412,
+            "outputTokens": 6875,
+            "operations": 56,
+            "generationCalls": 69,
+            "elapsedMs": 4489377
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 859,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-04",
+          "used": {
+            "inputTokens": 297930,
+            "outputTokens": 1306,
+            "elapsedMs": 11689,
+            "operations": 27,
+            "generationCalls": 12
+          },
+          "remaining": {
+            "inputTokens": 702070,
+            "outputTokens": 6694,
+            "operations": 53,
+            "generationCalls": 68,
+            "elapsedMs": 4488311
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 868,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-04",
+          "used": {
+            "inputTokens": 341269,
+            "outputTokens": 1414,
+            "elapsedMs": 12847,
+            "operations": 29,
+            "generationCalls": 13
+          },
+          "remaining": {
+            "inputTokens": 658731,
+            "outputTokens": 6586,
+            "operations": 51,
+            "generationCalls": 67,
+            "elapsedMs": 4487153
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 877,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-04",
+          "used": {
+            "inputTokens": 387375,
+            "outputTokens": 1522,
+            "elapsedMs": 13699,
+            "operations": 31,
+            "generationCalls": 14
+          },
+          "remaining": {
+            "inputTokens": 612625,
+            "outputTokens": 6478,
+            "operations": 49,
+            "generationCalls": 66,
+            "elapsedMs": 4486301
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 886,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-04",
+          "used": {
+            "inputTokens": 435460,
+            "outputTokens": 1613,
+            "elapsedMs": 14445,
+            "operations": 33,
+            "generationCalls": 15
+          },
+          "remaining": {
+            "inputTokens": 564540,
+            "outputTokens": 6387,
+            "operations": 47,
+            "generationCalls": 65,
+            "elapsedMs": 4485555
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 895,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-04",
+          "used": {
+            "inputTokens": 486458,
+            "outputTokens": 1731,
+            "elapsedMs": 15282,
+            "operations": 35,
+            "generationCalls": 16
+          },
+          "remaining": {
+            "inputTokens": 513542,
+            "outputTokens": 6269,
+            "operations": 45,
+            "generationCalls": 64,
+            "elapsedMs": 4484718
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 904,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-04",
+          "used": {
+            "inputTokens": 540334,
+            "outputTokens": 1844,
+            "elapsedMs": 16113,
+            "operations": 37,
+            "generationCalls": 17
+          },
+          "remaining": {
+            "inputTokens": 459666,
+            "outputTokens": 6156,
+            "operations": 43,
+            "generationCalls": 63,
+            "elapsedMs": 4483887
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 913,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-04",
+          "used": {
+            "inputTokens": 597506,
+            "outputTokens": 1952,
+            "elapsedMs": 17056,
+            "operations": 39,
+            "generationCalls": 18
+          },
+          "remaining": {
+            "inputTokens": 402494,
+            "outputTokens": 6048,
+            "operations": 41,
+            "generationCalls": 62,
+            "elapsedMs": 4482944
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 922,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-04",
+          "used": {
+            "inputTokens": 657931,
+            "outputTokens": 2060,
+            "elapsedMs": 17906,
+            "operations": 41,
+            "generationCalls": 19
+          },
+          "remaining": {
+            "inputTokens": 342069,
+            "outputTokens": 5940,
+            "operations": 39,
+            "generationCalls": 61,
+            "elapsedMs": 4482094
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 931,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-04",
+          "used": {
+            "inputTokens": 721384,
+            "outputTokens": 2168,
+            "elapsedMs": 18671,
+            "operations": 43,
+            "generationCalls": 20
+          },
+          "remaining": {
+            "inputTokens": 278616,
+            "outputTokens": 5832,
+            "operations": 37,
+            "generationCalls": 60,
+            "elapsedMs": 4481329
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 940,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-04",
+          "used": {
+            "inputTokens": 788361,
+            "outputTokens": 2276,
+            "elapsedMs": 19468,
+            "operations": 45,
+            "generationCalls": 21
+          },
+          "remaining": {
+            "inputTokens": 211639,
+            "outputTokens": 5724,
+            "operations": 35,
+            "generationCalls": 59,
+            "elapsedMs": 4480532
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 949,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-04",
+          "used": {
+            "inputTokens": 856509,
+            "outputTokens": 2388,
+            "elapsedMs": 20327,
+            "operations": 47,
+            "generationCalls": 22
+          },
+          "remaining": {
+            "inputTokens": 143491,
+            "outputTokens": 5612,
+            "operations": 33,
+            "generationCalls": 58,
+            "elapsedMs": 4479673
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        },
+        {
+          "journalIndex": 958,
+          "kind": "controller_budget_status",
+          "version": "entry-budget-status-v1",
+          "sessionId": "candidate-entry-04",
+          "used": {
+            "inputTokens": 927793,
+            "outputTokens": 2500,
+            "elapsedMs": 21105,
+            "operations": 49,
+            "generationCalls": 23
+          },
+          "remaining": {
+            "inputTokens": 72207,
+            "outputTokens": 5500,
+            "operations": 31,
+            "generationCalls": 57,
+            "elapsedMs": 4478895
+          },
+          "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+          "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+        }
+      ],
+      "stops": [
+        {
+          "journalIndex": 961,
+          "reason": "input-estimate-exceeds-remaining",
+          "estimatedNextInputTokens": 88098,
+          "remainingInputTokens": 72207,
+          "count": 88098,
+          "usage": {
+            "inputTokens": 927793,
+            "outputTokens": 2500,
+            "elapsedMs": 21121
+          }
+        }
+      ],
+      "toolErrors": [],
+      "maxRequestInputTokens": 71284,
+      "taskId": "inspect-with-detached-display",
+      "status": "incomplete",
+      "submissionPresent": false,
+      "usage": {
+        "inputTokens": 927793,
+        "outputTokens": 2500,
+        "elapsedMs": 21121
+      },
+      "turns": 23,
+      "operations": 49,
+      "costUSD": 0.030407723999999994,
+      "fatal": null,
+      "compilerFailure": null,
+      "compilationOK": null
+    }
+  ],
+  "dispatchedFeedbacksVerified": 100,
+  "interpretation": "Same previously exposed four tasks. No unseen holdout or causal generalization."
+}

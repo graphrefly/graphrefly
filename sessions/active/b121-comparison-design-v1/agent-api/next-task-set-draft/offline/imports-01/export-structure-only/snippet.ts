@@ -1,0 +1,1 @@
+import type { Graph, GraphTopologySnapshot } from "@graphrefly/ts/graph"; export type API = (g: Graph) => GraphTopologySnapshot;

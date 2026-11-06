@@ -1,0 +1,8 @@
+file:///private/tmp/b121-v6-live/run.mjs:29
+if(hash(manifest.samples)!==hash(prior.samples))throw Error('Sample table drift');
+                                                      ^
+
+Error: Sample table drift
+    at file:///private/tmp/b121-v6-live/run.mjs:29:55
+
+Node.js v24.18.0

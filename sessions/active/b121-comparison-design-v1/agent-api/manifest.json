@@ -1,5 +1,5 @@
 {
-  "kind": "B121-agent-api-execution-proposal-v1",
+  "kind": "B121-agent-api-execution-proposal-v10",
   "owner": "graphrefly:B121",
   "date": "2026-09-14",
   "executionReady": false,
@@ -12,36 +12,41 @@
   "human": "deferred; no recruitment",
   "provider": {
     "name": "OpenRouter",
-    "model": "qwen/qwen3.8-flash",
-    "provider": "Makora",
-    "tag": "makora/fp4",
+    "model": "deepseek/deepseek-v4.1-flash",
+    "provider": "Together",
+    "acceptedModels": [
+      "deepseek/deepseek-v4.1-flash",
+      "deepseek/deepseek-v4.1-flash-20260910"
+    ],
+    "tag": "together",
     "endpoint": "https://openrouter.ai/api/v1/chat/completions",
-    "contextTokens": 262144,
-    "inputPerMillion": 0.15,
-    "outputPerMillion": 0.47,
-    "cacheReadPerMillion": 0.016,
-    "source": "https://openrouter.ai/api/v1/models/qwen/qwen3.8-flash/endpoints",
+    "contextTokens": 1048576,
+    "inputPerMillion": 0.3,
+    "outputPerMillion": 1.2,
+    "cacheReadPerMillion": 0.006,
+    "source": "https://openrouter.ai/api/v1/models/deepseek/deepseek-v4.1-flash/endpoints",
     "config": {
-      "model": "qwen/qwen3.8-flash",
+      "model": "deepseek/deepseek-v4.1-flash",
       "stream": false,
       "reasoning": {
-        "effort": "medium"
+        "enabled": false
       },
+      "temperature": 0,
       "provider": {
         "only": [
-          "makora/fp4"
+          "together"
         ],
         "allow_fallbacks": false,
         "require_parameters": true,
         "max_price": {
-          "prompt": 0.15,
-          "completion": 0.47
+          "prompt": 0.3,
+          "completion": 1.2
         }
       }
     },
     "immutableRevision": null,
     "accountAccess": "unverified; no inference calls made",
-    "versionLimit": "Route metadata names 20260826 weights, but request/returned alias cannot independently prove immutable hosting."
+    "versionLimit": "Route metadata names 20260910 weights, but request/returned alias cannot independently prove immutable hosting."
   },
   "bindings": [
     {
@@ -74,23 +79,31 @@
     },
     {
       "path": "scripts/b121-comparison/session.mjs",
-      "sha256": "6a75c042b61d2b03401e8c2106273aa7d7c62c0cfb881e5f0a95746669817f45"
+      "sha256": "b65828b9535c849c2cab92d820056164d66cc8523674b0cdf5591f8cb20b42d7"
     },
     {
       "path": "scripts/b121-comparison/entry-tasks.mjs",
-      "sha256": "da16b83d5e6b377363577bae2c8f292deafb36c6b1458a908235500f51208f5e"
+      "sha256": "547606cf03c89265b3d74cacbae7eb6ec5cbd4a78cd448f88d8dd0d7f5f65824"
     },
     {
       "path": "scripts/b121-comparison/api-runner.mjs",
-      "sha256": "f77372f614f23d9ca0999866c77d9772999c761919b273ef23b5ef548ce4f01f"
+      "sha256": "af4e62e3c5356d7b19395107a9922fd0dd7ebb4fd088df3c7398101cb83fbd3e"
+    },
+    {
+      "path": "scripts/b121-comparison/api-tool.mjs",
+      "sha256": "67083f9b09e4e0d10484936cc9e36a6bc811c9397778604b8c4902ea3cbc5b8b"
     },
     {
       "path": "scripts/b121-comparison/api-provider.mjs",
-      "sha256": "f488a7b8584bff6eaedb2877498bbafa0359a8e3a5bd47b8750fba19efadad35"
+      "sha256": "7bee80882c178555ee4e0cd286bfad755619b0aec18417723a43ebe8130362ae"
+    },
+    {
+      "path": "scripts/b121-comparison/api-limits.mjs",
+      "sha256": "66308897515a919755884523dc4103a137940aa7877bf762a197d9ea9652fa35"
     },
     {
       "path": "scripts/b121-comparison/api-entry-review.mjs",
-      "sha256": "ca51be616236ddfa77a4887900dd316d664b07957ae16c1d793c37264df918c7"
+      "sha256": "1e12680c530628f8d0f4edad1ccb0f10bea21888759f3efceb1f42dcf0a5a1ba"
     },
     {
       "path": "scripts/b121-comparison/materials.mjs",
@@ -98,11 +111,11 @@
     },
     {
       "path": "../graphrefly-ts/packages/ts/evals/graph-native-rerun-avoidance/openrouter-transport.mjs",
-      "sha256": "131bcd3ca08209690a2a00efdf91ba877c0ca1644eec49b65b3789dcfb49b0a3"
+      "sha256": "2b08a28f3a5b3cdb411c0ca252f36546080f9de122e722c7aa57d98ec4befb34"
     },
     {
       "path": "scripts/b121-comparison/api-transport.mjs",
-      "sha256": "7132a57ba52d5ed422977787590e33d49863dd5d33bf9e31098151a19b2b6d00"
+      "sha256": "e3e9ae6dda2df060db3579f7cdb6bb343bcc343db089947c764b8ab773f5681e"
     },
     {
       "path": "../graphrefly-ts/packages/ts/evals/graph-native-rerun-avoidance/openrouter-recovery.mjs",
@@ -110,11 +123,19 @@
     },
     {
       "path": "scripts/b121-comparison/api-prepare.mjs",
-      "sha256": "37f00e0d7c1910d2a8f68f035699f7880344690f97d4e3d2921368c7058e35f8"
+      "sha256": "122370c37924209be015f0b83f3642369ef43c4075de76ffeea192ccb95d4e1c"
+    },
+    {
+      "path": "scripts/b121-comparison/source-navigation.mjs",
+      "sha256": "dfde73a515a64e4a98a0650ef179b2b20c068b9c2da68f3cee6e669d4963b3ce"
+    },
+    {
+      "path": "scripts/b121-comparison/source-access.mjs",
+      "sha256": "4988db34ec9c214a71b305dfc2d498a3f31008af74c4f99587d2f0e07e6a04c8"
     },
     {
       "path": "scripts/b121-comparison/api-campaign.mjs",
-      "sha256": "2b283e3053ce1259777d713d7dd3a317824056b8d4a93f3c95660e584009c469"
+      "sha256": "48c06f1f4a665b9c64216d22f104fd4f59434e5c6e00c3bab66c5459a3ac8510"
     },
     {
       "path": "../graphrefly-ts/examples/spending-alerts/causal-entry.ts",
@@ -153,7 +174,7 @@
       "sha256": "54b3644e0de855533f9ac91621b9e4eceb0368d11a953fe0d793dfd22e8b72fe"
     }
   ],
-  "bundleSHA": "7efed7b7cb4257a795e07affb9f2c0c7cd42a0843c9d9217a69d7df093548947",
+  "bundleSHA": "b05d8d91199785dda78ce62c127db3b810e68d6e8c08801d2991a50e52fdd311",
   "sessions": [
     {
       "id": "agent-01",
@@ -171,8 +192,8 @@
         "C4",
         "C1"
       ],
-      "packetHash": "3c7bbb505e6dc1ae5aecf5182cc85c7c7f7f60ec6dda22ba5ab12918e1a027e6",
-      "entryHash": "3401779166ebc426b8b1a686ec60834748c02945e28a3a72433551007c02236b"
+      "packetHash": "6095302f566a04617e22ae4d42a975790dad1f04715ca0fd226983b28f849ed8",
+      "entryHash": "c47ae564031a2dd0226c7cde7d7f0c0e855aeb7e016967bd05297cd9d40cd154"
     },
     {
       "id": "agent-02",
@@ -190,8 +211,8 @@
         "C4",
         "C1"
       ],
-      "packetHash": "657ad1f69e80505748d9095c2d7510741b2a45540c0ae5f7dd2ab058f2374be4",
-      "entryHash": "302981e1c57b6257b590634d33600f95b192671e77e9319e8a37a55151ec716c"
+      "packetHash": "9240d8e79971a0cb5ac319bb2be1ad0dcde97ac88896336dcda56954c19a51b9",
+      "entryHash": "e1189107a67c3f6eb4ebf9e554d61c086012b8c34be7ab3e462b918c13a7e419"
     },
     {
       "id": "agent-03",
@@ -209,8 +230,8 @@
         "C5",
         "C6"
       ],
-      "packetHash": "51285d30b50e7463b70c4fb1378dc7a90265184b1ca1f02d04cdee5b3463bf56",
-      "entryHash": "302981e1c57b6257b590634d33600f95b192671e77e9319e8a37a55151ec716c"
+      "packetHash": "29c81f8436cdfcf6e77954d37331c132fdc69040e126406a59c059824af2ffd9",
+      "entryHash": "e1189107a67c3f6eb4ebf9e554d61c086012b8c34be7ab3e462b918c13a7e419"
     },
     {
       "id": "agent-04",
@@ -228,7 +249,7 @@
         "C5",
         "C6"
       ],
-      "packetHash": "31fb902acf94aaf8bdf601a10e6a28674b5b54d71be9e648f0779bfa598db2d0",
+      "packetHash": "7c59ab647e8c09a637c1c8ec629082ce18402cecd8b17c088c0ba560a5973fed",
       "entryHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
     },
     {
@@ -247,7 +268,7 @@
         "C4",
         "C1"
       ],
-      "packetHash": "5c150ca189e55d735f5d4d3d33d9eececb37371d5e173dc2dc92c726f0c2666d",
+      "packetHash": "020dc182e1056b6e4f4d0f4aeeb6d40db122bfc98698d9abb7651671c42ba696",
       "entryHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
     },
     {
@@ -266,8 +287,8 @@
         "C5",
         "C6"
       ],
-      "packetHash": "c5814e04af1a3b621d83d5adfff8a7d3b523a67cd62debc4eb57940f53da5605",
-      "entryHash": "3401779166ebc426b8b1a686ec60834748c02945e28a3a72433551007c02236b"
+      "packetHash": "86d7d006cb0b435e89fdc1efe9f8bc2dd138257f3c601e9c6d15b4e40ef85370",
+      "entryHash": "c47ae564031a2dd0226c7cde7d7f0c0e855aeb7e016967bd05297cd9d40cd154"
     },
     {
       "id": "agent-07",
@@ -285,7 +306,7 @@
         "C4",
         "C1"
       ],
-      "packetHash": "9cb9c1d55dbcd3dcfaad418f2ece053ed2a67ad5bac72ec75886ddfa774acea0",
+      "packetHash": "6d0523812c6eb39eaa4d6f0de1f625e7084a305d7d0ce07c554bed658f5c8da5",
       "entryHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
     },
     {
@@ -304,7 +325,7 @@
         "C5",
         "C6"
       ],
-      "packetHash": "42e0e5e8d1b8dae5c73c6c2e3044bbfbd120e05494a77456becc1743ca1badc0",
+      "packetHash": "c37e39f4436e6e4b7c97a9966f6491c5f2c0dfd416535e72b92d4aa43e05988e",
       "entryHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
     },
     {
@@ -323,8 +344,8 @@
         "C4",
         "C1"
       ],
-      "packetHash": "c96a748768d511ab9a8875288c867015f2666e56f2a160bfa1eb5471c564306e",
-      "entryHash": "2e51734e0e01bdedb57b4a525bfa84bd1f177eed35c1ae946b80b6ff81030b52"
+      "packetHash": "7437e0eb06f5b9f45515b244d95d45a9e38daccd1bf4061aed740fcf57502832",
+      "entryHash": "28ed37c1761a1b6001fcba31f50211bb3f8ab0041d1408f76f4a7d9b3e18e816"
     },
     {
       "id": "agent-10",
@@ -342,7 +363,7 @@
         "C5",
         "C6"
       ],
-      "packetHash": "00d41b33a2a2dfac71af9cd0edd53636dd701403160412883dfe4311314372bb",
+      "packetHash": "788ec7dfa3ee311420a8e468b95e26759cf948bc4f1ce2fe9b17e9fac2201ce8",
       "entryHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
     },
     {
@@ -361,8 +382,8 @@
         "C5",
         "C6"
       ],
-      "packetHash": "45682141bb19cfd31eed4753a0c218f032285de13baf2a787d99fe233d3bab7b",
-      "entryHash": "2e51734e0e01bdedb57b4a525bfa84bd1f177eed35c1ae946b80b6ff81030b52"
+      "packetHash": "048f5d5fefcc3068c6baafa1ba289f07f98b796eb65251c3af72b5b63e1bd0e1",
+      "entryHash": "28ed37c1761a1b6001fcba31f50211bb3f8ab0041d1408f76f4a7d9b3e18e816"
     },
     {
       "id": "agent-12",
@@ -380,25 +401,154 @@
         "C4",
         "C1"
       ],
-      "packetHash": "dd24f30b79123426f192e6b3f3cacc588e4677e29151332858f0b605924300db",
+      "packetHash": "056a321436b1c5f349bb435630a9efefe16e0fbed94559b18246135acd7f0f28",
       "entryHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    }
+  ],
+  "entrySessions": [
+    {
+      "id": "agent-01-entry",
+      "population": "agent",
+      "role": "user",
+      "arm": "G",
+      "order": "O2",
+      "cases": [
+        "C6",
+        "C5",
+        "C8",
+        "C3",
+        "C7",
+        "C2",
+        "C4",
+        "C1"
+      ],
+      "experiment": "entry",
+      "entryHash": "c47ae564031a2dd0226c7cde7d7f0c0e855aeb7e016967bd05297cd9d40cd154"
+    },
+    {
+      "id": "agent-02-entry",
+      "population": "agent",
+      "role": "framework",
+      "arm": "G",
+      "order": "O2",
+      "cases": [
+        "C6",
+        "C5",
+        "C8",
+        "C3",
+        "C7",
+        "C2",
+        "C4",
+        "C1"
+      ],
+      "experiment": "entry",
+      "entryHash": "e1189107a67c3f6eb4ebf9e554d61c086012b8c34be7ab3e462b918c13a7e419"
+    },
+    {
+      "id": "agent-03-entry",
+      "population": "agent",
+      "role": "framework",
+      "arm": "G",
+      "order": "O1",
+      "cases": [
+        "C1",
+        "C4",
+        "C2",
+        "C7",
+        "C3",
+        "C8",
+        "C5",
+        "C6"
+      ],
+      "experiment": "entry",
+      "entryHash": "e1189107a67c3f6eb4ebf9e554d61c086012b8c34be7ab3e462b918c13a7e419"
+    },
+    {
+      "id": "agent-06-entry",
+      "population": "agent",
+      "role": "user",
+      "arm": "G",
+      "order": "O1",
+      "cases": [
+        "C1",
+        "C4",
+        "C2",
+        "C7",
+        "C3",
+        "C8",
+        "C5",
+        "C6"
+      ],
+      "experiment": "entry",
+      "entryHash": "c47ae564031a2dd0226c7cde7d7f0c0e855aeb7e016967bd05297cd9d40cd154"
+    },
+    {
+      "id": "agent-09-entry",
+      "population": "agent",
+      "role": "maintainer",
+      "arm": "G",
+      "order": "O2",
+      "cases": [
+        "C6",
+        "C5",
+        "C8",
+        "C3",
+        "C7",
+        "C2",
+        "C4",
+        "C1"
+      ],
+      "experiment": "entry",
+      "entryHash": "28ed37c1761a1b6001fcba31f50211bb3f8ab0041d1408f76f4a7d9b3e18e816"
+    },
+    {
+      "id": "agent-11-entry",
+      "population": "agent",
+      "role": "maintainer",
+      "arm": "G",
+      "order": "O1",
+      "cases": [
+        "C1",
+        "C4",
+        "C2",
+        "C7",
+        "C3",
+        "C8",
+        "C5",
+        "C6"
+      ],
+      "experiment": "entry",
+      "entryHash": "28ed37c1761a1b6001fcba31f50211bb3f8ab0041d1408f76f4a7d9b3e18e816"
     }
   ],
   "limits": {
     "perSession": {
       "calls": 80,
-      "inputTokens": 48000,
+      "inputTokens": 1000000,
       "outputTokens": 8000,
       "elapsedMs": 4500000
     },
-    "totalStudyInputTokens": 576000,
-    "totalStudyOutputTokens": 96000,
-    "qualification": {
-      "freshRequests": 2,
-      "inputTokens": 8192,
-      "outputTokens": 1024
+    "perEntrySession": {
+      "calls": 80,
+      "inputTokens": 1000000,
+      "outputTokens": 8000,
+      "elapsedMs": 4500000
     },
-    "generationCalls": 962,
+    "comparisonSessions": 12,
+    "entrySessions": 6,
+    "comparisonInputTokens": 12000000,
+    "comparisonOutputTokens": 96000,
+    "entryInputTokens": 6000000,
+    "entryOutputTokens": 48000,
+    "totalStudyInputTokens": 18000000,
+    "totalStudyOutputTokens": 144000,
+    "qualification": {
+      "freshConversations": 2,
+      "freshRequests": 4,
+      "inputTokens": 16384,
+      "outputTokens": 5120
+    },
+    "generationCalls": 1444,
     "countCalls": 0,
     "retries": {
       "capacity": 3,
@@ -407,36 +557,49 @@
     "maxCreateMs": 1261000,
     "concurrency": 1,
     "maxRequestMs": 60000,
-    "maxOutputPerRequest": 2048,
+    "maxOutputPerRequest": 4096,
     "noResume": true,
-    "anyFatalStopsCampaign": true
+    "participantFailureStopsCampaign": false,
+    "campaignFailureStopsCampaign": true,
+    "campaignFailureScopes": [
+      "qualification",
+      "transport",
+      "route-identity",
+      "accounting",
+      "spend",
+      "persistence",
+      "token-overrun"
+    ]
   },
   "price": {
     "currency": "USD",
-    "standardInputPerMillion": 0.15,
-    "cachedInputPerMillion": 0.016,
-    "outputPerMillion": 0.47,
-    "studyMaximum": 0.13152,
-    "qualificationMaximum": 0.0017100799999999999,
-    "proposedTotalCeiling": 0.2,
-    "singleRequestReservation": "Full published Makora context (262144 input tokens) plus requested output; no cache discount assumed",
-    "inputPreflight": "Local UTF-8 bytes + 2048 formatting allowance is a forecast, not exact tokenization. Actual reported input must fit the remaining 48000-token session allowance before answers are accepted. Overrun stops campaign; charged overrun remains visible.",
+    "standardInputPerMillion": 0.3,
+    "cachedInputPerMillion": 0.006,
+    "outputPerMillion": 1.2,
+    "comparisonMaximum": 3.7152,
+    "entryMaximum": 1.8576,
+    "studyMaximum": 5.5728,
+    "qualificationMaximum": 0.0110592,
+    "proposedTotalCeiling": 2,
+    "ceilingRelationship": "Session token maxima are theoretical and do not authorize their summed cost. The cumulative USD2 ceiling includes prior spending and retries and can stop before every session reaches its token limit.",
+    "singleRequestReservation": "Full published Together context (1048576 input tokens) plus requested output; no cache discount assumed",
+    "inputPreflight": "Local UTF-8 bytes / 3 + 256 formatting allowance is an unqualified heuristic transferred from another model, not exact tokenization or an upper bound. Actual reported input must fit the remaining configured cumulative input-token allowance before answers are accepted. Overrun stops campaign; charged overrun remains visible.",
     "basis": "Service-only USD; taxes/top-up fees excluded. Hard local dispatch reservation depends on published route context/rates and honest complete provider billing; provider internals cannot be enforced locally.",
-    "source": "https://openrouter.ai/api/v1/models/qwen/qwen3.8-flash/endpoints"
+    "source": "https://openrouter.ai/api/v1/models/deepseek/deepseek-v4.1-flash/endpoints"
   },
   "conditionsBeforeAnyCall": [
-    "Explicit one-shot grant bound to manifest SHA, Qwen/Makora route, USD 0.20, 962 maximum generation calls, expiry, explicit CSP11 retry policy (capacity 3; availability 1); retries consume the same call/money ceilings",
+    "Explicit one-shot grant bound to manifest SHA, DeepSeek V4.1 Flash/Together route, proposed USD 2.00 (requires separate spend approval), 1444 maximum generation calls, expiry, explicit CSP11 retry policy (capacity 3; availability 1); retries consume the same call/money ceilings",
     "Accept model alias and local input estimate limitations; no automatic provider/model replacement",
     "Confirm route metadata/price evidence remains current before approval; if changed, regenerate manifest",
     "Explicit private credential injection; preparation never discovers keys"
   ],
   "qualificationBeforeParticipants": [
-    "Two fresh synthetic requests; <=4096 reported input and 512 output each; exact requested broker operation; returned model/provider, complete usage and pricing audit",
-    "Mismatches, malformed responses and overruns stop the campaign. CSP11 infrastructure recovery is bounded; unknown failed billing retains the full reservation. No substitutions or session resume.",
-    "Only one custom broker; all history is explicit messages; no server-side conversation, repository tool or hidden grading data"
+    "Two fresh two-turn synthetic conversations; comparison read then seven-field submission; entry task/search/range then entry submission; <=4096 input per call, 512 read or2048 submit output; reasoning disabled; exact broker operation, route, usage and pricing audit",
+    "Entry retrieval parameter errors return recoverable tool feedback within unchanged budgets; denied paths, malformed envelopes/submissions and other invalid broker operations stop only that participant, with missing answers retained and no correction/retry. Qualification, transport, route/identity, accounting, persistence failures and overruns stop the campaign. CSP11 infrastructure recovery is bounded; unknown failed billing retains the full reservation. No substitutions or session resume.",
+    "HTTP200 error-finish responses remain terminal with unknown retryability. Their valid reported charge is retained separately from upstream compute cost; absent/invalid usage retains the conservative reservation. Successful response pricing validation remains unchanged. Only one custom broker; all history is explicit messages; no server-side conversation, repository tool or hidden grading data"
   ],
   "privacy": {
-    "transmitted": "Assigned role/arm materials, own session messages, and assigned Graph entry chunks after A/B closure go to OpenRouter and Makora; credential remains in HTTP header",
+    "transmitted": "Assigned role/arm comparison materials and own comparison messages go to OpenRouter and Together; separate fresh entry conversations transmit only assigned Graph entry tasks/search excerpts/source ranges and their own messages, never A/B materials or history. Credential remains in HTTP header",
     "retention": "No ZDR entitlement or no-retention guarantee asserted. OpenRouter and selected provider policies apply; no fabricated store=false promise.",
     "isolation": "Controller-owned file allowlist and fresh message arrays; not provider-internal memory isolation or immutable weights proof",
     "source": "https://openrouter.ai/docs/guides/privacy/provider-logging"
@@ -444,7 +607,7 @@
   "analysis": {
     "method": "judgment-only-v2",
     "denominator": "12 assigned slots x 8 cases x 7 fields x 2 phases, including failed/unrun slots",
-    "entry": "6 G sessions receive assigned role task after their A/B seals; same cumulative budget. Static compilation then bound trusted criterion review; pending review never accepted. No P entry score.",
+    "entry": "6 independent G entry sessions run after the 12 comparison slots, with fresh context and their own 1000000 input / 8000 output token, 80 operation, 75 minute limits. Entry slots receive only assigned task and bounded search/source-range results, regardless of comparison completion. Entry results are reported separately and never enter the 1344 comparison denominator. Static compilation then bound trusted criterion review; pending review never accepted. No P entry score.",
     "structured": "Existing frozen gradeSealed; value and required fact citations both required. Separate safety counts and role/arm rows.",
     "freeText": "Frozen HUMAN_RUBRIC; two blinded human reviewers unavailable. Preserve explanations and concepts unscored. No agent self-score replaces them.",
     "limitations": [

@@ -1,0 +1,17 @@
+{
+  "manifestSHA": "78a0d712fa98235af090ebae3b34fef42700cd829eb5fef1f4ba4d28cf03b8cf",
+  "action": "B121-agent-api-one-shot",
+  "acceptAliasLimitation": true,
+  "acceptInputEstimateLimitation": true,
+  "expiresAt": "2026-09-19T03:38:37.918Z",
+  "maxGenerationCalls": 1444,
+  "maxUSD": 11,
+  "retries": {
+    "capacity": 3,
+    "availability": 1
+  },
+  "model": "deepseek/deepseek-v4.1-flash",
+  "providerTag": "together",
+  "priorUsageUSD": 5.182913848000002,
+  "authorizationSource": "User authorized necessary internal budget increases <=100% and then said 好的，继续 after cap11 applied. Execute two prior tasks with no model HTTP attempts, once; preserve prior stopped campaign and first accepted answer. Standing budget authorization retained in budget-standing-authorization.md. External key limit remains1.97, no recharge."
+}

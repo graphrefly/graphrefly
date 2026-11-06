@@ -1,0 +1,49 @@
+--- before/examples/spending-alerts/README.md
++++ after/examples/spending-alerts/README.md
+@@ -24,6 +24,31 @@
+ 
+ ## Private Causal integration
+ 
++### Choose the boundary you already have
++
++These helpers are consumer-private source imports, **not published package
++subpaths**. Start with the object supplied to your component:
++
++| You already have | Read this contract first | Read implementation details when |
++|---|---|---|
++| An existing `SpendingAlertsView` and a render callback | [`mountSpendingView`](causal-view-binding.ts): five latest port values, explicit `unavailable` ports, observation cleanup | You need a different observation policy; the [ordinary panel](causal-ordinary-panel.ts) shows a consumer |
++| A Graph and prepared creation inputs | [`spendingAlertsFor`](causal-entry.ts): immutable defaults, per-compose overrides and returned view/capabilities | You also own input preparation or the executing host; follow [inputs](causal-inputs.ts) or [host](causal-focused-host.ts) for those responsibilities |
++| Issued capabilities, their owning Graph and expected binding | [`assertCausalCapabilities`](../../packages/ts/src/solutions/causal-occurrence/capabilities.ts): issued-object, Graph, binding and lineage validation | You implement capability construction; the [role examples](causal-audience.examples.ts) show consumption |
++| The owning Graph and a running instance | `graph.describe()` for graph structure; the instance's `inspect()` for host state, documented in [host](causal-focused-host.ts) | You are tracing a specific readiness, admission or outcome dependency |
++
++Using an existing view does not require reconstructing its input facts, permission
++sources or host. Using prepared inputs does not require implementing their
++creation. A capability validation failure must be handled before passing the
++capabilities to a recipient; a structural copy is not an issued object. The
++[observation meanings below](#interpret-observations-accurately) apply to all of
++these roles, including unavailable values and the limits of lifecycle readiness.
++
++The complete demo below is for application ownership and lifecycle tracing. Its
++fixture setup and simulated writer are not prerequisites for displaying a view
++or consuming already-issued capabilities.
++
++### Run the complete application demo
++
+ Run from the repository root:
+ 
+ ```sh
+@@ -44,14 +69,6 @@
+ it is not a production verification service. The writer simulates completion in
+ memory. Input messages in the demo are test-boundary facts, not new public
+ feed/publish/approve methods.
+-
+-Choose a reading path:
+-
+-| Your task | Start here | What remains with the application |
+-|---|---|---|
+-| Display business values | [ordinary panel](causal-ordinary-panel.ts), then [value binding](causal-view-binding.ts) | Construction, input sources, permissions, resource and running owner |
+-| Integrate or compose components | [complete application demo](causal-graded-demo.ts), then [creation entry](causal-entry.ts) and [role examples](causal-audience.examples.ts) | Verification and permission provenance, original capabilities, lifecycle ownership |
+-| Understand the executing system | The demo's actual graph and request records, then [host](causal-focused-host.ts) and [authority construction](../../packages/ts/src/solutions/causal-occurrence/construction.ts) | Interpreting exact source, admission, outcome and evidence bindings |
+ 
+ The application creates five actual input Nodes in four groups:
+ 

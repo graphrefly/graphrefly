@@ -1,0 +1,28 @@
+{
+  "denominator": 2,
+  "accepted": 1,
+  "submitted": 2,
+  "incomplete": 0,
+  "notRun": 0,
+  "formalReady": false,
+  "runtimeBehaviorVerified": false,
+  "interpretation": "Two exposed-task Graph-led development regression; frozen compiler/consumer plus original six criteria; root static review is separate from participant but not blind or independent of harness authorship; no runtime behavior proof",
+  "rows": [
+    {
+      "sampleId": "candidate-entry-01",
+      "taskId": "report-node-version-metadata",
+      "status": "accepted-candidate-session",
+      "accepted": true,
+      "submitted": true,
+      "reviewArtifact": "candidate-entry-01.review-verified.json"
+    },
+    {
+      "sampleId": "candidate-entry-02",
+      "taskId": "consume-business-results",
+      "status": "compile-failed",
+      "accepted": false,
+      "submitted": true,
+      "reviewArtifact": "candidate-entry-02.review-verified.json"
+    }
+  ]
+}

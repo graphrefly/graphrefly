@@ -1,0 +1,481 @@
+$ python3 scripts/check-causal-lint-evidence.py && biome check . && tsx scripts/check-no-raw-async.ts && tsx scripts/check-typecheck.ts && pnpm --filter @graphrefly/ts test:typecheck
+{"archives": 28, "currentQualified": false, "files": 323, "kind": "lint-frozen-integrity"}
+docs/design/causal-cost-investigation/comparison-proof/count-lint-v1.mjs:31:13 lint/style/useTemplate  FIXABLE  ━━━━━━━━━━
+
+  i Template literals are preferred over string concatenation.
+  
+    29 │ 			for (const step of scenario.steps) {
+    30 │ 				run.send(step);
+  > 31 │ 				capture("initial-" + step.lane);
+       │ 				        ^^^^^^^^^^^^^^^^^^^^^^
+    32 │ 			}
+    33 │ 			const before = mod.graphSnapshot(run);
+  
+  i Unsafe fix: Use a template literal.
+  
+    29 29 │   			for (const step of scenario.steps) {
+    30 30 │   				run.send(step);
+    31    │ - → → → → capture("initial-"·+·step.lane);
+       31 │ + → → → → capture(`initial-${step.lane}`);
+    32 32 │   			}
+    33 33 │   			const before = mod.graphSnapshot(run);
+  
+
+docs/design/causal-cost-investigation/comparison-proof/count-lint-v1.mjs:65:2 lint/style/useTemplate  FIXABLE  ━━━━━━━━━━
+
+  i Template literals are preferred over string concatenation.
+  
+    63 │ writeFileSync(
+    64 │ 	path.join(out, "counts.json"),
+  > 65 │ 	JSON.stringify(
+       │ 	^^^^^^^^^^^^^^^
+  > 66 │ 		{
+        ...
+  > 76 │ 		2,
+  > 77 │ 	) + "\n",
+       │ 	^^^^^^^^
+    78 │ );
+    79 │ 
+  
+  i Unsafe fix: Use a template literal.
+  
+    63 63 │   writeFileSync(
+    64 64 │   	path.join(out, "counts.json"),
+    65    │ - → JSON.stringify(
+       65 │ + → `${JSON.stringify(
+    66 66 │   		{
+    67 67 │   			passed: true,
+    ····· │ 
+    75 75 │   		null,
+    76 76 │   		2,
+    77    │ - → )·+·"\n",
+       77 │ + → )}\n`,
+    78 78 │   );
+    79 79 │   
+  
+
+docs/design/causal-cost-investigation/comparison-proof/remaining-lint-v1.mjs:17:57 lint/style/useTemplate  FIXABLE  ━━━━━━━━━━
+
+  i Template literals are preferred over string concatenation.
+  
+    15 │ 	const entry = { phase, stats: mod.__take() };
+    16 │ 	phases.push(entry);
+  > 17 │ 	appendFileSync(path.join(out, "partial-counts.jsonl"), JSON.stringify(entry) + "\n");
+       │ 	                                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    18 │ }
+    19 │ try {
+  
+  i Unsafe fix: Use a template literal.
+  
+    15 15 │   	const entry = { phase, stats: mod.__take() };
+    16 16 │   	phases.push(entry);
+    17    │ - → appendFileSync(path.join(out,·"partial-counts.jsonl"),·JSON.stringify(entry)·+·"\n");
+       17 │ + → appendFileSync(path.join(out,·"partial-counts.jsonl"),·`${JSON.stringify(entry)}\n`);
+    18 18 │   }
+    19 19 │   try {
+  
+
+docs/design/causal-cost-investigation/comparison-proof/remaining-lint-v1.mjs:24:11 lint/style/useTemplate  FIXABLE  ━━━━━━━━━━
+
+  i Template literals are preferred over string concatenation.
+  
+    22 │ 	for (const step of scenario.steps) {
+    23 │ 		run.send(step);
+  > 24 │ 		capture("initial-" + step.lane);
+       │ 		        ^^^^^^^^^^^^^^^^^^^^^^
+    25 │ 	}
+    26 │ 	assert.deepEqual(mod.graphSnapshot(run), expected);
+  
+  i Unsafe fix: Use a template literal.
+  
+    22 22 │   	for (const step of scenario.steps) {
+    23 23 │   		run.send(step);
+    24    │ - → → capture("initial-"·+·step.lane);
+       24 │ + → → capture(`initial-${step.lane}`);
+    25 25 │   	}
+    26 26 │   	assert.deepEqual(mod.graphSnapshot(run), expected);
+  
+
+docs/design/causal-cost-investigation/comparison-proof/remaining-lint-v1.mjs:46:3 lint/style/useTemplate  FIXABLE  ━━━━━━━━━━
+
+  i Template literals are preferred over string concatenation.
+  
+    44 │ 	writeFileSync(
+    45 │ 		path.join(out, "remaining-result.json"),
+  > 46 │ 		JSON.stringify(
+       │ 		^^^^^^^^^^^^^^^
+  > 47 │ 			{
+        ...
+  > 56 │ 			2,
+  > 57 │ 		) + "\n",
+       │ 		^^^^^^^^
+    58 │ 	);
+    59 │ } finally {
+  
+  i Unsafe fix: Use a template literal.
+  
+    44 44 │   	writeFileSync(
+    45 45 │   		path.join(out, "remaining-result.json"),
+    46    │ - → → JSON.stringify(
+       46 │ + → → `${JSON.stringify(
+    47 47 │   			{
+    48 48 │   				passed: true,
+    ····· │ 
+    55 55 │   			null,
+    56 56 │   			2,
+    57    │ - → → )·+·"\n",
+       57 │ + → → )}\n`,
+    58 58 │   	);
+    59 59 │   } finally {
+  
+
+docs/design/causal-cost-investigation/dependency-comparison-tools/build-lint-v1.mjs:55:40 lint/style/useTemplate  FIXABLE  ━━━━━━━━━━
+
+  i Template literals are preferred over string concatenation.
+  
+    53 │ 							`unexpected external ${args.path}`,
+    54 │ 						);
+  > 55 │ 						if (file.endsWith(".js")) file = file.slice(0, -3) + ".ts";
+       │ 						                                 ^^^^^^^^^^^^^^^^^^^^^^^^^
+    56 │ 						assert.ok(!file.startsWith("../") && !path.isAbsolute(file), file);
+    57 │ 						return { path: file, namespace: "snapshot" };
+  
+  i Unsafe fix: Use a template literal.
+  
+     53  53 │   							`unexpected external ${args.path}`,
+     54  54 │   						);
+     55     │ - → → → → → → if·(file.endsWith(".js"))·file·=·file.slice(0,·-3)·+·".ts";
+         55 │ + → → → → → → if·(file.endsWith(".js"))·file·=·`${file.slice(0,·-3)}.ts`;
+     56  56 │   						assert.ok(!file.startsWith("../") && !path.isAbsolute(file), file);
+     57  57 │   						return { path: file, namespace: "snapshot" };
+  
+
+docs/design/causal-cost-investigation/dependency-comparison-tools/build-lint-v1.mjs:78:9 lint/style/useTemplate  FIXABLE  ━━━━━━━━━━
+
+  i Template literals are preferred over string concatenation.
+  
+    76 │ 							content = content.replace(
+    77 │ 								target,
+  > 78 │ 								target + "\n\t\t\texpected: expectedSnapshot(c.plain),",
+       │ 								^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    79 │ 							);
+    80 │ 						}
+  
+  i Unsafe fix: Use a template literal.
+  
+     76  76 │   							content = content.replace(
+     77  77 │   								target,
+     78     │ - → → → → → → → → target·+·"\n\t\t\texpected:·expectedSnapshot(c.plain),",
+         78 │ + → → → → → → → → `${target}\n\t\t\texpected:·expectedSnapshot(c.plain),`,
+     79  79 │   							);
+     80  80 │   						}
+  
+
+docs/design/causal-cost-investigation/implementation-preparation/probe-lint-v1.mjs:68:21 lint/style/useTemplate  FIXABLE  ━━━━━━━━━━
+
+  i Template literals are preferred over string concatenation.
+  
+    66 │ } finally {
+    67 │ 	if (run && !cleaned) run.cleanup();
+  > 68 │ 	writeFileSync(out, JSON.stringify(result, null, 2) + "\n");
+       │ 	                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    69 │ }
+    70 │ 
+  
+  i Unsafe fix: Use a template literal.
+  
+    66 66 │   } finally {
+    67 67 │   	if (run && !cleaned) run.cleanup();
+    68    │ - → writeFileSync(out,·JSON.stringify(result,·null,·2)·+·"\n");
+       68 │ + → writeFileSync(out,·`${JSON.stringify(result,·null,·2)}\n`);
+    69 69 │   }
+    70 70 │   
+  
+
+docs/design/causal-cost-investigation/performance-comparison/build-lint-v1.mjs:55:40 lint/style/useTemplate  FIXABLE  ━━━━━━━━━━
+
+  i Template literals are preferred over string concatenation.
+  
+    53 │ 							`unexpected external ${args.path}`,
+    54 │ 						);
+  > 55 │ 						if (file.endsWith(".js")) file = file.slice(0, -3) + ".ts";
+       │ 						                                 ^^^^^^^^^^^^^^^^^^^^^^^^^
+    56 │ 						assert.ok(!file.startsWith("../") && !path.isAbsolute(file), file);
+    57 │ 						return { path: file, namespace: "snapshot" };
+  
+  i Unsafe fix: Use a template literal.
+  
+     53  53 │   							`unexpected external ${args.path}`,
+     54  54 │   						);
+     55     │ - → → → → → → if·(file.endsWith(".js"))·file·=·file.slice(0,·-3)·+·".ts";
+         55 │ + → → → → → → if·(file.endsWith(".js"))·file·=·`${file.slice(0,·-3)}.ts`;
+     56  56 │   						assert.ok(!file.startsWith("../") && !path.isAbsolute(file), file);
+     57  57 │   						return { path: file, namespace: "snapshot" };
+  
+
+docs/design/causal-cost-investigation/performance-comparison/build-lint-v1.mjs:78:9 lint/style/useTemplate  FIXABLE  ━━━━━━━━━━
+
+  i Template literals are preferred over string concatenation.
+  
+    76 │ 							content = content.replace(
+    77 │ 								target,
+  > 78 │ 								target + "\n\t\t\texpected: expectedSnapshot(c.plain),",
+       │ 								^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    79 │ 							);
+    80 │ 						}
+  
+  i Unsafe fix: Use a template literal.
+  
+     76  76 │   							content = content.replace(
+     77  77 │   								target,
+     78     │ - → → → → → → → → target·+·"\n\t\t\texpected:·expectedSnapshot(c.plain),",
+         78 │ + → → → → → → → → `${target}\n\t\t\texpected:·expectedSnapshot(c.plain),`,
+     79  79 │   							);
+     80  80 │   						}
+  
+
+docs/design/causal-cost-investigation/single-version-rss-tools/test_child-lint-v1.mjs:65:17 lint/style/useTemplate  FIXABLE  ━━━━━━━━━━
+
+  i Template literals are preferred over string concatenation.
+  
+    63 │ 		writeFileSync(e, JSON.stringify(entry));
+    64 │ 		const r = spawnSync(process.execPath, [path.join(root, "tools/child-lint-v1.mjs"), e], {
+  > 65 │ 			env: { PATH: path.dirname(process.execPath) + ":/usr/bin:/bin", LANG: "C", TZ: "UTC" },
+       │ 			             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    66 │ 			encoding: "utf8",
+    67 │ 			timeout: 10000,
+  
+  i Unsafe fix: Use a template literal.
+  
+    63 63 │   		writeFileSync(e, JSON.stringify(entry));
+    64 64 │   		const r = spawnSync(process.execPath, [path.join(root, "tools/child-lint-v1.mjs"), e], {
+    65    │ - → → → env:·{·PATH:·path.dirname(process.execPath)·+·":/usr/bin:/bin",·LANG:·"C",·TZ:·"UTC"·},
+       65 │ + → → → env:·{·PATH:·`${path.dirname(process.execPath)}:/usr/bin:/bin`,·LANG:·"C",·TZ:·"UTC"·},
+    66 66 │   			encoding: "utf8",
+    67 67 │   			timeout: 10000,
+  
+
+docs/design/causal-cost-investigation/single-version-rss-v2-tools/test_child-lint-v1.mjs:65:17 lint/style/useTemplate  FIXABLE  ━━━━━━━━━━
+
+  i Template literals are preferred over string concatenation.
+  
+    63 │ 		writeFileSync(e, JSON.stringify(entry));
+    64 │ 		const r = spawnSync(process.execPath, [path.join(root, "tools/child-lint-v1.mjs"), e], {
+  > 65 │ 			env: { PATH: path.dirname(process.execPath) + ":/usr/bin:/bin", LANG: "C", TZ: "UTC" },
+       │ 			             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    66 │ 			encoding: "utf8",
+    67 │ 			timeout: 10000,
+  
+  i Unsafe fix: Use a template literal.
+  
+    63 63 │   		writeFileSync(e, JSON.stringify(entry));
+    64 64 │   		const r = spawnSync(process.execPath, [path.join(root, "tools/child-lint-v1.mjs"), e], {
+    65    │ - → → → env:·{·PATH:·path.dirname(process.execPath)·+·":/usr/bin:/bin",·LANG:·"C",·TZ:·"UTC"·},
+       65 │ + → → → env:·{·PATH:·`${path.dirname(process.execPath)}:/usr/bin:/bin`,·LANG:·"C",·TZ:·"UTC"·},
+    66 66 │   			encoding: "utf8",
+    67 67 │   			timeout: 10000,
+  
+
+docs/design/causal-cost-investigation/single-version-tools/test_child-lint-v1.mjs:65:17 lint/style/useTemplate  FIXABLE  ━━━━━━━━━━
+
+  i Template literals are preferred over string concatenation.
+  
+    63 │ 		writeFileSync(e, JSON.stringify(entry));
+    64 │ 		const r = spawnSync(process.execPath, [path.join(root, "tools/child-lint-v1.mjs"), e], {
+  > 65 │ 			env: { PATH: path.dirname(process.execPath) + ":/usr/bin:/bin", LANG: "C", TZ: "UTC" },
+       │ 			             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    66 │ 			encoding: "utf8",
+    67 │ 			timeout: 10000,
+  
+  i Unsafe fix: Use a template literal.
+  
+    63 63 │   		writeFileSync(e, JSON.stringify(entry));
+    64 64 │   		const r = spawnSync(process.execPath, [path.join(root, "tools/child-lint-v1.mjs"), e], {
+    65    │ - → → → env:·{·PATH:·path.dirname(process.execPath)·+·":/usr/bin:/bin",·LANG:·"C",·TZ:·"UTC"·},
+       65 │ + → → → env:·{·PATH:·`${path.dirname(process.execPath)}:/usr/bin:/bin`,·LANG:·"C",·TZ:·"UTC"·},
+    66 66 │   			encoding: "utf8",
+    67 67 │   			timeout: 10000,
+  
+
+docs/design/causal-cpu-wall-retained-localization-v1/verify-lint-v1.mjs:51:2 lint/style/useTemplate  FIXABLE  ━━━━━━━━━━
+
+  i Template literals are preferred over string concatenation.
+  
+    49 │ writeFileSync(
+    50 │ 	`${doc}/verification-lint-v1.json`,
+  > 51 │ 	JSON.stringify(
+       │ 	^^^^^^^^^^^^^^^
+  > 52 │ 		{
+        ...
+  > 61 │ 		"\t",
+  > 62 │ 	) + "\n",
+       │ 	^^^^^^^^
+    63 │ );
+    64 │ console.log("RETAINED_GAP_VERIFICATION_DONE", checked);
+  
+  i Unsafe fix: Use a template literal.
+  
+    49 49 │   writeFileSync(
+    50 50 │   	`${doc}/verification-lint-v1.json`,
+    51    │ - → JSON.stringify(
+       51 │ + → `${JSON.stringify(
+    52 52 │   		{
+    53 53 │   			passed: true,
+    ····· │ 
+    60 60 │   		null,
+    61 61 │   		"\t",
+    62    │ - → )·+·"\n",
+       62 │ + → )}\n`,
+    63 63 │   );
+    64 64 │   console.log("RETAINED_GAP_VERIFICATION_DONE", checked);
+  
+
+docs/design/causal-currentness-query-optimization/comparison/tool.mjs:17:34 lint/style/useTemplate  FIXABLE  ━━━━━━━━━━
+
+  i Template literals are preferred over string concatenation.
+  
+    15 │ const read = (n) => JSON.parse(readFileSync(resolve(root, n), "utf8"));
+    16 │ const put = (n, x) =>
+  > 17 │ 	writeFileSync(resolve(root, n), JSON.stringify(x, null, 2) + "\n", { flag: "wx" });
+       │ 	                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    18 │ if (mode === "prepare") {
+    19 │ 	mkdirSync(root, { recursive: false });
+  
+  i Unsafe fix: Use a template literal.
+  
+     15  15 │   const read = (n) => JSON.parse(readFileSync(resolve(root, n), "utf8"));
+     16  16 │   const put = (n, x) =>
+     17     │ - → writeFileSync(resolve(root,·n),·JSON.stringify(x,·null,·2)·+·"\n",·{·flag:·"wx"·});
+         17 │ + → writeFileSync(resolve(root,·n),·`${JSON.stringify(x,·null,·2)}\n`,·{·flag:·"wx"·});
+     18  18 │   if (mode === "prepare") {
+     19  19 │   	mkdirSync(root, { recursive: false });
+  
+
+docs/design/causal-currentness-query-optimization/comparison/tool.mjs:54:31 lint/style/useTemplate  FIXABLE  ━━━━━━━━━━
+
+  i Template literals are preferred over string concatenation.
+  
+    52 │ 		});
+    53 │ 		const bytes = b.outputFiles[0].contents;
+  > 54 │ 		writeFileSync(resolve(root, variant + ".mjs"), bytes, { flag: "wx" });
+       │ 		                            ^^^^^^^^^^^^^^^^
+    55 │ 		bundles[variant] = sha(bytes);
+    56 │ 		for (const name of Object.keys(b.metafile.inputs)) sources[name] = sha(readFileSync(name));
+  
+  i Unsafe fix: Use a template literal.
+  
+     52  52 │   		});
+     53  53 │   		const bytes = b.outputFiles[0].contents;
+     54     │ - → → writeFileSync(resolve(root,·variant·+·".mjs"),·bytes,·{·flag:·"wx"·});
+         54 │ + → → writeFileSync(resolve(root,·`${variant}.mjs`),·bytes,·{·flag:·"wx"·});
+     55  55 │   		bundles[variant] = sha(bytes);
+     56  56 │   		for (const name of Object.keys(b.metafile.inputs)) sources[name] = sha(readFileSync(name));
+  
+
+docs/design/causal-currentness-query-optimization/comparison/tool.mjs:145:47 lint/style/useTemplate  FIXABLE  ━━━━━━━━━━
+
+  i Template literals are preferred over string concatenation.
+  
+    143 │ 	for (let position = 0; position < job.order.length; position++) {
+    144 │ 		const variant = job.order[position];
+  > 145 │ 		assert.equal(sha(readFileSync(resolve(root, variant + ".mjs"))), f.bundles[variant]);
+        │ 		                                            ^^^^^^^^^^^^^^^^
+    146 │ 		const worker = await import(pathToFileURL(resolve(root, variant + ".mjs")).href);
+    147 │ 		assert.equal(worker.preflight(row, input).passed, true);
+  
+  i Unsafe fix: Use a template literal.
+  
+    143 143 │   	for (let position = 0; position < job.order.length; position++) {
+    144 144 │   		const variant = job.order[position];
+    145     │ - → → assert.equal(sha(readFileSync(resolve(root,·variant·+·".mjs"))),·f.bundles[variant]);
+        145 │ + → → assert.equal(sha(readFileSync(resolve(root,·`${variant}.mjs`))),·f.bundles[variant]);
+    146 146 │   		const worker = await import(pathToFileURL(resolve(root, variant + ".mjs")).href);
+    147 147 │   		assert.equal(worker.preflight(row, input).passed, true);
+  
+
+docs/design/causal-currentness-query-optimization/comparison/tool.mjs:146:59 lint/style/useTemplate  FIXABLE  ━━━━━━━━━━
+
+  i Template literals are preferred over string concatenation.
+  
+    144 │ 		const variant = job.order[position];
+    145 │ 		assert.equal(sha(readFileSync(resolve(root, variant + ".mjs"))), f.bundles[variant]);
+  > 146 │ 		const worker = await import(pathToFileURL(resolve(root, variant + ".mjs")).href);
+        │ 		                                                        ^^^^^^^^^^^^^^^^
+    147 │ 		assert.equal(worker.preflight(row, input).passed, true);
+    148 │ 		const run = worker.measurementArm("candidate", "off");
+  
+  i Unsafe fix: Use a template literal.
+  
+    144 144 │   		const variant = job.order[position];
+    145 145 │   		assert.equal(sha(readFileSync(resolve(root, variant + ".mjs"))), f.bundles[variant]);
+    146     │ - → → const·worker·=·await·import(pathToFileURL(resolve(root,·variant·+·".mjs")).href);
+        146 │ + → → const·worker·=·await·import(pathToFileURL(resolve(root,·`${variant}.mjs`)).href);
+    147 147 │   		assert.equal(worker.preflight(row, input).passed, true);
+    148 148 │   		const run = worker.measurementArm("candidate", "off");
+  
+
+docs/design/causal-currentness-query-optimization/cpu-tool.mjs:52:3 lint/style/useTemplate  FIXABLE  ━━━━━━━━━━
+
+  i Template literals are preferred over string concatenation.
+  
+    50 │ 	writeFileSync(
+    51 │ 		output,
+  > 52 │ 		JSON.stringify({
+       │ 		^^^^^^^^^^^^^^^^
+  > 53 │ 			kind: "fixed-action-cpu-attribution",
+        ...
+  > 61 │ 			formalQualification: false,
+  > 62 │ 		}) + "\n",
+       │ 		^^^^^^^^^
+    63 │ 		{ flag: "wx" },
+    64 │ 	);
+  
+  i Unsafe fix: Use a template literal.
+  
+    50 50 │   	writeFileSync(
+    51 51 │   		output,
+    52    │ - → → JSON.stringify({
+       52 │ + → → `${JSON.stringify({
+    53 53 │   			kind: "fixed-action-cpu-attribution",
+    54 54 │   			row,
+    ····· │ 
+    60 60 │   			profile,
+    61 61 │   			formalQualification: false,
+    62    │ - → → })·+·"\n",
+       62 │ + → → })}\n`,
+    63 63 │   		{ flag: "wx" },
+    64 64 │   	);
+  
+
+docs/design/causal-currentness-query-optimization/comparison/source/scripts/fixtures/spending-preset-harness.ts:25:13 lint/correctness/noUnusedImports  FIXABLE  ━━━━━━━━━━
+
+  ! This import is unused.
+  
+    23 │ } from "../../packages/ts/src/graph/construction-scope.js";
+    24 │ import { Graph } from "../../packages/ts/src/graph/graph.js";
+  > 25 │ import type { Node } from "../../packages/ts/src/node/node.js";
+       │             ^^^^^^^^
+    26 │ import { checkpointStateOfNode } from "../../packages/ts/src/node/runtime-accessors.js";
+    27 │ import type {
+  
+  i Unused imports might be the result of an incomplete refactoring.
+  
+  i Unsafe fix: Remove the unused imports.
+  
+     23  23 │   } from "../../packages/ts/src/graph/construction-scope.js";
+     24  24 │   import { Graph } from "../../packages/ts/src/graph/graph.js";
+     25     │ - import·type·{·Node·}·from·"../../packages/ts/src/node/node.js";
+     26  25 │   import { checkpointStateOfNode } from "../../packages/ts/src/node/runtime-accessors.js";
+     27  26 │   import type {
+  
+
+The number of diagnostics exceeds the limit allowed. Use --max-diagnostics to increase it.
+Diagnostics not shown: 20.
+Checked 1452 files in 2s. No fixes applied.
+Found 6 warnings.
+Found 34 infos.
+check-no-raw-async: 284 files checked, no raw async outside the sanctioned boundary (26 whole-file allowlisted, 9 pattern-scoped).
+typecheck: spending-alerts example (examples/spending-alerts/tsconfig.json) — clean
+typecheck: keyed-rate-limit example (examples/basic/keyed-rate-limit/tsconfig.json) — clean
+typecheck: 2 package(s) checked, all clean.
+$ tsc --noEmit -p tsconfig.tests.json

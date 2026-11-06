@@ -1,0 +1,86 @@
+{
+  "kind": "B121-offline-harness-diagnostics",
+  "sessions": [
+    {
+      "id": "agent-01",
+      "arm": "G",
+      "requests": 8,
+      "estimatedInputTokens": 55400,
+      "actualInputTokens": 39373,
+      "cumulativeHistoryBytes": 142181,
+      "stops": [
+        {
+          "reason": "input-estimate-exceeds-remaining",
+          "actualInputTokens": 39373,
+          "estimatedNextInputTokens": 10394,
+          "remainingInputTokens": 8627,
+          "hypotheticalNextActualInputTokens": null
+        }
+      ],
+      "failure": null,
+      "submittedAnswers": 6,
+      "entryStatus": "missing",
+      "estimateToActualRatio": 1.4070555964747415
+    },
+    {
+      "id": "agent-02",
+      "arm": "G",
+      "requests": 5,
+      "estimatedInputTokens": 38777,
+      "actualInputTokens": 27796,
+      "cumulativeHistoryBytes": 101296,
+      "stops": [
+        {
+          "reason": "input-estimate-exceeds-remaining",
+          "actualInputTokens": 27796,
+          "estimatedNextInputTokens": 20855,
+          "remainingInputTokens": 20204,
+          "hypotheticalNextActualInputTokens": null
+        }
+      ],
+      "failure": null,
+      "submittedAnswers": 16,
+      "entryStatus": "missing",
+      "estimateToActualRatio": 1.3950568427111814
+    },
+    {
+      "id": "agent-03",
+      "arm": "G",
+      "requests": 6,
+      "estimatedInputTokens": 47760,
+      "actualInputTokens": 34017,
+      "cumulativeHistoryBytes": 125237,
+      "stops": [
+        {
+          "reason": "input-estimate-exceeds-remaining",
+          "actualInputTokens": 34017,
+          "estimatedNextInputTokens": 19078,
+          "remainingInputTokens": 13983,
+          "hypotheticalNextActualInputTokens": null
+        }
+      ],
+      "failure": null,
+      "submittedAnswers": 12,
+      "entryStatus": "missing",
+      "estimateToActualRatio": 1.4040038804127348
+    },
+    {
+      "id": "agent-04",
+      "arm": "P",
+      "requests": 1,
+      "estimatedInputTokens": 1003,
+      "actualInputTokens": 697,
+      "cumulativeHistoryBytes": 2,
+      "stops": [],
+      "failure": "invalid broker operation schema",
+      "submittedAnswers": 0,
+      "entryStatus": "not-applicable",
+      "estimateToActualRatio": 1.4390243902439024
+    }
+  ],
+  "limitations": [
+    "Byte counts describe serialized history, not token counts.",
+    "Estimate ratios describe executed requests only; the actual cost of a blocked request is unknown.",
+    "A successful transport does not establish library usability."
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "suite": {
+    "source": "../offline/verification.json",
+    "passed": 203,
+    "failed": 0,
+    "skipped": 0,
+    "rerunThisTurn": false
+  },
+  "journalRowsVerified": 90,
+  "codeBindingsVerified": 33,
+  "materialArtifactsVerified": 5,
+  "feedbackRequestsVerified": 6,
+  "plannedSamples": 4,
+  "startedSamples": 1,
+  "submissions": 0,
+  "providerAttemptFailures": 1,
+  "modelSessionReruns": 0,
+  "independentReview": false
+}

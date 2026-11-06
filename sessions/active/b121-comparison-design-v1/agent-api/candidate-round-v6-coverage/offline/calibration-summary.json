@@ -1,0 +1,16 @@
+{
+  "kind": "offline-rubric-calibration",
+  "caseCount": 11,
+  "positiveControls": 2,
+  "negativeControls": 9,
+  "compilerPasses": 11,
+  "blindJudgmentsMatchPredeclaredExpected": true,
+  "secondIndependentJudgmentsMatch": true,
+  "independentReviewLenses": 3,
+  "remainingFindings": [],
+  "generationCalls": 0,
+  "participantSubmissions": 0,
+  "runtimeBehaviorVerified": false,
+  "formalReady": false,
+  "limitations": "Author-written static calibration; not model performance, unseen holdout or executable behavior testing."
+}

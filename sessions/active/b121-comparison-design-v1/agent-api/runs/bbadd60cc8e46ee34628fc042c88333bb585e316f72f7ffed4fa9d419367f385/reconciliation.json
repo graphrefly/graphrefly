@@ -1,0 +1,61 @@
+{
+  "kind": "B121-live-run-reconciliation",
+  "at": "2026-09-15T04:58:56.336Z",
+  "manifestSHA": "bbadd60cc8e46ee34628fc042c88333bb585e316f72f7ffed4fa9d419367f385",
+  "account": {
+    "limitUSD": 2,
+    "reset": null,
+    "usageUSD": 0.019957336,
+    "remainingUSD": 1.980042664,
+    "expiresAt": "2026-09-16T01:17:11.542Z",
+    "deltaUSD": 0.017579304
+  },
+  "guardrail": {
+    "limitUSD": 2,
+    "period": "monthly",
+    "provider": "together",
+    "model": "deepseek/deepseek-v4.1-flash"
+  },
+  "requests": {
+    "count": 24,
+    "httpStatuses": [
+      200
+    ],
+    "retries": 0,
+    "latencyMs": {
+      "min": 439,
+      "median": 1844.5,
+      "p95": 39170,
+      "max": 48183
+    },
+    "measure": "Full response wall time; includes generation, not TTFT"
+  },
+  "result": {
+    "answers": 34,
+    "entries": 0,
+    "started": 4,
+    "completed": 0,
+    "unrun": 8,
+    "failure": "invalid broker operation schema"
+  },
+  "diagnosis": {
+    "lastModelOperation": {
+      "tool": "read_file",
+      "path": "README.md"
+    },
+    "requiredOperation": {
+      "op": "read",
+      "path": "orientation.json"
+    },
+    "priorSessionStops": "Input token admission forecast exceeded remaining original 48000-token session allowance."
+  },
+  "subsequentRunAuthorized": false,
+  "latestAccountCheck": {
+    "at": "2026-09-15T04:59:43.473Z",
+    "usageUSD": 0.022818016,
+    "remainingUSD": 1.977181984,
+    "deltaUSD": 0.020439984
+  },
+  "billingReconciled": true,
+  "billingNote": "Account delta matches response-reported charges"
+}

@@ -1,0 +1,40 @@
+{
+  "denominator": 3,
+  "accepted": 1,
+  "submitted": 1,
+  "incomplete": 1,
+  "notRun": 1,
+  "formalReady": false,
+  "runtimeBehaviorVerified": false,
+  "interpretation": "Three new API coverage tasks; first evaluated-model attempt; frozen consumer compilation plus nine static criteria; not independently authored or runtime behavior verification",
+  "rows": [
+    {
+      "sampleId": "candidate-entry-01",
+      "taskId": "export-structure-only",
+      "status": "accepted-candidate-session",
+      "accepted": true,
+      "submitted": true,
+      "reviewArtifact": "candidate-entry-01.review-verified.json"
+    },
+    {
+      "sampleId": "candidate-entry-02",
+      "taskId": "report-node-version-metadata",
+      "status": "incomplete",
+      "accepted": false,
+      "submitted": false,
+      "reviewArtifact": null
+    },
+    {
+      "sampleId": "candidate-entry-03",
+      "taskId": "consume-business-results",
+      "role": "application-boundary",
+      "packetSHA256": "461bfc41ca60c45bd134ed28de81b7026f8badca699533bc7ca05373d733c864",
+      "status": "not-run",
+      "reason": "provider cost/call ceiling",
+      "assessmentSHA256": null,
+      "accepted": false,
+      "submitted": false,
+      "reviewArtifact": null
+    }
+  ]
+}

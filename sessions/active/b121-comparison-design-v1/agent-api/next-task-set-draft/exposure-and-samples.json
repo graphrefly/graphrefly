@@ -1,0 +1,36 @@
+{
+  "status": "offline-qualified-not-live-authorized",
+  "formalReady": false,
+  "work": "graphrefly:B121",
+  "author": "Current Codex task, also author/developer of prior B121 harness and exposed tasks",
+  "exposure": "Author saw old tasks/answers and frozen source. These prompts are newly authored and have not been sent to the evaluated model in this preparation. They are not independently authored or guaranteed absent from model training. No candidate solution generated. Reviewer rubric is outside participant material. Subsequent preparation generated 10 author-written calibration fixtures, never sent to the evaluated model. Separate-context same-family reviewers examined rubric/fixtures and campaign edges; no independence from model training is claimed.",
+  "participantCalls": 0,
+  "liveAuthorization": false,
+  "samples": [
+    {
+      "sampleId": "candidate-entry-01",
+      "taskId": "export-structure-only",
+      "session": "independent",
+      "replicates": 1
+    },
+    {
+      "sampleId": "candidate-entry-02",
+      "taskId": "report-node-version-metadata",
+      "session": "independent",
+      "replicates": 1
+    },
+    {
+      "sampleId": "candidate-entry-03",
+      "taskId": "consume-business-results",
+      "session": "independent",
+      "replicates": 1
+    }
+  ],
+  "stop": "One initial submission or terminal failure per sample; retained denominator 3, no replacement until pass. Transport retries only as separately frozen.",
+  "remaining": [
+    "Refresh provider/key pricing and budget evidence without releasing historical reservations",
+    "Bind explicit one-shot execution authorization to the refreshed three-sample manifest before generation"
+  ],
+  "calibrationSolutions": 10,
+  "reviewEvidence": "review-notes.md"
+}

@@ -1,0 +1,80 @@
+{
+  "generationCalls": 0,
+  "metadataRequests": 1,
+  "snapshot": {
+    "checkedAt": "2026-09-18T03:43:35.195342+00:00",
+    "endpoint": "GET /api/v1/key",
+    "generationCalls": 0,
+    "metadataRequests": 1,
+    "data": {
+      "usage": 0.775756572,
+      "limit": 1.97,
+      "limit_remaining": 1.194243428,
+      "limit_reset": null
+    }
+  },
+  "retiredKeyReportedUsageUSD": 0.022818016,
+  "reportedUsageUSD": 0.798574588,
+  "unresolvedReservationsUSD": 0.9541632,
+  "reservations": [
+    {
+      "journal": "sessions/active/b121-comparison-design-v1/agent-api/runs/a47fc6f9b79f50d6348eb8787afcf5e15d364f58cdf401661dd5b860f5294c30/journal.jsonl",
+      "rowIndex": 17,
+      "at": "2026-09-16T07:10:42.223Z",
+      "eventHash": "761fee0ea17c8f1c0835f6bc22f9a307a83eeab0ff17bc787fc266dac8e57a84",
+      "request": {
+        "index": 16,
+        "requestHash": "ddbcf12c55e618f4924d56034b87a546c068c28b36fbe7340d74944f241ac238",
+        "reserveUSD": 0.3151872,
+        "attempt": 1
+      },
+      "httpStatus": 503,
+      "generationId": "gen-1789542638-UIu9R5tKA63s9Sk8Uuwo",
+      "requestId": null,
+      "reportedCost": null,
+      "failureKind": null,
+      "billing": "unknown-reservation-retained",
+      "error": "OpenRouter HTTP response failed"
+    },
+    {
+      "journal": "sessions/active/b121-comparison-design-v1/agent-api/runs/ec081c7e1b89bf9b2997cafb0d7f86f456af8d7e39813f05eae56d98a69736a2--authorized-r1/journal.jsonl",
+      "rowIndex": 1250,
+      "at": "2026-09-16T07:19:29.204Z",
+      "eventHash": "aa728f93ab36f1ff6e8e9c5229c6e25f1e31515378924244a10be2216c9250a9",
+      "request": {
+        "index": 1249,
+        "requestHash": "179dc8b714e9edea1b7f9c4b18c562b9d07887607ab78a13ec1b139ba998accd",
+        "reserveUSD": 0.319488,
+        "attempt": 1
+      },
+      "httpStatus": null,
+      "generationId": null,
+      "requestId": null,
+      "reportedCost": null,
+      "failureKind": null,
+      "billing": "unknown-reservation-retained",
+      "error": "fetch failed"
+    },
+    {
+      "journal": "sessions/active/b121-comparison-design-v1/agent-api/runs/ec081c7e1b89bf9b2997cafb0d7f86f456af8d7e39813f05eae56d98a69736a2--authorized-r1/journal.jsonl",
+      "rowIndex": 1863,
+      "at": "2026-09-16T07:21:14.290Z",
+      "eventHash": "ebc9842b140bb1c52f9d9ba55c328850fdbb22e6613a3324eed6210fa3bb8691",
+      "request": {
+        "index": 1862,
+        "requestHash": "9d08d88c00ac244934aabda7076629cdbd61d15394934de9749f4ab762ac0aa7",
+        "reserveUSD": 0.319488,
+        "attempt": 1
+      },
+      "httpStatus": null,
+      "generationId": null,
+      "requestId": null,
+      "reportedCost": null,
+      "failureKind": null,
+      "billing": "unknown-reservation-retained",
+      "error": "fetch failed"
+    }
+  ],
+  "releaseUSD": 0,
+  "reason": "The503 response contains a generation ID in its HTTP header, although the old envelope requestId and response-body id are empty. The two network failures have no identifiers. A generation receipt is queried separately; aggregate usage alone cannot settle unknown reservations."
+}

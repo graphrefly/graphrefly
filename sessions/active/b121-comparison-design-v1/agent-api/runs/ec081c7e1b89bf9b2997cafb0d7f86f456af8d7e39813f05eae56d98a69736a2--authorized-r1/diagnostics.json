@@ -1,0 +1,248 @@
+{
+  "kind": "B121-offline-harness-diagnostics",
+  "sessions": [
+    {
+      "id": "agent-01",
+      "arm": "G",
+      "requests": 3,
+      "estimatedInputTokens": 12944,
+      "actualInputTokens": 9928,
+      "cumulativeHistoryBytes": 22116,
+      "stops": [],
+      "failure": "invalid answer value",
+      "submittedAnswers": 3,
+      "entryStatus": "separate-experiment",
+      "estimateToActualRatio": 1.3037872683319904
+    },
+    {
+      "id": "agent-02",
+      "arm": "G",
+      "requests": 19,
+      "estimatedInputTokens": 253481,
+      "actualInputTokens": 195532,
+      "cumulativeHistoryBytes": 654483,
+      "stops": [],
+      "failure": null,
+      "submittedAnswers": 16,
+      "entryStatus": "separate-experiment",
+      "estimateToActualRatio": 1.296365812245566
+    },
+    {
+      "id": "agent-03",
+      "arm": "G",
+      "requests": 7,
+      "estimatedInputTokens": 70543,
+      "actualInputTokens": 54816,
+      "cumulativeHistoryBytes": 172591,
+      "stops": [],
+      "failure": null,
+      "submittedAnswers": 16,
+      "entryStatus": "separate-experiment",
+      "estimateToActualRatio": 1.2869052831290135
+    },
+    {
+      "id": "agent-04",
+      "arm": "P",
+      "requests": 3,
+      "estimatedInputTokens": 12953,
+      "actualInputTokens": 9928,
+      "cumulativeHistoryBytes": 22131,
+      "stops": [],
+      "failure": "invalid broker operation schema",
+      "submittedAnswers": 6,
+      "entryStatus": "not-applicable",
+      "estimateToActualRatio": 1.3046937953263498
+    },
+    {
+      "id": "agent-05",
+      "arm": "P",
+      "requests": 19,
+      "estimatedInputTokens": 255929,
+      "actualInputTokens": 196573,
+      "cumulativeHistoryBytes": 661811,
+      "stops": [],
+      "failure": null,
+      "submittedAnswers": 16,
+      "entryStatus": "not-applicable",
+      "estimateToActualRatio": 1.3019539814725318
+    },
+    {
+      "id": "agent-06",
+      "arm": "G",
+      "requests": 5,
+      "estimatedInputTokens": 41704,
+      "actualInputTokens": 32430,
+      "cumulativeHistoryBytes": 97250,
+      "stops": [],
+      "failure": null,
+      "submittedAnswers": 16,
+      "entryStatus": "separate-experiment",
+      "estimateToActualRatio": 1.2859697810669133
+    },
+    {
+      "id": "agent-07",
+      "arm": "P",
+      "requests": 19,
+      "estimatedInputTokens": 255031,
+      "actualInputTokens": 197996,
+      "cumulativeHistoryBytes": 659222,
+      "stops": [],
+      "failure": null,
+      "submittedAnswers": 16,
+      "entryStatus": "not-applicable",
+      "estimateToActualRatio": 1.2880613749772722
+    },
+    {
+      "id": "agent-08",
+      "arm": "P",
+      "requests": 5,
+      "estimatedInputTokens": 41532,
+      "actualInputTokens": 32310,
+      "cumulativeHistoryBytes": 96738,
+      "stops": [],
+      "failure": null,
+      "submittedAnswers": 16,
+      "entryStatus": "not-applicable",
+      "estimateToActualRatio": 1.285422469823584
+    },
+    {
+      "id": "agent-09",
+      "arm": "G",
+      "requests": 5,
+      "estimatedInputTokens": 41700,
+      "actualInputTokens": 32434,
+      "cumulativeHistoryBytes": 97212,
+      "stops": [],
+      "failure": "invalid broker operation schema",
+      "submittedAnswers": 8,
+      "entryStatus": "separate-experiment",
+      "estimateToActualRatio": 1.2856878584201763
+    },
+    {
+      "id": "agent-10",
+      "arm": "P",
+      "requests": 5,
+      "estimatedInputTokens": 41550,
+      "actualInputTokens": 32326,
+      "cumulativeHistoryBytes": 96760,
+      "stops": [],
+      "failure": null,
+      "submittedAnswers": 16,
+      "entryStatus": "not-applicable",
+      "estimateToActualRatio": 1.2853430674998454
+    },
+    {
+      "id": "agent-11",
+      "arm": "G",
+      "requests": 5,
+      "estimatedInputTokens": 41432,
+      "actualInputTokens": 32298,
+      "cumulativeHistoryBytes": 96406,
+      "stops": [],
+      "failure": null,
+      "submittedAnswers": 16,
+      "entryStatus": "separate-experiment",
+      "estimateToActualRatio": 1.2828038887856834
+    },
+    {
+      "id": "agent-12",
+      "arm": "P",
+      "requests": 5,
+      "estimatedInputTokens": 41693,
+      "actualInputTokens": 32512,
+      "cumulativeHistoryBytes": 97196,
+      "stops": [],
+      "failure": null,
+      "submittedAnswers": 16,
+      "entryStatus": "not-applicable",
+      "estimateToActualRatio": 1.2823880413385826
+    },
+    {
+      "id": "agent-01-entry",
+      "arm": "G",
+      "requests": 28,
+      "estimatedInputTokens": 1124164,
+      "actualInputTokens": 949773,
+      "cumulativeHistoryBytes": 3217823,
+      "stops": [
+        {
+          "reason": "input-estimate-exceeds-remaining",
+          "contextTokens": null,
+          "maxOutputTokens": null,
+          "actualInputTokens": 949773,
+          "estimatedNextInputTokens": 75929,
+          "remainingInputTokens": 50227,
+          "hypotheticalNextActualInputTokens": null
+        }
+      ],
+      "failure": null,
+      "submittedAnswers": 0,
+      "entryStatus": "missing",
+      "estimateToActualRatio": 1.183613347610429
+    },
+    {
+      "id": "agent-02-entry",
+      "arm": "G",
+      "requests": 34,
+      "estimatedInputTokens": 1147734,
+      "actualInputTokens": 951158,
+      "cumulativeHistoryBytes": 3255223,
+      "stops": [
+        {
+          "reason": "input-estimate-exceeds-remaining",
+          "contextTokens": null,
+          "maxOutputTokens": null,
+          "actualInputTokens": 951158,
+          "estimatedNextInputTokens": 62718,
+          "remainingInputTokens": 48842,
+          "hypotheticalNextActualInputTokens": null
+        }
+      ],
+      "failure": null,
+      "submittedAnswers": 0,
+      "entryStatus": "missing",
+      "estimateToActualRatio": 1.2066701851847959
+    },
+    {
+      "id": "agent-03-entry",
+      "arm": "G",
+      "requests": 29,
+      "estimatedInputTokens": 1153506,
+      "actualInputTokens": 970939,
+      "cumulativeHistoryBytes": 3300175,
+      "stops": [
+        {
+          "reason": "input-estimate-exceeds-remaining",
+          "contextTokens": null,
+          "maxOutputTokens": null,
+          "actualInputTokens": 970939,
+          "estimatedNextInputTokens": 77791,
+          "remainingInputTokens": 29061,
+          "hypotheticalNextActualInputTokens": null
+        }
+      ],
+      "failure": null,
+      "submittedAnswers": 0,
+      "entryStatus": "missing",
+      "estimateToActualRatio": 1.18803137993221
+    },
+    {
+      "id": "agent-06-entry",
+      "arm": "G",
+      "requests": 29,
+      "estimatedInputTokens": 828821,
+      "actualInputTokens": 645251,
+      "cumulativeHistoryBytes": 2326262,
+      "stops": [],
+      "failure": "provider cost/call ceiling before retry",
+      "submittedAnswers": 0,
+      "entryStatus": "missing",
+      "estimateToActualRatio": 1.2844939411174876
+    }
+  ],
+  "limitations": [
+    "Byte counts describe serialized history, not token counts.",
+    "Estimate ratios describe executed requests only; the actual cost of a blocked request is unknown.",
+    "A successful transport does not establish library usability."
+  ]
+}

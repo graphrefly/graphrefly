@@ -1,0 +1,32 @@
+{
+  "kind": "B121-agent-api-attempt-summary",
+  "manifestSHA": "bbadd60cc8e46ee34628fc042c88333bb585e316f72f7ffed4fa9d419367f385",
+  "startedAt": "2026-09-15T04:54:29.560Z",
+  "finishedAt": "2026-09-15T04:58:16.776Z",
+  "qualificationPassed": true,
+  "participantSessionsStarted": 4,
+  "participantSessionsCompleted": 0,
+  "participantSessionsUnrun": 8,
+  "submittedAnswers": 34,
+  "submittedEntries": 0,
+  "generationCalls": 24,
+  "providerReportedCostUSD": 0.020439983999999998,
+  "priorUsageUSD": 0.002378032,
+  "reservedUSD": 0.02043998399999991,
+  "unknownReservedUSD": 0,
+  "failure": "invalid broker operation schema",
+  "lastResponse": {
+    "status": 200,
+    "finishReason": "tool_calls",
+    "usage": {
+      "prompt_tokens": 697,
+      "completion_tokens": 53,
+      "total_tokens": 750,
+      "reasoning_tokens": 0,
+      "cost": 0.0002727
+    }
+  },
+  "denominator": 1344,
+  "b121Complete": false,
+  "journalHead": "768cf8c9f641fe8a467d494c4859009cb541d2d45e440da539539dfd582ea0c3"
+}

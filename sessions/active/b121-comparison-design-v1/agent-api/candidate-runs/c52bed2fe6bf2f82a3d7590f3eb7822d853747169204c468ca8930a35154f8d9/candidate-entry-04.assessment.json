@@ -1,0 +1,61 @@
+{
+  "assessment": {
+    "kind": "candidate-session",
+    "formalReady": false,
+    "providerCalls": null,
+    "binding": {
+      "materialSHA256": "d6a39d5f0efeb272cd0d03c9b0dda085b175f9c916e7663493d8c528962914ae",
+      "taskSHA256": "e61561186dd69dc9fc25b2009dac74fe992710af10080e9638635ec84efc7cab",
+      "rubricSHA256": "90f7b71c79bd1487848d727119b3a056b36d4796a4bbeacd1be74916084adcae",
+      "environmentSHA256": "f91909c59b32fd547594bfb9702e6231d684bebf1251a7e62ca1847711fcbb9e",
+      "runnerContractSHA256": "68f68630250d2b20e31f253a1aa55a95b69a0170e188a404009f48871fde4d83"
+    },
+    "taskId": "inspect-with-detached-display",
+    "sampleId": "candidate-entry-04",
+    "packetSHA256": "1112537ce8d35433d0b01efef46f189561ffac3997a48c2b131f846f830642fd",
+    "result": {
+      "slot": {
+        "id": "candidate-entry-04",
+        "arm": "G",
+        "role": "maintainer"
+      },
+      "controller": null,
+      "experiment": "entry",
+      "explanations": {
+        "A": {},
+        "B": {}
+      },
+      "entryAnswer": null,
+      "entryTiming": {
+        "startedMs": 0,
+        "submittedMs": null,
+        "elapsedMs": null,
+        "firstSourceRead": {
+          "path": "examples/spending-alerts/README.md",
+          "line": 1,
+          "operation": "read",
+          "elapsedMs": 1434
+        }
+      },
+      "entryStatus": "missing",
+      "usage": {
+        "inputTokens": 973297,
+        "outputTokens": 2236,
+        "elapsedMs": 18454
+      },
+      "costUSD": 0.024625067999999996,
+      "turns": 30,
+      "counts": 31,
+      "operations": 35,
+      "fatal": null,
+      "failureScope": null,
+      "pendingReservation": null,
+      "retryAllowed": false
+    },
+    "compilation": null,
+    "compilerFailure": null,
+    "compilerReceipt": null,
+    "status": "incomplete"
+  },
+  "assessmentSHA256": "4c8162c3e1e3538e1fd77b0ee15abb68f333a67c06cca83fe6076c67d328033a"
+}

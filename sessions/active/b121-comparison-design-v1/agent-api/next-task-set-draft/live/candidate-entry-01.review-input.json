@@ -1,0 +1,18 @@
+{
+  "assessmentSHA256": "2295b86fae2ec63e2602be1700d2e362945abd478a774bb6a7948f1cd48be280",
+  "reviewerId": "root-integrating-new_task_rubric_review",
+  "criteria": {
+    "structural-api": {
+      "evidence": "Independent source review: function calls only real graph.topology() on supplied Graph. Frozen graph.ts:663-665.",
+      "pass": true
+    },
+    "full-structure": {
+      "evidence": "Direct library snapshot retains recursive structure/metadata and excludes runtime node fields; frozen describe.ts:63-83 and graph/index.ts:58-66.",
+      "pass": true
+    },
+    "claim-boundary": {
+      "evidence": "Explicitly denies implementation/result equivalence and effect permission; preserves caller metadata and disclaims redaction. README:122-123,168-178. Citation/pure-read wording caveats recorded separately; no frozen criterion violation.",
+      "pass": true
+    }
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "kind": "B121-agent-api-attempt-summary",
+  "manifestSHA": "dc20a75fc7a9753637f761961e8bfb6c35be77627e1018bde34c6ea6d064865d",
+  "startedAt": "2026-09-16T04:58:04.123Z",
+  "finishedAt": "2026-09-16T05:00:25.540Z",
+  "qualificationPassed": true,
+  "participantSessionsStarted": 12,
+  "participantSessionsCompleted": 9,
+  "participantSessionsUnrun": 0,
+  "submittedAnswers": 173,
+  "participantFailures": [],
+  "entrySessionsStarted": 6,
+  "entrySessionsUnrun": 0,
+  "entrySessionsCompleted": 0,
+  "entryFailures": [
+    {
+      "sessionId": "agent-11-entry",
+      "message": "entry path unavailable",
+      "failureScope": "participant"
+    }
+  ],
+  "submittedEntries": 0,
+  "generationCalls": 90,
+  "providerReportedCostUSD": 0.12472049999999996,
+  "priorUsageUSD": 0.022818016,
+  "reservedUSD": 0.12472050000000001,
+  "unknownReservedUSD": 5.551115123125783e-17,
+  "failure": null,
+  "lastResponse": {
+    "status": 200,
+    "finishReason": "tool_calls",
+    "usage": {
+      "prompt_tokens": 1461,
+      "completion_tokens": 67,
+      "total_tokens": 1528,
+      "reasoning_tokens": 0,
+      "cost": 0.000104748
+    }
+  },
+  "denominator": 1344,
+  "b121Complete": false,
+  "journalHead": "2af2c800ea856a48aa28e094b35209b3d6336926ecce0b66a81539e7b3feb022"
+}

@@ -1,0 +1,23 @@
+{
+  "reusedPriorSuite": {
+    "source": "../offline/verification.json",
+    "passed": 200,
+    "failed": 0,
+    "skipped": 0,
+    "rerunThisTurn": false,
+    "reason": "All33executionCodeBindingsUnchanged"
+  },
+  "v7OfflineQualification": "../offline/module-preflight.json",
+  "finalizationBoundaryCases": 8,
+  "independentReviewLenses": 3,
+  "fixedFinding": "V7 request limit visibility and diagnostic records; exact runner bindings unchanged since offline 200-test qualification",
+  "journalRowsVerified": 537,
+  "codeBindingsVerified": 33,
+  "materialArtifactsVerified": 5,
+  "feedbackRequestsVerified": 48,
+  "plannedSamples": 4,
+  "startedSamples": 3,
+  "submissions": 2,
+  "providerAttemptFailures": 2,
+  "modelSessionReruns": 0
+}

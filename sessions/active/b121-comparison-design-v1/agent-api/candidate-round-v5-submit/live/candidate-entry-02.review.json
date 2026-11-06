@@ -1,0 +1,7 @@
+{
+  "assessmentSHA256": "726b5b4ec73790a3393b14df897392af2bd0576538c698824721fa9848cfe92f",
+  "accepted": false,
+  "status": "harness-failure",
+  "formalReady": false,
+  "compilerReceipt": "/Users/davidchenallio/src/graphrefly/sessions/active/b121-comparison-design-v1/agent-api/candidate-round-v5-submit/live/review-compiler/40ebaac4-324d-4095-9872-8d526abbe273"
+}

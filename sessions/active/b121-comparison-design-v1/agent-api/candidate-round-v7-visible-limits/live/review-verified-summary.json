@@ -1,0 +1,48 @@
+{
+  "denominator": 4,
+  "accepted": 2,
+  "submitted": 2,
+  "incomplete": 1,
+  "notRun": 1,
+  "formalReady": false,
+  "runtimeBehaviorVerified": false,
+  "interpretation": "Development coverage revision; static frozen compilation plus v6 criteria; not an unseen holdout or runtime behavior verification",
+  "rows": [
+    {
+      "sampleId": "candidate-entry-01",
+      "taskId": "display-current-values",
+      "status": "accepted-candidate-session",
+      "accepted": true,
+      "submitted": true,
+      "reviewArtifact": "candidate-entry-01.review-verified.json"
+    },
+    {
+      "sampleId": "candidate-entry-02",
+      "taskId": "compose-two-instances",
+      "status": "accepted-candidate-session",
+      "accepted": true,
+      "submitted": true,
+      "reviewArtifact": "candidate-entry-02.review-verified.json"
+    },
+    {
+      "sampleId": "candidate-entry-03",
+      "taskId": "validate-before-handoff",
+      "status": "incomplete",
+      "accepted": false,
+      "submitted": false,
+      "reviewArtifact": null
+    },
+    {
+      "sampleId": "candidate-entry-04",
+      "taskId": "inspect-with-detached-display",
+      "role": "maintainer",
+      "packetSHA256": "ce419bf2cb8757b13e611c23baa4fda5f26c4a1b3e3232f6c642bea15ab49083",
+      "status": "not-run",
+      "reason": "provider cost/call ceiling before retry",
+      "assessmentSHA256": null,
+      "accepted": false,
+      "submitted": false,
+      "reviewArtifact": null
+    }
+  ]
+}

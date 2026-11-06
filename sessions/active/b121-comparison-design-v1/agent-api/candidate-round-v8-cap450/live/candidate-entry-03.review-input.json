@@ -1,0 +1,18 @@
+{
+  "assessmentSHA256": "553e236488f29916e27d907c7fcefd4cdc8222837e08db5a002476b024cee7c8",
+  "reviewerId": "Codex primary /root; local frozen-source static review, not independent or runtime verification",
+  "criteria": {
+    "reject-before-recipient": {
+      "pass": true,
+      "evidence": "Calls assertCausalCapabilities before recipient with supplied Graph/full/expected; no catch/finally bypass. Frozen capabilities.ts 65-90 validates WeakMap issuance, owner, binding and lineage."
+    },
+    "preserve-issued-lineage": {
+      "pass": true,
+      "evidence": "New levels container holds original identity/execution/retained references; no handles minted/copied. Matches nested identities in frozen capabilities.ts 122-146."
+    },
+    "execution-boundary": {
+      "pass": true,
+      "evidence": "No transport invoked; explains execution only exposes Node handles, not arbitrary I/O authorization. Frozen capabilities.ts 27-32 and README 94-95 support this."
+    }
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "tests": {
+    "command": "node --test scripts/b121-comparison/*.test.mjs",
+    "passed": 192,
+    "failed": 0,
+    "skipped": 0
+  },
+  "historicalRunFilesUnchanged": 79,
+  "candidateArtifactsUnchanged": 5,
+  "currentCodeBindingsVerified": 33,
+  "generationCalls": 0,
+  "metadataRequests": 1,
+  "original404ReceiptReused": true,
+  "independentReviewLenses": 3,
+  "fixedFindings": [
+    "Fetch merges repeated identity headers; now separate candidates and explicit conflict",
+    "Old synthetic fixture manifests rebound to current copied code only; original artifacts unchanged"
+  ],
+  "remainingLimitations": [
+    "Supplied accounting evidence is trusted input; helper does not authenticate receipts or verify original journal hashes",
+    "Matching receipt needs accounting audit before any release; no automated settlement",
+    "No new model answers or library usability scores"
+  ]
+}

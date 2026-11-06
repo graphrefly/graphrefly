@@ -1,0 +1,70 @@
+{
+  "kind": "B121-live-reconciliation",
+  "manifestSHA": "2ed7b40707b08f8645d6d40e5b7709e87a10e65329b7ea43763490d154b211ab",
+  "checkedAt": "2026-09-16T05:51:38.963Z",
+  "status": "reconciled",
+  "providerReportedCostUSD": 0.11723567999999997,
+  "currentKeyStartingUsageUSD": 0.1247205,
+  "currentKeyUsageUSD": 0.24195618,
+  "currentKeyDeltaUSD": 0.11723568,
+  "priorRetiredKeyUsageUSD": 0.022818016,
+  "cumulativeUsageUSD": 0.264774196,
+  "keyLimitUSD": 1.97,
+  "httpStatuses": {
+    "200": 83
+  },
+  "retries": 0,
+  "latencyMs": {
+    "basis": "client journal request to complete response; not TTFT",
+    "median": 1202,
+    "p95": 13625,
+    "max": 21452
+  },
+  "comparison": {
+    "started": 12,
+    "completed": 10,
+    "submittedAnswers": 180,
+    "expectedAnswers": 192,
+    "budgetStops": 1,
+    "invalidSubmissionSchema": 1,
+    "graph": {
+      "correct": 461,
+      "denominator": 672,
+      "missingScenarios": 8
+    },
+    "plain": {
+      "correct": 489,
+      "denominator": 672,
+      "missingScenarios": 4
+    }
+  },
+  "entry": {
+    "started": 6,
+    "submitted": 0,
+    "readOperationsRequested": 35,
+    "searchOperationsRequested": 8,
+    "failures": {
+      "missingSourceReadRange": 2,
+      "invalidSourceLineRange": 4
+    }
+  },
+  "verification": {
+    "journalHashChain": true,
+    "records": 742,
+    "frozenBindings": true
+  },
+  "diagnosis": [
+    "Two source reads omitted line range; broker permits range-free read only for task metadata, returning misleading entry path unavailable.",
+    "Four sessions requested >80 inclusive lines (80..160 is 81; 1..130 is 130).",
+    "Recoverable source retrieval argument errors terminated sessions under current policy. No entry code reached compilation.",
+    "strict:true did not ensure all live calls obeyed schema; comparison submission included duplicate extra top-level answer fields.",
+    "Search was used in the two maintainer entry sessions, but subsequent oversized range reads terminated both."
+  ],
+  "nextProposal": "Simplify bounded source read arguments/defaults and return recoverable tool errors within existing operation/token budgets; keep scope and hidden-source restrictions. Requires review before a later live trial.",
+  "limitations": [
+    "No entry code-quality or library usability conclusion.",
+    "Single-model run with incomplete comparisons; no causal claim from scores."
+  ],
+  "b121Complete": false,
+  "retryAuthorized": false
+}

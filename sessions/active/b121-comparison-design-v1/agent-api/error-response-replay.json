@@ -1,0 +1,29 @@
+{
+  "kind": "B121-v7-offline-error-response-replay",
+  "manifestSHA": "f14b20fe8ed933b216b8a614300a02a77b9f4d34de9761a56391ad67490ebe99",
+  "providerCalls": 0,
+  "spendUSD": 0,
+  "fixtureDispatches": 1,
+  "classification": "provider-generation-error",
+  "message": "provider generation failed (finish_reason=error); retryability unknown",
+  "billingError": null,
+  "reportedUsage": {
+    "inputTokens": 10755,
+    "outputTokens": 2,
+    "costUSD": 0,
+    "billingBasis": "failed-generation-provider-reported"
+  },
+  "upstreamInferenceCostUSD": 0.0032289,
+  "transport": {
+    "generationCalls": 1,
+    "estimates": 1,
+    "countCalls": 0,
+    "reservedUSD": 0,
+    "reportedCostUSD": 0,
+    "unknownReservedUSD": 0,
+    "priorUsageUSD": 0,
+    "stopped": true
+  },
+  "retryClass": null,
+  "limitation": "Replayed one historical response through fake HTTP only; no proof of upstream reliability or later campaign completion."
+}

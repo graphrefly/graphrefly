@@ -1,0 +1,50 @@
+{
+  "reviewer": "v6_edges",
+  "status": "resolved-no-remaining-findings",
+  "scope": "Final read-only v6 task/rubric/source-boundary review. No calibration expected file read, participant code execution or network calls.",
+  "resolved": [
+    "compose prompt now requests code and explanation consistently",
+    "host-boundary-evidence explicitly requires returned target records/readiness and retained quiescence",
+    "C07/C08 comments now correctly distinguish naming from caller-prepared Nodes/resources; C11 preserves old false comment as negative"
+  ],
+  "findings": [],
+  "calibrationJudgments": {
+    "C01": [],
+    "C02": [
+      "target-instance-authority",
+      "missing-publication"
+    ],
+    "C03": [
+      "read-only-full-inspection"
+    ],
+    "C04": [
+      "missing-publication"
+    ],
+    "C05": [
+      "outcome-evidence-correlation"
+    ],
+    "C06": [
+      "missing-publication",
+      "unknown-outcome-conclusions"
+    ],
+    "C07": [],
+    "C08": [
+      "name-resource-boundary"
+    ],
+    "C09": [
+      "host-boundary-evidence"
+    ],
+    "C10": [
+      "host-boundary-evidence"
+    ],
+    "C11": [
+      "name-resource-boundary"
+    ]
+  },
+  "judgmentMeaning": "Listed criteria fail; empty list means no rubric failures identified from static source review. Compiler result separate.",
+  "artifactSHA256": {
+    "tasks.json": "cb7b5e7e2a956c21fb0ac0304dd5750cda98dbeb5feb4f93599e61c8734f3549",
+    "reviewer-rubric.json": "af8305b29aa5665917eda5503db5f41a91a57f9ec3b95da5dadc5fb6c1a53e61",
+    "offline/calibration-cases.json": "f4be93a0bc336a6deb26d7a75658849c9c0738f82e76590bc1958edba792acca"
+  }
+}

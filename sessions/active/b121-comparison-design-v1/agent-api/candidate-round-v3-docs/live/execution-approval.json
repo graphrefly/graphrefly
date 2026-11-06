@@ -1,0 +1,17 @@
+{
+  "manifestSHA": "d981286b1cd6cf1fe9004c79fbbc62011174b9e1a7e245b44e4f714c1011009f",
+  "action": "B121-agent-api-one-shot",
+  "acceptAliasLimitation": true,
+  "acceptInputEstimateLimitation": true,
+  "expiresAt": "2026-09-18T10:54:36.678Z",
+  "maxGenerationCalls": 1444,
+  "maxUSD": 4,
+  "retries": {
+    "capacity": 3,
+    "availability": 1
+  },
+  "model": "deepseek/deepseek-v4.1-flash",
+  "providerTag": "together",
+  "priorUsageUSD": 1.8522241240000001,
+  "authorizationSource": "Current task: user confirmed cumulative $4 including prior fees and unknown reservations; after completed v2 and recommendation to improve documentation then freeze a new version, user replied 继续. This authorizes one docs-only development regression of all four already-exposed tasks. Prior failures remain; no replacement, no unseen-holdout claim."
+}

@@ -1,0 +1,13 @@
+{
+  "kind": "recorded-process",
+  "startedSHA256": "8de1dadcd3b7ba4cd7e84dce3e96cceeaa539bd829b9a909eb3caf4595ad4acb",
+  "exitCode": 0,
+  "signal": null,
+  "timedOut": false,
+  "outputExceeded": false,
+  "error": null,
+  "stdoutSHA256": "2415b234b638ac3c4c82c0a2550e52ddc85d1dde25ff0877e4d45ec15aca179b",
+  "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "status": "completed",
+  "retryAllowed": false
+}

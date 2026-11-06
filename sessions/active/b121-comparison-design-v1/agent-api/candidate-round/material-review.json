@@ -1,0 +1,5623 @@
+{
+  "status": "candidate-not-executable",
+  "formalReady": false,
+  "providerCalls": 0,
+  "materialSHA256": "74b30e6cf29b485ac0767742889c0924eeea44b1b738ecdf7936b82178471137",
+  "selectionRule": "Start at existing example README; recursively include uniquely resolved local links and imports only under examples/spending-alerts and packages/ts/src. Exclude fixtures/tests/oracle paths; do not fetch external imports or resolve package aliases. No task-specific source selection.",
+  "auditorSHA256": "9ad3b5710fe5a8d694078eccc82d90579080262207ce4553e8a50310f7d407d1",
+  "coverage": {
+    "kind": "B121-material-coverage-audit",
+    "providerCalls": 0,
+    "executionReady": false,
+    "files": [
+      {
+        "path": "examples/spending-alerts/README.md",
+        "sha256": "f154720ef10c937a73ef923ef3f58e647d6ec336e9199f0305d9d1324b97170f",
+        "bytes": 7259,
+        "lines": 128,
+        "restricted": false
+      },
+      {
+        "path": "examples/spending-alerts/causal-admission.ts",
+        "sha256": "73e966f03b721b84e6a34fb0803089fbca24fcfea2bc53cdc0fd809004decca0",
+        "bytes": 17229,
+        "lines": 531,
+        "restricted": false
+      },
+      {
+        "path": "examples/spending-alerts/causal-audience.examples.ts",
+        "sha256": "7f692090cc3a0e734edc2da63cd8e51860b12c37e0e8f3b5e4fcaccf1aa84d36",
+        "bytes": 1581,
+        "lines": 39,
+        "restricted": false
+      },
+      {
+        "path": "examples/spending-alerts/causal-business.ts",
+        "sha256": "5808b47b937eaa35336736523d958d9dcfa58053caad9c65df2caac49333c523",
+        "bytes": 12990,
+        "lines": 415,
+        "restricted": false
+      },
+      {
+        "path": "examples/spending-alerts/causal-entry.ts",
+        "sha256": "3d802f8b01c27519dbcc7b0ed77ed151bc8fa4fd2e0337b7535879e3dbf9b792",
+        "bytes": 3215,
+        "lines": 78,
+        "restricted": false
+      },
+      {
+        "path": "examples/spending-alerts/causal-focused-host.ts",
+        "sha256": "a2988bfad5108f424cbf5347e0531ead939397ab0e725ed92461c05f38310819",
+        "bytes": 17228,
+        "lines": 579,
+        "restricted": false
+      },
+      {
+        "path": "examples/spending-alerts/causal-graded-demo.ts",
+        "sha256": "1d204980a8bbda0b104a12ace83be097b1c73239afe98c5d0b65329a05f1d6f6",
+        "bytes": 13234,
+        "lines": 326,
+        "restricted": false
+      },
+      {
+        "path": "examples/spending-alerts/causal-inputs.ts",
+        "sha256": "dfb1aa266cfed9bb6400171bfba30f046cd09ef94346c18560124566a7364561",
+        "bytes": 14090,
+        "lines": 439,
+        "restricted": false
+      },
+      {
+        "path": "examples/spending-alerts/causal-material-owner.ts",
+        "sha256": "76a3605e733a2f87b23eb908f37fd7177ef86861c80d839708bd9080c5b9b370",
+        "bytes": 5404,
+        "lines": 152,
+        "restricted": false
+      },
+      {
+        "path": "examples/spending-alerts/causal-numeric.ts",
+        "sha256": "0acdf5c800e55f7de0736718cc846eea137f880d0cbd0f158b680fa8b2e29dd8",
+        "bytes": 4260,
+        "lines": 111,
+        "restricted": false
+      },
+      {
+        "path": "examples/spending-alerts/causal-ordinary-panel.ts",
+        "sha256": "6f6db61a5d29a697b65bc73b1325e61b8644640c0bc4b78a2227ca14ac136383",
+        "bytes": 1546,
+        "lines": 20,
+        "restricted": false
+      },
+      {
+        "path": "examples/spending-alerts/causal-preset.ts",
+        "sha256": "71f801e17e95b2f7440017048dc08d3479a341d4e5e617be8eff9f513301dd50",
+        "bytes": 6874,
+        "lines": 207,
+        "restricted": false
+      },
+      {
+        "path": "examples/spending-alerts/causal-publication.ts",
+        "sha256": "4d2566ff521eeb370388b5d654eebfa9ab6f814c27e35233680f9d9125c7786e",
+        "bytes": 17301,
+        "lines": 484,
+        "restricted": false
+      },
+      {
+        "path": "examples/spending-alerts/causal-resource.ts",
+        "sha256": "8bcda13c34aff04379d0e40491fe361cc7c812ed806925649a407be012841ec9",
+        "bytes": 8265,
+        "lines": 263,
+        "restricted": false
+      },
+      {
+        "path": "examples/spending-alerts/causal-view-binding.ts",
+        "sha256": "3a8722abf4ed783b8caa794ccb16a1d4fdfdbe26d999160805da746a62427409",
+        "bytes": 1850,
+        "lines": 57,
+        "restricted": false
+      },
+      {
+        "path": "examples/spending-alerts/pipeline.ts",
+        "sha256": "2244de22b03aec5fd6e58ad9482caf37595d7f21f861c5d125b066f840c57d8a",
+        "bytes": 10023,
+        "lines": 278,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/batch/batch.ts",
+        "sha256": "a45147b408614e451ffd3c8459deb9a6e5b07fffabf2c7a69c34c2a066852890",
+        "bytes": 4606,
+        "lines": 157,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/batch/boundary.ts",
+        "sha256": "d04546e093175f515f424efe6d8bdb23287acc33bf49a502fa6e781f342bd3a3",
+        "bytes": 6010,
+        "lines": 132,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/ctx/types.ts",
+        "sha256": "e2c17c278b28c6c2f9ae6e483e3b5e6da9676ce97abcdb11e6d114872c7986c9",
+        "bytes": 12278,
+        "lines": 309,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/data/index.ts",
+        "sha256": "1fa509436fb94d44052365697566b652662170c616c4ebd30753b1525eb49aa2",
+        "bytes": 1111,
+        "lines": 39,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/dispatcher/index.ts",
+        "sha256": "32c759c62e7a2cd56033d7df13252f8ca10390423ba480e227d0ed8d313c847d",
+        "bytes": 6859,
+        "lines": 190,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/graph/blueprint.ts",
+        "sha256": "ce63d1efa776a9abc240a46b6f22a2ea1493f47de34195f5d34d6caaca9a545b",
+        "bytes": 15266,
+        "lines": 493,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/graph/checkpoint.ts",
+        "sha256": "303ffb3706bff5aa8f2d61a24290a322b3a7aa75f939318c5eb4e0d996b45ce7",
+        "bytes": 3488,
+        "lines": 115,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/graph/combinators.ts",
+        "sha256": "e62b42fbb2d1097c0aff5550317725f312a3450097275198a5ebdd496af1d0e2",
+        "bytes": 16058,
+        "lines": 450,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/graph/construction-scope.ts",
+        "sha256": "343e6828b5276525797f97cb9c3998e4c28a1b0215af0b6505404b676856d37b",
+        "bytes": 12538,
+        "lines": 373,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/graph/data-structures/change.ts",
+        "sha256": "59db7742651ec382fb862f52c6abb7a99d4c2dad6ab963adc0ba32eda1caf96d",
+        "bytes": 2393,
+        "lines": 52,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/graph/data-structures/core.ts",
+        "sha256": "dda044b58926635ab8086f2eb12121987e09b0603032b2549722d9e82c48804b",
+        "bytes": 13628,
+        "lines": 335,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/graph/data-structures/reactive-index.ts",
+        "sha256": "30d2ca270500a8069fb252ef24cc865b44f8b485894c06959b06931d2bfd065d",
+        "bytes": 19785,
+        "lines": 604,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/graph/data-structures/reactive-list.ts",
+        "sha256": "27737b2c2f6c455e55222b4b8d518d551b2acad4880688f25ad7d3b8a4366ca6",
+        "bytes": 13074,
+        "lines": 384,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/graph/data-structures/reactive-log.ts",
+        "sha256": "0f1aed7f7bfcd172231e779d0eb9aa2cc3ba3146c33a5617f53b0f03af45eb39",
+        "bytes": 14789,
+        "lines": 398,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/graph/data-structures/reactive-map.ts",
+        "sha256": "27cb6336b62c30486d3145d58404964e2a7ca4cd44410025e4cdd91b7e28e1b0",
+        "bytes": 27420,
+        "lines": 813,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/graph/describe.ts",
+        "sha256": "d43c3a67be7f7776bad9bffac8434343f5c6019fbdf9a1c691e5ca441a899fa4",
+        "bytes": 4279,
+        "lines": 126,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/graph/environment.ts",
+        "sha256": "2e7797663504212bd80955f72e1d832e32f06c2a5824c93d672c5f0105c8498c",
+        "bytes": 13498,
+        "lines": 455,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/graph/graph-lifecycle.ts",
+        "sha256": "23abc2773517b95265ce11e8144ba026b9ef4cac60af69351960fda00e12ac9d",
+        "bytes": 1325,
+        "lines": 36,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/graph/graph-support.ts",
+        "sha256": "e8a7c680ef3007f984c08e1c3bcecd8e09d80363740453c0d42a1bdded71c14a",
+        "bytes": 4103,
+        "lines": 131,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/graph/graph-topology-group.ts",
+        "sha256": "044f242b40e0ca8e069dbac19855af5d647513d80cbd54ac4978aa7b0830c119",
+        "bytes": 4043,
+        "lines": 139,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/graph/graph-types.ts",
+        "sha256": "cbfa306c38c609795445f256e17f11fdf34295e62799a327623728834f2525a7",
+        "bytes": 2368,
+        "lines": 49,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/graph/graph.ts",
+        "sha256": "54b3644e0de855533f9ac91621b9e4eceb0368d11a953fe0d793dfd22e8b72fe",
+        "bytes": 41610,
+        "lines": 1183,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/graph/higher-order.ts",
+        "sha256": "8b2743c2c6def92cb257c19ff6c1b11cca1a927014f8a97b4f32d513a89a165c",
+        "bytes": 17941,
+        "lines": 460,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/graph/inspect.ts",
+        "sha256": "c65d2bea840279146c9b2a16772a75792c5e6e53d2a9a15241334d08b36a8fd9",
+        "bytes": 4642,
+        "lines": 146,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/graph/operators.ts",
+        "sha256": "01dcdfe15269da8fede4e3a0057e668f7c3e6e40c1fbad6d3779c6e5bdf715f3",
+        "bytes": 33671,
+        "lines": 1005,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/graph/policies/collection.ts",
+        "sha256": "712200b94a834829ee3fedc0eff075250212b42560dfb3d765edfb44f790e1c4",
+        "bytes": 5343,
+        "lines": 205,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/graph/policies/types.ts",
+        "sha256": "7a04bded6397f707b2d8e916cdf76f9ce0058967e53a38394146d1bbc2f4e5b7",
+        "bytes": 1225,
+        "lines": 37,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/graph/restore.ts",
+        "sha256": "4e81ab301487c223f52c3918462a70ffa6cb1a5a79490b06e45a125c74a26f77",
+        "bytes": 33242,
+        "lines": 986,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/graph/sources.ts",
+        "sha256": "eec749f0239492723f02e89d2777d2568a9e4dc6a0030f4d160a1a5249fd3f76",
+        "bytes": 43993,
+        "lines": 1426,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/graph/time.ts",
+        "sha256": "04af98331c3a7b09c21dbf2b047c99e37fd8a563a4a42c9745ebd513a9c270d1",
+        "bytes": 18758,
+        "lines": 435,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/identity.ts",
+        "sha256": "4fd4ce5607c11777a29e123e1286bacf029e507077451e175e18d5fe71b1f270",
+        "bytes": 814,
+        "lines": 27,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/json/codec.ts",
+        "sha256": "7fadd889fa5ca55b83a812e67462a48873c50e67d4b9451e7f361e1af8a44ffa",
+        "bytes": 20024,
+        "lines": 628,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/node/core.ts",
+        "sha256": "87d482706dd0476297f191b485fb14cbbebc8298dd126d8005d8548f2423041c",
+        "bytes": 8884,
+        "lines": 313,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/node/node-checkpoint-runtime.ts",
+        "sha256": "5ed4b3fe287fdf3c37b3c15eb9dcbaf3509f03212752068b3d9f3a2eeafe40bb",
+        "bytes": 2983,
+        "lines": 68,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/node/node-context-runtime.ts",
+        "sha256": "6d2e09377783600a1866df9ad70ec2cb8c09def8138f6efc162ba0d2a6b8b624",
+        "bytes": 4618,
+        "lines": 129,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/node/node-input-runtime.ts",
+        "sha256": "9584a66cf34b057a449aecf80689819ea17717863b0d77f3c5541c686961f066",
+        "bytes": 15007,
+        "lines": 337,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/node/node-lifecycle-runtime.ts",
+        "sha256": "c0845b70f2da14aa8692ec2fe4d079cdb0e3be0af777648e0ce2c6adcca3273b",
+        "bytes": 7793,
+        "lines": 231,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/node/node-output-runtime.ts",
+        "sha256": "c6f4929126b041fed9c2f90ca8aede61a291b0ee572746a0110ba1dd858accf4",
+        "bytes": 21129,
+        "lines": 532,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/node/node-rewire-runtime.ts",
+        "sha256": "f56d6c2b1618e8245a2576757d0639c6337217b41f11a5c0f7a816f5f3db0e1b",
+        "bytes": 9203,
+        "lines": 226,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/node/node-runtime-host.ts",
+        "sha256": "7ac139ceb74b1561346060c10324e0d7d9a1671edda7a71c77853dfffa20f02b",
+        "bytes": 3497,
+        "lines": 104,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/node/node.ts",
+        "sha256": "b4f7ea41b8bd6cd9664cde9a31763caef4d4effd17597d868f9ef9b3d699eec6",
+        "bytes": 27165,
+        "lines": 843,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/node/owned-acquisition.ts",
+        "sha256": "b0f28f96d0f316bd76922869d55b46ef260bee9b9d473dcaaf64622d24c492d9",
+        "bytes": 2988,
+        "lines": 89,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/node/protocol-guards.ts",
+        "sha256": "11146a2f43c8e2cacd8a500d088025f02b853bb7be90abbc6ad07050896ef177",
+        "bytes": 1311,
+        "lines": 39,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/node/runtime-accessors.ts",
+        "sha256": "6ec8dc24114807f55bc4633fb12d4fa24c35d83d0796ce270f7407017073322f",
+        "bytes": 7601,
+        "lines": 196,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/node/types.ts",
+        "sha256": "294180cef420645d8f0d03cf096df67e592d026082f7027591c064777b040ec3",
+        "bytes": 4918,
+        "lines": 107,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/node/versioning.ts",
+        "sha256": "2e85ef63e93703ec3cda767dcd68e8e32b8f13f263c78d9d6b8ae551cbf8b27a",
+        "bytes": 6228,
+        "lines": 201,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/operators/index.ts",
+        "sha256": "67e774e2f339b483cc8381b3dab5be4708adaffb0e128f1e78911205909f900f",
+        "bytes": 856,
+        "lines": 67,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/protocol/messages.ts",
+        "sha256": "5b386dd07216c31c023e86446acdc1005e50861023eb0f01effea1d40a122aef",
+        "bytes": 5882,
+        "lines": 187,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/solutions/causal-occurrence/capabilities.ts",
+        "sha256": "606b352953fdb54f7ddc076662fc1fc8b88bed2841fdfe07bdf0b85224879fc7",
+        "bytes": 4830,
+        "lines": 149,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/solutions/causal-occurrence/committed-view.ts",
+        "sha256": "ed6e3b06a849f4f7bc9df455059b26f1dea92a64566acad04bbc8c306b35919d",
+        "bytes": 1340,
+        "lines": 44,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/solutions/causal-occurrence/construction.ts",
+        "sha256": "57a73dfa6eb9a685441403520f790447d63e13b5f221b8c7eba3c2c5dfae06c9",
+        "bytes": 12814,
+        "lines": 420,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/solutions/causal-occurrence/contracts.ts",
+        "sha256": "c2f08b4660f8bd69a680a2533ad5a3d21923603a6027e2c5b460999762a28342",
+        "bytes": 9768,
+        "lines": 297,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/solutions/causal-occurrence/evidence.ts",
+        "sha256": "535700f13c6b639f694d950922e78d3f7a1da29511477af0ba31ed69d8563e34",
+        "bytes": 6956,
+        "lines": 216,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/solutions/causal-occurrence/identity.ts",
+        "sha256": "54d7cee52121d369f5112e1bba363acd9c4b9d8651d565751b1cc6190799553a",
+        "bytes": 21290,
+        "lines": 655,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/solutions/causal-occurrence/lifecycle.ts",
+        "sha256": "bc8f3c7b353d9a2cfbbb0d39bd8fd88a0b356184bbd448c2252f80503dc6089a",
+        "bytes": 20378,
+        "lines": 682,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/solutions/causal-occurrence/transition.ts",
+        "sha256": "b85f0fa0d4c61c64f88295814c24c770a414bf7d304fd686a01a4a2c524fe220",
+        "bytes": 14894,
+        "lines": 416,
+        "restricted": false
+      }
+    ],
+    "entrypoints": [
+      {
+        "path": "examples/spending-alerts/README.md",
+        "status": "included"
+      }
+    ],
+    "references": [
+      {
+        "from": "examples/spending-alerts/README.md",
+        "ref": "pipeline.ts",
+        "kind": "link",
+        "line": 20,
+        "status": "included",
+        "resolved": "examples/spending-alerts/pipeline.ts",
+        "candidates": [
+          "examples/spending-alerts/pipeline.ts"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/README.md",
+        "ref": "causal-ordinary-panel.ts",
+        "kind": "link",
+        "line": 52,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-ordinary-panel.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-ordinary-panel.ts"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/README.md",
+        "ref": "causal-view-binding.ts",
+        "kind": "link",
+        "line": 52,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-view-binding.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-view-binding.ts"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/README.md",
+        "ref": "causal-graded-demo.ts",
+        "kind": "link",
+        "line": 53,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-graded-demo.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-graded-demo.ts"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/README.md",
+        "ref": "causal-entry.ts",
+        "kind": "link",
+        "line": 53,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-entry.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-entry.ts"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/README.md",
+        "ref": "causal-audience.examples.ts",
+        "kind": "link",
+        "line": 53,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-audience.examples.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-audience.examples.ts"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/README.md",
+        "ref": "causal-focused-host.ts",
+        "kind": "link",
+        "line": 54,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-focused-host.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-focused-host.ts"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/README.md",
+        "ref": "../../packages/ts/src/solutions/causal-occurrence/construction.ts",
+        "kind": "link",
+        "line": 54,
+        "status": "included",
+        "resolved": "packages/ts/src/solutions/causal-occurrence/construction.ts",
+        "candidates": [
+          "packages/ts/src/solutions/causal-occurrence/construction.ts"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/README.md",
+        "ref": "../../docs/design/causal-graded-entry-implementation/README.md",
+        "kind": "link",
+        "line": 120,
+        "status": "restricted",
+        "resolved": null,
+        "candidates": [
+          "docs/design/causal-graded-entry-implementation/README.md"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-admission.ts",
+        "ref": "../../packages/ts/src/ctx/types.js",
+        "kind": "import",
+        "line": 2,
+        "status": "included",
+        "resolved": "packages/ts/src/ctx/types.ts",
+        "candidates": [
+          "packages/ts/src/ctx/types.ts",
+          "packages/ts/src/ctx/types.tsx",
+          "packages/ts/src/ctx/types.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-admission.ts",
+        "ref": "../../packages/ts/src/node/node.js",
+        "kind": "import",
+        "line": 3,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node.ts",
+        "candidates": [
+          "packages/ts/src/node/node.ts",
+          "packages/ts/src/node/node.tsx",
+          "packages/ts/src/node/node.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-admission.ts",
+        "ref": "../../packages/ts/src/protocol/messages.js",
+        "kind": "import",
+        "line": 4,
+        "status": "included",
+        "resolved": "packages/ts/src/protocol/messages.ts",
+        "candidates": [
+          "packages/ts/src/protocol/messages.ts",
+          "packages/ts/src/protocol/messages.tsx",
+          "packages/ts/src/protocol/messages.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-admission.ts",
+        "ref": "../../packages/ts/src/solutions/causal-occurrence/contracts.js",
+        "kind": "import",
+        "line": 5,
+        "status": "included",
+        "resolved": "packages/ts/src/solutions/causal-occurrence/contracts.ts",
+        "candidates": [
+          "packages/ts/src/solutions/causal-occurrence/contracts.ts",
+          "packages/ts/src/solutions/causal-occurrence/contracts.tsx",
+          "packages/ts/src/solutions/causal-occurrence/contracts.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-admission.ts",
+        "ref": "./causal-business.js",
+        "kind": "import",
+        "line": 14,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-business.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-business.ts",
+          "examples/spending-alerts/causal-business.tsx",
+          "examples/spending-alerts/causal-business.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-admission.ts",
+        "ref": "./causal-inputs.js",
+        "kind": "import",
+        "line": 23,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-inputs.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-inputs.ts",
+          "examples/spending-alerts/causal-inputs.tsx",
+          "examples/spending-alerts/causal-inputs.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-admission.ts",
+        "ref": "./causal-material-owner.js",
+        "kind": "import",
+        "line": 41,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-material-owner.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-material-owner.ts",
+          "examples/spending-alerts/causal-material-owner.tsx",
+          "examples/spending-alerts/causal-material-owner.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-admission.ts",
+        "ref": "./causal-publication.js",
+        "kind": "import",
+        "line": 42,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-publication.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-publication.ts",
+          "examples/spending-alerts/causal-publication.tsx",
+          "examples/spending-alerts/causal-publication.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-admission.ts",
+        "ref": "./pipeline.js",
+        "kind": "import",
+        "line": 43,
+        "status": "included",
+        "resolved": "examples/spending-alerts/pipeline.ts",
+        "candidates": [
+          "examples/spending-alerts/pipeline.ts",
+          "examples/spending-alerts/pipeline.tsx",
+          "examples/spending-alerts/pipeline.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-audience.examples.ts",
+        "ref": "../../packages/ts/src/graph/graph.js",
+        "kind": "import",
+        "line": 2,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/graph.ts",
+        "candidates": [
+          "packages/ts/src/graph/graph.ts",
+          "packages/ts/src/graph/graph.tsx",
+          "packages/ts/src/graph/graph.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-audience.examples.ts",
+        "ref": "../../packages/ts/src/solutions/causal-occurrence/capabilities.js",
+        "kind": "import",
+        "line": 3,
+        "status": "included",
+        "resolved": "packages/ts/src/solutions/causal-occurrence/capabilities.ts",
+        "candidates": [
+          "packages/ts/src/solutions/causal-occurrence/capabilities.ts",
+          "packages/ts/src/solutions/causal-occurrence/capabilities.tsx",
+          "packages/ts/src/solutions/causal-occurrence/capabilities.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-audience.examples.ts",
+        "ref": "./causal-preset.js",
+        "kind": "import",
+        "line": 8,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-preset.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-preset.ts",
+          "examples/spending-alerts/causal-preset.tsx",
+          "examples/spending-alerts/causal-preset.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-audience.examples.ts",
+        "ref": "./causal-publication.js",
+        "kind": "import",
+        "line": 9,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-publication.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-publication.ts",
+          "examples/spending-alerts/causal-publication.tsx",
+          "examples/spending-alerts/causal-publication.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-audience.examples.ts",
+        "ref": "./causal-view-binding.js",
+        "kind": "import",
+        "line": 10,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-view-binding.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-view-binding.ts",
+          "examples/spending-alerts/causal-view-binding.tsx",
+          "examples/spending-alerts/causal-view-binding.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-business.ts",
+        "ref": "../../packages/ts/src/ctx/types.js",
+        "kind": "import",
+        "line": 2,
+        "status": "included",
+        "resolved": "packages/ts/src/ctx/types.ts",
+        "candidates": [
+          "packages/ts/src/ctx/types.ts",
+          "packages/ts/src/ctx/types.tsx",
+          "packages/ts/src/ctx/types.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-business.ts",
+        "ref": "../../packages/ts/src/data/index.js",
+        "kind": "import",
+        "line": 3,
+        "status": "included",
+        "resolved": "packages/ts/src/data/index.ts",
+        "candidates": [
+          "packages/ts/src/data/index.ts",
+          "packages/ts/src/data/index.tsx",
+          "packages/ts/src/data/index.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-business.ts",
+        "ref": "../../packages/ts/src/graph/construction-scope.js",
+        "kind": "import",
+        "line": 4,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/construction-scope.ts",
+        "candidates": [
+          "packages/ts/src/graph/construction-scope.ts",
+          "packages/ts/src/graph/construction-scope.tsx",
+          "packages/ts/src/graph/construction-scope.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-business.ts",
+        "ref": "../../packages/ts/src/node/node.js",
+        "kind": "import",
+        "line": 5,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node.ts",
+        "candidates": [
+          "packages/ts/src/node/node.ts",
+          "packages/ts/src/node/node.tsx",
+          "packages/ts/src/node/node.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-business.ts",
+        "ref": "../../packages/ts/src/protocol/messages.js",
+        "kind": "import",
+        "line": 6,
+        "status": "included",
+        "resolved": "packages/ts/src/protocol/messages.ts",
+        "candidates": [
+          "packages/ts/src/protocol/messages.ts",
+          "packages/ts/src/protocol/messages.tsx",
+          "packages/ts/src/protocol/messages.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-business.ts",
+        "ref": "./causal-inputs.js",
+        "kind": "import",
+        "line": 7,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-inputs.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-inputs.ts",
+          "examples/spending-alerts/causal-inputs.tsx",
+          "examples/spending-alerts/causal-inputs.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-business.ts",
+        "ref": "./causal-numeric.js",
+        "kind": "import",
+        "line": 20,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-numeric.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-numeric.ts",
+          "examples/spending-alerts/causal-numeric.tsx",
+          "examples/spending-alerts/causal-numeric.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-business.ts",
+        "ref": "./causal-publication.js",
+        "kind": "import",
+        "line": 21,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-publication.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-publication.ts",
+          "examples/spending-alerts/causal-publication.tsx",
+          "examples/spending-alerts/causal-publication.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-business.ts",
+        "ref": "./pipeline.js",
+        "kind": "import",
+        "line": 22,
+        "status": "included",
+        "resolved": "examples/spending-alerts/pipeline.ts",
+        "candidates": [
+          "examples/spending-alerts/pipeline.ts",
+          "examples/spending-alerts/pipeline.tsx",
+          "examples/spending-alerts/pipeline.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-entry.ts",
+        "ref": "../../packages/ts/src/graph/graph.js",
+        "kind": "import",
+        "line": 2,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/graph.ts",
+        "candidates": [
+          "packages/ts/src/graph/graph.ts",
+          "packages/ts/src/graph/graph.tsx",
+          "packages/ts/src/graph/graph.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-entry.ts",
+        "ref": "./causal-focused-host.js",
+        "kind": "import",
+        "line": 3,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-focused-host.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-focused-host.ts",
+          "examples/spending-alerts/causal-focused-host.tsx",
+          "examples/spending-alerts/causal-focused-host.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-entry.ts",
+        "ref": "./causal-inputs.js",
+        "kind": "import",
+        "line": 4,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-inputs.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-inputs.ts",
+          "examples/spending-alerts/causal-inputs.tsx",
+          "examples/spending-alerts/causal-inputs.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-entry.ts",
+        "ref": "./causal-resource.js",
+        "kind": "import",
+        "line": 5,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-resource.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-resource.ts",
+          "examples/spending-alerts/causal-resource.tsx",
+          "examples/spending-alerts/causal-resource.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-focused-host.ts",
+        "ref": "../../packages/ts/src/ctx/types.js",
+        "kind": "import",
+        "line": 2,
+        "status": "included",
+        "resolved": "packages/ts/src/ctx/types.ts",
+        "candidates": [
+          "packages/ts/src/ctx/types.ts",
+          "packages/ts/src/ctx/types.tsx",
+          "packages/ts/src/ctx/types.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-focused-host.ts",
+        "ref": "../../packages/ts/src/graph/construction-scope.js",
+        "kind": "import",
+        "line": 3,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/construction-scope.ts",
+        "candidates": [
+          "packages/ts/src/graph/construction-scope.ts",
+          "packages/ts/src/graph/construction-scope.tsx",
+          "packages/ts/src/graph/construction-scope.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-focused-host.ts",
+        "ref": "../../packages/ts/src/graph/graph.js",
+        "kind": "import",
+        "line": 10,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/graph.ts",
+        "candidates": [
+          "packages/ts/src/graph/graph.ts",
+          "packages/ts/src/graph/graph.tsx",
+          "packages/ts/src/graph/graph.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-focused-host.ts",
+        "ref": "../../packages/ts/src/node/node.js",
+        "kind": "import",
+        "line": 11,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node.ts",
+        "candidates": [
+          "packages/ts/src/node/node.ts",
+          "packages/ts/src/node/node.tsx",
+          "packages/ts/src/node/node.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-focused-host.ts",
+        "ref": "../../packages/ts/src/solutions/causal-occurrence/contracts.js",
+        "kind": "import",
+        "line": 12,
+        "status": "included",
+        "resolved": "packages/ts/src/solutions/causal-occurrence/contracts.ts",
+        "candidates": [
+          "packages/ts/src/solutions/causal-occurrence/contracts.ts",
+          "packages/ts/src/solutions/causal-occurrence/contracts.tsx",
+          "packages/ts/src/solutions/causal-occurrence/contracts.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-focused-host.ts",
+        "ref": "./causal-inputs.js",
+        "kind": "import",
+        "line": 17,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-inputs.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-inputs.ts",
+          "examples/spending-alerts/causal-inputs.tsx",
+          "examples/spending-alerts/causal-inputs.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-focused-host.ts",
+        "ref": "./causal-preset.js",
+        "kind": "import",
+        "line": 35,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-preset.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-preset.ts",
+          "examples/spending-alerts/causal-preset.tsx",
+          "examples/spending-alerts/causal-preset.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-focused-host.ts",
+        "ref": "./causal-publication.js",
+        "kind": "import",
+        "line": 36,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-publication.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-publication.ts",
+          "examples/spending-alerts/causal-publication.tsx",
+          "examples/spending-alerts/causal-publication.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-focused-host.ts",
+        "ref": "./causal-resource.js",
+        "kind": "import",
+        "line": 43,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-resource.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-resource.ts",
+          "examples/spending-alerts/causal-resource.tsx",
+          "examples/spending-alerts/causal-resource.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-focused-host.ts",
+        "ref": "./causal-resource.js",
+        "kind": "import",
+        "line": 45,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-resource.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-resource.ts",
+          "examples/spending-alerts/causal-resource.tsx",
+          "examples/spending-alerts/causal-resource.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-graded-demo.ts",
+        "ref": "node:assert/strict",
+        "kind": "import",
+        "line": 2,
+        "status": "external",
+        "resolved": null
+      },
+      {
+        "from": "examples/spending-alerts/causal-graded-demo.ts",
+        "ref": "node:url",
+        "kind": "import",
+        "line": 3,
+        "status": "external",
+        "resolved": null
+      },
+      {
+        "from": "examples/spending-alerts/causal-graded-demo.ts",
+        "ref": "../../packages/ts/src/batch/batch.js",
+        "kind": "import",
+        "line": 4,
+        "status": "included",
+        "resolved": "packages/ts/src/batch/batch.ts",
+        "candidates": [
+          "packages/ts/src/batch/batch.ts",
+          "packages/ts/src/batch/batch.tsx",
+          "packages/ts/src/batch/batch.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-graded-demo.ts",
+        "ref": "../../packages/ts/src/graph/graph.js",
+        "kind": "import",
+        "line": 5,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/graph.ts",
+        "candidates": [
+          "packages/ts/src/graph/graph.ts",
+          "packages/ts/src/graph/graph.tsx",
+          "packages/ts/src/graph/graph.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-graded-demo.ts",
+        "ref": "../../scripts/fixtures/spending-preset-harness.js",
+        "kind": "import",
+        "line": 6,
+        "status": "restricted",
+        "resolved": null,
+        "candidates": [
+          "scripts/fixtures/spending-preset-harness.ts",
+          "scripts/fixtures/spending-preset-harness.tsx",
+          "scripts/fixtures/spending-preset-harness.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-graded-demo.ts",
+        "ref": "../../scripts/fixtures/spending-preset-oracle.js",
+        "kind": "import",
+        "line": 12,
+        "status": "restricted",
+        "resolved": null,
+        "candidates": [
+          "scripts/fixtures/spending-preset-oracle.ts",
+          "scripts/fixtures/spending-preset-oracle.tsx",
+          "scripts/fixtures/spending-preset-oracle.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-graded-demo.ts",
+        "ref": "./causal-audience.examples.js",
+        "kind": "import",
+        "line": 13,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-audience.examples.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-audience.examples.ts",
+          "examples/spending-alerts/causal-audience.examples.tsx",
+          "examples/spending-alerts/causal-audience.examples.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-graded-demo.ts",
+        "ref": "./causal-entry.js",
+        "kind": "import",
+        "line": 14,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-entry.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-entry.ts",
+          "examples/spending-alerts/causal-entry.tsx",
+          "examples/spending-alerts/causal-entry.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-graded-demo.ts",
+        "ref": "./causal-focused-host.js",
+        "kind": "import",
+        "line": 15,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-focused-host.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-focused-host.ts",
+          "examples/spending-alerts/causal-focused-host.tsx",
+          "examples/spending-alerts/causal-focused-host.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-graded-demo.ts",
+        "ref": "./causal-inputs.js",
+        "kind": "import",
+        "line": 16,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-inputs.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-inputs.ts",
+          "examples/spending-alerts/causal-inputs.tsx",
+          "examples/spending-alerts/causal-inputs.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-graded-demo.ts",
+        "ref": "./causal-ordinary-panel.js",
+        "kind": "import",
+        "line": 23,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-ordinary-panel.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-ordinary-panel.ts",
+          "examples/spending-alerts/causal-ordinary-panel.tsx",
+          "examples/spending-alerts/causal-ordinary-panel.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-inputs.ts",
+        "ref": "../../packages/ts/src/data/index.js",
+        "kind": "import",
+        "line": 2,
+        "status": "included",
+        "resolved": "packages/ts/src/data/index.ts",
+        "candidates": [
+          "packages/ts/src/data/index.ts",
+          "packages/ts/src/data/index.tsx",
+          "packages/ts/src/data/index.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-inputs.ts",
+        "ref": "../../packages/ts/src/node/node.js",
+        "kind": "import",
+        "line": 3,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node.ts",
+        "candidates": [
+          "packages/ts/src/node/node.ts",
+          "packages/ts/src/node/node.tsx",
+          "packages/ts/src/node/node.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-inputs.ts",
+        "ref": "../../packages/ts/src/solutions/causal-occurrence/contracts.js",
+        "kind": "import",
+        "line": 4,
+        "status": "included",
+        "resolved": "packages/ts/src/solutions/causal-occurrence/contracts.ts",
+        "candidates": [
+          "packages/ts/src/solutions/causal-occurrence/contracts.ts",
+          "packages/ts/src/solutions/causal-occurrence/contracts.tsx",
+          "packages/ts/src/solutions/causal-occurrence/contracts.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-inputs.ts",
+        "ref": "./causal-publication.js",
+        "kind": "import",
+        "line": 9,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-publication.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-publication.ts",
+          "examples/spending-alerts/causal-publication.tsx",
+          "examples/spending-alerts/causal-publication.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-inputs.ts",
+        "ref": "./pipeline.js",
+        "kind": "import",
+        "line": 10,
+        "status": "included",
+        "resolved": "examples/spending-alerts/pipeline.ts",
+        "candidates": [
+          "examples/spending-alerts/pipeline.ts",
+          "examples/spending-alerts/pipeline.tsx",
+          "examples/spending-alerts/pipeline.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-material-owner.ts",
+        "ref": "../../packages/ts/src/ctx/types.js",
+        "kind": "import",
+        "line": 3,
+        "status": "included",
+        "resolved": "packages/ts/src/ctx/types.ts",
+        "candidates": [
+          "packages/ts/src/ctx/types.ts",
+          "packages/ts/src/ctx/types.tsx",
+          "packages/ts/src/ctx/types.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-material-owner.ts",
+        "ref": "../../packages/ts/src/data/index.js",
+        "kind": "import",
+        "line": 4,
+        "status": "included",
+        "resolved": "packages/ts/src/data/index.ts",
+        "candidates": [
+          "packages/ts/src/data/index.ts",
+          "packages/ts/src/data/index.tsx",
+          "packages/ts/src/data/index.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-material-owner.ts",
+        "ref": "../../packages/ts/src/node/node.js",
+        "kind": "import",
+        "line": 5,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node.ts",
+        "candidates": [
+          "packages/ts/src/node/node.ts",
+          "packages/ts/src/node/node.tsx",
+          "packages/ts/src/node/node.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-material-owner.ts",
+        "ref": "../../packages/ts/src/protocol/messages.js",
+        "kind": "import",
+        "line": 6,
+        "status": "included",
+        "resolved": "packages/ts/src/protocol/messages.ts",
+        "candidates": [
+          "packages/ts/src/protocol/messages.ts",
+          "packages/ts/src/protocol/messages.tsx",
+          "packages/ts/src/protocol/messages.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-material-owner.ts",
+        "ref": "../../packages/ts/src/solutions/causal-occurrence/contracts.js",
+        "kind": "import",
+        "line": 7,
+        "status": "included",
+        "resolved": "packages/ts/src/solutions/causal-occurrence/contracts.ts",
+        "candidates": [
+          "packages/ts/src/solutions/causal-occurrence/contracts.ts",
+          "packages/ts/src/solutions/causal-occurrence/contracts.tsx",
+          "packages/ts/src/solutions/causal-occurrence/contracts.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-material-owner.ts",
+        "ref": "./causal-business.js",
+        "kind": "import",
+        "line": 8,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-business.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-business.ts",
+          "examples/spending-alerts/causal-business.tsx",
+          "examples/spending-alerts/causal-business.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-material-owner.ts",
+        "ref": "./causal-inputs.js",
+        "kind": "import",
+        "line": 16,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-inputs.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-inputs.ts",
+          "examples/spending-alerts/causal-inputs.tsx",
+          "examples/spending-alerts/causal-inputs.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-material-owner.ts",
+        "ref": "./causal-publication.js",
+        "kind": "import",
+        "line": 23,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-publication.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-publication.ts",
+          "examples/spending-alerts/causal-publication.tsx",
+          "examples/spending-alerts/causal-publication.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-material-owner.ts",
+        "ref": "./pipeline.js",
+        "kind": "import",
+        "line": 32,
+        "status": "included",
+        "resolved": "examples/spending-alerts/pipeline.ts",
+        "candidates": [
+          "examples/spending-alerts/pipeline.ts",
+          "examples/spending-alerts/pipeline.tsx",
+          "examples/spending-alerts/pipeline.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-ordinary-panel.ts",
+        "ref": "./causal-preset.js",
+        "kind": "import",
+        "line": 2,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-preset.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-preset.ts",
+          "examples/spending-alerts/causal-preset.tsx",
+          "examples/spending-alerts/causal-preset.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-ordinary-panel.ts",
+        "ref": "./causal-view-binding.js",
+        "kind": "import",
+        "line": 3,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-view-binding.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-view-binding.ts",
+          "examples/spending-alerts/causal-view-binding.tsx",
+          "examples/spending-alerts/causal-view-binding.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-preset.ts",
+        "ref": "../../packages/ts/src/ctx/types.js",
+        "kind": "import",
+        "line": 2,
+        "status": "included",
+        "resolved": "packages/ts/src/ctx/types.ts",
+        "candidates": [
+          "packages/ts/src/ctx/types.ts",
+          "packages/ts/src/ctx/types.tsx",
+          "packages/ts/src/ctx/types.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-preset.ts",
+        "ref": "../../packages/ts/src/data/index.js",
+        "kind": "import",
+        "line": 3,
+        "status": "included",
+        "resolved": "packages/ts/src/data/index.ts",
+        "candidates": [
+          "packages/ts/src/data/index.ts",
+          "packages/ts/src/data/index.tsx",
+          "packages/ts/src/data/index.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-preset.ts",
+        "ref": "../../packages/ts/src/graph/construction-scope.js",
+        "kind": "import",
+        "line": 4,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/construction-scope.ts",
+        "candidates": [
+          "packages/ts/src/graph/construction-scope.ts",
+          "packages/ts/src/graph/construction-scope.tsx",
+          "packages/ts/src/graph/construction-scope.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-preset.ts",
+        "ref": "../../packages/ts/src/graph/graph.js",
+        "kind": "import",
+        "line": 8,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/graph.ts",
+        "candidates": [
+          "packages/ts/src/graph/graph.ts",
+          "packages/ts/src/graph/graph.tsx",
+          "packages/ts/src/graph/graph.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-preset.ts",
+        "ref": "../../packages/ts/src/node/node.js",
+        "kind": "import",
+        "line": 9,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node.ts",
+        "candidates": [
+          "packages/ts/src/node/node.ts",
+          "packages/ts/src/node/node.tsx",
+          "packages/ts/src/node/node.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-preset.ts",
+        "ref": "../../packages/ts/src/solutions/causal-occurrence/capabilities.js",
+        "kind": "import",
+        "line": 10,
+        "status": "included",
+        "resolved": "packages/ts/src/solutions/causal-occurrence/capabilities.ts",
+        "candidates": [
+          "packages/ts/src/solutions/causal-occurrence/capabilities.ts",
+          "packages/ts/src/solutions/causal-occurrence/capabilities.tsx",
+          "packages/ts/src/solutions/causal-occurrence/capabilities.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-preset.ts",
+        "ref": "../../packages/ts/src/solutions/causal-occurrence/construction.js",
+        "kind": "import",
+        "line": 14,
+        "status": "included",
+        "resolved": "packages/ts/src/solutions/causal-occurrence/construction.ts",
+        "candidates": [
+          "packages/ts/src/solutions/causal-occurrence/construction.ts",
+          "packages/ts/src/solutions/causal-occurrence/construction.tsx",
+          "packages/ts/src/solutions/causal-occurrence/construction.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-preset.ts",
+        "ref": "./causal-admission.js",
+        "kind": "import",
+        "line": 19,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-admission.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-admission.ts",
+          "examples/spending-alerts/causal-admission.tsx",
+          "examples/spending-alerts/causal-admission.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-preset.ts",
+        "ref": "./causal-business.js",
+        "kind": "import",
+        "line": 20,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-business.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-business.ts",
+          "examples/spending-alerts/causal-business.tsx",
+          "examples/spending-alerts/causal-business.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-preset.ts",
+        "ref": "./causal-inputs.js",
+        "kind": "import",
+        "line": 21,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-inputs.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-inputs.ts",
+          "examples/spending-alerts/causal-inputs.tsx",
+          "examples/spending-alerts/causal-inputs.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-preset.ts",
+        "ref": "./causal-material-owner.js",
+        "kind": "import",
+        "line": 28,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-material-owner.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-material-owner.ts",
+          "examples/spending-alerts/causal-material-owner.tsx",
+          "examples/spending-alerts/causal-material-owner.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-preset.ts",
+        "ref": "./causal-publication.js",
+        "kind": "import",
+        "line": 29,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-publication.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-publication.ts",
+          "examples/spending-alerts/causal-publication.tsx",
+          "examples/spending-alerts/causal-publication.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-publication.ts",
+        "ref": "node:crypto",
+        "kind": "import",
+        "line": 2,
+        "status": "external",
+        "resolved": null
+      },
+      {
+        "from": "examples/spending-alerts/causal-publication.ts",
+        "ref": "../../packages/ts/src/ctx/types.js",
+        "kind": "import",
+        "line": 3,
+        "status": "included",
+        "resolved": "packages/ts/src/ctx/types.ts",
+        "candidates": [
+          "packages/ts/src/ctx/types.ts",
+          "packages/ts/src/ctx/types.tsx",
+          "packages/ts/src/ctx/types.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-publication.ts",
+        "ref": "../../packages/ts/src/graph/construction-scope.js",
+        "kind": "import",
+        "line": 4,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/construction-scope.ts",
+        "candidates": [
+          "packages/ts/src/graph/construction-scope.ts",
+          "packages/ts/src/graph/construction-scope.tsx",
+          "packages/ts/src/graph/construction-scope.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-publication.ts",
+        "ref": "../../packages/ts/src/graph/graph.js",
+        "kind": "import",
+        "line": 8,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/graph.ts",
+        "candidates": [
+          "packages/ts/src/graph/graph.ts",
+          "packages/ts/src/graph/graph.tsx",
+          "packages/ts/src/graph/graph.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-publication.ts",
+        "ref": "../../packages/ts/src/node/node.js",
+        "kind": "import",
+        "line": 9,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node.ts",
+        "candidates": [
+          "packages/ts/src/node/node.ts",
+          "packages/ts/src/node/node.tsx",
+          "packages/ts/src/node/node.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-publication.ts",
+        "ref": "../../packages/ts/src/solutions/causal-occurrence/capabilities.js",
+        "kind": "import",
+        "line": 10,
+        "status": "included",
+        "resolved": "packages/ts/src/solutions/causal-occurrence/capabilities.ts",
+        "candidates": [
+          "packages/ts/src/solutions/causal-occurrence/capabilities.ts",
+          "packages/ts/src/solutions/causal-occurrence/capabilities.tsx",
+          "packages/ts/src/solutions/causal-occurrence/capabilities.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-publication.ts",
+        "ref": "../../packages/ts/src/solutions/causal-occurrence/construction.js",
+        "kind": "import",
+        "line": 11,
+        "status": "included",
+        "resolved": "packages/ts/src/solutions/causal-occurrence/construction.ts",
+        "candidates": [
+          "packages/ts/src/solutions/causal-occurrence/construction.ts",
+          "packages/ts/src/solutions/causal-occurrence/construction.tsx",
+          "packages/ts/src/solutions/causal-occurrence/construction.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-publication.ts",
+        "ref": "../../packages/ts/src/solutions/causal-occurrence/contracts.js",
+        "kind": "import",
+        "line": 12,
+        "status": "included",
+        "resolved": "packages/ts/src/solutions/causal-occurrence/contracts.ts",
+        "candidates": [
+          "packages/ts/src/solutions/causal-occurrence/contracts.ts",
+          "packages/ts/src/solutions/causal-occurrence/contracts.tsx",
+          "packages/ts/src/solutions/causal-occurrence/contracts.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-resource.ts",
+        "ref": "node:path",
+        "kind": "import",
+        "line": 2,
+        "status": "external",
+        "resolved": null
+      },
+      {
+        "from": "examples/spending-alerts/causal-resource.ts",
+        "ref": "./causal-inputs.js",
+        "kind": "import",
+        "line": 3,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-inputs.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-inputs.ts",
+          "examples/spending-alerts/causal-inputs.tsx",
+          "examples/spending-alerts/causal-inputs.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-resource.ts",
+        "ref": "node:fs/promises",
+        "kind": "import",
+        "line": 142,
+        "status": "external",
+        "resolved": null
+      },
+      {
+        "from": "examples/spending-alerts/causal-resource.ts",
+        "ref": "node:fs/promises",
+        "kind": "import",
+        "line": 250,
+        "status": "external",
+        "resolved": null
+      },
+      {
+        "from": "examples/spending-alerts/causal-view-binding.ts",
+        "ref": "../../packages/ts/src/node/node.js",
+        "kind": "import",
+        "line": 2,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node.ts",
+        "candidates": [
+          "packages/ts/src/node/node.ts",
+          "packages/ts/src/node/node.tsx",
+          "packages/ts/src/node/node.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-view-binding.ts",
+        "ref": "./causal-preset.js",
+        "kind": "import",
+        "line": 3,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-preset.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-preset.ts",
+          "examples/spending-alerts/causal-preset.tsx",
+          "examples/spending-alerts/causal-preset.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/pipeline.ts",
+        "ref": "@graphrefly/ts/core",
+        "kind": "import",
+        "line": 30,
+        "status": "external",
+        "resolved": null
+      },
+      {
+        "from": "examples/spending-alerts/pipeline.ts",
+        "ref": "@graphrefly/ts/graph",
+        "kind": "import",
+        "line": 31,
+        "status": "external",
+        "resolved": null
+      },
+      {
+        "from": "packages/ts/src/batch/batch.ts",
+        "ref": "../protocol/messages.js",
+        "kind": "import",
+        "line": 15,
+        "status": "included",
+        "resolved": "packages/ts/src/protocol/messages.ts",
+        "candidates": [
+          "packages/ts/src/protocol/messages.ts",
+          "packages/ts/src/protocol/messages.tsx",
+          "packages/ts/src/protocol/messages.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/batch/batch.ts",
+        "ref": "./boundary.js",
+        "kind": "import",
+        "line": 16,
+        "status": "included",
+        "resolved": "packages/ts/src/batch/boundary.ts",
+        "candidates": [
+          "packages/ts/src/batch/boundary.ts",
+          "packages/ts/src/batch/boundary.tsx",
+          "packages/ts/src/batch/boundary.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/batch/boundary.ts",
+        "ref": "../node/core.js",
+        "kind": "import",
+        "line": 33,
+        "status": "included",
+        "resolved": "packages/ts/src/node/core.ts",
+        "candidates": [
+          "packages/ts/src/node/core.ts",
+          "packages/ts/src/node/core.tsx",
+          "packages/ts/src/node/core.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/ctx/types.ts",
+        "ref": "../dispatcher/index.js",
+        "kind": "import",
+        "line": 8,
+        "status": "included",
+        "resolved": "packages/ts/src/dispatcher/index.ts",
+        "candidates": [
+          "packages/ts/src/dispatcher/index.ts",
+          "packages/ts/src/dispatcher/index.tsx",
+          "packages/ts/src/dispatcher/index.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/ctx/types.ts",
+        "ref": "../graph/environment.js",
+        "kind": "import",
+        "line": 9,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/environment.ts",
+        "candidates": [
+          "packages/ts/src/graph/environment.ts",
+          "packages/ts/src/graph/environment.tsx",
+          "packages/ts/src/graph/environment.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/ctx/types.ts",
+        "ref": "../node/node.js",
+        "kind": "import",
+        "line": 10,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node.ts",
+        "candidates": [
+          "packages/ts/src/node/node.ts",
+          "packages/ts/src/node/node.tsx",
+          "packages/ts/src/node/node.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/ctx/types.ts",
+        "ref": "../protocol/messages.js",
+        "kind": "import",
+        "line": 11,
+        "status": "included",
+        "resolved": "packages/ts/src/protocol/messages.ts",
+        "candidates": [
+          "packages/ts/src/protocol/messages.ts",
+          "packages/ts/src/protocol/messages.tsx",
+          "packages/ts/src/protocol/messages.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/dispatcher/index.ts",
+        "ref": "../ctx/types.js",
+        "kind": "import",
+        "line": 13,
+        "status": "included",
+        "resolved": "packages/ts/src/ctx/types.ts",
+        "candidates": [
+          "packages/ts/src/ctx/types.ts",
+          "packages/ts/src/ctx/types.tsx",
+          "packages/ts/src/ctx/types.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/blueprint.ts",
+        "ref": "../identity.js",
+        "kind": "import",
+        "line": 8,
+        "status": "included",
+        "resolved": "packages/ts/src/identity.ts",
+        "candidates": [
+          "packages/ts/src/identity.ts",
+          "packages/ts/src/identity.tsx",
+          "packages/ts/src/identity.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/blueprint.ts",
+        "ref": "../json/codec.js",
+        "kind": "import",
+        "line": 9,
+        "status": "included",
+        "resolved": "packages/ts/src/json/codec.ts",
+        "candidates": [
+          "packages/ts/src/json/codec.ts",
+          "packages/ts/src/json/codec.tsx",
+          "packages/ts/src/json/codec.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/blueprint.ts",
+        "ref": "./describe.js",
+        "kind": "import",
+        "line": 16,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/describe.ts",
+        "candidates": [
+          "packages/ts/src/graph/describe.ts",
+          "packages/ts/src/graph/describe.tsx",
+          "packages/ts/src/graph/describe.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/checkpoint.ts",
+        "ref": "../node/runtime-accessors.js",
+        "kind": "import",
+        "line": 1,
+        "status": "included",
+        "resolved": "packages/ts/src/node/runtime-accessors.ts",
+        "candidates": [
+          "packages/ts/src/node/runtime-accessors.ts",
+          "packages/ts/src/node/runtime-accessors.tsx",
+          "packages/ts/src/node/runtime-accessors.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/checkpoint.ts",
+        "ref": "../json/codec.js",
+        "kind": "import",
+        "line": 9,
+        "status": "included",
+        "resolved": "packages/ts/src/json/codec.ts",
+        "candidates": [
+          "packages/ts/src/json/codec.ts",
+          "packages/ts/src/json/codec.tsx",
+          "packages/ts/src/json/codec.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/checkpoint.ts",
+        "ref": "../node/node.js",
+        "kind": "import",
+        "line": 10,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node.ts",
+        "candidates": [
+          "packages/ts/src/node/node.ts",
+          "packages/ts/src/node/node.tsx",
+          "packages/ts/src/node/node.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/checkpoint.ts",
+        "ref": "../node/versioning.js",
+        "kind": "import",
+        "line": 11,
+        "status": "included",
+        "resolved": "packages/ts/src/node/versioning.ts",
+        "candidates": [
+          "packages/ts/src/node/versioning.ts",
+          "packages/ts/src/node/versioning.tsx",
+          "packages/ts/src/node/versioning.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/checkpoint.ts",
+        "ref": "../protocol/messages.js",
+        "kind": "import",
+        "line": 12,
+        "status": "included",
+        "resolved": "packages/ts/src/protocol/messages.ts",
+        "candidates": [
+          "packages/ts/src/protocol/messages.ts",
+          "packages/ts/src/protocol/messages.tsx",
+          "packages/ts/src/protocol/messages.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/combinators.ts",
+        "ref": "../ctx/types.js",
+        "kind": "import",
+        "line": 25,
+        "status": "included",
+        "resolved": "packages/ts/src/ctx/types.ts",
+        "candidates": [
+          "packages/ts/src/ctx/types.ts",
+          "packages/ts/src/ctx/types.tsx",
+          "packages/ts/src/ctx/types.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/combinators.ts",
+        "ref": "./operators.js",
+        "kind": "import",
+        "line": 36,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/operators.ts",
+        "candidates": [
+          "packages/ts/src/graph/operators.ts",
+          "packages/ts/src/graph/operators.tsx",
+          "packages/ts/src/graph/operators.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/construction-scope.ts",
+        "ref": "../batch/batch.js",
+        "kind": "import",
+        "line": 1,
+        "status": "included",
+        "resolved": "packages/ts/src/batch/batch.ts",
+        "candidates": [
+          "packages/ts/src/batch/batch.ts",
+          "packages/ts/src/batch/batch.tsx",
+          "packages/ts/src/batch/batch.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/construction-scope.ts",
+        "ref": "../batch/boundary.js",
+        "kind": "import",
+        "line": 2,
+        "status": "included",
+        "resolved": "packages/ts/src/batch/boundary.ts",
+        "candidates": [
+          "packages/ts/src/batch/boundary.ts",
+          "packages/ts/src/batch/boundary.tsx",
+          "packages/ts/src/batch/boundary.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/construction-scope.ts",
+        "ref": "../ctx/types.js",
+        "kind": "import",
+        "line": 3,
+        "status": "included",
+        "resolved": "packages/ts/src/ctx/types.ts",
+        "candidates": [
+          "packages/ts/src/ctx/types.ts",
+          "packages/ts/src/ctx/types.tsx",
+          "packages/ts/src/ctx/types.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/construction-scope.ts",
+        "ref": "../node/node.js",
+        "kind": "import",
+        "line": 4,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node.ts",
+        "candidates": [
+          "packages/ts/src/node/node.ts",
+          "packages/ts/src/node/node.tsx",
+          "packages/ts/src/node/node.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/construction-scope.ts",
+        "ref": "../node/node-runtime-host.js",
+        "kind": "import",
+        "line": 5,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node-runtime-host.ts",
+        "candidates": [
+          "packages/ts/src/node/node-runtime-host.ts",
+          "packages/ts/src/node/node-runtime-host.tsx",
+          "packages/ts/src/node/node-runtime-host.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/construction-scope.ts",
+        "ref": "../node/owned-acquisition.js",
+        "kind": "import",
+        "line": 6,
+        "status": "included",
+        "resolved": "packages/ts/src/node/owned-acquisition.ts",
+        "candidates": [
+          "packages/ts/src/node/owned-acquisition.ts",
+          "packages/ts/src/node/owned-acquisition.tsx",
+          "packages/ts/src/node/owned-acquisition.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/construction-scope.ts",
+        "ref": "../node/runtime-accessors.js",
+        "kind": "import",
+        "line": 11,
+        "status": "included",
+        "resolved": "packages/ts/src/node/runtime-accessors.ts",
+        "candidates": [
+          "packages/ts/src/node/runtime-accessors.ts",
+          "packages/ts/src/node/runtime-accessors.tsx",
+          "packages/ts/src/node/runtime-accessors.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/construction-scope.ts",
+        "ref": "./describe.js",
+        "kind": "import",
+        "line": 12,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/describe.ts",
+        "candidates": [
+          "packages/ts/src/graph/describe.ts",
+          "packages/ts/src/graph/describe.tsx",
+          "packages/ts/src/graph/describe.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/construction-scope.ts",
+        "ref": "./graph.js",
+        "kind": "import",
+        "line": 13,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/graph.ts",
+        "candidates": [
+          "packages/ts/src/graph/graph.ts",
+          "packages/ts/src/graph/graph.tsx",
+          "packages/ts/src/graph/graph.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/construction-scope.ts",
+        "ref": "./graph-lifecycle.js",
+        "kind": "import",
+        "line": 14,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/graph-lifecycle.ts",
+        "candidates": [
+          "packages/ts/src/graph/graph-lifecycle.ts",
+          "packages/ts/src/graph/graph-lifecycle.tsx",
+          "packages/ts/src/graph/graph-lifecycle.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/construction-scope.ts",
+        "ref": "./graph-types.js",
+        "kind": "import",
+        "line": 15,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/graph-types.ts",
+        "candidates": [
+          "packages/ts/src/graph/graph-types.ts",
+          "packages/ts/src/graph/graph-types.tsx",
+          "packages/ts/src/graph/graph-types.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/construction-scope.ts",
+        "ref": "./operators.js",
+        "kind": "import",
+        "line": 16,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/operators.ts",
+        "candidates": [
+          "packages/ts/src/graph/operators.ts",
+          "packages/ts/src/graph/operators.tsx",
+          "packages/ts/src/graph/operators.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/data-structures/core.ts",
+        "ref": "../../ctx/types.js",
+        "kind": "import",
+        "line": 34,
+        "status": "included",
+        "resolved": "packages/ts/src/ctx/types.ts",
+        "candidates": [
+          "packages/ts/src/ctx/types.ts",
+          "packages/ts/src/ctx/types.tsx",
+          "packages/ts/src/ctx/types.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/data-structures/core.ts",
+        "ref": "../../dispatcher/index.js",
+        "kind": "import",
+        "line": 35,
+        "status": "included",
+        "resolved": "packages/ts/src/dispatcher/index.ts",
+        "candidates": [
+          "packages/ts/src/dispatcher/index.ts",
+          "packages/ts/src/dispatcher/index.tsx",
+          "packages/ts/src/dispatcher/index.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/data-structures/core.ts",
+        "ref": "../../node/node.js",
+        "kind": "import",
+        "line": 36,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node.ts",
+        "candidates": [
+          "packages/ts/src/node/node.ts",
+          "packages/ts/src/node/node.tsx",
+          "packages/ts/src/node/node.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/data-structures/core.ts",
+        "ref": "../../protocol/messages.js",
+        "kind": "import",
+        "line": 37,
+        "status": "included",
+        "resolved": "packages/ts/src/protocol/messages.ts",
+        "candidates": [
+          "packages/ts/src/protocol/messages.ts",
+          "packages/ts/src/protocol/messages.tsx",
+          "packages/ts/src/protocol/messages.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/data-structures/core.ts",
+        "ref": "../checkpoint.js",
+        "kind": "import",
+        "line": 38,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/checkpoint.ts",
+        "candidates": [
+          "packages/ts/src/graph/checkpoint.ts",
+          "packages/ts/src/graph/checkpoint.tsx",
+          "packages/ts/src/graph/checkpoint.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/data-structures/core.ts",
+        "ref": "../graph.js",
+        "kind": "import",
+        "line": 39,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/graph.ts",
+        "candidates": [
+          "packages/ts/src/graph/graph.ts",
+          "packages/ts/src/graph/graph.tsx",
+          "packages/ts/src/graph/graph.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/data-structures/core.ts",
+        "ref": "../operators.js",
+        "kind": "import",
+        "line": 40,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/operators.ts",
+        "candidates": [
+          "packages/ts/src/graph/operators.ts",
+          "packages/ts/src/graph/operators.tsx",
+          "packages/ts/src/graph/operators.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/data-structures/core.ts",
+        "ref": "../policies/types.js",
+        "kind": "import",
+        "line": 41,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/policies/types.ts",
+        "candidates": [
+          "packages/ts/src/graph/policies/types.ts",
+          "packages/ts/src/graph/policies/types.tsx",
+          "packages/ts/src/graph/policies/types.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/data-structures/reactive-index.ts",
+        "ref": "../../ctx/types.js",
+        "kind": "import",
+        "line": 15,
+        "status": "included",
+        "resolved": "packages/ts/src/ctx/types.ts",
+        "candidates": [
+          "packages/ts/src/ctx/types.ts",
+          "packages/ts/src/ctx/types.tsx",
+          "packages/ts/src/ctx/types.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/data-structures/reactive-index.ts",
+        "ref": "../../node/node.js",
+        "kind": "import",
+        "line": 16,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node.ts",
+        "candidates": [
+          "packages/ts/src/node/node.ts",
+          "packages/ts/src/node/node.tsx",
+          "packages/ts/src/node/node.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/data-structures/reactive-index.ts",
+        "ref": "../../protocol/messages.js",
+        "kind": "import",
+        "line": 17,
+        "status": "included",
+        "resolved": "packages/ts/src/protocol/messages.ts",
+        "candidates": [
+          "packages/ts/src/protocol/messages.ts",
+          "packages/ts/src/protocol/messages.tsx",
+          "packages/ts/src/protocol/messages.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/data-structures/reactive-index.ts",
+        "ref": "../operators.js",
+        "kind": "import",
+        "line": 18,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/operators.ts",
+        "candidates": [
+          "packages/ts/src/graph/operators.ts",
+          "packages/ts/src/graph/operators.tsx",
+          "packages/ts/src/graph/operators.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/data-structures/reactive-index.ts",
+        "ref": "../policies/types.js",
+        "kind": "import",
+        "line": 19,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/policies/types.ts",
+        "candidates": [
+          "packages/ts/src/graph/policies/types.ts",
+          "packages/ts/src/graph/policies/types.tsx",
+          "packages/ts/src/graph/policies/types.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/data-structures/reactive-index.ts",
+        "ref": "./change.js",
+        "kind": "import",
+        "line": 20,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/data-structures/change.ts",
+        "candidates": [
+          "packages/ts/src/graph/data-structures/change.ts",
+          "packages/ts/src/graph/data-structures/change.tsx",
+          "packages/ts/src/graph/data-structures/change.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/data-structures/reactive-index.ts",
+        "ref": "./core.js",
+        "kind": "import",
+        "line": 21,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/data-structures/core.ts",
+        "candidates": [
+          "packages/ts/src/graph/data-structures/core.ts",
+          "packages/ts/src/graph/data-structures/core.tsx",
+          "packages/ts/src/graph/data-structures/core.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/data-structures/reactive-list.ts",
+        "ref": "../../ctx/types.js",
+        "kind": "import",
+        "line": 15,
+        "status": "included",
+        "resolved": "packages/ts/src/ctx/types.ts",
+        "candidates": [
+          "packages/ts/src/ctx/types.ts",
+          "packages/ts/src/ctx/types.tsx",
+          "packages/ts/src/ctx/types.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/data-structures/reactive-list.ts",
+        "ref": "../../node/node.js",
+        "kind": "import",
+        "line": 16,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node.ts",
+        "candidates": [
+          "packages/ts/src/node/node.ts",
+          "packages/ts/src/node/node.tsx",
+          "packages/ts/src/node/node.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/data-structures/reactive-list.ts",
+        "ref": "../../protocol/messages.js",
+        "kind": "import",
+        "line": 17,
+        "status": "included",
+        "resolved": "packages/ts/src/protocol/messages.ts",
+        "candidates": [
+          "packages/ts/src/protocol/messages.ts",
+          "packages/ts/src/protocol/messages.tsx",
+          "packages/ts/src/protocol/messages.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/data-structures/reactive-list.ts",
+        "ref": "../operators.js",
+        "kind": "import",
+        "line": 18,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/operators.ts",
+        "candidates": [
+          "packages/ts/src/graph/operators.ts",
+          "packages/ts/src/graph/operators.tsx",
+          "packages/ts/src/graph/operators.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/data-structures/reactive-list.ts",
+        "ref": "../policies/collection.js",
+        "kind": "import",
+        "line": 19,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/policies/collection.ts",
+        "candidates": [
+          "packages/ts/src/graph/policies/collection.ts",
+          "packages/ts/src/graph/policies/collection.tsx",
+          "packages/ts/src/graph/policies/collection.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/data-structures/reactive-list.ts",
+        "ref": "../policies/types.js",
+        "kind": "import",
+        "line": 20,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/policies/types.ts",
+        "candidates": [
+          "packages/ts/src/graph/policies/types.ts",
+          "packages/ts/src/graph/policies/types.tsx",
+          "packages/ts/src/graph/policies/types.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/data-structures/reactive-list.ts",
+        "ref": "./change.js",
+        "kind": "import",
+        "line": 21,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/data-structures/change.ts",
+        "candidates": [
+          "packages/ts/src/graph/data-structures/change.ts",
+          "packages/ts/src/graph/data-structures/change.tsx",
+          "packages/ts/src/graph/data-structures/change.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/data-structures/reactive-list.ts",
+        "ref": "./core.js",
+        "kind": "import",
+        "line": 22,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/data-structures/core.ts",
+        "candidates": [
+          "packages/ts/src/graph/data-structures/core.ts",
+          "packages/ts/src/graph/data-structures/core.tsx",
+          "packages/ts/src/graph/data-structures/core.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/data-structures/reactive-log.ts",
+        "ref": "../../ctx/types.js",
+        "kind": "import",
+        "line": 21,
+        "status": "included",
+        "resolved": "packages/ts/src/ctx/types.ts",
+        "candidates": [
+          "packages/ts/src/ctx/types.ts",
+          "packages/ts/src/ctx/types.tsx",
+          "packages/ts/src/ctx/types.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/data-structures/reactive-log.ts",
+        "ref": "../../node/node.js",
+        "kind": "import",
+        "line": 22,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node.ts",
+        "candidates": [
+          "packages/ts/src/node/node.ts",
+          "packages/ts/src/node/node.tsx",
+          "packages/ts/src/node/node.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/data-structures/reactive-log.ts",
+        "ref": "../checkpoint.js",
+        "kind": "import",
+        "line": 23,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/checkpoint.ts",
+        "candidates": [
+          "packages/ts/src/graph/checkpoint.ts",
+          "packages/ts/src/graph/checkpoint.tsx",
+          "packages/ts/src/graph/checkpoint.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/data-structures/reactive-log.ts",
+        "ref": "../policies/collection.js",
+        "kind": "import",
+        "line": 24,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/policies/collection.ts",
+        "candidates": [
+          "packages/ts/src/graph/policies/collection.ts",
+          "packages/ts/src/graph/policies/collection.tsx",
+          "packages/ts/src/graph/policies/collection.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/data-structures/reactive-log.ts",
+        "ref": "../policies/types.js",
+        "kind": "import",
+        "line": 25,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/policies/types.ts",
+        "candidates": [
+          "packages/ts/src/graph/policies/types.ts",
+          "packages/ts/src/graph/policies/types.tsx",
+          "packages/ts/src/graph/policies/types.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/data-structures/reactive-log.ts",
+        "ref": "./change.js",
+        "kind": "import",
+        "line": 26,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/data-structures/change.ts",
+        "candidates": [
+          "packages/ts/src/graph/data-structures/change.ts",
+          "packages/ts/src/graph/data-structures/change.tsx",
+          "packages/ts/src/graph/data-structures/change.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/data-structures/reactive-log.ts",
+        "ref": "./core.js",
+        "kind": "import",
+        "line": 27,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/data-structures/core.ts",
+        "candidates": [
+          "packages/ts/src/graph/data-structures/core.ts",
+          "packages/ts/src/graph/data-structures/core.tsx",
+          "packages/ts/src/graph/data-structures/core.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/data-structures/reactive-map.ts",
+        "ref": "../../ctx/types.js",
+        "kind": "import",
+        "line": 24,
+        "status": "included",
+        "resolved": "packages/ts/src/ctx/types.ts",
+        "candidates": [
+          "packages/ts/src/ctx/types.ts",
+          "packages/ts/src/ctx/types.tsx",
+          "packages/ts/src/ctx/types.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/data-structures/reactive-map.ts",
+        "ref": "../../json/codec.js",
+        "kind": "import",
+        "line": 32,
+        "status": "included",
+        "resolved": "packages/ts/src/json/codec.ts",
+        "candidates": [
+          "packages/ts/src/json/codec.ts",
+          "packages/ts/src/json/codec.tsx",
+          "packages/ts/src/json/codec.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/data-structures/reactive-map.ts",
+        "ref": "../../node/node.js",
+        "kind": "import",
+        "line": 33,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node.ts",
+        "candidates": [
+          "packages/ts/src/node/node.ts",
+          "packages/ts/src/node/node.tsx",
+          "packages/ts/src/node/node.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/data-structures/reactive-map.ts",
+        "ref": "../../protocol/messages.js",
+        "kind": "import",
+        "line": 34,
+        "status": "included",
+        "resolved": "packages/ts/src/protocol/messages.ts",
+        "candidates": [
+          "packages/ts/src/protocol/messages.ts",
+          "packages/ts/src/protocol/messages.tsx",
+          "packages/ts/src/protocol/messages.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/data-structures/reactive-map.ts",
+        "ref": "../checkpoint.js",
+        "kind": "import",
+        "line": 35,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/checkpoint.ts",
+        "candidates": [
+          "packages/ts/src/graph/checkpoint.ts",
+          "packages/ts/src/graph/checkpoint.tsx",
+          "packages/ts/src/graph/checkpoint.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/data-structures/reactive-map.ts",
+        "ref": "../operators.js",
+        "kind": "import",
+        "line": 36,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/operators.ts",
+        "candidates": [
+          "packages/ts/src/graph/operators.ts",
+          "packages/ts/src/graph/operators.tsx",
+          "packages/ts/src/graph/operators.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/data-structures/reactive-map.ts",
+        "ref": "../policies/collection.js",
+        "kind": "import",
+        "line": 37,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/policies/collection.ts",
+        "candidates": [
+          "packages/ts/src/graph/policies/collection.ts",
+          "packages/ts/src/graph/policies/collection.tsx",
+          "packages/ts/src/graph/policies/collection.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/data-structures/reactive-map.ts",
+        "ref": "../policies/types.js",
+        "kind": "import",
+        "line": 46,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/policies/types.ts",
+        "candidates": [
+          "packages/ts/src/graph/policies/types.ts",
+          "packages/ts/src/graph/policies/types.tsx",
+          "packages/ts/src/graph/policies/types.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/data-structures/reactive-map.ts",
+        "ref": "../sources.js",
+        "kind": "import",
+        "line": 47,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/sources.ts",
+        "candidates": [
+          "packages/ts/src/graph/sources.ts",
+          "packages/ts/src/graph/sources.tsx",
+          "packages/ts/src/graph/sources.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/data-structures/reactive-map.ts",
+        "ref": "./change.js",
+        "kind": "import",
+        "line": 48,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/data-structures/change.ts",
+        "candidates": [
+          "packages/ts/src/graph/data-structures/change.ts",
+          "packages/ts/src/graph/data-structures/change.tsx",
+          "packages/ts/src/graph/data-structures/change.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/data-structures/reactive-map.ts",
+        "ref": "./core.js",
+        "kind": "import",
+        "line": 49,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/data-structures/core.ts",
+        "candidates": [
+          "packages/ts/src/graph/data-structures/core.ts",
+          "packages/ts/src/graph/data-structures/core.tsx",
+          "packages/ts/src/graph/data-structures/core.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/describe.ts",
+        "ref": "../node/node.js",
+        "kind": "import",
+        "line": 9,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node.ts",
+        "candidates": [
+          "packages/ts/src/node/node.ts",
+          "packages/ts/src/node/node.tsx",
+          "packages/ts/src/node/node.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/describe.ts",
+        "ref": "../node/versioning.js",
+        "kind": "import",
+        "line": 10,
+        "status": "included",
+        "resolved": "packages/ts/src/node/versioning.ts",
+        "candidates": [
+          "packages/ts/src/node/versioning.ts",
+          "packages/ts/src/node/versioning.tsx",
+          "packages/ts/src/node/versioning.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph-lifecycle.ts",
+        "ref": "../ctx/types.js",
+        "kind": "import",
+        "line": 1,
+        "status": "included",
+        "resolved": "packages/ts/src/ctx/types.ts",
+        "candidates": [
+          "packages/ts/src/ctx/types.ts",
+          "packages/ts/src/ctx/types.tsx",
+          "packages/ts/src/ctx/types.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph-lifecycle.ts",
+        "ref": "../node/node.js",
+        "kind": "import",
+        "line": 2,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node.ts",
+        "candidates": [
+          "packages/ts/src/node/node.ts",
+          "packages/ts/src/node/node.tsx",
+          "packages/ts/src/node/node.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph-lifecycle.ts",
+        "ref": "../node/owned-acquisition.js",
+        "kind": "import",
+        "line": 3,
+        "status": "included",
+        "resolved": "packages/ts/src/node/owned-acquisition.ts",
+        "candidates": [
+          "packages/ts/src/node/owned-acquisition.ts",
+          "packages/ts/src/node/owned-acquisition.tsx",
+          "packages/ts/src/node/owned-acquisition.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph-lifecycle.ts",
+        "ref": "./construction-scope.js",
+        "kind": "import",
+        "line": 4,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/construction-scope.ts",
+        "candidates": [
+          "packages/ts/src/graph/construction-scope.ts",
+          "packages/ts/src/graph/construction-scope.tsx",
+          "packages/ts/src/graph/construction-scope.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph-lifecycle.ts",
+        "ref": "./describe.js",
+        "kind": "import",
+        "line": 5,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/describe.ts",
+        "candidates": [
+          "packages/ts/src/graph/describe.ts",
+          "packages/ts/src/graph/describe.tsx",
+          "packages/ts/src/graph/describe.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph-lifecycle.ts",
+        "ref": "./graph.js",
+        "kind": "import",
+        "line": 6,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/graph.ts",
+        "candidates": [
+          "packages/ts/src/graph/graph.ts",
+          "packages/ts/src/graph/graph.tsx",
+          "packages/ts/src/graph/graph.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph-lifecycle.ts",
+        "ref": "./graph-types.js",
+        "kind": "import",
+        "line": 7,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/graph-types.ts",
+        "candidates": [
+          "packages/ts/src/graph/graph-types.ts",
+          "packages/ts/src/graph/graph-types.tsx",
+          "packages/ts/src/graph/graph-types.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph-support.ts",
+        "ref": "../node/node.js",
+        "kind": "import",
+        "line": 1,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node.ts",
+        "candidates": [
+          "packages/ts/src/node/node.ts",
+          "packages/ts/src/node/node.tsx",
+          "packages/ts/src/node/node.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph-support.ts",
+        "ref": "./checkpoint.js",
+        "kind": "import",
+        "line": 2,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/checkpoint.ts",
+        "candidates": [
+          "packages/ts/src/graph/checkpoint.ts",
+          "packages/ts/src/graph/checkpoint.tsx",
+          "packages/ts/src/graph/checkpoint.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph-support.ts",
+        "ref": "./describe.js",
+        "kind": "import",
+        "line": 3,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/describe.ts",
+        "candidates": [
+          "packages/ts/src/graph/describe.ts",
+          "packages/ts/src/graph/describe.tsx",
+          "packages/ts/src/graph/describe.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph-support.ts",
+        "ref": "./inspect.js",
+        "kind": "import",
+        "line": 4,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/inspect.ts",
+        "candidates": [
+          "packages/ts/src/graph/inspect.ts",
+          "packages/ts/src/graph/inspect.tsx",
+          "packages/ts/src/graph/inspect.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph-topology-group.ts",
+        "ref": "../ctx/types.js",
+        "kind": "import",
+        "line": 1,
+        "status": "included",
+        "resolved": "packages/ts/src/ctx/types.ts",
+        "candidates": [
+          "packages/ts/src/ctx/types.ts",
+          "packages/ts/src/ctx/types.tsx",
+          "packages/ts/src/ctx/types.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph-topology-group.ts",
+        "ref": "../node/node.js",
+        "kind": "import",
+        "line": 2,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node.ts",
+        "candidates": [
+          "packages/ts/src/node/node.ts",
+          "packages/ts/src/node/node.tsx",
+          "packages/ts/src/node/node.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph-topology-group.ts",
+        "ref": "./graph.js",
+        "kind": "import",
+        "line": 3,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/graph.ts",
+        "candidates": [
+          "packages/ts/src/graph/graph.ts",
+          "packages/ts/src/graph/graph.tsx",
+          "packages/ts/src/graph/graph.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph-topology-group.ts",
+        "ref": "./graph-lifecycle.js",
+        "kind": "import",
+        "line": 4,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/graph-lifecycle.ts",
+        "candidates": [
+          "packages/ts/src/graph/graph-lifecycle.ts",
+          "packages/ts/src/graph/graph-lifecycle.tsx",
+          "packages/ts/src/graph/graph-lifecycle.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph-topology-group.ts",
+        "ref": "./graph-types.js",
+        "kind": "import",
+        "line": 5,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/graph-types.ts",
+        "candidates": [
+          "packages/ts/src/graph/graph-types.ts",
+          "packages/ts/src/graph/graph-types.tsx",
+          "packages/ts/src/graph/graph-types.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph-topology-group.ts",
+        "ref": "./operators.js",
+        "kind": "import",
+        "line": 6,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/operators.ts",
+        "candidates": [
+          "packages/ts/src/graph/operators.ts",
+          "packages/ts/src/graph/operators.tsx",
+          "packages/ts/src/graph/operators.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph-types.ts",
+        "ref": "../dispatcher/index.js",
+        "kind": "import",
+        "line": 1,
+        "status": "included",
+        "resolved": "packages/ts/src/dispatcher/index.ts",
+        "candidates": [
+          "packages/ts/src/dispatcher/index.ts",
+          "packages/ts/src/dispatcher/index.tsx",
+          "packages/ts/src/dispatcher/index.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph-types.ts",
+        "ref": "../node/node.js",
+        "kind": "import",
+        "line": 2,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node.ts",
+        "candidates": [
+          "packages/ts/src/node/node.ts",
+          "packages/ts/src/node/node.tsx",
+          "packages/ts/src/node/node.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph-types.ts",
+        "ref": "../node/versioning.js",
+        "kind": "import",
+        "line": 3,
+        "status": "included",
+        "resolved": "packages/ts/src/node/versioning.ts",
+        "candidates": [
+          "packages/ts/src/node/versioning.ts",
+          "packages/ts/src/node/versioning.tsx",
+          "packages/ts/src/node/versioning.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph-types.ts",
+        "ref": "./environment.js",
+        "kind": "import",
+        "line": 4,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/environment.ts",
+        "candidates": [
+          "packages/ts/src/graph/environment.ts",
+          "packages/ts/src/graph/environment.tsx",
+          "packages/ts/src/graph/environment.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "../node/runtime-accessors.js",
+        "kind": "import",
+        "line": 1,
+        "status": "included",
+        "resolved": "packages/ts/src/node/runtime-accessors.ts",
+        "candidates": [
+          "packages/ts/src/node/runtime-accessors.ts",
+          "packages/ts/src/node/runtime-accessors.tsx",
+          "packages/ts/src/node/runtime-accessors.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "./construction-scope.js",
+        "kind": "import",
+        "line": 2,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/construction-scope.ts",
+        "candidates": [
+          "packages/ts/src/graph/construction-scope.ts",
+          "packages/ts/src/graph/construction-scope.tsx",
+          "packages/ts/src/graph/construction-scope.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "../batch/batch.js",
+        "kind": "import",
+        "line": 16,
+        "status": "included",
+        "resolved": "packages/ts/src/batch/batch.ts",
+        "candidates": [
+          "packages/ts/src/batch/batch.ts",
+          "packages/ts/src/batch/batch.tsx",
+          "packages/ts/src/batch/batch.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "../ctx/types.js",
+        "kind": "import",
+        "line": 17,
+        "status": "included",
+        "resolved": "packages/ts/src/ctx/types.ts",
+        "candidates": [
+          "packages/ts/src/ctx/types.ts",
+          "packages/ts/src/ctx/types.tsx",
+          "packages/ts/src/ctx/types.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "../dispatcher/index.js",
+        "kind": "import",
+        "line": 18,
+        "status": "included",
+        "resolved": "packages/ts/src/dispatcher/index.ts",
+        "candidates": [
+          "packages/ts/src/dispatcher/index.ts",
+          "packages/ts/src/dispatcher/index.tsx",
+          "packages/ts/src/dispatcher/index.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "../node/core.js",
+        "kind": "import",
+        "line": 19,
+        "status": "included",
+        "resolved": "packages/ts/src/node/core.ts",
+        "candidates": [
+          "packages/ts/src/node/core.ts",
+          "packages/ts/src/node/core.tsx",
+          "packages/ts/src/node/core.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "../node/node.js",
+        "kind": "import",
+        "line": 20,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node.ts",
+        "candidates": [
+          "packages/ts/src/node/node.ts",
+          "packages/ts/src/node/node.tsx",
+          "packages/ts/src/node/node.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "../node/owned-acquisition.js",
+        "kind": "import",
+        "line": 35,
+        "status": "included",
+        "resolved": "packages/ts/src/node/owned-acquisition.ts",
+        "candidates": [
+          "packages/ts/src/node/owned-acquisition.ts",
+          "packages/ts/src/node/owned-acquisition.tsx",
+          "packages/ts/src/node/owned-acquisition.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "../node/versioning.js",
+        "kind": "import",
+        "line": 40,
+        "status": "included",
+        "resolved": "packages/ts/src/node/versioning.ts",
+        "candidates": [
+          "packages/ts/src/node/versioning.ts",
+          "packages/ts/src/node/versioning.tsx",
+          "packages/ts/src/node/versioning.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "../protocol/messages.js",
+        "kind": "import",
+        "line": 41,
+        "status": "included",
+        "resolved": "packages/ts/src/protocol/messages.ts",
+        "candidates": [
+          "packages/ts/src/protocol/messages.ts",
+          "packages/ts/src/protocol/messages.tsx",
+          "packages/ts/src/protocol/messages.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "./blueprint.js",
+        "kind": "import",
+        "line": 42,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/blueprint.ts",
+        "candidates": [
+          "packages/ts/src/graph/blueprint.ts",
+          "packages/ts/src/graph/blueprint.tsx",
+          "packages/ts/src/graph/blueprint.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "./checkpoint.js",
+        "kind": "import",
+        "line": 50,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/checkpoint.ts",
+        "candidates": [
+          "packages/ts/src/graph/checkpoint.ts",
+          "packages/ts/src/graph/checkpoint.tsx",
+          "packages/ts/src/graph/checkpoint.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "./describe.js",
+        "kind": "import",
+        "line": 61,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/describe.ts",
+        "candidates": [
+          "packages/ts/src/graph/describe.ts",
+          "packages/ts/src/graph/describe.tsx",
+          "packages/ts/src/graph/describe.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "./environment.js",
+        "kind": "import",
+        "line": 69,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/environment.ts",
+        "candidates": [
+          "packages/ts/src/graph/environment.ts",
+          "packages/ts/src/graph/environment.tsx",
+          "packages/ts/src/graph/environment.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "./graph-lifecycle.js",
+        "kind": "import",
+        "line": 70,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/graph-lifecycle.ts",
+        "candidates": [
+          "packages/ts/src/graph/graph-lifecycle.ts",
+          "packages/ts/src/graph/graph-lifecycle.tsx",
+          "packages/ts/src/graph/graph-lifecycle.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "./graph-support.js",
+        "kind": "import",
+        "line": 71,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/graph-support.ts",
+        "candidates": [
+          "packages/ts/src/graph/graph-support.ts",
+          "packages/ts/src/graph/graph-support.tsx",
+          "packages/ts/src/graph/graph-support.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "./graph-topology-group.js",
+        "kind": "import",
+        "line": 80,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/graph-topology-group.ts",
+        "candidates": [
+          "packages/ts/src/graph/graph-topology-group.ts",
+          "packages/ts/src/graph/graph-topology-group.tsx",
+          "packages/ts/src/graph/graph-topology-group.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "./graph-types.js",
+        "kind": "import",
+        "line": 85,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/graph-types.ts",
+        "candidates": [
+          "packages/ts/src/graph/graph-types.ts",
+          "packages/ts/src/graph/graph-types.tsx",
+          "packages/ts/src/graph/graph-types.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "./inspect.js",
+        "kind": "import",
+        "line": 86,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/inspect.ts",
+        "candidates": [
+          "packages/ts/src/graph/inspect.ts",
+          "packages/ts/src/graph/inspect.tsx",
+          "packages/ts/src/graph/inspect.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "./operators.js",
+        "kind": "import",
+        "line": 93,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/operators.ts",
+        "candidates": [
+          "packages/ts/src/graph/operators.ts",
+          "packages/ts/src/graph/operators.tsx",
+          "packages/ts/src/graph/operators.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "./graph-topology-group.js",
+        "kind": "import",
+        "line": 95,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/graph-topology-group.ts",
+        "candidates": [
+          "packages/ts/src/graph/graph-topology-group.ts",
+          "packages/ts/src/graph/graph-topology-group.tsx",
+          "packages/ts/src/graph/graph-topology-group.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "./graph-types.js",
+        "kind": "import",
+        "line": 100,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/graph-types.ts",
+        "candidates": [
+          "packages/ts/src/graph/graph-types.ts",
+          "packages/ts/src/graph/graph-types.tsx",
+          "packages/ts/src/graph/graph-types.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/higher-order.ts",
+        "ref": "../ctx/types.js",
+        "kind": "import",
+        "line": 26,
+        "status": "included",
+        "resolved": "packages/ts/src/ctx/types.ts",
+        "candidates": [
+          "packages/ts/src/ctx/types.ts",
+          "packages/ts/src/ctx/types.tsx",
+          "packages/ts/src/ctx/types.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/higher-order.ts",
+        "ref": "../node/node.js",
+        "kind": "import",
+        "line": 37,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node.ts",
+        "candidates": [
+          "packages/ts/src/node/node.ts",
+          "packages/ts/src/node/node.tsx",
+          "packages/ts/src/node/node.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/higher-order.ts",
+        "ref": "../protocol/messages.js",
+        "kind": "import",
+        "line": 38,
+        "status": "included",
+        "resolved": "packages/ts/src/protocol/messages.ts",
+        "candidates": [
+          "packages/ts/src/protocol/messages.ts",
+          "packages/ts/src/protocol/messages.tsx",
+          "packages/ts/src/protocol/messages.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/higher-order.ts",
+        "ref": "./operators.js",
+        "kind": "import",
+        "line": 39,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/operators.ts",
+        "candidates": [
+          "packages/ts/src/graph/operators.ts",
+          "packages/ts/src/graph/operators.tsx",
+          "packages/ts/src/graph/operators.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/higher-order.ts",
+        "ref": "./sources.js",
+        "kind": "import",
+        "line": 40,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/sources.ts",
+        "candidates": [
+          "packages/ts/src/graph/sources.ts",
+          "packages/ts/src/graph/sources.tsx",
+          "packages/ts/src/graph/sources.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/inspect.ts",
+        "ref": "../node/node.js",
+        "kind": "import",
+        "line": 9,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node.ts",
+        "candidates": [
+          "packages/ts/src/node/node.ts",
+          "packages/ts/src/node/node.tsx",
+          "packages/ts/src/node/node.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/inspect.ts",
+        "ref": "../protocol/messages.js",
+        "kind": "import",
+        "line": 10,
+        "status": "included",
+        "resolved": "packages/ts/src/protocol/messages.ts",
+        "candidates": [
+          "packages/ts/src/protocol/messages.ts",
+          "packages/ts/src/protocol/messages.tsx",
+          "packages/ts/src/protocol/messages.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/operators.ts",
+        "ref": "../node/owned-acquisition.js",
+        "kind": "import",
+        "line": 1,
+        "status": "included",
+        "resolved": "packages/ts/src/node/owned-acquisition.ts",
+        "candidates": [
+          "packages/ts/src/node/owned-acquisition.ts",
+          "packages/ts/src/node/owned-acquisition.tsx",
+          "packages/ts/src/node/owned-acquisition.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/operators.ts",
+        "ref": "../ctx/types.js",
+        "kind": "import",
+        "line": 26,
+        "status": "included",
+        "resolved": "packages/ts/src/ctx/types.ts",
+        "candidates": [
+          "packages/ts/src/ctx/types.ts",
+          "packages/ts/src/ctx/types.tsx",
+          "packages/ts/src/ctx/types.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/operators.ts",
+        "ref": "../node/core.js",
+        "kind": "import",
+        "line": 37,
+        "status": "included",
+        "resolved": "packages/ts/src/node/core.ts",
+        "candidates": [
+          "packages/ts/src/node/core.ts",
+          "packages/ts/src/node/core.tsx",
+          "packages/ts/src/node/core.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/operators.ts",
+        "ref": "../node/node.js",
+        "kind": "import",
+        "line": 38,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node.ts",
+        "candidates": [
+          "packages/ts/src/node/node.ts",
+          "packages/ts/src/node/node.tsx",
+          "packages/ts/src/node/node.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/operators.ts",
+        "ref": "../protocol/messages.js",
+        "kind": "import",
+        "line": 39,
+        "status": "included",
+        "resolved": "packages/ts/src/protocol/messages.ts",
+        "candidates": [
+          "packages/ts/src/protocol/messages.ts",
+          "packages/ts/src/protocol/messages.tsx",
+          "packages/ts/src/protocol/messages.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/operators.ts",
+        "ref": "./checkpoint.js",
+        "kind": "import",
+        "line": 40,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/checkpoint.ts",
+        "candidates": [
+          "packages/ts/src/graph/checkpoint.ts",
+          "packages/ts/src/graph/checkpoint.tsx",
+          "packages/ts/src/graph/checkpoint.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/operators.ts",
+        "ref": "./restore.js",
+        "kind": "import",
+        "line": 41,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/restore.ts",
+        "candidates": [
+          "packages/ts/src/graph/restore.ts",
+          "packages/ts/src/graph/restore.tsx",
+          "packages/ts/src/graph/restore.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/policies/collection.ts",
+        "ref": "../../ctx/types.js",
+        "kind": "import",
+        "line": 9,
+        "status": "included",
+        "resolved": "packages/ts/src/ctx/types.ts",
+        "candidates": [
+          "packages/ts/src/ctx/types.ts",
+          "packages/ts/src/ctx/types.tsx",
+          "packages/ts/src/ctx/types.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/policies/collection.ts",
+        "ref": "../../node/node.js",
+        "kind": "import",
+        "line": 10,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node.ts",
+        "candidates": [
+          "packages/ts/src/node/node.ts",
+          "packages/ts/src/node/node.tsx",
+          "packages/ts/src/node/node.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/policies/types.ts",
+        "ref": "../../node/node.js",
+        "kind": "import",
+        "line": 1,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node.ts",
+        "candidates": [
+          "packages/ts/src/node/node.ts",
+          "packages/ts/src/node/node.tsx",
+          "packages/ts/src/node/node.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/restore.ts",
+        "ref": "../dispatcher/index.js",
+        "kind": "import",
+        "line": 10,
+        "status": "included",
+        "resolved": "packages/ts/src/dispatcher/index.ts",
+        "candidates": [
+          "packages/ts/src/dispatcher/index.ts",
+          "packages/ts/src/dispatcher/index.tsx",
+          "packages/ts/src/dispatcher/index.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/restore.ts",
+        "ref": "../identity.js",
+        "kind": "import",
+        "line": 11,
+        "status": "included",
+        "resolved": "packages/ts/src/identity.ts",
+        "candidates": [
+          "packages/ts/src/identity.ts",
+          "packages/ts/src/identity.tsx",
+          "packages/ts/src/identity.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/restore.ts",
+        "ref": "../json/codec.js",
+        "kind": "import",
+        "line": 12,
+        "status": "included",
+        "resolved": "packages/ts/src/json/codec.ts",
+        "candidates": [
+          "packages/ts/src/json/codec.ts",
+          "packages/ts/src/json/codec.tsx",
+          "packages/ts/src/json/codec.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/restore.ts",
+        "ref": "../node/node.js",
+        "kind": "import",
+        "line": 13,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node.ts",
+        "candidates": [
+          "packages/ts/src/node/node.ts",
+          "packages/ts/src/node/node.tsx",
+          "packages/ts/src/node/node.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/restore.ts",
+        "ref": "../node/node.js",
+        "kind": "import",
+        "line": 14,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node.ts",
+        "candidates": [
+          "packages/ts/src/node/node.ts",
+          "packages/ts/src/node/node.tsx",
+          "packages/ts/src/node/node.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/restore.ts",
+        "ref": "../node/versioning.js",
+        "kind": "import",
+        "line": 15,
+        "status": "included",
+        "resolved": "packages/ts/src/node/versioning.ts",
+        "candidates": [
+          "packages/ts/src/node/versioning.ts",
+          "packages/ts/src/node/versioning.tsx",
+          "packages/ts/src/node/versioning.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/restore.ts",
+        "ref": "../protocol/messages.js",
+        "kind": "import",
+        "line": 20,
+        "status": "included",
+        "resolved": "packages/ts/src/protocol/messages.ts",
+        "candidates": [
+          "packages/ts/src/protocol/messages.ts",
+          "packages/ts/src/protocol/messages.tsx",
+          "packages/ts/src/protocol/messages.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/restore.ts",
+        "ref": "./checkpoint.js",
+        "kind": "import",
+        "line": 21,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/checkpoint.ts",
+        "candidates": [
+          "packages/ts/src/graph/checkpoint.ts",
+          "packages/ts/src/graph/checkpoint.tsx",
+          "packages/ts/src/graph/checkpoint.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/restore.ts",
+        "ref": "./data-structures/reactive-index.js",
+        "kind": "import",
+        "line": 31,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/data-structures/reactive-index.ts",
+        "candidates": [
+          "packages/ts/src/graph/data-structures/reactive-index.ts",
+          "packages/ts/src/graph/data-structures/reactive-index.tsx",
+          "packages/ts/src/graph/data-structures/reactive-index.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/restore.ts",
+        "ref": "./data-structures/reactive-index.js",
+        "kind": "import",
+        "line": 32,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/data-structures/reactive-index.ts",
+        "candidates": [
+          "packages/ts/src/graph/data-structures/reactive-index.ts",
+          "packages/ts/src/graph/data-structures/reactive-index.tsx",
+          "packages/ts/src/graph/data-structures/reactive-index.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/restore.ts",
+        "ref": "./data-structures/reactive-list.js",
+        "kind": "import",
+        "line": 33,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/data-structures/reactive-list.ts",
+        "candidates": [
+          "packages/ts/src/graph/data-structures/reactive-list.ts",
+          "packages/ts/src/graph/data-structures/reactive-list.tsx",
+          "packages/ts/src/graph/data-structures/reactive-list.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/restore.ts",
+        "ref": "./data-structures/reactive-log.js",
+        "kind": "import",
+        "line": 34,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/data-structures/reactive-log.ts",
+        "candidates": [
+          "packages/ts/src/graph/data-structures/reactive-log.ts",
+          "packages/ts/src/graph/data-structures/reactive-log.tsx",
+          "packages/ts/src/graph/data-structures/reactive-log.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/restore.ts",
+        "ref": "./data-structures/reactive-map.js",
+        "kind": "import",
+        "line": 35,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/data-structures/reactive-map.ts",
+        "candidates": [
+          "packages/ts/src/graph/data-structures/reactive-map.ts",
+          "packages/ts/src/graph/data-structures/reactive-map.tsx",
+          "packages/ts/src/graph/data-structures/reactive-map.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/restore.ts",
+        "ref": "./graph.js",
+        "kind": "import",
+        "line": 39,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/graph.ts",
+        "candidates": [
+          "packages/ts/src/graph/graph.ts",
+          "packages/ts/src/graph/graph.tsx",
+          "packages/ts/src/graph/graph.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/restore.ts",
+        "ref": "./operators.js",
+        "kind": "import",
+        "line": 46,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/operators.ts",
+        "candidates": [
+          "packages/ts/src/graph/operators.ts",
+          "packages/ts/src/graph/operators.tsx",
+          "packages/ts/src/graph/operators.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/restore.ts",
+        "ref": "./sources.js",
+        "kind": "import",
+        "line": 47,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/sources.ts",
+        "candidates": [
+          "packages/ts/src/graph/sources.ts",
+          "packages/ts/src/graph/sources.tsx",
+          "packages/ts/src/graph/sources.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/restore.ts",
+        "ref": "../ctx/types.js",
+        "kind": "import",
+        "line": 72,
+        "status": "included",
+        "resolved": "packages/ts/src/ctx/types.ts",
+        "candidates": [
+          "packages/ts/src/ctx/types.ts",
+          "packages/ts/src/ctx/types.tsx",
+          "packages/ts/src/ctx/types.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/sources.ts",
+        "ref": "../ctx/types.js",
+        "kind": "import",
+        "line": 17,
+        "status": "included",
+        "resolved": "packages/ts/src/ctx/types.ts",
+        "candidates": [
+          "packages/ts/src/ctx/types.ts",
+          "packages/ts/src/ctx/types.tsx",
+          "packages/ts/src/ctx/types.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/sources.ts",
+        "ref": "../node/node.js",
+        "kind": "import",
+        "line": 18,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node.ts",
+        "candidates": [
+          "packages/ts/src/node/node.ts",
+          "packages/ts/src/node/node.tsx",
+          "packages/ts/src/node/node.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/sources.ts",
+        "ref": "../protocol/messages.js",
+        "kind": "import",
+        "line": 19,
+        "status": "included",
+        "resolved": "packages/ts/src/protocol/messages.ts",
+        "candidates": [
+          "packages/ts/src/protocol/messages.ts",
+          "packages/ts/src/protocol/messages.tsx",
+          "packages/ts/src/protocol/messages.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/sources.ts",
+        "ref": "./checkpoint.js",
+        "kind": "import",
+        "line": 20,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/checkpoint.ts",
+        "candidates": [
+          "packages/ts/src/graph/checkpoint.ts",
+          "packages/ts/src/graph/checkpoint.tsx",
+          "packages/ts/src/graph/checkpoint.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/sources.ts",
+        "ref": "./environment.js",
+        "kind": "import",
+        "line": 21,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/environment.ts",
+        "candidates": [
+          "packages/ts/src/graph/environment.ts",
+          "packages/ts/src/graph/environment.tsx",
+          "packages/ts/src/graph/environment.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/sources.ts",
+        "ref": "./operators.js",
+        "kind": "import",
+        "line": 38,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/operators.ts",
+        "candidates": [
+          "packages/ts/src/graph/operators.ts",
+          "packages/ts/src/graph/operators.tsx",
+          "packages/ts/src/graph/operators.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/time.ts",
+        "ref": "../ctx/types.js",
+        "kind": "import",
+        "line": 45,
+        "status": "included",
+        "resolved": "packages/ts/src/ctx/types.ts",
+        "candidates": [
+          "packages/ts/src/ctx/types.ts",
+          "packages/ts/src/ctx/types.tsx",
+          "packages/ts/src/ctx/types.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/time.ts",
+        "ref": "../node/node.js",
+        "kind": "import",
+        "line": 54,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node.ts",
+        "candidates": [
+          "packages/ts/src/node/node.ts",
+          "packages/ts/src/node/node.tsx",
+          "packages/ts/src/node/node.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/time.ts",
+        "ref": "../protocol/messages.js",
+        "kind": "import",
+        "line": 55,
+        "status": "included",
+        "resolved": "packages/ts/src/protocol/messages.ts",
+        "candidates": [
+          "packages/ts/src/protocol/messages.ts",
+          "packages/ts/src/protocol/messages.tsx",
+          "packages/ts/src/protocol/messages.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/time.ts",
+        "ref": "./higher-order.js",
+        "kind": "import",
+        "line": 56,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/higher-order.ts",
+        "candidates": [
+          "packages/ts/src/graph/higher-order.ts",
+          "packages/ts/src/graph/higher-order.tsx",
+          "packages/ts/src/graph/higher-order.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/time.ts",
+        "ref": "./operators.js",
+        "kind": "import",
+        "line": 57,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/operators.ts",
+        "candidates": [
+          "packages/ts/src/graph/operators.ts",
+          "packages/ts/src/graph/operators.tsx",
+          "packages/ts/src/graph/operators.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/time.ts",
+        "ref": "./sources.js",
+        "kind": "import",
+        "line": 58,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/sources.ts",
+        "candidates": [
+          "packages/ts/src/graph/sources.ts",
+          "packages/ts/src/graph/sources.tsx",
+          "packages/ts/src/graph/sources.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/core.ts",
+        "ref": "../ctx/types.js",
+        "kind": "import",
+        "line": 1,
+        "status": "included",
+        "resolved": "packages/ts/src/ctx/types.ts",
+        "candidates": [
+          "packages/ts/src/ctx/types.ts",
+          "packages/ts/src/ctx/types.tsx",
+          "packages/ts/src/ctx/types.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/core.ts",
+        "ref": "../dispatcher/index.js",
+        "kind": "import",
+        "line": 2,
+        "status": "included",
+        "resolved": "packages/ts/src/dispatcher/index.ts",
+        "candidates": [
+          "packages/ts/src/dispatcher/index.ts",
+          "packages/ts/src/dispatcher/index.tsx",
+          "packages/ts/src/dispatcher/index.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/core.ts",
+        "ref": "../graph/environment.js",
+        "kind": "import",
+        "line": 3,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/environment.ts",
+        "candidates": [
+          "packages/ts/src/graph/environment.ts",
+          "packages/ts/src/graph/environment.tsx",
+          "packages/ts/src/graph/environment.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/core.ts",
+        "ref": "../protocol/messages.js",
+        "kind": "import",
+        "line": 4,
+        "status": "included",
+        "resolved": "packages/ts/src/protocol/messages.ts",
+        "candidates": [
+          "packages/ts/src/protocol/messages.ts",
+          "packages/ts/src/protocol/messages.tsx",
+          "packages/ts/src/protocol/messages.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/core.ts",
+        "ref": "./node.js",
+        "kind": "import",
+        "line": 5,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node.ts",
+        "candidates": [
+          "packages/ts/src/node/node.ts",
+          "packages/ts/src/node/node.tsx",
+          "packages/ts/src/node/node.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/core.ts",
+        "ref": "./owned-acquisition.js",
+        "kind": "import",
+        "line": 6,
+        "status": "included",
+        "resolved": "packages/ts/src/node/owned-acquisition.ts",
+        "candidates": [
+          "packages/ts/src/node/owned-acquisition.ts",
+          "packages/ts/src/node/owned-acquisition.tsx",
+          "packages/ts/src/node/owned-acquisition.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/core.ts",
+        "ref": "./versioning.js",
+        "kind": "import",
+        "line": 7,
+        "status": "included",
+        "resolved": "packages/ts/src/node/versioning.ts",
+        "candidates": [
+          "packages/ts/src/node/versioning.ts",
+          "packages/ts/src/node/versioning.tsx",
+          "packages/ts/src/node/versioning.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node-checkpoint-runtime.ts",
+        "ref": "./node-runtime-host.js",
+        "kind": "import",
+        "line": 1,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node-runtime-host.ts",
+        "candidates": [
+          "packages/ts/src/node/node-runtime-host.ts",
+          "packages/ts/src/node/node-runtime-host.tsx",
+          "packages/ts/src/node/node-runtime-host.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node-checkpoint-runtime.ts",
+        "ref": "./types.js",
+        "kind": "import",
+        "line": 2,
+        "status": "included",
+        "resolved": "packages/ts/src/node/types.ts",
+        "candidates": [
+          "packages/ts/src/node/types.ts",
+          "packages/ts/src/node/types.tsx",
+          "packages/ts/src/node/types.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node-checkpoint-runtime.ts",
+        "ref": "./versioning.js",
+        "kind": "import",
+        "line": 3,
+        "status": "included",
+        "resolved": "packages/ts/src/node/versioning.ts",
+        "candidates": [
+          "packages/ts/src/node/versioning.ts",
+          "packages/ts/src/node/versioning.tsx",
+          "packages/ts/src/node/versioning.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node-context-runtime.ts",
+        "ref": "../batch/boundary.js",
+        "kind": "import",
+        "line": 1,
+        "status": "included",
+        "resolved": "packages/ts/src/batch/boundary.ts",
+        "candidates": [
+          "packages/ts/src/batch/boundary.ts",
+          "packages/ts/src/batch/boundary.tsx",
+          "packages/ts/src/batch/boundary.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node-context-runtime.ts",
+        "ref": "../ctx/types.js",
+        "kind": "import",
+        "line": 2,
+        "status": "included",
+        "resolved": "packages/ts/src/ctx/types.ts",
+        "candidates": [
+          "packages/ts/src/ctx/types.ts",
+          "packages/ts/src/ctx/types.tsx",
+          "packages/ts/src/ctx/types.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node-context-runtime.ts",
+        "ref": "../protocol/messages.js",
+        "kind": "import",
+        "line": 11,
+        "status": "included",
+        "resolved": "packages/ts/src/protocol/messages.ts",
+        "candidates": [
+          "packages/ts/src/protocol/messages.ts",
+          "packages/ts/src/protocol/messages.tsx",
+          "packages/ts/src/protocol/messages.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node-context-runtime.ts",
+        "ref": "./node.js",
+        "kind": "import",
+        "line": 12,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node.ts",
+        "candidates": [
+          "packages/ts/src/node/node.ts",
+          "packages/ts/src/node/node.tsx",
+          "packages/ts/src/node/node.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node-context-runtime.ts",
+        "ref": "./node-runtime-host.js",
+        "kind": "import",
+        "line": 13,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node-runtime-host.ts",
+        "candidates": [
+          "packages/ts/src/node/node-runtime-host.ts",
+          "packages/ts/src/node/node-runtime-host.tsx",
+          "packages/ts/src/node/node-runtime-host.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node-context-runtime.ts",
+        "ref": "./protocol-guards.js",
+        "kind": "import",
+        "line": 14,
+        "status": "included",
+        "resolved": "packages/ts/src/node/protocol-guards.ts",
+        "candidates": [
+          "packages/ts/src/node/protocol-guards.ts",
+          "packages/ts/src/node/protocol-guards.tsx",
+          "packages/ts/src/node/protocol-guards.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node-context-runtime.ts",
+        "ref": "./runtime-accessors.js",
+        "kind": "import",
+        "line": 15,
+        "status": "included",
+        "resolved": "packages/ts/src/node/runtime-accessors.ts",
+        "candidates": [
+          "packages/ts/src/node/runtime-accessors.ts",
+          "packages/ts/src/node/runtime-accessors.tsx",
+          "packages/ts/src/node/runtime-accessors.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node-input-runtime.ts",
+        "ref": "../ctx/types.js",
+        "kind": "import",
+        "line": 1,
+        "status": "included",
+        "resolved": "packages/ts/src/ctx/types.ts",
+        "candidates": [
+          "packages/ts/src/ctx/types.ts",
+          "packages/ts/src/ctx/types.tsx",
+          "packages/ts/src/ctx/types.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node-input-runtime.ts",
+        "ref": "../dispatcher/index.js",
+        "kind": "import",
+        "line": 2,
+        "status": "included",
+        "resolved": "packages/ts/src/dispatcher/index.ts",
+        "candidates": [
+          "packages/ts/src/dispatcher/index.ts",
+          "packages/ts/src/dispatcher/index.tsx",
+          "packages/ts/src/dispatcher/index.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node-input-runtime.ts",
+        "ref": "../protocol/messages.js",
+        "kind": "import",
+        "line": 3,
+        "status": "included",
+        "resolved": "packages/ts/src/protocol/messages.ts",
+        "candidates": [
+          "packages/ts/src/protocol/messages.ts",
+          "packages/ts/src/protocol/messages.tsx",
+          "packages/ts/src/protocol/messages.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node-input-runtime.ts",
+        "ref": "../protocol/messages.js",
+        "kind": "import",
+        "line": 4,
+        "status": "included",
+        "resolved": "packages/ts/src/protocol/messages.ts",
+        "candidates": [
+          "packages/ts/src/protocol/messages.ts",
+          "packages/ts/src/protocol/messages.tsx",
+          "packages/ts/src/protocol/messages.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node-input-runtime.ts",
+        "ref": "./node-runtime-host.js",
+        "kind": "import",
+        "line": 5,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node-runtime-host.ts",
+        "candidates": [
+          "packages/ts/src/node/node-runtime-host.ts",
+          "packages/ts/src/node/node-runtime-host.tsx",
+          "packages/ts/src/node/node-runtime-host.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node-lifecycle-runtime.ts",
+        "ref": "../protocol/messages.js",
+        "kind": "import",
+        "line": 1,
+        "status": "included",
+        "resolved": "packages/ts/src/protocol/messages.ts",
+        "candidates": [
+          "packages/ts/src/protocol/messages.ts",
+          "packages/ts/src/protocol/messages.tsx",
+          "packages/ts/src/protocol/messages.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node-lifecycle-runtime.ts",
+        "ref": "./node.js",
+        "kind": "import",
+        "line": 2,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node.ts",
+        "candidates": [
+          "packages/ts/src/node/node.ts",
+          "packages/ts/src/node/node.tsx",
+          "packages/ts/src/node/node.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node-lifecycle-runtime.ts",
+        "ref": "./node-runtime-host.js",
+        "kind": "import",
+        "line": 3,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node-runtime-host.ts",
+        "candidates": [
+          "packages/ts/src/node/node-runtime-host.ts",
+          "packages/ts/src/node/node-runtime-host.tsx",
+          "packages/ts/src/node/node-runtime-host.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node-lifecycle-runtime.ts",
+        "ref": "./owned-acquisition.js",
+        "kind": "import",
+        "line": 4,
+        "status": "included",
+        "resolved": "packages/ts/src/node/owned-acquisition.ts",
+        "candidates": [
+          "packages/ts/src/node/owned-acquisition.ts",
+          "packages/ts/src/node/owned-acquisition.tsx",
+          "packages/ts/src/node/owned-acquisition.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node-lifecycle-runtime.ts",
+        "ref": "./runtime-accessors.js",
+        "kind": "import",
+        "line": 5,
+        "status": "included",
+        "resolved": "packages/ts/src/node/runtime-accessors.ts",
+        "candidates": [
+          "packages/ts/src/node/runtime-accessors.ts",
+          "packages/ts/src/node/runtime-accessors.tsx",
+          "packages/ts/src/node/runtime-accessors.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node-lifecycle-runtime.ts",
+        "ref": "../ctx/types.js",
+        "kind": "import",
+        "line": 39,
+        "status": "included",
+        "resolved": "packages/ts/src/ctx/types.ts",
+        "candidates": [
+          "packages/ts/src/ctx/types.ts",
+          "packages/ts/src/ctx/types.tsx",
+          "packages/ts/src/ctx/types.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node-lifecycle-runtime.ts",
+        "ref": "../dispatcher/index.js",
+        "kind": "import",
+        "line": 136,
+        "status": "included",
+        "resolved": "packages/ts/src/dispatcher/index.ts",
+        "candidates": [
+          "packages/ts/src/dispatcher/index.ts",
+          "packages/ts/src/dispatcher/index.tsx",
+          "packages/ts/src/dispatcher/index.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node-output-runtime.ts",
+        "ref": "../batch/batch.js",
+        "kind": "import",
+        "line": 1,
+        "status": "included",
+        "resolved": "packages/ts/src/batch/batch.ts",
+        "candidates": [
+          "packages/ts/src/batch/batch.ts",
+          "packages/ts/src/batch/batch.tsx",
+          "packages/ts/src/batch/batch.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node-output-runtime.ts",
+        "ref": "../batch/boundary.js",
+        "kind": "import",
+        "line": 2,
+        "status": "included",
+        "resolved": "packages/ts/src/batch/boundary.ts",
+        "candidates": [
+          "packages/ts/src/batch/boundary.ts",
+          "packages/ts/src/batch/boundary.tsx",
+          "packages/ts/src/batch/boundary.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node-output-runtime.ts",
+        "ref": "../ctx/types.js",
+        "kind": "import",
+        "line": 3,
+        "status": "included",
+        "resolved": "packages/ts/src/ctx/types.ts",
+        "candidates": [
+          "packages/ts/src/ctx/types.ts",
+          "packages/ts/src/ctx/types.tsx",
+          "packages/ts/src/ctx/types.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node-output-runtime.ts",
+        "ref": "../protocol/messages.js",
+        "kind": "import",
+        "line": 4,
+        "status": "included",
+        "resolved": "packages/ts/src/protocol/messages.ts",
+        "candidates": [
+          "packages/ts/src/protocol/messages.ts",
+          "packages/ts/src/protocol/messages.tsx",
+          "packages/ts/src/protocol/messages.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node-output-runtime.ts",
+        "ref": "../protocol/messages.js",
+        "kind": "import",
+        "line": 5,
+        "status": "included",
+        "resolved": "packages/ts/src/protocol/messages.ts",
+        "candidates": [
+          "packages/ts/src/protocol/messages.ts",
+          "packages/ts/src/protocol/messages.tsx",
+          "packages/ts/src/protocol/messages.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node-output-runtime.ts",
+        "ref": "./node.js",
+        "kind": "import",
+        "line": 13,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node.ts",
+        "candidates": [
+          "packages/ts/src/node/node.ts",
+          "packages/ts/src/node/node.tsx",
+          "packages/ts/src/node/node.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node-output-runtime.ts",
+        "ref": "./node-runtime-host.js",
+        "kind": "import",
+        "line": 14,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node-runtime-host.ts",
+        "candidates": [
+          "packages/ts/src/node/node-runtime-host.ts",
+          "packages/ts/src/node/node-runtime-host.tsx",
+          "packages/ts/src/node/node-runtime-host.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node-output-runtime.ts",
+        "ref": "./protocol-guards.js",
+        "kind": "import",
+        "line": 15,
+        "status": "included",
+        "resolved": "packages/ts/src/node/protocol-guards.ts",
+        "candidates": [
+          "packages/ts/src/node/protocol-guards.ts",
+          "packages/ts/src/node/protocol-guards.tsx",
+          "packages/ts/src/node/protocol-guards.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node-output-runtime.ts",
+        "ref": "./types.js",
+        "kind": "import",
+        "line": 16,
+        "status": "included",
+        "resolved": "packages/ts/src/node/types.ts",
+        "candidates": [
+          "packages/ts/src/node/types.ts",
+          "packages/ts/src/node/types.tsx",
+          "packages/ts/src/node/types.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node-output-runtime.ts",
+        "ref": "./versioning.js",
+        "kind": "import",
+        "line": 17,
+        "status": "included",
+        "resolved": "packages/ts/src/node/versioning.ts",
+        "candidates": [
+          "packages/ts/src/node/versioning.ts",
+          "packages/ts/src/node/versioning.tsx",
+          "packages/ts/src/node/versioning.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node-rewire-runtime.ts",
+        "ref": "../batch/batch.js",
+        "kind": "import",
+        "line": 1,
+        "status": "included",
+        "resolved": "packages/ts/src/batch/batch.ts",
+        "candidates": [
+          "packages/ts/src/batch/batch.ts",
+          "packages/ts/src/batch/batch.tsx",
+          "packages/ts/src/batch/batch.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node-rewire-runtime.ts",
+        "ref": "../batch/boundary.js",
+        "kind": "import",
+        "line": 2,
+        "status": "included",
+        "resolved": "packages/ts/src/batch/boundary.ts",
+        "candidates": [
+          "packages/ts/src/batch/boundary.ts",
+          "packages/ts/src/batch/boundary.tsx",
+          "packages/ts/src/batch/boundary.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node-rewire-runtime.ts",
+        "ref": "../ctx/types.js",
+        "kind": "import",
+        "line": 3,
+        "status": "included",
+        "resolved": "packages/ts/src/ctx/types.ts",
+        "candidates": [
+          "packages/ts/src/ctx/types.ts",
+          "packages/ts/src/ctx/types.tsx",
+          "packages/ts/src/ctx/types.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node-rewire-runtime.ts",
+        "ref": "../protocol/messages.js",
+        "kind": "import",
+        "line": 4,
+        "status": "included",
+        "resolved": "packages/ts/src/protocol/messages.ts",
+        "candidates": [
+          "packages/ts/src/protocol/messages.ts",
+          "packages/ts/src/protocol/messages.tsx",
+          "packages/ts/src/protocol/messages.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node-rewire-runtime.ts",
+        "ref": "../protocol/messages.js",
+        "kind": "import",
+        "line": 5,
+        "status": "included",
+        "resolved": "packages/ts/src/protocol/messages.ts",
+        "candidates": [
+          "packages/ts/src/protocol/messages.ts",
+          "packages/ts/src/protocol/messages.tsx",
+          "packages/ts/src/protocol/messages.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node-rewire-runtime.ts",
+        "ref": "./node.js",
+        "kind": "import",
+        "line": 6,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node.ts",
+        "candidates": [
+          "packages/ts/src/node/node.ts",
+          "packages/ts/src/node/node.tsx",
+          "packages/ts/src/node/node.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node-rewire-runtime.ts",
+        "ref": "./node-runtime-host.js",
+        "kind": "import",
+        "line": 7,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node-runtime-host.ts",
+        "candidates": [
+          "packages/ts/src/node/node-runtime-host.ts",
+          "packages/ts/src/node/node-runtime-host.tsx",
+          "packages/ts/src/node/node-runtime-host.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node-rewire-runtime.ts",
+        "ref": "./runtime-accessors.js",
+        "kind": "import",
+        "line": 8,
+        "status": "included",
+        "resolved": "packages/ts/src/node/runtime-accessors.ts",
+        "candidates": [
+          "packages/ts/src/node/runtime-accessors.ts",
+          "packages/ts/src/node/runtime-accessors.tsx",
+          "packages/ts/src/node/runtime-accessors.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node-rewire-runtime.ts",
+        "ref": "./types.js",
+        "kind": "import",
+        "line": 9,
+        "status": "included",
+        "resolved": "packages/ts/src/node/types.ts",
+        "candidates": [
+          "packages/ts/src/node/types.ts",
+          "packages/ts/src/node/types.tsx",
+          "packages/ts/src/node/types.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node-runtime-host.ts",
+        "ref": "../ctx/types.js",
+        "kind": "import",
+        "line": 1,
+        "status": "included",
+        "resolved": "packages/ts/src/ctx/types.ts",
+        "candidates": [
+          "packages/ts/src/ctx/types.ts",
+          "packages/ts/src/ctx/types.tsx",
+          "packages/ts/src/ctx/types.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node-runtime-host.ts",
+        "ref": "../protocol/messages.js",
+        "kind": "import",
+        "line": 2,
+        "status": "included",
+        "resolved": "packages/ts/src/protocol/messages.ts",
+        "candidates": [
+          "packages/ts/src/protocol/messages.ts",
+          "packages/ts/src/protocol/messages.tsx",
+          "packages/ts/src/protocol/messages.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node-runtime-host.ts",
+        "ref": "./core.js",
+        "kind": "import",
+        "line": 3,
+        "status": "included",
+        "resolved": "packages/ts/src/node/core.ts",
+        "candidates": [
+          "packages/ts/src/node/core.ts",
+          "packages/ts/src/node/core.tsx",
+          "packages/ts/src/node/core.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node-runtime-host.ts",
+        "ref": "./node.js",
+        "kind": "import",
+        "line": 17,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node.ts",
+        "candidates": [
+          "packages/ts/src/node/node.ts",
+          "packages/ts/src/node/node.tsx",
+          "packages/ts/src/node/node.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node-runtime-host.ts",
+        "ref": "./owned-acquisition.js",
+        "kind": "import",
+        "line": 18,
+        "status": "included",
+        "resolved": "packages/ts/src/node/owned-acquisition.ts",
+        "candidates": [
+          "packages/ts/src/node/owned-acquisition.ts",
+          "packages/ts/src/node/owned-acquisition.tsx",
+          "packages/ts/src/node/owned-acquisition.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node-runtime-host.ts",
+        "ref": "./types.js",
+        "kind": "import",
+        "line": 19,
+        "status": "included",
+        "resolved": "packages/ts/src/node/types.ts",
+        "candidates": [
+          "packages/ts/src/node/types.ts",
+          "packages/ts/src/node/types.tsx",
+          "packages/ts/src/node/types.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node.ts",
+        "ref": "../batch/boundary.js",
+        "kind": "import",
+        "line": 16,
+        "status": "included",
+        "resolved": "packages/ts/src/batch/boundary.ts",
+        "candidates": [
+          "packages/ts/src/batch/boundary.ts",
+          "packages/ts/src/batch/boundary.tsx",
+          "packages/ts/src/batch/boundary.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node.ts",
+        "ref": "../ctx/types.js",
+        "kind": "import",
+        "line": 17,
+        "status": "included",
+        "resolved": "packages/ts/src/ctx/types.ts",
+        "candidates": [
+          "packages/ts/src/ctx/types.ts",
+          "packages/ts/src/ctx/types.tsx",
+          "packages/ts/src/ctx/types.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node.ts",
+        "ref": "../dispatcher/index.js",
+        "kind": "import",
+        "line": 18,
+        "status": "included",
+        "resolved": "packages/ts/src/dispatcher/index.ts",
+        "candidates": [
+          "packages/ts/src/dispatcher/index.ts",
+          "packages/ts/src/dispatcher/index.tsx",
+          "packages/ts/src/dispatcher/index.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node.ts",
+        "ref": "../graph/environment.js",
+        "kind": "import",
+        "line": 19,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/environment.ts",
+        "candidates": [
+          "packages/ts/src/graph/environment.ts",
+          "packages/ts/src/graph/environment.tsx",
+          "packages/ts/src/graph/environment.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node.ts",
+        "ref": "../protocol/messages.js",
+        "kind": "import",
+        "line": 20,
+        "status": "included",
+        "resolved": "packages/ts/src/protocol/messages.ts",
+        "candidates": [
+          "packages/ts/src/protocol/messages.ts",
+          "packages/ts/src/protocol/messages.tsx",
+          "packages/ts/src/protocol/messages.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node.ts",
+        "ref": "./core.js",
+        "kind": "import",
+        "line": 27,
+        "status": "included",
+        "resolved": "packages/ts/src/node/core.ts",
+        "candidates": [
+          "packages/ts/src/node/core.ts",
+          "packages/ts/src/node/core.tsx",
+          "packages/ts/src/node/core.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node.ts",
+        "ref": "./node-context-runtime.js",
+        "kind": "import",
+        "line": 42,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node-context-runtime.ts",
+        "candidates": [
+          "packages/ts/src/node/node-context-runtime.ts",
+          "packages/ts/src/node/node-context-runtime.tsx",
+          "packages/ts/src/node/node-context-runtime.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node.ts",
+        "ref": "./node-input-runtime.js",
+        "kind": "import",
+        "line": 48,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node-input-runtime.ts",
+        "candidates": [
+          "packages/ts/src/node/node-input-runtime.ts",
+          "packages/ts/src/node/node-input-runtime.tsx",
+          "packages/ts/src/node/node-input-runtime.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node.ts",
+        "ref": "./node-lifecycle-runtime.js",
+        "kind": "import",
+        "line": 62,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node-lifecycle-runtime.ts",
+        "candidates": [
+          "packages/ts/src/node/node-lifecycle-runtime.ts",
+          "packages/ts/src/node/node-lifecycle-runtime.tsx",
+          "packages/ts/src/node/node-lifecycle-runtime.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node.ts",
+        "ref": "./node-output-runtime.js",
+        "kind": "import",
+        "line": 72,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node-output-runtime.ts",
+        "candidates": [
+          "packages/ts/src/node/node-output-runtime.ts",
+          "packages/ts/src/node/node-output-runtime.tsx",
+          "packages/ts/src/node/node-output-runtime.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node.ts",
+        "ref": "./node-rewire-runtime.js",
+        "kind": "import",
+        "line": 97,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node-rewire-runtime.ts",
+        "candidates": [
+          "packages/ts/src/node/node-rewire-runtime.ts",
+          "packages/ts/src/node/node-rewire-runtime.tsx",
+          "packages/ts/src/node/node-rewire-runtime.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node.ts",
+        "ref": "./node-runtime-host.js",
+        "kind": "import",
+        "line": 103,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node-runtime-host.ts",
+        "candidates": [
+          "packages/ts/src/node/node-runtime-host.ts",
+          "packages/ts/src/node/node-runtime-host.tsx",
+          "packages/ts/src/node/node-runtime-host.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node.ts",
+        "ref": "./owned-acquisition.js",
+        "kind": "import",
+        "line": 104,
+        "status": "included",
+        "resolved": "packages/ts/src/node/owned-acquisition.ts",
+        "candidates": [
+          "packages/ts/src/node/owned-acquisition.ts",
+          "packages/ts/src/node/owned-acquisition.tsx",
+          "packages/ts/src/node/owned-acquisition.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node.ts",
+        "ref": "./runtime-accessors.js",
+        "kind": "import",
+        "line": 110,
+        "status": "included",
+        "resolved": "packages/ts/src/node/runtime-accessors.ts",
+        "candidates": [
+          "packages/ts/src/node/runtime-accessors.ts",
+          "packages/ts/src/node/runtime-accessors.tsx",
+          "packages/ts/src/node/runtime-accessors.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node.ts",
+        "ref": "./types.js",
+        "kind": "import",
+        "line": 116,
+        "status": "included",
+        "resolved": "packages/ts/src/node/types.ts",
+        "candidates": [
+          "packages/ts/src/node/types.ts",
+          "packages/ts/src/node/types.tsx",
+          "packages/ts/src/node/types.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node.ts",
+        "ref": "./versioning.js",
+        "kind": "import",
+        "line": 117,
+        "status": "included",
+        "resolved": "packages/ts/src/node/versioning.ts",
+        "candidates": [
+          "packages/ts/src/node/versioning.ts",
+          "packages/ts/src/node/versioning.tsx",
+          "packages/ts/src/node/versioning.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node.ts",
+        "ref": "./runtime-accessors.js",
+        "kind": "import",
+        "line": 124,
+        "status": "included",
+        "resolved": "packages/ts/src/node/runtime-accessors.ts",
+        "candidates": [
+          "packages/ts/src/node/runtime-accessors.ts",
+          "packages/ts/src/node/runtime-accessors.tsx",
+          "packages/ts/src/node/runtime-accessors.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/node.ts",
+        "ref": "./types.js",
+        "kind": "import",
+        "line": 138,
+        "status": "included",
+        "resolved": "packages/ts/src/node/types.ts",
+        "candidates": [
+          "packages/ts/src/node/types.ts",
+          "packages/ts/src/node/types.tsx",
+          "packages/ts/src/node/types.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/owned-acquisition.ts",
+        "ref": "../dispatcher/index.js",
+        "kind": "import",
+        "line": 1,
+        "status": "included",
+        "resolved": "packages/ts/src/dispatcher/index.ts",
+        "candidates": [
+          "packages/ts/src/dispatcher/index.ts",
+          "packages/ts/src/dispatcher/index.tsx",
+          "packages/ts/src/dispatcher/index.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/owned-acquisition.ts",
+        "ref": "./core.js",
+        "kind": "import",
+        "line": 2,
+        "status": "included",
+        "resolved": "packages/ts/src/node/core.ts",
+        "candidates": [
+          "packages/ts/src/node/core.ts",
+          "packages/ts/src/node/core.tsx",
+          "packages/ts/src/node/core.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/owned-acquisition.ts",
+        "ref": "./node.js",
+        "kind": "import",
+        "line": 3,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node.ts",
+        "candidates": [
+          "packages/ts/src/node/node.ts",
+          "packages/ts/src/node/node.tsx",
+          "packages/ts/src/node/node.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/owned-acquisition.ts",
+        "ref": "./runtime-accessors.js",
+        "kind": "import",
+        "line": 4,
+        "status": "included",
+        "resolved": "packages/ts/src/node/runtime-accessors.ts",
+        "candidates": [
+          "packages/ts/src/node/runtime-accessors.ts",
+          "packages/ts/src/node/runtime-accessors.tsx",
+          "packages/ts/src/node/runtime-accessors.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/protocol-guards.ts",
+        "ref": "../protocol/messages.js",
+        "kind": "import",
+        "line": 1,
+        "status": "included",
+        "resolved": "packages/ts/src/protocol/messages.ts",
+        "candidates": [
+          "packages/ts/src/protocol/messages.ts",
+          "packages/ts/src/protocol/messages.tsx",
+          "packages/ts/src/protocol/messages.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/runtime-accessors.ts",
+        "ref": "../graph/environment.js",
+        "kind": "import",
+        "line": 1,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/environment.ts",
+        "candidates": [
+          "packages/ts/src/graph/environment.ts",
+          "packages/ts/src/graph/environment.tsx",
+          "packages/ts/src/graph/environment.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/runtime-accessors.ts",
+        "ref": "./core.js",
+        "kind": "import",
+        "line": 2,
+        "status": "included",
+        "resolved": "packages/ts/src/node/core.ts",
+        "candidates": [
+          "packages/ts/src/node/core.ts",
+          "packages/ts/src/node/core.tsx",
+          "packages/ts/src/node/core.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/runtime-accessors.ts",
+        "ref": "./node.js",
+        "kind": "import",
+        "line": 3,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node.ts",
+        "candidates": [
+          "packages/ts/src/node/node.ts",
+          "packages/ts/src/node/node.tsx",
+          "packages/ts/src/node/node.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/runtime-accessors.ts",
+        "ref": "./node-checkpoint-runtime.js",
+        "kind": "import",
+        "line": 4,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node-checkpoint-runtime.ts",
+        "candidates": [
+          "packages/ts/src/node/node-checkpoint-runtime.ts",
+          "packages/ts/src/node/node-checkpoint-runtime.tsx",
+          "packages/ts/src/node/node-checkpoint-runtime.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/runtime-accessors.ts",
+        "ref": "./node-runtime-host.js",
+        "kind": "import",
+        "line": 5,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node-runtime-host.ts",
+        "candidates": [
+          "packages/ts/src/node/node-runtime-host.ts",
+          "packages/ts/src/node/node-runtime-host.tsx",
+          "packages/ts/src/node/node-runtime-host.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/runtime-accessors.ts",
+        "ref": "./owned-acquisition.js",
+        "kind": "import",
+        "line": 6,
+        "status": "included",
+        "resolved": "packages/ts/src/node/owned-acquisition.ts",
+        "candidates": [
+          "packages/ts/src/node/owned-acquisition.ts",
+          "packages/ts/src/node/owned-acquisition.tsx",
+          "packages/ts/src/node/owned-acquisition.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/runtime-accessors.ts",
+        "ref": "./types.js",
+        "kind": "import",
+        "line": 7,
+        "status": "included",
+        "resolved": "packages/ts/src/node/types.ts",
+        "candidates": [
+          "packages/ts/src/node/types.ts",
+          "packages/ts/src/node/types.tsx",
+          "packages/ts/src/node/types.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/runtime-accessors.ts",
+        "ref": "./versioning.js",
+        "kind": "import",
+        "line": 8,
+        "status": "included",
+        "resolved": "packages/ts/src/node/versioning.ts",
+        "candidates": [
+          "packages/ts/src/node/versioning.ts",
+          "packages/ts/src/node/versioning.tsx",
+          "packages/ts/src/node/versioning.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/types.ts",
+        "ref": "../ctx/types.js",
+        "kind": "import",
+        "line": 1,
+        "status": "included",
+        "resolved": "packages/ts/src/ctx/types.ts",
+        "candidates": [
+          "packages/ts/src/ctx/types.ts",
+          "packages/ts/src/ctx/types.tsx",
+          "packages/ts/src/ctx/types.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/types.ts",
+        "ref": "../dispatcher/index.js",
+        "kind": "import",
+        "line": 2,
+        "status": "included",
+        "resolved": "packages/ts/src/dispatcher/index.ts",
+        "candidates": [
+          "packages/ts/src/dispatcher/index.ts",
+          "packages/ts/src/dispatcher/index.tsx",
+          "packages/ts/src/dispatcher/index.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/types.ts",
+        "ref": "../protocol/messages.js",
+        "kind": "import",
+        "line": 3,
+        "status": "included",
+        "resolved": "packages/ts/src/protocol/messages.ts",
+        "candidates": [
+          "packages/ts/src/protocol/messages.ts",
+          "packages/ts/src/protocol/messages.tsx",
+          "packages/ts/src/protocol/messages.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/types.ts",
+        "ref": "./node.js",
+        "kind": "import",
+        "line": 4,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node.ts",
+        "candidates": [
+          "packages/ts/src/node/node.ts",
+          "packages/ts/src/node/node.tsx",
+          "packages/ts/src/node/node.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/types.ts",
+        "ref": "./versioning.js",
+        "kind": "import",
+        "line": 5,
+        "status": "included",
+        "resolved": "packages/ts/src/node/versioning.ts",
+        "candidates": [
+          "packages/ts/src/node/versioning.ts",
+          "packages/ts/src/node/versioning.tsx",
+          "packages/ts/src/node/versioning.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/node/versioning.ts",
+        "ref": "../json/codec.js",
+        "kind": "import",
+        "line": 1,
+        "status": "included",
+        "resolved": "packages/ts/src/json/codec.ts",
+        "candidates": [
+          "packages/ts/src/json/codec.ts",
+          "packages/ts/src/json/codec.tsx",
+          "packages/ts/src/json/codec.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/operators/index.ts",
+        "ref": "../graph/combinators.js",
+        "kind": "import",
+        "line": 1,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/combinators.ts",
+        "candidates": [
+          "packages/ts/src/graph/combinators.ts",
+          "packages/ts/src/graph/combinators.tsx",
+          "packages/ts/src/graph/combinators.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/operators/index.ts",
+        "ref": "../graph/higher-order.js",
+        "kind": "import",
+        "line": 13,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/higher-order.ts",
+        "candidates": [
+          "packages/ts/src/graph/higher-order.ts",
+          "packages/ts/src/graph/higher-order.tsx",
+          "packages/ts/src/graph/higher-order.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/operators/index.ts",
+        "ref": "../graph/operators.js",
+        "kind": "import",
+        "line": 23,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/operators.ts",
+        "candidates": [
+          "packages/ts/src/graph/operators.ts",
+          "packages/ts/src/graph/operators.tsx",
+          "packages/ts/src/graph/operators.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/operators/index.ts",
+        "ref": "../graph/time.js",
+        "kind": "import",
+        "line": 56,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/time.ts",
+        "candidates": [
+          "packages/ts/src/graph/time.ts",
+          "packages/ts/src/graph/time.tsx",
+          "packages/ts/src/graph/time.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/solutions/causal-occurrence/capabilities.ts",
+        "ref": "../../ctx/types.js",
+        "kind": "import",
+        "line": 1,
+        "status": "included",
+        "resolved": "packages/ts/src/ctx/types.ts",
+        "candidates": [
+          "packages/ts/src/ctx/types.ts",
+          "packages/ts/src/ctx/types.tsx",
+          "packages/ts/src/ctx/types.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/solutions/causal-occurrence/capabilities.ts",
+        "ref": "../../data/index.js",
+        "kind": "import",
+        "line": 2,
+        "status": "included",
+        "resolved": "packages/ts/src/data/index.ts",
+        "candidates": [
+          "packages/ts/src/data/index.ts",
+          "packages/ts/src/data/index.tsx",
+          "packages/ts/src/data/index.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/solutions/causal-occurrence/capabilities.ts",
+        "ref": "../../graph/construction-scope.js",
+        "kind": "import",
+        "line": 3,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/construction-scope.ts",
+        "candidates": [
+          "packages/ts/src/graph/construction-scope.ts",
+          "packages/ts/src/graph/construction-scope.tsx",
+          "packages/ts/src/graph/construction-scope.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/solutions/causal-occurrence/capabilities.ts",
+        "ref": "../../graph/graph.js",
+        "kind": "import",
+        "line": 4,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/graph.ts",
+        "candidates": [
+          "packages/ts/src/graph/graph.ts",
+          "packages/ts/src/graph/graph.tsx",
+          "packages/ts/src/graph/graph.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/solutions/causal-occurrence/capabilities.ts",
+        "ref": "../../node/node.js",
+        "kind": "import",
+        "line": 5,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node.ts",
+        "candidates": [
+          "packages/ts/src/node/node.ts",
+          "packages/ts/src/node/node.tsx",
+          "packages/ts/src/node/node.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/solutions/causal-occurrence/capabilities.ts",
+        "ref": "./contracts.js",
+        "kind": "import",
+        "line": 6,
+        "status": "included",
+        "resolved": "packages/ts/src/solutions/causal-occurrence/contracts.ts",
+        "candidates": [
+          "packages/ts/src/solutions/causal-occurrence/contracts.ts",
+          "packages/ts/src/solutions/causal-occurrence/contracts.tsx",
+          "packages/ts/src/solutions/causal-occurrence/contracts.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/solutions/causal-occurrence/committed-view.ts",
+        "ref": "./capabilities.js",
+        "kind": "import",
+        "line": 1,
+        "status": "included",
+        "resolved": "packages/ts/src/solutions/causal-occurrence/capabilities.ts",
+        "candidates": [
+          "packages/ts/src/solutions/causal-occurrence/capabilities.ts",
+          "packages/ts/src/solutions/causal-occurrence/capabilities.tsx",
+          "packages/ts/src/solutions/causal-occurrence/capabilities.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/solutions/causal-occurrence/committed-view.ts",
+        "ref": "./contracts.js",
+        "kind": "import",
+        "line": 2,
+        "status": "included",
+        "resolved": "packages/ts/src/solutions/causal-occurrence/contracts.ts",
+        "candidates": [
+          "packages/ts/src/solutions/causal-occurrence/contracts.ts",
+          "packages/ts/src/solutions/causal-occurrence/contracts.tsx",
+          "packages/ts/src/solutions/causal-occurrence/contracts.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/solutions/causal-occurrence/construction.ts",
+        "ref": "../../ctx/types.js",
+        "kind": "import",
+        "line": 1,
+        "status": "included",
+        "resolved": "packages/ts/src/ctx/types.ts",
+        "candidates": [
+          "packages/ts/src/ctx/types.ts",
+          "packages/ts/src/ctx/types.tsx",
+          "packages/ts/src/ctx/types.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/solutions/causal-occurrence/construction.ts",
+        "ref": "../../graph/construction-scope.js",
+        "kind": "import",
+        "line": 2,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/construction-scope.ts",
+        "candidates": [
+          "packages/ts/src/graph/construction-scope.ts",
+          "packages/ts/src/graph/construction-scope.tsx",
+          "packages/ts/src/graph/construction-scope.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/solutions/causal-occurrence/construction.ts",
+        "ref": "../../graph/graph.js",
+        "kind": "import",
+        "line": 3,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/graph.ts",
+        "candidates": [
+          "packages/ts/src/graph/graph.ts",
+          "packages/ts/src/graph/graph.tsx",
+          "packages/ts/src/graph/graph.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/solutions/causal-occurrence/construction.ts",
+        "ref": "../../node/node.js",
+        "kind": "import",
+        "line": 4,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node.ts",
+        "candidates": [
+          "packages/ts/src/node/node.ts",
+          "packages/ts/src/node/node.tsx",
+          "packages/ts/src/node/node.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/solutions/causal-occurrence/construction.ts",
+        "ref": "../../operators/index.js",
+        "kind": "import",
+        "line": 5,
+        "status": "included",
+        "resolved": "packages/ts/src/operators/index.ts",
+        "candidates": [
+          "packages/ts/src/operators/index.ts",
+          "packages/ts/src/operators/index.tsx",
+          "packages/ts/src/operators/index.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/solutions/causal-occurrence/construction.ts",
+        "ref": "./capabilities.js",
+        "kind": "import",
+        "line": 6,
+        "status": "included",
+        "resolved": "packages/ts/src/solutions/causal-occurrence/capabilities.ts",
+        "candidates": [
+          "packages/ts/src/solutions/causal-occurrence/capabilities.ts",
+          "packages/ts/src/solutions/causal-occurrence/capabilities.tsx",
+          "packages/ts/src/solutions/causal-occurrence/capabilities.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/solutions/causal-occurrence/construction.ts",
+        "ref": "./committed-view.js",
+        "kind": "import",
+        "line": 12,
+        "status": "included",
+        "resolved": "packages/ts/src/solutions/causal-occurrence/committed-view.ts",
+        "candidates": [
+          "packages/ts/src/solutions/causal-occurrence/committed-view.ts",
+          "packages/ts/src/solutions/causal-occurrence/committed-view.tsx",
+          "packages/ts/src/solutions/causal-occurrence/committed-view.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/solutions/causal-occurrence/construction.ts",
+        "ref": "./contracts.js",
+        "kind": "import",
+        "line": 13,
+        "status": "included",
+        "resolved": "packages/ts/src/solutions/causal-occurrence/contracts.ts",
+        "candidates": [
+          "packages/ts/src/solutions/causal-occurrence/contracts.ts",
+          "packages/ts/src/solutions/causal-occurrence/contracts.tsx",
+          "packages/ts/src/solutions/causal-occurrence/contracts.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/solutions/causal-occurrence/construction.ts",
+        "ref": "./transition.js",
+        "kind": "import",
+        "line": 23,
+        "status": "included",
+        "resolved": "packages/ts/src/solutions/causal-occurrence/transition.ts",
+        "candidates": [
+          "packages/ts/src/solutions/causal-occurrence/transition.ts",
+          "packages/ts/src/solutions/causal-occurrence/transition.tsx",
+          "packages/ts/src/solutions/causal-occurrence/transition.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/solutions/causal-occurrence/contracts.ts",
+        "ref": "../../data/index.js",
+        "kind": "import",
+        "line": 1,
+        "status": "included",
+        "resolved": "packages/ts/src/data/index.ts",
+        "candidates": [
+          "packages/ts/src/data/index.ts",
+          "packages/ts/src/data/index.tsx",
+          "packages/ts/src/data/index.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/solutions/causal-occurrence/contracts.ts",
+        "ref": "../../graph/construction-scope.js",
+        "kind": "import",
+        "line": 2,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/construction-scope.ts",
+        "candidates": [
+          "packages/ts/src/graph/construction-scope.ts",
+          "packages/ts/src/graph/construction-scope.tsx",
+          "packages/ts/src/graph/construction-scope.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/solutions/causal-occurrence/contracts.ts",
+        "ref": "../../node/node.js",
+        "kind": "import",
+        "line": 3,
+        "status": "included",
+        "resolved": "packages/ts/src/node/node.ts",
+        "candidates": [
+          "packages/ts/src/node/node.ts",
+          "packages/ts/src/node/node.tsx",
+          "packages/ts/src/node/node.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/solutions/causal-occurrence/contracts.ts",
+        "ref": "./capabilities.js",
+        "kind": "import",
+        "line": 4,
+        "status": "included",
+        "resolved": "packages/ts/src/solutions/causal-occurrence/capabilities.ts",
+        "candidates": [
+          "packages/ts/src/solutions/causal-occurrence/capabilities.ts",
+          "packages/ts/src/solutions/causal-occurrence/capabilities.tsx",
+          "packages/ts/src/solutions/causal-occurrence/capabilities.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/solutions/causal-occurrence/evidence.ts",
+        "ref": "../../identity.js",
+        "kind": "import",
+        "line": 1,
+        "status": "included",
+        "resolved": "packages/ts/src/identity.ts",
+        "candidates": [
+          "packages/ts/src/identity.ts",
+          "packages/ts/src/identity.tsx",
+          "packages/ts/src/identity.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/solutions/causal-occurrence/evidence.ts",
+        "ref": "./contracts.js",
+        "kind": "import",
+        "line": 2,
+        "status": "included",
+        "resolved": "packages/ts/src/solutions/causal-occurrence/contracts.ts",
+        "candidates": [
+          "packages/ts/src/solutions/causal-occurrence/contracts.ts",
+          "packages/ts/src/solutions/causal-occurrence/contracts.tsx",
+          "packages/ts/src/solutions/causal-occurrence/contracts.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/solutions/causal-occurrence/evidence.ts",
+        "ref": "./identity.js",
+        "kind": "import",
+        "line": 9,
+        "status": "included",
+        "resolved": "packages/ts/src/solutions/causal-occurrence/identity.ts",
+        "candidates": [
+          "packages/ts/src/solutions/causal-occurrence/identity.ts",
+          "packages/ts/src/solutions/causal-occurrence/identity.tsx",
+          "packages/ts/src/solutions/causal-occurrence/identity.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/solutions/causal-occurrence/identity.ts",
+        "ref": "../../data/index.js",
+        "kind": "import",
+        "line": 1,
+        "status": "included",
+        "resolved": "packages/ts/src/data/index.ts",
+        "candidates": [
+          "packages/ts/src/data/index.ts",
+          "packages/ts/src/data/index.tsx",
+          "packages/ts/src/data/index.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/solutions/causal-occurrence/identity.ts",
+        "ref": "../../identity.js",
+        "kind": "import",
+        "line": 2,
+        "status": "included",
+        "resolved": "packages/ts/src/identity.ts",
+        "candidates": [
+          "packages/ts/src/identity.ts",
+          "packages/ts/src/identity.tsx",
+          "packages/ts/src/identity.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/solutions/causal-occurrence/identity.ts",
+        "ref": "../../json/codec.js",
+        "kind": "import",
+        "line": 3,
+        "status": "included",
+        "resolved": "packages/ts/src/json/codec.ts",
+        "candidates": [
+          "packages/ts/src/json/codec.ts",
+          "packages/ts/src/json/codec.tsx",
+          "packages/ts/src/json/codec.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/solutions/causal-occurrence/identity.ts",
+        "ref": "./contracts.js",
+        "kind": "import",
+        "line": 4,
+        "status": "included",
+        "resolved": "packages/ts/src/solutions/causal-occurrence/contracts.ts",
+        "candidates": [
+          "packages/ts/src/solutions/causal-occurrence/contracts.ts",
+          "packages/ts/src/solutions/causal-occurrence/contracts.tsx",
+          "packages/ts/src/solutions/causal-occurrence/contracts.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/solutions/causal-occurrence/identity.ts",
+        "ref": "./contracts.js",
+        "kind": "import",
+        "line": 283,
+        "status": "included",
+        "resolved": "packages/ts/src/solutions/causal-occurrence/contracts.ts",
+        "candidates": [
+          "packages/ts/src/solutions/causal-occurrence/contracts.ts",
+          "packages/ts/src/solutions/causal-occurrence/contracts.tsx",
+          "packages/ts/src/solutions/causal-occurrence/contracts.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/solutions/causal-occurrence/lifecycle.ts",
+        "ref": "../../identity.js",
+        "kind": "import",
+        "line": 1,
+        "status": "included",
+        "resolved": "packages/ts/src/identity.ts",
+        "candidates": [
+          "packages/ts/src/identity.ts",
+          "packages/ts/src/identity.tsx",
+          "packages/ts/src/identity.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/solutions/causal-occurrence/lifecycle.ts",
+        "ref": "./contracts.js",
+        "kind": "import",
+        "line": 2,
+        "status": "included",
+        "resolved": "packages/ts/src/solutions/causal-occurrence/contracts.ts",
+        "candidates": [
+          "packages/ts/src/solutions/causal-occurrence/contracts.ts",
+          "packages/ts/src/solutions/causal-occurrence/contracts.tsx",
+          "packages/ts/src/solutions/causal-occurrence/contracts.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/solutions/causal-occurrence/lifecycle.ts",
+        "ref": "./identity.js",
+        "kind": "import",
+        "line": 12,
+        "status": "included",
+        "resolved": "packages/ts/src/solutions/causal-occurrence/identity.ts",
+        "candidates": [
+          "packages/ts/src/solutions/causal-occurrence/identity.ts",
+          "packages/ts/src/solutions/causal-occurrence/identity.tsx",
+          "packages/ts/src/solutions/causal-occurrence/identity.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/solutions/causal-occurrence/transition.ts",
+        "ref": "../../data/index.js",
+        "kind": "import",
+        "line": 1,
+        "status": "included",
+        "resolved": "packages/ts/src/data/index.ts",
+        "candidates": [
+          "packages/ts/src/data/index.ts",
+          "packages/ts/src/data/index.tsx",
+          "packages/ts/src/data/index.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/solutions/causal-occurrence/transition.ts",
+        "ref": "./contracts.js",
+        "kind": "import",
+        "line": 2,
+        "status": "included",
+        "resolved": "packages/ts/src/solutions/causal-occurrence/contracts.ts",
+        "candidates": [
+          "packages/ts/src/solutions/causal-occurrence/contracts.ts",
+          "packages/ts/src/solutions/causal-occurrence/contracts.tsx",
+          "packages/ts/src/solutions/causal-occurrence/contracts.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/solutions/causal-occurrence/transition.ts",
+        "ref": "./evidence.js",
+        "kind": "import",
+        "line": 11,
+        "status": "included",
+        "resolved": "packages/ts/src/solutions/causal-occurrence/evidence.ts",
+        "candidates": [
+          "packages/ts/src/solutions/causal-occurrence/evidence.ts",
+          "packages/ts/src/solutions/causal-occurrence/evidence.tsx",
+          "packages/ts/src/solutions/causal-occurrence/evidence.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/solutions/causal-occurrence/transition.ts",
+        "ref": "./identity.js",
+        "kind": "import",
+        "line": 12,
+        "status": "included",
+        "resolved": "packages/ts/src/solutions/causal-occurrence/identity.ts",
+        "candidates": [
+          "packages/ts/src/solutions/causal-occurrence/identity.ts",
+          "packages/ts/src/solutions/causal-occurrence/identity.tsx",
+          "packages/ts/src/solutions/causal-occurrence/identity.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/solutions/causal-occurrence/transition.ts",
+        "ref": "./identity.js",
+        "kind": "import",
+        "line": 13,
+        "status": "included",
+        "resolved": "packages/ts/src/solutions/causal-occurrence/identity.ts",
+        "candidates": [
+          "packages/ts/src/solutions/causal-occurrence/identity.ts",
+          "packages/ts/src/solutions/causal-occurrence/identity.tsx",
+          "packages/ts/src/solutions/causal-occurrence/identity.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/solutions/causal-occurrence/transition.ts",
+        "ref": "./lifecycle.js",
+        "kind": "import",
+        "line": 24,
+        "status": "included",
+        "resolved": "packages/ts/src/solutions/causal-occurrence/lifecycle.ts",
+        "candidates": [
+          "packages/ts/src/solutions/causal-occurrence/lifecycle.ts",
+          "packages/ts/src/solutions/causal-occurrence/lifecycle.tsx",
+          "packages/ts/src/solutions/causal-occurrence/lifecycle.js"
+        ]
+      }
+    ],
+    "manualReview": [],
+    "limitations": [
+      "Structural local path audit only; not TypeScript module resolution, link-anchor validation, answer-leak detection or proof that tasks are answerable.",
+      "External packages and computed imports need review. No reference causes a file to be added. Files with innocuous names can still contain hidden answers; human material review is required.",
+      "Restrictions are screening signals, not an isolation/security boundary. No runnable material bundle or formal freeze is produced."
+    ]
+  }
+}

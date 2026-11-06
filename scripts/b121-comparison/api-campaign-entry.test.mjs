@@ -1,19 +1,14 @@
+import { copyGraphRuntime } from "./test-fixtures/graph-runtime.mjs";
+import { CEILING_USD } from "./api-provider.mjs";
 /** Actual campaign consumer plus offline review; all HTTP responses are synthetic. */
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import {
-	copyFileSync,
-	mkdirSync,
-	mkdtempSync,
-	readFileSync,
-	rmSync,
-	symlinkSync,
-	writeFileSync,
-} from "node:fs";
+import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import test from "node:test";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { QUALIFICATION_READS, QUALIFICATION_SUBMISSIONS } from "./api-transport.mjs";
 
 const root = resolve(fileURLToPath(new URL("../../", import.meta.url)));
 const base = "sessions/active/b121-comparison-design-v1/agent-api";
@@ -30,15 +25,15 @@ function fixture() {
 		mkdirSync(dirname(join(dir, path)), { recursive: true });
 		copyFileSync(join(root, path), join(dir, path));
 	}
-	symlinkSync(
-		resolve(root, "../graphrefly-ts/node_modules"),
-		join(temp, "graphrefly-ts/node_modules"),
-	);
-	copyFileSync(
-		resolve(root, "../graphrefly-ts/package.json"),
-		join(temp, "graphrefly-ts/package.json"),
-	);
-	const manifestSHA = createHash("sha256").update(bytes).digest("hex");
+	copyGraphRuntime(dir, manifest);
+	// Synthetic fixtures bind the copied current code, without rewriting historical artifacts.
+	for (const binding of manifest.bindings)
+		binding.sha256 = createHash("sha256")
+			.update(readFileSync(join(dir, binding.path)))
+			.digest("hex");
+	const fixtureBytes = JSON.stringify(manifest);
+	writeFileSync(join(dir, base, "manifest.json"), fixtureBytes);
+	const manifestSHA = createHash("sha256").update(fixtureBytes).digest("hex");
 	return {
 		temp,
 		dir,
@@ -51,11 +46,11 @@ function fixture() {
 			acceptAliasLimitation: true,
 			acceptInputEstimateLimitation: true,
 			expiresAt: "2099-01-01",
-			maxGenerationCalls: 962,
-			maxUSD: 0.2,
+			maxGenerationCalls: 1444,
+			maxUSD: CEILING_USD,
 			retries: 0,
-			model: "qwen/qwen3.8-flash",
-			providerTag: "makora/fp4",
+			model: "deepseek/deepseek-v4.1-flash",
+			providerTag: "together",
 		},
 	};
 }
@@ -66,8 +61,7 @@ function submits(subject, phase) {
 		scenario,
 		fields: Object.fromEntries(
 			Object.entries(
-				JSON.parse(subject.files[`${phase}/common.json`].content)
-					.answerVocabulary,
+				JSON.parse(subject.files[`${phase}/common.json`].content).answerVocabulary,
 			).map(([k, v]) => [k, { value: v[0], citations: [] }]),
 		),
 		explanation: "synthetic fixture",
@@ -79,38 +73,35 @@ for (const valid of [true, false])
 			oldFetch = globalThis.fetch;
 		let calls = 0;
 		try {
-			const subject = f.bundle.slots[0];
+			const subject = f.bundle.entrySlots[0];
 			assert.equal(subject.slot.arm, "G");
 			const batches = [
 				[{ op: "read", path: "probe.json" }],
-				[{ op: "read", path: "probe.json" }],
-				submits(subject, "A"),
-				submits(subject, "B"),
+				QUALIFICATION_SUBMISSIONS[0],
+				QUALIFICATION_READS[1],
+				QUALIFICATION_SUBMISSIONS[1],
+				...f.bundle.slots.flatMap((p) => [submits(p, "A"), submits(p, "B")]),
 				[
 					{
 						op: "submit",
-						snippet: valid
-							? "export const value:number=1;"
-							: 'export const value:number="wrong";',
+						snippet: valid ? "export const value:number=1;" : 'export const value:number="wrong";',
 						explanation: "synthetic fixture",
 						concepts: { read: [], required: [], firstExpansion: null },
 					},
 				],
 			];
 			globalThis.fetch = async (url) => {
-				const requests = batches[calls] ?? [
-					{ op: "read", path: "../../forbidden" },
-				];
+				const requests = batches[calls] ?? [{ op: "read", path: "../../forbidden" }];
 				calls++;
 				const body = {
 					id: `fixture_${calls}`,
-					model: "qwen/qwen3.8-flash",
-					provider: "Makora",
+					model: "deepseek/deepseek-v4.1-flash",
+					provider: "Together",
 					usage: {
 						prompt_tokens: 100,
 						completion_tokens: 20,
 						total_tokens: 120,
-						cost: 0.0000244,
+						cost: 0.000054,
 					},
 					choices: [
 						{
@@ -125,7 +116,7 @@ for (const valid of [true, false])
 										function: {
 											name: "broker",
 											arguments: JSON.stringify({
-												requests: JSON.stringify(requests),
+												requests: requests,
 											}),
 										},
 									},
@@ -143,21 +134,26 @@ for (const valid of [true, false])
 			const { runCampaign, reviewCampaignEntries } = await import(
 				pathToFileURL(join(f.dir, "scripts/b121-comparison/api-campaign.mjs"))
 			);
+			if (valid) f.approval.attemptId = "separate-offline-attempt";
 			const result = await runCampaign({
 				approval: f.approval,
 				apiKey: "OFFLINE-FAKE",
 			});
-			assert.equal(calls, 6);
+			assert.equal(calls, 34);
 			const logs = readFileSync(join(result.directory, "journal.jsonl"), "utf8")
 				.trim()
 				.split("\n")
 				.map(JSON.parse);
-			const row = logs.at(-1).event.data.results[0];
+			const row = logs.findLast((r) => r.event.type === "campaign-finished").event.data
+				.entryResults[0];
 			assert.equal(row.entry.status, "pending-review");
 			assert.equal(row.entry.accepted, false);
 			assert.equal(row.entry.compilation.ok, valid);
 			assert.ok(row.entry.compilation.diagnostics);
-			assert.equal(logs.at(-1).event.data.denominator, 1344);
+			assert.equal(
+				logs.findLast((r) => r.event.type === "campaign-finished").event.data.denominator,
+				1344,
+			);
 			const review = {
 				binding: row.entry.binding,
 				reviewerId: "synthetic-trusted-review",
@@ -181,11 +177,8 @@ for (const valid of [true, false])
 			});
 			assert.equal(saved.entries[0].result.status, "rejected");
 			assert.equal(saved.providerCalls, 0);
-			assert.equal(calls, 6);
-			assert.equal(
-				JSON.parse(readFileSync(saved.path)).entries[0].result.accepted,
-				false,
-			);
+			assert.equal(calls, 34);
+			assert.equal(JSON.parse(readFileSync(saved.path)).entries[0].result.accepted, false);
 			assert.throws(
 				() =>
 					reviewCampaignEntries({
@@ -207,6 +200,22 @@ for (const valid of [true, false])
 					}),
 				/binding/,
 			);
+			// An intact journal from one authorized attempt cannot be moved to another claim.
+			const swapped = join(dirname(result.directory), `${f.manifestSHA}--swapped`);
+			mkdirSync(swapped);
+			writeFileSync(
+				join(swapped, "approval.json"),
+				JSON.stringify({ ...f.approval, attemptId: "swapped" }),
+			);
+			copyFileSync(join(result.directory, "journal.jsonl"), join(swapped, "journal.jsonl"));
+			assert.throws(
+				() =>
+					reviewCampaignEntries({
+						directory: swapped,
+						reviews: { [subject.slot.id]: review },
+					}),
+				/completed campaign journal required/,
+			);
 			logs[1].event.type = "tampered";
 			writeFileSync(
 				join(result.directory, "journal.jsonl"),
@@ -220,7 +229,7 @@ for (const valid of [true, false])
 					}),
 				/integrity/,
 			);
-			assert.equal(calls, 6);
+			assert.equal(calls, 34);
 		} finally {
 			globalThis.fetch = oldFetch;
 			rmSync(f.temp, { recursive: true, force: true });
@@ -231,10 +240,7 @@ test("entry source drift refuses actual campaign before any HTTP", async () => {
 		oldFetch = globalThis.fetch;
 	let calls = 0;
 	try {
-		const path = join(
-			f.temp,
-			"graphrefly-ts/examples/spending-alerts/causal-entry.ts",
-		);
+		const path = join(f.temp, "graphrefly-ts/examples/spending-alerts/causal-entry.ts");
 		writeFileSync(path, readFileSync(path, "utf8") + "\n// drift\n");
 		globalThis.fetch = async () => {
 			calls++;

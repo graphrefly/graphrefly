@@ -1,0 +1,18 @@
+{
+  "tests": 206,
+  "passed": 206,
+  "failed": 0,
+  "skipped": 0,
+  "loopbackCases": 6,
+  "loopbackRequests": 120,
+  "externalRequests": 0,
+  "generationCalls": 0,
+  "files": {
+    "scripts/b121-comparison/api-transport.mjs": "ba9d28067f885a4c34926b37ddd32111d7c9c6f2bce5f62e2d2bfa3eb12d1fac",
+    "scripts/b121-comparison/candidate-campaign.mjs": "8cb18a6008e5887e5c758f2159511f1a5ce0992b1bdf87ca45d7981763b8488d",
+    "scripts/b121-comparison/api-runner.test.mjs": "0c11782b44cadb352933604743cf878be98c72c7147614ca945c04943017f4da"
+  },
+  "review": "One independent bounded reviewer plus local scope/edge/verification review; no blocker reported; remote-root-cause and synthetic scenario limits explicitly disclosed",
+  "liveRootCauseEstablished": false,
+  "paidRerunPerformed": false
+}

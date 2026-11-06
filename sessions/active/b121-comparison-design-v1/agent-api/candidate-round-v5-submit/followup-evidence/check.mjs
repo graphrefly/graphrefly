@@ -1,0 +1,20 @@
+import {readFileSync,writeFileSync} from 'node:fs';
+import {gunzipSync} from 'node:zlib';
+import {createHash} from 'node:crypto';
+import {resolve,dirname} from 'node:path';
+import {existsSync} from 'node:fs';
+import {compileInProcess} from '/Users/davidchenallio/src/graphrefly/scripts/b121-comparison/compiler-process.mjs';
+const root='/Users/davidchenallio/src/graphrefly',tsRoot='/Users/davidchenallio/src/graphrefly-ts';
+const base=root+'/sessions/active/b121-comparison-design-v1/agent-api/candidate-round-v5-submit';
+const sha=x=>createHash('sha256').update(x).digest('hex');
+const path=tsRoot+'/examples/spending-alerts/README.md',doc=readFileSync(path,'utf8');
+const code=doc.match(/```ts\n([\s\S]*?)```/)[1];
+const snippet='import type { Graph } from "../../packages/ts/src/graph/graph.js";\nimport type { spendingAlertsFor } from "./causal-entry.js";\ndeclare const graph: Graph;\ndeclare const app: ReturnType<ReturnType<typeof spendingAlertsFor>["compose"]>;\n'+code;
+const env=gunzipSync(readFileSync(base+'/compiler-environment.json.gz')).toString();
+const compiler=await compileInProcess({environmentJSON:env,expectedSHA256:sha(env),snippet,directory:'/tmp/b121-v5-followup/compiler',context:{kind:'documentation-snippet-check',providerCalls:0,README_SHA256:sha(doc)}});
+if(!compiler.compilation?.ok||compiler.compilerFailure)throw Error(JSON.stringify(compiler));
+let links=0;for(const [,target]of doc.matchAll(/\]\(([^)]+)\)/g)){if(target.startsWith('#'))continue;if(!existsSync(resolve(dirname(path),target.split('#')[0])))throw Error('missing link '+target);links++;}
+const manifest=JSON.parse(readFileSync(base+'/live/manifest.json'));for(const [p,h]of Object.entries(manifest.artifactSHA256))if(sha(readFileSync(base+'/'+p))!==h)throw Error('frozen material modified');for(const b of manifest.codeBindings)if(sha(readFileSync(root+'/'+b.path))!==b.sha256)throw Error('frozen runtime modified');
+const demo=JSON.parse(readFileSync('/tmp/b121-v5-followup/demo.json'));
+const result={readmeSHA256:sha(doc),snippetSHA256:sha(snippet),compilerOK:compiler.compilation.ok,compilerReceipt:compiler.receiptDirectory,localFileLinksChecked:links,unchangedFrozenArtifacts:5,unchangedCodeBindings:manifest.codeBindings.length,providerCalls:0,demoComposition:demo.composition};
+writeFileSync('/tmp/b121-v5-followup/check.json',JSON.stringify(result,null,2));console.log(JSON.stringify({...result,demoComposition:{aPendingAfterB:demo.composition.aPendingAfterB,bSucceededWhileAPending:demo.composition.bSucceededWhileAPending,writes:demo.composition.writes}}));

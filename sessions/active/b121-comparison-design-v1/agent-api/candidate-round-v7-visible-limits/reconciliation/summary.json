@@ -1,0 +1,18 @@
+{
+  "work": "graphrefly:B121",
+  "kind": "reservation-reconciliation-evidence",
+  "generationCalls": 0,
+  "metadataRequests": 3,
+  "reservationCount": 8,
+  "noGenerationIdCount": 6,
+  "reportedCumulativeUSD": 1.39232266,
+  "unknownReservationsUSD": 2.549442,
+  "releasedReservationsUSD": 0,
+  "conservativeCommittedUSD": 3.94176466,
+  "ceilingUSD": 4,
+  "conservativeAvailableUSD": 0.05823534,
+  "externalKeyRemainingUSD": 0.6004953559999999,
+  "nextMaximumRequestReserveUSD": 0.319488,
+  "accountingSettled": false,
+  "sampleResultsUnchanged": true
+}

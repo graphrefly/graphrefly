@@ -1,0 +1,32 @@
+import assert from 'node:assert/strict';
+import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { gunzipSync } from 'node:zlib';
+import { fileURLToPath } from 'node:url';
+import { resolve } from 'node:path';
+import { openCandidateRound } from '../../../../../scripts/b121-comparison/candidate-entry.mjs';
+import { candidatePreflight } from '../../../../../scripts/b121-comparison/candidate-preflight.mjs';
+import { ROUTE, maximumCost } from '../../../../../scripts/b121-comparison/api-provider.mjs';
+const base=fileURLToPath(new URL('.',import.meta.url));
+const read=n=>readFileSync(resolve(base,n),'utf8');
+const receiptRoot=resolve(base,'offline',process.argv[2]??'calibration-01');mkdirSync(receiptRoot,{recursive:true});
+const round=openCandidateRound({materialsJSON:read('materials.json'),tasksJSON:read('tasks.json'),rubricJSON:read('reviewer-rubric.json'),environmentJSON:gunzipSync(readFileSync(resolve(base,'compiler-environment.json.gz'))).toString(),pins:JSON.parse(read('integration-pins.json')),receiptRoot});
+const preflight=await candidatePreflight(base,{receiptRoot});
+writeFileSync(resolve(base,'preflight.json'),JSON.stringify(preflight,null,2)+'\n');
+assert(preflight.readyForCandidateTypechecking);
+const rows=[];
+for(const f of JSON.parse(read('calibration-fixtures.json')).fixtures){
+ const events=[];
+ const response={id:'offline-calibration',model:ROUTE.model,provider:ROUTE.provider,usage:{prompt_tokens:100,completion_tokens:20,total_tokens:120,cost:maximumCost(100,20),prompt_tokens_details:{cached_tokens:0},completion_tokens_details:{reasoning_tokens:0}},choices:[{finish_reason:'tool_calls',message:{role:'assistant',content:null,tool_calls:[{id:'offline-call',type:'function',function:{name:'broker',arguments:JSON.stringify({requests:[{op:'submit',snippet:f.snippet,explanation:f.explanation,concepts:{read:[],required:[],firstExpansion:null}}]})}}]}}]};
+ const result=await round.replay({taskId:f.taskId,sampleId:f.id,responses:[response],journal:e=>events.push(e)});
+ const compiled=result.assessment.compilation;
+ rows.push({id:f.id,expectedCompile:f.expectedCompile,...result});
+ writeFileSync(resolve(receiptRoot,f.id+'.journal.json'),JSON.stringify(events,null,2)+'\n');
+ assert.equal(result.assessment.compilerFailure,null);
+ assert.equal(compiled?.ok,f.expectedCompile,f.id);
+ assert.equal(compiled.materialDiagnostics.length,0,f.id);
+ const packet=round.prepare(f.taskId,f.id).entryFiles;
+ assert(!Object.keys(packet).some(p=>/rubric|calibration|consumer-probe/.test(p)));
+ assert(!JSON.stringify(packet).includes('declare const versions: readonly'));
+ console.log(f.id,compiled.ok?'compiled':'rejected by consumer');
+}
+writeFileSync(resolve(base,'calibration-results.json'),JSON.stringify({providerCalls:0,formalReady:false,meaning:'Synthetic replay and compile only; static expected verdicts require separate review. No participant model or code execution.',binding:round.binding,rows},null,2)+'\n');

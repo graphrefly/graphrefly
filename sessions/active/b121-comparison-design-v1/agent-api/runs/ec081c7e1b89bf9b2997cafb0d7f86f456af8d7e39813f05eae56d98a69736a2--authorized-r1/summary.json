@@ -1,0 +1,56 @@
+{
+  "kind": "B121-agent-api-attempt-summary",
+  "manifestSHA": "ec081c7e1b89bf9b2997cafb0d7f86f456af8d7e39813f05eae56d98a69736a2",
+  "startedAt": "2026-09-16T07:16:27.521Z",
+  "finishedAt": "2026-09-16T07:21:14.318Z",
+  "qualificationPassed": true,
+  "participantSessionsStarted": 12,
+  "participantSessionsCompleted": 9,
+  "participantSessionsUnrun": 0,
+  "submittedAnswers": 161,
+  "participantFailures": [
+    {
+      "sessionId": "agent-01",
+      "message": "invalid answer value"
+    },
+    {
+      "sessionId": "agent-04",
+      "message": "invalid broker operation schema"
+    },
+    {
+      "sessionId": "agent-09",
+      "message": "invalid broker operation schema"
+    }
+  ],
+  "entrySessionsStarted": 4,
+  "entrySessionsUnrun": 2,
+  "entrySessionsCompleted": 0,
+  "entryFailures": [
+    {
+      "sessionId": "agent-06-entry",
+      "message": "provider cost/call ceiling before retry",
+      "failureScope": "campaign"
+    }
+  ],
+  "submittedEntries": 0,
+  "generationCalls": 225,
+  "providerReportedCostUSD": 0.19383742800000014,
+  "priorUsageUSD": 0.91992436,
+  "reservedUSD": 0.8328134279999995,
+  "unknownReservedUSD": 0.6389759999999993,
+  "failure": "provider cost/call ceiling before retry",
+  "lastResponse": {
+    "status": 200,
+    "finishReason": "tool_calls",
+    "usage": {
+      "prompt_tokens": 40961,
+      "completion_tokens": 73,
+      "total_tokens": 41034,
+      "reasoning_tokens": 0,
+      "cost": 0.000672348
+    }
+  },
+  "denominator": 1344,
+  "b121Complete": false,
+  "journalHead": "d91c6e047cfa0d251213ab7ecfbdb6ea6ed7f79ebbfb00c15160c71340363ae5"
+}

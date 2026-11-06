@@ -1,0 +1,42 @@
+{
+  "kind": "B121-agent-api-attempt-summary",
+  "manifestSHA": "f14b20fe8ed933b216b8a614300a02a77b9f4d34de9761a56391ad67490ebe99",
+  "startedAt": "2026-09-16T06:48:23.545Z",
+  "finishedAt": "2026-09-16T06:51:33.658Z",
+  "qualificationPassed": true,
+  "participantSessionsStarted": 12,
+  "participantSessionsCompleted": 7,
+  "participantSessionsUnrun": 0,
+  "submittedAnswers": 132,
+  "participantFailures": [
+    {
+      "sessionId": "agent-05",
+      "message": "invalid tool envelope"
+    }
+  ],
+  "entrySessionsStarted": 6,
+  "entrySessionsUnrun": 0,
+  "entrySessionsCompleted": 0,
+  "entryFailures": [],
+  "submittedEntries": 0,
+  "generationCalls": 95,
+  "providerReportedCostUSD": 0.11945860800000002,
+  "priorUsageUSD": 0.299479912,
+  "reservedUSD": 0.11945860799999974,
+  "unknownReservedUSD": 0,
+  "failure": null,
+  "lastResponse": {
+    "status": 200,
+    "finishReason": "tool_calls",
+    "usage": {
+      "prompt_tokens": 14591,
+      "completion_tokens": 198,
+      "total_tokens": 14789,
+      "reasoning_tokens": 0,
+      "cost": 0.001303284
+    }
+  },
+  "denominator": 1344,
+  "b121Complete": false,
+  "journalHead": "e4bdb3c2c66499d1163ff9d537050a0acf2429842fdc112b4132a746eecdea3f"
+}

@@ -1,0 +1,39 @@
+{
+  "assessmentSHA256": "9dd20e6064439e20170a6e900db51c702eb681375822377b1b3c6ec0b02e5626",
+  "binding": {
+    "materialSHA256": "a7846d59bdc5d0ca359292dceb91ef3274991bfb4afd9ce28e18c867e7554e6d",
+    "taskSHA256": "4cb85526391e8a15e083f1ee62df9370d65712555b5faf2116d047a89de8a1ee",
+    "rubricSHA256": "ef5013f4525bc88a9f8ac5848b2a5090378fe6c740c4619e26237ffe8e7d597b",
+    "environmentSHA256": "25c512ca2d3dd5c501f470bd4e6f63994ffbe635c402622b02180226b7302687",
+    "runnerContractSHA256": "8c304251aa7233fe97e4350d360f789312c1d72bf39054e48aa35e4b52e5809e"
+  },
+  "taskId": "compose-two-instances",
+  "sampleId": "candidate-entry-02",
+  "formalReady": false,
+  "providerCalls": 0,
+  "accepted": true,
+  "status": "accepted-candidate-session",
+  "compilerReceipt": "/Users/davidchenallio/src/graphrefly/sessions/active/b121-comparison-design-v1/agent-api/candidate-round-v11-connection-close/live/review-compiler/974000e0-f233-4ef2-95bb-985af9a0a8fd",
+  "review": {
+    "assessmentSHA256": "9dd20e6064439e20170a6e900db51c702eb681375822377b1b3c6ec0b02e5626",
+    "reviewerId": "Codex primary /root local source review; second reviewer spawn unavailable (thread limit)",
+    "criteria": {
+      "distinct-instance-construction": {
+        "pass": true,
+        "evidence": "One preset on given Graph composes supplied firstInputs and secondInputs under alerts-a and alerts-b; frozen causal-entry.ts49-74 confirms complete host construction with existing resource. No direct transport or fabricated facts."
+      },
+      "default-override-isolation": {
+        "pass": true,
+        "evidence": "Immutable defaults diagnostics off; first inherits off, only second overrides summary. No shared defaults mutation; frozen causal-entry.ts36-52."
+      },
+      "separate-observation-ownership": {
+        "pass": true,
+        "evidence": "Separate mountSpendingView calls use each actual view and callback; pair returns original apps plus separate detach functions. Explanation preserves owning Graph and obligations; frozen view binding16-56 and README143-151."
+      },
+      "name-resource-boundary": {
+        "pass": true,
+        "evidence": "Two prepared input sets passed unchanged; explanation distinguishes namespace names, actual input Nodes and resource binding; explicitly says changing name does not clone resources or authorize/rebind. Frozen README85-89 and causal-entry55-69."
+      }
+    }
+  }
+}

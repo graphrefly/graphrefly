@@ -1,0 +1,23 @@
+{
+  "reusedPriorSuite": {
+    "source": "../../candidate-round-v5-submit/live/verification.json",
+    "passed": 197,
+    "failed": 0,
+    "skipped": 0,
+    "rerunThisTurn": false,
+    "reason": "All33executionCodeBindingsUnchanged"
+  },
+  "v6OfflineQualification": "../offline/qualification.json",
+  "finalizationBoundaryCases": 8,
+  "independentReviewLenses": 3,
+  "fixedFinding": "V6 reviewed task/rubric coverage gaps resolved before freeze; runner unchanged",
+  "journalRowsVerified": 883,
+  "codeBindingsVerified": 33,
+  "materialArtifactsVerified": 5,
+  "feedbackRequestsVerified": 91,
+  "plannedSamples": 4,
+  "startedSamples": 4,
+  "submissions": 2,
+  "providerAttemptFailures": 0,
+  "modelSessionReruns": 0
+}

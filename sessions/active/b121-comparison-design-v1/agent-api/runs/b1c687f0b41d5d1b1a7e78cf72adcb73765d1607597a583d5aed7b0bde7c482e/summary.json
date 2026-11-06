@@ -1,0 +1,37 @@
+{
+  "kind": "B121-agent-api-attempt-summary",
+  "manifestSHA": "b1c687f0b41d5d1b1a7e78cf72adcb73765d1607597a583d5aed7b0bde7c482e",
+  "startedAt": "2026-09-16T06:35:24.533Z",
+  "finishedAt": "2026-09-16T06:36:20.329Z",
+  "qualificationPassed": true,
+  "participantSessionsStarted": 5,
+  "participantSessionsCompleted": 2,
+  "participantSessionsUnrun": 7,
+  "submittedAnswers": 57,
+  "participantFailures": [],
+  "entrySessionsStarted": 0,
+  "entrySessionsUnrun": 6,
+  "entrySessionsCompleted": 0,
+  "entryFailures": [],
+  "submittedEntries": 0,
+  "generationCalls": 32,
+  "providerReportedCostUSD": 0.034705716000000005,
+  "priorUsageUSD": 0.264774196,
+  "reservedUSD": 0.3541937160000001,
+  "unknownReservedUSD": 0.3194880000000001,
+  "failure": "provider usage.cost disagreed with the admitted route pricing audit",
+  "lastResponse": {
+    "status": 200,
+    "finishReason": "error",
+    "usage": {
+      "prompt_tokens": 10755,
+      "completion_tokens": 2,
+      "total_tokens": 10757,
+      "reasoning_tokens": 0,
+      "cost": 0
+    }
+  },
+  "denominator": 1344,
+  "b121Complete": false,
+  "journalHead": "029785fe958647e0b1c40d13826293bd3fb311a74fa2964261420b03d285588d"
+}

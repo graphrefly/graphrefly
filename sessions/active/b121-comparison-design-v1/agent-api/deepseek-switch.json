@@ -1,0 +1,50 @@
+{
+  "kind": "B121-model-provider-switch",
+  "owner": "graphrefly:B121",
+  "at": "2026-09-15T04:48:54.885Z",
+  "manifestSHA": "bbadd60cc8e46ee34628fc042c88333bb585e316f72f7ffed4fa9d419367f385",
+  "requested": "Latest DeepSeek Flash, replacing Qwen/Makora after repeated capacity errors",
+  "route": {
+    "model": "deepseek/deepseek-v4.1-flash",
+    "provider": "Together",
+    "acceptedModels": [
+      "deepseek/deepseek-v4.1-flash",
+      "deepseek/deepseek-v4.1-flash-20260910"
+    ],
+    "tag": "together",
+    "endpoint": "https://openrouter.ai/api/v1/chat/completions",
+    "contextTokens": 1048576,
+    "inputPerMillion": 0.3,
+    "outputPerMillion": 1.2,
+    "cacheReadPerMillion": 0.006,
+    "source": "https://openrouter.ai/api/v1/models/deepseek/deepseek-v4.1-flash/endpoints"
+  },
+  "releaseSource": "https://api-docs.deepseek.com/news/news260910/",
+  "removedUnsupportedParameters": [
+    "seed"
+  ],
+  "checks": {
+    "offlineTests": 110,
+    "review": "no actionable route issues"
+  },
+  "externalGuardrail": {
+    "id": "c0224de1-810d-46e1-af6f-8ef15039211e",
+    "allowedModel": "deepseek/deepseek-v4.1-flash",
+    "allowedProvider": "together",
+    "existingBudgetUSD": 0.2
+  },
+  "proposal": {
+    "budgetUSD": 2,
+    "studyTokenEnvelopeUSD": 0.288,
+    "qualificationTokenEnvelopeUSD": 0.0110592,
+    "singleRequestReservationUSD": 0.319488,
+    "approved": false
+  },
+  "providerCalls": 0,
+  "executionReady": false,
+  "limitations": [
+    "Together capacity is unverified for this model; published uptime does not guarantee availability.",
+    "Full-context monetary reservation exceeds current USD0.20 key limit.",
+    "New model token forecast remains heuristic."
+  ]
+}

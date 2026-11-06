@@ -1,0 +1,19 @@
+{
+  "kind": "docs-only-offline-verification",
+  "moduleProbesPassed": 4,
+  "moduleProbeCount": 4,
+  "participantSolutions": 0,
+  "readmeLocalLinksChecked": 10,
+  "missingLinks": 0,
+  "realBrokerFirstPageContainsFourEntrypoints": true,
+  "brokerResponseBytes": 6409,
+  "unchangedOtherMaterialFiles": 97,
+  "originalV2ArtifactHashesVerified": 5,
+  "harnessAndTokenLimitsUnchanged": true,
+  "review": "Local source/contract, scope/edge, and verification review; static docs-only change; no independent review claim",
+  "limitations": [
+    "This documents existing helpers; it does not repair runtime behavior",
+    "Reused prompts are development regression tasks, not unseen tasks",
+    "No causal claim about effect of navigation from one sample per task"
+  ]
+}

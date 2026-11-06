@@ -1,0 +1,17 @@
+{
+  "manifestSHA": "4fdb86fff59a8172a234aa9923f745248767d692bdd0d6d6441998bf805e41b3",
+  "action": "B121-agent-api-one-shot",
+  "acceptAliasLimitation": true,
+  "acceptInputEstimateLimitation": true,
+  "expiresAt": "2026-09-18T23:31:00.709Z",
+  "maxGenerationCalls": 1444,
+  "maxUSD": 4.5,
+  "retries": {
+    "capacity": 3,
+    "availability": 1
+  },
+  "model": "deepseek/deepseek-v4.1-flash",
+  "providerTag": "together",
+  "priorUsageUSD": 4.050526492000001,
+  "authorizationSource": "After v9 offline freeze and disclosure of new fourth-task consumer contract, user replied 继续 to proceed. One fixed-four v9 development run under previously approved cumulative USD4.50 including all historical reported cost and unknown reservations; external key limit USD1.97 unchanged. Model/provider/session budgets/retry policy unchanged. No automatic rerun or replacement."
+}

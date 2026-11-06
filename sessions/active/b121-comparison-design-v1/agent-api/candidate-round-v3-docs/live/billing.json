@@ -1,0 +1,18 @@
+{
+  "billingDeltaMatches": false,
+  "keySnapshotCumulativeUSD": 0.966034888,
+  "responseReceiptCumulativeUSD": 0.993404176,
+  "aggregation": "maximum of known cumulative sources; not a settlement or release",
+  "newReportedCostUSD": 0.09534325199999996,
+  "keyUsageDeltaUSD": 0.067973964,
+  "reportedCumulativeUSD": 0.993404176,
+  "unresolvedPriorReservationsUSD": 0.9541632,
+  "newUnknownReservationsUSD": 0.6389760000000013,
+  "conservativeCommittedUSD": 2.586543376000001,
+  "ceilingUSD": 4,
+  "conservativeAvailableUSD": 1.4134566239999988,
+  "externalKeyRemainingUSD": 1.026783128,
+  "oldReservationReleasedUSD": 0,
+  "generationCalls": 124,
+  "metadataRequests": 2
+}

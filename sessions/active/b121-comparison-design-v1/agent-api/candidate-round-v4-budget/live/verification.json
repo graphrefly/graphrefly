@@ -1,0 +1,23 @@
+{
+  "fullSuite": {
+    "command": "node --test scripts/b121-comparison/*.test.mjs",
+    "passed": 194,
+    "failed": 0,
+    "skipped": 0
+  },
+  "finalHistoryAssertionTests": {
+    "passed": 2,
+    "failed": 0
+  },
+  "independentReviewLenses": 3,
+  "fixedFinding": "Strengthen through-turn3 exact history assertions to catch evidence loss",
+  "journalRowsVerified": 967,
+  "codeBindingsVerified": 33,
+  "materialArtifactsVerified": 5,
+  "feedbackRequestsVerified": 100,
+  "plannedSamples": 4,
+  "startedSamples": 4,
+  "submissions": 1,
+  "providerAttemptFailures": 1,
+  "modelSessionReruns": 0
+}

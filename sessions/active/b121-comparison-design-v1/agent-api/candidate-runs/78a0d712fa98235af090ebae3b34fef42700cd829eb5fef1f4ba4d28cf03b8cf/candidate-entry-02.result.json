@@ -1,0 +1,66 @@
+{
+  "slot": {
+    "id": "candidate-entry-02",
+    "arm": "G",
+    "role": "application-boundary"
+  },
+  "controller": null,
+  "experiment": "entry",
+  "explanations": {
+    "A": {},
+    "B": {}
+  },
+  "entryAnswer": {
+    "op": "submit",
+    "snippet": "import type { DataIssue, DataResult } from \"@graphrefly/ts/core\";\n\n/**\n * Passive collection of DATA-level payload facts (D184).\n *\n * This helper only reads the supplied payloads. It performs no subscription,\n * transport, retry or graph mutation, and it never invents an error value.\n */\nexport function collectBusinessResults<T>(\n\tresults: readonly DataResult<T>[],\n): { values: readonly T[]; issues: readonly DataIssue[] } {\n\tconst values: T[] = [];\n\tconst issues: DataIssue[] = [];\n\n\tfor (const result of results) {\n\t\tif (result.kind === \"ok\") {\n\t\t\t// Retain the value from every ok result, even when it carries issues.\n\t\t\tvalues.push(result.value);\n\t\t\tif (result.issues !== undefined) {\n\t\t\t\tfor (const issue of result.issues) issues.push(issue);\n\t\t\t}\n\t\t} else {\n\t\t\t// Primary error first, then that result's additional issues.\n\t\t\tissues.push(result.error);\n\t\t\tif (result.issues !== undefined) {\n\t\t\t\tfor (const issue of result.issues) issues.push(issue);\n\t\t\t}\n\t\t}\n\t}\n\n\treturn { values, issues };\n}\n",
+    "explanation": "Shape of the input. `DataResult<T, E extends DataIssue = DataIssue>` is the union `DataOk<T> | DataError<E>` (packages/ts/src/data/index.ts:38). `DataOk<T>` has `kind: \"ok\"`, a required `value: T` and optional `issues?: readonly DataIssue[]` (data/index.ts:24-29). `DataError<E>` has `kind: \"error\"`, a required `error: E` and optional `issues?: readonly DataIssue[]` (data/index.ts:31-36). `DataIssue` is a passive record with `kind: \"issue\"`, `code`, `message` and optional fields including `severity` and `retryable` (data/index.ts:8-22). The file header states these shapes are \"ordinary payload facts. They are not protocol ERROR messages and carry no wave terminal or lifecycle semantics\" (data/index.ts:1-6).\n\nCollection rules implemented. The loop discriminates on `result.kind` (the only discriminant in the union). For `ok` it pushes `result.value` unconditionally, so a value is retained even when `issues` is present, then appends that result's `issues` in order. For `error` it pushes `result.error` (the primary error) first, then appends `result.issues` if present. Because the loop walks the input array once and pushes in encounter order, input order, duplicates and object identity are preserved: no copies, spreads, sorting, dedup or `Object.freeze` are applied, and the original `DataIssue`/`T` references are stored as-is. Inputs are only read; the returned arrays are fresh, so the caller's array and payload objects are not mutated. No error value is synthesized: the error branch only forwards `result.error`, and the `ok` branch never fabricates an issue.\n\nTyping. The signature accepts `readonly DataResult<T>[]` and returns `{ values: readonly T[]; issues: readonly DataIssue[] }`, matching the consumer contract. `DataError<E>` defaults `E` to `DataIssue`, so `result.error` is assignable to `DataIssue` without a cast; the local mutable arrays are widened to `readonly` in the return type. The import uses the package alias `@graphrefly/ts/core`, which maps to packages/ts/src/core/index.ts, the same module that re-exports the data vocabulary.\n\nWhat an error payload or `retryable: true` does NOT do. An error `DataResult` is a passive DATA fact, not a protocol ERROR message, and it carries no wave-terminal or lifecycle semantics (data/index.ts:1-6). The causal contracts repeat this for the same vocabulary: `CausalEffectOutcome.result` is annotated \"D184 passive DATA result. Failure never travels as protocol ERROR\" (packages/ts/src/solutions/causal-occurrence/contracts.ts:67-68). So an error payload by itself does not send a protocol ERROR, does not end a graph run, and does not authorize automatic retry. `retryable?: boolean` is only an optional field on `DataIssue` (data/index.ts:19); it is a hint carried in the payload, not an instruction this function acts on, and nothing in the collected output triggers retry. The README reinforces the boundary: a busy or exhausted write budget yields an exact cancelled/no-submit result with \"no queue or automatic retry\" (examples/spending-alerts/README.md:146-151), and \"The protocol has no END message: business stop, node COMPLETE and run termination are distinct\" (README.md:153-157). Lifecycle readiness flags are likewise \"not proof that lifecycle termination or resource release occurred\" (README.md:144).\n\nScope. `collectBusinessResults` is a pure collector over caller-supplied payloads: it does not subscribe to nodes, does not touch transport, does not mutate the graph, and does not create or reimplement the given objects. It only reports the payload facts it was handed.",
+    "concepts": {
+      "read": [
+        "occurrence",
+        "admission",
+        "retained-evidence",
+        "identity",
+        "lifecycle",
+        "authority",
+        "revision",
+        "provenance"
+      ],
+      "required": [
+        "occurrence",
+        "admission",
+        "retained-evidence",
+        "identity",
+        "lifecycle",
+        "authority",
+        "revision",
+        "provenance"
+      ],
+      "firstExpansion": null
+    }
+  },
+  "entryTiming": {
+    "startedMs": 0,
+    "submittedMs": 15500,
+    "elapsedMs": 15500,
+    "firstSourceRead": {
+      "path": "examples/spending-alerts/README.md",
+      "line": 1,
+      "operation": "read",
+      "elapsedMs": 1539
+    }
+  },
+  "entryStatus": "submitted",
+  "usage": {
+    "inputTokens": 185176,
+    "outputTokens": 2670,
+    "elapsedMs": 15504
+  },
+  "costUSD": 0.012431807999999999,
+  "turns": 11,
+  "counts": 11,
+  "operations": 26,
+  "fatal": null,
+  "failureScope": null,
+  "pendingReservation": null,
+  "retryAllowed": false
+}

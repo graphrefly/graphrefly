@@ -1,0 +1,12 @@
+{
+  "work": "graphrefly:B121",
+  "kind": "development-coverage-preparation",
+  "formalReady": false,
+  "generationCalls": 0,
+  "liveAuthorization": false,
+  "change": "README update plus composition/inspection criteria; runner/provider/budgets unchanged",
+  "exposure": "Same development lineage; authors have seen prior tasks and answers. Not unseen holdout.",
+  "files": 98,
+  "criteria": 16,
+  "compilerChanges": "material digest and README only; compiler JS/options/declarations unchanged"
+}

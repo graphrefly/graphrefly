@@ -1,0 +1,19 @@
+{
+  "suite": {
+    "source": "../offline/tests.log",
+    "passed": 207,
+    "failed": 0,
+    "skipped": 0,
+    "rerunThisTurn": false
+  },
+  "journalRowsVerified": 260,
+  "codeBindingsVerified": 33,
+  "materialArtifactsVerified": 5,
+  "feedbackRequestsVerified": 22,
+  "plannedSamples": 3,
+  "startedSamples": 2,
+  "submissions": 1,
+  "providerAttemptFailures": 1,
+  "modelSessionReruns": 0,
+  "independentReview": false
+}

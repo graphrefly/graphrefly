@@ -1,0 +1,21 @@
+{
+  "reviewer": "v7_blind",
+  "scope": "v7 delta against /tmp/b121-v7 runtime baselines; read-only source review and local targeted tests",
+  "findings": [],
+  "validation": {
+    "targetedCommand": "node --test --test-name-pattern='current request cap|field limits agree|rebuilt final request' scripts/b121-comparison/api-runner.test.mjs",
+    "testsPassed": 3,
+    "testsFailed": 0,
+    "checks": [
+      "currentRequest.maxOutputTokens uses exact payload cap before estimation and is rebuilt after finalization transition",
+      "new feedback remains outside retained history; no task answers or grader evidence introduced",
+      "runtime field limits retain preexisting JavaScript string.length acceptance (32000/6000)",
+      "new journal observations do not modify submission acceptance, replay checks, retry policy, or hard budgets",
+      "campaign contract binds changed instructions and feedback version; runtime file hashes bind api-runner.mjs and api-tool.mjs"
+    ]
+  },
+  "limitations": [
+    "JSON Schema maxLength convention counts Unicode characters whereas runner string.length counts UTF-16 code units; this preexists v7, schema is a looser bound for supplementary characters, and new instructions accurately disclose the stricter unchanged runner bound. The test verifies shared numeric limits and runner behavior, not full Unicode schema equivalence.",
+    "No live model calls, billing checks, or broad test suite performed by this reviewer."
+  ]
+}

@@ -1,0 +1,176 @@
+{
+  "kind": "independent-read-only-failure-audit",
+  "reviewer": "v6_failure_audit",
+  "sampleId": "candidate-entry-04",
+  "runDirectory": "/Users/davidchenallio/src/graphrefly/sessions/active/b121-comparison-design-v1/agent-api/candidate-runs/f562ac9d68bd815e13885a0da3ea92ca1e059b58aa4d963540e93fd576fbcf93",
+  "journalIndices": {
+    "sampleStarted": 638,
+    "finalization": 868,
+    "lastBudgetStatus": 869,
+    "lastDispatch": 872,
+    "lastResponse": 875,
+    "brokerRequest": 876,
+    "failed": 877,
+    "sampleFinished": 881
+  },
+  "result": {
+    "slot": {
+      "id": "candidate-entry-04",
+      "arm": "G",
+      "role": "maintainer"
+    },
+    "controller": null,
+    "experiment": "entry",
+    "explanations": {
+      "A": {},
+      "B": {}
+    },
+    "entryAnswer": null,
+    "entryTiming": {
+      "startedMs": 0,
+      "submittedMs": null,
+      "elapsedMs": null,
+      "firstSourceRead": {
+        "path": "examples/spending-alerts/README.md",
+        "line": 1,
+        "operation": "read",
+        "elapsedMs": 1357
+      }
+    },
+    "entryStatus": "missing",
+    "usage": {
+      "inputTokens": 901051,
+      "outputTokens": 5200,
+      "elapsedMs": 31596
+    },
+    "costUSD": 0.030479652000000003,
+    "turns": 26,
+    "counts": 27,
+    "operations": 34,
+    "fatal": "bounded entry answer required",
+    "failureScope": "participant",
+    "pendingReservation": null,
+    "retryAllowed": false
+  },
+  "lastRequest": {
+    "max_tokens": 4096,
+    "requestHash": "efa1302b433ddb552222972075f226a1a8e0ea00e9f9bf67e1fb072ccb77bc5e",
+    "budgetStatus": {
+      "kind": "controller_budget_status",
+      "version": "entry-budget-status-v1",
+      "stage": "submit-only",
+      "finalizationPolicy": {
+        "version": "entry-reserved-submit-v1",
+        "outputTokensReserved": 4096,
+        "minimumRetrievalOutputTokens": 1024,
+        "operationThreshold": 16,
+        "projectedInputGrowthTokens": 65536,
+        "projection": "two current request estimates plus growth allowance; heuristic, not guaranteed admission",
+        "terminalRule": "submit-only accepts exactly one submit; no model repair or retrieval call afterward"
+      },
+      "sessionId": "candidate-entry-04",
+      "used": {
+        "inputTokens": 842535,
+        "outputTokens": 1971,
+        "elapsedMs": 18773,
+        "operations": 33,
+        "generationCalls": 25
+      },
+      "remaining": {
+        "inputTokens": 157465,
+        "outputTokens": 6029,
+        "operations": 47,
+        "generationCalls": 55,
+        "elapsedMs": 4481227
+      },
+      "basis": "cumulative provider-reported session usage; cached history counts again on each call",
+      "rule": "informational only; no extra calls, tokens, operations, deadlines or model repair turns"
+    }
+  },
+  "lastResponse": {
+    "httpStatus": 200,
+    "generationId": "gen-1789711772-KH8ebQ78kgydl8YUFoRh",
+    "finish_reason": "tool_calls",
+    "native_finish_reason": "tool_calls",
+    "usage": {
+      "prompt_tokens": 58516,
+      "completion_tokens": 3229,
+      "total_tokens": 61745,
+      "cost": 0.004833888,
+      "is_byok": false,
+      "prompt_tokens_details": {
+        "cached_tokens": 56448,
+        "cache_write_tokens": 0,
+        "audio_tokens": 0,
+        "video_tokens": 0
+      },
+      "cost_details": {
+        "upstream_inference_cost": 0.004833888,
+        "upstream_inference_prompt_cost": 0.000959088,
+        "upstream_inference_completions_cost": 0.0038748
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 0,
+        "image_tokens": 0,
+        "audio_tokens": 0
+      }
+    },
+    "submitCount": 1,
+    "fields": {
+      "snippet": {
+        "javascriptUTF16Length": 4557,
+        "unicodeCodePoints": 4557,
+        "utf8Bytes": 4557
+      },
+      "explanation": {
+        "javascriptUTF16Length": 6904,
+        "unicodeCodePoints": 6904,
+        "utf8Bytes": 6908
+      }
+    }
+  },
+  "exactDefect": "The single submit has an explanation of 6904 JavaScript UTF-16 code units, exceeding the communicated maxLength 6000 by904. Snippet is4557 and below32000. Runtime rejects before assigning entryAnswer.",
+  "limitsCommunication": {
+    "toolSchema": {
+      "snippet": {
+        "type": "string",
+        "maxLength": 32000
+      },
+      "explanation": {
+        "type": "string",
+        "maxLength": 6000
+      }
+    },
+    "strict": true,
+    "systemInstructions": "Require broker submission and state invalid final response terminates without repair. Numeric field lengths are present in tool schema, not repeated in system prose.",
+    "runtimeAlignment": "This sample contains no supplementary Unicode code points, so JSON Schema character versus JavaScript code-unit counting does not affect the failure."
+  },
+  "finalization": {
+    "entered": true,
+    "reason": "projected-input-reserve",
+    "stageOnLastRequest": "submit-only",
+    "maxOutput": 4096,
+    "usedOutput": 3229,
+    "unusedPerRequestOutput": 867
+  },
+  "validationReference": {
+    "path": "/Users/davidchenallio/src/graphrefly/scripts/b121-comparison/api-runner.mjs",
+    "line": 482,
+    "symbol": "bounded entry answer required"
+  },
+  "submissionText": {
+    "rawSubmissionPresent": true,
+    "eligibleForCurrentFrozenGrading": false,
+    "salvageOrRegradeAttempted": false,
+    "reason": "Raw complete submit text remains in journal but violates a frozen admission bound. No accepted entryAnswer or compiler assessment was created."
+  },
+  "boundedConclusions": [
+    "This is a submission-field length violation, not a native length finish or output-token exhaustion. Completion used3229 of4096 allocated tokens and native_finish_reason is tool_calls.",
+    "The wire response violates the advertised tool schema despite strict true; this demonstrates strict cannot be assumed sufficient enforcement for this observed route. Local validation correctly enforces the frozen bound.",
+    "Harness shares contribution through a fixed6000-character bound and terminal no-repair policy; both were communicated before execution and must not be relaxed retroactively.",
+    "The source/library quality or correctness of submitted code cannot be judged from this rejected answer. Raw text was not compiled or graded in this audit.",
+    "Future usability experiments might alter instructions or admission policy, but this sample must remain failed and cannot establish a causal benefit of any proposed change."
+  ],
+  "networkCalls": 0,
+  "runtimeChanges": false
+}

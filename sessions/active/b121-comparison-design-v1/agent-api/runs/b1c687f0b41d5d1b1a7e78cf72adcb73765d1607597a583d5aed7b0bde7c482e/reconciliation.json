@@ -1,0 +1,40 @@
+{
+  "kind": "B121-live-reconciliation",
+  "manifestSHA": "b1c687f0b41d5d1b1a7e78cf72adcb73765d1607597a583d5aed7b0bde7c482e",
+  "checkedAt": "2026-09-16T06:37:25.904Z",
+  "status": "reconciled",
+  "providerReportedCostUSD": 0.034705716000000005,
+  "currentKeyStartingUsageUSD": 0.24195618,
+  "currentKeyUsageUSD": 0.276661896,
+  "currentKeyDeltaUSD": 0.034705716000000025,
+  "cumulativeUsageUSD": 0.299479912,
+  "generationCalls": 32,
+  "comparison": {
+    "started": 5,
+    "completed": 2,
+    "unrun": 7,
+    "submittedAnswers": 57
+  },
+  "entry": {
+    "started": 0,
+    "unrun": 6
+  },
+  "failure": {
+    "message": "provider usage.cost disagreed with the admitted route pricing audit",
+    "httpStatus": 200,
+    "finishReason": "error",
+    "reportedCost": 0,
+    "upstreamInferenceCost": 0.0032289,
+    "errorDetailsAvailable": false
+  },
+  "unknownReservationUSD": 0.3194880000000001,
+  "verification": {
+    "journalHashChain": true,
+    "records": 277,
+    "frozenBindings": true
+  },
+  "diagnosis": "An HTTP 200 response ended with finish_reason:error and no error explanation. Top-level usage.cost was zero despite nonzero upstream inference cost details. The success-pricing audit rejected it before semantic response-error classification. Current key usage delta matches prior accepted response costs, consistent with no added charge for this failed response at reconciliation time. Do not treat internal conservative reservation as an actual bill.",
+  "nextProposal": "Offline transport review: classify error-finish responses before success-only pricing validation; retain distinct reported billing and upstream cost evidence. Determine retryability from available error evidence rather than assuming all HTTP200 errors are transient. No paid rerun or relaxed accounting checks authorized.",
+  "b121Complete": false,
+  "retryAuthorized": false
+}

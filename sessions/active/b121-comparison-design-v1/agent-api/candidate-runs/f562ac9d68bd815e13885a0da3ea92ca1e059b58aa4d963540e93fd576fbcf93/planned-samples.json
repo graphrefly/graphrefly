@@ -1,0 +1,38 @@
+[
+  {
+    "sampleId": "candidate-entry-01",
+    "taskId": "display-current-values",
+    "role": "display-component",
+    "packetSHA256": "339a109438e09e6665c443834cdff7a8eee098a7b25a6fb61c3665603e513e2e",
+    "status": "not-run",
+    "reason": "not-started",
+    "assessmentSHA256": null
+  },
+  {
+    "sampleId": "candidate-entry-02",
+    "taskId": "compose-two-instances",
+    "role": "application-integrator",
+    "packetSHA256": "537507c66a119bd04574761fbf33b8f8f935fcd1cebd271ef8dc4e2d7a37633d",
+    "status": "not-run",
+    "reason": "not-started",
+    "assessmentSHA256": null
+  },
+  {
+    "sampleId": "candidate-entry-03",
+    "taskId": "validate-before-handoff",
+    "role": "framework-integrator",
+    "packetSHA256": "e01a7bdc8f05108440827f9da96550ca059f9ea40eb9979f052ac44766834b43",
+    "status": "not-run",
+    "reason": "not-started",
+    "assessmentSHA256": null
+  },
+  {
+    "sampleId": "candidate-entry-04",
+    "taskId": "inspect-with-detached-display",
+    "role": "maintainer",
+    "packetSHA256": "ce419bf2cb8757b13e611c23baa4fda5f26c4a1b3e3232f6c642bea15ab49083",
+    "status": "not-run",
+    "reason": "not-started",
+    "assessmentSHA256": null
+  }
+]

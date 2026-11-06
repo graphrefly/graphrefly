@@ -1,0 +1,84 @@
+{
+  "work": "graphrefly:B121",
+  "kind": "offline-budget-reconciliation-closure",
+  "auditSHA256": "7100c6f508ca924eee6539c132847fdce81623477fa12a3d876eaf53f41ab03e",
+  "state": "closed",
+  "accountingSettled": false,
+  "authorization": false,
+  "generationCalls": 0,
+  "metadataRequests": 0,
+  "automaticRetryAllowed": false,
+  "releasedReservationsUSD": 0,
+  "reportedUsageUSD": 0.798574588,
+  "unresolvedReservationsUSD": 0.9541632,
+  "committedUSD": 1.7527377880000001,
+  "ceilingUSD": 2,
+  "conservativeAvailableUSD": 0.24726221199999987,
+  "nextRequestReserveUSD": 0.319488,
+  "fitsBudget": false,
+  "nextAction": "settlement-evidence-or-explicit-budget-change-required",
+  "reservations": [
+    {
+      "journal": "sessions/active/b121-comparison-design-v1/agent-api/runs/a47fc6f9b79f50d6348eb8787afcf5e15d364f58cdf401661dd5b860f5294c30/journal.jsonl",
+      "rowIndex": 17,
+      "eventHash": "761fee0ea17c8f1c0835f6bc22f9a307a83eeab0ff17bc787fc266dac8e57a84",
+      "generationId": "gen-1789542638-UIu9R5tKA63s9Sk8Uuwo",
+      "retainedUSD": 0.3151872,
+      "status": "unresolved-record-not-found",
+      "lookupSHA256": "e70f4f61e501a62c88744da95e880757de28935ecc5150b1f62db5f1a5353e31"
+    },
+    {
+      "journal": "sessions/active/b121-comparison-design-v1/agent-api/runs/ec081c7e1b89bf9b2997cafb0d7f86f456af8d7e39813f05eae56d98a69736a2--authorized-r1/journal.jsonl",
+      "rowIndex": 1250,
+      "eventHash": "aa728f93ab36f1ff6e8e9c5229c6e25f1e31515378924244a10be2216c9250a9",
+      "generationId": null,
+      "retainedUSD": 0.319488,
+      "status": "unresolved-no-generation-id",
+      "lookupSHA256": null
+    },
+    {
+      "journal": "sessions/active/b121-comparison-design-v1/agent-api/runs/ec081c7e1b89bf9b2997cafb0d7f86f456af8d7e39813f05eae56d98a69736a2--authorized-r1/journal.jsonl",
+      "rowIndex": 1863,
+      "eventHash": "ebc9842b140bb1c52f9d9ba55c328850fdbb22e6613a3324eed6210fa3bb8691",
+      "generationId": null,
+      "retainedUSD": 0.319488,
+      "status": "unresolved-no-generation-id",
+      "lookupSHA256": null
+    }
+  ],
+  "denominator": 4,
+  "rows": [
+    {
+      "sampleId": "candidate-entry-01",
+      "taskId": "display-current-values",
+      "role": "display-component",
+      "packetSHA256": "f8f91ac9d82fbfac5f4029cd76cda8229555c2684eb98e7c29929e602727e6c2",
+      "status": "not-run",
+      "reason": "budget-not-admitted"
+    },
+    {
+      "sampleId": "candidate-entry-02",
+      "taskId": "compose-two-instances",
+      "role": "application-integrator",
+      "packetSHA256": "9258007981dd76137e5954347c05f2f419e82a5f09668d785e5ac09914fed862",
+      "status": "not-run",
+      "reason": "budget-not-admitted"
+    },
+    {
+      "sampleId": "candidate-entry-03",
+      "taskId": "validate-before-handoff",
+      "role": "framework-integrator",
+      "packetSHA256": "00f41dcae451cb68b600392d3880b775f4f905e9a91cc4ca3cd8dad590329b85",
+      "status": "not-run",
+      "reason": "budget-not-admitted"
+    },
+    {
+      "sampleId": "candidate-entry-04",
+      "taskId": "inspect-with-detached-display",
+      "role": "maintainer",
+      "packetSHA256": "1112537ce8d35433d0b01efef46f189561ffac3997a48c2b131f846f830642fd",
+      "status": "not-run",
+      "reason": "budget-not-admitted"
+    }
+  ]
+}

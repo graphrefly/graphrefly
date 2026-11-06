@@ -1,0 +1,18 @@
+{
+  "assessmentSHA256": "b958115203dc37d4622c26e60cba67cc8c497249407801780e5162aef919ae5b",
+  "reviewerId": "Codex independent read-only reviewer /root/final_blind",
+  "criteria": {
+    "current-values": {
+      "pass": true,
+      "evidence": "Snippet58-67 delegates the actual supplied view to mountSpendingView and renders observation.values. Frozen causal-view-binding.ts14,25-30,38-46 subscribes all five ports and publishes their actual DATA values; causal-preset.ts171-177 confirms the view ports. No fabricated success values or new running instance."
+    },
+    "missing-values": {
+      "pass": true,
+      "evidence": "Snippet26-30 and62-65 expose observation.unavailable alongside actual values; formatter38-49 labels absent ports unavailable using Object.hasOwn. Frozen causal-view-binding.ts29,42-45 derives absent ports, deletes INVALIDATE/ERROR values and republishes. Explanation correctly cites README99 and avoids stale-value caching."
+    },
+    "observation-lifetime": {
+      "pass": true,
+      "evidence": "Snippet58-67 returns mountSpendingView cleanup unchanged. Frozen causal-view-binding.ts16,32-36,51 establishes observation-only unsubscribe cleanup. Explanation explicitly says detach does not complete/release the running instance or settle retained obligations, consistent with frozen README104,110-118."
+    }
+  }
+}

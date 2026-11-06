@@ -1,0 +1,54 @@
+{
+  "generationCalls": 0,
+  "passed": 4,
+  "cases": [
+    {
+      "name": "v8-original",
+      "expected": "compile-failed",
+      "actual": "compile-failed",
+      "diagnostics": [
+        {
+          "code": 2345,
+          "category": "Error",
+          "path": "/b121-frozen/examples/spending-alerts/__b121_consumer_probe__.ts",
+          "line": 6,
+          "message": "Argument of type 'Readonly<{ view: Readonly<{ assessment: Node<BusinessFrame<Assessment>>; publication: Node<Publication>; coverage: Node<CausalEvidenceCoverage>; issues: Node<...>; startup: Node<...>; }>; ... 7 more ...; inspect: () => Readonly<...>; }>' is not assignable to parameter of type 'ComposedSpendingInstance'.\n  The types of 'capabilities.retained.retainedQuiescence' are incompatible between these types.\n    Type 'Node<CausalQuiescence>' is not assignable to type 'Node<Publication>'.\n      Type 'CausalQuiescence' is missing the following properties from type 'Publication': authorityId, binding, asOf, retention, and 3 more."
+        }
+      ]
+    },
+    {
+      "name": "synthetic-corrected-type",
+      "expected": "pending-review",
+      "actual": "pending-review",
+      "diagnostics": []
+    },
+    {
+      "name": "original-with-nocheck",
+      "expected": "compile-failed",
+      "actual": "compile-failed",
+      "diagnostics": [
+        {
+          "code": 2345,
+          "category": "Error",
+          "path": "/b121-frozen/examples/spending-alerts/__b121_consumer_probe__.ts",
+          "line": 6,
+          "message": "Argument of type 'Readonly<{ view: Readonly<{ assessment: Node<BusinessFrame<Assessment>>; publication: Node<Publication>; coverage: Node<CausalEvidenceCoverage>; issues: Node<...>; startup: Node<...>; }>; ... 7 more ...; inspect: () => Readonly<...>; }>' is not assignable to parameter of type 'ComposedSpendingInstance'.\n  The types of 'capabilities.retained.retainedQuiescence' are incompatible between these types.\n    Type 'Node<CausalQuiescence>' is not assignable to type 'Node<Publication>'.\n      Type 'CausalQuiescence' is missing the following properties from type 'Publication': authorityId, binding, asOf, retention, and 3 more."
+        }
+      ]
+    },
+    {
+      "name": "missing-required-export",
+      "expected": "compile-failed",
+      "actual": "compile-failed",
+      "diagnostics": [
+        {
+          "code": 2459,
+          "category": "Error",
+          "path": "/b121-frozen/examples/spending-alerts/__b121_consumer_probe__.ts",
+          "line": 1,
+          "message": "Module '\"./__b121_entry_validation__.js\"' declares 'inspectSpendingInstance' locally, but it is not exported."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "kind": "local-launch-script-check",
+  "generationCalls": 0,
+  "failure": "Compared entire v6 sample rows against v5 including packetSHA256, which intentionally changes for revised README/tasks. Stopped before campaign dispatch.",
+  "repair": "Compare fixed sampleId/taskId/role identities; bind all material and task hashes to reviewed v6 freeze instead. Preserve exact existing budget receipt. No runtime, task, rubric or provider changes."
+}

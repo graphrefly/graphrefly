@@ -1,0 +1,41 @@
+{
+  "directory": "/Users/davidchenallio/src/graphrefly/sessions/active/b121-comparison-design-v1/agent-api/candidate-runs/78a0d712fa98235af090ebae3b34fef42700cd829eb5fef1f4ba4d28cf03b8cf",
+  "summary": {
+    "manifestSHA": "78a0d712fa98235af090ebae3b34fef42700cd829eb5fef1f4ba4d28cf03b8cf",
+    "denominator": 2,
+    "rows": [
+      {
+        "sampleId": "candidate-entry-01",
+        "taskId": "report-node-version-metadata",
+        "role": "diagnostic-integrator",
+        "packetSHA256": "4720c6148cf9239437e8786c614b36799616dba7b9ed7e4f639b915aef71456b",
+        "status": "incomplete",
+        "reason": null,
+        "assessmentSHA256": "e0009e2394c46c3d1f02b144a645795c2a7dfe82dbd7e9f138b5d21ab1874e0f"
+      },
+      {
+        "sampleId": "candidate-entry-02",
+        "taskId": "consume-business-results",
+        "role": "application-boundary",
+        "packetSHA256": "461bfc41ca60c45bd134ed28de81b7026f8badca699533bc7ca05373d733c864",
+        "status": "compile-failed",
+        "reason": null,
+        "assessmentSHA256": "79ddc92e305fb5da4f6d58094b688ebf5ced991033c2c8fbe2ba50e7890c7288"
+      }
+    ],
+    "failure": null,
+    "transport": {
+      "generationCalls": 33,
+      "estimates": 32,
+      "countCalls": 0,
+      "reservedUSD": 0.34846249199999974,
+      "reportedCostUSD": 0.03131209199999999,
+      "unknownReservedUSD": 0.3171503999999997,
+      "priorUsageUSD": 5.182913848000002,
+      "stopped": false
+    },
+    "completedCollection": true,
+    "scoresPending": true,
+    "retryAllowed": false
+  }
+}

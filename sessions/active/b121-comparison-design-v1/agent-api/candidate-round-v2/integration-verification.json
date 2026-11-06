@@ -1,0 +1,20 @@
+{
+  "providerCalls": 0,
+  "formalReady": false,
+  "tests": {
+    "count": 165,
+    "passed": 165,
+    "command": "node --test scripts/b121-comparison/*.test.mjs",
+    "logSHA256": "524253eb62bfecd2bf6a8c49f97354b613c3a8e12912529cf9c8d73196fa5e8a"
+  },
+  "preflightSHA256": "14780f639433c0cff443cf4b1e748fc493c548c79a5f53da42091de0c77cdf34",
+  "repeatedPreflightEqual": true,
+  "sourceFilesMatch": 98,
+  "historicalRunFilesUnchanged": 79,
+  "implementationSHA256": {
+    "frozen-compiler.mjs": "f6f35c97f843e948a2b481413b11bf6eb26a12755c31269eff3ad255488a0a31",
+    "candidate-entry.mjs": "27d98dac99571ecd69d88ff16fad95f09aa836267badfdb5e00a140af2b8cfea",
+    "candidate-entry.test.mjs": "785042d8f44698e10f1e8f19dbacd2546430c3c3738afe11c1979ab052b5e94f",
+    "candidate-preflight.mjs": "b4be0d025a30b7bbcd98ce866113df377845bb7c304c5a989cec91af42fc2b86"
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "manifestSHA": "ebed7b6c80929f8f7401421f8973cba77add1735e43227588eb540bb5912aa39",
+  "denominator": 4,
+  "rows": [
+    {
+      "sampleId": "candidate-entry-01",
+      "taskId": "display-current-values",
+      "role": "display-component",
+      "packetSHA256": "304c9a76147f3512a60f37565b9cf1444e9c0170274271c53d001a184cf77c53",
+      "status": "pending-review",
+      "reason": null,
+      "assessmentSHA256": "b958115203dc37d4622c26e60cba67cc8c497249407801780e5162aef919ae5b"
+    },
+    {
+      "sampleId": "candidate-entry-02",
+      "taskId": "compose-two-instances",
+      "role": "application-integrator",
+      "packetSHA256": "99365b6c0ae6826f57aba3a811213e6b3a39d3d4e905e95173b3415a4490f610",
+      "status": "pending-review",
+      "reason": null,
+      "assessmentSHA256": "726b5b4ec73790a3393b14df897392af2bd0576538c698824721fa9848cfe92f"
+    },
+    {
+      "sampleId": "candidate-entry-03",
+      "taskId": "validate-before-handoff",
+      "role": "framework-integrator",
+      "packetSHA256": "ef409378d9c58e036e14905a5c062e6d9579ddc5180da390d843a18770d99d18",
+      "status": "pending-review",
+      "reason": null,
+      "assessmentSHA256": "19383325837fdfd5e5d89a6810d17faccabb57dbbc175f3ecd2c3ce949ffa3d7"
+    },
+    {
+      "sampleId": "candidate-entry-04",
+      "taskId": "inspect-with-detached-display",
+      "role": "maintainer",
+      "packetSHA256": "45f3b0949b523d47b0463076f34b83b55ab765b68d62b83f834e3583f658f3ef",
+      "status": "pending-review",
+      "reason": null,
+      "assessmentSHA256": "d5cb0058382dd1c4a9f41ee8116d3da339c589f5ad649735323ab7be4dea35f7"
+    }
+  ],
+  "failure": null,
+  "transport": {
+    "generationCalls": 66,
+    "estimates": 68,
+    "countCalls": 0,
+    "reservedUSD": 0.09332520000000016,
+    "reportedCostUSD": 0.09332520000000001,
+    "unknownReservedUSD": 1.5265566588595902e-16,
+    "priorUsageUSD": 3.0154192240000013,
+    "stopped": false
+  },
+  "completedCollection": true,
+  "scoresPending": true,
+  "retryAllowed": false
+}

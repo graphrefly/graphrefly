@@ -1,0 +1,43 @@
+{
+  "manifestSHA": "78a0d712fa98235af090ebae3b34fef42700cd829eb5fef1f4ba4d28cf03b8cf",
+  "artifactBindingsVerified": 5,
+  "executionBindingsVerified": 33,
+  "httpAttempts": 33,
+  "successfulResponses": 32,
+  "socketFailures": 1,
+  "boundedRetries": 1,
+  "modelRepairRuns": 0,
+  "campaignCollectionComplete": true,
+  "budgetStop": false,
+  "consumerProbeVerified": true,
+  "review": {
+    "denominator": 2,
+    "accepted": 0,
+    "submitted": 1,
+    "incomplete": 1,
+    "notRun": 0,
+    "formalReady": false,
+    "runtimeBehaviorVerified": false,
+    "interpretation": "Three new API coverage tasks; first evaluated-model attempt; frozen consumer compilation plus nine static criteria; not independently authored or runtime behavior verification",
+    "rows": [
+      {
+        "sampleId": "candidate-entry-01",
+        "taskId": "report-node-version-metadata",
+        "status": "incomplete",
+        "accepted": false,
+        "submitted": false,
+        "reviewArtifact": null
+      },
+      {
+        "sampleId": "candidate-entry-02",
+        "taskId": "consume-business-results",
+        "status": "compile-failed",
+        "accepted": false,
+        "submitted": true,
+        "reviewArtifact": "candidate-entry-02.review-verified.json"
+      }
+    ]
+  },
+  "providerCallsForReview": 0,
+  "reservationsReleasedUSD": 0
+}

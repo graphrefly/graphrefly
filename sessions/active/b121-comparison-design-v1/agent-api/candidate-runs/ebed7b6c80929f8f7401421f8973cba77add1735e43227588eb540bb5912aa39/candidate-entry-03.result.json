@@ -1,0 +1,66 @@
+{
+  "slot": {
+    "id": "candidate-entry-03",
+    "arm": "G",
+    "role": "framework-integrator"
+  },
+  "controller": null,
+  "experiment": "entry",
+  "explanations": {
+    "A": {},
+    "B": {}
+  },
+  "entryAnswer": {
+    "op": "submit",
+    "snippet": "/**\n * B121 entry validation: hand a validated FullCausalCapability to a recipient.\n *\n * Virtual file: examples/spending-alerts/__b121_entry_validation__.ts\n * Relative .js specifiers resolve to the provided .ts sources.\n *\n * The Graph, the FullCausalCapability value, the expected CausalBinding and the\n * recipient callback are all supplied by the caller. This function creates no\n * Graph, no capability, no resource and no I/O; it only validates and forwards\n * the original issued handles.\n */\nimport type { Graph } from \"../../packages/ts/src/graph/graph.js\";\nimport {\n\tassertCausalCapabilities,\n\ttype CausalBinding,\n\ttype FullCausalCapability,\n} from \"../../packages/ts/src/solutions/causal-occurrence/capabilities.js\";\n\n/** The three graded levels, delivered as the original issued objects. */\nexport interface CausalCapabilityRecipient<T> {\n\treadonly identity: FullCausalCapability<T>[\"identity\"];\n\treadonly execution: FullCausalCapability<T>[\"execution\"];\n\treadonly retained: FullCausalCapability<T>[\"retained\"];\n}\n\n/**\n * Validate the supplied capability against the owning Graph and the expected\n * binding, then deliver the three levels. The recipient is never called when\n * validation fails: a structural copy, a capability from another Graph, or a\n * capability issued under a different binding/epoch all throw before delivery.\n */\nexport function handoffCausalCapabilities<T>(\n\tgraph: Graph,\n\tcapabilities: FullCausalCapability<T>,\n\texpected: CausalBinding,\n\trecipient: (levels: CausalCapabilityRecipient<T>) => void,\n): void {\n\t// Exact issued-object, Graph, binding and lineage validation. Throws TypeError\n\t// for a structural copy (not in the issued WeakMap), a different Graph, a\n\t// mismatched contract/revision/scope/epoch, or a broken lower-handle lineage.\n\tassertCausalCapabilities(graph, capabilities, expected);\n\n\t// Deliver the original handles, preserving the identity relationships:\n\t// execution.identity === identity and retained.execution === execution.\n\t// No clone, spread, cast or re-creation of the capability objects.\n\tconst levels: CausalCapabilityRecipient<T> = Object.freeze({\n\t\tidentity: capabilities.identity,\n\t\texecution: capabilities.execution,\n\t\tretained: capabilities.retained,\n\t});\n\n\trecipient(levels);\n}\n",
+    "explanation": "What the function does. `handoffCausalCapabilities` takes the caller-supplied Graph, FullCausalCapability, expected CausalBinding and recipient callback. It first calls `assertCausalCapabilities(graph, capabilities, expected)` (packages/ts/src/solutions/causal-occurrence/capabilities.ts:67-90). That function looks the value up in the module-private `issued` WeakMap (capabilities.ts:51) and throws `TypeError(\"causal capability binding mismatch\")` when the value is absent (a structural copy or cast), when `root.graph !== graph` (a different Graph), when `root.level !== \"full\"`, or when contract/implementationRevision/scope/epoch differ from the expected binding (capabilities.ts:72-82). It then walks `full.identity`, `full.execution`, `full.retained`, requiring each to be an issued record with the same `instance` and `graph` (capabilities.ts:83-87), and finally requires `full.execution.identity === full.identity` and `full.retained.execution === full.execution` (capabilities.ts:88-89). Because the throw happens before `recipient(levels)`, the recipient is not called for a structural copy, a foreign-Graph capability or a binding mismatch. The README states the same rule: \"A capability validation failure must be handled before passing the capabilities to a recipient; a structural copy is not an issued object\" (examples/spending-alerts/README.md:41-43).\n\nIdentity preservation. The three levels are forwarded as the original references (`capabilities.identity`, `capabilities.execution`, `capabilities.retained`), not rebuilt. `createCausalCapabilities` freezes the nested objects so that `execution.identity` is the very same `identity` object and `retained.execution` is the very same `execution` object (capabilities.ts:122-138), and the demo asserts exactly these equalities: `assert.equal(execution, app.capabilities.execution)`, `assert.equal(execution.identity, app.capabilities.identity)`, `assert.equal(app.capabilities.retained.execution, execution)` (examples/spending-alerts/causal-graded-demo.ts:85-87). The framework example likewise returns `capabilities.execution` unchanged after validation (examples/spending-alerts/causal-audience.examples.ts:18-25). The wrapper object I build is a fresh frozen record of those same references; it does not copy or re-issue the capability objects, so the WeakMap identity and the lower-handle lineage remain intact.\n\nDoes possession of the execution level authorize an arbitrary I/O call? No. The execution level is a passive set of Node handles: `ExecutionCapability` exposes `identity`, `terminals`, `conservation` and `causalQuiescence` (capabilities.ts:27-32), and `FullCausalCapability` adds only `retained` and `startup` (capabilities.ts:38-43). There is no write/open/execute method anywhere in these interfaces. The README says \"Capabilities have no arbitrary I/O execution method\" (README.md:91) and the audience example comments \"an execution view grants no I/O method\" (causal-audience.examples.ts:17). Actual I/O is gated elsewhere and separately: the host guard requires an admitted effect, a passing independent verification receipt, a non-revoked local grant whose `admissionRef` equals the hash of proposal+receipt+grant+binding, a current watermark, and a ready inbox with one free slot (causal-focused-host.ts:404-431); only then does it call `lease.write(payload)` (causal-focused-host.ts:455), and the lease itself refuses writes unless it was transferred (causal-resource.ts:76-98). The README also notes that a publication saying \"succeeded\" is only that exact request's simulated result, and that startup/readiness facts do not prove authorization or completion (README.md:99-105). So the execution level conveys observation of lifecycle/terminal/conservation facts, not authority to perform arbitrary I/O.\n\nScope note. This snippet is a virtual file; it was not executed, and no code execution was available. It relies only on the supplied frozen sources and the caller-supplied objects.",
+    "concepts": {
+      "read": [
+        "occurrence",
+        "admission",
+        "retained-evidence",
+        "identity",
+        "lifecycle",
+        "authority",
+        "revision",
+        "provenance"
+      ],
+      "required": [
+        "occurrence",
+        "admission",
+        "retained-evidence",
+        "identity",
+        "lifecycle",
+        "authority",
+        "revision",
+        "provenance"
+      ],
+      "firstExpansion": "identity"
+    }
+  },
+  "entryTiming": {
+    "startedMs": 0,
+    "submittedMs": 19871,
+    "elapsedMs": 19871,
+    "firstSourceRead": {
+      "path": "examples/spending-alerts/README.md",
+      "line": 1,
+      "operation": "read",
+      "elapsedMs": 1120
+    }
+  },
+  "entryStatus": "submitted",
+  "usage": {
+    "inputTokens": 878494,
+    "outputTokens": 3918,
+    "elapsedMs": 19874
+  },
+  "costUSD": 0.032372424000000004,
+  "turns": 22,
+  "counts": 23,
+  "operations": 45,
+  "fatal": null,
+  "failureScope": null,
+  "pendingReservation": null,
+  "retryAllowed": false
+}

@@ -1,0 +1,17 @@
+{
+  "manifestSHA": "a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3",
+  "action": "B121-agent-api-one-shot",
+  "acceptAliasLimitation": true,
+  "acceptInputEstimateLimitation": true,
+  "expiresAt": "2026-09-19T04:33:41.329Z",
+  "maxGenerationCalls": 1444,
+  "maxUSD": 11,
+  "retries": {
+    "capacity": 3,
+    "availability": 1
+  },
+  "model": "deepseek/deepseek-v4.1-flash",
+  "providerTag": "together",
+  "priorUsageUSD": 5.531376340000001,
+  "authorizationSource": "User authorized modifications and reruns until funds exhausted or testing complete; approved Graph-led implementation, then said 好的，继续 after offline handoff. Fixed two-task development regression, once. Standing internal budget authorization applies, current cap remains11. Historical results retained; no answer repair or success-driven resampling; external key limit unchanged."
+}

@@ -1,0 +1,17 @@
+{
+  "manifestSHA": "0b0809270a7a914097df623b19f0ca8f9573ca84a0cbd415badc67b6635b93d2",
+  "action": "B121-agent-api-one-shot",
+  "acceptAliasLimitation": true,
+  "acceptInputEstimateLimitation": true,
+  "model": "qwen/qwen3.8-flash",
+  "providerTag": "makora/fp4",
+  "expiresAt": "2026-09-16T01:00:00.000Z",
+  "maxGenerationCalls": 964,
+  "maxUSD": 0.2,
+  "priorUsageUSD": 0.002378032,
+  "retries": {
+    "capacity": 3,
+    "availability": 1
+  },
+  "evidence": "User explicitly requested collect all foreseeable repairs, implement all, then try once. This authorizes current calibrated manifest: reasoning disabled, temperature0 seed42,4096 per-request output within original48k/8k session caps, calibrated input forecast,4 qualification calls,964 total dispatch cap, same key/model/provider and cumulative USD0.20. No model/provider fallback or later rerun."
+}

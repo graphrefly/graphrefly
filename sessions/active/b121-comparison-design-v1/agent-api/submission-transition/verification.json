@@ -1,0 +1,26 @@
+{
+  "providerCalls": 0,
+  "tests": {
+    "passed": 211,
+    "failed": 0,
+    "skipped": 0
+  },
+  "scope": "offline synthetic controller verification and package export-map/type declaration inspection; no live efficacy claim",
+  "files": [
+    {
+      "path": "/Users/davidchenallio/src/graphrefly/scripts/b121-comparison/api-runner.mjs",
+      "sha256": "e5e9fdad7a462c40617b83215c8ecc05865bbd7ce2be4ea62e49d2b3c8df30bb"
+    },
+    {
+      "path": "/Users/davidchenallio/src/graphrefly/scripts/b121-comparison/api-tool.mjs",
+      "sha256": "859c27ccf79cb045fcac8874537a121721506f9a25eac8e7ac73572c9209455d"
+    },
+    {
+      "path": "/Users/davidchenallio/src/graphrefly-ts/packages/ts/README.md",
+      "sha256": "16b4f3468b1260617e54032228ca2992964643ad176d28040f968d355e1e3533"
+    }
+  ],
+  "docsExportMapVerified": true,
+  "independentReview": "denominator_edge_review: no findings; additional review unavailable due agent thread limit, primary performed remaining verification pass",
+  "historicalResultsChanged": false
+}

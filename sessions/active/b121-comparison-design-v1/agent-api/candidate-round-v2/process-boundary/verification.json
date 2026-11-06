@@ -1,0 +1,20 @@
+{
+  "generationCalls": 0,
+  "metadataRequests": 1,
+  "formalReady": false,
+  "fullSuite": {
+    "passed": 173,
+    "total": 173,
+    "logSHA256": "7564d0c3cb60231bc3941c5d0ec5ea9bcb67ee41cec6bcdad282ecba3d0fb8de"
+  },
+  "lastTargetedFaultTest": "✔ real compiler initialization failure retains submission and durable sample linkage without retry (414.562208ms)\nℹ tests 1\nℹ suites 0\nℹ pass 1\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 710.50325\n",
+  "preflightTaskCount": 4,
+  "verifiedProcessReceipts": 4,
+  "historicalRunFilesUnchanged": 79,
+  "executionDraftSHA256": "1496d26f247cf59e1a48fc73aafc206274172d7edc9154981cb4081115b097b6",
+  "artifactSHA256": {
+    "preflight.json": "a4eb061aac6198cb0ff1e36744060f554bc0870962f05912de464415eb144f87",
+    "crash-evidence.json": "feb6b3225b6190743a910257a0e1aef6d14ae7943d557e97ca6453c626ffb175",
+    "key-usage.json": "7cbd7252179ed0141ec483f6f53efa3d8979b6ce0b0ae84f326f38378670f3e6"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "slot": {
+    "id": "candidate-entry-01",
+    "arm": "G",
+    "role": "display-component"
+  },
+  "controller": null,
+  "experiment": "entry",
+  "explanations": {
+    "A": {},
+    "B": {}
+  },
+  "entryAnswer": null,
+  "entryTiming": {
+    "startedMs": 0,
+    "submittedMs": null,
+    "elapsedMs": null,
+    "firstSourceRead": {
+      "path": "examples/spending-alerts/README.md",
+      "line": 1,
+      "operation": "read",
+      "elapsedMs": 1238
+    }
+  },
+  "entryStatus": "missing",
+  "usage": {
+    "inputTokens": 59780,
+    "outputTokens": 448,
+    "elapsedMs": 5138
+  },
+  "costUSD": 0.001085616,
+  "turns": 6,
+  "counts": 6,
+  "operations": 10,
+  "fatal": "provider cost/call ceiling before retry",
+  "failureScope": "campaign",
+  "pendingReservation": {
+    "inputTokens": 1048576,
+    "outputTokens": 3456,
+    "costUSD": 0.31872
+  },
+  "retryAllowed": false
+}

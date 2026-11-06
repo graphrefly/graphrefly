@@ -1,0 +1,45 @@
+{
+  "manifestSHA": "4293e6a291a5529a864a40761a496b22c9a0fa2e611068ee0e0fb3aac2cc9341",
+  "generationCalls": 0,
+  "liveCampaignStarted": false,
+  "authorizationCreated": false,
+  "status": "budget-not-admitted",
+  "samples": [
+    {
+      "sampleId": "candidate-entry-01",
+      "taskId": "display-current-values",
+      "role": "display-component",
+      "packetSHA256": "f8f91ac9d82fbfac5f4029cd76cda8229555c2684eb98e7c29929e602727e6c2",
+      "status": "not-run",
+      "reason": "budget-not-admitted"
+    },
+    {
+      "sampleId": "candidate-entry-02",
+      "taskId": "compose-two-instances",
+      "role": "application-integrator",
+      "packetSHA256": "9258007981dd76137e5954347c05f2f419e82a5f09668d785e5ac09914fed862",
+      "status": "not-run",
+      "reason": "budget-not-admitted"
+    },
+    {
+      "sampleId": "candidate-entry-03",
+      "taskId": "validate-before-handoff",
+      "role": "framework-integrator",
+      "packetSHA256": "00f41dcae451cb68b600392d3880b775f4f905e9a91cc4ca3cd8dad590329b85",
+      "status": "not-run",
+      "reason": "budget-not-admitted"
+    },
+    {
+      "sampleId": "candidate-entry-04",
+      "taskId": "inspect-with-detached-display",
+      "role": "maintainer",
+      "packetSHA256": "1112537ce8d35433d0b01efef46f189561ffac3997a48c2b131f846f830642fd",
+      "status": "not-run",
+      "reason": "budget-not-admitted"
+    }
+  ],
+  "denominator": 4,
+  "conservativeAvailableUSD": 0.247262212,
+  "nextRequestReserveUSD": 0.319488,
+  "interpretation": "Preparation/admission evidence only; not a run claim, model result, or human execution authorization. A fresh budget snapshot is required at launch."
+}

@@ -1,0 +1,23 @@
+{
+  "sourceJournal": "/Users/davidchenallio/src/graphrefly/sessions/active/b121-comparison-design-v1/agent-api/candidate-runs/4fdb86fff59a8172a234aa9923f745248767d692bdd0d6d6441998bf805e41b3/journal.jsonl",
+  "eventIndex": 83,
+  "eventHash": "9fb11e2b121344d855a945d3b9a4faa8b4c676ae36bbe7d91ccc2c0a7feff732",
+  "generationId": null,
+  "error": "fetch failed",
+  "requestReservationUSD": 0.31872,
+  "generationCalls": 10,
+  "qualificationCalls": 4,
+  "taskAttempts": 6,
+  "newReportedCostUSD": 0.0017887080000000002,
+  "keyDeltaUSD": 0,
+  "keyDeltaMatches": false,
+  "knownCostBasis": "max(response receipts plus prior known, key usage plus retired key). Snapshot unchanged; receipt costs retained. Delay is possible, not established.",
+  "committedUSD": 4.3710352000000015,
+  "retryCommittedUSD": 4.689755200000001,
+  "ceilingUSD": 4.5,
+  "retryAdmitted": false,
+  "retrySent": false,
+  "releasedReservationsUSD": 0,
+  "generationLookupRequests": 0,
+  "reason": "No generation ID from failed fetch; no per-generation lookup possible. No speculative retry or reservation release."
+}

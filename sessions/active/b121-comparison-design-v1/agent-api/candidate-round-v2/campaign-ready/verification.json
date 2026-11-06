@@ -1,0 +1,16 @@
+{
+  "generationCalls": 0,
+  "metadataRequests": 2,
+  "liveCampaignStarted": false,
+  "tests": {
+    "passed": 184,
+    "total": 184,
+    "logSHA256": "a36b715892909a650bd8f97d9202e005ef516ed86e3a89f131e09956c936f109"
+  },
+  "finalRecoveryTest": "✔ recovery retains interrupted sample without dispatch and detects journal/summary drift (628.993792ms)\nℹ tests 1\nℹ suites 0\nℹ pass 1\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 710.173667\n",
+  "manifestSHA": "4293e6a291a5529a864a40761a496b22c9a0fa2e611068ee0e0fb3aac2cc9341",
+  "codeBindingsVerified": 32,
+  "allFiveCandidateArtifactsUnchanged": true,
+  "historicalRunFilesUnchanged": 79,
+  "admission": "budget-not-admitted"
+}

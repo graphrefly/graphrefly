@@ -1,0 +1,63 @@
+{
+  "directory": "/Users/davidchenallio/src/graphrefly/sessions/active/b121-comparison-design-v1/agent-api/candidate-runs/a704fb454e4b3dd50bd67955e92c13b656ab8a4af1f280e233c5a13b093ee7ba",
+  "manifestSHA": "a704fb454e4b3dd50bd67955e92c13b656ab8a4af1f280e233c5a13b093ee7ba",
+  "attemptedHTTP": 0,
+  "credentialLoaded": false,
+  "paidGenerationStarted": false,
+  "summary": {
+    "manifestSHA": "a704fb454e4b3dd50bd67955e92c13b656ab8a4af1f280e233c5a13b093ee7ba",
+    "denominator": 4,
+    "rows": [
+      {
+        "sampleId": "candidate-entry-01",
+        "taskId": "display-current-values",
+        "role": "display-component",
+        "packetSHA256": "f8f91ac9d82fbfac5f4029cd76cda8229555c2684eb98e7c29929e602727e6c2",
+        "status": "not-run",
+        "reason": "budget-not-admitted",
+        "assessmentSHA256": null
+      },
+      {
+        "sampleId": "candidate-entry-02",
+        "taskId": "compose-two-instances",
+        "role": "application-integrator",
+        "packetSHA256": "9258007981dd76137e5954347c05f2f419e82a5f09668d785e5ac09914fed862",
+        "status": "not-run",
+        "reason": "budget-not-admitted",
+        "assessmentSHA256": null
+      },
+      {
+        "sampleId": "candidate-entry-03",
+        "taskId": "validate-before-handoff",
+        "role": "framework-integrator",
+        "packetSHA256": "00f41dcae451cb68b600392d3880b775f4f905e9a91cc4ca3cd8dad590329b85",
+        "status": "not-run",
+        "reason": "budget-not-admitted",
+        "assessmentSHA256": null
+      },
+      {
+        "sampleId": "candidate-entry-04",
+        "taskId": "inspect-with-detached-display",
+        "role": "maintainer",
+        "packetSHA256": "1112537ce8d35433d0b01efef46f189561ffac3997a48c2b131f846f830642fd",
+        "status": "not-run",
+        "reason": "budget-not-admitted",
+        "assessmentSHA256": null
+      }
+    ],
+    "failure": "budget-not-admitted",
+    "transport": {
+      "generationCalls": 0,
+      "estimates": 0,
+      "countCalls": 0,
+      "reservedUSD": 0,
+      "reportedCostUSD": 0,
+      "unknownReservedUSD": 0,
+      "priorUsageUSD": 1.7527377880000001,
+      "stopped": true
+    },
+    "completedCollection": false,
+    "scoresPending": true,
+    "retryAllowed": false
+  }
+}

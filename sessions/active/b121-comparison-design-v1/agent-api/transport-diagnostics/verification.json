@@ -1,0 +1,18 @@
+{
+  "passed": 205,
+  "failed": 0,
+  "skipped": 0,
+  "generationCalls": 0,
+  "firstRun": {
+    "passed": 204,
+    "failed": 1,
+    "cause": "New test incorrectly expected timeout for ordinary socket disconnect; corrected assertion only"
+  },
+  "files": {
+    "scripts/b121-comparison/api-transport.mjs": "cb9fa91e160e30254c87b493fbdc3d7c9845690a645fe4e047ff2d03f5e3d47d",
+    "scripts/b121-comparison/api-runner.test.mjs": "dfb69fd8b162f5687f1741370cf6a0da8fd2cb4f90c233057bfb437c890af39e"
+  },
+  "review": "Local scope/edge/verification passes; no independent QA claimed",
+  "historicalEvidenceModified": false,
+  "newLiveFreezeCreated": false
+}

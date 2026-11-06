@@ -1,0 +1,80 @@
+{
+  "status": "offline-candidate-with-consumer-probes",
+  "formalReady": false,
+  "taskSHA256": "f0217735c7ab80bc16fbfae23190541dd3ebc696b8d7d1e4d7d1a7218aac898b",
+  "acceptance": "Proposed: frozen standalone and consumer typechecks plus all task static criteria. Static evidence only; no runtime proof. Ambiguous criteria invalidate the affected score until a new version is frozen.",
+  "tasks": [
+    {
+      "id": "export-structure-only",
+      "criteria": [
+        {
+          "id": "structural-api",
+          "rule": "Uses the supplied graph and an existing library structural snapshot API, either graph.topology() or topologyFromDescribe(graph.describe()). No handwritten projector or graph mutation. Both equivalent library routes are accepted.",
+          "evidencePath": "packages/ts/src/graph/graph.ts",
+          "evidenceSHA256": "54b3644e0de855533f9ac91621b9e4eceb0368d11a953fe0d793dfd22e8b72fe"
+        },
+        {
+          "id": "full-structure",
+          "rule": "Retains the complete library topology including subgraphs and annotations, without adding runtime node fields. It may return the snapshot directly.",
+          "evidencePath": "packages/ts/src/graph/describe.ts",
+          "evidenceSHA256": "d43c3a67be7f7776bad9bffac8434343f5c6019fbdf9a1c691e5ca441a899fa4"
+        },
+        {
+          "id": "claim-boundary",
+          "rule": "Explicitly explains that pure topology does not prove equal implementations, equal business results or effect permission; does not claim arbitrary metadata has been security-redacted.",
+          "evidencePath": "examples/spending-alerts/README.md",
+          "evidenceSHA256": "b6b25cfb5a5421255cb601e9ecdd7ba17d21de9e92c5d90621ddbd571197d75e"
+        }
+      ],
+      "consumerProbe": "import type { Graph, GraphTopologySnapshot } from \"@graphrefly/ts/graph\";\nimport { captureStructure } from \"./__b121_entry_validation__.js\";\ndeclare const graph: Graph;\nconst result: GraphTopologySnapshot = captureStructure(graph);\nvoid result;\n"
+    },
+    {
+      "id": "report-node-version-metadata",
+      "criteria": [
+        {
+          "id": "union-and-absence",
+          "rule": "Uses undefined and level discrimination; returns exactly one correctly tagged report per item; no truthiness test losing counter zero. Imports the actual library NodeVersion input type, rather than copying a replacement structural union.",
+          "evidencePath": "packages/ts/src/node/versioning.ts",
+          "evidenceSHA256": "2e85ef63e93703ec3cda767dcd68e8e32b8f13f263c78d9d6b8ae551cbf8b27a"
+        },
+        {
+          "id": "preserve-fields",
+          "rule": "Preserves counter, cid and prev, including null; does not reinterpret cid as a source revision or invent a disabled hash.",
+          "evidencePath": "packages/ts/src/node/versioning.ts",
+          "evidenceSHA256": "2e85ef63e93703ec3cda767dcd68e8e32b8f13f263c78d9d6b8ae551cbf8b27a"
+        },
+        {
+          "id": "version-meaning",
+          "rule": "Explains content hash versus source/authorization; advanceNodeVersion can increment counter even when content hash remains equal. Does not claim any equality proves effect permission. Does not claim equal CIDs guarantee equal payloads: hashing is configurable and equality is not a collision-free proof.",
+          "evidencePath": "packages/ts/src/node/versioning.ts",
+          "evidenceSHA256": "2e85ef63e93703ec3cda767dcd68e8e32b8f13f263c78d9d6b8ae551cbf8b27a"
+        }
+      ],
+      "consumerProbe": "import type { NodeVersion } from \"@graphrefly/ts/core\";\nimport { summarizeVersions } from \"./__b121_entry_validation__.js\";\ndeclare const versions: readonly (NodeVersion | undefined)[];\ntype Report = {kind: \"disabled\"} | {kind: \"counter\"; counter: number} | {kind: \"content\"; counter: number; cid: string; prev: string | null};\nconst result: readonly Report[] = summarizeVersions(versions);\nvoid result;\n"
+    },
+    {
+      "id": "consume-business-results",
+      "criteria": [
+        {
+          "id": "result-branches",
+          "rule": "Collects values from ok results only, even if issues exist; error contributes its primary error before additional issues. Uses the actual imported generic DataResult<T> input type and DataIssue type.",
+          "evidencePath": "packages/ts/src/data/index.ts",
+          "evidenceSHA256": "1fa509436fb94d44052365697566b652662170c616c4ebd30753b1525eb49aa2"
+        },
+        {
+          "id": "preserve-order-identity",
+          "rule": "Preserves ordering, duplicates and object references; does not mutate input arrays/objects or substitute fabricated facts. Empty input yields empty arrays.",
+          "evidencePath": "packages/ts/src/data/index.ts",
+          "evidenceSHA256": "1fa509436fb94d44052365697566b652662170c616c4ebd30753b1525eb49aa2"
+        },
+        {
+          "id": "passive-facts",
+          "rule": "Distinguishes passive result/issue facts from protocol ERROR and run termination; retryable metadata alone does not authorize retry or execute effects.",
+          "evidencePath": "packages/ts/src/data/index.ts",
+          "evidenceSHA256": "1fa509436fb94d44052365697566b652662170c616c4ebd30753b1525eb49aa2"
+        }
+      ],
+      "consumerProbe": "import type { DataResult, DataIssue } from \"../../packages/ts/src/data/index.js\";\nimport { collectBusinessResults } from \"./__b121_entry_validation__.js\";\ndeclare const objects: readonly DataResult<{id: string}>[];\ndeclare const numbers: readonly DataResult<number>[];\nconst a: {values: readonly {id: string}[]; issues: readonly DataIssue[]} = collectBusinessResults(objects);\nconst b: {values: readonly number[]; issues: readonly DataIssue[]} = collectBusinessResults(numbers);\nconst c: {values: readonly string[]; issues: readonly DataIssue[]} = collectBusinessResults<string>([]);\nvoid [a, b, c];\n"
+    }
+  ]
+}

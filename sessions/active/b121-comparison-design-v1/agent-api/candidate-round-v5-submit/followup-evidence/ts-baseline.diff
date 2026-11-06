@@ -1,0 +1,2394 @@
+diff --git a/.agents/skills/bmad-build/SKILL.md b/.agents/skills/bmad-build/SKILL.md
+index df893a9a..94929b24 100644
+--- a/.agents/skills/bmad-build/SKILL.md
++++ b/.agents/skills/bmad-build/SKILL.md
+@@ -3,6 +3,12 @@ name: bmad-build
+ description: "Implement a bounded repository change with the shared BMAD build workflow and local gates."
+ ---
+ 
++## Rules / decisions / work
++
++Read `~/.codex/skills/project-governance/references/rules-decisions-work.md` before contract
++analysis or record changes in this workflow. Keep this repository's rule, decision, and work
++ownership in the shared build plan and handoff.
++
+ Read and follow `~/.codex/skills/bmad-build/SKILL.md` with this repository as the project root.
+ This entrypoint intentionally uses the shared personal workflow directly; do not run the legacy
+ BMAD renderer or adjacent workflow snapshots. Preserve this repository's authority and local gates.
+diff --git a/.agents/skills/bmad-checkpoint-preview/SKILL.md b/.agents/skills/bmad-checkpoint-preview/SKILL.md
+index 8d13941e..21939281 100644
+--- a/.agents/skills/bmad-checkpoint-preview/SKILL.md
++++ b/.agents/skills/bmad-checkpoint-preview/SKILL.md
+@@ -3,6 +3,13 @@ name: bmad-checkpoint-preview
+ description: "Guide human review of a change with orientation, concern walkthrough, risk details, and observation."
+ ---
+ 
++## Rules / decisions / work
++
++Read `~/.codex/skills/project-governance/references/rules-decisions-work.md` before contract
++analysis or record changes in this workflow. For each reviewed concern, preserve separate rule
++findings, decision rationale/questions, and remaining work/evidence. Follow the user's topic order
++and interactive pacing.
++
+ Read and follow `~/.codex/skills/bmad-checkpoint-preview/SKILL.md` with this repository as the project root.
+ This entrypoint intentionally uses the shared personal workflow directly; do not run the legacy
+ BMAD renderer or adjacent workflow snapshots. Preserve this repository's authority and local gates.
+diff --git a/.agents/skills/bmad-qa/SKILL.md b/.agents/skills/bmad-qa/SKILL.md
+index d0366344..947001f3 100644
+--- a/.agents/skills/bmad-qa/SKILL.md
++++ b/.agents/skills/bmad-qa/SKILL.md
+@@ -3,6 +3,12 @@ name: bmad-qa
+ description: "Review changes with the shared BMAD QA process and local domain gates; fix only when requested."
+ ---
+ 
++## Rules / decisions / work
++
++Read `~/.codex/skills/project-governance/references/rules-decisions-work.md` before contract
++analysis or record changes in this workflow. Keep current-contract findings, maintainer choices, and
++verification/repair work separate in the shared QA record.
++
+ Read and follow `~/.codex/skills/bmad-qa/SKILL.md` with this repository as the project root.
+ This entrypoint intentionally uses the shared personal workflow directly; do not run the legacy
+ BMAD renderer or adjacent workflow snapshots. Preserve this repository's authority and local gates.
+diff --git a/.agents/skills/conformance/SKILL.md b/.agents/skills/conformance/SKILL.md
+index e5ba6eee..7b1e6a74 100644
+--- a/.agents/skills/conformance/SKILL.md
++++ b/.agents/skills/conformance/SKILL.md
+@@ -1,68 +1,9 @@
+ ---
+ name: conformance
+-description: "Behavioral conformance check across GraphReFly language runtimes (ts/rust/py) for the clean-slate redesign. Replaces the old structural 'parity' diff. Parity = does each runtime satisfy the wave-protocol behavior (conformance scenarios) + dispatcher contract — NOT 'do the symbol sets match'. Use after implementing/changing substrate behavior in any runtime, or when adding a new protocol rule. Authors/runs language-agnostic scenarios and updates conformance.jsonl runtime status. Triggers: 'conformance', 'cross-lang check', 'does rust match', 'parity', 'run the conformance suite', 'is the substrate behavior consistent'."
++description: "Behavioral conformance check across GraphReFly language runtimes (ts/rust/py) for the clean-slate redesign. Replaces the old structural 'parity' diff. Parity = does each runtime satisfy the wave-protocol behavior (conformance scenarios) + dispatcher contract — NOT 'do the symbol sets match'. Use after implementing/changing substrate behavior in any runtime, or when adding a new protocol rule. Authors/runs language-agnostic scenarios and reports exact source-bound evidence. Triggers: 'conformance', 'cross-lang check', 'does rust match', 'parity', 'run the conformance suite', 'is the substrate behavior consistent'."
+ ---
+ 
+-You are executing **conformance** for the clean-slate GraphReFly redesign.
+-
+-**Parity is behavioral, not structural (D24).** There is NO `Impl` symbol-set to diff and NO
+-cross-track-ledger. Operators / sugar / inspection are **per-language and never in parity**
+-(D6/D27 — graph-layer wraps everything to `(ctx)=>void` before register). The ONLY parity
+-surface is: **wave-protocol behavior + dispatcher contract + handle format**. Conformance =
+-each runtime passes the same language-agnostic scenarios.
+-
+-## Authority
+-
+-| Source | Role |
+-|---|---|
+-| `~/src/graphrefly/spec/conformance.jsonl` | The scenario definitions and canonical forward `covers` edges. Existing `runtimes` fields are legacy claims, not authoritative evidence under D784. |
+-| `~/src/graphrefly/spec/rules.jsonl` | The rules scenarios pin (`covers` must resolve here). |
+-| `~/src/graphrefly/spec/protocol.proto` | Protocol-contract IDL (DR-2) — the light structural anchor codegen'd into each runtime's interface stub. |
+-| `~/src/graphrefly/formal/*.tla` | TLA+ model (γ); property tests mirror its invariants. |
+-
+-## Scope from $ARGUMENTS
+-
+-- **rule-id** (e.g. `R-diamond`) → all scenarios whose `covers` includes it.
+-- **scenario-id** (e.g. `C-1`) → that scenario.
+-- **full** → every `status:"required"` scenario.
+-- optional **runtime** → restrict to one arm.
+-
+-## Code-intelligence routing
+-
+-Use a current Codegraph index when it helps trace the affected symbols; use direct file reads or
+-`rg` for simpler lookups, unavailable tools, or stale/unindexed files. Reuse source already read.
+-Do not initialize an index merely to satisfy this workflow. Validate through the affected executable
+-checks and required gates; an index is context, not correctness evidence.
+-
+-## Phase 1 — scenario integrity
+-
+-1. Load `conformance.jsonl` + `rules.jsonl`. Verify every `covers` rule-id resolves (else HALT — fix the scenario or add the rule via `/spec-amend`).
+-2. List the **DR-5 required hard scenarios** and their status: `C-1` cross-graph diamond, `C-2` async-result-at-paused-node, `C-3` INVALIDATE×ctx.state×onInvalidate, `C-4` mixed sync/async diamond, `C-5` PAUSE-lockset multi-source. These are the load-bearing ones — behavioral parity is a blank cheque until they're green on each shipped runtime.
+-
+-## Phase 2 — run / verify per runtime
+-
+-For each in-scope `(scenario, runtime)`:
+-1. Locate/author the scenario harness in that runtime's conformance test dir (language-agnostic spec → per-runtime adapter; the scenario describes observable wave behavior, not a symbol call).
+-2. Run it. Record outcome.
+-3. Capture the exact runtime, test command, result and source commit. Until the D784 evidence-receipt ledger is separately designed and approved, report that evidence without treating mutable `conformance.jsonl.runtimes.<rt>` as authority or inventing a receipt path.
+-4. Mirror the invariant as a property test (fast-check ts ↔ proptest rust ↔ hypothesis py) where the rule is property-shaped (L5-Q2 / D14).
+-
+-## Phase 3 — report
+-
+-| scenario | covers | ts | rust | py | verdict |
+-|---|---|---|---|---|---|
+-
+-- **Behavior drift** = same scenario, different observable outcome across runtimes → this is the ONLY kind of parity gap. File it as a substrate bug in the lagging runtime (route fix via `/dev-dispatch` on that package).
+-- **Missing scenario** for a current rule (no conformance record whose forward `covers` includes the rule id) → author it (this is the real risk under behavioral parity: untested behavior can drift silently — D24 residual). Coverage is derived; never add a reverse `covers_by` field to the rule. Flag via `/dashboard` Gaps (`uncoveredRules`).
+-- **NOT a gap:** a runtime having a different operator set / different sugar / different inspection ergonomics. Those are per-language by design — do not report them.
+-
+-## Phase 4 — gate
+-
+-Run `node ~/src/graphrefly/dashboard/build.mjs --check` (scenario↔rule links intact). Do not declare a
+-runtime conformant from legacy mutable arm fields alone; authoritative status requires the separately
+-approved D784 commit-bound receipt projection.
+-
+-## Boundaries
+-
+-Does NOT diff symbol sets (that's the retired structural model). Does NOT touch operators/sugar/inspection
+-(per-language). New protocol behavior must go through `/spec-amend` FIRST (scenario authored before code).
++Read and follow the canonical GraphReFly workflow at
++`~/src/graphrefly/.agents/skills/conformance/SKILL.md`.
++Pass the user request, arguments, and target runtime through unchanged. The protocol workflow is
++owned by the language-neutral repository; this package entrypoint has no separate policy.
+diff --git a/.agents/skills/dashboard/SKILL.md b/.agents/skills/dashboard/SKILL.md
+index 89b62278..58dcb4c5 100644
+--- a/.agents/skills/dashboard/SKILL.md
++++ b/.agents/skills/dashboard/SKILL.md
+@@ -3,40 +3,7 @@ name: dashboard
+ description: "Build / check the GraphReFly internal docs dashboard (jsonl single-source → generated HTML with progress, structure map, gaps, search). Use when the user wants to see global project state, regenerate the dashboard, run the docs consistency gate (broken links / orphans / coverage gaps), or after editing any jsonl in ~/src/graphrefly (decisions/plan/spec/sessions/guide). Triggers: 'build the dashboard', 'check docs consistency', 'what are the gaps', 'show progress', 'regenerate dashboard', 'doc gate'."
+ ---
+ 
+-You are executing **dashboard** for the clean-slate GraphReFly redesign.
+-
+-**Repo:** `~/src/graphrefly` (clean-slate branch). Canonical JSONL is federated by owner/class under D783; the dashboard resolves root ledgers and renders generated current/ownership views. Schema contract: `~/src/graphrefly/dashboard/README.md`.
+-
+-## Code-intelligence routing
+-
+-Use a current Codegraph index when it helps trace the affected symbols; use direct file reads or
+-`rg` for simpler lookups, unavailable tools, or stale/unindexed files. Reuse source already read.
+-Do not initialize an index merely to satisfy this workflow. Validate through the affected executable
+-checks and required gates; an index is context, not correctness evidence.
+-
+-## What this skill does
+-
+-1. **Run the generator:**
+-   - `node ~/src/graphrefly/dashboard/build.mjs` → writes `dashboard/dashboard.html` + prints counts / gaps / broken-links / orphans report.
+-   - `node ~/src/graphrefly/dashboard/build.mjs --check` → consistency gate only; **non-zero exit on broken links** (use as a pre-commit / CI gate).
+-2. **Interpret the report** for the user:
+-   - **counts** — aggregate root-ledger decision counts plus phases/rules/conformance/...
+-   - **authority** — ledger ownership, relocated-record integrity, current protocol, unresolved classification, supersession cycles and duplicate-current metrics.
+-   - **gaps** — designPhases (status=design|gap) · openDecisions · deferredBacklog · uncoveredRules (no conformance) · todoConformance (runtimes=todo). This answers "哪里还有缺口".
+-   - **broken links** — must be zero (session.locks → decision; phase.sessions → session; conformance.covers → rule; flowchart.explains → rule|D#). Legacy 3-digit D### / R# refs are external (old main), reported separately as OK.
+-   - **orphans** — decisions referenced by no session (informational).
+-3. **If broken links exist:** locate the offending jsonl row, fix the id reference (or add the missing record), re-run `--check`.
+-
+-## When the jsonl changed
+-
+-After any root JSONL edit run `--check`. After any owner-ledger edit also run
+-`npm --prefix ~/src/graphrefly run authority:check:workspace` to verify qualified identities,
+-relocation integrity and available sibling ledgers.
+-
+-## UI styling
+-
+-`build.mjs` emits a **placeholder shell** with the data model embedded. Visual design / interactive search is a separate `/frontend-design` pass — do NOT hand-style the HTML here; keep `build.mjs` focused on the data model + consistency checks. The dogfood endgame (phase CSP-8) rebuilds this dashboard *with GraphReFly itself* (jsonl producer → reactive views → HTML effect).
+-
+-## Output
+-
+-The counts + gaps + link-health report, a plain-language "where are the gaps / what's the progress" summary, and (unless `--check`) confirmation that `dashboard.html` was written. Flag any broken link as a blocker to fix before commit.
++Read and follow the canonical GraphReFly workflow at
++`~/src/graphrefly/.agents/skills/dashboard/SKILL.md`.
++Pass the user request, arguments, and target runtime through unchanged. The protocol workflow is
++owned by the language-neutral repository; this package entrypoint has no separate policy.
+diff --git a/.agents/skills/decision-guard/SKILL.md b/.agents/skills/decision-guard/SKILL.md
+index bcb2e7b7..ce57b8e5 100644
+--- a/.agents/skills/decision-guard/SKILL.md
++++ b/.agents/skills/decision-guard/SKILL.md
+@@ -3,104 +3,7 @@ name: decision-guard
+ description: "GraphReFly clean-slate decision-consistency check. Resolves the federated owner ledgers plus the user's locked values/principles and recurring decision-process patterns. Use BEFORE answering consistency, scope, choice, or regression questions."
+ ---
+ 
+-# decision-guard — recall and apply locked decisions, values, invariants (clean-slate)
+-
+-Load and apply the personal `$project-governance` skill at
+-`~/.codex/skills/project-governance/SKILL.md` before classifying or appending any decision, work,
+-execution authorization, attempt, incident, receipt or evidence record. It supplies the cross-project
+-classification floor; this skill and the federated GraphReFly authorities still decide the unique
+-project owner and semantic consistency.
+-
+-**Purpose.** Conversations lose context-window state quickly. This is the canonical recall
+-surface for the **clean-slate** redesign: invoke BEFORE answering decision questions to anchor
+-against the user's locked positions and prevent silent drift — especially when a chat proposes
+-a scope expansion mid-implementation, presents A/B/C as a fork, uses "completeness" to justify
+-expanding a locked slice, or builds on a premise that may be stale.
+-
+-> **Clean-slate retired the old port model.** Do NOT reach for `rust-port-decisions.md`,
+-> `cross-track-ledger.md`, the `Impl` parity contract, `BindingBoundary`, the actor model, or
+-> 3-digit D### port decisions — those are old-`main` history. The clean-slate decision
+-> authority is below.
+-
+-## Sources (load in order)
+-
+-| Source | Role |
+-|---|---|
+-| `~/src/graphrefly/authority/ledgers.jsonl` + `authority/federation.mjs` | Owner/class locator and origin-qualified resolver. Run `npm --prefix ~/src/graphrefly run authority:check:workspace` when sibling ledgers matter. |
+-| Governing owner ledger | Root durable `~/src/graphrefly/decisions/decisions.jsonl`, root eval/execution `decisions/execution.jsonl`, or the Canvas/Stack/package-local ledger selected by concern ownership. |
+-| `~/src/graphrefly/sessions/active/SESSION-clean-slate-redesign.md` (DS-1) | Full design narrative + 8 forced constraints + spec-amendment list + conformance hard scenarios. |
+-| `~/src/graphrefly/plan/antipatterns.jsonl` | Lessons / anti-patterns to flag against. |
+-| `~/src/graphrefly/spec/rules.jsonl` | Protocol rules — for "does the spec already pin this?". |
+-| Memory `feedback_*` files | The user's durable values/principles (below). |
+-
+-## Locked values (durable — cite by name)
+-
+-1. **No backward compat** (pre-1.0): structurally cleaner option, no legacy shims. `feedback_no_backward_compat`.
+-2. **No imperative triggers** in public API: reactive `ctx.up`/signals, not emitters/callbacks/timers+set; remove imperative paths when no caller depends. `feedback_no_imperative`.
+-3. **Single source of truth**: one canonical per concern; index points, never duplicates. `feedback_single_source_of_truth`.
+-4. **No autonomous decisions** (hard rule): surface spec↔code conflicts; don't silently pick; file-by-file review for multi-file rewrites. `feedback_no_autonomous_decisions`.
+-5. **No implement without approval**: decisions locked ≠ implementation approved. `feedback_no_implement_without_approval`.
+-6. **Verify premise before greenfield**: design tables lag code — inspect symbols + check landed markers before a 9Q; stale premise = HALT. `feedback_verify_premise_before_greenfield`.
+-7. **Latest versions + context7** for current API docs. `feedback_latest_versions_context7`.
+-8. **Long-command observation discipline** (run-logged + DONE sentinel; no tail; no sleep-poll) and **subagent bg hygiene** (sync-verify or teardown before return). `feedback_long_command_observation`, `feedback_subagent_bg_hygiene`.
+-
+-## Clean-slate floor (never violate)
+-
+-**Sacred (L0.7):** topology declarative/serializable/inspectable · wave protocol is a public spec ·
+-wave protocol impl is **sync** · all fn go through dispatcher.
+-
+-**Forced (F-*):** F-PERF (budget every abstraction) · F-PROTO-SPEC (spec+TLA++property) ·
+-F-SYNC-CORE (dispatcher.invoke sync void) · F-DISPATCH-ALL (no inline-fn bypass) ·
+-F-GRAPH-FIRST-API · F-NO-WEDGE-CUT (every primitive ≥2 segments) ·
+-F-NO-IMPL-DEFINED (spec-locked or explicitly undefined-by-design) · F-NO-LLM-ONLY.
+-
+-**Red flags (HALT if proposed):** async in the sync wave core (async lives only in pools/wire-bridge) ·
+-inline-fn bypassing dispatcher · a primitive serving only LLM workflows · a protocol behavior left
+-"implementation-defined" · user-replaceable onMessage/onSubscribe · adding a 10th tier casually ·
+-graph-level shared mutable state accessed implicitly (must be explicit node + dep).
+-
+-## Decision-process patterns (apply in order)
+-
+-1. **Identify the governing origin-qualified D#.** Resolve through `authority/ledgers.jsonl`, then search the unique owner ledger. Bare historical refs resolve in their ledger origin; new cross-repo refs must use `origin:D#`. Mid-implementation scope expansion = anti-pattern unless promoted to a NEW owner-local record.
+-2. **Check the spec.** Does `rules.jsonl` pin the behavior? If yes, follow it — divergence is a bug, not a design call. If silent/ambiguous → real design HALT.
+-3. **Verify premise (value 6).** Has the symbol/surface already landed? In a repository with a live
+-   `.codegraph` index, call `codegraph_explore` first for the exact source, callers/dependents, tests,
+-   export boundary, and blast radius. Treat its source as already read and query again only for uncovered
+-   paths. Use direct `rg`/Read for authority jsonl, docs, configs, git diff, untracked files, and
+-   stale/unindexed files; never initialize an index autonomously.
+-4. **Apply values + floor.** Especially: no autonomous decisions, no imperative, single source of truth, sync-core/async-at-boundary, F-* constraints.
+-5. **Verdict:** `consistent (cite D#)` / `regression on D#` / `out-of-scope` / `needs new decision (don't auto-pick)`.
+-6. **Routing:**
+-   - New fork, no governing D# → present options + recommend, **do NOT lock** → that's `/design-review` → user approval → append `decisions.jsonl`.
+-   - Changes protocol behavior → `/spec-amend` (spec-first).
+-   - Cross-runtime parity concern → `/conformance` (behavioral scenario, not structural diff).
+-
+-## Common decision shapes
+-
+-- **A/B/C (fix shape):** default = the option that **structurally extends an existing pattern** beats per-site workarounds.
+-- **Completeness vs discipline:** if a proposal closes a real semantic gap → formalize as a NEW D# (don't continue under the original D's banner). If speculative scope expansion → revert.
+-- **Orthogonal sub-decisions:** before locking two "orthogonal" sub-decisions, sketch ONE input exercising BOTH — confirm orthogonality survives the example (antipatterns.jsonl; the 30-second check that catches coupling at design-time).
+-
+-## Scope boundaries
+-
+-Read-mostly. Loads decisions + values + patterns; produces **decision + reasoning + relay-ready text**.
+-Does NOT run gates, apply fixes, or author scenarios — those are `/dev-dispatch` / `/qa` / `/conformance`
+-after a decision locks. Invoke when the question is "what should I decide?", not "what should I do?".
+-
+-## Update protocol
+-
+-When a new durable D# locks (after user approval), verify that it represents a material semantic,
+-architectural, product, safety or authority-boundary decision and select the unique owner. Attempts,
+-incidents, receipts, reruns, provider/model changes and spend grants are not D# records. Use the
+-project's approved non-decision mapping when one exists; while `graphrefly:B137` remains proposed, do
+-not invent its schema or use a new execution D# as a substitute. Append a durable decision only to its
+-owner ledger; use qualified cross-repo refs and never copy the record body upstream.
+-Update a root session lock only for a root-owned decision. Run
+-`npm --prefix ~/src/graphrefly run authority:check:workspace` and
+-`node ~/src/graphrefly/dashboard/build.mjs --check`.
+-When a new anti-pattern recurs: append to `~/src/graphrefly/plan/antipatterns.jsonl` (+ a `feedback_*`
+-memory if generalizable). When a new durable value surfaces: add a `feedback_<name>.md` memory + a
+-pointer line here.
+-
+-Admission reminder: an approved new record uses the normal owner ledger and must satisfy
+-~/src/graphrefly/authority/README.md; historical-only ledgers are relocation destinations.
++Read and follow the canonical GraphReFly workflow at
++`~/src/graphrefly/.agents/skills/decision-guard/SKILL.md`.
++Pass the user request, arguments, and target runtime through unchanged. The protocol workflow is
++owned by the language-neutral repository; this package entrypoint has no separate policy.
+diff --git a/.agents/skills/design-review/SKILL.md b/.agents/skills/design-review/SKILL.md
+index 71865074..992e42d1 100644
+--- a/.agents/skills/design-review/SKILL.md
++++ b/.agents/skills/design-review/SKILL.md
+@@ -3,6 +3,14 @@ name: design-review
+ description: "Review a proposed public API, primitive, or architectural change against project constraints and resolve material design choices."
+ ---
+ 
++## Rules / decisions / work
++
++Read `~/.codex/skills/project-governance/references/rules-decisions-work.md` before contract
++analysis or record changes in this workflow. Separate the proposed normative contract from its
++rationale and implementation work. Exercise interacting rules with one concrete trace. Existing
++decisions constrain evolution but do not prevent an explicit, user-approved reconsideration of
++design quality.
++
+ You are executing the **design-review** workflow for the **clean-slate GraphReFly** redesign.
+ 
+ This skill applies the 5 design-review questions (Q5–Q9 of the 9-question per-unit format) to a **single-symbol / single-file / single-diff** review. Use it BEFORE coding a new public API / sugar factory / operator / inspection surface — or right after a sketch lands, before tests. Different from `/qa` (finds bugs in landed code) and `/decision-guard` (recalls locked decisions); this validates abstraction + long-term shape + reactive composability + alternatives, and its output may become a new `D#` (architectural lock → user approval → append `decisions.jsonl`).
+@@ -40,7 +48,7 @@ Read in parallel before reviewing (clean-slate authority):
+ - `~/src/graphrefly/spec/rules.jsonl` — the R-* rules your target touches (the design invariants).
+ - `~/src/graphrefly/authority/ledgers.jsonl` + the uniquely resolved owner ledger — the governing origin-qualified D# (or `/decision-guard` to recall the floor/values).
+ - `~/src/graphrefly/plan/phases.jsonl` — the CSP-* phase the target belongs to (locked vs open-design); if the target isn't sequenced yet, the review's output may need a new phase / backlog entry.
+-- `~/src/graphrefly/guide/guide.jsonl` (G-composition) — composition patterns (lazy activation, subscription order, SENTINEL/prevData guards, feedback cycles).
++- `~/src/graphrefly/guide/guide.jsonl` (G-composition) — composition patterns (lazy activation, subscription order, SENTINEL/current ctx-input guards, feedback cycles).
+ - `~/src/graphrefly/sessions/active/SESSION-clean-slate-redesign.md` (DS-1) — the F-* constraints + the why behind locks.
+ - The target file(s) + 1–2 closest existing primitives in the same dir (precedent).
+ - **Frozen reference (D41):** `packages/pure-ts/**` + `~/src/callbag-recharge` for analogous prior art (operator behavior, edge cases, test structure) — NOT the authority.
+@@ -63,7 +71,7 @@ For each target, produce a structured report covering all five questions. Be spe
+ ### Q6 — Right long-term solution? Caveats? Maintenance burden?
+ 
+ - **6-month lens.** What forces this to evolve — spec/conformance changes, rust/py arm parity (D24), F-PERF budget?
+-- **Hidden invariants** the type system can't express — list each as `INVARIANT: …` (subscribe order before kick; first-run gate; SENTINEL = `prevData === undefined`; sync-vs-async strategy; stable refs; equals identity).
++- **Hidden invariants** the type system can't express — list each as `INVARIANT: …` (subscribe order before kick; first-run gate; SENTINEL absence versus an empty/no-occurrence wave; sync-vs-async strategy; stable refs; equals identity).
+ - **Constraint locks** (positional args can't grow options; hardcoded enum can't extend).
+ - **Doc debt** (contract knowable from JSDoc, or only from the body?).
+ 
+@@ -76,7 +84,7 @@ The **explainability check** — a primitive's reactive shape is only as good as
+ - **Wire a minimal composition** (≥2 sources → target → ≥1 sink). Predict `describe()` — a flat JSON-serializable snapshot; renderers (pretty/mermaid/d2) are pure fns over it (D39), NOT a `describe({format})` option. If you can't predict the output, the topology is too imperative.
+ - **Island check.** A node with zero in-edges AND zero out-edges (not an entry/exit) is a smell.
+ - **Imperative escape paths.** Search for: emit/set/callback wiring that bypasses the graph (R-no-imperative); `.cache` reads inside reactive fn bodies (R-data-not-peek — data moves via messages); raw `Promise`/`setTimeout`/`queueMicrotask` outside a source/pool (R-no-raw-async / F-SYNC-CORE); hardcoded `type === "DATA"` instead of `messageTier` (R-tier); an inline fn bypassing the dispatcher (R-dispatch-all).
+-- **SENTINEL / prevData guards.** Never-emitted detection via `ctx.prevData[i] === undefined` (the canonical detector); fix eager-placeholder upstreams rather than bolting on companions.
++- **SENTINEL / input guards.** Resolve R-sentinel, R-ctx-wave-data and R-fn-contract; distinguish no wave, RESOLVED-only wave, and INVALIDATE. D77 retired raw `prevData`/`latest` aliases. Fix eager-placeholder upstreams rather than inventing a second input channel.
+ - **Feedback cycles.** A fn that re-drives its own dep mid-wave is a wave-level ERROR (D37/R-reentrancy), not iteration; legit accumulation = `ctx.state` (scan), not a topological cycle.
+ 
+ > **Topology / Imperative leaks / cache reads / Feedback cycles / Simplifications:** …
+@@ -116,7 +124,7 @@ Output a numbered list, each finding with the pattern, where it appears (file:li
+ ## Phase 3: Decisions log
+ 
+ - **Architectural lock** (clear) → resolve the owner first, then draft a `D#` for that owner's ledger from `~/src/graphrefly/authority/ledgers.jsonl`; append only after user approval. Update a session's `locks` only when that session actually owns the narrative, use the origin-qualified id when cross-repo, and run `npm --prefix ~/src/graphrefly run authority:check:workspace` plus the dashboard gate.
+-- **Deferred / no clear answer** → append to `~/src/graphrefly/plan/backlog.jsonl` (B# + concrete trigger).
++- **Deferred / no clear answer** → record the open question and proposed work under the existing owner/work-admission process; do not lock it as a decision or silently widen a root backlog.
+ - **Recurring anti-pattern** → `~/src/graphrefly/plan/antipatterns.jsonl` (+ a `feedback_*` memory if generalizable).
+ - **Protocol-behavior change** surfaced → route to `/spec-amend` (spec-first), not a direct code change.
+ 
+diff --git a/.agents/skills/dev-dispatch/SKILL.md b/.agents/skills/dev-dispatch/SKILL.md
+index 689a1067..28322fb1 100644
+--- a/.agents/skills/dev-dispatch/SKILL.md
++++ b/.agents/skills/dev-dispatch/SKILL.md
+@@ -3,6 +3,14 @@ name: dev-dispatch
+ description: "Implement the requested feature or fix within project authority and verify affected behavior."
+ ---
+ 
++## Rules / decisions / work
++
++Read `~/.codex/skills/project-governance/references/rules-decisions-work.md` before contract
++analysis or record changes in this workflow. Implement against current rules and approved design
++constraints; use work only for scope, acceptance and evidence. Reconcile affected documentation
++through the proper owner. Never activate a rule or infer new semantics from a task completion or
++passing test.
++
+ You are executing the **dev-dispatch** workflow for the **clean-slate GraphReFly** redesign.
+ 
+ This repo is **`@graphrefly/ts`** — the self-contained TypeScript implementation (D32). Clean-slate code lands in **`packages/ts/src/`**. The language-neutral authority (spec / decisions / plan / conformance / formal) lives in **`~/src/graphrefly`** (branch `clean-slate`) as jsonl — when this skill and that repo disagree, **that repo wins** (AGENTS.md). Sibling impls: `@graphrefly/rust` (`~/src/graphrefly-rs`), `@graphrefly/py` (`~/src/graphrefly-py`) — each self-contained; cross-language = wire bridge, never in-process (D32).
+@@ -54,14 +62,14 @@ material already loaded. Protocol/formal context is needed only when the changed
+ - `~/src/graphrefly/authority/ledgers.jsonl` + the resolved owner ledger — the federated decision authority (or invoke `/decision-guard` to recall the governing origin-qualified D#/values/floor).
+ - `~/src/graphrefly/plan/phases.jsonl` — the CSP-* sequencer: find the phase this task belongs to, its `status` (done/impl/design), deps, and note. Read this FIRST among the plan files so you know whether you're on a ready phase or one still gated.
+ - `~/src/graphrefly/plan/backlog.jsonl` + `plan/antipatterns.jsonl` — deferred carries (B#) with triggers; anti-patterns to flag against.
+-- `~/src/graphrefly/spec/conformance.jsonl` — the behavioral scenarios (C-*) your change must keep green; check the `runtimes` status for the arm you target.
++- `~/src/graphrefly/spec/conformance.jsonl` — the behavioral scenarios (C-*) your change must keep green; locate exact test/source evidence for the arm you target; legacy `runtimes` fields are claims, not proof.
+ - `~/src/graphrefly/guide/guide.jsonl` — composition / test / docs / contribute guidance (G-composition / G-test / G-docs / G-contribute).
+ - `~/src/graphrefly/sessions/active/SESSION-clean-slate-redesign.md` (DS-1) — the L0–L6 design narrative + F-* constraints, when you need the why behind a lock.
+ - Any files the user referenced in $ARGUMENTS.
+ - The clean-slate source you'll modify: substrate = `packages/ts/src/{node,dispatcher,ctx,protocol,batch}/`; graph-layer = `packages/ts/src/graph/` (Graph + 8-verb sugar + operators + inspection describe/observe/profile).
+ - Existing tests: `packages/ts/src/__tests__/`.
+ 
+-**Frozen reference (D41):** `packages/pure-ts/**` and `~/src/callbag-recharge` are READ-ONLY prior art for analogous operator behavior / edge cases / test structure during a re-derive (D40 Catalog-first). Map concepts to the clean-slate substrate (`node`/`ctx.down`/`ctx.depRecords`/`Graph`, D39 `describe`/`observe`) — do NOT 1:1 port; the old substrate API and semantics differ. They are NOT the behavior authority — `spec/rules.jsonl` is.
++**Frozen reference (D41):** `packages/pure-ts/**` and `~/src/callbag-recharge` are READ-ONLY prior art for analogous operator behavior / edge cases / test structure during a re-derive (D40 Catalog-first). Map concepts to the clean-slate substrate (`node`/`ctx.down`/`ctx.waveData`/`Graph`, D39 `describe`/`observe`) — do NOT 1:1 port; the old substrate API and semantics differ. They are NOT the behavior authority — `spec/rules.jsonl` is.
+ 
+ While planning, validate proposed changes against the clean-slate floor (cite the rule/D#):
+ - **Sacred (L0.7):** topology declarative/serializable/inspectable · wave protocol is a public spec · wave protocol impl is **sync** · all fn go through the dispatcher.
+@@ -71,7 +79,7 @@ While planning, validate proposed changes against the clean-slate floor (cite th
+ - **`ctx.up`**: read the current control/demand boundary in R-ctx-up before changing its behavior. A handle is pure data, no methods (D7).
+ - **No polling** (R-no-polling); **no imperative triggers** (R-no-imperative — reactive `ctx.up`/signals, not emitters/callbacks/timers+set; remove imperative paths when no caller depends); **no raw async** in the sync core (R-no-raw-async / F-SYNC-CORE — async lives only in sources / the pool / the wire bridge).
+ - **All fn through the dispatcher** (R-dispatch-all / F-DISPATCH-ALL — no inline-fn bypass). `dispatcher.invoke` is sync void (R-sync-core).
+-- **Data moves via messages** (R-data-not-peek — never peek a dep's `.cache` to seed compute; `.cache` is a read-only accessor for external consumers). SENTINEL = absence-of-DATA (R-sentinel); the canonical never-emitted detector is `ctx.prevData[i] === undefined`.
++- **Data moves via messages** (R-data-not-peek — never peek a dep's `.cache` to seed compute; `.cache` is a read-only accessor for external consumers). SENTINEL = absence-of-DATA (R-sentinel); resolve the current input representation through R-ctx-wave-data/R-fn-contract rather than reviving D77-retired raw `prevData` aliases.
+ - **messageTier is a compile-time const table** (D18/D34/R-tier); the clock is **graph-local** (no global singleton, D26/R-clock); `onMessage`/`onSubscribe` are substrate-fixed, not user-replaceable (D19).
+ - **Primary-API clean** (R-primary-api-clean): protocol internals (DIRTY/RESOLVED/bitmask) never surface in value-level sugar (derived/effect/operator); ctx-level (node/producer) intentionally exposes tier as a power surface (DR-1). Sugar value-fn → ctx-fn wrapping happens in the graph layer (D27); a value-level `throw` becomes `[[ERROR,e]]` down (D30).
+ - **graph = single-thread causal/concurrency domain (D22 / R-graph-domain):** parallelism via pool callback or multi-graph + wire bridge; rewire is intra-graph only.
+@@ -80,7 +88,6 @@ While planning, validate proposed changes against the clean-slate floor (cite th
+ 
+ **Targeting a sibling (py/rust):** if the task targets `@graphrefly/py` (`~/src/graphrefly-py`) or `@graphrefly/rust` (`~/src/graphrefly-rs`), read that package's local layout + its conformance arm status in `spec/conformance.jsonl`. The cross-language contract is **behavioral conformance (D24)**, not symbol parity. PY public APIs are synchronous (return `Node[T]`/`Graph`/value, no `async def`); async lives at the source/pool boundary only (F-SYNC-CORE).
+ 
+-
+ ---
+ 
+ ## Phase 2: Resolve material decisions
+@@ -99,14 +106,14 @@ Once implementation is authorized and material decisions are resolved:
+    - Cite the governing R-id / D# in test expectations.
+ 2. Add meaningful behavior tests where needed (per `guide/guide.jsonl` G-test — unit / property / conformance layering):
+    - Put tests in the most specific existing file under `packages/ts/src/__tests__/`.
+-   - Use `graph.observe()` for live message assertions; assert at the node + message level otherwise. A behavioral-protocol change ALSO needs a `spec/conformance.jsonl` scenario (`/conformance`) before its rule flips `draft → active`.
++   - Use `graph.observe()` for live message assertions; assert at the node + message level otherwise. A behavioral-protocol change ALSO needs a `spec/conformance.jsonl` scenario (`/conformance`) and explicit activation under `authority/README.md`; passing tests never activate the rule automatically.
+ 3. Run checks:
+    - **TS:** `pnpm --filter @graphrefly/ts test` (vitest) + `pnpm run lint` (biome + layer/typecheck gates) + `pnpm run build` (tsup) as relevant.
+    - **PY (if targeted):** the `@graphrefly/py` package's own test/lint/type gates in `~/src/graphrefly-py`.
+    - **jsonl touched:** `node ~/src/graphrefly/dashboard/build.mjs --check` (consistency gate).
+ 4. Fix any failures.
+ 
+-If implementation leaves an **open architectural decision** (deferred behavior, parity caveat, "needs spec" item), append it to `~/src/graphrefly/plan/backlog.jsonl` (B# + trigger) — NOT a docs file. If it **lands or advances a CSP-* phase**, update that phase's `status`/`note` in `~/src/graphrefly/plan/phases.jsonl`, flip any conformance-backed `draft` rule to `active` once its scenario is green per arm, then run the consistency gate.
++If implementation exposes an **open architectural question**, keep it unresolved and route it to design review; track its resolution work under the existing owner/work-admission process. Update only the authorized work or phase whose acceptance has actually passed. Rule activation is a separate explicit amendment under `authority/README.md`, never a consequence of marking work complete. Run the relevant consistency gates after record changes.
+ 
+ When done, briefly list files changed and new exports added. Apply the shared BMAD QA process with local gates, then provide the checkpoint preview trail.
+ Wait for review navigation only when interactive checkpoint mode was explicitly requested.
+diff --git a/.agents/skills/graph-animation/SKILL.md b/.agents/skills/graph-animation/SKILL.md
+index 144c822c..8f6f7920 100644
+--- a/.agents/skills/graph-animation/SKILL.md
++++ b/.agents/skills/graph-animation/SKILL.md
+@@ -3,425 +3,7 @@ name: graph-animation
+ description: "Create GraphReFly concept explanation videos using HyperFrames. Use when asked to generate animated diagrams of reactive graph topologies — node activations, START/DIRTY/DATA/COMPLETE message flow, diamond resolution, batch mode, operators, etc. Supports two modes: default = concept-explainer (captioned, beat-structured, 30–90s); `--mode ambient-hero` = silent looping landing-page background (8-stage canonical storyboard, ~42s seamless loop). Invokes /hyperframes for composition authoring and /gsap for deterministic animation. Run /hyperframes-cli for preview/render commands."
+ ---
+ 
+-You are executing the **graph-animation** workflow for **GraphReFly**.
+-
+-The user's request: `$ARGUMENTS`
+-
+-This skill produces a HyperFrames HTML composition that animates GraphReFly reactive graph concepts — topology diagrams with animated message flow, node activations, and tier-coded signals. It wraps `/hyperframes` and `/gsap` with GraphReFly-specific knowledge so you don't have to explain the domain each time.
+-
+----
+-
+-## Mode detection
+-
+-If `$ARGUMENTS` contains `--mode ambient-hero` (or the user asks for a "hero", "landing-page", "background video", or "loop"), use **ambient-hero mode** — skip directly to the "Mode B: ambient hero" section near the bottom. The 8-stage canonical storyboard is fully specified there; do not re-derive it.
+-
+-Otherwise, treat the request as **concept-explainer mode** (default) and follow Steps 1–4 below.
+-
+-## Code-intelligence routing
+-
+-When an animation claims current GraphReFly implementation behavior or names a source API, call
+-`codegraph_explore` in the indexed implementation repo before raw source Read/`rg`. Ask for the exact symbol,
+-its message/call path, callers/dependents, tests, public exports, and blast radius; treat returned source as
+-already read. Read protocol/decision jsonl, storyboard assets, HyperFrames files, configs, git diff, untracked
+-files, and stale/unindexed files directly. If an index is absent or disabled, use direct inspection and never
+-initialize it autonomously. The protocol authority wins over implementation, and rendered preview/lint remain
+-the visual correctness gates.
+-
+----
+-
+-## Step 1 — Understand the concept (concept-explainer mode only)
+-
+-If `$ARGUMENTS` is vague or empty, ask the user ONE question: which concept or workflow do you want to animate? Give them these options as examples:
+-
+-- Node lifecycle (START → DATA → COMPLETE → TEARDOWN)
+-- Message propagation through a linear chain (A → B → C)
+-- Diamond resolution (fan-out + fan-in, single recomputation)
+-- Batch mode (DIRTY cascades, DATA deferred until batch end)
+-- Reactive timer source feeding a derived node
+-- Operator pipeline (map → filter → combine)
+-- Human-in-the-loop gate (promptNode / valve pattern)
+-- Multi-agent subgraph ownership (L0–L3 staircase)
+-
+-If `$ARGUMENTS` names a concept already, proceed directly to Step 2.
+-
+----
+-
+-## Step 2 — GraphReFly visual language
+-
+-Use these conventions consistently across all GraphReFly animation videos.
+-
+-### Node shapes (canonical sugar names — `graph.state/producer/derived/effect`)
+-
+-| Sugar | Role | Shape | Color |
+-|---|---|---|---|
+-| `state` | Mutable cell, no deps | Circle | `#14B8A6` (teal) |
+-| `producer` | Push source (timer, event, async) | Diamond / pill | `#10B981` (emerald) |
+-| `derived` | Pure fn of deps | Circle | `#6C63FF` (violet) |
+-| `effect` | Sink / side-effect | Rounded rect | `#F59E0B` (amber) |
+-| External / human | Out-of-graph input | Hexagon | `#64748B` (slate) |
+-
+-Border stroke: `2px solid rgba(255,255,255,0.2)`. Inactive fill: 30% opacity of the node color. Active fill: 100% opacity. The underlying primitive `node()` exists below these four sugars; videos should use sugar names for vocabulary teaching.
+-
+-### Message symbols (canonical — `core/messages.ts`)
+-
+-The full protocol exports `START / DIRTY / DATA / RESOLVED / COMPLETE / TEARDOWN / INVALIDATE / PAUSE / RESUME / ERROR`. For videos, use the **foundational subset** unless a specific concept requires more:
+-
+-| Symbol | Color | Visual | When to show |
+-|---|---|---|---|
+-| `START` | `#94A3B8` (slate-light) | Thin pulse from src→dst, edge brightens | First message on a new connection (handshake) |
+-| `DIRTY` | `#FBBF24` (yellow) | Dashed pulse traveling along edge | Upstream may have changed; dep marks dirty |
+-| `DATA` | `#34D399` (green) | Solid dot traveling along edge; triggers node fn on arrival | Value flowing |
+-| `RESOLVED` | `#60A5FA` (blue) | Ring ripple on destination node | Diamond-resolution wave only (skip in beginner videos) |
+-| `COMPLETE` | `#94A3B8` (slate) | Edge fades, dst node dims | Producer finished emitting |
+-| `TEARDOWN` | `#A78BFA` (purple) | Edge erases backwards from dst→src | Subscription cancelled / dispose |
+-| `BATCH_*` | `#A78BFA` (purple) | Bracket sweep across topology | Batch-mode beats |
+-
+-Default foundational subset for hero / intro videos: **`START → DIRTY → DATA → COMPLETE`**. Add `RESOLVED` only when teaching diamond resolution; add `TEARDOWN` only when teaching lifecycle.
+-
+-### Edge conventions
+-
+-- Directed arrows from producer to consumer.
+-- Edge color matches the tier of the in-flight message.
+-- Resting state: `rgba(255,255,255,0.15)` gray.
+-- Animate as SVG `<path>` or a CSS `clip-path` wipe so timing is seekable.
+-
+-### Layout
+-
+-- Canvas: **1920×1080** (landscape), dark background `#0F172A`.
+-- Nodes: minimum 80px diameter circles, 24px sans-serif label inside.
+-- Edges: 3px stroke with arrowhead marker.
+-- Label overlay: bottom-left, `font-size: 28px`, `color: #E2E8F0`, describes what is happening.
+-
+-### Timing budget
+-
+-- 2–4 seconds per "beat" (one message hop or one lifecycle phase).
+-- Total target: **30–90 seconds** for a concept clip.
+-- Add 1.5s of static "intro frame" showing the graph topology before any animation begins.
+-
+----
+-
+-## Step 3 — Scaffold the composition
+-
+-Use `npx hyperframes init <concept-slug>` to scaffold a new project directory, OR create the file inline if the user prefers a single-file drop.
+-
+-A minimal starting template (adapt to the specific concept):
+-
+-```html
+-<!DOCTYPE html>
+-<html>
+-<head>
+-  <meta charset="utf-8" />
+-  <style>
+-    * { margin: 0; padding: 0; box-sizing: border-box; }
+-    body { width: 1920px; height: 1080px; background: #0F172A; overflow: hidden; font-family: 'Inter', sans-serif; }
+-
+-    .node { position: absolute; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+-      font-size: 22px; font-weight: 600; color: #fff; opacity: 0.3; transition: none; }
+-    .node.active { opacity: 1; }
+-    .label { position: absolute; bottom: 60px; left: 80px; font-size: 28px; color: #E2E8F0; opacity: 0; max-width: 900px; line-height: 1.4; }
+-
+-    svg.edges { position: absolute; top: 0; left: 0; width: 1920px; height: 1080px; }
+-  </style>
+-
+-  <!-- GSAP via CDN (deterministic, seekable) -->
+-  <script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js"></script>
+-  <script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/MotionPathPlugin.min.js"></script>
+-</head>
+-<body>
+-  <!-- Stage -->
+-  <div id="stage"
+-    data-composition-id="graphrefly-concept"
+-    data-start="0"
+-    data-width="1920"
+-    data-height="1080">
+-
+-    <!-- SVG edges layer -->
+-    <svg class="edges" id="edges">
+-      <defs>
+-        <marker id="arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+-          <polygon points="0 0, 10 3.5, 0 7" fill="rgba(255,255,255,0.15)" />
+-        </marker>
+-      </defs>
+-      <!-- edges drawn here as <path> elements -->
+-    </svg>
+-
+-    <!-- Nodes -->
+-    <!-- Example: -->
+-    <!-- <div class="node" id="n-source" style="width:90px;height:90px;background:#10B981;left:200px;top:495px;">src</div> -->
+-    <!-- <div class="node" id="n-derived" style="width:90px;height:90px;background:#6C63FF;left:900px;top:495px;">node</div> -->
+-
+-    <!-- Animated message dots (positioned by GSAP MotionPath) -->
+-    <div id="msg-dirty"  style="position:absolute;width:18px;height:18px;border-radius:50%;background:#FBBF24;opacity:0;border:2px dashed #fff;"></div>
+-    <div id="msg-data"   style="position:absolute;width:18px;height:18px;border-radius:50%;background:#34D399;opacity:0;"></div>
+-
+-    <!-- Caption label -->
+-    <div class="label" id="caption"></div>
+-  </div>
+-
+-  <script>
+-    gsap.registerPlugin(MotionPathPlugin);
+-
+-    const tl = gsap.timeline();
+-
+-    // --- helpers ---
+-    function activate(id) {
+-      return tl.to(`#${id}`, { opacity: 1, scale: 1.1, duration: 0.25, yoyo: true, repeat: 1, ease: 'power2.out' }, '<');
+-    }
+-    function caption(text, at) {
+-      tl.to('#caption', { opacity: 1, duration: 0.3 }, at)
+-        .call(() => { document.getElementById('caption').textContent = text; }, [], at)
+-        .to('#caption', { opacity: 0, duration: 0.3 }, `+=${text.length * 0.04 + 2}`);
+-    }
+-    function sendMsg(dotId, path, color, duration) {
+-      const dot = document.getElementById(dotId);
+-      dot.style.background = color;
+-      tl.to(dot, { opacity: 1, duration: 0.1 })
+-        .to(dot, { motionPath: { path, align: path, autoRotate: false }, duration, ease: 'none' })
+-        .to(dot, { opacity: 0, duration: 0.1 });
+-    }
+-
+-    // --- build your timeline below ---
+-    // Example: 1.5s static intro
+-    tl.to({}, { duration: 1.5 });
+-    // ... animate your concept here
+-
+-    // Register the timeline with HyperFrames for seekable rendering
+-    window.__hfGsapTimeline = tl;
+-  </script>
+-</body>
+-</html>
+-```
+-
+----
+-
+-## Step 4 — Mode A: concept-explainer patterns
+-
+-### Diamond resolution
+-
+-```
+-     A
+-    / \
+-   B   C
+-    \ /
+-     D (recomputes once)
+-```
+-
+-Sequence:
+-1. A emits DATA → DIRTY cascades to B and C simultaneously (two yellow dashes)
+-2. B and C each emit DIRTY to D
+-3. D receives both DIRTYs — stays dirty, does NOT recompute yet
+-4. A emits RESOLVED → B resolves → C resolves → D resolves
+-5. D recomputes **once** (green DATA dot appears from D)
+-6. Caption: "Diamond resolved — one recomputation, zero double-fires"
+-
+-### Batch mode
+-
+-Sequence:
+-1. `batch(() => ...)` bracket appears — purple "BATCH_START" ring
+-2. Multiple sources emit DATA — nodes flash DIRTY but DATA dots are held (shown as queued dots stacked at source)
+-3. batch end — all deferred DATA releases simultaneously
+-4. Caption: "Batch defers DATA, not DIRTY — downstream sees one coherent update"
+-
+-### Node lifecycle
+-
+-Sequence:
+-1. Node dims (initial)
+-2. Subscription arrives → node brightens
+-3. Upstream emits DATA → node pulses green
+-4. RESOLVED ripple out
+-5. Unsubscribe → teardown ring (purple) → node dims again
+-
+-### Operator pipeline
+-
+-Show 3–4 nodes in a horizontal chain (map → filter → combine). Animate a value token flowing left to right, label each node with its transform (`×2`, `> 5`, `merge`).
+-
+----
+-
+-## Step 5 — Run the dev loop
+-
+-```bash
+-# from the composition project directory:
+-npx hyperframes lint        # validate timing/structure
+-npx hyperframes preview     # live browser preview with hot reload
+-npx hyperframes render      # output MP4
+-```
+-
+-Use `/hyperframes-cli` skill for detailed CLI guidance.
+-Use `/gsap` skill for advanced GSAP timeline patterns.
+-Use `/hyperframes-media` skill if you need TTS narration or audio.
+-
+----
+-
+-## Step 6 — Quality checks before render
+-
+-- [ ] All nodes have correct shape + color per the visual language table above
+-- [ ] Message colors match the canonical table (START=slate-light, DIRTY=yellow, DATA=green, COMPLETE=slate, RESOLVED=blue if shown, TEARDOWN=purple if shown)
+-- [ ] Timeline registers `window.__hfGsapTimeline = tl` (required for seekable render)
+-- [ ] Caption text is ≤ 80 chars per line and readable at 1080p (concept-explainer mode only)
+-- [ ] `npx hyperframes lint` passes with no errors
+-- [ ] Preview scrubbing doesn't stutter (all animations are on the GSAP timeline, not setTimeout)
+-
+----
+-
+-## Mode B: ambient hero (canonical 8-stage landing-page loop)
+-
+-This mode produces the **GraphReFly landing-page background video** — a silent, looping, atmospheric reactive-graph composition. Use it whenever the user asks for a "hero", "landing-page", "background video", or passes `--mode ambient-hero`.
+-
+-### Mode-B rules (differ from concept-explainer)
+-
+-| Rule | Value | Why |
+-|---|---|---|
+-| Length | ~42s seamless loop | Hero convention 15–60s; matches the 8-stage plan |
+-| Audio | none | Plays muted; hero conventions |
+-| Captions | none over the topology | Headline text overlays the hero on the page; captions would compete |
+-| Small floating labels | OK, ≤ 4 words, ≤ 22px font | E.g. `graph.describe()`, `graph.observe()`, `batch()` — vocabulary pre-teach |
+-| Pacing | slow / ambient | No frantic motion; eye should rest |
+-| Loop seam | **Stage 8 ends at exactly the same camera/node positions as Stage 1 starts** | Imperceptible loop |
+-| Contrast | reduced — palette at ~70% saturation, bg `#0F172A` | Headline text on page must dominate |
+-| Render output | MP4 + a WebM/VP9 variant for `<video>` autoplay-muted-loop | Web embedding |
+-
+-### The 8-stage canonical storyboard (~42s total)
+-
+-#### Stage 1 — Connection protocol (6s)
+-
+-**Topology:** two nodes, side by side, mid-canvas. Left = `producer` (emerald diamond), right = `derived` (violet circle). Single edge between them.
+-
+-Beat-by-beat:
+-- 0.0–1.0s: Both nodes appear dim. Edge draws in as a gray line.
+-- 1.0–1.8s: `START` pulse (slate-light, thin) travels src→dst. Edge brightens to active. Both nodes pulse subtly (handshake established). Tiny label appears below: `START`.
+-- 1.8–2.8s: `DIRTY` dashed yellow pulse travels src→dst. Destination node briefly outlines yellow (marked dirty). Label: `DIRTY`.
+-- 2.8–4.0s: `DATA` solid green dot travels src→dst. **On arrival, the destination node's interior briefly displays the literal text `fn(...)` then snaps back** — this teaches "DATA arrival triggers the node's fn". Label: `DATA`.
+-- 4.0–5.5s: Repeat one more DIRTY+DATA cycle (faster, no label) to show the steady-state rhythm.
+-- 5.5–6.0s: `COMPLETE` slate pulse travels src→dst. Edge fades. Destination dims slightly. Label: `COMPLETE`.
+-
+-**Marketing payload:** "this is the connection lifecycle. START → DIRTY → DATA → COMPLETE." Foundational subset shown.
+-
+-#### Stage 2 — Diamond (5s)
+-
+-**Topology:** add two more nodes to form a diamond. The producer from Stage 1 becomes `A` (top). Stage 1's derived becomes `D` (bottom). Two new derived nodes `B` and `C` appear left and right.
+-
+-```
+-       A
+-      / \
+-     B   C
+-      \ /
+-       D
+-```
+-
+-Beat-by-beat:
+-- 0.0–1.0s: Nodes `B` and `C` fade in; edges `A→B`, `A→C`, `B→D`, `C→D` draw.
+-- 1.0–2.0s: `A` emits DIRTY → cascades to B and C simultaneously (two yellow dashes leaving A). Both B and C outline yellow.
+-- 2.0–2.8s: Both B and C emit DIRTY toward D (two yellow dashes converging on D). D outlines yellow but does **not** recompute yet — visually emphasized by D pulsing yellow twice without firing.
+-- 2.8–3.8s: `A` emits DATA → green dot to B and C in parallel; B fires (interior `fn(...)` flash), C fires.
+-- 3.8–4.5s: B and C each emit DATA → both green dots converge on D simultaneously. D fires **once** (single `fn(...)` flash) — emphasize by halting motion for 200ms after the fire.
+-- 4.5–5.0s: All nodes settle, edges return to resting gray.
+-
+-**Marketing payload:** "the DIRTY-then-DATA wave guarantees D recomputes once, not twice."
+-
+-#### Stage 3 — Zoom into one node (5s)
+-
+-**Topology:** camera dollies into node `D` from Stage 2. It grows to ~60% of canvas height. Other nodes fade out.
+-
+-Beat-by-beat:
+-- 0.0–1.5s: Camera zoom + other nodes fade. `D` now reveals its internal anatomy as labeled segments:
+-  - **Center**: large `fn(...)` glyph
+-  - **Top wedge**: `down ▼` — outgoing edge ports
+-  - **Bottom wedge**: `up ▲` — incoming dep ports
+-  - **Left wedge**: `cache` — small dotted box showing a value
+-  - **Right wedge**: `version: 3` — a small numeric ticker
+-  - **Outer ring**: `guard` — a thin guard-ring with a small lock icon
+-- 1.5–3.5s: One by one, each anatomy label highlights briefly (~400ms each) in this order: `up ▲` → `fn` → `cache` (a value gets written into the dotted box) → `version: 3 → 4` (ticker increments) → `down ▼` → `guard` (lock briefly clasps).
+-- 3.5–5.0s: All anatomy labels fade back to baseline, leaving the node visible as a labeled diagram.
+-
+-**Marketing payload:** "every node is the same primitive — cache + version + guard + up/down."
+-
+-#### Stage 4 — Node taxonomy (Y-shape, 5s)
+-
+-**Topology:** starts with the single node from Stage 3.
+-
+-Beat-by-beat:
+-- 0.0–2.0s: The center label cycles its text every 500ms: `state` (teal flash) → `producer` (emerald flash) → `derived` (violet flash) → `effect` (amber flash). The node's fill color matches each kind as the label changes.
+-- 2.0–3.5s: Camera pulls back. The single node splits/morphs into a **Y-shape**:
+-  ```
+-   state (teal)    ──┐
+-                     ├──► derived (violet) ──► effect (amber)
+-   producer (emer) ──┘
+-  ```
+-  Edges draw in left-to-right.
+-- 3.5–5.0s: A real flow runs once through the Y — `state` and `producer` both emit DIRTY (two yellow dashes converging on `derived`), then both emit DATA (two green dots converging). `derived` fires **once** (`fn(...)` flash; this is a mini-diamond callback to Stage 2). Then `derived` emits DATA → green dot to `effect`; `effect` fires (amber ring ripple = side effect).
+-
+-**Marketing payload:** "four sugars, one primitive — state/producer feed derived; derived feeds effect."
+-
+-#### Stage 5 — Graph level (8s, 4 beats)
+-
+-##### 5a — Population (1.5s)
+-Camera dollies further back. The single Y-chain replicates into 3–4 parallel chains, with cross-edges weaving between them. The topology resolves into a richer connected mesh of ~20 nodes. No messages flowing yet — just structure crystallizing.
+-
+-##### 5b — describe() blueprint + observe() magnifier (3s)
+-- 0.0–1.0s: All nodes drain of color; the topology becomes a faint dotted **blueprint** — pure structure, no signal. Small label fades in top-left: `graph.describe()` with a thin arrow → tiny annotation `"the map"`.
+-- 1.0–2.2s: A circular **magnifier lens** (glassy, thin ring border) glides in from the right and hovers over a cluster of 3–4 blueprint nodes. *Inside the lens only*, the blueprint becomes vivid and live message dots (DIRTY yellow + DATA green) flow along the edges within the lens's field of view. Label updates: `graph.observe(path)` → `"the magnifier"`.
+-- 2.2–3.0s: The lens drifts to a different cluster, dots flow there instead. Then lens fades; topology re-colorizes fully.
+-
+-**Marketing payload:** "describe is the map. observe is the magnifier. The graph is its own data." (DS-14.5.A spec-as-projection reframe embodied.)
+-
+-##### 5c — batch() sweep (2s)
+-A purple `BATCH_START` bracket sweeps left-to-right across the entire graph. Multiple producers fire DIRTY *simultaneously* (yellow dashes cascading everywhere); green DATA dots queue up *visibly held* at the producers, glowing brighter as they accumulate. Then a `BATCH_END` bracket sweeps back, and all held DATA releases at once as a synchronized wave rippling through the topology.
+-
+-**Marketing payload:** "batch defers DATA, not DIRTY — one coherent update."
+-
+-##### 5d — Subgraph carve (1.5s, hands off to Stage 6)
+-Two or three translucent capsule outlines appear around clusters of nodes — each capsule has its own slow-pulsing border color (different agent owners; e.g. cyan capsule, magenta capsule). The bridge nodes between capsules glow brighter — these become the messaging hubs in Stage 6. Capsules persist into Stage 6.
+-
+-#### Stage 6 — Domain level: orchestration + messaging (6s, 2 beats)
+-
+-##### 6a — Orchestration (2.5s)
+-Inside one capsule, a sequential pipeline animation runs: 4 nodes lit in succession (left-to-right) like a small assembly line — `gate → action → check → action`. Each node fires (`fn(...)` flash) when the green DATA arrives; the next one lights when this one completes. Small label: `pipeline`.
+-
+-##### 6b — Messaging hub + cursor (3.5s)
+-A **central hub node** appears in the gap between the two capsules — distinct visual: a vertical pill shape with a "stream" of small horizontal tokens (items) inside, stacked top-to-bottom. Each capsule has a **cursor marker** (small `▌` glyph) at a position in the hub's stream.
+-
+-Beat-by-beat:
+-- 0.0–1.5s: New tokens fall in from the top of the hub (publishers in one capsule pushing). The hub's stream grows.
+-- 1.5–3.0s: Each capsule's cursor independently advances upward, "consuming" tokens. The cursors move at different rates (one capsule reads faster than the other). As a cursor passes a token, the token glows then dims, and a DATA dot leaves the hub edge toward a node inside that capsule.
+-- 3.0–3.5s: A small floating label: `hub + cursor`. Beneath in smaller faded text: `static graph, dynamic data`.
+-
+-**Marketing payload:** the 降维 idea — the graph topology is static, but the hub's stream carries dynamic content; cursors decouple consumers' read pace from publishers' write pace. This is the substrate for higher-level patterns.
+-
+-#### Stage 7 — Agent loop + memory + "?" (5s)
+-
+-##### 7a — Agent loop (1.8s)
+-Inside one capsule, a closed cyclic subgraph lights up: `agent → tool → result → agent` (a tight loop of 3-4 nodes arranged in a circle). A DATA dot circulates around the loop 2–3 times.
+-
+-##### 7b — Agentic memory (1.7s)
+-A second node appears off the agent loop labeled `memory`. As the agent loop runs, small tokens stream from the loop into `memory`, accumulating visibly (the memory node grows or its interior fills up with stacked tokens).
+-
+-##### 7c — "?" extensibility (1.5s)
+-Several **hexagonal nodes labeled `?`** appear at the periphery of the canvas, each connected to the existing topology by a single edge that trails off into faded space. They pulse gently.
+-
+-**Marketing payload:** "agent loop, memory — and these are just examples. The substrate is open." (Anti-stealth thesis embodied — the library shows its primitives, not just packaged solutions.)
+-
+-#### Stage 8 — Loop seam (2s)
+-
+-Camera zooms back in. All decorations (capsules, hub, `?` nodes, memory, agent loop) fade out. The topology reduces back to the **exact two-node arrangement of Stage 1**: producer (emerald diamond, left) + derived (violet circle, right), same canvas positions, edge resting.
+-
+-The last frame at t=42s must match the first frame at t=0s pixel-for-pixel for an invisible loop seam.
+-
+-### Mode-B implementation notes
+-
+-- **Single GSAP timeline** spans all 8 stages. Use `gsap.timeline({ repeat: -1 })` so the seam loops in preview automatically.
+-- **Position parameter** is your friend — use absolute timeline labels (`stage1`, `stage2`, ...) at each stage boundary so timing tweaks don't cascade.
+-- **No `setTimeout`, no `requestAnimationFrame`** — everything goes through the GSAP timeline (HyperFrames seeking requirement, also project invariant from AGENTS.md "no raw async primitives").
+-- **Camera zoom/pan**: implement as GSAP-animated CSS `transform: scale() translate()` on a wrapper `<div>` containing the topology — *not* by reflowing nodes individually. Keeps motion frame-rate-stable.
+-- **Loop-seam validation**: at the end, evaluate `tl.time(0)` vs `tl.time(tl.duration())` visually in preview. The two frames must be indistinguishable.
+-- **Render to two formats**: MP4 for downloads/social, WebM (VP9, transparent if your design allows) for `<video autoplay muted loop playsinline>` embedding on the landing page.
+-- **Headline test**: after rendering, drop the video into the actual hero slot on the live `website/` and verify the planned headline text is readable over the most visually busy frames (likely Stages 2, 5c, 6b). If contrast fails, increase the overlay darken to 50% rather than dimming the video itself.
+-
+-### Mode-B quality checks (in addition to Step 6)
+-
+-- [ ] Total duration is 40–48s
+-- [ ] Stage 8's final frame matches Stage 1's opening frame (loop seam invisible)
+-- [ ] Sugar names used as labels are exactly: `state`, `producer`, `derived`, `effect` (no `node` in user-facing labels)
+-- [ ] Message labels used are exactly: `START`, `DIRTY`, `DATA`, `COMPLETE` (foundational subset)
+-- [ ] No captions over the topology (small floating labels of ≤4 words OK; full sentences are forbidden in this mode)
+-- [ ] Both MP4 and WebM/VP9 outputs render successfully
+-- [ ] Headline-readability test on a live `website/` page passes
++Read and follow the canonical GraphReFly workflow at
++`~/src/graphrefly/.agents/skills/graph-animation/SKILL.md`.
++Pass the user request, arguments, and target runtime through unchanged. The protocol workflow is
++owned by the language-neutral repository; this package entrypoint has no separate policy.
+diff --git a/.agents/skills/qa/SKILL.md b/.agents/skills/qa/SKILL.md
+index 08fa4c52..4cf9d14f 100644
+--- a/.agents/skills/qa/SKILL.md
++++ b/.agents/skills/qa/SKILL.md
+@@ -3,6 +3,13 @@ name: qa
+ description: "Review project changes and verify affected behavior or required phase gates. Apply fixes only within an implementation or QA-and-fix request."
+ ---
+ 
++## Rules / decisions / work
++
++Read `~/.codex/skills/project-governance/references/rules-decisions-work.md` before contract
++analysis or record changes in this workflow. Review rules for correctness, completeness, duplication
++and contradictions as well as code conformance. Keep rule defects, decision questions and repair
++work separate; do not suppress a current-contract violation because an old backlog item is deferred.
++
+ Read `~/.codex/skills/bmad-build/references/qa.md` for the shared review lenses, five-way triage and
+ repair loop. Integrate the domain checks below into that one review; retain this repository's canonical
+ completion verdict. Review-only remains read-only, including documentation and authority records.
+@@ -29,7 +36,7 @@ Inspect the diff to detect which package(s) are touched: `packages/ts/` (this re
+ 
+ ### 1a. Gather the diff
+ 
+-Run `git diff` for uncommitted changes; if the chat's work was already committed, diff against the chat's baseline commit (`git log --oneline` to find it, then `git diff <base>..HEAD`). Include relevant untracked files (read them). Concentrate the review on the **substantive hand-written code** — formally-verified TLA+ (already TLC-checked), generated artifacts, and jsonl data are lower bug-risk than imperative substrate/graph code.
++Run `git diff` for uncommitted changes; if the chat's work was already committed, diff against the chat's baseline commit (`git log --oneline` to find it, then `git diff <base>..HEAD`). Include relevant untracked files (read them). Review both implementation and the governing contract where affected. JSONL rules and model assumptions can contain semantic defects; a TLC result proves only the checked model and invariants, not that the model matches intended behavior.
+ 
+ For changed implementation source in a repository with a live `.codegraph` index, call
+ `codegraph_explore` after gathering the diff and before raw source Read/`rg`. Query the changed symbols or
+@@ -42,7 +49,7 @@ autonomously. Codegraph does not replace diff review, compiler/typecheck, tests,
+ Read the governing entries from the following index when relevant to the changed behavior:
+ - `~/src/graphrefly/spec/rules.jsonl` — the protocol 宪法 (R-* rules); the behavior authority. Cite R-ids in findings.
+ - `~/src/graphrefly/authority/ledgers.jsonl` + the resolved owner ledger — the governing origin-qualified D# (or `/decision-guard`); the F-* floor + durable values.
+-- `~/src/graphrefly/plan/backlog.jsonl` + `plan/antipatterns.jsonl` — **already-acknowledged deferred concerns (B#) and known anti-patterns. DO NOT raise a finding that matches an existing deferred B# or antipattern** — those are accepted. DO raise a finding that *contradicts* a deferred entry's stated scope.
++- `~/src/graphrefly/plan/backlog.jsonl` + `plan/antipatterns.jsonl` — existing work and historical lessons. Deduplicate known findings, but verify that a deferral is still applicable and consistent with current rules. A backlog entry cannot waive a normative obligation; anti-patterns describe things to avoid, not accepted violations.
+ - `~/src/graphrefly/spec/conformance.jsonl` — the C-* scenarios the change must keep green (+ their `runtimes` status).
+ - `~/src/graphrefly/formal/*.tla` — when the change implements a formally-modeled rule, cross-check the impl against the TLC-verified model.
+ 
+@@ -87,7 +94,7 @@ If a failure exposes a design question, **HALT** and raise it before fixing.
+ 
+ **Skip if `--skip-docs` was passed.** Update only what behavior/API actually changed; clean-slate docs are jsonl (single source of truth):
+ 
+-- **`spec/rules.jsonl`** — only if the protocol itself was intentionally revised → that is a `/spec-amend`, not a casual edit (amend rules + `formal/*.tla` + `spec/conformance.jsonl` together). Flip a conformance-backed rule `draft → active` once its scenario is green on the reference arm + formal lands (cite the precedent).
++- **`spec/rules.jsonl`** — only if the protocol itself was intentionally revised → that is a `/spec-amend`, not a casual edit (amend rules + `formal/*.tla` + `spec/conformance.jsonl` together). Use explicit revisions and activation under `authority/README.md`; passing scenarios or phase completion never activate a rule automatically.
+ - **Owner decision ledger** — a new architectural lock surfaced by QA → `/design-review` → user approval → resolve the owner from `authority/ledgers.jsonl` and append an origin-qualified `D#`; update a session's `locks` only when that session owns the narrative.
+ - **`spec/conformance.jsonl`** — add a new C-* scenario for a new behavioral rule; `covers` is the sole canonical coverage edge and dashboard views derive the reverse relation. Record exact runtime/test/commit evidence, but until the D784 receipt-ledger design is separately approved do not treat mutable `runtimes.<arm>` fields as authoritative status.
+ - **`plan/phases.jsonl`** — update the CSP-* phase `status`/`note` the change advances.
+diff --git a/.agents/skills/research/SKILL.md b/.agents/skills/research/SKILL.md
+index 45e08bf1..a8a0dc35 100644
+--- a/.agents/skills/research/SKILL.md
++++ b/.agents/skills/research/SKILL.md
+@@ -3,152 +3,7 @@ name: research
+ description: "Research a requested GraphReFly topic or competitive question using current sources and relevant project authority."
+ ---
+ 
+-You are executing the **research** workflow for **GraphReFly**.
+-
+-The user has a topic they want to explore — triggered by curiosity, a post they saw, or a trend they want to understand. Your job is to research it thoroughly using web search, then ground the findings against GraphReFly's current position. The goal is to **facilitate a discussion** about library direction — surface facts, tensions, and open questions that the user can react to, not just deliver a static report.
+-
+-**Today's date: use the current date from system context for all searches.**
+-
+-User input: $ARGUMENTS
+-
+----
+-
+-## Phase 0: Topic extraction
+-
+-Parse `$ARGUMENTS` to determine:
+-
+-1. **Topic** — the core subject to research (e.g. "reactive state management trends", "AI agent frameworks", "graph-based orchestration")
+-2. **Trigger** — what prompted this (a post URL, a screenshot, a thought). If a URL is provided, fetch it first with `mcp__searxng__web_url_read` or `WebFetch` to extract context.
+-3. **Angle** — what specifically interests the user (if stated). If not stated, default to: "how does this relate to GraphReFly's positioning?"
+-
+-State the extracted topic, trigger, and angle before proceeding.
+-
+----
+-
+-## Phase 1: Landscape research
+-
+-Use `mcp__searxng__searxng_web_search` (preferred) or `WebSearch` to gather intel. Search the angles needed to answer the request. Stop when the material claims and recommendation
+-have adequate evidence; expand only for unresolved uncertainty. Suggested search patterns (adapt to topic):
+-
+-1. **Trend pulse** — `"{topic}" trends 2025 2026` or `"{topic}" state of` 
+-2. **User pain points** — `"{topic}" problems OR frustrations OR "wish it could"` or reddit/HN discussions
+-3. **Competitor landscape** — `"{topic}" libraries OR frameworks comparison` or `"{topic}" vs` 
+-4. **Future direction** — `"{topic}" roadmap OR "what's next" OR future`
+-5. **Developer adoption** — `"{topic}" adoption OR migration OR "switched to"`
+-6. **Academic/deep** — `"{topic}" research OR paper OR architecture` (if relevant)
+-
+-Read the sources needed to substantiate material claims using `mcp__searxng__web_url_read` or `WebFetch` to get substance beyond snippets.
+-
+----
+-
+-## Phase 2: Read GraphReFly context
+-
+-Read `~/src/graphrefly/CLAUDE.md` first as the authority index, then load only relevant rows from:
+-
+-- `~/src/graphrefly/plan/phases.jsonl` and `plan/backlog.jsonl` for current sequence and deferred triggers;
+-- `~/src/graphrefly/authority/ledgers.jsonl`, the resolved governing owner ledger, and the indexed active session for locked rationale;
+-- `~/src/graphrefly/spec/rules.jsonl`, `spec/conformance.jsonl`, and `guide/guide.jsonl` when the topic
+-  touches protocol, behavioral parity, composition, or public guidance;
+-- package-local `docs/docs.jsonl` for TypeScript documentation ownership and public package positioning.
+-
+-For claims about current implementation, call `codegraph_explore` in the relevant indexed GraphReFly repo
+-before raw source Read/`rg`. Ask for exact symbols, end-to-end call paths, callers/dependents, tests,
+-public/export boundaries, and blast radius. Treat returned source as already read and query again only for
+-uncovered paths. Read authority jsonl, archived narrative, configs, git diff, untracked files, and
+-stale/unindexed files directly. If the index is absent or disabled, use direct inspection and never initialize
+-it autonomously. External web sources establish the landscape; Codegraph establishes what the repositories
+-actually implement.
+-
+----
+-
+-## Phase 3: Structured analysis
+-
+-Select the sections that answer the request; a narrow question does not require a landscape report. Be **honest and specific** — don't flatter GraphReFly where it doesn't deserve it.
+-
+-### 3.1 Trend summary
+-
+-> What's happening in this space right now? What are the dominant patterns, tools, and conversations? Cite sources.
+-
+-3-5 bullet points, each with a source link.
+-
+-### 3.2 User patterns & demands
+-
+-> What do developers/users actually want? What pain points keep surfacing? What's the "pull" signal?
+-
+-Distinguish between:
+-- **Validated demand** (multiple sources, real adoption) 
+-- **Emerging signal** (early signs, small communities)
+-- **Hype** (lots of talk, unclear substance)
+-
+-### 3.3 Competitor matrix
+-
+-Build a comparison table:
+-
+-| Competitor | Approach | Strengths | Weaknesses | Adoption signal |
+-|---|---|---|---|---|
+-| {name} | {1-line approach} | {2-3 points} | {2-3 points} | {GitHub stars, npm downloads, community size, or "unknown"} |
+-
+-Include only competitors relevant to the requested comparison and explain their material differences.
+-
+-### 3.4 GraphReFly positioning
+-
+-Answer each honestly:
+-
+-- **Where GraphReFly has genuine advantages** — be specific about which feature/design decision creates the edge. Reference rule/decision IDs and current code paths.
+-- **Where GraphReFly has gaps** — things competitors do that we don't, or user demands we can't meet yet. Reference phase/backlog IDs if they're planned.
+-- **Where it's unclear** — areas where we'd need to build something to know if our approach works better.
+-
+-### 3.5 Lessons & insights
+-
+-> What can we learn from this research? What surprised you?
+-
+-3-5 numbered insights. For each:
+-- The insight itself
+-- Why it matters for GraphReFly specifically
+-- Whether it validates, challenges, or is orthogonal to our current direction
+-
+-### 3.6 Plan alignment
+-
+-Cross-reference findings with canonical `plan/phases.jsonl` and `plan/backlog.jsonl`:
+-
+-| Finding | Plan alignment | Action |
+-|---|---|---|
+-| {trend/demand/gap} | {matches CSP phase / matches backlog trigger / no match / conflicts with locked D#} | {already planned / propose a phase or backlog record / revisit} |
+-
+----
+-
+-## Phase 4: Recommendations & discussion prompts
+-
+-End with two subsections:
+-
+-### 4.1 Recommendations
+-
+-A prioritized list of **at most 5** concrete recommendations:
+-
+-1. **{Action}** — {why, grounded in research}. Priority: {high/medium/low}. Effort: {small/medium/large}.
+-
+-Recommendations should be actionable — not "think about X" but "propose X for phase Y" / "draft a backlog
+-record with trigger Z" / "prototype X to validate assumption Z" / "write a comparison doc showing advantage
+-over Y". Ask before changing canonical records.
+-
+-### 4.2 Discussion prompts
+-
+-Surface unresolved material questions, if any, that the research raised but can't answer alone — things that depend on the user's judgment, taste, or strategic priorities. Frame these as genuine questions to spark discussion, not rhetorical ones. Examples:
+-
+-- "Competitor X chose to do Y — do we think that's the right trade-off for our users, or does our reactive-first approach make Y unnecessary?"
+-- "There's emerging demand for Z, but it would pull us toward {direction}. Is that a direction we want to go?"
+-- "Our prior decision in SESSION-{name} assumed {thing} — this research suggests that assumption may be shifting. Worth revisiting?"
+-
+-The goal is to leave the user with something to react to, not just a wall of information.
+-
+----
+-
+-## Output discipline
+-
+-- **Cite sources.** Every claim about the external world should have a URL or at minimum a named source.
+-- **Be honest.** "GraphReFly doesn't address this yet" is more useful than spin.
+-- **Date-stamp.** Note that this research reflects the landscape as of the current date.
+-- **Keep it scannable.** Use tables, bullets, and headers. Avoid walls of prose.
+-- **Don't implement.** This skill produces a research report. It does NOT modify code. It MAY suggest phase
+-  or backlog changes, but must ask before editing canonical records.
+-- Ask a follow-up only when a user decision is needed; otherwise end with the supported recommendation.
++Read and follow the canonical GraphReFly workflow at
++`~/src/graphrefly/.agents/skills/research/SKILL.md`.
++Pass the user request, arguments, and target runtime through unchanged. The protocol workflow is
++owned by the language-neutral repository; this package entrypoint has no separate policy.
+diff --git a/.agents/skills/spec-amend/SKILL.md b/.agents/skills/spec-amend/SKILL.md
+index 78c47b34..bcf1cf98 100644
+--- a/.agents/skills/spec-amend/SKILL.md
++++ b/.agents/skills/spec-amend/SKILL.md
+@@ -1,40 +1,9 @@
+ ---
+ name: spec-amend
+-description: "Spec-first protocol amendment flow for the clean-slate GraphReFly redesign. Use BEFORE changing any wave-protocol behavior (tiers, wave semantics, diamond/equals/SENTINEL, batch, push-on-subscribe, ctx.up/down contract). Enforces F-NO-IMPL-DEFINED: amend spec/rules.jsonl + formal/*.tla + spec/conformance.jsonl FIRST, then implement in each language package. Triggers: 'amend the spec', 'change the protocol', 'add a tier', 'spec change', 'new wave rule', 'this changes protocol behavior'. NOT for sugar/operator/inspection changes — those are per-language, never touch spec."
++description: "Spec-first protocol amendment flow for the clean-slate GraphReFly redesign. Use BEFORE changing any wave-protocol behavior (tiers, wave semantics, diamond/equals/SENTINEL, batch, push-on-subscribe, ctx.up/down contract). Enforces F-NO-IMPL-DEFINED: amend spec/rules.jsonl + formal/*.tla + spec/conformance.jsonl FIRST, then implement in each language package. Triggers: 'amend the spec', 'change the protocol', 'add a tier', 'spec change', 'new wave rule', 'this changes protocol behavior'. Not for purely package-local sugar/operator/inspection changes that preserve protocol behavior."
+ ---
+ 
+-You are executing **spec-amend** for the clean-slate GraphReFly redesign.
+-
+-**Authority repo:** `~/src/graphrefly` (clean-slate branch) holds the language-neutral spec.
+-Per-language packages (`graphrefly-{ts,rust,py}`) implement it; they NEVER define protocol behavior.
+-
+-## Iron rule (F-NO-IMPL-DEFINED, decision D14/D19)
+-
+-Protocol behavior is **spec-first**. No "implementation defines what happens." Order is fixed:
+-
+-1. **Amend the spec data** (before any code):
+-   - `~/src/graphrefly/spec/rules.jsonl` — append a normative rule revision (`{id, revision, area, tier?, statement, rationale, introduced_by:["D#"], activated_by?:["D#"], transition?}`). Rule decision refs are root-context refs because protocol locks are root-owned. Never edit a published revision in place. Use an explicit `transition` (`replace`/`retire`) from a later revision when the trace set changes. Coverage is derived from conformance records' forward `covers` refs; rules do not carry `covers_by`.
+-   - `~/src/graphrefly/formal/*.tla` (+ MC config) — model the behavior; add the invariant; run TLC. (formalization γ, D14.)
+-   - `~/src/graphrefly/spec/conformance.jsonl` — add the behavioral scenario(s) that pin the new rule (`covers:[rule-id]`, `runtimes:{ts:"todo",rust:"todo",py:"todo"}`, `status:"required"`).
+-2. **Record the decision** if this is a new architectural lock: protocol/cross-project locks are root-owned, so append the approved root `D#` and reference its root-context id from `introduced_by`/`activated_by`. Use `~/src/graphrefly/authority/ledgers.jsonl` to verify the owner rather than copying the decision elsewhere.
+-3. **Run the consistency gate:** `node ~/src/graphrefly/dashboard/build.mjs --check` (no broken links/orphans).
+-4. **THEN implement** in each language package to make the conformance scenarios pass. Use `/dev-dispatch` per package. Until the D784 commit-bound evidence-receipt ledger is separately designed and approved, report exact test/commit evidence but do not present mutable `runtimes.<lang>` fields as authoritative conformance status or invent a receipt path.
+-
+-## Closed-set guardrails (do not bypass)
+-
+-- **9 tiers are a closed set** (D9). Adding a tier is a constitutional change — requires explicit user lock + TLA+ re-model, not a casual amend.
+-- **onMessage/onSubscribe are substrate-fixed** (D19) — they are NOT user-replaceable hooks; "amend" means changing the spec'd behavior, not adding a config knob.
+-- **equals fires only single-DATA-wave** (D15); **ctx.up is control-tier only** (R-ctx-up); **restore ≠ fresh-lifecycle wipe** (R-restore). Re-read these rules before touching adjacent behavior.
+-
+-## Code-intelligence routing
+-
+-Use a current Codegraph index when it helps trace the affected symbols; use direct file reads or
+-`rg` for simpler lookups, unavailable tools, or stale/unindexed files. Reuse source already read.
+-Do not initialize an index merely to satisfy this workflow. Validate through the affected executable
+-checks and required gates; an index is context, not correctness evidence.
+-
+-## Output
+-
+-A spec-amendment plan: which rule(s) change, the TLA+ invariant delta, the conformance scenario(s) added, the D# (new or referenced), and the per-language implementation order. HALT for user approval before writing TLA+/code if the change touches a closed-set guardrail.
+-
+-After the spec data lands and `--check` is clean, hand off to `/dev-dispatch` per language package and `/conformance` to drive the scenarios green.
++Read and follow the canonical GraphReFly workflow at
++`~/src/graphrefly/.agents/skills/spec-amend/SKILL.md`.
++Pass the user request, arguments, and target runtime through unchanged. The protocol workflow is
++owned by the language-neutral repository; this package entrypoint has no separate policy.
+diff --git a/.claude/skills/bmad-build/SKILL.md b/.claude/skills/bmad-build/SKILL.md
+index df893a9a..f6110140 100644
+--- a/.claude/skills/bmad-build/SKILL.md
++++ b/.claude/skills/bmad-build/SKILL.md
+@@ -3,6 +3,6 @@ name: bmad-build
+ description: "Implement a bounded repository change with the shared BMAD build workflow and local gates."
+ ---
+ 
+-Read and follow `~/.codex/skills/bmad-build/SKILL.md` with this repository as the project root.
+-This entrypoint intentionally uses the shared personal workflow directly; do not run the legacy
+-BMAD renderer or adjacent workflow snapshots. Preserve this repository's authority and local gates.
++Read and follow [the maintained bmad-build workflow](../../../.agents/skills/bmad-build/SKILL.md).
++Resolve that path relative to this file and pass the user request and arguments through unchanged.
++This entrypoint has no separate protocol, decision, work, or review policy.
+diff --git a/.claude/skills/bmad-checkpoint-preview/SKILL.md b/.claude/skills/bmad-checkpoint-preview/SKILL.md
+index 8d13941e..225193df 100644
+--- a/.claude/skills/bmad-checkpoint-preview/SKILL.md
++++ b/.claude/skills/bmad-checkpoint-preview/SKILL.md
+@@ -3,6 +3,6 @@ name: bmad-checkpoint-preview
+ description: "Guide human review of a change with orientation, concern walkthrough, risk details, and observation."
+ ---
+ 
+-Read and follow `~/.codex/skills/bmad-checkpoint-preview/SKILL.md` with this repository as the project root.
+-This entrypoint intentionally uses the shared personal workflow directly; do not run the legacy
+-BMAD renderer or adjacent workflow snapshots. Preserve this repository's authority and local gates.
++Read and follow [the maintained bmad-checkpoint-preview workflow](../../../.agents/skills/bmad-checkpoint-preview/SKILL.md).
++Resolve that path relative to this file and pass the user request and arguments through unchanged.
++This entrypoint has no separate protocol, decision, work, or review policy.
+diff --git a/.claude/skills/bmad-qa/SKILL.md b/.claude/skills/bmad-qa/SKILL.md
+index d0366344..2d5e2617 100644
+--- a/.claude/skills/bmad-qa/SKILL.md
++++ b/.claude/skills/bmad-qa/SKILL.md
+@@ -3,6 +3,6 @@ name: bmad-qa
+ description: "Review changes with the shared BMAD QA process and local domain gates; fix only when requested."
+ ---
+ 
+-Read and follow `~/.codex/skills/bmad-qa/SKILL.md` with this repository as the project root.
+-This entrypoint intentionally uses the shared personal workflow directly; do not run the legacy
+-BMAD renderer or adjacent workflow snapshots. Preserve this repository's authority and local gates.
++Read and follow [the maintained bmad-qa workflow](../../../.agents/skills/bmad-qa/SKILL.md).
++Resolve that path relative to this file and pass the user request and arguments through unchanged.
++This entrypoint has no separate protocol, decision, work, or review policy.
+diff --git a/.claude/skills/conformance/SKILL.md b/.claude/skills/conformance/SKILL.md
+index 2acd3479..f369bcc4 100644
+--- a/.claude/skills/conformance/SKILL.md
++++ b/.claude/skills/conformance/SKILL.md
+@@ -1,61 +1,9 @@
+ ---
+ name: conformance
+-description: "Behavioral conformance check across GraphReFly language runtimes (ts/rust/py) for the clean-slate redesign. Replaces the old structural 'parity' diff. Parity = does each runtime satisfy the wave-protocol behavior (conformance scenarios) + dispatcher contract — NOT 'do the symbol sets match'. Use after implementing/changing substrate behavior in any runtime, or when adding a new protocol rule. Authors/runs language-agnostic scenarios and updates conformance.jsonl runtime status. Triggers: 'conformance', 'cross-lang check', 'does rust match', 'parity', 'run the conformance suite', 'is the substrate behavior consistent'."
++description: "Behavioral conformance check across GraphReFly language runtimes (ts/rust/py) for the clean-slate redesign. Replaces the old structural 'parity' diff. Parity = does each runtime satisfy the wave-protocol behavior (conformance scenarios) + dispatcher contract — NOT 'do the symbol sets match'. Use after implementing/changing substrate behavior in any runtime, or when adding a new protocol rule. Authors/runs language-agnostic scenarios and reports exact source-bound evidence. Triggers: 'conformance', 'cross-lang check', 'does rust match', 'parity', 'run the conformance suite', 'is the substrate behavior consistent'."
+ argument-hint: "[rule-id | scenario-id | 'full'] [optional: runtime ts|rust|py]"
+ ---
+ 
+-You are executing **conformance** for the clean-slate GraphReFly redesign.
+-
+-**Parity is behavioral, not structural (D24).** There is NO `Impl` symbol-set to diff and NO
+-cross-track-ledger. Operators / sugar / inspection are **per-language and never in parity**
+-(D6/D27 — graph-layer wraps everything to `(ctx)=>void` before register). The ONLY parity
+-surface is: **wave-protocol behavior + dispatcher contract + handle format**. Conformance =
+-each runtime passes the same language-agnostic scenarios.
+-
+-## Authority
+-
+-| Source | Role |
+-|---|---|
+-| `~/src/graphrefly/spec/conformance.jsonl` | The scenario registry: `{id, name, covers:[rule-id], runtimes:{ts,rust,py}, status, note}`. |
+-| `~/src/graphrefly/spec/rules.jsonl` | The rules scenarios pin (`covers` must resolve here). |
+-| `~/src/graphrefly/spec/protocol.proto` | Protocol-contract IDL (DR-2) — the light structural anchor codegen'd into each runtime's interface stub. |
+-| `~/src/graphrefly/formal/*.tla` | TLA+ model (γ); property tests mirror its invariants. |
+-
+-## Scope from $ARGUMENTS
+-
+-- **rule-id** (e.g. `R-diamond`) → all scenarios whose `covers` includes it.
+-- **scenario-id** (e.g. `C-1`) → that scenario.
+-- **full** → every `status:"required"` scenario.
+-- optional **runtime** → restrict to one arm.
+-
+-## Phase 1 — scenario integrity
+-
+-1. Load `conformance.jsonl` + `rules.jsonl`. Verify every `covers` rule-id resolves (else HALT — fix the scenario or add the rule via `/spec-amend`).
+-2. List the **DR-5 required hard scenarios** and their status: `C-1` cross-graph diamond, `C-2` async-result-at-paused-node, `C-3` INVALIDATE×ctx.state×onInvalidate, `C-4` mixed sync/async diamond, `C-5` PAUSE-lockset multi-source. These are the load-bearing ones — behavioral parity is a blank cheque until they're green on each shipped runtime.
+-
+-## Phase 2 — run / verify per runtime
+-
+-For each in-scope `(scenario, runtime)`:
+-1. Locate/author the scenario harness in that runtime's conformance test dir (language-agnostic spec → per-runtime adapter; the scenario describes observable wave behavior, not a symbol call).
+-2. Run it. Record outcome.
+-3. Update `conformance.jsonl` `runtimes.<rt>`: `"todo" | "poc-pass" | "pass" | "fail"`.
+-4. Mirror the invariant as a property test (fast-check ts ↔ proptest rust ↔ hypothesis py) where the rule is property-shaped (L5-Q2 / D14).
+-
+-## Phase 3 — report
+-
+-| scenario | covers | ts | rust | py | verdict |
+-|---|---|---|---|---|---|
+-
+-- **Behavior drift** = same scenario, different observable outcome across runtimes → this is the ONLY kind of parity gap. File it as a substrate bug in the lagging runtime (route fix via `/dev-dispatch` on that package).
+-- **Missing scenario** for a rule (rule's `covers_by` empty) → author it (this is the real risk under behavioral parity: untested behavior can drift silently — D24 residual). Flag via `/dashboard` Gaps (uncoveredRules).
+-- **NOT a gap:** a runtime having a different operator set / different sugar / different inspection ergonomics. Those are per-language by design — do not report them.
+-
+-## Phase 4 — gate
+-
+-Run `node ~/src/graphrefly/dashboard/build.mjs --check` (scenario↔rule links intact). For a runtime
+-to be declared "conformant", all `status:"required"` scenarios must be `"pass"` on its arm.
+-
+-## Boundaries
+-
+-Does NOT diff symbol sets (that's the retired structural model). Does NOT touch operators/sugar/inspection
+-(per-language). New protocol behavior must go through `/spec-amend` FIRST (scenario authored before code).
++Read and follow [the maintained conformance workflow](../../../.agents/skills/conformance/SKILL.md).
++Resolve that path relative to this file and pass the user request and arguments through unchanged.
++This entrypoint has no separate protocol, decision, work, or review policy.
+diff --git a/.claude/skills/dashboard/SKILL.md b/.claude/skills/dashboard/SKILL.md
+index a2903ef4..40dbc4bf 100644
+--- a/.claude/skills/dashboard/SKILL.md
++++ b/.claude/skills/dashboard/SKILL.md
+@@ -1,33 +1,9 @@
+ ---
+ name: dashboard
+-description: "Build / check the GraphReFly internal docs dashboard (jsonl single-source -> generated HTML with progress, structure map, gaps, search). Use when the user wants to see global project state, regenerate the dashboard, run the docs consistency gate (broken links / orphans / coverage gaps), or after editing any jsonl in ~/src/graphrefly (decisions/plan/spec/sessions/guide). Triggers: 'build the dashboard', 'check docs consistency', 'what are the gaps', 'show progress', 'regenerate dashboard', 'doc gate'."
++description: "Build / check the GraphReFly internal docs dashboard (jsonl single-source → generated HTML with progress, structure map, gaps, search). Use when the user wants to see global project state, regenerate the dashboard, run the docs consistency gate (broken links / orphans / coverage gaps), or after editing any jsonl in ~/src/graphrefly (decisions/plan/spec/sessions/guide). Triggers: 'build the dashboard', 'check docs consistency', 'what are the gaps', 'show progress', 'regenerate dashboard', 'doc gate'."
+ argument-hint: "[--check (gate only) | (default: build + report)]"
+ ---
+ 
+-You are executing **dashboard** for the clean-slate GraphReFly redesign.
+-
+-**Repo:** `~/src/graphrefly` (clean-slate branch). All structured docs are jsonl (single source of truth, decision 2); the dashboard renders them into one searchable HTML view for the maintainer (decision 3). Schema contract: `~/src/graphrefly/dashboard/README.md`.
+-
+-## What this skill does
+-
+-1. **Run the generator:**
+-   - `node ~/src/graphrefly/dashboard/build.mjs` → writes `dashboard/dashboard.html` + prints counts / gaps / broken-links / orphans report.
+-   - `node ~/src/graphrefly/dashboard/build.mjs --check` → consistency gate only; **non-zero exit on broken links** (use as a pre-commit / CI gate).
+-2. **Interpret the report** for the user:
+-   - **counts** — per-jsonl row counts (decisions/phases/rules/conformance/...).
+-   - **gaps** — designPhases (status=design|gap) · openDecisions · deferredBacklog · uncoveredRules (no conformance) · todoConformance (runtimes=todo). This answers "哪里还有缺口".
+-   - **broken links** — must be zero (session.locks → decision; phase.sessions → session; conformance.covers → rule; flowchart.explains → rule|D#). Legacy 3-digit D### / R# refs are external (old main), reported separately as OK.
+-   - **orphans** — decisions referenced by no session (informational).
+-3. **If broken links exist:** locate the offending jsonl row, fix the id reference (or add the missing record), re-run `--check`.
+-
+-## When the jsonl changed
+-
+-After any edit to `decisions/`, `plan/`, `spec/`, `sessions/`, `guide/` jsonl — run `--check` to catch dangling references immediately (fixes P4 stale-premise + P6 link-rot). The generator is the enforcement mechanism for "single canonical, no broken cross-refs."
+-
+-## UI styling
+-
+-`build.mjs` emits a **placeholder shell** with the data model embedded. Visual design / interactive search is a separate `/frontend-design` pass — do NOT hand-style the HTML here; keep `build.mjs` focused on the data model + consistency checks. The dogfood endgame (phase CSP-8) rebuilds this dashboard *with GraphReFly itself* (jsonl producer → reactive views → HTML effect).
+-
+-## Output
+-
+-The counts + gaps + link-health report, a plain-language "where are the gaps / what's the progress" summary, and (unless `--check`) confirmation that `dashboard.html` was written. Flag any broken link as a blocker to fix before commit.
++Read and follow [the maintained dashboard workflow](../../../.agents/skills/dashboard/SKILL.md).
++Resolve that path relative to this file and pass the user request and arguments through unchanged.
++This entrypoint has no separate protocol, decision, work, or review policy.
+diff --git a/.claude/skills/decision-guard/SKILL.md b/.claude/skills/decision-guard/SKILL.md
+index 78f64884..149b2c5e 100644
+--- a/.claude/skills/decision-guard/SKILL.md
++++ b/.claude/skills/decision-guard/SKILL.md
+@@ -1,87 +1,9 @@
+ ---
+ name: decision-guard
+-description: "GraphReFly clean-slate decision-consistency check. Loads the user's locked values/principles + the unified D-numbered decision log (decisions.jsonl) + recurring decision-process patterns. Use BEFORE answering any question of the form 'is this consistent with our decisions?', 'should I pick option A/B/C?', 'what about this proposed fix?', 'is X part of our scope?', 'is this a regression on a prior decision?'. Triggers: 'decision check', 'drift check', 'align check', 'is this consistent', 'should I pick', 'what about this', 'is this in scope', 'consistency review'."
++description: "GraphReFly clean-slate decision-consistency check. Resolves the federated owner ledgers plus the user's locked values/principles and recurring decision-process patterns. Use BEFORE answering consistency, scope, choice, or regression questions."
+ argument-hint: "[short context of what you're being asked about — paste the proposal if relevant]"
+ ---
+ 
+-# decision-guard — recall and apply locked decisions, values, invariants (clean-slate)
+-
+-**Purpose.** Conversations lose context-window state quickly. This is the canonical recall
+-surface for the **clean-slate** redesign: invoke BEFORE answering decision questions to anchor
+-against the user's locked positions and prevent silent drift — especially when a chat proposes
+-a scope expansion mid-implementation, presents A/B/C as a fork, uses "completeness" to justify
+-expanding a locked slice, or builds on a premise that may be stale.
+-
+-> **Clean-slate retired the old port model.** Do NOT reach for `rust-port-decisions.md`,
+-> `cross-track-ledger.md`, the `Impl` parity contract, `BindingBoundary`, the actor model, or
+-> 3-digit D### port decisions — those are old-`main` history. The clean-slate decision
+-> authority is below.
+-
+-## Sources (load in order)
+-
+-| Source | Role |
+-|---|---|
+-| `~/src/graphrefly/decisions/decisions.jsonl` | **Unified D# log** (D1–D33 + DR-*). Canonical record: `{id, layer, question, decision, rationale, supersedes, status}`. |
+-| `~/src/graphrefly/sessions/active/SESSION-clean-slate-redesign.md` (DS-1) | Full design narrative + 8 forced constraints + spec-amendment list + conformance hard scenarios. |
+-| `~/src/graphrefly/plan/antipatterns.jsonl` | Lessons / anti-patterns to flag against. |
+-| `~/src/graphrefly/spec/rules.jsonl` | Protocol rules — for "does the spec already pin this?". |
+-| Memory `feedback_*` files | The user's durable values/principles (below). |
+-
+-## Locked values (durable — cite by name)
+-
+-1. **No backward compat** (pre-1.0): structurally cleaner option, no legacy shims. `feedback_no_backward_compat`.
+-2. **No imperative triggers** in public API: reactive `ctx.up`/signals, not emitters/callbacks/timers+set; remove imperative paths when no caller depends. `feedback_no_imperative`.
+-3. **Single source of truth**: one canonical per concern; index points, never duplicates. `feedback_single_source_of_truth`.
+-4. **No autonomous decisions** (hard rule): surface spec↔code conflicts; don't silently pick; file-by-file review for multi-file rewrites. `feedback_no_autonomous_decisions`.
+-5. **No implement without approval**: decisions locked ≠ implementation approved. `feedback_no_implement_without_approval`.
+-6. **Verify premise before greenfield**: design tables lag code — grep symbols + check landed markers before a 9Q; stale premise = HALT. `feedback_verify_premise_before_greenfield`.
+-7. **Latest versions + context7** for current API docs. `feedback_latest_versions_context7`.
+-8. **Long-command observation discipline** (run-logged + DONE sentinel; no tail; no sleep-poll) and **subagent bg hygiene** (sync-verify or teardown before return). `feedback_long_command_observation`, `feedback_subagent_bg_hygiene`.
+-
+-## Clean-slate floor (never violate)
+-
+-**Sacred (L0.7):** topology declarative/serializable/inspectable · wave protocol is a public spec ·
+-wave protocol impl is **sync** · all fn go through dispatcher.
+-
+-**Forced (F-*):** F-PERF (budget every abstraction) · F-PROTO-SPEC (spec+TLA++property) ·
+-F-SYNC-CORE (dispatcher.invoke sync void) · F-DISPATCH-ALL (no inline-fn bypass) ·
+-F-GRAPH-FIRST-API · F-NO-WEDGE-CUT (every primitive ≥2 segments) ·
+-F-NO-IMPL-DEFINED (spec-locked or explicitly undefined-by-design) · F-NO-LLM-ONLY.
+-
+-**Red flags (HALT if proposed):** async in the sync wave core (async lives only in pools/wire-bridge) ·
+-inline-fn bypassing dispatcher · a primitive serving only LLM workflows · a protocol behavior left
+-"implementation-defined" · user-replaceable onMessage/onSubscribe · adding a 10th tier casually ·
+-graph-level shared mutable state accessed implicitly (must be explicit node + dep).
+-
+-## Decision-process patterns (apply in order)
+-
+-1. **Identify the governing D#.** Grep `decisions.jsonl` by `layer`/keyword. Is the proposal within a locked D's scope? Mid-implementation scope expansion = anti-pattern unless promoted to a NEW D#.
+-2. **Check the spec.** Does `rules.jsonl` pin the behavior? If yes, follow it — divergence is a bug, not a design call. If silent/ambiguous → real design HALT.
+-3. **Verify premise (value 6).** Has the symbol/surface already landed? grep before designing new surface.
+-4. **Apply values + floor.** Especially: no autonomous decisions, no imperative, single source of truth, sync-core/async-at-boundary, F-* constraints.
+-5. **Verdict:** `consistent (cite D#)` / `regression on D#` / `out-of-scope` / `needs new decision (don't auto-pick)`.
+-6. **Routing:**
+-   - New fork, no governing D# → present options + recommend, **do NOT lock** → that's `/design-review` → user approval → append `decisions.jsonl`.
+-   - Changes protocol behavior → `/spec-amend` (spec-first).
+-   - Cross-runtime parity concern → `/conformance` (behavioral scenario, not structural diff).
+-
+-## Common decision shapes
+-
+-- **A/B/C (fix shape):** default = the option that **structurally extends an existing pattern** beats per-site workarounds.
+-- **Completeness vs discipline:** if a proposal closes a real semantic gap → formalize as a NEW D# (don't continue under the original D's banner). If speculative scope expansion → revert.
+-- **Orthogonal sub-decisions:** before locking two "orthogonal" sub-decisions, sketch ONE input exercising BOTH — confirm orthogonality survives the example (antipatterns.jsonl; the 30-second check that catches coupling at design-time).
+-
+-## Scope boundaries
+-
+-Read-mostly. Loads decisions + values + patterns; produces **decision + reasoning + relay-ready text**.
+-Does NOT run gates, apply fixes, or author scenarios — those are `/dev-dispatch` / `/qa` / `/conformance`
+-after a decision locks. Invoke when the question is "what should I decide?", not "what should I do?".
+-
+-## Update protocol
+-
+-When a new D# locks (after user approval): append to `~/src/graphrefly/decisions/decisions.jsonl`
+-(`{id, layer, date, question, decision, rationale, supersedes, status:"locked", session}`), update the
+-session's `locks` in `sessions.jsonl`, and run `node ~/src/graphrefly/dashboard/build.mjs --check`.
+-When a new anti-pattern recurs: append to `~/src/graphrefly/plan/antipatterns.jsonl` (+ a `feedback_*`
+-memory if generalizable). When a new durable value surfaces: add a `feedback_<name>.md` memory + a
+-pointer line here.
++Read and follow [the maintained decision-guard workflow](../../../.agents/skills/decision-guard/SKILL.md).
++Resolve that path relative to this file and pass the user request and arguments through unchanged.
++This entrypoint has no separate protocol, decision, work, or review policy.
+diff --git a/.claude/skills/design-review/SKILL.md b/.claude/skills/design-review/SKILL.md
+index ca5f7f54..d97b72c5 100644
+--- a/.claude/skills/design-review/SKILL.md
++++ b/.claude/skills/design-review/SKILL.md
+@@ -5,143 +5,6 @@ disable-model-invocation: true
+ argument-hint: "[<file path> | <symbol> | --diff] [optional context]"
+ ---
+ 
+-You are executing the **design-review** workflow for the **clean-slate GraphReFly** redesign.
+-
+-This skill applies the 5 design-review questions (Q5–Q9 of the 9-question per-unit format) to a **single-symbol / single-file / single-diff** review. Use it BEFORE coding a new public API / sugar factory / operator / inspection surface — or right after a sketch lands, before tests. Different from `/qa` (finds bugs in landed code) and `/decision-guard` (recalls locked decisions); this validates abstraction + long-term shape + reactive composability + alternatives, and its output may become a new `D#` (architectural lock → user approval → append `decisions.jsonl`).
+-
+-Clean-slate code lives in **`packages/ts/src/`** (`@graphrefly/ts`, D32). The language-neutral authority is **`~/src/graphrefly`** jsonl (branch `clean-slate`) — when this skill and that repo disagree, that repo wins (CLAUDE.md).
+-
+-> **Stale-infra guard.** Do NOT cite the retired port-model: `packages/pure-ts/**` (frozen read-only reference only, D41), `docs/implementation-plan.md` / `optimizations.md` / `roadmap.md` / `test-guidance.md` / `docs-guidance.md`, `GRAPHREFLY-SPEC.md` / `COMPOSITION-GUIDE.md` (migrated to `spec/rules.jsonl` + `guide/guide.jsonl`, B7), `describe({format})` (D39: renderers are pure fns over the snapshot, NOT a `format` option), the `Impl`/facade/actor model.
+-
+-**When to use:** before a new public symbol in `packages/ts/src/graph/` (sugar / operator / inspection) or a new substrate primitive in `packages/ts/src/{node,dispatcher,ctx,protocol,batch}/`; right after sketching a factory; when two implementations exist and you need a principled pick; when `/dev-dispatch` Phase 2 needs to go deeper than its default template.
+-**When NOT:** bug fixes / pure refactors → `/qa`; already-approved work → proceed; trivial additive changes (a JSDoc field, a docstring).
+-
+-User context: $ARGUMENTS
+-
+----
+-
+-## Phase 0: Scope resolution
+-
+-Resolve the target(s) from `$ARGUMENTS`:
+-
+-1. **`--diff` / no args** — review the new public symbols in the uncommitted diff. Enumerate via `git diff --name-only HEAD` + `git status --short`, filtered to `packages/ts/src/**` files that introduce new exports.
+-2. **`<file path>`** — public symbols in that file.
+-3. **`<symbol name>`** — Grep-locate, then review.
+-4. **Multiple targets** — apply Q5–Q9 to each, then add Phase 2 synthesis.
+-
+-Read in parallel before reviewing (clean-slate authority):
+-
+-- `~/src/graphrefly/spec/rules.jsonl` — the R-* rules your target touches (the design invariants).
+-- `~/src/graphrefly/decisions/decisions.jsonl` — the governing D# (or `/decision-guard` to recall the floor/values).
+-- `~/src/graphrefly/plan/phases.jsonl` — the CSP-* phase the target belongs to (locked vs open-design); if the target isn't sequenced yet, the review's output may need a new phase / backlog entry.
+-- `~/src/graphrefly/guide/guide.jsonl` (G-composition) — composition patterns (lazy activation, subscription order, SENTINEL/prevData guards, feedback cycles).
+-- `~/src/graphrefly/sessions/active/SESSION-clean-slate-redesign.md` (DS-1) — the F-* constraints + the why behind locks.
+-- The target file(s) + 1–2 closest existing primitives in the same dir (precedent).
+-- **Frozen reference (D41):** `packages/pure-ts/**` + `~/src/callbag-recharge` for analogous prior art (operator behavior, edge cases, test structure) — NOT the authority.
+-
+----
+-
+-## Phase 1: Per-target review (Q5–Q9)
+-
+-For each target, produce a structured report covering all five questions. Be specific, quote `file:line`. Cap each answer ~150 words.
+-
+-### Q5 — Is this the right abstraction? Could it be more generic?
+-
+-- **Layer placement.** Substrate (`node`/`dispatcher`/`ctx`/`protocol`/`batch` — a protocol primitive, must stay thin per R-node-thin) vs graph-layer (`graph/` — sugar / operator / inspection, per-language per D6/D24)? Mismatched layer is the most common drift signal. A new **verb** is a constitutional change (8-verb closed set, D4) — almost certainly the target is sugar, not a verb.
+-- **Decomposition.** Could the body split into 2+ smaller primitives that compose? (F-NO-WEDGE-CUT: each must serve ≥2 segments.)
+-- **Generalization.** A 2+ similar primitive nearby hinting at a shared abstraction? Could `T = number` be `T = unknown` without losing safety?
+-- **Naming.** Does the name describe what it **returns/produces** (composable) or what it does internally (rots)? D6 real factory names show in `describe`.
+-
+-> **Layer / Decomposition / Generalization / Naming:** …
+-
+-### Q6 — Right long-term solution? Caveats? Maintenance burden?
+-
+-- **6-month lens.** What forces this to evolve — spec/conformance changes, rust/py arm parity (D24), F-PERF budget?
+-- **Hidden invariants** the type system can't express — list each as `INVARIANT: …` (subscribe order before kick; first-run gate; SENTINEL = `prevData === undefined`; sync-vs-async strategy; stable refs; equals identity).
+-- **Constraint locks** (positional args can't grow options; hardcoded enum can't extend).
+-- **Doc debt** (contract knowable from JSDoc, or only from the body?).
+-
+-> **6-month risk / Hidden invariants / Constraint locks / Doc debt:** …
+-
+-### Q7 — Can we simplify it? Reactive, composable, explainable?
+-
+-The **explainability check** — a primitive's reactive shape is only as good as its `describe()` snapshot (D39).
+-
+-- **Wire a minimal composition** (≥2 sources → target → ≥1 sink). Predict `describe()` — a flat JSON-serializable snapshot; renderers (pretty/mermaid/d2) are pure fns over it (D39), NOT a `describe({format})` option. If you can't predict the output, the topology is too imperative.
+-- **Island check.** A node with zero in-edges AND zero out-edges (not an entry/exit) is a smell.
+-- **Imperative escape paths.** Search for: emit/set/callback wiring that bypasses the graph (R-no-imperative); `.cache` reads inside reactive fn bodies (R-data-not-peek — data moves via messages); raw `Promise`/`setTimeout`/`queueMicrotask` outside a source/pool (R-no-raw-async / F-SYNC-CORE); hardcoded `type === "DATA"` instead of `messageTier` (R-tier); an inline fn bypassing the dispatcher (R-dispatch-all).
+-- **SENTINEL / prevData guards.** Never-emitted detection via `ctx.prevData[i] === undefined` (the canonical detector); fix eager-placeholder upstreams rather than bolting on companions.
+-- **Feedback cycles.** A fn that re-drives its own dep mid-wave is a wave-level ERROR (D37/R-reentrancy), not iteration; legit accumulation = `ctx.state` (scan), not a topological cycle.
+-
+-> **Topology / Imperative leaks / cache reads / Feedback cycles / Simplifications:** …
+-
+-### Q8 — Alternative implementations (A / B / C)
+-
+-Sketch **≥2** named alternatives. For each: **Shape** (1–3 line pseudo-sig), **Pros** (2–4), **Cons** (2–4), **Precedent** — does the shape exist in the frozen `packages/pure-ts/**` reference (D41), `callbag-recharge`, or RxJS? Cite if so. Don't pick a winner yet — that's Q9.
+-
+-> **A. {name}** — sketch / Pros / Cons / Precedent
+-> **B. {name}** — …
+-
+-### Q9 — Recommendation + coverage check
+-
+-Pick the recommended alternative; build a coverage matrix (each Q5–Q8 concern → recommended alt covers it? yes / partially / no — because …). For any `partially`/`no`, name the residual risk: accept it (justify), add a `backlog.jsonl` follow-up, or pick a different alternative. End with:
+-
+-> **Recommendation:** {alt}, because {2–3 reasons grounded in Q5–Q8}.
+-> **Residual risks:** {none, OR 1–2}.
+-> **Implementation guidance:** {next step — usually a draft `D#` for approval, or a sub-decision the user must answer first}.
+-
+-If the design is an architectural lock, draft the `D#` (`{id, layer, date, question, decision, rationale, supersedes, status}`) for the user to approve BEFORE append — do NOT auto-lock (no-autonomous-decisions). A wave-protocol behavior change routes to `/spec-amend` (spec-first), not a direct edit.
+-
+----
+-
+-## Phase 2: Cross-cutting synthesis (multi-target only)
+-
+-Apply only when reviewing multiple targets in one pass:
+-
+-- **Naming consistency** (`extract` vs `select` vs `pick` for the same role = drift).
+-- **Argument-shape consistency** (options-bag vs positional applied the same way).
+-- **Composition direction** (do the targets' input/output shapes line up to compose?).
+-- **Repeated patterns** (the same SENTINEL-gate / subscribe-order / batch-on-write in 2+ places → a shared helper candidate).
+-
+-Output a numbered list, each finding with the pattern, where it appears (file:line × N), and a proposed unifying shape.
+-
+----
+-
+-## Phase 3: Decisions log
+-
+-- **Architectural lock** (clear) → draft a `D#` for `~/src/graphrefly/decisions/decisions.jsonl`; append only after user approval, then update the DS-1 `locks` in `sessions/sessions.jsonl` and run `node ~/src/graphrefly/dashboard/build.mjs --check`.
+-- **Deferred / no clear answer** → append to `~/src/graphrefly/plan/backlog.jsonl` (B# + concrete trigger).
+-- **Recurring anti-pattern** → `~/src/graphrefly/plan/antipatterns.jsonl` (+ a `feedback_*` memory if generalizable).
+-- **Protocol-behavior change** surfaced → route to `/spec-amend` (spec-first), not a direct code change.
+-
+----
+-
+-## Output discipline
+-
+-- Be concrete. Quote `file:line` refs.
+-- Don't write "this looks good" — say WHICH Q5–Q9 dimensions clear and why.
+-- Don't pad. If Q6 has no caveats, write `**Hidden invariants:** none surfaced.` and move on.
+-- Don't second-guess the user's stated intent — Q8 alternatives are options to compare; Q5–Q7 probe the recommended shape.
+-- Skim-readable: headers per question, bullets within.
+-
+----
+-
+-## Authority hierarchy
+-
+-1. `~/src/graphrefly/spec/rules.jsonl` — the protocol 宪法.
+-2. `~/src/graphrefly/decisions/decisions.jsonl` (+ DS-1 narrative) — locked decisions + F-* floor + durable values.
+-3. `~/src/graphrefly/plan/phases.jsonl` — the CSP-* sequencer (phase locks).
+-4. `~/src/graphrefly/guide/guide.jsonl` (G-test / G-composition) — testability + composition shape.
+-5. Existing patterns in `packages/ts/src/` — only when the above are silent.
+-
+-If a finding conflicts with a higher-authority doc, surface it explicitly — DO NOT silently override (no-autonomous-decisions).
+-
+----
+-
+-## What to do AFTER this skill completes
+-
+-- Lock approved → `/dev-dispatch` (or `--light`) with the locked design; a protocol-behavior change goes through `/spec-amend` first.
+-- Decisions deferred → leave them in `backlog.jsonl` and move on.
+-- Needs more thought → HALT, summarize, let the user think.
+-
+-This skill produces a report; it modifies no implementation files (it only appends to `~/src/graphrefly` jsonl after explicit user approval of a `D#`).
++Read and follow [the maintained design-review workflow](../../../.agents/skills/design-review/SKILL.md).
++Resolve that path relative to this file and pass the user request and arguments through unchanged.
++This entrypoint has no separate protocol, decision, work, or review policy.
+diff --git a/.claude/skills/dev-dispatch/SKILL.md b/.claude/skills/dev-dispatch/SKILL.md
+index 66c5dc6e..1b82adad 100644
+--- a/.claude/skills/dev-dispatch/SKILL.md
++++ b/.claude/skills/dev-dispatch/SKILL.md
+@@ -4,91 +4,6 @@ description: "Implement the requested feature or fix within project authority an
+ argument-hint: "[--light] [task description or context]"
+ ---
+ 
+-You are executing the **dev-dispatch** workflow for the **clean-slate GraphReFly** redesign.
+-
+-This repo is **`@graphrefly/ts`** — the self-contained TypeScript implementation (D32). Clean-slate code lands in **`packages/ts/src/`**. The language-neutral authority (spec / decisions / plan / conformance / formal) lives in **`~/src/graphrefly`** (branch `clean-slate`) as jsonl — when this skill and that repo disagree, **that repo wins** (CLAUDE.md). Sibling impls: `@graphrefly/rust` (`~/src/graphrefly-rs`), `@graphrefly/py` (`~/src/graphrefly-py`) — each self-contained; cross-language = wire bridge, never in-process (D32).
+-
+-> **Stale-infra guard.** Do NOT reach for the retired port-model surfaces: `packages/pure-ts/**` (frozen read-only reference only, D41), `docs/implementation-plan.md`, `docs/optimizations.md`, `docs/roadmap.md`, `docs/test-guidance.md`, `docs/docs-guidance.md`, `GRAPHREFLY-SPEC.md`/`COMPOSITION-GUIDE.md` (migrated to `spec/rules.jsonl` + `guide/guide.jsonl`, B7), the `Impl`/facade/actor model / 3-digit D### port decisions. The clean-slate authority is the jsonl below.
+-
+-The user's task/context is: $ARGUMENTS
+-
+-### Mode detection
+-Use a focused workflow for routine fixes and a fuller plan for substantial changes. `--light` remains
+-supported. Neither mode requires another approval for work already authorized by the user; pause
+-for unresolved semantic/architectural decisions or an action outside the approved scope.
+-
+-### Workflow floor (non-negotiable)
+-- **decision-first**: any architectural lock needs a `D#` in `~/src/graphrefly/decisions/decisions.jsonl` BEFORE code (`/design-review` → user approval → append). A design lock alone is not implementation approval; the current implementation request can supply that approval.
+-- **spec-first** (F-NO-IMPL-DEFINED): any wave-protocol behavior change amends `spec/rules.jsonl` + `formal/*.tla` + `spec/conformance.jsonl` FIRST (`/spec-amend`), THEN code. Operators/sugar/inspection are per-language (D6/D24) — NOT spec, skip spec-amend.
+-- **no autonomous decisions**: surface spec↔code conflicts; don't silently pick. Review affected boundaries for multi-file rewrites.
+-- **verify premise**: design tables lag code — grep the named symbols + check landed markers (`plan/phases.jsonl` status/notes) before designing new surface; correct stale premises from current evidence; ask only if the correction changes scope or a locked decision.
+-- **consistency gate**: after touching any `~/src/graphrefly` jsonl, run `node ~/src/graphrefly/dashboard/build.mjs --check` (non-zero on broken links / orphans).
+-
+----
+-
+-## Phase 1: Context & Planning
+-
+-Load context and plan in a single pass. **Parallelize all reads.**
+-
+-Context index: read only the governing records and relevant implementation/tests below, reusing
+-material already loaded. Protocol/formal context is needed only when the changed behavior depends on it:
+-- `~/src/graphrefly/CLAUDE.md` — the single-source authority index (read FIRST).
+-- `~/src/graphrefly/spec/rules.jsonl` — the protocol 宪法 (R-* rules); deep-read the rules your change touches.
+-- `~/src/graphrefly/decisions/decisions.jsonl` — the unified D# log (or invoke `/decision-guard` to recall the governing D#/values/floor).
+-- `~/src/graphrefly/plan/phases.jsonl` — the CSP-* sequencer: find the phase this task belongs to, its `status` (done/impl/design), deps, and note. Read this FIRST among the plan files so you know whether you're on a ready phase or one still gated.
+-- `~/src/graphrefly/plan/backlog.jsonl` + `plan/antipatterns.jsonl` — deferred carries (B#) with triggers; anti-patterns to flag against.
+-- `~/src/graphrefly/spec/conformance.jsonl` — the behavioral scenarios (C-*) your change must keep green; check the `runtimes` status for the arm you target.
+-- `~/src/graphrefly/guide/guide.jsonl` — composition / test / docs / contribute guidance (G-composition / G-test / G-docs / G-contribute).
+-- `~/src/graphrefly/sessions/active/SESSION-clean-slate-redesign.md` (DS-1) — the L0–L6 design narrative + F-* constraints, when you need the why behind a lock.
+-- Any files the user referenced in $ARGUMENTS.
+-- The clean-slate source you'll modify: substrate = `packages/ts/src/{node,dispatcher,ctx,protocol,batch}/`; graph-layer = `packages/ts/src/graph/` (Graph + 8-verb sugar + operators + inspection describe/observe/profile).
+-- Existing tests: `packages/ts/src/__tests__/`.
+-
+-**Frozen reference (D41):** `packages/pure-ts/**` and `~/src/callbag-recharge` are READ-ONLY prior art for analogous operator behavior / edge cases / test structure during a re-derive (D40 Catalog-first). Map concepts to the clean-slate substrate (`node`/`ctx.down`/`ctx.depRecords`/`Graph`, D39 `describe`/`observe`) — do NOT 1:1 port; the old substrate API and semantics differ. They are NOT the behavior authority — `spec/rules.jsonl` is.
+-
+-While planning, validate proposed changes against the clean-slate floor (cite the rule/D#):
+-- **Sacred (L0.7):** topology declarative/serializable/inspectable · wave protocol is a public spec · wave protocol impl is **sync** · all fn go through the dispatcher.
+-- **8 verbs, closed (D4):** `node`/`graph`/`batch`/`state` + `producer`/`derived`/`effect`/`mount`. **Operators are `node` sugar (D6), not verbs** — per-language, never in parity (D24); real factory names show in `describe`. Adding a verb is a constitutional change.
+-- **Messages** `[[Type, Data?], ...]`; one array to `ctx.down`/`ctx.up` = one wave (R-msg-format). The closed message set is defined by R-msg-closed-set; do not duplicate its count here.
+-- **DIRTY before DATA/RESOLVED** in the same wave (R-dirty-before-data); two-phase glitch-free diamond (R-two-phase); a diamond/fan-in node recomputes exactly once after all changed deps settle (R-diamond). batch defers tier-≥3, not DIRTY.
+-- **`ctx.up`**: read the current control/demand boundary in R-ctx-up before changing its behavior. A handle is pure data, no methods (D7).
+-- **No polling** (R-no-polling); **no imperative triggers** (R-no-imperative — reactive `ctx.up`/signals, not emitters/callbacks/timers+set; remove imperative paths when no caller depends); **no raw async** in the sync core (R-no-raw-async / F-SYNC-CORE — async lives only in sources / the pool / the wire bridge).
+-- **All fn through the dispatcher** (R-dispatch-all / F-DISPATCH-ALL — no inline-fn bypass). `dispatcher.invoke` is sync void (R-sync-core).
+-- **Data moves via messages** (R-data-not-peek — never peek a dep's `.cache` to seed compute; `.cache` is a read-only accessor for external consumers). SENTINEL = absence-of-DATA (R-sentinel); the canonical never-emitted detector is `ctx.prevData[i] === undefined`.
+-- **messageTier is a compile-time const table** (D18/D34/R-tier); the clock is **graph-local** (no global singleton, D26/R-clock); `onMessage`/`onSubscribe` are substrate-fixed, not user-replaceable (D19).
+-- **Primary-API clean** (R-primary-api-clean): protocol internals (DIRTY/RESOLVED/bitmask) never surface in value-level sugar (derived/effect/operator); ctx-level (node/producer) intentionally exposes tier as a power surface (DR-1). Sugar value-fn → ctx-fn wrapping happens in the graph layer (D27); a value-level `throw` becomes `[[ERROR,e]]` down (D30).
+-- **graph = single-thread causal/concurrency domain (D22 / R-graph-domain):** parallelism via pool callback or multi-graph + wire bridge; rewire is intra-graph only.
+-- **`ctx.state`** = per-node private cross-wave state (R-ctx-state); shared/observable state must be an explicit node + dep, not `ctx.state` (D23). A synchronous feedback cycle (a fn re-driving its own dep mid-wave) is a wave-level ERROR (D37/R-reentrancy), not iteration.
+-- **F-NO-WEDGE-CUT:** every primitive serves ≥2 segments (no LLM-only or single-segment wedge; F-NO-LLM-ONLY). **F-PERF:** budget every abstraction (thin node, default-off inspection).
+-
+-**Targeting a sibling (py/rust):** if the task targets `@graphrefly/py` (`~/src/graphrefly-py`) or `@graphrefly/rust` (`~/src/graphrefly-rs`), read that package's local layout + its conformance arm status in `spec/conformance.jsonl`. The cross-language contract is **behavioral conformance (D24)**, not symbol parity. PY public APIs are synchronous (return `Node[T]`/`Graph`/value, no `async def`); async lives at the source/pool boundary only (F-SYNC-CORE).
+-
+-
+----
+-
+-## Phase 2: Resolve material decisions
+-
+-Proceed with authorized implementation when existing decisions govern the behavior. Explain material
+-assumptions and tradeoffs briefly. Ask only when an unresolved choice changes product semantics,
+-public contract, architecture, or authorization. Preserve spec-first amendments and owner-ledger
+-approval for new locks; a locked design alone does not authorize implementation when the user deferred it.
+-
+-## Phase 3: Implementation & Self-Test
+-
+-Once implementation is authorized and material decisions are resolved:
+-
+-1. Implement the changes.
+-   - Treat `~/src/graphrefly/spec/rules.jsonl` as non-negotiable for behavior; if code drifts from a rule, align to the rule — or surface the conflict, don't silently pick.
+-   - Cite the governing R-id / D# in test expectations.
+-2. Add meaningful behavior tests where needed (per `guide/guide.jsonl` G-test — unit / property / conformance layering):
+-   - Put tests in the most specific existing file under `packages/ts/src/__tests__/`.
+-   - Use `graph.observe()` for live message assertions; assert at the node + message level otherwise. A behavioral-protocol change ALSO needs a `spec/conformance.jsonl` scenario (`/conformance`) before its rule flips `draft → active`.
+-3. Run checks:
+-   - **TS:** `pnpm --filter @graphrefly/ts test` (vitest) + `pnpm run lint` (biome + layer/typecheck gates) + `pnpm run build` (tsup) as relevant.
+-   - **PY (if targeted):** the `@graphrefly/py` package's own test/lint/type gates in `~/src/graphrefly-py`.
+-   - **jsonl touched:** `node ~/src/graphrefly/dashboard/build.mjs --check` (consistency gate).
+-4. Fix any failures.
+-
+-If implementation leaves an **open architectural decision** (deferred behavior, parity caveat, "needs spec" item), append it to `~/src/graphrefly/plan/backlog.jsonl` (B# + trigger) — NOT a docs file. If it **lands or advances a CSP-* phase**, update that phase's `status`/`note` in `~/src/graphrefly/plan/phases.jsonl`, flip any conformance-backed `draft` rule to `active` once its scenario is green per arm, then run the consistency gate.
+-
+-When done, briefly list files changed and new exports added. Then suggest running `/qa` for adversarial review and final checks.
++Read and follow [the maintained dev-dispatch workflow](../../../.agents/skills/dev-dispatch/SKILL.md).
++Resolve that path relative to this file and pass the user request and arguments through unchanged.
++This entrypoint has no separate protocol, decision, work, or review policy.
+diff --git a/.claude/skills/graph-animation/SKILL.md b/.claude/skills/graph-animation/SKILL.md
+index 0a7ec448..ecf4c6b8 100644
+--- a/.claude/skills/graph-animation/SKILL.md
++++ b/.claude/skills/graph-animation/SKILL.md
+@@ -4,415 +4,6 @@ description: "Create GraphReFly concept explanation videos using HyperFrames. Us
+ argument-hint: "[--mode ambient-hero] [concept to animate, e.g. 'diamond resolution', 'batch mode', 'node lifecycle']"
+ ---
+ 
+-You are executing the **graph-animation** workflow for **GraphReFly**.
+-
+-The user's request: `$ARGUMENTS`
+-
+-This skill produces a HyperFrames HTML composition that animates GraphReFly reactive graph concepts — topology diagrams with animated message flow, node activations, and tier-coded signals. It wraps `/hyperframes` and `/gsap` with GraphReFly-specific knowledge so you don't have to explain the domain each time.
+-
+----
+-
+-## Mode detection
+-
+-If `$ARGUMENTS` contains `--mode ambient-hero` (or the user asks for a "hero", "landing-page", "background video", or "loop"), use **ambient-hero mode** — skip directly to the "Mode B: ambient hero" section near the bottom. The 8-stage canonical storyboard is fully specified there; do not re-derive it.
+-
+-Otherwise, treat the request as **concept-explainer mode** (default) and follow Steps 1–4 below.
+-
+----
+-
+-## Step 1 — Understand the concept (concept-explainer mode only)
+-
+-If `$ARGUMENTS` is vague or empty, ask the user ONE question: which concept or workflow do you want to animate? Give them these options as examples:
+-
+-- Node lifecycle (START → DATA → COMPLETE → TEARDOWN)
+-- Message propagation through a linear chain (A → B → C)
+-- Diamond resolution (fan-out + fan-in, single recomputation)
+-- Batch mode (DIRTY cascades, DATA deferred until batch end)
+-- Reactive timer source feeding a derived node
+-- Operator pipeline (map → filter → combine)
+-- Human-in-the-loop gate (promptNode / valve pattern)
+-- Multi-agent subgraph ownership (L0–L3 staircase)
+-
+-If `$ARGUMENTS` names a concept already, proceed directly to Step 2.
+-
+----
+-
+-## Step 2 — GraphReFly visual language
+-
+-Use these conventions consistently across all GraphReFly animation videos.
+-
+-### Node shapes (canonical sugar names — `graph.state/producer/derived/effect`)
+-
+-| Sugar | Role | Shape | Color |
+-|---|---|---|---|
+-| `state` | Mutable cell, no deps | Circle | `#14B8A6` (teal) |
+-| `producer` | Push source (timer, event, async) | Diamond / pill | `#10B981` (emerald) |
+-| `derived` | Pure fn of deps | Circle | `#6C63FF` (violet) |
+-| `effect` | Sink / side-effect | Rounded rect | `#F59E0B` (amber) |
+-| External / human | Out-of-graph input | Hexagon | `#64748B` (slate) |
+-
+-Border stroke: `2px solid rgba(255,255,255,0.2)`. Inactive fill: 30% opacity of the node color. Active fill: 100% opacity. The underlying primitive `node()` exists below these four sugars; videos should use sugar names for vocabulary teaching.
+-
+-### Message symbols (canonical — `core/messages.ts`)
+-
+-The full protocol exports `START / DIRTY / DATA / RESOLVED / COMPLETE / TEARDOWN / INVALIDATE / PAUSE / RESUME / ERROR`. For videos, use the **foundational subset** unless a specific concept requires more:
+-
+-| Symbol | Color | Visual | When to show |
+-|---|---|---|---|
+-| `START` | `#94A3B8` (slate-light) | Thin pulse from src→dst, edge brightens | First message on a new connection (handshake) |
+-| `DIRTY` | `#FBBF24` (yellow) | Dashed pulse traveling along edge | Upstream may have changed; dep marks dirty |
+-| `DATA` | `#34D399` (green) | Solid dot traveling along edge; triggers node fn on arrival | Value flowing |
+-| `RESOLVED` | `#60A5FA` (blue) | Ring ripple on destination node | Diamond-resolution wave only (skip in beginner videos) |
+-| `COMPLETE` | `#94A3B8` (slate) | Edge fades, dst node dims | Producer finished emitting |
+-| `TEARDOWN` | `#A78BFA` (purple) | Edge erases backwards from dst→src | Subscription cancelled / dispose |
+-| `BATCH_*` | `#A78BFA` (purple) | Bracket sweep across topology | Batch-mode beats |
+-
+-Default foundational subset for hero / intro videos: **`START → DIRTY → DATA → COMPLETE`**. Add `RESOLVED` only when teaching diamond resolution; add `TEARDOWN` only when teaching lifecycle.
+-
+-### Edge conventions
+-
+-- Directed arrows from producer to consumer.
+-- Edge color matches the tier of the in-flight message.
+-- Resting state: `rgba(255,255,255,0.15)` gray.
+-- Animate as SVG `<path>` or a CSS `clip-path` wipe so timing is seekable.
+-
+-### Layout
+-
+-- Canvas: **1920×1080** (landscape), dark background `#0F172A`.
+-- Nodes: minimum 80px diameter circles, 24px sans-serif label inside.
+-- Edges: 3px stroke with arrowhead marker.
+-- Label overlay: bottom-left, `font-size: 28px`, `color: #E2E8F0`, describes what is happening.
+-
+-### Timing budget
+-
+-- 2–4 seconds per "beat" (one message hop or one lifecycle phase).
+-- Total target: **30–90 seconds** for a concept clip.
+-- Add 1.5s of static "intro frame" showing the graph topology before any animation begins.
+-
+----
+-
+-## Step 3 — Scaffold the composition
+-
+-Use `npx hyperframes init <concept-slug>` to scaffold a new project directory, OR create the file inline if the user prefers a single-file drop.
+-
+-A minimal starting template (adapt to the specific concept):
+-
+-```html
+-<!DOCTYPE html>
+-<html>
+-<head>
+-  <meta charset="utf-8" />
+-  <style>
+-    * { margin: 0; padding: 0; box-sizing: border-box; }
+-    body { width: 1920px; height: 1080px; background: #0F172A; overflow: hidden; font-family: 'Inter', sans-serif; }
+-
+-    .node { position: absolute; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+-      font-size: 22px; font-weight: 600; color: #fff; opacity: 0.3; transition: none; }
+-    .node.active { opacity: 1; }
+-    .label { position: absolute; bottom: 60px; left: 80px; font-size: 28px; color: #E2E8F0; opacity: 0; max-width: 900px; line-height: 1.4; }
+-
+-    svg.edges { position: absolute; top: 0; left: 0; width: 1920px; height: 1080px; }
+-  </style>
+-
+-  <!-- GSAP via CDN (deterministic, seekable) -->
+-  <script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js"></script>
+-  <script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/MotionPathPlugin.min.js"></script>
+-</head>
+-<body>
+-  <!-- Stage -->
+-  <div id="stage"
+-    data-composition-id="graphrefly-concept"
+-    data-start="0"
+-    data-width="1920"
+-    data-height="1080">
+-
+-    <!-- SVG edges layer -->
+-    <svg class="edges" id="edges">
+-      <defs>
+-        <marker id="arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+-          <polygon points="0 0, 10 3.5, 0 7" fill="rgba(255,255,255,0.15)" />
+-        </marker>
+-      </defs>
+-      <!-- edges drawn here as <path> elements -->
+-    </svg>
+-
+-    <!-- Nodes -->
+-    <!-- Example: -->
+-    <!-- <div class="node" id="n-source" style="width:90px;height:90px;background:#10B981;left:200px;top:495px;">src</div> -->
+-    <!-- <div class="node" id="n-derived" style="width:90px;height:90px;background:#6C63FF;left:900px;top:495px;">node</div> -->
+-
+-    <!-- Animated message dots (positioned by GSAP MotionPath) -->
+-    <div id="msg-dirty"  style="position:absolute;width:18px;height:18px;border-radius:50%;background:#FBBF24;opacity:0;border:2px dashed #fff;"></div>
+-    <div id="msg-data"   style="position:absolute;width:18px;height:18px;border-radius:50%;background:#34D399;opacity:0;"></div>
+-
+-    <!-- Caption label -->
+-    <div class="label" id="caption"></div>
+-  </div>
+-
+-  <script>
+-    gsap.registerPlugin(MotionPathPlugin);
+-
+-    const tl = gsap.timeline();
+-
+-    // --- helpers ---
+-    function activate(id) {
+-      return tl.to(`#${id}`, { opacity: 1, scale: 1.1, duration: 0.25, yoyo: true, repeat: 1, ease: 'power2.out' }, '<');
+-    }
+-    function caption(text, at) {
+-      tl.to('#caption', { opacity: 1, duration: 0.3 }, at)
+-        .call(() => { document.getElementById('caption').textContent = text; }, [], at)
+-        .to('#caption', { opacity: 0, duration: 0.3 }, `+=${text.length * 0.04 + 2}`);
+-    }
+-    function sendMsg(dotId, path, color, duration) {
+-      const dot = document.getElementById(dotId);
+-      dot.style.background = color;
+-      tl.to(dot, { opacity: 1, duration: 0.1 })
+-        .to(dot, { motionPath: { path, align: path, autoRotate: false }, duration, ease: 'none' })
+-        .to(dot, { opacity: 0, duration: 0.1 });
+-    }
+-
+-    // --- build your timeline below ---
+-    // Example: 1.5s static intro
+-    tl.to({}, { duration: 1.5 });
+-    // ... animate your concept here
+-
+-    // Register the timeline with HyperFrames for seekable rendering
+-    window.__hfGsapTimeline = tl;
+-  </script>
+-</body>
+-</html>
+-```
+-
+----
+-
+-## Step 4 — Mode A: concept-explainer patterns
+-
+-### Diamond resolution
+-
+-```
+-     A
+-    / \
+-   B   C
+-    \ /
+-     D (recomputes once)
+-```
+-
+-Sequence:
+-1. A emits DATA → DIRTY cascades to B and C simultaneously (two yellow dashes)
+-2. B and C each emit DIRTY to D
+-3. D receives both DIRTYs — stays dirty, does NOT recompute yet
+-4. A emits RESOLVED → B resolves → C resolves → D resolves
+-5. D recomputes **once** (green DATA dot appears from D)
+-6. Caption: "Diamond resolved — one recomputation, zero double-fires"
+-
+-### Batch mode
+-
+-Sequence:
+-1. `batch(() => ...)` bracket appears — purple "BATCH_START" ring
+-2. Multiple sources emit DATA — nodes flash DIRTY but DATA dots are held (shown as queued dots stacked at source)
+-3. batch end — all deferred DATA releases simultaneously
+-4. Caption: "Batch defers DATA, not DIRTY — downstream sees one coherent update"
+-
+-### Node lifecycle
+-
+-Sequence:
+-1. Node dims (initial)
+-2. Subscription arrives → node brightens
+-3. Upstream emits DATA → node pulses green
+-4. RESOLVED ripple out
+-5. Unsubscribe → teardown ring (purple) → node dims again
+-
+-### Operator pipeline
+-
+-Show 3–4 nodes in a horizontal chain (map → filter → combine). Animate a value token flowing left to right, label each node with its transform (`×2`, `> 5`, `merge`).
+-
+----
+-
+-## Step 5 — Run the dev loop
+-
+-```bash
+-# from the composition project directory:
+-npx hyperframes lint        # validate timing/structure
+-npx hyperframes preview     # live browser preview with hot reload
+-npx hyperframes render      # output MP4
+-```
+-
+-Use `/hyperframes-cli` skill for detailed CLI guidance.
+-Use `/gsap` skill for advanced GSAP timeline patterns.
+-Use `/hyperframes-media` skill if you need TTS narration or audio.
+-
+----
+-
+-## Step 6 — Quality checks before render
+-
+-- [ ] All nodes have correct shape + color per the visual language table above
+-- [ ] Message colors match the canonical table (START=slate-light, DIRTY=yellow, DATA=green, COMPLETE=slate, RESOLVED=blue if shown, TEARDOWN=purple if shown)
+-- [ ] Timeline registers `window.__hfGsapTimeline = tl` (required for seekable render)
+-- [ ] Caption text is ≤ 80 chars per line and readable at 1080p (concept-explainer mode only)
+-- [ ] `npx hyperframes lint` passes with no errors
+-- [ ] Preview scrubbing doesn't stutter (all animations are on the GSAP timeline, not setTimeout)
+-
+----
+-
+-## Mode B: ambient hero (canonical 8-stage landing-page loop)
+-
+-This mode produces the **GraphReFly landing-page background video** — a silent, looping, atmospheric reactive-graph composition. Use it whenever the user asks for a "hero", "landing-page", "background video", or passes `--mode ambient-hero`.
+-
+-### Mode-B rules (differ from concept-explainer)
+-
+-| Rule | Value | Why |
+-|---|---|---|
+-| Length | ~42s seamless loop | Hero convention 15–60s; matches the 8-stage plan |
+-| Audio | none | Plays muted; hero conventions |
+-| Captions | none over the topology | Headline text overlays the hero on the page; captions would compete |
+-| Small floating labels | OK, ≤ 4 words, ≤ 22px font | E.g. `graph.describe()`, `graph.observe()`, `batch()` — vocabulary pre-teach |
+-| Pacing | slow / ambient | No frantic motion; eye should rest |
+-| Loop seam | **Stage 8 ends at exactly the same camera/node positions as Stage 1 starts** | Imperceptible loop |
+-| Contrast | reduced — palette at ~70% saturation, bg `#0F172A` | Headline text on page must dominate |
+-| Render output | MP4 + a WebM/VP9 variant for `<video>` autoplay-muted-loop | Web embedding |
+-
+-### The 8-stage canonical storyboard (~42s total)
+-
+-#### Stage 1 — Connection protocol (6s)
+-
+-**Topology:** two nodes, side by side, mid-canvas. Left = `producer` (emerald diamond), right = `derived` (violet circle). Single edge between them.
+-
+-Beat-by-beat:
+-- 0.0–1.0s: Both nodes appear dim. Edge draws in as a gray line.
+-- 1.0–1.8s: `START` pulse (slate-light, thin) travels src→dst. Edge brightens to active. Both nodes pulse subtly (handshake established). Tiny label appears below: `START`.
+-- 1.8–2.8s: `DIRTY` dashed yellow pulse travels src→dst. Destination node briefly outlines yellow (marked dirty). Label: `DIRTY`.
+-- 2.8–4.0s: `DATA` solid green dot travels src→dst. **On arrival, the destination node's interior briefly displays the literal text `fn(...)` then snaps back** — this teaches "DATA arrival triggers the node's fn". Label: `DATA`.
+-- 4.0–5.5s: Repeat one more DIRTY+DATA cycle (faster, no label) to show the steady-state rhythm.
+-- 5.5–6.0s: `COMPLETE` slate pulse travels src→dst. Edge fades. Destination dims slightly. Label: `COMPLETE`.
+-
+-**Marketing payload:** "this is the connection lifecycle. START → DIRTY → DATA → COMPLETE." Foundational subset shown.
+-
+-#### Stage 2 — Diamond (5s)
+-
+-**Topology:** add two more nodes to form a diamond. The producer from Stage 1 becomes `A` (top). Stage 1's derived becomes `D` (bottom). Two new derived nodes `B` and `C` appear left and right.
+-
+-```
+-       A
+-      / \
+-     B   C
+-      \ /
+-       D
+-```
+-
+-Beat-by-beat:
+-- 0.0–1.0s: Nodes `B` and `C` fade in; edges `A→B`, `A→C`, `B→D`, `C→D` draw.
+-- 1.0–2.0s: `A` emits DIRTY → cascades to B and C simultaneously (two yellow dashes leaving A). Both B and C outline yellow.
+-- 2.0–2.8s: Both B and C emit DIRTY toward D (two yellow dashes converging on D). D outlines yellow but does **not** recompute yet — visually emphasized by D pulsing yellow twice without firing.
+-- 2.8–3.8s: `A` emits DATA → green dot to B and C in parallel; B fires (interior `fn(...)` flash), C fires.
+-- 3.8–4.5s: B and C each emit DATA → both green dots converge on D simultaneously. D fires **once** (single `fn(...)` flash) — emphasize by halting motion for 200ms after the fire.
+-- 4.5–5.0s: All nodes settle, edges return to resting gray.
+-
+-**Marketing payload:** "the DIRTY-then-DATA wave guarantees D recomputes once, not twice."
+-
+-#### Stage 3 — Zoom into one node (5s)
+-
+-**Topology:** camera dollies into node `D` from Stage 2. It grows to ~60% of canvas height. Other nodes fade out.
+-
+-Beat-by-beat:
+-- 0.0–1.5s: Camera zoom + other nodes fade. `D` now reveals its internal anatomy as labeled segments:
+-  - **Center**: large `fn(...)` glyph
+-  - **Top wedge**: `down ▼` — outgoing edge ports
+-  - **Bottom wedge**: `up ▲` — incoming dep ports
+-  - **Left wedge**: `cache` — small dotted box showing a value
+-  - **Right wedge**: `version: 3` — a small numeric ticker
+-  - **Outer ring**: `guard` — a thin guard-ring with a small lock icon
+-- 1.5–3.5s: One by one, each anatomy label highlights briefly (~400ms each) in this order: `up ▲` → `fn` → `cache` (a value gets written into the dotted box) → `version: 3 → 4` (ticker increments) → `down ▼` → `guard` (lock briefly clasps).
+-- 3.5–5.0s: All anatomy labels fade back to baseline, leaving the node visible as a labeled diagram.
+-
+-**Marketing payload:** "every node is the same primitive — cache + version + guard + up/down."
+-
+-#### Stage 4 — Node taxonomy (Y-shape, 5s)
+-
+-**Topology:** starts with the single node from Stage 3.
+-
+-Beat-by-beat:
+-- 0.0–2.0s: The center label cycles its text every 500ms: `state` (teal flash) → `producer` (emerald flash) → `derived` (violet flash) → `effect` (amber flash). The node's fill color matches each kind as the label changes.
+-- 2.0–3.5s: Camera pulls back. The single node splits/morphs into a **Y-shape**:
+-  ```
+-   state (teal)    ──┐
+-                     ├──► derived (violet) ──► effect (amber)
+-   producer (emer) ──┘
+-  ```
+-  Edges draw in left-to-right.
+-- 3.5–5.0s: A real flow runs once through the Y — `state` and `producer` both emit DIRTY (two yellow dashes converging on `derived`), then both emit DATA (two green dots converging). `derived` fires **once** (`fn(...)` flash; this is a mini-diamond callback to Stage 2). Then `derived` emits DATA → green dot to `effect`; `effect` fires (amber ring ripple = side effect).
+-
+-**Marketing payload:** "four sugars, one primitive — state/producer feed derived; derived feeds effect."
+-
+-#### Stage 5 — Graph level (8s, 4 beats)
+-
+-##### 5a — Population (1.5s)
+-Camera dollies further back. The single Y-chain replicates into 3–4 parallel chains, with cross-edges weaving between them. The topology resolves into a richer connected mesh of ~20 nodes. No messages flowing yet — just structure crystallizing.
+-
+-##### 5b — describe() blueprint + observe() magnifier (3s)
+-- 0.0–1.0s: All nodes drain of color; the topology becomes a faint dotted **blueprint** — pure structure, no signal. Small label fades in top-left: `graph.describe()` with a thin arrow → tiny annotation `"the map"`.
+-- 1.0–2.2s: A circular **magnifier lens** (glassy, thin ring border) glides in from the right and hovers over a cluster of 3–4 blueprint nodes. *Inside the lens only*, the blueprint becomes vivid and live message dots (DIRTY yellow + DATA green) flow along the edges within the lens's field of view. Label updates: `graph.observe(path)` → `"the magnifier"`.
+-- 2.2–3.0s: The lens drifts to a different cluster, dots flow there instead. Then lens fades; topology re-colorizes fully.
+-
+-**Marketing payload:** "describe is the map. observe is the magnifier. The graph is its own data." (DS-14.5.A spec-as-projection reframe embodied.)
+-
+-##### 5c — batch() sweep (2s)
+-A purple `BATCH_START` bracket sweeps left-to-right across the entire graph. Multiple producers fire DIRTY *simultaneously* (yellow dashes cascading everywhere); green DATA dots queue up *visibly held* at the producers, glowing brighter as they accumulate. Then a `BATCH_END` bracket sweeps back, and all held DATA releases at once as a synchronized wave rippling through the topology.
+-
+-**Marketing payload:** "batch defers DATA, not DIRTY — one coherent update."
+-
+-##### 5d — Subgraph carve (1.5s, hands off to Stage 6)
+-Two or three translucent capsule outlines appear around clusters of nodes — each capsule has its own slow-pulsing border color (different agent owners; e.g. cyan capsule, magenta capsule). The bridge nodes between capsules glow brighter — these become the messaging hubs in Stage 6. Capsules persist into Stage 6.
+-
+-#### Stage 6 — Domain level: orchestration + messaging (6s, 2 beats)
+-
+-##### 6a — Orchestration (2.5s)
+-Inside one capsule, a sequential pipeline animation runs: 4 nodes lit in succession (left-to-right) like a small assembly line — `gate → action → check → action`. Each node fires (`fn(...)` flash) when the green DATA arrives; the next one lights when this one completes. Small label: `pipeline`.
+-
+-##### 6b — Messaging hub + cursor (3.5s)
+-A **central hub node** appears in the gap between the two capsules — distinct visual: a vertical pill shape with a "stream" of small horizontal tokens (items) inside, stacked top-to-bottom. Each capsule has a **cursor marker** (small `▌` glyph) at a position in the hub's stream.
+-
+-Beat-by-beat:
+-- 0.0–1.5s: New tokens fall in from the top of the hub (publishers in one capsule pushing). The hub's stream grows.
+-- 1.5–3.0s: Each capsule's cursor independently advances upward, "consuming" tokens. The cursors move at different rates (one capsule reads faster than the other). As a cursor passes a token, the token glows then dims, and a DATA dot leaves the hub edge toward a node inside that capsule.
+-- 3.0–3.5s: A small floating label: `hub + cursor`. Beneath in smaller faded text: `static graph, dynamic data`.
+-
+-**Marketing payload:** the 降维 idea — the graph topology is static, but the hub's stream carries dynamic content; cursors decouple consumers' read pace from publishers' write pace. This is the substrate for higher-level patterns.
+-
+-#### Stage 7 — Agent loop + memory + "?" (5s)
+-
+-##### 7a — Agent loop (1.8s)
+-Inside one capsule, a closed cyclic subgraph lights up: `agent → tool → result → agent` (a tight loop of 3-4 nodes arranged in a circle). A DATA dot circulates around the loop 2–3 times.
+-
+-##### 7b — Agentic memory (1.7s)
+-A second node appears off the agent loop labeled `memory`. As the agent loop runs, small tokens stream from the loop into `memory`, accumulating visibly (the memory node grows or its interior fills up with stacked tokens).
+-
+-##### 7c — "?" extensibility (1.5s)
+-Several **hexagonal nodes labeled `?`** appear at the periphery of the canvas, each connected to the existing topology by a single edge that trails off into faded space. They pulse gently.
+-
+-**Marketing payload:** "agent loop, memory — and these are just examples. The substrate is open." (Anti-stealth thesis embodied — the library shows its primitives, not just packaged solutions.)
+-
+-#### Stage 8 — Loop seam (2s)
+-
+-Camera zooms back in. All decorations (capsules, hub, `?` nodes, memory, agent loop) fade out. The topology reduces back to the **exact two-node arrangement of Stage 1**: producer (emerald diamond, left) + derived (violet circle, right), same canvas positions, edge resting.
+-
+-The last frame at t=42s must match the first frame at t=0s pixel-for-pixel for an invisible loop seam.
+-
+-### Mode-B implementation notes
+-
+-- **Single GSAP timeline** spans all 8 stages. Use `gsap.timeline({ repeat: -1 })` so the seam loops in preview automatically.
+-- **Position parameter** is your friend — use absolute timeline labels (`stage1`, `stage2`, ...) at each stage boundary so timing tweaks don't cascade.
+-- **No `setTimeout`, no `requestAnimationFrame`** — everything goes through the GSAP timeline (HyperFrames seeking requirement, also project invariant from CLAUDE.md "no raw async primitives").
+-- **Camera zoom/pan**: implement as GSAP-animated CSS `transform: scale() translate()` on a wrapper `<div>` containing the topology — *not* by reflowing nodes individually. Keeps motion frame-rate-stable.
+-- **Loop-seam validation**: at the end, evaluate `tl.time(0)` vs `tl.time(tl.duration())` visually in preview. The two frames must be indistinguishable.
+-- **Render to two formats**: MP4 for downloads/social, WebM (VP9, transparent if your design allows) for `<video autoplay muted loop playsinline>` embedding on the landing page.
+-- **Headline test**: after rendering, drop the video into the actual hero slot on the live `website/` and verify the planned headline text is readable over the most visually busy frames (likely Stages 2, 5c, 6b). If contrast fails, increase the overlay darken to 50% rather than dimming the video itself.
+-
+-### Mode-B quality checks (in addition to Step 6)
+-
+-- [ ] Total duration is 40–48s
+-- [ ] Stage 8's final frame matches Stage 1's opening frame (loop seam invisible)
+-- [ ] Sugar names used as labels are exactly: `state`, `producer`, `derived`, `effect` (no `node` in user-facing labels)
+-- [ ] Message labels used are exactly: `START`, `DIRTY`, `DATA`, `COMPLETE` (foundational subset)
+-- [ ] No captions over the topology (small floating labels of ≤4 words OK; full sentences are forbidden in this mode)
+-- [ ] Both MP4 and WebM/VP9 outputs render successfully
+-- [ ] Headline-readability test on a live `website/` page passes
++Read and follow [the maintained graph-animation workflow](../../../.agents/skills/graph-animation/SKILL.md).
++Resolve that path relative to this file and pass the user request and arguments through unchanged.
++This entrypoint has no separate protocol, decision, work, or review policy.
+diff --git a/.claude/skills/qa/SKILL.md b/.claude/skills/qa/SKILL.md
+index 30ae38ad..be8c6ebd 100644
+--- a/.claude/skills/qa/SKILL.md
++++ b/.claude/skills/qa/SKILL.md
+@@ -4,93 +4,6 @@ description: "Review project changes and verify affected behavior or required ph
+ argument-hint: "[--skip-docs] [optional context about what was implemented]"
+ ---
+ 
+-Read `~/.codex/skills/bmad-build/references/qa.md` for the shared review lenses, five-way triage and
+-repair loop. Integrate the domain checks below into that one review; retain this repository's canonical
+-completion verdict. Review-only remains read-only, including documentation and authority records.
+-Finish with `~/.codex/skills/bmad-checkpoint-preview/SKILL.md` in build-handoff mode unless interactive
+-review was requested.
+-
+-You are executing the **qa** workflow for the **clean-slate GraphReFly** redesign.
+-
+-This repo is **`@graphrefly/ts`** — the self-contained TypeScript implementation (D32); clean-slate code lives in **`packages/ts/src/`**. Siblings (each self-contained, cross-language = wire bridge, never in-process): `@graphrefly/rust` (`~/src/graphrefly-rs`), `@graphrefly/py` (`~/src/graphrefly-py`). The language-neutral authority (spec / decisions / plan / conformance / formal) lives in **`~/src/graphrefly`** (branch `clean-slate`) as jsonl — when this skill and that repo disagree, that repo wins (CLAUDE.md).
+-
+-> **Stale-infra guard.** Do NOT reach for the retired port-model surfaces: `packages/pure-ts/**` (frozen read-only reference only, D41), `docs/implementation-plan.md` / `implementation-plan-13.6-*.md` / `optimizations.md` / `roadmap.md` / `test-guidance.md` / `docs-guidance.md`, `GRAPHREFLY-SPEC.md` / `COMPOSITION-GUIDE.md` (migrated to `spec/rules.jsonl` + `guide/guide.jsonl`, B7), the `@graphrefly/graphrefly` shim + its 4-file subpath rule, the `Impl`/facade/actor model, the Rust `migration-status.md` / `porting-deferred.md` / canonical-spec-13.6 registries. The clean-slate authority is the `~/src/graphrefly` jsonl.
+-
+-Context from user: $ARGUMENTS
+-
+-### Flag detection
+-If `$ARGUMENTS` contains `--skip-docs`, skip Phase 4 (Documentation Updates).
+-
+-### Repo detection
+-Inspect the diff to detect which package(s) are touched: `packages/ts/` (this repo), `~/src/graphrefly-py`, `~/src/graphrefly-rs`. The cross-language contract is **behavioral conformance (D24)**, not symbol parity — review each arm against the SAME `spec/rules.jsonl` + `spec/conformance.jsonl`, per-language idioms aside.
+-
+----
+-
+-## Phase 1: Adversarial Code Review
+-
+-### 1a. Gather the diff
+-
+-Run `git diff` for uncommitted changes; if the chat's work was already committed, diff against the chat's baseline commit (`git log --oneline` to find it, then `git diff <base>..HEAD`). Include relevant untracked files (read them). Concentrate the review on the **substantive hand-written code** — formally-verified TLA+ (already TLC-checked), generated artifacts, and jsonl data are lower bug-risk than imperative substrate/graph code.
+-
+-Read the governing entries from the following index when relevant to the changed behavior:
+-- `~/src/graphrefly/spec/rules.jsonl` — the protocol 宪法 (R-* rules); the behavior authority. Cite R-ids in findings.
+-- `~/src/graphrefly/decisions/decisions.jsonl` — the governing D# (or `/decision-guard`); the F-* floor + durable values.
+-- `~/src/graphrefly/plan/backlog.jsonl` + `plan/antipatterns.jsonl` — **already-acknowledged deferred concerns (B#) and known anti-patterns. DO NOT raise a finding that matches an existing deferred B# or antipattern** — those are accepted. DO raise a finding that *contradicts* a deferred entry's stated scope.
+-- `~/src/graphrefly/spec/conformance.jsonl` — the C-* scenarios the change must keep green (+ their `runtimes` status).
+-- `~/src/graphrefly/formal/*.tla` — when the change implements a formally-modeled rule, cross-check the impl against the TLC-verified model.
+-
+-### 1b. Review, triage and repair
+-
+-Apply the shared BMAD QA reference once, using the original acceptance, governing R-id / D# and this
+-diff. Use its blind-hunter, edge-case and verification-gap lenses, then classify validated findings as
+-`intent_gap`, `bad_spec`, `patch`, `defer`, or `reject`. Preserve spec-first and owner-first boundaries:
+-a `bad_spec` finding never authorizes changing protocol, semantics or a locked design. Collect material
+-questions for the user; apply clear in-scope fixes when authorized. Trace protocol behavior and lifecycle
+-against conformance and the formal model where relevant. Reuse the final checks below in that repair loop.
+-
+----
+-
+-## Phase 2: Apply Review Fixes
+-Apply the approved fixes. Cite the governing R-id / D# in any new test expectations.
+-
+----
+-
+-## Phase 3: Final Checks
+-Select checks for the changed surfaces and complete any required phase/release gates. Reuse passing
+-results for unchanged code and environment; rerun affected checks after fixes. Available commands:
+-
+-**TypeScript (`@graphrefly/ts`):**
+-1. `pnpm --filter @graphrefly/ts test` (vitest) — all pass.
+-2. `pnpm run lint` (biome + layer-boundary + typecheck gates); `pnpm run lint:fix` to auto-format.
+-3. `pnpm run build` (tsup ESM/CJS/DTS) when public API changed.
+-
+-**Sibling packages (only if touched):** run that package's own test/lint/type gate in its repo (`~/src/graphrefly-py` / `~/src/graphrefly-rs`) following its local conventions. The cross-language contract is behavioral conformance (D24) — a substrate behavior change should drive its `spec/conformance.jsonl` arm green per runtime.
+-
+-**jsonl touched (`~/src/graphrefly`):** `node ~/src/graphrefly/dashboard/build.mjs --check` — the consistency gate (non-zero on broken links / orphans).
+-
+-**TLA+ touched:** re-run the affected model (`cd ~/src/graphrefly/formal && java -cp <tla2tools.jar> tlc2.TLC -config <name>.cfg <name>`); for a new invariant, mutation-verify it is load-bearing (break the guard → confirm it trips) before claiming it.
+-
+-**Long / heavy commands** (full test sweeps, Rust gates, TLC): run them so they're observably-finishing, not a false-hang — prefer a run-logged wrapper + monitor a guaranteed DONE sentinel (never a guessed progress string, never `sleep`-poll). If this QA runs in a spawned subagent, run such commands **synchronously** (wait for the sentinel) or tear them down (kill by process group) **before returning** — never leak a live background process as a stale "running" entry. (memories `feedback_long_command_observation`, `feedback_subagent_bg_hygiene`, `feedback_no_chained_background_cargo`.)
+-
+-If a failure exposes a design question, **HALT** and raise it before fixing.
+-
+----
+-
+-## Phase 4: Documentation Updates
+-
+-**Skip if `--skip-docs` was passed.** Update only what behavior/API actually changed; clean-slate docs are jsonl (single source of truth):
+-
+-- **`spec/rules.jsonl`** — only if the protocol itself was intentionally revised → that is a `/spec-amend`, not a casual edit (amend rules + `formal/*.tla` + `spec/conformance.jsonl` together). Flip a conformance-backed rule `draft → active` once its scenario is green on the reference arm + formal lands (cite the precedent).
+-- **`decisions/decisions.jsonl`** — a new architectural lock surfaced by QA → `/design-review` → user approval → append a `D#` (update the DS-1 `locks` in `sessions/sessions.jsonl`).
+-- **`spec/conformance.jsonl`** — flip `runtimes.<arm>` → `pass` when an arm lands green; add a new C-* scenario for a new behavioral rule; keep `covers` ↔ rule `covers_by` bidirectionally consistent.
+-- **`plan/phases.jsonl`** — update the CSP-* phase `status`/`note` the change advances.
+-- **`plan/backlog.jsonl`** — add new deferred items (B# + concrete trigger) surfaced by QA.
+-- **`plan/antipatterns.jsonl`** — a recurring anti-pattern (+ a `feedback_*` memory if generalizable).
+-- **`formal/README.md`** — when a TLA+ module was added/changed (module-map row + a mutation-verified note).
+-- **Structured JSDoc** on new exported public symbols (`packages/ts/src/<area>`); cite the governing R-id/D# when the API encodes a spec invariant.
+-- **`guide/guide.jsonl`** (G-test / G-composition / G-docs / G-contribute) — if a new test/composition pattern or doc convention was established.
+-- **`~/src/graphrefly/CLAUDE.md`** — only if a fundamental workflow/command changed.
+-
+-After any `~/src/graphrefly` jsonl edit, re-run `node ~/src/graphrefly/dashboard/build.mjs --check`.
+-
+-When done, briefly list files changed + new exports, the fixes applied vs deferred (with B# pointers), and the gate results.
++Read and follow [the maintained qa workflow](../../../.agents/skills/qa/SKILL.md).
++Resolve that path relative to this file and pass the user request and arguments through unchanged.
++This entrypoint has no separate protocol, decision, work, or review policy.
+diff --git a/.claude/skills/research/SKILL.md b/.claude/skills/research/SKILL.md
+index 6ad9772e..855b4a9f 100644
+--- a/.claude/skills/research/SKILL.md
++++ b/.claude/skills/research/SKILL.md
+@@ -4,141 +4,6 @@ description: "Research a requested GraphReFly topic or competitive question usin
+ argument-hint: "<topic or URL or paste of post>"
+ ---
+ 
+-You are executing the **research** workflow for **GraphReFly**.
+-
+-The user has a topic they want to explore — triggered by curiosity, a post they saw, or a trend they want to understand. Your job is to research it thoroughly using web search, then ground the findings against GraphReFly's current position. The goal is to **facilitate a discussion** about library direction — surface facts, tensions, and open questions that the user can react to, not just deliver a static report.
+-
+-**Today's date: use the current date from system context for all searches.**
+-
+-User input: $ARGUMENTS
+-
+----
+-
+-## Phase 0: Topic extraction
+-
+-Parse `$ARGUMENTS` to determine:
+-
+-1. **Topic** — the core subject to research (e.g. "reactive state management trends", "AI agent frameworks", "graph-based orchestration")
+-2. **Trigger** — what prompted this (a post URL, a screenshot, a thought). If a URL is provided, fetch it first with `mcp__searxng__web_url_read` or `WebFetch` to extract context.
+-3. **Angle** — what specifically interests the user (if stated). If not stated, default to: "how does this relate to GraphReFly's positioning?"
+-
+-State the extracted topic, trigger, and angle before proceeding.
+-
+----
+-
+-## Phase 1: Landscape research
+-
+-Use `mcp__searxng__searxng_web_search` (preferred) or `WebSearch` to gather intel. Search the angles needed to answer the request. Stop when the material claims and recommendation
+-have adequate evidence; expand only for unresolved uncertainty. Suggested search patterns (adapt to topic):
+-
+-1. **Trend pulse** — `"{topic}" trends 2025 2026` or `"{topic}" state of` 
+-2. **User pain points** — `"{topic}" problems OR frustrations OR "wish it could"` or reddit/HN discussions
+-3. **Competitor landscape** — `"{topic}" libraries OR frameworks comparison` or `"{topic}" vs` 
+-4. **Future direction** — `"{topic}" roadmap OR "what's next" OR future`
+-5. **Developer adoption** — `"{topic}" adoption OR migration OR "switched to"`
+-6. **Academic/deep** — `"{topic}" research OR paper OR architecture` (if relevant)
+-
+-Read the sources needed to substantiate material claims using `mcp__searxng__web_url_read` or `WebFetch` to get substance beyond snippets.
+-
+----
+-
+-## Phase 2: Read GraphReFly context
+-
+-Read these files in parallel to ground findings:
+-
+-- `docs/implementation-plan.md` — **canonical pre-1.0 sequencer.** Find which phase covers this topic area (Phase 11–16 + Parked) and read what's locked, what's open-design, what's parked. This is where "current phase" lives now.
+-- `docs/roadmap.md` — vision / wave context only (Wave 0/1/2/3 announcement frame, harness engineering positioning). Useful for the strategic story; do NOT use as the active sequencer.
+-- `docs/optimizations.md` — active backlog and open questions (line-item state)
+-- `archive/docs/design-archive-index.jsonl` — **this is an index file, not content.** Scan it for session docs whose titles/descriptions relate to the research topic. Then read the relevant `archive/docs/SESSION-*.md` files in detail. These contain design decisions, trade-off discussions, and architectural context that may directly inform the analysis.
+-- `~/src/graphrefly/GRAPHREFLY-SPEC.md` — spec (skim relevant sections if topic touches protocol)
+-
+----
+-
+-## Phase 3: Structured analysis
+-
+-Select the sections that answer the request; a narrow question does not require a landscape report. Be **honest and specific** — don't flatter GraphReFly where it doesn't deserve it.
+-
+-### 3.1 Trend summary
+-
+-> What's happening in this space right now? What are the dominant patterns, tools, and conversations? Cite sources.
+-
+-3-5 bullet points, each with a source link.
+-
+-### 3.2 User patterns & demands
+-
+-> What do developers/users actually want? What pain points keep surfacing? What's the "pull" signal?
+-
+-Distinguish between:
+-- **Validated demand** (multiple sources, real adoption) 
+-- **Emerging signal** (early signs, small communities)
+-- **Hype** (lots of talk, unclear substance)
+-
+-### 3.3 Competitor matrix
+-
+-Build a comparison table:
+-
+-| Competitor | Approach | Strengths | Weaknesses | Adoption signal |
+-|---|---|---|---|---|
+-| {name} | {1-line approach} | {2-3 points} | {2-3 points} | {GitHub stars, npm downloads, community size, or "unknown"} |
+-
+-Include only competitors relevant to the requested comparison and explain their material differences.
+-
+-### 3.4 GraphReFly positioning
+-
+-Answer each honestly:
+-
+-- **Where GraphReFly has genuine advantages** — be specific about which feature/design decision creates the edge. Reference spec sections or code.
+-- **Where GraphReFly has gaps** — things competitors do that we don't, or user demands we can't meet yet. Reference roadmap items if they're planned.
+-- **Where it's unclear** — areas where we'd need to build something to know if our approach works better.
+-
+-### 3.5 Lessons & insights
+-
+-> What can we learn from this research? What surprised you?
+-
+-3-5 numbered insights. For each:
+-- The insight itself
+-- Why it matters for GraphReFly specifically
+-- Whether it validates, challenges, or is orthogonal to our current direction
+-
+-### 3.6 Plan alignment
+-
+-Cross-reference findings with `docs/implementation-plan.md` (canonical) and `docs/optimizations.md` (line-item):
+-
+-| Finding | Plan alignment | Action |
+-|---|---|---|
+-| {trend/demand/gap} | {matches Phase 11–16 item / matches Parked trigger / no match / conflicts with locked decision} | {already planned in Phase X / consider adding to Phase Y / file as Parked / file in optimizations.md / revisit} |
+-
+----
+-
+-## Phase 4: Recommendations & discussion prompts
+-
+-End with two subsections:
+-
+-### 4.1 Recommendations
+-
+-A prioritized list of **at most 5** concrete recommendations:
+-
+-1. **{Action}** — {why, grounded in research}. Priority: {high/medium/low}. Effort: {small/medium/large}.
+-
+-Recommendations should be actionable — not "think about X" but "add X to implementation-plan.md Phase Y" / "file X under Parked with trigger Z" / "prototype X to validate assumption Z" / "write a comparison doc showing advantage over Y".
+-
+-### 4.2 Discussion prompts
+-
+-Surface unresolved material questions, if any, that the research raised but can't answer alone — things that depend on the user's judgment, taste, or strategic priorities. Frame these as genuine questions to spark discussion, not rhetorical ones. Examples:
+-
+-- "Competitor X chose to do Y — do we think that's the right trade-off for our users, or does our reactive-first approach make Y unnecessary?"
+-- "There's emerging demand for Z, but it would pull us toward {direction}. Is that a direction we want to go?"
+-- "Our prior decision in SESSION-{name} assumed {thing} — this research suggests that assumption may be shifting. Worth revisiting?"
+-
+-The goal is to leave the user with something to react to, not just a wall of information.
+-
+----
+-
+-## Output discipline
+-
+-- **Cite sources.** Every claim about the external world should have a URL or at minimum a named source.
+-- **Be honest.** "GraphReFly doesn't address this yet" is more useful than spin.
+-- **Date-stamp.** Note that this research reflects the landscape as of the current date.
+-- **Keep it scannable.** Use tables, bullets, and headers. Avoid walls of prose.
+-- **Don't implement.** This skill produces a research report. It does NOT modify code. It MAY suggest additions to `docs/optimizations.md` if gaps are identified — ask the user first.
+-- Ask a follow-up only when a user decision is needed; otherwise end with the supported recommendation.
++Read and follow [the maintained research workflow](../../../.agents/skills/research/SKILL.md).
++Resolve that path relative to this file and pass the user request and arguments through unchanged.
++This entrypoint has no separate protocol, decision, work, or review policy.
+diff --git a/.claude/skills/spec-amend/SKILL.md b/.claude/skills/spec-amend/SKILL.md
+index abed49e4..5a014066 100644
+--- a/.claude/skills/spec-amend/SKILL.md
++++ b/.claude/skills/spec-amend/SKILL.md
+@@ -1,34 +1,9 @@
+ ---
+ name: spec-amend
+-description: "Spec-first protocol amendment flow for the clean-slate GraphReFly redesign. Use BEFORE changing any wave-protocol behavior (tiers, wave semantics, diamond/equals/SENTINEL, batch, push-on-subscribe, ctx.up/down contract). Enforces F-NO-IMPL-DEFINED: amend spec/rules.jsonl + formal/*.tla + spec/conformance.jsonl FIRST, then implement in each language package. Triggers: 'amend the spec', 'change the protocol', 'add a tier', 'spec change', 'new wave rule', 'this changes protocol behavior'. NOT for sugar/operator/inspection changes — those are per-language, never touch spec."
++description: "Spec-first protocol amendment flow for the clean-slate GraphReFly redesign. Use BEFORE changing any wave-protocol behavior (tiers, wave semantics, diamond/equals/SENTINEL, batch, push-on-subscribe, ctx.up/down contract). Enforces F-NO-IMPL-DEFINED: amend spec/rules.jsonl + formal/*.tla + spec/conformance.jsonl FIRST, then implement in each language package. Triggers: 'amend the spec', 'change the protocol', 'add a tier', 'spec change', 'new wave rule', 'this changes protocol behavior'. Not for purely package-local sugar/operator/inspection changes that preserve protocol behavior."
+ argument-hint: "[short description of the protocol behavior to change]"
+ ---
+ 
+-You are executing **spec-amend** for the clean-slate GraphReFly redesign.
+-
+-**Authority repo:** `~/src/graphrefly` (clean-slate branch) holds the language-neutral spec.
+-Per-language packages (`graphrefly-{ts,rust,py}`) implement it; they NEVER define protocol behavior.
+-
+-## Iron rule (F-NO-IMPL-DEFINED, decision D14/D19)
+-
+-Protocol behavior is **spec-first**. No "implementation defines what happens." Order is fixed:
+-
+-1. **Amend the spec data** (before any code):
+-   - `~/src/graphrefly/spec/rules.jsonl` — add/edit the normative rule (`{id, area, tier?, statement, rationale, status, since:"D#", covers_by:[]}`). Mark `status:"draft"` until conformance + code land, then `"active"`.
+-   - `~/src/graphrefly/formal/*.tla` (+ MC config) — model the behavior; add the invariant; run TLC. (formalization γ, D14.)
+-   - `~/src/graphrefly/spec/conformance.jsonl` — add the behavioral scenario(s) that pin the new rule (`covers:[rule-id]`, `runtimes:{ts:"todo",rust:"todo",py:"todo"}`, `status:"required"`).
+-2. **Record the decision** if this is a new architectural lock: append a `D#` to `~/src/graphrefly/decisions/decisions.jsonl` (or reference the existing one in `since`).
+-3. **Run the consistency gate:** `node ~/src/graphrefly/dashboard/build.mjs --check` (no broken links/orphans).
+-4. **THEN implement** in each language package to make the conformance scenarios pass; flip `runtimes.<lang>` → `"pass"` as each lands. Use `/dev-dispatch` per package.
+-
+-## Closed-set guardrails (do not bypass)
+-
+-- **9 tiers are a closed set** (D9). Adding a tier is a constitutional change — requires explicit user lock + TLA+ re-model, not a casual amend.
+-- **onMessage/onSubscribe are substrate-fixed** (D19) — they are NOT user-replaceable hooks; "amend" means changing the spec'd behavior, not adding a config knob.
+-- **equals fires only single-DATA-wave** (D15); **ctx.up is control-tier only** (R-ctx-up); **restore ≠ fresh-lifecycle wipe** (R-restore). Re-read these rules before touching adjacent behavior.
+-
+-## Output
+-
+-A spec-amendment plan: which rule(s) change, the TLA+ invariant delta, the conformance scenario(s) added, the D# (new or referenced), and the per-language implementation order. HALT for user approval before writing TLA+/code if the change touches a closed-set guardrail.
+-
+-After the spec data lands and `--check` is clean, hand off to `/dev-dispatch` per language package and `/conformance` to drive the scenarios green.
++Read and follow [the maintained spec-amend workflow](../../../.agents/skills/spec-amend/SKILL.md).
++Resolve that path relative to this file and pass the user request and arguments through unchanged.
++This entrypoint has no separate protocol, decision, work, or review policy.
+diff --git a/AGENTS.md b/AGENTS.md
+index 801fbb5d..dbb3f4b4 100644
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -108,7 +108,14 @@ pnpm bench         # vitest bench (informational, not a CI gate — L5-Q1)
+ 
+ ## Skills (clean-slate)
+ 
+-Project-local skills under `.agents/skills/`:
++The language-neutral workflow bodies are maintained in `~/src/graphrefly/.agents/skills/`.
++Local entries for decision-guard, spec-amend, conformance, dashboard, research and graph-animation
++forward there; package implementation/design/QA entrypoints remain local. Protocol reconciliation
++and walkthroughs start in the root authority repository and use this package as implementation
++evidence. Read `~/.codex/skills/project-governance/references/rules-decisions-work.md` for the
++shared separation of current rules, maintainer rationale, and delivery/evidence records.
++
++Project-local entrypoints under `.agents/skills/`:
+ 
+ - **decision-guard** — recall locked D#/values/floor before any decision question.
+ - **spec-amend** — spec-first protocol amendment (rules + TLA+ + conformance, then code).
+diff --git a/examples/spending-alerts/README.md b/examples/spending-alerts/README.md
+index edd8d806..63b34be5 100644
+--- a/examples/spending-alerts/README.md
++++ b/examples/spending-alerts/README.md
+@@ -24,6 +24,31 @@ lifecycle proof described below.
+ 
+ ## Private Causal integration
+ 
++### Choose the boundary you already have
++
++These helpers are consumer-private source imports, **not published package
++subpaths**. Start with the object supplied to your component:
++
++| You already have | Read this contract first | Read implementation details when |
++|---|---|---|
++| An existing `SpendingAlertsView` and a render callback | [`mountSpendingView`](causal-view-binding.ts): five latest port values, explicit `unavailable` ports, observation cleanup | You need a different observation policy; the [ordinary panel](causal-ordinary-panel.ts) shows a consumer |
++| A Graph and prepared creation inputs | [`spendingAlertsFor`](causal-entry.ts): immutable defaults, per-compose overrides and returned view/capabilities | You also own input preparation or the executing host; follow [inputs](causal-inputs.ts) or [host](causal-focused-host.ts) for those responsibilities |
++| Issued capabilities, their owning Graph and expected binding | [`assertCausalCapabilities`](../../packages/ts/src/solutions/causal-occurrence/capabilities.ts): issued-object, Graph, binding and lineage validation | You implement capability construction; the [role examples](causal-audience.examples.ts) show consumption |
++| The owning Graph and a running instance | `graph.describe()` for graph structure; the instance's `inspect()` for host state, documented in [host](causal-focused-host.ts) | You are tracing a specific readiness, admission or outcome dependency |
++
++Using an existing view does not require reconstructing its input facts, permission
++sources or host. Using prepared inputs does not require implementing their
++creation. A capability validation failure must be handled before passing the
++capabilities to a recipient; a structural copy is not an issued object. The
++[observation meanings below](#interpret-observations-accurately) apply to all of
++these roles, including unavailable values and the limits of lifecycle readiness.
++
++The complete demo below is for application ownership and lifecycle tracing. Its
++fixture setup and simulated writer are not prerequisites for displaying a view
++or consuming already-issued capabilities.
++
++### Run the complete application demo
++
+ Run from the repository root:
+ 
+ ```sh
+@@ -45,14 +70,6 @@ it is not a production verification service. The writer simulates completion in
+ memory. Input messages in the demo are test-boundary facts, not new public
+ feed/publish/approve methods.
+ 
+-Choose a reading path:
+-
+-| Your task | Start here | What remains with the application |
+-|---|---|---|
+-| Display business values | [ordinary panel](causal-ordinary-panel.ts), then [value binding](causal-view-binding.ts) | Construction, input sources, permissions, resource and running owner |
+-| Integrate or compose components | [complete application demo](causal-graded-demo.ts), then [creation entry](causal-entry.ts) and [role examples](causal-audience.examples.ts) | Verification and permission provenance, original capabilities, lifecycle ownership |
+-| Understand the executing system | The demo's actual graph and request records, then [host](causal-focused-host.ts) and [authority construction](../../packages/ts/src/solutions/causal-occurrence/construction.ts) | Interpreting exact source, admission, outcome and evidence bindings |
+-
+ The application creates five actual input Nodes in four groups:
+ 
+ | Input group | Explicit source responsibility |

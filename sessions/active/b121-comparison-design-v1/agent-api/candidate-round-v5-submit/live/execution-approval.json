@@ -1,0 +1,17 @@
+{
+  "manifestSHA": "ebed7b6c80929f8f7401421f8973cba77add1735e43227588eb540bb5912aa39",
+  "action": "B121-agent-api-one-shot",
+  "acceptAliasLimitation": true,
+  "acceptInputEstimateLimitation": true,
+  "expiresAt": "2026-09-18T11:20:50.990Z",
+  "maxGenerationCalls": 1444,
+  "maxUSD": 4,
+  "retries": {
+    "capacity": 3,
+    "availability": 1
+  },
+  "model": "deepseek/deepseek-v4.1-flash",
+  "providerTag": "together",
+  "priorUsageUSD": 3.0154192240000013,
+  "authorizationSource": "User previously confirmed cumulative $4 including all prior usage and unknown reservations. After v4 result and proposal to reserve submission within existing hard limits, user replied 那继续. One v5 development regression of the same four exposed tasks; reserve 4096 output tokens and transition to final stage before retrieval allowance falls to 1024 tokens or less; no replacements or model repair turns; preserve all prior failures."
+}

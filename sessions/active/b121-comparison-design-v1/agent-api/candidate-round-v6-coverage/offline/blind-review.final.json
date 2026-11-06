@@ -1,0 +1,85 @@
+{
+  "cases": [
+    {
+      "id": "C01",
+      "failedCriteria": [],
+      "evidence": "Returns unfiltered graph.describe(), original target inspect/publication/retained cache, exact publication authorityId with undefined when absent. Explanation correctly covers readiness, uncertainty, detached observation, non-atomic reads and exact requestRef correlation; supported by README:98-151, causal-graded-demo.ts:207-230 and causal-focused-host.ts:171-185,558-575."
+    },
+    {
+      "id": "C02",
+      "failedCriteria": [
+        "target-instance-authority",
+        "missing-publication"
+      ],
+      "evidence": "Selects fullGraph.nodes.find(...endsWith(\"/causal/authority\")) regardless of supplied target or missing target publication. Can return another instance authority, including when the target has no publication. README:117-123 and causal-graded-demo.ts:226 require target publication authority."
+    },
+    {
+      "id": "C03",
+      "failedCriteria": [
+        "read-only-full-inspection"
+      ],
+      "evidence": "Returned fullGraph contains only nodeCount/edgeCount, discarding actual nodes and edges, contrary to explicit task and README:117-118."
+    },
+    {
+      "id": "C04",
+      "failedCriteria": [
+        "missing-publication"
+      ],
+      "evidence": "When publication is absent, suffix fallback produces an authority lookup instead of unavailable. Available-publication path is correct; revised target-instance-authority explicitly scores missing fallback separately."
+    },
+    {
+      "id": "C05",
+      "failedCriteria": [
+        "outcome-evidence-correlation"
+      ],
+      "evidence": "Last explanatory sentence falsely says physical outcomes can only appear in host diagnostics and never publication; contradicts preceding explanation and source causal-focused-host.ts:171-185 plus causal-graded-demo.ts:230. Correct earlier text does not resolve explicit false assertion."
+    },
+    {
+      "id": "C06",
+      "failedCriteria": [
+        "unknown-outcome-conclusions",
+        "missing-publication"
+      ],
+      "evidence": "Last sentence concludes no submission and safe replay from missing publication, explicitly forbidden by missing-publication and inconsistent with task unknown-prior-outcome situation. Earlier correct statements do not cancel the contrary claim."
+    },
+    {
+      "id": "C07",
+      "failedCriteria": [],
+      "evidence": "Corrected JSDoc and explanation distinguish names from caller-prepared input Nodes/resources. Code composes original separate inputs in supplied graph with distinct names, defaults immutable through spendingAlertsFor configuration, diagnostics summary only for second, separate view subscriptions/cleanup, both complete instances retained. Sources causal-entry.ts:36-74 and causal-view-binding.ts:16-51."
+    },
+    {
+      "id": "C08",
+      "failedCriteria": [
+        "name-resource-boundary"
+      ],
+      "evidence": "Corrected JSDoc is accurate, but final explanatory sentence still falsely asserts names alone create resource bindings and authorize resources, contrary to causal-entry.ts:54-67 and README:85-89."
+    },
+    {
+      "id": "C09",
+      "failedCriteria": [
+        "host-boundary-evidence"
+      ],
+      "evidence": "Reads retainedQuiescence but omits it from returned object. Criterion explicitly requires returning it; graph snapshot is not identified as equivalent retained-quiescence output."
+    },
+    {
+      "id": "C10",
+      "failedCriteria": [
+        "host-boundary-evidence"
+      ],
+      "evidence": "Reads app.inspect() but omits host from returned object; no equivalent returned host records/readiness."
+    },
+    {
+      "id": "C11",
+      "failedCriteria": [
+        "name-resource-boundary"
+      ],
+      "evidence": "Original false JSDoc says distinct names yield distinct input Nodes and resource bindings, conflicting with causal-entry.ts:54-67 and README:85-89 despite correct separate explanation."
+    }
+  ],
+  "findings": [],
+  "artifactSHA256": {
+    "tasks.json": "cb7b5e7e2a956c21fb0ac0304dd5750cda98dbeb5feb4f93599e61c8734f3549",
+    "reviewer-rubric.json": "af8305b29aa5665917eda5503db5f41a91a57f9ec3b95da5dadc5fb6c1a53e61",
+    "offline/calibration-cases.json": "f4be93a0bc336a6deb26d7a75658849c9c0738f82e76590bc1958edba792acca"
+  }
+}

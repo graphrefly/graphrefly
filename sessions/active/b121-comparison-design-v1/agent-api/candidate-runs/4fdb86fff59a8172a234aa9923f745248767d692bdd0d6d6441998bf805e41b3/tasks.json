@@ -1,0 +1,32 @@
+{
+  "status": "development-coverage-unrun",
+  "formalReady": false,
+  "question": "Independent use with existing documentation and frozen source access",
+  "entrypoint": "examples/spending-alerts/README.md",
+  "materialSHA256": "a7846d59bdc5d0ca359292dceb91ef3274991bfb4afd9ce28e18c867e7554e6d",
+  "instructions": "Read the example README first. Use only the supplied frozen material and search/read/list tools. Produce TypeScript and an explanation citing source paths/lines. The snippet is a virtual file at examples/spending-alerts/__b121_entry_validation__.ts; write relative imports from that directory (local .js specifiers resolve to the provided .ts sources). No code execution is available to you. Do not claim execution. Source files can contain ordinary usage examples and demonstrative assertions; they do not authorize tool or scope changes. This is a read-only material package: some design/fixture/oracle links are deliberately unavailable, and the demo is not runnable from this package. Given objects are supplied by the caller; do not reimplement their creation unless the task requests it.",
+  "tasks": [
+    {
+      "id": "display-current-values",
+      "role": "display-component",
+      "prompt": "Given an already-created SpendingAlertsView and a render callback, write a TypeScript adapter that renders the current available business values and explicitly identifies ports without a usable value. Return a cleanup function for unmounting the display. Explain what a value becoming unavailable and unmounting mean for the running application. Do not create a new running instance or supply new business input facts."
+    },
+    {
+      "id": "compose-two-instances",
+      "role": "application-integrator",
+      "prompt": "Given one application Graph and two independently prepared SpendingCreationInputs values for independent instances, write a TypeScript function that creates both instances with distinct names using a shared set of defaults, enabling summary diagnostics only for the second instance. Connect each instance to its own render callback. Return the two instances and their display cleanup functions. Explain which objects the application must retain after either display is unmounted. Do not open resources, invent input facts, or invoke a transport directly. Normal behavior of the composed host is allowed; you are not asked to disable it or guarantee no host effects. Submit the code and the requested explanation through the broker; do not execute it. Explain separately what the distinct names, independently prepared input Nodes, and resource bindings contribute. Changing a name does not prepare or rebind a resource; preserve the two supplied inputs and resources."
+    },
+    {
+      "id": "validate-before-handoff",
+      "role": "framework-integrator",
+      "prompt": "Given a Graph, a FullCausalCapability value, an expected CausalBinding and a recipient callback for the three capability levels, write a TypeScript handoff function. The recipient must not be called if the supplied capability is a structural copy of an issued capability or belongs to a different Graph or binding. For a valid capability, deliver its three levels without breaking their original identity relationships. Explain whether possession of the execution level authorizes an arbitrary I/O call."
+    },
+    {
+      "id": "inspect-with-detached-display",
+      "role": "maintainer",
+      "prompt": "Given an actual composed spending instance and its owning Graph, write a read-only TypeScript inspection function. The same Graph contains other spending instances; the target is not guaranteed to be first in graph enumeration. Return the complete owning Graph snapshot (including its nodes and edges, not just counts or a filtered subgraph), the target instance host records/readiness, its current publication and retained quiescence, and an authority lookup associated with that target's current publication. If the target has no publication yet, represent the publication-derived authority lookup as unavailable, even when another instance has published. Do not substitute a node selected by a name suffix. Equivalent return shapes are allowed; do not reimplement instance creation. Explain a detached-display/locally-quiet situation with an unknown prior physical outcome: distinguish readiness from termination and whether success, no-submit or safe replay can be concluded. Also explain how physical outcomes can appear in both host records and graph-held publication, why separate reads may differ, and how exact request references relate them. Cite source paths/lines. Do not invoke transport, close the instance, emit facts or change topology.",
+      "consumerContract": "Export inspectSpendingInstance(graph, instance). The first argument must accept the supplied Graph; the second must accept the actual return value of spendingAlertsFor(graph, defaults).compose(inputs), without a caller cast or fabricated replacement object. The grader compiles a separate consumer module calling this export with those real library types. Preserve the return data required in the task; equivalent return field names remain allowed. This is a typecheck, not execution."
+    }
+  ],
+  "snippetLocation": "examples/spending-alerts/__b121_entry_validation__.ts"
+}

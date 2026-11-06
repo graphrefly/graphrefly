@@ -1,0 +1,15 @@
+{
+  "work": "graphrefly:B121",
+  "authorization": false,
+  "generationCalls": 0,
+  "kind": "reserved-submission-development-regression",
+  "materialArtifactSHA256": {
+    "materials.json": "d6c54e73f9de7ad0f2dbac12107ba3550bb792d0d3fc5f8e4be5e43ad773113e",
+    "tasks.json": "e499fdc9d9ee8cda3918d50eb643cc7355cefeaa70e7eff359594a0dd857ef5c",
+    "reviewer-rubric.json": "e079e5c3b27d8c3cc4c775d5e893f7597bc28f25701e07c869c993cf0efb9ccd",
+    "integration-pins.json": "ce2613005faba4f0444e323316bcb0f7bd5d3c8f8bcf6f535d5308bf7b431d0b",
+    "compiler-environment.json.gz": "9b02e60859b1d3b68f8a3cd065ee32ea1d04f597533e83f7dd86ceae02b8311e"
+  },
+  "reuseDisclosure": "Same previously exposed four tasks; not formal holdout",
+  "change": "Within original limits: reserve output4096 and one operation; submit-only when remaining input <= 2*estimate+65536 forecast, output<=4096, operations<=16 or turn79. Final exact payload re-estimated. One submit only; no model repair. Admission not guaranteed by heuristic."
+}

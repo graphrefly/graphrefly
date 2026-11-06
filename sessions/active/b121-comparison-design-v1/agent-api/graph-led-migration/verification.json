@@ -1,0 +1,114 @@
+{
+  "kind": "B121-graph-led-migration-offline-verification-v1",
+  "date": "2026-09-18",
+  "workRef": "graphrefly:B121",
+  "governingRef": "graphrefly:D795",
+  "scope": "entry and judgment session control; provider qualification, budget, retry, campaign progression and independent verification persistence",
+  "implementationVerified": true,
+  "b121Complete": false,
+  "realProviderCalls": 0,
+  "actualSpendUSD": 0,
+  "historicalEvidencePreserved": true,
+  "codeBindings": "sources.json",
+  "baseline": "baseline-preservation.json",
+  "checks": [
+    {
+      "command": "node --test scripts/b121-comparison/*.test.mjs",
+      "cwd": "/Users/davidchenallio/src/graphrefly",
+      "log": "tests-initial.log",
+      "exitCode": 1,
+      "passed": 221,
+      "failed": 10,
+      "role": "initial integration; synthetic repositories lacked new Graph runtime"
+    },
+    {
+      "command": "node --test scripts/b121-comparison/*.test.mjs",
+      "cwd": "/Users/davidchenallio/src/graphrefly",
+      "log": "tests-full.log",
+      "exitCode": 1,
+      "passed": 229,
+      "failed": 2,
+      "total": 231,
+      "remainingFailure": "missing summary refused with ENOENT rather than the established incomplete-campaign diagnostic"
+    },
+    {
+      "command": "node --test scripts/b121-comparison/api-campaign-entry.test.mjs",
+      "cwd": "/Users/davidchenallio/src/graphrefly",
+      "log": "tests-entry-final.log",
+      "exitCode": 0,
+      "passed": 3,
+      "failed": 0,
+      "role": "post-fix affected consumer verification; includes both failures and source drift refusal"
+    },
+    {
+      "command": "pnpm test",
+      "cwd": "/Users/davidchenallio/src/graphrefly-ts",
+      "log": "ts-tests.log",
+      "exitCode": 0,
+      "passed": 2727,
+      "skipped": 4,
+      "filesPassed": 165,
+      "filesSkipped": 1
+    },
+    {
+      "command": "pnpm run lint",
+      "cwd": "/Users/davidchenallio/src/graphrefly-ts",
+      "log": "ts-lint.log",
+      "exitCode": 0,
+      "warnings": 6,
+      "infos": 34,
+      "note": "existing frozen-doc archive diagnostics; no errors; layer, typecheck and test typecheck gates included"
+    },
+    {
+      "command": "npm run authority:check:workspace",
+      "cwd": "/Users/davidchenallio/src/graphrefly",
+      "log": "authority.log",
+      "exitCode": 0,
+      "note": "existing legacy/coverage metrics remain; not resolved by harness migration"
+    },
+    {
+      "command": "node dashboard/build.mjs --check",
+      "cwd": "/Users/davidchenallio/src/graphrefly",
+      "log": "dashboard.log",
+      "exitCode": 0,
+      "note": "pre-existing unavailable sibling evidence warnings; no D795 orphan"
+    },
+    {
+      "command": "node sessions/active/b121-comparison-design-v1/agent-api/graph-led-migration/offline-trace.mjs",
+      "cwd": "/Users/davidchenallio/src/graphrefly",
+      "log": "offline-trace.log",
+      "exitCode": 0,
+      "syntheticHTTPResponses": 5,
+      "actualGraphNodes": 83,
+      "observations": 965,
+      "graded": false,
+      "artifact": "offline-trace.json"
+    }
+  ],
+  "combinedRootVerdict": {
+    "uniqueTestsCovered": 231,
+    "unresolvedFailures": 0,
+    "method": "229 passed in complete suite plus final affected-file rerun of 3, with 1 overlap; not a claim of one 231-pass invocation"
+  },
+  "qa": {
+    "independence": "one implementer agent edge review plus separate local blind-spot and consumer verification passes; three independent agents unavailable",
+    "remainingBlockingFindings": [],
+    "fixedFindings": [
+      "quiet filtered fan-in delivery",
+      "await exact asynchronous write-ahead and terminal persistence",
+      "preserve prior campaign rows after later failure",
+      "bind named graph observation paths",
+      "retain known provider usage on journal failure",
+      "load actual Graph in temporary consumer repositories",
+      "read finish event by type and require bound summary for offline review",
+      "missing final summary is incomplete on recovery"
+    ]
+  },
+  "limits": [
+    "no model ability or score result",
+    "no protocol/public API change or cross-language conformance claim",
+    "no package build because public API unchanged; source runtime used",
+    "runtime binding is declared source/loader/lock/version coverage, not a hermetic OS and installed native-dependency image",
+    "new frozen manifest required for subsequent live execution"
+  ]
+}

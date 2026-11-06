@@ -1,0 +1,38 @@
+{
+  "kind": "B121-live-reconciliation",
+  "manifestSHA": "f14b20fe8ed933b216b8a614300a02a77b9f4d34de9761a56391ad67490ebe99",
+  "checkedAt": "2026-09-16T06:53:06.539Z",
+  "status": "reconciled",
+  "providerReportedCostUSD": 0.11945860800000002,
+  "currentKeyStartingUsageUSD": 0.276661896,
+  "currentKeyUsageUSD": 0.396120504,
+  "currentKeyDeltaUSD": 0.11945860799999997,
+  "priorRetiredKeyUsageUSD": 0.022818016,
+  "cumulativeUsageUSD": 0.41893852,
+  "keyLimitUSD": 1.97,
+  "keyRemainingUSD": 1.573879496,
+  "httpStatuses": {
+    "200": 95
+  },
+  "retries": 0,
+  "comparison": {
+    "started": 12,
+    "completed": 7,
+    "submittedAnswers": 132,
+    "expectedAnswers": 192,
+    "unrun": 0
+  },
+  "entry": {
+    "started": 6,
+    "submitted": 0,
+    "searchUsedSessions": 5,
+    "searchOperations": 19,
+    "readOperations": 57,
+    "parameterErrors": 0,
+    "budgetStops": 6
+  },
+  "diagnosis": "All entry sessions stopped at input-estimate-exceeds-remaining before submission. Each successfully read 524-741 distinct source lines. Full prior tool history repeats on subsequent calls and consumes the cumulative input allowance. The admission estimate remains heuristic, not a tokenizer-backed proof of overflow. Tools are now usable, but no submitted code exists to assess library usability.",
+  "nextProposal": "Stop paid repetition. Use the retained real retrieval trajectories to evaluate history retention and cumulative budget design offline before proposing another trial.",
+  "b121Complete": false,
+  "retryAuthorized": false
+}

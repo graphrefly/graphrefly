@@ -1,0 +1,22 @@
+{
+  "assessmentSHA256": "9dd20e6064439e20170a6e900db51c702eb681375822377b1b3c6ec0b02e5626",
+  "reviewerId": "Codex primary /root local source review; second reviewer spawn unavailable (thread limit)",
+  "criteria": {
+    "distinct-instance-construction": {
+      "pass": true,
+      "evidence": "One preset on given Graph composes supplied firstInputs and secondInputs under alerts-a and alerts-b; frozen causal-entry.ts49-74 confirms complete host construction with existing resource. No direct transport or fabricated facts."
+    },
+    "default-override-isolation": {
+      "pass": true,
+      "evidence": "Immutable defaults diagnostics off; first inherits off, only second overrides summary. No shared defaults mutation; frozen causal-entry.ts36-52."
+    },
+    "separate-observation-ownership": {
+      "pass": true,
+      "evidence": "Separate mountSpendingView calls use each actual view and callback; pair returns original apps plus separate detach functions. Explanation preserves owning Graph and obligations; frozen view binding16-56 and README143-151."
+    },
+    "name-resource-boundary": {
+      "pass": true,
+      "evidence": "Two prepared input sets passed unchanged; explanation distinguishes namespace names, actual input Nodes and resource binding; explicitly says changing name does not clone resources or authorize/rebind. Frozen README85-89 and causal-entry55-69."
+    }
+  }
+}

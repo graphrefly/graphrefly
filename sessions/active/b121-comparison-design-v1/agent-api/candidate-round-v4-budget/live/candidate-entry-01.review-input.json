@@ -1,0 +1,18 @@
+{
+  "assessmentSHA256": "681d83bd1f88e70642fdc27bf7502335ab373b2fef2fd4aa76ca23894e8f736f",
+  "reviewerId": "Codex independent read-only reviewer /root/feedback_blind",
+  "criteria": {
+    "current-values": {
+      "pass": true,
+      "evidence": "Snippet17-23 enumerates five ports;41-48 formats actual values;62-63 renders mountSpendingView observations. Frozen causal-view-binding.ts14,25-30,38-46 defines five subscriptions and actual DATA values. No fabricated success values."
+    },
+    "missing-values": {
+      "pass": true,
+      "evidence": "Snippet39-49 uses unavailable and value===undefined to label missing values. Frozen causal-view-binding.ts29,42-43 derives absent ports and clears INVALIDATE/ERROR values. README99 prohibits stale displayed values."
+    },
+    "observation-lifetime": {
+      "pass": true,
+      "evidence": "Snippet55-64 returns observation cleanup; explanation retains application ownership and outstanding obligations. Frozen causal-view-binding.ts16,32-36,51 and README104,111-118 separate detach from run completion."
+    }
+  }
+}

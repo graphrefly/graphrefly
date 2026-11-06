@@ -1,0 +1,18 @@
+{
+  "suite": {
+    "source": "../verification.json",
+    "uniquePassed": 231,
+    "unresolvedFailures": 0,
+    "rerunThisTurn": false
+  },
+  "journalRowsVerified": 3310,
+  "codeBindingsVerified": 388,
+  "materialArtifactsVerified": 5,
+  "feedbackRequestsVerified": 14,
+  "plannedSamples": 2,
+  "startedSamples": 2,
+  "submissions": 2,
+  "providerAttemptFailures": 0,
+  "modelSessionReruns": 0,
+  "independentReview": false
+}

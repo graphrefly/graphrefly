@@ -1,0 +1,19 @@
+{
+  "frozenArtifactsVerified": 5,
+  "codeBindingsVerified": 33,
+  "localRubricReviewedSubmissions": 2,
+  "independentLiveReviewCompleted": false,
+  "reviewInterruptionArtifact": "review-interruption.json",
+  "accepted": 2,
+  "incomplete": 1,
+  "notRun": 1,
+  "denominator": 4,
+  "modelSessionReruns": 0,
+  "participantCodeExecuted": false,
+  "answerEdits": 0,
+  "postHocScoringChanges": 0,
+  "allRequestCapAndFieldLimitFeedbackVerified": true,
+  "providerGenerationMetadataGETs": 1,
+  "priorOfflineTestsReused": 200,
+  "formalReady": false
+}

@@ -1,0 +1,10 @@
+{
+  "checkedAt": "2026-09-18T16:46:06.265294+00:00",
+  "endpoint": "GET /api/v1/generation",
+  "generationId": "gen-1789749771-J5QRjzBTghoi2AslMNq3",
+  "sourceJournalIndex": 530,
+  "httpStatus": 404,
+  "rawBody": "{\"error\":{\"message\":\"Generation gen-1789749771-J5QRjzBTghoi2AslMNq3 not found\",\"code\":404}}",
+  "generationCalls": 0,
+  "releasedReservationsUSD": 0
+}

@@ -1,0 +1,18 @@
+{
+  "assessmentSHA256": "f96e856081664716eb68cdf27efb0c949eab768f2a84040493aaefcb19bd1af6",
+  "reviewerId": "codex-bmad-source-review-v11-sample01",
+  "criteria": {
+    "current-values": {
+      "pass": true,
+      "evidence": "The submitted mountSpendingAlertsDisplay subscribes directly to all five supplied view ports (assessment, publication, coverage, issues, startup), stores actual DATA payloads, and renders their copied values plus unavailable port names. This matches frozen causal-view-binding.ts:14-50 and the view construction in causal-preset.ts:171-177. It creates no instance or business facts and fabricates no success values; its text formatter labels observed publication records and qualifies startup/assessment conclusions."
+    },
+    "missing-values": {
+      "pass": true,
+      "evidence": "The submitted values object begins empty; unavailable is computed by own-property absence. Each INVALIDATE or ERROR deletes that port before rendering, while DATA replaces its actual value. This is equivalent to frozen causal-view-binding.ts:21-50, including ignored non-value messages, and satisfies README.md:138,159-161. The explanation explicitly rejects stale display values and describes the result as non-atomic per-port observation."
+    },
+    "observation-lifetime": {
+      "pass": true,
+      "evidence": "The returned idempotent stop function only marks observation closed and invokes the collected subscription cleanup functions. No instance close, fact emission, transport or run termination occurs. The explanation states that unmounting stops observation while application-owned obligations and retained request/admission/outcome records persist, and does not establish recovery, resource release or lifecycle completion. This agrees with frozen causal-view-binding.ts:16,32-35 and README.md:143-157."
+    }
+  }
+}

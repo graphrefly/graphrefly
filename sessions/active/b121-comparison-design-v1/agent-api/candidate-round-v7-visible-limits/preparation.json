@@ -1,0 +1,15 @@
+{
+  "work": "graphrefly:B121",
+  "kind": "request-limit-visibility-development-candidate",
+  "formalReady": false,
+  "liveAuthorization": false,
+  "generationCalls": 0,
+  "change": "Exact per-request output cap and unchanged answer field limits visible; native finish/field length diagnostics retained. No budget allocation, acceptance or retry changes.",
+  "sameFiveArtifactsAsV6": true,
+  "sameTaskAndSamplePacketsAsV6": true,
+  "changedExecutionFiles": [
+    "scripts/b121-comparison/api-runner.mjs",
+    "scripts/b121-comparison/api-tool.mjs"
+  ],
+  "exposure": "Same exposed development tasks and v6 rubric; not an unseen holdout."
+}

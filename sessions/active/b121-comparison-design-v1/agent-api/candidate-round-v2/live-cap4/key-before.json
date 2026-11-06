@@ -1,0 +1,12 @@
+{
+  "checkedAt": "2026-09-18T04:32:26.129154+00:00",
+  "endpoint": "GET /api/v1/key",
+  "generationCalls": 0,
+  "metadataRequests": 1,
+  "data": {
+    "usage": 0.775756572,
+    "limit": 1.97,
+    "limit_remaining": 1.194243428,
+    "limit_reset": null
+  }
+}

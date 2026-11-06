@@ -1,0 +1,11 @@
+✔ real campaign entry compilation passes and offline review persists without HTTP (39173.163292ms)
+✔ real campaign entry compilation fails and offline review persists without HTTP (36037.196666ms)
+✔ entry source drift refuses actual campaign before any HTTP (317.018208ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 76038.196042

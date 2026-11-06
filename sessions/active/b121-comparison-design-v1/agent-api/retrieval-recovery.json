@@ -1,0 +1,245 @@
+{
+  "kind": "B121-v6-offline-retrieval-recovery",
+  "manifestSHA": "b1c687f0b41d5d1b1a7e78cf72adcb73765d1607597a583d5aed7b0bde7c482e",
+  "sourceRun": "2ed7b40707b08f8645d6d40e5b7709e87a10e65329b7ea43763490d154b211ab",
+  "providerCalls": 0,
+  "spendUSD": 0,
+  "replayedFailedBatches": 6,
+  "replay": [
+    {
+      "id": "agent-01-entry",
+      "previousError": "entry path unavailable",
+      "results": [
+        {
+          "request": {
+            "op": "read",
+            "path": "examples/spending-alerts/causal-entry.ts"
+          },
+          "ok": true,
+          "startLine": 1,
+          "endLine": 78,
+          "nextLine": null,
+          "returnedLines": 78
+        },
+        {
+          "request": {
+            "op": "read",
+            "path": "examples/spending-alerts/causal-inputs.ts",
+            "startLine": 1,
+            "endLine": 80
+          },
+          "ok": true,
+          "startLine": 1,
+          "endLine": 80,
+          "nextLine": null,
+          "returnedLines": 80
+        },
+        {
+          "request": {
+            "op": "read",
+            "path": "examples/spending-alerts/causal-view-binding.ts"
+          },
+          "ok": true,
+          "startLine": 1,
+          "endLine": 57,
+          "nextLine": null,
+          "returnedLines": 57
+        }
+      ]
+    },
+    {
+      "id": "agent-02-entry",
+      "previousError": "invalid source line range",
+      "results": [
+        {
+          "request": {
+            "op": "read",
+            "path": "examples/spending-alerts/causal-resource.ts",
+            "startLine": 80,
+            "endLine": 160
+          },
+          "ok": true,
+          "startLine": 80,
+          "endLine": 159,
+          "nextLine": 160,
+          "returnedLines": 80
+        },
+        {
+          "request": {
+            "op": "read",
+            "path": "examples/spending-alerts/causal-inputs.ts",
+            "startLine": 1,
+            "endLine": 80
+          },
+          "ok": true,
+          "startLine": 1,
+          "endLine": 80,
+          "nextLine": null,
+          "returnedLines": 80
+        }
+      ]
+    },
+    {
+      "id": "agent-03-entry",
+      "previousError": "entry path unavailable",
+      "results": [
+        {
+          "request": {
+            "op": "read",
+            "path": "examples/spending-alerts/causal-entry.ts"
+          },
+          "ok": true,
+          "startLine": 1,
+          "endLine": 78,
+          "nextLine": null,
+          "returnedLines": 78
+        },
+        {
+          "request": {
+            "op": "read",
+            "path": "examples/spending-alerts/causal-view-binding.ts"
+          },
+          "ok": true,
+          "startLine": 1,
+          "endLine": 57,
+          "nextLine": null,
+          "returnedLines": 57
+        },
+        {
+          "request": {
+            "op": "read",
+            "path": "packages/ts/src/solutions/causal-occurrence/capabilities.ts"
+          },
+          "ok": true,
+          "startLine": 1,
+          "endLine": 80,
+          "nextLine": 81,
+          "returnedLines": 80
+        }
+      ]
+    },
+    {
+      "id": "agent-06-entry",
+      "previousError": "invalid source line range",
+      "results": [
+        {
+          "request": {
+            "op": "read",
+            "path": "examples/spending-alerts/causal-focused-host.ts",
+            "startLine": 80,
+            "endLine": 160
+          },
+          "ok": true,
+          "startLine": 80,
+          "endLine": 159,
+          "nextLine": 160,
+          "returnedLines": 80
+        },
+        {
+          "request": {
+            "op": "read",
+            "path": "examples/spending-alerts/causal-preset.ts",
+            "startLine": 80,
+            "endLine": 160
+          },
+          "ok": true,
+          "startLine": 80,
+          "endLine": 159,
+          "nextLine": 160,
+          "returnedLines": 80
+        }
+      ]
+    },
+    {
+      "id": "agent-09-entry",
+      "previousError": "invalid source line range",
+      "results": [
+        {
+          "request": {
+            "op": "read",
+            "path": "examples/spending-alerts/causal-focused-host.ts",
+            "startLine": 1,
+            "endLine": 130
+          },
+          "ok": true,
+          "startLine": 1,
+          "endLine": 80,
+          "nextLine": 81,
+          "returnedLines": 80
+        },
+        {
+          "request": {
+            "op": "read",
+            "path": "examples/spending-alerts/causal-focused-host.ts",
+            "startLine": 460,
+            "endLine": 540
+          },
+          "ok": true,
+          "startLine": 460,
+          "endLine": 539,
+          "nextLine": 540,
+          "returnedLines": 80
+        },
+        {
+          "request": {
+            "op": "read",
+            "path": "examples/spending-alerts/causal-focused-host.ts",
+            "startLine": 540,
+            "endLine": 600
+          },
+          "ok": true,
+          "startLine": 540,
+          "endLine": 579,
+          "nextLine": null,
+          "returnedLines": 40
+        }
+      ]
+    },
+    {
+      "id": "agent-11-entry",
+      "previousError": "invalid source line range",
+      "results": [
+        {
+          "request": {
+            "op": "read",
+            "path": "examples/spending-alerts/causal-focused-host.ts",
+            "startLine": 1,
+            "endLine": 130
+          },
+          "ok": true,
+          "startLine": 1,
+          "endLine": 80,
+          "nextLine": 81,
+          "returnedLines": 80
+        },
+        {
+          "request": {
+            "op": "read",
+            "path": "examples/spending-alerts/causal-focused-host.ts",
+            "startLine": 460,
+            "endLine": 540
+          },
+          "ok": true,
+          "startLine": 460,
+          "endLine": 539,
+          "nextLine": 540,
+          "returnedLines": 80
+        },
+        {
+          "request": {
+            "op": "read",
+            "path": "examples/spending-alerts/causal-focused-host.ts",
+            "startLine": 540,
+            "endLine": 600
+          },
+          "ok": true,
+          "startLine": 540,
+          "endLine": 579,
+          "nextLine": null,
+          "returnedLines": 40
+        }
+      ]
+    }
+  ],
+  "limitation": "Replays only the recorded failing retrieval batches, not later unseen model choices, full sessions or code correctness."
+}

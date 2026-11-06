@@ -1,0 +1,17 @@
+{
+  "manifestSHA": "f562ac9d68bd815e13885a0da3ea92ca1e059b58aa4d963540e93fd576fbcf93",
+  "action": "B121-agent-api-one-shot",
+  "acceptAliasLimitation": true,
+  "acceptInputEstimateLimitation": true,
+  "expiresAt": "2026-09-18T12:07:46.535Z",
+  "maxGenerationCalls": 1444,
+  "maxUSD": 4,
+  "retries": {
+    "capacity": 3,
+    "availability": 1
+  },
+  "model": "deepseek/deepseek-v4.1-flash",
+  "providerTag": "together",
+  "priorUsageUSD": 3.108744424000001,
+  "authorizationSource": "User confirmed cumulative $4 including prior usage and all unresolved reservations. After v6 four-task/16-criterion offline freeze and proposal to run each once, user replied 继续. Authorizes one v6 development campaign, same frozen provider, retry policy and hard limits, no replacement or score-driven model repair; not an unseen holdout."
+}

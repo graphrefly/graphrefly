@@ -1,0 +1,21 @@
+{
+  "reviewer": "v7_edges",
+  "scope": "v7 api-runner/api-tool delta against supplied baseline; edge and invariant review",
+  "findings": [],
+  "verdict": "No concrete introduced defect found",
+  "verification": {
+    "command": "node --test scripts/b121-comparison/api-runner.test.mjs",
+    "passed": 84,
+    "failed": 0,
+    "log": "/tmp/b121-v7/edges-tests.log"
+  },
+  "checks": [
+    "Missing choices and native finish reason use nullable observations before unchanged response validation; malformed outputs remain failures.",
+    "Reported output equality is diagnostic only and does not accept native length output or trigger retries.",
+    "Invalid answer field types yield null diagnostic lengths, then unchanged participant rejection; missing field shape fails before lengths observation.",
+    "Exact UTF-16 boundaries retain existing JS string.length acceptance; 6000/6001, 6904, supplementary Unicode, and 32000/32001 exercised.",
+    "Current request cap is appended before estimate and hash; final-stage rebuild recomputes feedback and repeats exact admission estimate.",
+    "Cumulative input/output, request cap, final-stage switch, retry and comparison instructions unchanged.",
+    "The JSON Schema maxLength keyword itself counts Unicode code points; existing runtime uses stricter UTF-16 units. This preexisting distinction is now explicitly disclosed in instructions/feedback and has not widened acceptance."
+  ]
+}

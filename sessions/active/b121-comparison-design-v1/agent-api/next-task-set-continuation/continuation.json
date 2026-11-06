@@ -1,0 +1,20 @@
+{
+  "work": "graphrefly:B121",
+  "priorRun": "2817a2182d07b8b8181335cb93ae257789429c6dab974a787b31098afb7b947d",
+  "reason": "User continued after standing budget authorization; complete two tasks with no prior model HTTP generation. Keep original three-sample stopped run immutable.",
+  "sampleMapping": [
+    {
+      "priorSampleId": "candidate-entry-02",
+      "sampleId": "candidate-entry-01",
+      "taskId": "report-node-version-metadata"
+    },
+    {
+      "priorSampleId": "candidate-entry-03",
+      "sampleId": "candidate-entry-02",
+      "taskId": "consume-business-results"
+    }
+  ],
+  "excludedCompletedTask": "export-structure-only",
+  "resultInterpretation": "Separate two-sample continuation under changed total budget. Do not relabel original stopped campaign as 3/3; retain all attempts and report task coverage across runs explicitly.",
+  "generationAuthorization": "Latest user 好的，继续 following USD11 standing budget change; one execution of the two unattempted tasks without rerunning successful first task."
+}

@@ -1,0 +1,1420 @@
+{
+  "sessions": [
+    {
+      "sampleId": "candidate-entry-01",
+      "outputs": [
+        {
+          "journalIndex": 35,
+          "finishReason": "tool_calls",
+          "nativeFinishReason": "tool_calls",
+          "reportedOutputTokens": 54,
+          "requestMaxOutputTokens": 3904,
+          "reachedOutputLimit": false
+        },
+        {
+          "journalIndex": 45,
+          "finishReason": "tool_calls",
+          "nativeFinishReason": "tool_calls",
+          "reportedOutputTokens": 99,
+          "requestMaxOutputTokens": 3850,
+          "reachedOutputLimit": false
+        },
+        {
+          "journalIndex": 55,
+          "finishReason": "tool_calls",
+          "nativeFinishReason": "tool_calls",
+          "reportedOutputTokens": 115,
+          "requestMaxOutputTokens": 3751,
+          "reachedOutputLimit": false
+        },
+        {
+          "journalIndex": 65,
+          "finishReason": "tool_calls",
+          "nativeFinishReason": "tool_calls",
+          "reportedOutputTokens": 106,
+          "requestMaxOutputTokens": 3636,
+          "reachedOutputLimit": false
+        },
+        {
+          "journalIndex": 75,
+          "finishReason": "tool_calls",
+          "nativeFinishReason": "tool_calls",
+          "reportedOutputTokens": 108,
+          "requestMaxOutputTokens": 3530,
+          "reachedOutputLimit": false
+        },
+        {
+          "journalIndex": 85,
+          "finishReason": "tool_calls",
+          "nativeFinishReason": "tool_calls",
+          "reportedOutputTokens": 110,
+          "requestMaxOutputTokens": 3422,
+          "reachedOutputLimit": false
+        },
+        {
+          "journalIndex": 95,
+          "finishReason": "tool_calls",
+          "nativeFinishReason": "tool_calls",
+          "reportedOutputTokens": 100,
+          "requestMaxOutputTokens": 3312,
+          "reachedOutputLimit": false
+        },
+        {
+          "journalIndex": 105,
+          "finishReason": "tool_calls",
+          "nativeFinishReason": "tool_calls",
+          "reportedOutputTokens": 112,
+          "requestMaxOutputTokens": 3212,
+          "reachedOutputLimit": false
+        },
+        {
+          "journalIndex": 115,
+          "finishReason": "tool_calls",
+          "nativeFinishReason": "tool_calls",
+          "reportedOutputTokens": 108,
+          "requestMaxOutputTokens": 3100,
+          "reachedOutputLimit": false
+        },
+        {
+          "journalIndex": 125,
+          "finishReason": "tool_calls",
+          "nativeFinishReason": "tool_calls",
+          "reportedOutputTokens": 121,
+          "requestMaxOutputTokens": 2992,
+          "reachedOutputLimit": false
+        },
+        {
+          "journalIndex": 135,
+          "finishReason": "tool_calls",
+          "nativeFinishReason": "tool_calls",
+          "reportedOutputTokens": 110,
+          "requestMaxOutputTokens": 2871,
+          "reachedOutputLimit": false
+        },
+        {
+          "journalIndex": 145,
+          "finishReason": "tool_calls",
+          "nativeFinishReason": "tool_calls",
+          "reportedOutputTokens": 116,
+          "requestMaxOutputTokens": 2761,
+          "reachedOutputLimit": false
+        },
+        {
+          "journalIndex": 155,
+          "finishReason": "tool_calls",
+          "nativeFinishReason": "tool_calls",
+          "reportedOutputTokens": 104,
+          "requestMaxOutputTokens": 2645,
+          "reachedOutputLimit": false
+        },
+        {
+          "journalIndex": 168,
+          "finishReason": "tool_calls",
+          "nativeFinishReason": "tool_calls",
+          "reportedOutputTokens": 104,
+          "requestMaxOutputTokens": 2541,
+          "reachedOutputLimit": false
+        },
+        {
+          "journalIndex": 178,
+          "finishReason": "tool_calls",
+          "nativeFinishReason": "tool_calls",
+          "reportedOutputTokens": 104,
+          "requestMaxOutputTokens": 2437,
+          "reachedOutputLimit": false
+        },
+        {
+          "journalIndex": 188,
+          "finishReason": "tool_calls",
+          "nativeFinishReason": "tool_calls",
+          "reportedOutputTokens": 104,
+          "requestMaxOutputTokens": 2333,
+          "reachedOutputLimit": false
+        },
+        {
+          "journalIndex": 198,
+          "finishReason": "tool_calls",
+          "nativeFinishReason": "tool_calls",
+          "reportedOutputTokens": 104,
+          "requestMaxOutputTokens": 2229,
+          "reachedOutputLimit": false
+        },
+        {
+          "journalIndex": 208,
+          "finishReason": "tool_calls",
+          "nativeFinishReason": "tool_calls",
+          "reportedOutputTokens": 111,
+          "requestMaxOutputTokens": 2125,
+          "reachedOutputLimit": false
+        },
+        {
+          "journalIndex": 218,
+          "finishReason": "tool_calls",
+          "nativeFinishReason": "tool_calls",
+          "reportedOutputTokens": 111,
+          "requestMaxOutputTokens": 2014,
+          "reachedOutputLimit": false
+        },
+        {
+          "journalIndex": 228,
+          "finishReason": "tool_calls",
+          "nativeFinishReason": "tool_calls",
+          "reportedOutputTokens": 110,
+          "requestMaxOutputTokens": 1903,
+          "reachedOutputLimit": false
+        },
+        {
+          "journalIndex": 238,
+          "finishReason": "tool_calls",
+          "nativeFinishReason": "tool_calls",
+          "reportedOutputTokens": 110,
+          "requestMaxOutputTokens": 1793,
+          "reachedOutputLimit": false
+        },
+        {
+          "journalIndex": 248,
+          "finishReason": "tool_calls",
+          "nativeFinishReason": "tool_calls",
+          "reportedOutputTokens": 110,
+          "requestMaxOutputTokens": 1683,
+          "reachedOutputLimit": false
+        },
+        {
+          "journalIndex": 258,
+          "finishReason": "tool_calls",
+          "nativeFinishReason": "tool_calls",
+          "reportedOutputTokens": 111,
+          "requestMaxOutputTokens": 1573,
+          "reachedOutputLimit": false
+        },
+        {
+          "journalIndex": 272,
+          "finishReason": "tool_calls",
+          "nativeFinishReason": "tool_calls",
+          "reportedOutputTokens": 2089,
+          "requestMaxOutputTokens": 4096,
+          "reachedOutputLimit": false
+        }
+      ],
+      "lengthChecks": [
+        {
+          "journalIndex": 274,
+          "lengths": {
+            "snippet": 3535,
+            "explanation": 4099
+          },
+          "limits": {
+            "snippet": 32000,
+            "explanation": 6000
+          },
+          "unit": "UTF-16 code units (JavaScript string.length)"
+        }
+      ],
+      "finalizations": [
+        {
+          "journalIndex": 264,
+          "reason": "projected-input-reserve",
+          "estimatedInputTokens": 78421,
+          "usage": {
+            "inputTokens": 833128,
+            "outputTokens": 2442,
+            "elapsedMs": 82135
+          }
+        }
+      ],
+      "dispatches": [
+        {
+          "journalIndex": 31,
+          "requestHash": "0bf2ced4a7170ef2023d0d08c30f1cc602cbda6b95b9873e65e0b0dada06d641",
+          "stage": "retrieve-or-submit",
+          "currentRequest": {
+            "maxOutputTokens": 3904
+          },
+          "remaining": {
+            "inputTokens": 1000000,
+            "outputTokens": 8000,
+            "operations": 80,
+            "generationCalls": 80,
+            "elapsedMs": 4499990
+          },
+          "answerLimits": {
+            "snippet": 32000,
+            "explanation": 6000,
+            "unit": "UTF-16 code units (JavaScript string.length)"
+          }
+        },
+        {
+          "journalIndex": 41,
+          "requestHash": "a5e89e35d48cff07525373ebb3e4972433ffa75eaead3225233bed05286bb021",
+          "stage": "retrieve-or-submit",
+          "currentRequest": {
+            "maxOutputTokens": 3850
+          },
+          "remaining": {
+            "inputTokens": 997968,
+            "outputTokens": 7946,
+            "operations": 79,
+            "generationCalls": 79,
+            "elapsedMs": 4499293
+          },
+          "answerLimits": {
+            "snippet": 32000,
+            "explanation": 6000,
+            "unit": "UTF-16 code units (JavaScript string.length)"
+          }
+        },
+        {
+          "journalIndex": 51,
+          "requestHash": "7a5078a41fac24d3703df2dbfa4137e68af161f78845d8222a561917857bbacb",
+          "stage": "retrieve-or-submit",
+          "currentRequest": {
+            "maxOutputTokens": 3751
+          },
+          "remaining": {
+            "inputTokens": 989021,
+            "outputTokens": 7847,
+            "operations": 76,
+            "generationCalls": 78,
+            "elapsedMs": 4498653
+          },
+          "answerLimits": {
+            "snippet": 32000,
+            "explanation": 6000,
+            "unit": "UTF-16 code units (JavaScript string.length)"
+          }
+        },
+        {
+          "journalIndex": 61,
+          "requestHash": "4b35e4269fdae3380316d2a5e944b645fdf4e21b1588f04f6c3a61091098c4d7",
+          "stage": "retrieve-or-submit",
+          "currentRequest": {
+            "maxOutputTokens": 3636
+          },
+          "remaining": {
+            "inputTokens": 975641,
+            "outputTokens": 7732,
+            "operations": 73,
+            "generationCalls": 77,
+            "elapsedMs": 4497943
+          },
+          "answerLimits": {
+            "snippet": 32000,
+            "explanation": 6000,
+            "unit": "UTF-16 code units (JavaScript string.length)"
+          }
+        },
+        {
+          "journalIndex": 71,
+          "requestHash": "28b3628e9444dfc58f5b1777846b28b122ad4fa2a71ebf9a42c25d95b8544473",
+          "stage": "retrieve-or-submit",
+          "currentRequest": {
+            "maxOutputTokens": 3530
+          },
+          "remaining": {
+            "inputTokens": 958331,
+            "outputTokens": 7626,
+            "operations": 71,
+            "generationCalls": 76,
+            "elapsedMs": 4497188
+          },
+          "answerLimits": {
+            "snippet": 32000,
+            "explanation": 6000,
+            "unit": "UTF-16 code units (JavaScript string.length)"
+          }
+        },
+        {
+          "journalIndex": 81,
+          "requestHash": "da5edc41ea03b279bb9a00aba30c5d5ead2ffea6a53b8a10f1c4f882b8f1e7a0",
+          "stage": "retrieve-or-submit",
+          "currentRequest": {
+            "maxOutputTokens": 3422
+          },
+          "remaining": {
+            "inputTokens": 938840,
+            "outputTokens": 7518,
+            "operations": 69,
+            "generationCalls": 75,
+            "elapsedMs": 4496406
+          },
+          "answerLimits": {
+            "snippet": 32000,
+            "explanation": 6000,
+            "unit": "UTF-16 code units (JavaScript string.length)"
+          }
+        },
+        {
+          "journalIndex": 91,
+          "requestHash": "7f27ba725046a90eef10ba15eb6af5b43cc5bb4164ba47eeb4c21777413dcdb9",
+          "stage": "retrieve-or-submit",
+          "currentRequest": {
+            "maxOutputTokens": 3312
+          },
+          "remaining": {
+            "inputTokens": 917135,
+            "outputTokens": 7408,
+            "operations": 67,
+            "generationCalls": 74,
+            "elapsedMs": 4494909
+          },
+          "answerLimits": {
+            "snippet": 32000,
+            "explanation": 6000,
+            "unit": "UTF-16 code units (JavaScript string.length)"
+          }
+        },
+        {
+          "journalIndex": 101,
+          "requestHash": "bc2338fb38872afc741b7a54b7b5dd21fda12f6cb64f9465eaef1576dc68b050",
+          "stage": "retrieve-or-submit",
+          "currentRequest": {
+            "maxOutputTokens": 3212
+          },
+          "remaining": {
+            "inputTokens": 892590,
+            "outputTokens": 7308,
+            "operations": 65,
+            "generationCalls": 73,
+            "elapsedMs": 4494194
+          },
+          "answerLimits": {
+            "snippet": 32000,
+            "explanation": 6000,
+            "unit": "UTF-16 code units (JavaScript string.length)"
+          }
+        },
+        {
+          "journalIndex": 111,
+          "requestHash": "1b620fd3f85120f7525bbce0475c2b52dc053589b8b398e39c6fe1ca6fcf76c7",
+          "stage": "retrieve-or-submit",
+          "currentRequest": {
+            "maxOutputTokens": 3100
+          },
+          "remaining": {
+            "inputTokens": 865469,
+            "outputTokens": 7196,
+            "operations": 63,
+            "generationCalls": 72,
+            "elapsedMs": 4493411
+          },
+          "answerLimits": {
+            "snippet": 32000,
+            "explanation": 6000,
+            "unit": "UTF-16 code units (JavaScript string.length)"
+          }
+        },
+        {
+          "journalIndex": 121,
+          "requestHash": "d060893452070114923da324ef915474c5d118d375011e1f604019092eaae540",
+          "stage": "retrieve-or-submit",
+          "currentRequest": {
+            "maxOutputTokens": 2992
+          },
+          "remaining": {
+            "inputTokens": 834599,
+            "outputTokens": 7088,
+            "operations": 61,
+            "generationCalls": 71,
+            "elapsedMs": 4492464
+          },
+          "answerLimits": {
+            "snippet": 32000,
+            "explanation": 6000,
+            "unit": "UTF-16 code units (JavaScript string.length)"
+          }
+        },
+        {
+          "journalIndex": 131,
+          "requestHash": "8ffab4c43a8b1a1f272749c9af644c9853e25a3d68f9b74c2579cbda0ee72382",
+          "stage": "retrieve-or-submit",
+          "currentRequest": {
+            "maxOutputTokens": 2871
+          },
+          "remaining": {
+            "inputTokens": 801862,
+            "outputTokens": 6967,
+            "operations": 59,
+            "generationCalls": 70,
+            "elapsedMs": 4491743
+          },
+          "answerLimits": {
+            "snippet": 32000,
+            "explanation": 6000,
+            "unit": "UTF-16 code units (JavaScript string.length)"
+          }
+        },
+        {
+          "journalIndex": 141,
+          "requestHash": "243479b6f609bda94da9aa3cc9ca9127642e915bf9216be6678a420ec6716a98",
+          "stage": "retrieve-or-submit",
+          "currentRequest": {
+            "maxOutputTokens": 2761
+          },
+          "remaining": {
+            "inputTokens": 767843,
+            "outputTokens": 6857,
+            "operations": 57,
+            "generationCalls": 69,
+            "elapsedMs": 4491013
+          },
+          "answerLimits": {
+            "snippet": 32000,
+            "explanation": 6000,
+            "unit": "UTF-16 code units (JavaScript string.length)"
+          }
+        },
+        {
+          "journalIndex": 151,
+          "requestHash": "5e2822fb4d553728ebf124a0385c60f638e378ab0949c86d2b04516ffd2163f2",
+          "stage": "retrieve-or-submit",
+          "currentRequest": {
+            "maxOutputTokens": 2645
+          },
+          "remaining": {
+            "inputTokens": 731016,
+            "outputTokens": 6741,
+            "operations": 55,
+            "generationCalls": 68,
+            "elapsedMs": 4489682
+          },
+          "answerLimits": {
+            "snippet": 32000,
+            "explanation": 6000,
+            "unit": "UTF-16 code units (JavaScript string.length)"
+          }
+        },
+        {
+          "journalIndex": 161,
+          "requestHash": "05dbc16bb8b8b07659fbf6490e5944d004c7a16249c751ebb189ce271791aade",
+          "stage": "retrieve-or-submit",
+          "currentRequest": {
+            "maxOutputTokens": 2541
+          },
+          "remaining": {
+            "inputTokens": 692686,
+            "outputTokens": 6637,
+            "operations": 53,
+            "generationCalls": 67,
+            "elapsedMs": 4489028
+          },
+          "answerLimits": {
+            "snippet": 32000,
+            "explanation": 6000,
+            "unit": "UTF-16 code units (JavaScript string.length)"
+          }
+        },
+        {
+          "journalIndex": 174,
+          "requestHash": "ddb6855bf4b0b3124e408a017f321aeff5c6d5e17ebd38e1108ada48efbef64c",
+          "stage": "retrieve-or-submit",
+          "currentRequest": {
+            "maxOutputTokens": 2437
+          },
+          "remaining": {
+            "inputTokens": 651632,
+            "outputTokens": 6533,
+            "operations": 51,
+            "generationCalls": 66,
+            "elapsedMs": 4427947
+          },
+          "answerLimits": {
+            "snippet": 32000,
+            "explanation": 6000,
+            "unit": "UTF-16 code units (JavaScript string.length)"
+          }
+        },
+        {
+          "journalIndex": 184,
+          "requestHash": "32ca4586d3bd59f3fe31eedbc4d77072d64d36c545ced96dd811406c2fbe461a",
+          "stage": "retrieve-or-submit",
+          "currentRequest": {
+            "maxOutputTokens": 2333
+          },
+          "remaining": {
+            "inputTokens": 607929,
+            "outputTokens": 6429,
+            "operations": 49,
+            "generationCalls": 65,
+            "elapsedMs": 4427098
+          },
+          "answerLimits": {
+            "snippet": 32000,
+            "explanation": 6000,
+            "unit": "UTF-16 code units (JavaScript string.length)"
+          }
+        },
+        {
+          "journalIndex": 194,
+          "requestHash": "19cdf3ca4104fa467c2f9b78f101f51fe75759343d4af35ef1ee7e9cd9ae7aa0",
+          "stage": "retrieve-or-submit",
+          "currentRequest": {
+            "maxOutputTokens": 2229
+          },
+          "remaining": {
+            "inputTokens": 562364,
+            "outputTokens": 6325,
+            "operations": 47,
+            "generationCalls": 64,
+            "elapsedMs": 4426303
+          },
+          "answerLimits": {
+            "snippet": 32000,
+            "explanation": 6000,
+            "unit": "UTF-16 code units (JavaScript string.length)"
+          }
+        },
+        {
+          "journalIndex": 204,
+          "requestHash": "4d50fd5f411f168f5a7e467640763b85ffc98aab6a47e5a9e3be318efe1f862b",
+          "stage": "retrieve-or-submit",
+          "currentRequest": {
+            "maxOutputTokens": 2125
+          },
+          "remaining": {
+            "inputTokens": 514165,
+            "outputTokens": 6221,
+            "operations": 45,
+            "generationCalls": 63,
+            "elapsedMs": 4425597
+          },
+          "answerLimits": {
+            "snippet": 32000,
+            "explanation": 6000,
+            "unit": "UTF-16 code units (JavaScript string.length)"
+          }
+        },
+        {
+          "journalIndex": 214,
+          "requestHash": "cd30dbc6ac26df140d0bb8016a299f6bc42e935216e8a59e322ab205ede2ccd9",
+          "stage": "retrieve-or-submit",
+          "currentRequest": {
+            "maxOutputTokens": 2014
+          },
+          "remaining": {
+            "inputTokens": 463279,
+            "outputTokens": 6110,
+            "operations": 43,
+            "generationCalls": 62,
+            "elapsedMs": 4423514
+          },
+          "answerLimits": {
+            "snippet": 32000,
+            "explanation": 6000,
+            "unit": "UTF-16 code units (JavaScript string.length)"
+          }
+        },
+        {
+          "journalIndex": 224,
+          "requestHash": "7e87144ee7333a283227688bd947c65da72089eee84acd39fefddfd9d6bb6c38",
+          "stage": "retrieve-or-submit",
+          "currentRequest": {
+            "maxOutputTokens": 1903
+          },
+          "remaining": {
+            "inputTokens": 409306,
+            "outputTokens": 5999,
+            "operations": 41,
+            "generationCalls": 61,
+            "elapsedMs": 4422753
+          },
+          "answerLimits": {
+            "snippet": 32000,
+            "explanation": 6000,
+            "unit": "UTF-16 code units (JavaScript string.length)"
+          }
+        },
+        {
+          "journalIndex": 234,
+          "requestHash": "111fd070050bb87551d637884f341700cea41386df0a3abc7d7e8d853c6d5e05",
+          "stage": "retrieve-or-submit",
+          "currentRequest": {
+            "maxOutputTokens": 1793
+          },
+          "remaining": {
+            "inputTokens": 352866,
+            "outputTokens": 5889,
+            "operations": 39,
+            "generationCalls": 60,
+            "elapsedMs": 4421845
+          },
+          "answerLimits": {
+            "snippet": 32000,
+            "explanation": 6000,
+            "unit": "UTF-16 code units (JavaScript string.length)"
+          }
+        },
+        {
+          "journalIndex": 244,
+          "requestHash": "fbddaf99e4cf1cd2ce0250fc2080aa6cd10c9bf7bda2222f6d86a789586af698",
+          "stage": "retrieve-or-submit",
+          "currentRequest": {
+            "maxOutputTokens": 1683
+          },
+          "remaining": {
+            "inputTokens": 292995,
+            "outputTokens": 5779,
+            "operations": 37,
+            "generationCalls": 59,
+            "elapsedMs": 4421002
+          },
+          "answerLimits": {
+            "snippet": 32000,
+            "explanation": 6000,
+            "unit": "UTF-16 code units (JavaScript string.length)"
+          }
+        },
+        {
+          "journalIndex": 254,
+          "requestHash": "fd1f7e5ba8549ca286c142c3969acd9102433601c94953a698fc68194347a2e3",
+          "stage": "retrieve-or-submit",
+          "currentRequest": {
+            "maxOutputTokens": 1573
+          },
+          "remaining": {
+            "inputTokens": 231473,
+            "outputTokens": 5669,
+            "operations": 35,
+            "generationCalls": 58,
+            "elapsedMs": 4418667
+          },
+          "answerLimits": {
+            "snippet": 32000,
+            "explanation": 6000,
+            "unit": "UTF-16 code units (JavaScript string.length)"
+          }
+        },
+        {
+          "journalIndex": 268,
+          "requestHash": "0e327068f7a7a19045ab9be95d69d0a1c647def1b1254f74c3fe88323bda2d9f",
+          "stage": "submit-only",
+          "currentRequest": {
+            "maxOutputTokens": 4096
+          },
+          "remaining": {
+            "inputTokens": 166872,
+            "outputTokens": 5558,
+            "operations": 33,
+            "generationCalls": 57,
+            "elapsedMs": 4417851
+          },
+          "answerLimits": {
+            "snippet": 32000,
+            "explanation": 6000,
+            "unit": "UTF-16 code units (JavaScript string.length)"
+          }
+        }
+      ],
+      "status": "pending-review"
+    },
+    {
+      "sampleId": "candidate-entry-02",
+      "outputs": [
+        {
+          "journalIndex": 290,
+          "finishReason": "tool_calls",
+          "nativeFinishReason": "tool_calls",
+          "reportedOutputTokens": 54,
+          "requestMaxOutputTokens": 3904,
+          "reachedOutputLimit": false
+        },
+        {
+          "journalIndex": 300,
+          "finishReason": "tool_calls",
+          "nativeFinishReason": "tool_calls",
+          "reportedOutputTokens": 99,
+          "requestMaxOutputTokens": 3850,
+          "reachedOutputLimit": false
+        },
+        {
+          "journalIndex": 310,
+          "finishReason": "tool_calls",
+          "nativeFinishReason": "tool_calls",
+          "reportedOutputTokens": 93,
+          "requestMaxOutputTokens": 3751,
+          "reachedOutputLimit": false
+        },
+        {
+          "journalIndex": 320,
+          "finishReason": "tool_calls",
+          "nativeFinishReason": "tool_calls",
+          "reportedOutputTokens": 128,
+          "requestMaxOutputTokens": 3658,
+          "reachedOutputLimit": false
+        },
+        {
+          "journalIndex": 330,
+          "finishReason": "tool_calls",
+          "nativeFinishReason": "tool_calls",
+          "reportedOutputTokens": 81,
+          "requestMaxOutputTokens": 3530,
+          "reachedOutputLimit": false
+        },
+        {
+          "journalIndex": 340,
+          "finishReason": "tool_calls",
+          "nativeFinishReason": "tool_calls",
+          "reportedOutputTokens": 97,
+          "requestMaxOutputTokens": 3449,
+          "reachedOutputLimit": false
+        },
+        {
+          "journalIndex": 350,
+          "finishReason": "tool_calls",
+          "nativeFinishReason": "tool_calls",
+          "reportedOutputTokens": 99,
+          "requestMaxOutputTokens": 3352,
+          "reachedOutputLimit": false
+        },
+        {
+          "journalIndex": 360,
+          "finishReason": "tool_calls",
+          "nativeFinishReason": "tool_calls",
+          "reportedOutputTokens": 100,
+          "requestMaxOutputTokens": 3253,
+          "reachedOutputLimit": false
+        },
+        {
+          "journalIndex": 370,
+          "finishReason": "tool_calls",
+          "nativeFinishReason": "tool_calls",
+          "reportedOutputTokens": 110,
+          "requestMaxOutputTokens": 3153,
+          "reachedOutputLimit": false
+        },
+        {
+          "journalIndex": 380,
+          "finishReason": "tool_calls",
+          "nativeFinishReason": "tool_calls",
+          "reportedOutputTokens": 108,
+          "requestMaxOutputTokens": 3043,
+          "reachedOutputLimit": false
+        },
+        {
+          "journalIndex": 390,
+          "finishReason": "tool_calls",
+          "nativeFinishReason": "tool_calls",
+          "reportedOutputTokens": 108,
+          "requestMaxOutputTokens": 2935,
+          "reachedOutputLimit": false
+        },
+        {
+          "journalIndex": 400,
+          "finishReason": "tool_calls",
+          "nativeFinishReason": "tool_calls",
+          "reportedOutputTokens": 108,
+          "requestMaxOutputTokens": 2827,
+          "reachedOutputLimit": false
+        },
+        {
+          "journalIndex": 410,
+          "finishReason": "tool_calls",
+          "nativeFinishReason": "tool_calls",
+          "reportedOutputTokens": 108,
+          "requestMaxOutputTokens": 2719,
+          "reachedOutputLimit": false
+        },
+        {
+          "journalIndex": 420,
+          "finishReason": "tool_calls",
+          "nativeFinishReason": "tool_calls",
+          "reportedOutputTokens": 108,
+          "requestMaxOutputTokens": 2611,
+          "reachedOutputLimit": false
+        },
+        {
+          "journalIndex": 430,
+          "finishReason": "tool_calls",
+          "nativeFinishReason": "tool_calls",
+          "reportedOutputTokens": 108,
+          "requestMaxOutputTokens": 2503,
+          "reachedOutputLimit": false
+        },
+        {
+          "journalIndex": 440,
+          "finishReason": "tool_calls",
+          "nativeFinishReason": "tool_calls",
+          "reportedOutputTokens": 108,
+          "requestMaxOutputTokens": 2395,
+          "reachedOutputLimit": false
+        },
+        {
+          "journalIndex": 450,
+          "finishReason": "tool_calls",
+          "nativeFinishReason": "tool_calls",
+          "reportedOutputTokens": 108,
+          "requestMaxOutputTokens": 2287,
+          "reachedOutputLimit": false
+        },
+        {
+          "journalIndex": 460,
+          "finishReason": "tool_calls",
+          "nativeFinishReason": "tool_calls",
+          "reportedOutputTokens": 108,
+          "requestMaxOutputTokens": 2179,
+          "reachedOutputLimit": false
+        },
+        {
+          "journalIndex": 470,
+          "finishReason": "tool_calls",
+          "nativeFinishReason": "tool_calls",
+          "reportedOutputTokens": 107,
+          "requestMaxOutputTokens": 2071,
+          "reachedOutputLimit": false
+        },
+        {
+          "journalIndex": 480,
+          "finishReason": "tool_calls",
+          "nativeFinishReason": "tool_calls",
+          "reportedOutputTokens": 106,
+          "requestMaxOutputTokens": 1964,
+          "reachedOutputLimit": false
+        },
+        {
+          "journalIndex": 490,
+          "finishReason": "tool_calls",
+          "nativeFinishReason": "tool_calls",
+          "reportedOutputTokens": 106,
+          "requestMaxOutputTokens": 1858,
+          "reachedOutputLimit": false
+        },
+        {
+          "journalIndex": 504,
+          "finishReason": "tool_calls",
+          "nativeFinishReason": "tool_calls",
+          "reportedOutputTokens": 1945,
+          "requestMaxOutputTokens": 4096,
+          "reachedOutputLimit": false
+        }
+      ],
+      "lengthChecks": [
+        {
+          "journalIndex": 506,
+          "lengths": {
+            "snippet": 2621,
+            "explanation": 4402
+          },
+          "limits": {
+            "snippet": 32000,
+            "explanation": 6000
+          },
+          "unit": "UTF-16 code units (JavaScript string.length)"
+        }
+      ],
+      "finalizations": [
+        {
+          "journalIndex": 496,
+          "reason": "projected-input-reserve",
+          "estimatedInputTokens": 85039,
+          "usage": {
+            "inputTokens": 793682,
+            "outputTokens": 2152,
+            "elapsedMs": 16205
+          }
+        }
+      ],
+      "dispatches": [
+        {
+          "journalIndex": 286,
+          "requestHash": "6f37df8dfc24e8daf8ff664a82625fc658dd4a03287712752a2148c9622f0d24",
+          "stage": "retrieve-or-submit",
+          "currentRequest": {
+            "maxOutputTokens": 3904
+          },
+          "remaining": {
+            "inputTokens": 1000000,
+            "outputTokens": 8000,
+            "operations": 80,
+            "generationCalls": 80,
+            "elapsedMs": 4499991
+          },
+          "answerLimits": {
+            "snippet": 32000,
+            "explanation": 6000,
+            "unit": "UTF-16 code units (JavaScript string.length)"
+          }
+        },
+        {
+          "journalIndex": 296,
+          "requestHash": "7424098b2d3386745c0a0ed74a192320002128028b8f7a0bf33d8a8475632e92",
+          "stage": "retrieve-or-submit",
+          "currentRequest": {
+            "maxOutputTokens": 3850
+          },
+          "remaining": {
+            "inputTokens": 997965,
+            "outputTokens": 7946,
+            "operations": 79,
+            "generationCalls": 79,
+            "elapsedMs": 4499524
+          },
+          "answerLimits": {
+            "snippet": 32000,
+            "explanation": 6000,
+            "unit": "UTF-16 code units (JavaScript string.length)"
+          }
+        },
+        {
+          "journalIndex": 306,
+          "requestHash": "b6e72a7833bb597a57251837b5ba764aa49be44be9067f82cc4de7923a71499c",
+          "stage": "retrieve-or-submit",
+          "currentRequest": {
+            "maxOutputTokens": 3751
+          },
+          "remaining": {
+            "inputTokens": 988917,
+            "outputTokens": 7847,
+            "operations": 76,
+            "generationCalls": 78,
+            "elapsedMs": 4498901
+          },
+          "answerLimits": {
+            "snippet": 32000,
+            "explanation": 6000,
+            "unit": "UTF-16 code units (JavaScript string.length)"
+          }
+        },
+        {
+          "journalIndex": 316,
+          "requestHash": "ef7906c41b756e7edcde4dfacb056e75c45a51958b86e3d127849901ceda98f0",
+          "stage": "retrieve-or-submit",
+          "currentRequest": {
+            "maxOutputTokens": 3658
+          },
+          "remaining": {
+            "inputTokens": 975436,
+            "outputTokens": 7754,
+            "operations": 74,
+            "generationCalls": 77,
+            "elapsedMs": 4498224
+          },
+          "answerLimits": {
+            "snippet": 32000,
+            "explanation": 6000,
+            "unit": "UTF-16 code units (JavaScript string.length)"
+          }
+        },
+        {
+          "journalIndex": 326,
+          "requestHash": "99d05fcd163c4265deb4bb3ed4cf961fbf7adbf3d652105762970442dd92b0a2",
+          "stage": "retrieve-or-submit",
+          "currentRequest": {
+            "maxOutputTokens": 3530
+          },
+          "remaining": {
+            "inputTokens": 958789,
+            "outputTokens": 7626,
+            "operations": 71,
+            "generationCalls": 76,
+            "elapsedMs": 4497526
+          },
+          "answerLimits": {
+            "snippet": 32000,
+            "explanation": 6000,
+            "unit": "UTF-16 code units (JavaScript string.length)"
+          }
+        },
+        {
+          "journalIndex": 336,
+          "requestHash": "e9a9e6b4f208bb4311cab39c249f03f70293a499df6542736c975b968097c7e5",
+          "stage": "retrieve-or-submit",
+          "currentRequest": {
+            "maxOutputTokens": 3449
+          },
+          "remaining": {
+            "inputTokens": 938541,
+            "outputTokens": 7545,
+            "operations": 69,
+            "generationCalls": 75,
+            "elapsedMs": 4496647
+          },
+          "answerLimits": {
+            "snippet": 32000,
+            "explanation": 6000,
+            "unit": "UTF-16 code units (JavaScript string.length)"
+          }
+        },
+        {
+          "journalIndex": 346,
+          "requestHash": "3a17089a191a8598dc44ed4c168b38cb77d322ffb7cc8bad9f0b2aac0853e6cf",
+          "stage": "retrieve-or-submit",
+          "currentRequest": {
+            "maxOutputTokens": 3352
+          },
+          "remaining": {
+            "inputTokens": 915286,
+            "outputTokens": 7448,
+            "operations": 67,
+            "generationCalls": 74,
+            "elapsedMs": 4495984
+          },
+          "answerLimits": {
+            "snippet": 32000,
+            "explanation": 6000,
+            "unit": "UTF-16 code units (JavaScript string.length)"
+          }
+        },
+        {
+          "journalIndex": 356,
+          "requestHash": "a37475dc9bbf4bb4596a34ed9f8cb10d34ca0a4fe934e9260720d5acbb05d438",
+          "stage": "retrieve-or-submit",
+          "currentRequest": {
+            "maxOutputTokens": 3253
+          },
+          "remaining": {
+            "inputTokens": 888851,
+            "outputTokens": 7349,
+            "operations": 65,
+            "generationCalls": 73,
+            "elapsedMs": 4495266
+          },
+          "answerLimits": {
+            "snippet": 32000,
+            "explanation": 6000,
+            "unit": "UTF-16 code units (JavaScript string.length)"
+          }
+        },
+        {
+          "journalIndex": 366,
+          "requestHash": "47b7d900bcb3aca67f0e022618c177748b742009efb1b334e13cf5940283d379",
+          "stage": "retrieve-or-submit",
+          "currentRequest": {
+            "maxOutputTokens": 3153
+          },
+          "remaining": {
+            "inputTokens": 859914,
+            "outputTokens": 7249,
+            "operations": 63,
+            "generationCalls": 72,
+            "elapsedMs": 4494422
+          },
+          "answerLimits": {
+            "snippet": 32000,
+            "explanation": 6000,
+            "unit": "UTF-16 code units (JavaScript string.length)"
+          }
+        },
+        {
+          "journalIndex": 376,
+          "requestHash": "686f053727f74fc24ea3b3690cdbe18f93949fe4b7ebcad1857f0935f7b2e88c",
+          "stage": "retrieve-or-submit",
+          "currentRequest": {
+            "maxOutputTokens": 3043
+          },
+          "remaining": {
+            "inputTokens": 828207,
+            "outputTokens": 7139,
+            "operations": 61,
+            "generationCalls": 71,
+            "elapsedMs": 4493357
+          },
+          "answerLimits": {
+            "snippet": 32000,
+            "explanation": 6000,
+            "unit": "UTF-16 code units (JavaScript string.length)"
+          }
+        },
+        {
+          "journalIndex": 386,
+          "requestHash": "6893fe4a80384f4284ec059dee1b2365cef676865c182874eeac449d65f0068e",
+          "stage": "retrieve-or-submit",
+          "currentRequest": {
+            "maxOutputTokens": 2935
+          },
+          "remaining": {
+            "inputTokens": 793089,
+            "outputTokens": 7031,
+            "operations": 59,
+            "generationCalls": 70,
+            "elapsedMs": 4492460
+          },
+          "answerLimits": {
+            "snippet": 32000,
+            "explanation": 6000,
+            "unit": "UTF-16 code units (JavaScript string.length)"
+          }
+        },
+        {
+          "journalIndex": 396,
+          "requestHash": "fd404296b4c8a01aee0bf86cb73ff70513f78335c52b2afae6c0c5c2d3e6ed5a",
+          "stage": "retrieve-or-submit",
+          "currentRequest": {
+            "maxOutputTokens": 2827
+          },
+          "remaining": {
+            "inputTokens": 755425,
+            "outputTokens": 6923,
+            "operations": 57,
+            "generationCalls": 69,
+            "elapsedMs": 4491738
+          },
+          "answerLimits": {
+            "snippet": 32000,
+            "explanation": 6000,
+            "unit": "UTF-16 code units (JavaScript string.length)"
+          }
+        },
+        {
+          "journalIndex": 406,
+          "requestHash": "71977ac493e333e96f85f547ccac0df610f39f78011f264757d7e4fe4411e793",
+          "stage": "retrieve-or-submit",
+          "currentRequest": {
+            "maxOutputTokens": 2719
+          },
+          "remaining": {
+            "inputTokens": 714552,
+            "outputTokens": 6815,
+            "operations": 55,
+            "generationCalls": 68,
+            "elapsedMs": 4490986
+          },
+          "answerLimits": {
+            "snippet": 32000,
+            "explanation": 6000,
+            "unit": "UTF-16 code units (JavaScript string.length)"
+          }
+        },
+        {
+          "journalIndex": 416,
+          "requestHash": "521df1ff9f0a87b4fed392841e39aba813d864100310fb5de1c8d744267fb49f",
+          "stage": "retrieve-or-submit",
+          "currentRequest": {
+            "maxOutputTokens": 2611
+          },
+          "remaining": {
+            "inputTokens": 670243,
+            "outputTokens": 6707,
+            "operations": 53,
+            "generationCalls": 67,
+            "elapsedMs": 4489820
+          },
+          "answerLimits": {
+            "snippet": 32000,
+            "explanation": 6000,
+            "unit": "UTF-16 code units (JavaScript string.length)"
+          }
+        },
+        {
+          "journalIndex": 426,
+          "requestHash": "b50e72d0e51f7522f0fcfb8566ceeedc17e0939d8391f1841628ec6860b7ec8d",
+          "stage": "retrieve-or-submit",
+          "currentRequest": {
+            "maxOutputTokens": 2503
+          },
+          "remaining": {
+            "inputTokens": 623378,
+            "outputTokens": 6599,
+            "operations": 51,
+            "generationCalls": 66,
+            "elapsedMs": 4489122
+          },
+          "answerLimits": {
+            "snippet": 32000,
+            "explanation": 6000,
+            "unit": "UTF-16 code units (JavaScript string.length)"
+          }
+        },
+        {
+          "journalIndex": 436,
+          "requestHash": "94f7f7a8468880d6f7b7b28b7577f2b0a7933b3752f02f750e956deb93bfcb5a",
+          "stage": "retrieve-or-submit",
+          "currentRequest": {
+            "maxOutputTokens": 2395
+          },
+          "remaining": {
+            "inputTokens": 572985,
+            "outputTokens": 6491,
+            "operations": 49,
+            "generationCalls": 65,
+            "elapsedMs": 4488444
+          },
+          "answerLimits": {
+            "snippet": 32000,
+            "explanation": 6000,
+            "unit": "UTF-16 code units (JavaScript string.length)"
+          }
+        },
+        {
+          "journalIndex": 446,
+          "requestHash": "b2d4ebfd7327795c442c0bfc7e9d1f82590bd9f723e0fd65b3ba3eaaa7f9544f",
+          "stage": "retrieve-or-submit",
+          "currentRequest": {
+            "maxOutputTokens": 2287
+          },
+          "remaining": {
+            "inputTokens": 519035,
+            "outputTokens": 6383,
+            "operations": 47,
+            "generationCalls": 64,
+            "elapsedMs": 4487741
+          },
+          "answerLimits": {
+            "snippet": 32000,
+            "explanation": 6000,
+            "unit": "UTF-16 code units (JavaScript string.length)"
+          }
+        },
+        {
+          "journalIndex": 456,
+          "requestHash": "e1b14afb60523b9b35ba5de82ae92ab8e16afafbbb509b6629f3eaf4fadb6757",
+          "stage": "retrieve-or-submit",
+          "currentRequest": {
+            "maxOutputTokens": 2179
+          },
+          "remaining": {
+            "inputTokens": 463041,
+            "outputTokens": 6275,
+            "operations": 45,
+            "generationCalls": 63,
+            "elapsedMs": 4486972
+          },
+          "answerLimits": {
+            "snippet": 32000,
+            "explanation": 6000,
+            "unit": "UTF-16 code units (JavaScript string.length)"
+          }
+        },
+        {
+          "journalIndex": 466,
+          "requestHash": "77bffc84c2e35976961a9f70a7a9a427fc1367568a3df275a2d181d8e1c58138",
+          "stage": "retrieve-or-submit",
+          "currentRequest": {
+            "maxOutputTokens": 2071
+          },
+          "remaining": {
+            "inputTokens": 403721,
+            "outputTokens": 6167,
+            "operations": 43,
+            "generationCalls": 62,
+            "elapsedMs": 4486123
+          },
+          "answerLimits": {
+            "snippet": 32000,
+            "explanation": 6000,
+            "unit": "UTF-16 code units (JavaScript string.length)"
+          }
+        },
+        {
+          "journalIndex": 476,
+          "requestHash": "a1a4b6ebf1beb1bd7e289d37043ae741778a85ffa27c610ccf39bce78a3b10f2",
+          "stage": "retrieve-or-submit",
+          "currentRequest": {
+            "maxOutputTokens": 1964
+          },
+          "remaining": {
+            "inputTokens": 341040,
+            "outputTokens": 6060,
+            "operations": 41,
+            "generationCalls": 61,
+            "elapsedMs": 4485387
+          },
+          "answerLimits": {
+            "snippet": 32000,
+            "explanation": 6000,
+            "unit": "UTF-16 code units (JavaScript string.length)"
+          }
+        },
+        {
+          "journalIndex": 486,
+          "requestHash": "483c62855b6ff43b07c98a51315769c8bc1e7aeca04f0d01eb7e64f7a05fcf6e",
+          "stage": "retrieve-or-submit",
+          "currentRequest": {
+            "maxOutputTokens": 1858
+          },
+          "remaining": {
+            "inputTokens": 275331,
+            "outputTokens": 5954,
+            "operations": 39,
+            "generationCalls": 60,
+            "elapsedMs": 4484592
+          },
+          "answerLimits": {
+            "snippet": 32000,
+            "explanation": 6000,
+            "unit": "UTF-16 code units (JavaScript string.length)"
+          }
+        },
+        {
+          "journalIndex": 500,
+          "requestHash": "6a2856b90b69faaf4844f5cdec58923f0cfdf3c2f7daf1326c2c3209fef5ba29",
+          "stage": "submit-only",
+          "currentRequest": {
+            "maxOutputTokens": 4096
+          },
+          "remaining": {
+            "inputTokens": 206318,
+            "outputTokens": 5848,
+            "operations": 37,
+            "generationCalls": 59,
+            "elapsedMs": 4483779
+          },
+          "answerLimits": {
+            "snippet": 32000,
+            "explanation": 6000,
+            "unit": "UTF-16 code units (JavaScript string.length)"
+          }
+        }
+      ],
+      "status": "pending-review"
+    },
+    {
+      "sampleId": "candidate-entry-03",
+      "outputs": [
+        {
+          "journalIndex": 522,
+          "finishReason": "tool_calls",
+          "nativeFinishReason": "tool_calls",
+          "reportedOutputTokens": 54,
+          "requestMaxOutputTokens": 3904,
+          "reachedOutputLimit": false
+        }
+      ],
+      "lengthChecks": [],
+      "finalizations": [],
+      "dispatches": [
+        {
+          "journalIndex": 518,
+          "requestHash": "3c082c625a44a917f198c5ed5b5bcba8668915a07e6c8a6036e18432584eff55",
+          "stage": "retrieve-or-submit",
+          "currentRequest": {
+            "maxOutputTokens": 3904
+          },
+          "remaining": {
+            "inputTokens": 1000000,
+            "outputTokens": 8000,
+            "operations": 80,
+            "generationCalls": 80,
+            "elapsedMs": 4499990
+          },
+          "answerLimits": {
+            "snippet": 32000,
+            "explanation": 6000,
+            "unit": "UTF-16 code units (JavaScript string.length)"
+          }
+        },
+        {
+          "journalIndex": 528,
+          "requestHash": "a5ffe16c0207af048570db8c2f77e01144a525167816bbb36f8837c036ace3c9",
+          "stage": "retrieve-or-submit",
+          "currentRequest": {
+            "maxOutputTokens": 3850
+          },
+          "remaining": {
+            "inputTokens": 997965,
+            "outputTokens": 7946,
+            "operations": 79,
+            "generationCalls": 79,
+            "elapsedMs": 4499447
+          },
+          "answerLimits": {
+            "snippet": 32000,
+            "explanation": 6000,
+            "unit": "UTF-16 code units (JavaScript string.length)"
+          }
+        }
+      ],
+      "status": "incomplete"
+    }
+  ],
+  "allDispatchedRequestCapsAndFieldLimitsVerified": true,
+  "interpretation": "Exact observed fields; no inferred root cause, salvage or answer repair."
+}

@@ -1,0 +1,73 @@
+{
+  "kind": "B121-agent-api-attempt-summary",
+  "manifestSHA": "2ed7b40707b08f8645d6d40e5b7709e87a10e65329b7ea43763490d154b211ab",
+  "startedAt": "2026-09-16T05:44:41.002Z",
+  "finishedAt": "2026-09-16T05:50:12.693Z",
+  "qualificationPassed": true,
+  "participantSessionsStarted": 12,
+  "participantSessionsCompleted": 10,
+  "participantSessionsUnrun": 0,
+  "submittedAnswers": 180,
+  "participantFailures": [
+    {
+      "sessionId": "agent-09",
+      "message": "invalid broker operation schema"
+    }
+  ],
+  "entrySessionsStarted": 6,
+  "entrySessionsUnrun": 0,
+  "entrySessionsCompleted": 0,
+  "entryFailures": [
+    {
+      "sessionId": "agent-01-entry",
+      "message": "entry path unavailable",
+      "failureScope": "participant"
+    },
+    {
+      "sessionId": "agent-02-entry",
+      "message": "invalid source line range",
+      "failureScope": "participant"
+    },
+    {
+      "sessionId": "agent-03-entry",
+      "message": "entry path unavailable",
+      "failureScope": "participant"
+    },
+    {
+      "sessionId": "agent-06-entry",
+      "message": "invalid source line range",
+      "failureScope": "participant"
+    },
+    {
+      "sessionId": "agent-09-entry",
+      "message": "invalid source line range",
+      "failureScope": "participant"
+    },
+    {
+      "sessionId": "agent-11-entry",
+      "message": "invalid source line range",
+      "failureScope": "participant"
+    }
+  ],
+  "submittedEntries": 0,
+  "generationCalls": 83,
+  "providerReportedCostUSD": 0.11723567999999997,
+  "priorUsageUSD": 0.147538516,
+  "reservedUSD": 0.11723568000000001,
+  "unknownReservedUSD": 4.163336342344337e-17,
+  "failure": null,
+  "lastResponse": {
+    "status": 200,
+    "finishReason": "tool_calls",
+    "usage": {
+      "prompt_tokens": 4823,
+      "completion_tokens": 143,
+      "total_tokens": 4966,
+      "reasoning_tokens": 0,
+      "cost": 0.000941124
+    }
+  },
+  "denominator": 1344,
+  "b121Complete": false,
+  "journalHead": "2675c7fc042ae0ccd2c53d54db19fd5041a587978a930ae0ed3c8dc8600855b4"
+}

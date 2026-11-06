@@ -1,0 +1,47 @@
+{
+  "assessmentSHA256": "b751e098607f014bf3314434bae240c7ca124db61456e8317224f597ac9e2f02",
+  "binding": {
+    "materialSHA256": "a7846d59bdc5d0ca359292dceb91ef3274991bfb4afd9ce28e18c867e7554e6d",
+    "taskSHA256": "4cb85526391e8a15e083f1ee62df9370d65712555b5faf2116d047a89de8a1ee",
+    "rubricSHA256": "ef5013f4525bc88a9f8ac5848b2a5090378fe6c740c4619e26237ffe8e7d597b",
+    "environmentSHA256": "25c512ca2d3dd5c501f470bd4e6f63994ffbe635c402622b02180226b7302687",
+    "runnerContractSHA256": "8c304251aa7233fe97e4350d360f789312c1d72bf39054e48aa35e4b52e5809e"
+  },
+  "taskId": "inspect-with-detached-display",
+  "sampleId": "candidate-entry-04",
+  "formalReady": false,
+  "providerCalls": 0,
+  "accepted": true,
+  "status": "accepted-candidate-session",
+  "compilerReceipt": "/Users/davidchenallio/src/graphrefly/sessions/active/b121-comparison-design-v1/agent-api/candidate-round-v11-connection-close/live/review-compiler/9a88a245-a1e6-4edc-8f8c-87e0230e81a3",
+  "review": {
+    "assessmentSHA256": "b751e098607f014bf3314434bae240c7ca124db61456e8317224f597ac9e2f02",
+    "reviewerId": "Codex primary /root local frozen-source review; separate consumer compile passed",
+    "criteria": {
+      "read-only-full-inspection": {
+        "pass": true,
+        "evidence": "Returns graph.describe() complete snapshot, no filter/count projection; only reads/find/cache/inspect. Frozen graph.ts564-568 supports full structure."
+      },
+      "host-boundary-evidence": {
+        "pass": true,
+        "evidence": "Returns actual target inspect records and readiness, publication and Node<CausalQuiescence> cache; predeclared consumer compile with actual compose return passes without assertions. Explanation distinguishes host normalEndReady and local quiescence from termination. Frozen capabilities33-37, host558-576, README106-144."
+      },
+      "unknown-outcome-conclusions": {
+        "pass": true,
+        "evidence": "Explicitly denies success/no-submit/replay safety from unknown and detached display; retains outstanding obligations. Frozen README143-151 and host dispatchStopped logic support this."
+      },
+      "target-instance-authority": {
+        "pass": true,
+        "evidence": "Exact target publication.authorityId drives graph.find; no enumeration/suffix guess; both host/publication read target handles. Frozen README106-123."
+      },
+      "missing-publication": {
+        "pass": true,
+        "evidence": "publication optional lookup makes authorityId and authority undefined when absent, even with other instances. Does not infer success/no-submit/termination. Frozen README121-130."
+      },
+      "outcome-evidence-correlation": {
+        "pass": true,
+        "evidence": "sameRef compares exact kind/id of publication proposal requestRef to host retained requestRef; returns host record and outcome for comparison. Explanation identifies graph-held publication and non-atomic timing. Frozen demo207-238 and README125-130."
+      }
+    }
+  }
+}

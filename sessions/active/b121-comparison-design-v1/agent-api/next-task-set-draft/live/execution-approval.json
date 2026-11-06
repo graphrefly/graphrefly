@@ -1,0 +1,17 @@
+{
+  "manifestSHA": "2817a2182d07b8b8181335cb93ae257789429c6dab974a787b31098afb7b947d",
+  "action": "B121-agent-api-one-shot",
+  "acceptAliasLimitation": true,
+  "acceptInputEstimateLimitation": true,
+  "expiresAt": "2026-09-19T03:25:53.578Z",
+  "maxGenerationCalls": 1444,
+  "maxUSD": 5.5,
+  "retries": {
+    "capacity": 3,
+    "availability": 1
+  },
+  "model": "deepseek/deepseek-v4.1-flash",
+  "providerTag": "together",
+  "priorUsageUSD": 4.839011164000002,
+  "authorizationSource": "User replied 继续 to the explicit proposal to refresh costs and execute one fixed three-task evaluation under cumulative USD5.50, preserving all historical unknown reservations, with no replacement runs. Same reviewed task artifacts and source, model/provider/session limits/retry policy; key lifetime cap1.97 unchanged. This grant is consumed by this one campaign."
+}

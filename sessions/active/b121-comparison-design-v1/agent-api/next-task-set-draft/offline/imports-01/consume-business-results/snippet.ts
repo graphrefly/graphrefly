@@ -1,0 +1,1 @@
+import type { DataResult, DataIssue } from "../../packages/ts/src/data/index.js"; export type API<T> = (r: readonly DataResult<T>[]) => { values: readonly T[]; issues: readonly DataIssue[] };

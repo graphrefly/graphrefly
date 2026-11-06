@@ -1,0 +1,56 @@
+{
+  "manifestSHA": "88c2fc7e66bdd554ef62ba8ab91ddbde634d4ade1f48ffe4ec424d937960f518",
+  "denominator": 4,
+  "rows": [
+    {
+      "sampleId": "candidate-entry-01",
+      "taskId": "display-current-values",
+      "role": "display-component",
+      "packetSHA256": "339a109438e09e6665c443834cdff7a8eee098a7b25a6fb61c3665603e513e2e",
+      "status": "pending-review",
+      "reason": null,
+      "assessmentSHA256": "f96e856081664716eb68cdf27efb0c949eab768f2a84040493aaefcb19bd1af6"
+    },
+    {
+      "sampleId": "candidate-entry-02",
+      "taskId": "compose-two-instances",
+      "role": "application-integrator",
+      "packetSHA256": "537507c66a119bd04574761fbf33b8f8f935fcd1cebd271ef8dc4e2d7a37633d",
+      "status": "pending-review",
+      "reason": null,
+      "assessmentSHA256": "9dd20e6064439e20170a6e900db51c702eb681375822377b1b3c6ec0b02e5626"
+    },
+    {
+      "sampleId": "candidate-entry-03",
+      "taskId": "validate-before-handoff",
+      "role": "framework-integrator",
+      "packetSHA256": "e01a7bdc8f05108440827f9da96550ca059f9ea40eb9979f052ac44766834b43",
+      "status": "pending-review",
+      "reason": null,
+      "assessmentSHA256": "1273109260d324fee147870d184f62ce789f7da2528c5e14f71fb1c5f7dc199f"
+    },
+    {
+      "sampleId": "candidate-entry-04",
+      "taskId": "inspect-with-detached-display",
+      "role": "maintainer",
+      "packetSHA256": "5bdd880b55697994eccefc3dbb646e9ac510ee16a1c919a11ffa4a0481601254",
+      "status": "pending-review",
+      "reason": null,
+      "assessmentSHA256": "b751e098607f014bf3314434bae240c7ca124db61456e8317224f597ac9e2f02"
+    }
+  ],
+  "failure": null,
+  "transport": {
+    "generationCalls": 93,
+    "estimates": 96,
+    "countCalls": 0,
+    "reservedUSD": 0.12839341199999982,
+    "reportedCostUSD": 0.12839341200000004,
+    "unknownReservedUSD": 0,
+    "priorUsageUSD": 4.710617752000002,
+    "stopped": false
+  },
+  "completedCollection": true,
+  "scoresPending": true,
+  "retryAllowed": false
+}

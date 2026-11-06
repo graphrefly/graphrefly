@@ -1,0 +1,62 @@
+{
+  "slot": {
+    "id": "candidate-entry-01",
+    "arm": "G",
+    "role": "diagnostic-integrator"
+  },
+  "controller": null,
+  "experiment": "entry",
+  "explanations": {
+    "A": {},
+    "B": {}
+  },
+  "entryAnswer": {
+    "op": "submit",
+    "snippet": "import type { NodeVersion } from \"@graphrefly/ts/core\";\n\n/**\n * Report variants required by the consumer contract.\n *\n * `disabled` mirrors an absent (undefined) library version.\n * `counter` mirrors the V0 library version (level 0).\n * `content` mirrors the V1 library version (level 1), preserving the\n * supplied counter, cid and prev exactly as the library reports them.\n */\nexport type VersionReport =\n\t| { kind: \"disabled\" }\n\t| { kind: \"counter\"; counter: number }\n\t| { kind: \"content\"; counter: number; cid: string; prev: string | null };\n\n/**\n * Summarize actual library NodeVersion values, one report per input, in order.\n *\n * The library union is discriminated by `level` (0 = V0, 1 = V1); see\n * packages/ts/src/node/versioning.ts lines 27-39. `undefined` means versioning\n * is disabled (createNodeVersion returns undefined when the resolved policy is\n * not enabled, versioning.ts lines 113-117).\n *\n * No hashing, node comparison or identifier manufacture happens here: every\n * counter, cid and prev is copied verbatim from the supplied version, so\n * counter 0 and prev null survive unchanged.\n */\nexport function summarizeVersions(\n\tversions: readonly (NodeVersion | undefined)[],\n): VersionReport[] {\n\treturn versions.map((version): VersionReport => {\n\t\tif (version === undefined) {\n\t\t\treturn { kind: \"disabled\" };\n\t\t}\n\t\tif (version.level === 0) {\n\t\t\treturn { kind: \"counter\", counter: version.counter };\n\t\t}\n\t\treturn {\n\t\t\tkind: \"content\",\n\t\t\tcounter: version.counter,\n\t\t\tcid: version.cid,\n\t\t\tprev: version.prev,\n\t\t};\n\t});\n}\n",
+    "explanation": "The snippet is a virtual file at examples/spending-alerts/__b121_entry_validation__.ts. It imports the real library union `NodeVersion` from the package alias `@graphrefly/ts/core`, which re-exports it from packages/ts/src/node/versioning.ts (packages/ts/src/core/index.ts lines 31-40). No fabricated input type is introduced: the parameter is exactly `readonly (NodeVersion | undefined)[]`.\n\nDiscrimination uses the library's own `level` field, not a replacement tag. `NodeVersionV0` is `{ readonly level: 0; readonly counter: number }` and `NodeVersionV1` is `{ readonly level: 1; readonly counter: number; readonly cid: string; readonly prev: string | null }`, with `NodeVersion = NodeVersionV0 | NodeVersionV1` (versioning.ts lines 27-39). `undefined` is the disabled case because `createNodeVersion` returns `undefined` when the resolved policy is not enabled (versioning.ts lines 113-117). The function maps inputs in order and copies `counter`, `cid` and `prev` verbatim, so counter 0 and prev null are preserved; it performs no hashing, comparison or identifier creation.\n\nOn the three questions:\n\n1. Is `cid` a source-code revision? No. It is a content identifier computed from the node's DATA value, not from source code. `computeV1Cid` hashes `strictCanonicalJsonBytes(value)` (versioning.ts lines 74-79), and `advanceNodeVersion` recomputes it from the new value (lines 137-143). It identifies the versioned data content, not a code revision.\n\n2. Does equal `cid` prove equal implementation or I/O authorization? No. The cid is a hash of canonical data bytes only (versioning.ts lines 74-79); it carries no information about the function/implementation that produced the value, and no authority or permission facts. Equal cid therefore cannot prove equal implementation, and it says nothing about I/O authorization. Authorization is a separate concern (the README distinguishes permission grants in the localAuthority input group, examples/spending-alerts/README.md lines 75-80).\n\n3. Does an unchanged content identifier necessarily imply an unchanged counter? No. The counter is advanced independently of the cid: `advanceNodeVersion` increments `counter` by one on every advance (versioning.ts lines 134-143), while the cid is recomputed from the value. If a node advances with a value whose canonical bytes hash to the same cid (e.g. the same data re-advanced), the counter still increases while the cid stays the same. Conversely, a changed cid does not by itself tell you the counter delta. So an unchanged cid does not imply an unchanged counter.\n\nNo code was executed; this is a static reading of the frozen sources.",
+    "concepts": {
+      "read": [
+        "occurrence",
+        "admission",
+        "retained-evidence",
+        "identity",
+        "lifecycle",
+        "authority",
+        "revision",
+        "provenance"
+      ],
+      "required": [
+        "identity",
+        "revision",
+        "provenance",
+        "lifecycle"
+      ],
+      "firstExpansion": null
+    }
+  },
+  "entryTiming": {
+    "startedMs": 0,
+    "submittedMs": 12211,
+    "elapsedMs": 12211,
+    "firstSourceRead": {
+      "path": "examples/spending-alerts/README.md",
+      "line": 1,
+      "operation": "read",
+      "elapsedMs": 2719
+    }
+  },
+  "entryStatus": "submitted",
+  "usage": {
+    "inputTokens": 90833,
+    "outputTokens": 1951,
+    "elapsedMs": 12220
+  },
+  "costUSD": 0.008855868,
+  "turns": 7,
+  "counts": 7,
+  "operations": 15,
+  "fatal": null,
+  "failureScope": null,
+  "pendingReservation": null,
+  "retryAllowed": false
+}

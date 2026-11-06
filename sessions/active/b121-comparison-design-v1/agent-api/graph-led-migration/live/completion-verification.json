@@ -1,0 +1,62 @@
+{
+  "workRef": "graphrefly:B121",
+  "kind": "graph-led-fixed-development-regression-completion",
+  "manifestSHA": "a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3",
+  "directory": "/Users/davidchenallio/src/graphrefly/sessions/active/b121-comparison-design-v1/agent-api/candidate-runs/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3",
+  "plannedSamples": 2,
+  "submissions": 2,
+  "acceptedByFrozenStaticCriteria": 1,
+  "failed": 1,
+  "completedCollection": true,
+  "modelAnswerRepairTurns": 0,
+  "graphNodes": 135,
+  "graphObservationEvents": 3113,
+  "requiredNodePathCoverage": {
+    "/input-budget-admission": [
+      "session/candidate-entry-01/input-budget-admission",
+      "session/candidate-entry-02/input-budget-admission"
+    ],
+    "/persisted-request-admission": [
+      "session/candidate-entry-01/persisted-request-admission",
+      "session/candidate-entry-02/persisted-request-admission"
+    ],
+    "/broker-phase-admission": [
+      "session/candidate-entry-01/broker-phase-admission",
+      "session/candidate-entry-02/broker-phase-admission"
+    ],
+    "/budget-admission": [
+      "provider/7d0dec7b-d377-4179-a07d-0acdcf86ad4b/budget-admission"
+    ],
+    "/exact-http-admission": [
+      "provider/7d0dec7b-d377-4179-a07d-0acdcf86ad4b/exact-http-admission"
+    ],
+    "/retry-admission": [
+      "provider/7d0dec7b-d377-4179-a07d-0acdcf86ad4b/retry-admission"
+    ],
+    "/final-persistence-execution-admission": [
+      "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/final-persistence-execution-admission"
+    ],
+    "/terminal": [
+      "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/terminal",
+      "qualification/51d89b01-5ee3-4605-af98-310fcd89a947/terminal",
+      "session/candidate-entry-01/terminal",
+      "session/candidate-entry-02/terminal"
+    ]
+  },
+  "graphTopologySHA256": "f3fc3dff8e7e7b63551562043e1442722d64661f731fb6b468864a1ec5b8ab02",
+  "participantRequestedSubmitTransitions": 2,
+  "generationCalls": 18,
+  "providerFailures": 0,
+  "newReportedCostUSD": 0.018739187999999997,
+  "newUnknownReservationsUSD": 0,
+  "conservativeCommittedUSD": 5.550115528000002,
+  "ceilingUSD": 11,
+  "codeBindingsVerified": 388,
+  "artifactsUnchangedAgainstPreviousRun": true,
+  "review": "Root static criterion review separate from participant, not blind or independent of harness authorship; frozen compiler/consumer verdict recomputed by review API. No participant snippet executed.",
+  "formalReady": false,
+  "b121Complete": false,
+  "metadataRequests": 3,
+  "billingDeltaMatches": false,
+  "releasedReservationsUSD": 0
+}

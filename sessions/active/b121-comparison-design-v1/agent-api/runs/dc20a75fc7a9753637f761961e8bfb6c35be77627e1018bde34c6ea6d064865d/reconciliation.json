@@ -1,0 +1,59 @@
+{
+  "kind": "B121-live-reconciliation",
+  "manifestSHA": "dc20a75fc7a9753637f761961e8bfb6c35be77627e1018bde34c6ea6d064865d",
+  "checkedAt": "2026-09-16T05:01:44.171Z",
+  "status": "reconciled",
+  "providerReportedCostUSD": 0.12472049999999996,
+  "newKeyUsageUSD": 0.1247205,
+  "newKeyStartingUsageUSD": 0,
+  "priorRetiredKeyUsageUSD": 0.022818016,
+  "cumulativeUsageUSD": 0.147538516,
+  "keyLimitUSD": 1.97,
+  "keyLimitReset": null,
+  "keyExpiresAt": "2026-09-23T04:50:04.235Z",
+  "httpStatuses": {
+    "200": 90
+  },
+  "retries": 0,
+  "latencyMs": {
+    "basis": "client journal provider-attempt request to response; includes response download; not TTFT",
+    "median": 618.5,
+    "p95": 4666,
+    "max": 7290
+  },
+  "comparison": {
+    "started": 12,
+    "completed": 9,
+    "submittedAnswers": 173,
+    "expectedAnswers": 192,
+    "graph": {
+      "correct": 427,
+      "denominator": 672,
+      "missingScenarios": 15
+    },
+    "plain": {
+      "correct": 490,
+      "denominator": 672,
+      "missingScenarios": 4
+    }
+  },
+  "entry": {
+    "started": 6,
+    "submitted": 0,
+    "budgetStops": 5,
+    "unavailablePathFailures": 1
+  },
+  "verification": {
+    "journalHashChain": true,
+    "records": 815,
+    "frozenBindings": true
+  },
+  "limitations": [
+    "Input estimate is a conservative heuristic, not verified tokenizer output.",
+    "Graph/plain evidence scores include missing answers; not an API usability conclusion.",
+    "No code submissions, compilation or behavioral evidence from entry sessions.",
+    "Single model and run; free text has no two blinded human reviewers."
+  ],
+  "b121Complete": false,
+  "retryAuthorized": false
+}

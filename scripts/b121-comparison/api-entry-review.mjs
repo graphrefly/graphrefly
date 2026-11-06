@@ -1,6 +1,10 @@
 /** Trusted offline entry review. Never expose this compiler/reviewer API to participants. */
 import { createHash } from "node:crypto";
-import { createEntryAcceptance, validateEntrySnippet } from "./entry-tasks.mjs";
+import {
+	createEntryAcceptance,
+	createStandaloneEntryAcceptance,
+	validateEntrySnippet,
+} from "./entry-tasks.mjs";
 import { hash } from "./session.mjs";
 
 const sha = (value) => createHash("sha256").update(value).digest("hex");
@@ -22,6 +26,18 @@ export function reviewEntry({ result, entryFiles, tsRoot, review }) {
 		result?.slot && ["G", "P"].includes(result.slot.arm),
 		"valid study slot required",
 	);
+	insist(
+		result.experiment === undefined ||
+			["entry", "comparison"].includes(result.experiment),
+		"unknown entry review experiment",
+	);
+	const standalone = result.experiment === "entry";
+	if (standalone) {
+		insist(
+			result.slot.arm === "G" && result.controller === null,
+			"standalone entry must be Graph-only without a comparison controller",
+		);
+	}
 	if (result.slot.arm === "P") {
 		insist(
 			!result.entryAnswer &&
@@ -32,15 +48,23 @@ export function reviewEntry({ result, entryFiles, tsRoot, review }) {
 		return { scope: "Graph-only", status: "not-applicable", accepted: false };
 	}
 	insist(Object.hasOwn(roleTasks, result.slot.role), "unknown entry role");
-	insist(
-		result.controller?.sessionId === result.slot.id,
-		"entry session binding mismatch",
-	);
-	const acceptance = createEntryAcceptance({
-		controller: { snapshot: () => result.controller },
-		tsRoot,
-	});
-	const released = acceptance.releaseTasks(); // Reuses both sealed-answer and close-audit proof checks.
+	if (!standalone)
+		insist(
+			result.controller?.sessionId === result.slot.id,
+			"entry session binding mismatch",
+		);
+	const acceptance = standalone
+		? createStandaloneEntryAcceptance({
+				experiment: result.experiment,
+				sessionId: result.slot.id,
+				role: result.slot.role,
+				tsRoot,
+			})
+		: createEntryAcceptance({
+				controller: { snapshot: () => result.controller },
+				tsRoot,
+			});
+	const released = acceptance.releaseTasks(); // Historical comparison sessions still require sealed closure.
 	const task = released.tasks.find((t) => t.id === roleTasks[result.slot.role]);
 	const frozen = JSON.parse(entryFiles?.["entry/task.json"] ?? "null");
 	insist(
@@ -56,7 +80,13 @@ export function reviewEntry({ result, entryFiles, tsRoot, review }) {
 	const common = {
 		scope: "Graph-only",
 		taskId: task.id,
-		comparisonProof: released.comparisonProof,
+		...(standalone
+			? {
+					experiment: "entry",
+					sessionId: result.slot.id,
+					role: result.slot.role,
+				}
+			: { comparisonProof: released.comparisonProof }),
 		accepted: false,
 		basis:
 			"static typecheck plus trusted reviewer assessment; not runtime verification",

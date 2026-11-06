@@ -1,0 +1,18 @@
+{
+  "assessmentSHA256": "19383325837fdfd5e5d89a6810d17faccabb57dbbc175f3ecd2c3ce949ffa3d7",
+  "reviewerId": "codex-final-verify-independent-static-v5-sample03",
+  "criteria": {
+    "reject-before-recipient": {
+      "pass": true,
+      "evidence": "The unmodified handoffCausalCapabilities calls assertCausalCapabilities(graph, capabilities, expected) before constructing levels and invoking recipient(levels), with no catch/finally bypass. Frozen capabilities.ts:51,67-89 uses the private issued WeakMap, rejects non-issued copies, wrong Graph and contract/implementationRevision/scope/epoch mismatches, and validates lower-handle lineage."
+    },
+    "preserve-issued-lineage": {
+      "pass": true,
+      "evidence": "The snippet forwards capabilities.identity, capabilities.execution and capabilities.retained directly into a frozen wrapper; it does not clone or mint handles. Frozen capabilities.ts:122-146 constructs and registers original frozen handles with execution.identity === identity and retained.execution === execution; validation at 83-89 checks those relationships before handoff."
+    },
+    "execution-boundary": {
+      "pass": true,
+      "evidence": "The snippet invokes only capability validation and the caller recipient, with no transport call. Its explanation explicitly denies arbitrary I/O authority, describes passive Node observations and separate per-request authorization. Frozen capabilities.ts:22-43 exposes observation handles and no I/O method; README.md:88-93 states the same boundary; causal-focused-host.ts:404-431 checks receipt, grant, binding and readiness before lease.write at 455."
+    }
+  }
+}

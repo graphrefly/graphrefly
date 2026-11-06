@@ -1,0 +1,10 @@
+{
+  "passed": 200,
+  "failed": 0,
+  "skipped": 0,
+  "modulesPassed": 4,
+  "codeDelta": "Only CEILING_USD 4 -> 4.5; baseline /tmp/b121-v8/api-provider.before.mjs",
+  "review": "Local blind/edge/verification passes for one constant: transport and manifest import same ceiling; prior usage includes all reservations; regression tests cover full-context reservation, admission and retry stops. No independent QA claimed.",
+  "pricingMatches": true,
+  "generationCalls": 0
+}

@@ -1,0 +1,59 @@
+{
+  "directory": "/Users/davidchenallio/src/graphrefly/sessions/active/b121-comparison-design-v1/agent-api/candidate-runs/f562ac9d68bd815e13885a0da3ea92ca1e059b58aa4d963540e93fd576fbcf93",
+  "summary": {
+    "manifestSHA": "f562ac9d68bd815e13885a0da3ea92ca1e059b58aa4d963540e93fd576fbcf93",
+    "denominator": 4,
+    "rows": [
+      {
+        "sampleId": "candidate-entry-01",
+        "taskId": "display-current-values",
+        "role": "display-component",
+        "packetSHA256": "339a109438e09e6665c443834cdff7a8eee098a7b25a6fb61c3665603e513e2e",
+        "status": "incomplete",
+        "reason": null,
+        "assessmentSHA256": "9be821b13421571f98cd0dda16b6cc06c5bfe12e8783ce2db53664f84f094f22"
+      },
+      {
+        "sampleId": "candidate-entry-02",
+        "taskId": "compose-two-instances",
+        "role": "application-integrator",
+        "packetSHA256": "537507c66a119bd04574761fbf33b8f8f935fcd1cebd271ef8dc4e2d7a37633d",
+        "status": "pending-review",
+        "reason": null,
+        "assessmentSHA256": "af8ad66722de023edd69af981a73a3ad8538c011ca3bbfbccfcabcfe49d71d36"
+      },
+      {
+        "sampleId": "candidate-entry-03",
+        "taskId": "validate-before-handoff",
+        "role": "framework-integrator",
+        "packetSHA256": "e01a7bdc8f05108440827f9da96550ca059f9ea40eb9979f052ac44766834b43",
+        "status": "pending-review",
+        "reason": null,
+        "assessmentSHA256": "ecf6b4603e1801efe7f272e92cce9aefc230c2f2ef24e6f3ae26d42b42744a88"
+      },
+      {
+        "sampleId": "candidate-entry-04",
+        "taskId": "inspect-with-detached-display",
+        "role": "maintainer",
+        "packetSHA256": "ce419bf2cb8757b13e611c23baa4fda5f26c4a1b3e3232f6c642bea15ab49083",
+        "status": "incomplete",
+        "reason": null,
+        "assessmentSHA256": "975efbd54e1ddd924b8e29e1786bd34dc70a1a2c4576c5543e084f4ba1689e79"
+      }
+    ],
+    "failure": null,
+    "transport": {
+      "generationCalls": 95,
+      "estimates": 98,
+      "countCalls": 0,
+      "reservedUSD": 0.1287309720000001,
+      "reportedCostUSD": 0.128730972,
+      "unknownReservedUSD": 1.1102230246251565e-16,
+      "priorUsageUSD": 3.108744424000001,
+      "stopped": false
+    },
+    "completedCollection": true,
+    "scoresPending": true,
+    "retryAllowed": false
+  }
+}

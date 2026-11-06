@@ -1,0 +1,27 @@
+{
+  "work": "graphrefly:B121",
+  "kind": "docs-only-development-regression-preparation",
+  "authorization": false,
+  "generationCalls": 0,
+  "changedMaterialFiles": [
+    "examples/spending-alerts/README.md"
+  ],
+  "unchangedMaterialFileCount": 97,
+  "originalArtifactSHA256": {
+    "materials.json": "d6a39d5f0efeb272cd0d03c9b0dda085b175f9c916e7663493d8c528962914ae",
+    "tasks.json": "e61561186dd69dc9fc25b2009dac74fe992710af10080e9638635ec84efc7cab",
+    "reviewer-rubric.json": "90f7b71c79bd1487848d727119b3a056b36d4796a4bbeacd1be74916084adcae",
+    "integration-pins.json": "d623491953e7507387bf50b9ae9c477dede5233eefb3cc6c529a1aecc8705305",
+    "compiler-environment.json.gz": "368af9ec6c47c0345072afbbeedbca36a4042582ae5fdb25efc47c5c49524990"
+  },
+  "compilerChanges": [
+    "/b121-frozen/examples/spending-alerts/README.md"
+  ],
+  "toolchainUnchanged": true,
+  "taskPromptsUnchanged": true,
+  "scoringRulesUnchanged": true,
+  "harnessChange": false,
+  "limitsChange": false,
+  "reuseDisclosure": "Same already-exposed tasks; no formal holdout claims",
+  "runtime": "Node v24.18.0"
+}

@@ -1,0 +1,39 @@
+{
+  "slot": {
+    "id": "candidate-entry-03",
+    "arm": "G",
+    "role": "framework-integrator"
+  },
+  "controller": null,
+  "experiment": "entry",
+  "explanations": {
+    "A": {},
+    "B": {}
+  },
+  "entryAnswer": null,
+  "entryTiming": {
+    "startedMs": 0,
+    "submittedMs": null,
+    "elapsedMs": null,
+    "firstSourceRead": {
+      "path": "examples/spending-alerts/README.md",
+      "line": 1,
+      "operation": "read",
+      "elapsedMs": 962
+    }
+  },
+  "entryStatus": "missing",
+  "usage": {
+    "inputTokens": 948416,
+    "outputTokens": 2637,
+    "elapsedMs": 18096
+  },
+  "costUSD": 0.024792047999999997,
+  "turns": 27,
+  "counts": 28,
+  "operations": 45,
+  "fatal": null,
+  "failureScope": null,
+  "pendingReservation": null,
+  "retryAllowed": false
+}

@@ -1,0 +1,15 @@
+{
+  "generationCalls": 0,
+  "metadataRequests": 2,
+  "reportedUsageUSD": 0.798574588,
+  "unresolvedReservationsUSD": 0.9541632,
+  "releasedReservationsUSD": 0,
+  "ceilingUSD": 2,
+  "conservativeAvailableUSD": 0.247262212,
+  "nextRequestReserveUSD": 0.319488,
+  "admitted": false,
+  "asOf": "2026-09-18T03:06:19.977395+00:00",
+  "keyReceiptSHA256": "ab95d4dd535097d5196a46da5262ba4085043ca2cccde700435b6e6b07c586fe",
+  "generationLookupSHA256": "0b04cdc9ad19e2857c49db0a45b161bf0172a4dfa2a5cd39b4e0bafa20510ef0",
+  "reason": "Header generation ID discovered for503; GET generation returned404, not an explicit zero-cost receipt. Two network failures have no generation ID. Preserve all three reservations."
+}

@@ -1,0 +1,25 @@
+{
+  "kind": "frozen-typecheck",
+  "environmentSHA256": "25c512ca2d3dd5c501f470bd4e6f63994ffbe635c402622b02180226b7302687",
+  "snippetSHA256": "db6358e169fdffe78e7aa39a450d02a3975fef8882346d8bc2e41d724aa859d8",
+  "context": {
+    "taskId": "compose-two-instances",
+    "stage": "module-probe",
+    "binding": {
+      "materialSHA256": "a7846d59bdc5d0ca359292dceb91ef3274991bfb4afd9ce28e18c867e7554e6d",
+      "taskSHA256": "4cb85526391e8a15e083f1ee62df9370d65712555b5faf2116d047a89de8a1ee",
+      "rubricSHA256": "ef5013f4525bc88a9f8ac5848b2a5090378fe6c740c4619e26237ffe8e7d597b",
+      "environmentSHA256": "25c512ca2d3dd5c501f470bd4e6f63994ffbe635c402622b02180226b7302687",
+      "runnerContractSHA256": "8c304251aa7233fe97e4350d360f789312c1d72bf39054e48aa35e4b52e5809e"
+    }
+  },
+  "policy": {
+    "timeoutMs": 60000,
+    "heapMiB": 512,
+    "maxOutputBytes": 4194304,
+    "retries": 0
+  },
+  "nodeVersion": "v24.18.0",
+  "executableSHA256": "ee6fb0e015284d83a91e8ec5213f43a157f8a392b58555301682892ba928c04a",
+  "workerSHA256": "b1d6e51d9522eeb96258cec5bf07aab722d52c5029a108329c311a19cfc74326"
+}

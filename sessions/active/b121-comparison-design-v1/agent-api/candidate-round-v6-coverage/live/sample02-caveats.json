@@ -1,0 +1,9 @@
+{
+  "kind": "non-scoring-source-review-observation",
+  "reviewer": "v6_sample02_review",
+  "sampleId": "candidate-entry-02",
+  "frozenCriterionVerdict": "All four pass; no post-hoc criteria added",
+  "claim": "Participant explanation claims cross-instance sharing of input Nodes triggers the distinct-node check",
+  "source": "examples/spending-alerts/causal-preset.ts:73-93",
+  "finding": "The check compares six Nodes within one instance, not a global cross-instance registry. Submitted code uses the two independently prepared input/resource sets supplied by the task. Keep this explanation error separately; acceptance is not a claim that every statement is correct."
+}

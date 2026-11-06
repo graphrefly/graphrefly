@@ -1,0 +1,49 @@
+{
+  "kind": "B121-offline-harness-diagnostics",
+  "sessions": [
+    {
+      "id": "agent-01",
+      "arm": "G",
+      "requests": 19,
+      "estimatedInputTokens": 263602,
+      "actualInputTokens": 202326,
+      "cumulativeHistoryBytes": 684936,
+      "stops": [],
+      "failure": null,
+      "submittedAnswers": 16,
+      "entryStatus": "separate-experiment",
+      "estimateToActualRatio": 1.302857764202327
+    },
+    {
+      "id": "agent-02",
+      "arm": "G",
+      "requests": 5,
+      "estimatedInputTokens": 41753,
+      "actualInputTokens": 32510,
+      "cumulativeHistoryBytes": 97378,
+      "stops": [],
+      "failure": null,
+      "submittedAnswers": 16,
+      "entryStatus": "separate-experiment",
+      "estimateToActualRatio": 1.284312519224854
+    },
+    {
+      "id": "agent-03",
+      "arm": "G",
+      "requests": 3,
+      "estimatedInputTokens": 12953,
+      "actualInputTokens": 3598,
+      "cumulativeHistoryBytes": 22131,
+      "stops": [],
+      "failure": "provider generation failed (finish_reason=error); retryability unknown",
+      "submittedAnswers": 0,
+      "entryStatus": "separate-experiment",
+      "estimateToActualRatio": 3.6000555864369095
+    }
+  ],
+  "limitations": [
+    "Byte counts describe serialized history, not token counts.",
+    "Estimate ratios describe executed requests only; the actual cost of a blocked request is unknown.",
+    "A successful transport does not establish library usability."
+  ]
+}

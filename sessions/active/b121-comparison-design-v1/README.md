@@ -1,5 +1,7 @@
 # B121：分层使用与理解效果比较设计 v1
 
+> 2026-09-17 当前评测方法与状态见 [冻结评测与 library 复盘](agent-api/evaluation-method.md)。截至该记录的 API 运行均为开发／试运行证据；正式轮尚未冻结。以下设计历史保留，不覆盖这次用户确认的方法。
+
 状态：**待用户审阅，未批准、未执行**。Owner：graphrefly:B121；TS 拥有 consumer、源码适配与包内能力，root 拥有比较方法、oracle、评分和汇总。本稿不改变 B121 proposed 状态，不新增公共 API、registry、协议消息或性能门槛。
 
 ## 本次推荐与批准范围

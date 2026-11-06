@@ -1,0 +1,11 @@
+{
+  "tasksUnchanged": true,
+  "rubricUnchanged": true,
+  "materialsUnchanged": true,
+  "compilerUnchanged": true,
+  "contractUnchanged": true,
+  "changedExecutionFiles": [
+    "scripts/b121-comparison/api-provider.mjs"
+  ],
+  "reason": "Only cumulative budget constant changed 5.5 to11; sample subset explicitly mapped in continuation.json."
+}

@@ -1,0 +1,33 @@
+{
+  "reviewer": "v7_verify",
+  "scope": "v7 delta against /tmp/b121-v7/api-runner.before.mjs and api-tool.before.mjs",
+  "readOnly": true,
+  "findings": [
+    {
+      "location": "scripts/b121-comparison/api-runner.test.mjs:83",
+      "category": "verification_gap",
+      "trigger": "Move currentRequest or answerLimits feedback append to after transport.estimate(payload), mutating the same payload before dispatch.",
+      "consequence": "The tests claiming visibility before estimation still see the later mutation via f.sent retained object reference; an admission estimate omitting metadata could pass.",
+      "recommendation": "Snapshot payload in fake estimate with structuredClone(payload), or assert feedback inside estimate. Compare dispatched payload/hash against the stored estimate snapshot for final rebuild.",
+      "status": "resolved",
+      "resolution": "fake estimate snapshots structuredClone(payload) at estimate time. Current-cap test compares every dispatched requestHash to hash of that snapshot."
+    }
+  ],
+  "checks": {
+    "targetedCommand": "node --test --test-name-pattern='current request cap|field limit|rebuilt final request' scripts/b121-comparison/api-runner.test.mjs",
+    "passed": 3,
+    "failed": 0,
+    "implementationOrder": "Feedback actually appended before estimate in current implementation.",
+    "binding": "Campaign codeBindings hashes every production .mjs in scripts/b121-comparison, including api-tool and api-runner. Contract also binds instructions, policy and ENTRY_TOOL. Candidate entry runner hash binds instructions/policy/tool.",
+    "failureAccounting": "Usage accounting and invalid output rejection remain before entry acceptance; new output observations do not trigger retries.",
+    "utf16": "Controller exact BMP and supplementary-character boundary tests cover stricter JavaScript string.length semantics. Schema numeric constants share source; JSON Schema maxLength is code points and is not semantically identical to runtime UTF-16 bound. This distinction predates v7 and instructions now disclose runtime units.",
+    "skipped": 0,
+    "testClaim": "Field-limit test title now correctly claims numeric equality and unchanged runtime UTF-16 bounds, not JSON Schema semantic equivalence."
+  },
+  "limits": [
+    "No live provider calls.",
+    "Reviewed change only; not a new whole-repository correctness claim."
+  ],
+  "openFindings": [],
+  "verdict": "No outstanding concrete verification gap in reviewed v7 delta."
+}

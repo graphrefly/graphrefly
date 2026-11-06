@@ -1,0 +1,18 @@
+{
+  "assessmentSHA256": "1d46b5b55c1eeca789c5da1f5d3b6c9004abfd00f907cb4be10c4eb4dedee6d4",
+  "reviewerId": "codex-root-static-review-not-blind",
+  "criteria": {
+    "union-and-absence": {
+      "pass": true,
+      "evidence": "Actual NodeVersion imported from frozen core alias; readonly input array mapped once per item; explicit undefined then level===0; zero counter is preserved. Consumer typecheck passes."
+    },
+    "preserve-fields": {
+      "pass": true,
+      "evidence": "Returns counter/cid/prev directly from supplied union members; no hashing or identifier fabrication. Explanation distinguishes DATA content identifier from source revision; null prev is retained."
+    },
+    "version-meaning": {
+      "pass": true,
+      "evidence": "Explanation denies implementation/I/O authority proof and states counter increments despite unchanged CID, matching frozen versioning.ts:74-79,128-143. It does not assert equal CID proves equal payloads; criterion does not require separate collision discussion."
+    }
+  }
+}

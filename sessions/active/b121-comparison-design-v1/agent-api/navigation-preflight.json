@@ -1,0 +1,16 @@
+{
+  "kind": "B121-navigation-preflight",
+  "at": "2026-09-16T04:47:41.462Z",
+  "manifestSHA": "dc20a75fc7a9753637f761961e8bfb6c35be77627e1018bde34c6ea6d064865d",
+  "userApproval": "User explicitly confirmed one v4 DeepSeek V4.1 Flash/Together campaign: 12 comparisons plus 6 standalone entry sessions, qualification and bounded retries within cumulative USD2.",
+  "status": "blocked-expired-credential",
+  "keyMetadataStatus": 401,
+  "keyMetadataError": "API key expired.",
+  "priorKeyExpiresAt": "2026-09-16T01:17:11.542Z",
+  "lastReconciledPriorSpendUSD": 0.022818016,
+  "suggestedReplacementKeyCeilingUSD": 1.97,
+  "routeMetadata": "Together route, model, context and price unchanged at preflight",
+  "inferenceCalls": 0,
+  "newSpendUSD": 0,
+  "authorizationConsumed": false
+}

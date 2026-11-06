@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
 import { createSession } from './session.mjs';
-import { createEntryAcceptance, validateEntrySnippet } from './entry-tasks.mjs';
+import { createEntryAcceptance, createStandaloneEntryAcceptance, validateEntrySnippet } from './entry-tasks.mjs';
 const tsRoot = fileURLToPath(new URL('../../../graphrefly-ts/', import.meta.url));
 const session = () => createSession({ sessionId: 'offline-entry-smoke', files: {} });
 function closed() {
@@ -94,4 +94,20 @@ test('Graph-only per-task grading requires review and keeps rejected/missing res
     review: syntheticReview(packet.tasks[2]) });
   assert.equal(invalid.compilation.ok, false);
   assert.equal(invalid.accepted, false);
+});
+
+test('standalone acceptance explicitly binds one role and never claims comparison closure', () => {
+  for (const [role, id] of [['user', 'ordinary'], ['framework', 'framework'], ['maintainer', 'maintainer']]) {
+    const acceptance = createStandaloneEntryAcceptance({ experiment: 'entry', sessionId: 'independent-entry', role, tsRoot });
+    const packet = acceptance.releaseTasks();
+    assert.equal(packet.experiment, 'entry');
+    assert.equal(packet.sessionId, 'independent-entry');
+    assert.equal(Object.hasOwn(packet, 'comparisonProof'), false);
+    assert.deepEqual(packet.tasks.map(t => t.id), [id]);
+    assert.deepEqual(acceptance.referenceSnippets().map(t => t.id), [id]);
+    assert.throws(() => acceptance.grade({ taskId: id === 'ordinary' ? 'maintainer' : 'ordinary', snippet: 'export {}' }), /unknown task/);
+  }
+  for (const partial of [{}, { experiment: 'entry', sessionId: 'x' }, { experiment: 'comparison', sessionId: 'x', role: 'user' }, { experiment: 'entry', sessionId: '', role: 'user' }]) {
+    assert.throws(() => createStandaloneEntryAcceptance({ ...partial, tsRoot }), /explicit standalone/);
+  }
 });

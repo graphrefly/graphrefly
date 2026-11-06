@@ -1,0 +1,66 @@
+{
+  "slot": {
+    "id": "candidate-entry-03",
+    "arm": "G",
+    "role": "framework-integrator"
+  },
+  "controller": null,
+  "experiment": "entry",
+  "explanations": {
+    "A": {},
+    "B": {}
+  },
+  "entryAnswer": {
+    "op": "submit",
+    "snippet": "/**\n * B121 entry validation: validate an issued FullCausalCapability before handing its\n * three levels to a recipient. Consumer-private source imports, not package subpaths.\n */\nimport type { Graph } from \"../../packages/ts/src/graph/graph.js\";\nimport {\n\tassertCausalCapabilities,\n\ttype CausalBinding,\n\ttype FullCausalCapability,\n} from \"../../packages/ts/src/solutions/causal-occurrence/capabilities.js\";\n\n/** The three graded levels a recipient may consume, in their original identity order. */\nexport interface CausalCapabilityRecipient<T> {\n\treadonly identity: FullCausalCapability<T>[\"identity\"];\n\treadonly execution: FullCausalCapability<T>[\"execution\"];\n\treadonly retained: FullCausalCapability<T>[\"retained\"];\n}\n\n/**\n * Validate the supplied capability against the owning Graph and the expected binding,\n * then deliver the three levels. The recipient is never called when validation fails:\n * a structural copy, a capability from another Graph, or a binding/epoch mismatch all\n * throw before any delivery. The delivered handles are the original issued objects, so\n * `execution.identity === identity` and `retained.execution === execution` still hold.\n */\nexport function handoffCausalCapabilities<T>(\n\tgraph: Graph,\n\tcapability: FullCausalCapability<T>,\n\texpected: CausalBinding,\n\trecipient: (levels: CausalCapabilityRecipient<T>) => void,\n): void {\n\t// Throws TypeError on: unissued/structural copy, wrong Graph, wrong level,\n\t// binding contract/revision/scope/epoch mismatch, or broken lower-handle lineage.\n\tassertCausalCapabilities(graph, capability, expected);\n\n\t// Original references only; no re-wrapping, cloning or re-registration.\n\tconst levels: CausalCapabilityRecipient<T> = Object.freeze({\n\t\tidentity: capability.identity,\n\t\texecution: capability.execution,\n\t\tretained: capability.retained,\n\t});\n\n\trecipient(levels);\n}\n",
+    "explanation": "The handoff is a validate-then-deliver function. `assertCausalCapabilities(graph, capability, expected)` is the only admission gate: it looks the object up in the module-private `issued` WeakMap and throws `TypeError(\"causal capability binding mismatch\")` when the object was never issued (a structural copy or cast), when `root.graph !== graph`, when `root.level !== \"full\"`, or when contract/implementationRevision/scope/epoch differ from the expected binding (packages/ts/src/solutions/causal-occurrence/capabilities.ts:66-82). It then throws `TypeError(\"causal capability lineage mismatch\")` unless each of `identity`, `execution`, `retained` is itself an issued handle of the same instance and Graph (capabilities.ts:83-87), and `TypeError(\"causal capability lower handle mismatch\")` unless `execution.identity === identity` and `retained.execution === execution` (capabilities.ts:88-89). Because the assertion runs before `recipient(...)`, a structural copy, a different-Graph capability or a wrong binding never reaches the recipient; the README states the same rule: \"A capability validation failure must be handled before passing the capabilities to a recipient; a structural copy is not an issued object\" (examples/spending-alerts/README.md:41-43).\n\nDelivery preserves identity relationships by passing the original frozen handles, not copies: `createCausalCapabilities` builds `identity`, `execution` (with `identity` nested), `retained` (with `execution` nested) and `full` as frozen objects and registers each level in the WeakMap (capabilities.ts:122-147). The demo asserts exactly these relationships after handoff: `execution === app.capabilities.execution`, `execution.identity === app.capabilities.identity`, `app.capabilities.retained.execution === execution` (examples/spending-alerts/causal-graded-demo.ts:85-87), and the framework example returns `capabilities.execution` unchanged after validation (examples/spending-alerts/causal-audience.examples.ts:17-25). The binding itself is validated/normalized by `causalBinding` (capabilities.ts:53-64), and the preset constructs the expected binding with `contract: \"contract-v2\"`, `implementationRevision: \"construction-v1\"`, `scope: \"full\"`, `epoch: binding.compositionEpoch` (examples/spending-alerts/causal-preset.ts:114-119).\n\nPossession of the execution level does NOT authorize an arbitrary I/O call. `ExecutionCapability` exposes only graph Nodes (`terminals`, `conservation`, `causalQuiescence`) plus the identity handles (capabilities.ts:27-32); there is no write/open/execute method. The README says \"Capabilities have no arbitrary I/O execution method\" (README.md:94), and the audience example comments \"an execution view grants no I/O method\" (causal-audience.examples.ts:17). Actual I/O is gated elsewhere: the resource lease must be `transferred` before `write` is allowed (examples/spending-alerts/causal-resource.ts:76-79), and admission requires a matching local grant, current policy watermark, and ready inbox slot (examples/spending-alerts/causal-admission.ts:253-296). So the execution level is an observation/lineage handle, not an authorization token; a name or handle is not permission (README.md:86, 122-123).",
+    "concepts": {
+      "read": [
+        "occurrence",
+        "admission",
+        "retained-evidence",
+        "identity",
+        "lifecycle",
+        "authority",
+        "revision",
+        "provenance"
+      ],
+      "required": [
+        "occurrence",
+        "admission",
+        "retained-evidence",
+        "identity",
+        "lifecycle",
+        "authority",
+        "revision",
+        "provenance"
+      ],
+      "firstExpansion": null
+    }
+  },
+  "entryTiming": {
+    "startedMs": 0,
+    "submittedMs": 28979,
+    "elapsedMs": 28979,
+    "firstSourceRead": {
+      "path": "examples/spending-alerts/README.md",
+      "line": 1,
+      "operation": "read",
+      "elapsedMs": 1622
+    }
+  },
+  "entryStatus": "submitted",
+  "usage": {
+    "inputTokens": 680408,
+    "outputTokens": 3225,
+    "elapsedMs": 28984
+  },
+  "costUSD": 0.028149071999999997,
+  "turns": 19,
+  "counts": 19,
+  "operations": 39,
+  "fatal": null,
+  "failureScope": null,
+  "pendingReservation": null,
+  "retryAllowed": false
+}

@@ -1,0 +1,41 @@
+{
+  "kind": "primary-read-only-accounting-audit",
+  "independentReview": false,
+  "failures": [
+    {
+      "journalIndex": 163,
+      "error": "fetch failed",
+      "httpStatus": null,
+      "generationId": null,
+      "reservedUSD": 0.317622,
+      "billing": "unknown-reservation-retained"
+    },
+    {
+      "journalIndex": 530,
+      "error": "OpenRouter HTTP response failed",
+      "httpStatus": 502,
+      "generationId": "gen-1789749771-J5QRjzBTghoi2AslMNq3",
+      "reservedUSD": 0.3191928,
+      "billing": "unknown-reservation-retained"
+    }
+  ],
+  "initialCommittedUSD": 3.2374753960000016,
+  "newReportedUSD": 0.06747446399999998,
+  "newUnknownUSD": 0.6368148000000002,
+  "finalCommittedUSD": 3.941764660000002,
+  "availableUSD": 0.05823533999999819,
+  "retryReservationUSD": 0.3191928,
+  "committedPlusRetryUSD": 4.260957460000002,
+  "retryBlockedBeforeWaitOrHTTP": true,
+  "generationCalls": 53,
+  "callCeilingReached": false,
+  "transportRetriesExecuted": 1,
+  "lastFailureScope": "campaign",
+  "sample03": "incomplete",
+  "sample04": "not-run",
+  "denominator": 4,
+  "generationLookupHTTP": 404,
+  "reservationReleaseUSD": 0,
+  "metadataRequestsTotal": 3,
+  "keyBalanceNotExhausted": true
+}

@@ -1,0 +1,27 @@
+{
+  "kind": "frozen-typecheck",
+  "environmentSHA256": "25c512ca2d3dd5c501f470bd4e6f63994ffbe635c402622b02180226b7302687",
+  "snippetSHA256": "ebafe71d16c22c1b55f218dc0109c5072c18dacd0f09539b8391a6231ebc2a16",
+  "consumerProbeSHA256": "d5f9390de9c65d701144af8ad68909b8185c27a6fb6494e51521c3091bdbc989",
+  "context": {
+    "taskId": "consume-business-results",
+    "sampleId": "candidate-entry-02",
+    "stage": "entry",
+    "binding": {
+      "materialSHA256": "a7846d59bdc5d0ca359292dceb91ef3274991bfb4afd9ce28e18c867e7554e6d",
+      "taskSHA256": "c2e7319352a9d2e663336a9c38606dbd41a6e8af39c93b5d09c3b60a90f876d9",
+      "rubricSHA256": "34414fc3f59a9ed7d269d1de8321c01a7cdc3392cb9cfae67c3aed7c52da14d2",
+      "environmentSHA256": "25c512ca2d3dd5c501f470bd4e6f63994ffbe635c402622b02180226b7302687",
+      "runnerContractSHA256": "fa13bb24115b1b14508b2d1d61fca4159d1a45ff2342b29e5e21c91c57db9625"
+    }
+  },
+  "policy": {
+    "timeoutMs": 60000,
+    "heapMiB": 512,
+    "maxOutputBytes": 4194304,
+    "retries": 0
+  },
+  "nodeVersion": "v24.18.0",
+  "executableSHA256": "ee6fb0e015284d83a91e8ec5213f43a157f8a392b58555301682892ba928c04a",
+  "workerSHA256": "b1d6e51d9522eeb96258cec5bf07aab722d52c5029a108329c311a19cfc74326"
+}

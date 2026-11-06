@@ -1,0 +1,1430 @@
+{
+  "kind": "loopback-only-connection-policy-experiment",
+  "node": "v24.18.0",
+  "undici": "7.28.0",
+  "externalRequests": 0,
+  "generationCalls": 0,
+  "limitations": [
+    "HTTP loopback, not TLS or OpenRouter",
+    "Server intentionally closes sockets; this establishes mechanism and mitigation scope, not cause of prior production failures",
+    "Elapsed loopback times do not estimate provider latency"
+  ],
+  "results": [
+    {
+      "scenario": "healthy",
+      "policy": "default",
+      "requests": [
+        {
+          "sequence": 1,
+          "socket": 1,
+          "requestOnSocket": 1,
+          "connectionHeader": "keep-alive",
+          "drop": false
+        },
+        {
+          "sequence": 2,
+          "socket": 1,
+          "requestOnSocket": 2,
+          "connectionHeader": "keep-alive",
+          "drop": false
+        },
+        {
+          "sequence": 3,
+          "socket": 1,
+          "requestOnSocket": 3,
+          "connectionHeader": "keep-alive",
+          "drop": false
+        },
+        {
+          "sequence": 4,
+          "socket": 1,
+          "requestOnSocket": 4,
+          "connectionHeader": "keep-alive",
+          "drop": false
+        },
+        {
+          "sequence": 5,
+          "socket": 1,
+          "requestOnSocket": 5,
+          "connectionHeader": "keep-alive",
+          "drop": false
+        },
+        {
+          "sequence": 6,
+          "socket": 1,
+          "requestOnSocket": 6,
+          "connectionHeader": "keep-alive",
+          "drop": false
+        },
+        {
+          "sequence": 7,
+          "socket": 1,
+          "requestOnSocket": 7,
+          "connectionHeader": "keep-alive",
+          "drop": false
+        },
+        {
+          "sequence": 8,
+          "socket": 1,
+          "requestOnSocket": 8,
+          "connectionHeader": "keep-alive",
+          "drop": false
+        },
+        {
+          "sequence": 9,
+          "socket": 1,
+          "requestOnSocket": 9,
+          "connectionHeader": "keep-alive",
+          "drop": false
+        },
+        {
+          "sequence": 10,
+          "socket": 1,
+          "requestOnSocket": 10,
+          "connectionHeader": "keep-alive",
+          "drop": false
+        },
+        {
+          "sequence": 11,
+          "socket": 1,
+          "requestOnSocket": 11,
+          "connectionHeader": "keep-alive",
+          "drop": false
+        },
+        {
+          "sequence": 12,
+          "socket": 1,
+          "requestOnSocket": 12,
+          "connectionHeader": "keep-alive",
+          "drop": false
+        },
+        {
+          "sequence": 13,
+          "socket": 1,
+          "requestOnSocket": 13,
+          "connectionHeader": "keep-alive",
+          "drop": false
+        },
+        {
+          "sequence": 14,
+          "socket": 1,
+          "requestOnSocket": 14,
+          "connectionHeader": "keep-alive",
+          "drop": false
+        },
+        {
+          "sequence": 15,
+          "socket": 1,
+          "requestOnSocket": 15,
+          "connectionHeader": "keep-alive",
+          "drop": false
+        },
+        {
+          "sequence": 16,
+          "socket": 1,
+          "requestOnSocket": 16,
+          "connectionHeader": "keep-alive",
+          "drop": false
+        },
+        {
+          "sequence": 17,
+          "socket": 1,
+          "requestOnSocket": 17,
+          "connectionHeader": "keep-alive",
+          "drop": false
+        },
+        {
+          "sequence": 18,
+          "socket": 1,
+          "requestOnSocket": 18,
+          "connectionHeader": "keep-alive",
+          "drop": false
+        },
+        {
+          "sequence": 19,
+          "socket": 1,
+          "requestOnSocket": 19,
+          "connectionHeader": "keep-alive",
+          "drop": false
+        },
+        {
+          "sequence": 20,
+          "socket": 1,
+          "requestOnSocket": 20,
+          "connectionHeader": "keep-alive",
+          "drop": false
+        }
+      ],
+      "connections": 1,
+      "outcomes": [
+        {
+          "ok": true,
+          "elapsedMs": 18
+        },
+        {
+          "ok": true,
+          "elapsedMs": 3
+        },
+        {
+          "ok": true,
+          "elapsedMs": 2
+        },
+        {
+          "ok": true,
+          "elapsedMs": 2
+        },
+        {
+          "ok": true,
+          "elapsedMs": 2
+        },
+        {
+          "ok": true,
+          "elapsedMs": 2
+        },
+        {
+          "ok": true,
+          "elapsedMs": 2
+        },
+        {
+          "ok": true,
+          "elapsedMs": 3
+        },
+        {
+          "ok": true,
+          "elapsedMs": 2
+        },
+        {
+          "ok": true,
+          "elapsedMs": 2
+        },
+        {
+          "ok": true,
+          "elapsedMs": 2
+        },
+        {
+          "ok": true,
+          "elapsedMs": 2
+        },
+        {
+          "ok": true,
+          "elapsedMs": 2
+        },
+        {
+          "ok": true,
+          "elapsedMs": 2
+        },
+        {
+          "ok": true,
+          "elapsedMs": 2
+        },
+        {
+          "ok": true,
+          "elapsedMs": 2
+        },
+        {
+          "ok": true,
+          "elapsedMs": 2
+        },
+        {
+          "ok": true,
+          "elapsedMs": 2
+        },
+        {
+          "ok": true,
+          "elapsedMs": 2
+        },
+        {
+          "ok": true,
+          "elapsedMs": 2
+        }
+      ],
+      "successes": 20,
+      "failures": 0
+    },
+    {
+      "scenario": "healthy",
+      "policy": "connection-close",
+      "requests": [
+        {
+          "sequence": 1,
+          "socket": 1,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": false
+        },
+        {
+          "sequence": 2,
+          "socket": 2,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": false
+        },
+        {
+          "sequence": 3,
+          "socket": 3,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": false
+        },
+        {
+          "sequence": 4,
+          "socket": 4,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": false
+        },
+        {
+          "sequence": 5,
+          "socket": 5,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": false
+        },
+        {
+          "sequence": 6,
+          "socket": 6,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": false
+        },
+        {
+          "sequence": 7,
+          "socket": 7,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": false
+        },
+        {
+          "sequence": 8,
+          "socket": 8,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": false
+        },
+        {
+          "sequence": 9,
+          "socket": 9,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": false
+        },
+        {
+          "sequence": 10,
+          "socket": 10,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": false
+        },
+        {
+          "sequence": 11,
+          "socket": 11,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": false
+        },
+        {
+          "sequence": 12,
+          "socket": 12,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": false
+        },
+        {
+          "sequence": 13,
+          "socket": 13,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": false
+        },
+        {
+          "sequence": 14,
+          "socket": 14,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": false
+        },
+        {
+          "sequence": 15,
+          "socket": 15,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": false
+        },
+        {
+          "sequence": 16,
+          "socket": 16,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": false
+        },
+        {
+          "sequence": 17,
+          "socket": 17,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": false
+        },
+        {
+          "sequence": 18,
+          "socket": 18,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": false
+        },
+        {
+          "sequence": 19,
+          "socket": 19,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": false
+        },
+        {
+          "sequence": 20,
+          "socket": 20,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": false
+        }
+      ],
+      "connections": 20,
+      "outcomes": [
+        {
+          "ok": true,
+          "elapsedMs": 2
+        },
+        {
+          "ok": true,
+          "elapsedMs": 2
+        },
+        {
+          "ok": true,
+          "elapsedMs": 2
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": true,
+          "elapsedMs": 2
+        },
+        {
+          "ok": true,
+          "elapsedMs": 2
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        }
+      ],
+      "successes": 20,
+      "failures": 0
+    },
+    {
+      "scenario": "close-reused-connection",
+      "policy": "default",
+      "requests": [
+        {
+          "sequence": 1,
+          "socket": 1,
+          "requestOnSocket": 1,
+          "connectionHeader": "keep-alive",
+          "drop": false
+        },
+        {
+          "sequence": 2,
+          "socket": 1,
+          "requestOnSocket": 2,
+          "connectionHeader": "keep-alive",
+          "drop": true
+        },
+        {
+          "sequence": 3,
+          "socket": 2,
+          "requestOnSocket": 1,
+          "connectionHeader": "keep-alive",
+          "drop": false
+        },
+        {
+          "sequence": 4,
+          "socket": 2,
+          "requestOnSocket": 2,
+          "connectionHeader": "keep-alive",
+          "drop": true
+        },
+        {
+          "sequence": 5,
+          "socket": 3,
+          "requestOnSocket": 1,
+          "connectionHeader": "keep-alive",
+          "drop": false
+        },
+        {
+          "sequence": 6,
+          "socket": 3,
+          "requestOnSocket": 2,
+          "connectionHeader": "keep-alive",
+          "drop": true
+        },
+        {
+          "sequence": 7,
+          "socket": 4,
+          "requestOnSocket": 1,
+          "connectionHeader": "keep-alive",
+          "drop": false
+        },
+        {
+          "sequence": 8,
+          "socket": 4,
+          "requestOnSocket": 2,
+          "connectionHeader": "keep-alive",
+          "drop": true
+        },
+        {
+          "sequence": 9,
+          "socket": 5,
+          "requestOnSocket": 1,
+          "connectionHeader": "keep-alive",
+          "drop": false
+        },
+        {
+          "sequence": 10,
+          "socket": 5,
+          "requestOnSocket": 2,
+          "connectionHeader": "keep-alive",
+          "drop": true
+        },
+        {
+          "sequence": 11,
+          "socket": 6,
+          "requestOnSocket": 1,
+          "connectionHeader": "keep-alive",
+          "drop": false
+        },
+        {
+          "sequence": 12,
+          "socket": 6,
+          "requestOnSocket": 2,
+          "connectionHeader": "keep-alive",
+          "drop": true
+        },
+        {
+          "sequence": 13,
+          "socket": 7,
+          "requestOnSocket": 1,
+          "connectionHeader": "keep-alive",
+          "drop": false
+        },
+        {
+          "sequence": 14,
+          "socket": 7,
+          "requestOnSocket": 2,
+          "connectionHeader": "keep-alive",
+          "drop": true
+        },
+        {
+          "sequence": 15,
+          "socket": 8,
+          "requestOnSocket": 1,
+          "connectionHeader": "keep-alive",
+          "drop": false
+        },
+        {
+          "sequence": 16,
+          "socket": 8,
+          "requestOnSocket": 2,
+          "connectionHeader": "keep-alive",
+          "drop": true
+        },
+        {
+          "sequence": 17,
+          "socket": 9,
+          "requestOnSocket": 1,
+          "connectionHeader": "keep-alive",
+          "drop": false
+        },
+        {
+          "sequence": 18,
+          "socket": 9,
+          "requestOnSocket": 2,
+          "connectionHeader": "keep-alive",
+          "drop": true
+        },
+        {
+          "sequence": 19,
+          "socket": 10,
+          "requestOnSocket": 1,
+          "connectionHeader": "keep-alive",
+          "drop": false
+        },
+        {
+          "sequence": 20,
+          "socket": 10,
+          "requestOnSocket": 2,
+          "connectionHeader": "keep-alive",
+          "drop": true
+        }
+      ],
+      "connections": 10,
+      "outcomes": [
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": false,
+          "code": "UND_ERR_SOCKET",
+          "elapsedMs": 2
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": false,
+          "code": "UND_ERR_SOCKET",
+          "elapsedMs": 2
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": false,
+          "code": "UND_ERR_SOCKET",
+          "elapsedMs": 2
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": false,
+          "code": "UND_ERR_SOCKET",
+          "elapsedMs": 2
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": false,
+          "code": "UND_ERR_SOCKET",
+          "elapsedMs": 2
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": false,
+          "code": "UND_ERR_SOCKET",
+          "elapsedMs": 2
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": false,
+          "code": "UND_ERR_SOCKET",
+          "elapsedMs": 2
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": false,
+          "code": "UND_ERR_SOCKET",
+          "elapsedMs": 2
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": false,
+          "code": "UND_ERR_SOCKET",
+          "elapsedMs": 2
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": false,
+          "code": "UND_ERR_SOCKET",
+          "elapsedMs": 2
+        }
+      ],
+      "successes": 10,
+      "failures": 10
+    },
+    {
+      "scenario": "close-reused-connection",
+      "policy": "connection-close",
+      "requests": [
+        {
+          "sequence": 1,
+          "socket": 1,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": false
+        },
+        {
+          "sequence": 2,
+          "socket": 2,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": false
+        },
+        {
+          "sequence": 3,
+          "socket": 3,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": false
+        },
+        {
+          "sequence": 4,
+          "socket": 4,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": false
+        },
+        {
+          "sequence": 5,
+          "socket": 5,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": false
+        },
+        {
+          "sequence": 6,
+          "socket": 6,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": false
+        },
+        {
+          "sequence": 7,
+          "socket": 7,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": false
+        },
+        {
+          "sequence": 8,
+          "socket": 8,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": false
+        },
+        {
+          "sequence": 9,
+          "socket": 9,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": false
+        },
+        {
+          "sequence": 10,
+          "socket": 10,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": false
+        },
+        {
+          "sequence": 11,
+          "socket": 11,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": false
+        },
+        {
+          "sequence": 12,
+          "socket": 12,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": false
+        },
+        {
+          "sequence": 13,
+          "socket": 13,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": false
+        },
+        {
+          "sequence": 14,
+          "socket": 14,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": false
+        },
+        {
+          "sequence": 15,
+          "socket": 15,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": false
+        },
+        {
+          "sequence": 16,
+          "socket": 16,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": false
+        },
+        {
+          "sequence": 17,
+          "socket": 17,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": false
+        },
+        {
+          "sequence": 18,
+          "socket": 18,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": false
+        },
+        {
+          "sequence": 19,
+          "socket": 19,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": false
+        },
+        {
+          "sequence": 20,
+          "socket": 20,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": false
+        }
+      ],
+      "connections": 20,
+      "outcomes": [
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": true,
+          "elapsedMs": 2
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        }
+      ],
+      "successes": 20,
+      "failures": 0
+    },
+    {
+      "scenario": "close-any-second-request",
+      "policy": "default",
+      "requests": [
+        {
+          "sequence": 1,
+          "socket": 1,
+          "requestOnSocket": 1,
+          "connectionHeader": "keep-alive",
+          "drop": false
+        },
+        {
+          "sequence": 2,
+          "socket": 1,
+          "requestOnSocket": 2,
+          "connectionHeader": "keep-alive",
+          "drop": true
+        },
+        {
+          "sequence": 3,
+          "socket": 2,
+          "requestOnSocket": 1,
+          "connectionHeader": "keep-alive",
+          "drop": false
+        },
+        {
+          "sequence": 4,
+          "socket": 2,
+          "requestOnSocket": 2,
+          "connectionHeader": "keep-alive",
+          "drop": true
+        },
+        {
+          "sequence": 5,
+          "socket": 3,
+          "requestOnSocket": 1,
+          "connectionHeader": "keep-alive",
+          "drop": false
+        },
+        {
+          "sequence": 6,
+          "socket": 3,
+          "requestOnSocket": 2,
+          "connectionHeader": "keep-alive",
+          "drop": true
+        },
+        {
+          "sequence": 7,
+          "socket": 4,
+          "requestOnSocket": 1,
+          "connectionHeader": "keep-alive",
+          "drop": false
+        },
+        {
+          "sequence": 8,
+          "socket": 4,
+          "requestOnSocket": 2,
+          "connectionHeader": "keep-alive",
+          "drop": true
+        },
+        {
+          "sequence": 9,
+          "socket": 5,
+          "requestOnSocket": 1,
+          "connectionHeader": "keep-alive",
+          "drop": false
+        },
+        {
+          "sequence": 10,
+          "socket": 5,
+          "requestOnSocket": 2,
+          "connectionHeader": "keep-alive",
+          "drop": true
+        },
+        {
+          "sequence": 11,
+          "socket": 6,
+          "requestOnSocket": 1,
+          "connectionHeader": "keep-alive",
+          "drop": false
+        },
+        {
+          "sequence": 12,
+          "socket": 6,
+          "requestOnSocket": 2,
+          "connectionHeader": "keep-alive",
+          "drop": true
+        },
+        {
+          "sequence": 13,
+          "socket": 7,
+          "requestOnSocket": 1,
+          "connectionHeader": "keep-alive",
+          "drop": false
+        },
+        {
+          "sequence": 14,
+          "socket": 7,
+          "requestOnSocket": 2,
+          "connectionHeader": "keep-alive",
+          "drop": true
+        },
+        {
+          "sequence": 15,
+          "socket": 8,
+          "requestOnSocket": 1,
+          "connectionHeader": "keep-alive",
+          "drop": false
+        },
+        {
+          "sequence": 16,
+          "socket": 8,
+          "requestOnSocket": 2,
+          "connectionHeader": "keep-alive",
+          "drop": true
+        },
+        {
+          "sequence": 17,
+          "socket": 9,
+          "requestOnSocket": 1,
+          "connectionHeader": "keep-alive",
+          "drop": false
+        },
+        {
+          "sequence": 18,
+          "socket": 9,
+          "requestOnSocket": 2,
+          "connectionHeader": "keep-alive",
+          "drop": true
+        },
+        {
+          "sequence": 19,
+          "socket": 10,
+          "requestOnSocket": 1,
+          "connectionHeader": "keep-alive",
+          "drop": false
+        },
+        {
+          "sequence": 20,
+          "socket": 10,
+          "requestOnSocket": 2,
+          "connectionHeader": "keep-alive",
+          "drop": true
+        }
+      ],
+      "connections": 10,
+      "outcomes": [
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": false,
+          "code": "UND_ERR_SOCKET",
+          "elapsedMs": 2
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": false,
+          "code": "UND_ERR_SOCKET",
+          "elapsedMs": 2
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": false,
+          "code": "UND_ERR_SOCKET",
+          "elapsedMs": 2
+        },
+        {
+          "ok": true,
+          "elapsedMs": 2
+        },
+        {
+          "ok": false,
+          "code": "UND_ERR_SOCKET",
+          "elapsedMs": 2
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": false,
+          "code": "UND_ERR_SOCKET",
+          "elapsedMs": 2
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": false,
+          "code": "UND_ERR_SOCKET",
+          "elapsedMs": 2
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": false,
+          "code": "UND_ERR_SOCKET",
+          "elapsedMs": 1
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": false,
+          "code": "UND_ERR_SOCKET",
+          "elapsedMs": 2
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": false,
+          "code": "UND_ERR_SOCKET",
+          "elapsedMs": 2
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": false,
+          "code": "UND_ERR_SOCKET",
+          "elapsedMs": 2
+        }
+      ],
+      "successes": 10,
+      "failures": 10
+    },
+    {
+      "scenario": "close-any-second-request",
+      "policy": "connection-close",
+      "requests": [
+        {
+          "sequence": 1,
+          "socket": 1,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": false
+        },
+        {
+          "sequence": 2,
+          "socket": 2,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": true
+        },
+        {
+          "sequence": 3,
+          "socket": 3,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": false
+        },
+        {
+          "sequence": 4,
+          "socket": 4,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": true
+        },
+        {
+          "sequence": 5,
+          "socket": 5,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": false
+        },
+        {
+          "sequence": 6,
+          "socket": 6,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": true
+        },
+        {
+          "sequence": 7,
+          "socket": 7,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": false
+        },
+        {
+          "sequence": 8,
+          "socket": 8,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": true
+        },
+        {
+          "sequence": 9,
+          "socket": 9,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": false
+        },
+        {
+          "sequence": 10,
+          "socket": 10,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": true
+        },
+        {
+          "sequence": 11,
+          "socket": 11,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": false
+        },
+        {
+          "sequence": 12,
+          "socket": 12,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": true
+        },
+        {
+          "sequence": 13,
+          "socket": 13,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": false
+        },
+        {
+          "sequence": 14,
+          "socket": 14,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": true
+        },
+        {
+          "sequence": 15,
+          "socket": 15,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": false
+        },
+        {
+          "sequence": 16,
+          "socket": 16,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": true
+        },
+        {
+          "sequence": 17,
+          "socket": 17,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": false
+        },
+        {
+          "sequence": 18,
+          "socket": 18,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": true
+        },
+        {
+          "sequence": 19,
+          "socket": 19,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": false
+        },
+        {
+          "sequence": 20,
+          "socket": 20,
+          "requestOnSocket": 1,
+          "connectionHeader": "close",
+          "drop": true
+        }
+      ],
+      "connections": 20,
+      "outcomes": [
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": false,
+          "code": "UND_ERR_SOCKET",
+          "elapsedMs": 1
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": false,
+          "code": "UND_ERR_SOCKET",
+          "elapsedMs": 1
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": false,
+          "code": "UND_ERR_SOCKET",
+          "elapsedMs": 1
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": false,
+          "code": "UND_ERR_SOCKET",
+          "elapsedMs": 1
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": false,
+          "code": "UND_ERR_SOCKET",
+          "elapsedMs": 1
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": false,
+          "code": "UND_ERR_SOCKET",
+          "elapsedMs": 1
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": false,
+          "code": "UND_ERR_SOCKET",
+          "elapsedMs": 1
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": false,
+          "code": "UND_ERR_SOCKET",
+          "elapsedMs": 1
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": false,
+          "code": "UND_ERR_SOCKET",
+          "elapsedMs": 1
+        },
+        {
+          "ok": true,
+          "elapsedMs": 1
+        },
+        {
+          "ok": false,
+          "code": "UND_ERR_SOCKET",
+          "elapsedMs": 1
+        }
+      ],
+      "successes": 10,
+      "failures": 10
+    }
+  ]
+}

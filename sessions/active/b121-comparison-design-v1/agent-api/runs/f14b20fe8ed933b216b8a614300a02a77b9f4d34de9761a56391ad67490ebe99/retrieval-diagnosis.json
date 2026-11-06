@@ -1,0 +1,600 @@
+{
+  "kind": "B121-v7-retrieval-diagnosis",
+  "manifestSHA": "f14b20fe8ed933b216b8a614300a02a77b9f4d34de9761a56391ad67490ebe99",
+  "statuses": {
+    "200": 95
+  },
+  "retries": 0,
+  "latencyMs": {
+    "median": 762,
+    "p95": 7758,
+    "max": 12421,
+    "basis": "client request to complete response, not TTFT"
+  },
+  "arms": {
+    "G": {
+      "correct": 400,
+      "denominator": 672,
+      "missingScenarios": 20
+    },
+    "P": {
+      "correct": 298,
+      "denominator": 672,
+      "missingScenarios": 40
+    }
+  },
+  "verification": {
+    "journalHashChain": true,
+    "records": 852,
+    "frozenBindings": true
+  },
+  "entries": {
+    "agent-01-entry": {
+      "role": "user",
+      "requests": [
+        {
+          "op": "read",
+          "path": "entry/task.json"
+        },
+        {
+          "op": "read",
+          "path": "examples/spending-alerts/causal-entry.ts"
+        },
+        {
+          "op": "read",
+          "path": "examples/spending-alerts/causal-view-binding.ts"
+        },
+        {
+          "op": "read",
+          "path": "examples/spending-alerts/causal-inputs.ts"
+        },
+        {
+          "op": "read",
+          "path": "examples/spending-alerts/causal-focused-host.ts"
+        },
+        {
+          "op": "read",
+          "path": "examples/spending-alerts/causal-preset.ts"
+        },
+        {
+          "op": "read",
+          "path": "examples/spending-alerts/causal-resource.ts"
+        },
+        {
+          "op": "read",
+          "path": "examples/spending-alerts/causal-focused-host.ts",
+          "startLine": 81,
+          "endLine": 200
+        },
+        {
+          "op": "search",
+          "query": "consume",
+          "pathPrefix": "examples/spending-alerts/causal-focused-host.ts",
+          "caseSensitive": false,
+          "offset": 0,
+          "limit": 20
+        }
+      ],
+      "recoverableErrors": 0,
+      "stop": {
+        "reason": "input-estimate-exceeds-remaining",
+        "estimatedNextInputTokens": 15816,
+        "remainingInputTokens": 13332,
+        "count": 15816,
+        "usage": {
+          "inputTokens": 34668,
+          "outputTokens": 416,
+          "elapsedMs": 3837
+        }
+      },
+      "usage": {
+        "inputTokens": 34668,
+        "outputTokens": 416,
+        "elapsedMs": 3837
+      }
+    },
+    "agent-02-entry": {
+      "role": "framework",
+      "requests": [
+        {
+          "op": "read",
+          "path": "entry/task.json"
+        },
+        {
+          "op": "read",
+          "path": "examples/spending-alerts/causal-entry.ts"
+        },
+        {
+          "op": "read",
+          "path": "examples/spending-alerts/causal-view-binding.ts"
+        },
+        {
+          "op": "read",
+          "path": "packages/ts/src/solutions/causal-occurrence/capabilities.ts"
+        },
+        {
+          "op": "read",
+          "path": "packages/ts/src/solutions/causal-occurrence/capabilities.ts",
+          "startLine": 81,
+          "endLine": 149
+        },
+        {
+          "op": "read",
+          "path": "examples/spending-alerts/causal-focused-host.ts"
+        },
+        {
+          "op": "read",
+          "path": "examples/spending-alerts/causal-focused-host.ts",
+          "startLine": 81,
+          "endLine": 200
+        },
+        {
+          "op": "search",
+          "query": "createCausalCapabilities",
+          "pathPrefix": "",
+          "caseSensitive": true,
+          "offset": 0,
+          "limit": 20
+        },
+        {
+          "op": "search",
+          "query": "assertCausalCapabilities",
+          "pathPrefix": "",
+          "caseSensitive": true,
+          "offset": 0,
+          "limit": 20
+        },
+        {
+          "op": "search",
+          "query": "consume",
+          "pathPrefix": "examples/spending-alerts/causal-focused-host.ts",
+          "caseSensitive": true,
+          "offset": 0,
+          "limit": 20
+        },
+        {
+          "op": "read",
+          "path": "examples/spending-alerts/causal-preset.ts",
+          "startLine": 150,
+          "endLine": 200
+        },
+        {
+          "op": "read",
+          "path": "examples/spending-alerts/causal-audience.examples.ts"
+        },
+        {
+          "op": "read",
+          "path": "examples/spending-alerts/causal-focused-host.ts",
+          "startLine": 500,
+          "endLine": 579
+        }
+      ],
+      "recoverableErrors": 0,
+      "stop": {
+        "reason": "input-estimate-exceeds-remaining",
+        "estimatedNextInputTokens": 18569,
+        "remainingInputTokens": 4902,
+        "count": 18569,
+        "usage": {
+          "inputTokens": 43098,
+          "outputTokens": 631,
+          "elapsedMs": 5570
+        }
+      },
+      "usage": {
+        "inputTokens": 43098,
+        "outputTokens": 631,
+        "elapsedMs": 5570
+      }
+    },
+    "agent-03-entry": {
+      "role": "framework",
+      "requests": [
+        {
+          "op": "read",
+          "path": "entry/task.json"
+        },
+        {
+          "op": "read",
+          "path": "examples/spending-alerts/causal-entry.ts"
+        },
+        {
+          "op": "read",
+          "path": "examples/spending-alerts/causal-view-binding.ts"
+        },
+        {
+          "op": "read",
+          "path": "packages/ts/src/solutions/causal-occurrence/capabilities.ts"
+        },
+        {
+          "op": "read",
+          "path": "packages/ts/src/solutions/causal-occurrence/capabilities.ts",
+          "startLine": 81,
+          "endLine": 149
+        },
+        {
+          "op": "read",
+          "path": "examples/spending-alerts/causal-resource.ts"
+        },
+        {
+          "op": "read",
+          "path": "examples/spending-alerts/causal-resource.ts",
+          "startLine": 81,
+          "endLine": 160
+        },
+        {
+          "op": "read",
+          "path": "examples/spending-alerts/causal-inputs.ts"
+        },
+        {
+          "op": "search",
+          "query": "validateBinding",
+          "pathPrefix": "examples/spending-alerts/causal-inputs.ts",
+          "caseSensitive": true,
+          "offset": 0,
+          "limit": 10
+        },
+        {
+          "op": "search",
+          "query": "assertCausalCapabilities",
+          "pathPrefix": "",
+          "caseSensitive": true,
+          "offset": 0,
+          "limit": 20
+        },
+        {
+          "op": "search",
+          "query": "createCausalCapabilities",
+          "pathPrefix": "",
+          "caseSensitive": true,
+          "offset": 0,
+          "limit": 20
+        }
+      ],
+      "recoverableErrors": 0,
+      "stop": {
+        "reason": "input-estimate-exceeds-remaining",
+        "estimatedNextInputTokens": 16124,
+        "remainingInputTokens": 14952,
+        "count": 16124,
+        "usage": {
+          "inputTokens": 33048,
+          "outputTokens": 521,
+          "elapsedMs": 3638
+        }
+      },
+      "usage": {
+        "inputTokens": 33048,
+        "outputTokens": 521,
+        "elapsedMs": 3638
+      }
+    },
+    "agent-06-entry": {
+      "role": "user",
+      "requests": [
+        {
+          "op": "read",
+          "path": "entry/task.json"
+        },
+        {
+          "op": "read",
+          "path": "examples/spending-alerts/causal-entry.ts"
+        },
+        {
+          "op": "read",
+          "path": "examples/spending-alerts/causal-view-binding.ts"
+        },
+        {
+          "op": "read",
+          "path": "examples/spending-alerts/causal-inputs.ts"
+        },
+        {
+          "op": "read",
+          "path": "examples/spending-alerts/causal-focused-host.ts"
+        },
+        {
+          "op": "read",
+          "path": "examples/spending-alerts/causal-resource.ts"
+        },
+        {
+          "op": "read",
+          "path": "examples/spending-alerts/causal-preset.ts"
+        },
+        {
+          "op": "read",
+          "path": "examples/spending-alerts/causal-focused-host.ts",
+          "startLine": 80,
+          "endLine": 200
+        },
+        {
+          "op": "read",
+          "path": "examples/spending-alerts/causal-preset.ts",
+          "startLine": 80,
+          "endLine": 207
+        },
+        {
+          "op": "read",
+          "path": "examples/spending-alerts/causal-preset.ts",
+          "startLine": 160,
+          "endLine": 207
+        },
+        {
+          "op": "read",
+          "path": "examples/spending-alerts/causal-focused-host.ts",
+          "startLine": 160,
+          "endLine": 300
+        }
+      ],
+      "recoverableErrors": 0,
+      "stop": {
+        "reason": "input-estimate-exceeds-remaining",
+        "estimatedNextInputTokens": 20559,
+        "remainingInputTokens": 11753,
+        "count": 20559,
+        "usage": {
+          "inputTokens": 36247,
+          "outputTokens": 473,
+          "elapsedMs": 3577
+        }
+      },
+      "usage": {
+        "inputTokens": 36247,
+        "outputTokens": 473,
+        "elapsedMs": 3577
+      }
+    },
+    "agent-09-entry": {
+      "role": "maintainer",
+      "requests": [
+        {
+          "op": "read",
+          "path": "entry/task.json"
+        },
+        {
+          "op": "read",
+          "path": "examples/spending-alerts/causal-entry.ts"
+        },
+        {
+          "op": "search",
+          "query": "composeSpendingHost",
+          "pathPrefix": "",
+          "caseSensitive": true,
+          "offset": 0,
+          "limit": 20
+        },
+        {
+          "op": "search",
+          "query": "hostGuard",
+          "pathPrefix": "",
+          "caseSensitive": true,
+          "offset": 0,
+          "limit": 20
+        },
+        {
+          "op": "search",
+          "query": "runEndReady",
+          "pathPrefix": "",
+          "caseSensitive": true,
+          "offset": 0,
+          "limit": 20
+        },
+        {
+          "op": "search",
+          "query": "normalEndReady",
+          "pathPrefix": "",
+          "caseSensitive": true,
+          "offset": 0,
+          "limit": 20
+        },
+        {
+          "op": "read",
+          "path": "examples/spending-alerts/causal-focused-host.ts",
+          "startLine": 1,
+          "endLine": 130
+        },
+        {
+          "op": "read",
+          "path": "examples/spending-alerts/causal-focused-host.ts",
+          "startLine": 440,
+          "endLine": 600
+        },
+        {
+          "op": "read",
+          "path": "examples/spending-alerts/causal-focused-host.ts",
+          "startLine": 80,
+          "endLine": 200
+        },
+        {
+          "op": "read",
+          "path": "examples/spending-alerts/causal-focused-host.ts",
+          "startLine": 519,
+          "endLine": 579
+        },
+        {
+          "op": "read",
+          "path": "examples/spending-alerts/causal-focused-host.ts",
+          "startLine": 200,
+          "endLine": 300
+        },
+        {
+          "op": "read",
+          "path": "examples/spending-alerts/causal-focused-host.ts",
+          "startLine": 300,
+          "endLine": 440
+        },
+        {
+          "op": "read",
+          "path": "examples/spending-alerts/causal-focused-host.ts",
+          "startLine": 280,
+          "endLine": 300
+        },
+        {
+          "op": "read",
+          "path": "examples/spending-alerts/causal-focused-host.ts",
+          "startLine": 380,
+          "endLine": 440
+        },
+        {
+          "op": "search",
+          "query": "quiescence",
+          "pathPrefix": "packages/ts/src/solutions/causal-occurrence",
+          "caseSensitive": true,
+          "offset": 0,
+          "limit": 20
+        },
+        {
+          "op": "search",
+          "query": "CausalQuiescence",
+          "pathPrefix": "",
+          "caseSensitive": true,
+          "offset": 0,
+          "limit": 20
+        }
+      ],
+      "recoverableErrors": 0,
+      "stop": {
+        "reason": "input-estimate-exceeds-remaining",
+        "estimatedNextInputTokens": 20270,
+        "remainingInputTokens": 4728,
+        "count": 20270,
+        "usage": {
+          "inputTokens": 43272,
+          "outputTokens": 787,
+          "elapsedMs": 5816
+        }
+      },
+      "usage": {
+        "inputTokens": 43272,
+        "outputTokens": 787,
+        "elapsedMs": 5816
+      }
+    },
+    "agent-11-entry": {
+      "role": "maintainer",
+      "requests": [
+        {
+          "op": "read",
+          "path": "entry/task.json"
+        },
+        {
+          "op": "read",
+          "path": "examples/spending-alerts/causal-entry.ts"
+        },
+        {
+          "op": "search",
+          "query": "composeSpendingHost",
+          "pathPrefix": "",
+          "caseSensitive": true,
+          "offset": 0,
+          "limit": 20
+        },
+        {
+          "op": "search",
+          "query": "hostGuard",
+          "pathPrefix": "",
+          "caseSensitive": true,
+          "offset": 0,
+          "limit": 20
+        },
+        {
+          "op": "search",
+          "query": "runEndReady",
+          "pathPrefix": "",
+          "caseSensitive": true,
+          "offset": 0,
+          "limit": 20
+        },
+        {
+          "op": "search",
+          "query": "normalEndReady",
+          "pathPrefix": "",
+          "caseSensitive": true,
+          "offset": 0,
+          "limit": 20
+        },
+        {
+          "op": "read",
+          "path": "examples/spending-alerts/causal-focused-host.ts",
+          "startLine": 1,
+          "endLine": 130
+        },
+        {
+          "op": "read",
+          "path": "examples/spending-alerts/causal-focused-host.ts",
+          "startLine": 440,
+          "endLine": 600
+        },
+        {
+          "op": "read",
+          "path": "examples/spending-alerts/causal-focused-host.ts",
+          "startLine": 80,
+          "endLine": 200
+        },
+        {
+          "op": "read",
+          "path": "examples/spending-alerts/causal-focused-host.ts",
+          "startLine": 519,
+          "endLine": 579
+        },
+        {
+          "op": "read",
+          "path": "examples/spending-alerts/causal-focused-host.ts",
+          "startLine": 200,
+          "endLine": 300
+        },
+        {
+          "op": "read",
+          "path": "examples/spending-alerts/causal-focused-host.ts",
+          "startLine": 300,
+          "endLine": 440
+        },
+        {
+          "op": "read",
+          "path": "examples/spending-alerts/causal-focused-host.ts",
+          "startLine": 280,
+          "endLine": 300
+        },
+        {
+          "op": "read",
+          "path": "examples/spending-alerts/causal-focused-host.ts",
+          "startLine": 380,
+          "endLine": 440
+        },
+        {
+          "op": "search",
+          "query": "quiescence",
+          "pathPrefix": "packages/ts/src/solutions/causal-occurrence",
+          "caseSensitive": true,
+          "offset": 0,
+          "limit": 20
+        },
+        {
+          "op": "search",
+          "query": "CausalQuiescence",
+          "pathPrefix": "",
+          "caseSensitive": true,
+          "offset": 0,
+          "limit": 20
+        }
+      ],
+      "recoverableErrors": 0,
+      "stop": {
+        "reason": "input-estimate-exceeds-remaining",
+        "estimatedNextInputTokens": 20270,
+        "remainingInputTokens": 4728,
+        "count": 20270,
+        "usage": {
+          "inputTokens": 43272,
+          "outputTokens": 787,
+          "elapsedMs": 4659
+        }
+      },
+      "usage": {
+        "inputTokens": 43272,
+        "outputTokens": 787,
+        "elapsedMs": 4659
+      }
+    }
+  },
+  "limitation": "Input admission uses a heuristic estimate. Stops show the current cumulative accounting policy blocked dispatch; they do not prove the actual tokenizer would exceed 48k or that library code is unusable."
+}

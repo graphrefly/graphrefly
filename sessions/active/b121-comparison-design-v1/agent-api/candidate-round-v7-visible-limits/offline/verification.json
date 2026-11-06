@@ -1,0 +1,17 @@
+{
+  "fullSuite": {
+    "command": "node --test scripts/b121-comparison/*.test.mjs",
+    "passed": 200,
+    "failed": 0,
+    "skipped": 0
+  },
+  "moduleProbes": 4,
+  "independentReviewLenses": 3,
+  "fixedFinding": "Estimate-time payload snapshot and dispatched hash equality make metadata-before-admission regression detectable.",
+  "remainingFindings": [],
+  "providerCalls": 0,
+  "runtimeBudgetAllocationChanged": false,
+  "acceptanceLimitsChanged": false,
+  "unicodeCaveat": "JSON Schema maxLength counts code points; existing runner counts UTF-16 units. Numeric caps unchanged; runner units now explicit. No equivalence claim.",
+  "reviewScope": "Current turn delta vs saved before-files; preexisting dirty work preserved."
+}

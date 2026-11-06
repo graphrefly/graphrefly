@@ -1,0 +1,36 @@
+{
+  "graphrefly": {
+    "trackedChangedSinceTaskBaseline": [
+      "decisions/decisions.jsonl",
+      "plan/backlog.jsonl",
+      "scripts/b121-comparison/api-campaign-entry.test.mjs",
+      "scripts/b121-comparison/api-campaign.mjs",
+      "scripts/b121-comparison/api-campaign.test.mjs",
+      "scripts/b121-comparison/api-prepare.mjs",
+      "scripts/b121-comparison/api-runner.mjs",
+      "scripts/b121-comparison/api-runner.test.mjs",
+      "scripts/b121-comparison/api-transport.mjs",
+      "sessions/sessions.jsonl"
+    ],
+    "preexistingUntrackedChanged": [
+      "scripts/b121-comparison/api-campaign-summary.test.mjs",
+      "scripts/b121-comparison/candidate-campaign.mjs",
+      "scripts/b121-comparison/candidate-campaign.test.mjs",
+      "sessions/active/b121-comparison-design-v1/agent-api/next-round-draft.md"
+    ],
+    "preexistingUntrackedCount": 1827,
+    "preexistingUntrackedUnchanged": 1823,
+    "gitHeadUnchanged": true,
+    "stagedPatchUnchanged": true
+  },
+  "graphrefly-ts": {
+    "trackedChangedSinceTaskBaseline": [],
+    "preexistingUntrackedChanged": [],
+    "preexistingUntrackedCount": 0,
+    "preexistingUntrackedUnchanged": 0,
+    "gitHeadUnchanged": true,
+    "stagedPatchUnchanged": true
+  },
+  "historicalArtifactsChanged": [],
+  "baselineDirectory": "/var/folders/1k/6k95mf1117q9_klyvs61pml00000gn/T/b121-graph-migration-j6hec6bu"
+}

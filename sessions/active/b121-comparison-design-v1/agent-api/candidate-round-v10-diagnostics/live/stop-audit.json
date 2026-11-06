@@ -1,0 +1,38 @@
+{
+  "eventIndex": 223,
+  "eventHash": "aa5282312dacf021a6c08dde2dd501d1c261fc8edd09cbb0cf6a0346336ef7e5",
+  "journal": "/Users/davidchenallio/src/graphrefly/sessions/active/b121-comparison-design-v1/agent-api/candidate-runs/d9e645b41e11cf67b32f066f808297d2b77a7577ea2aa7863461b4c459c1e013/journal.jsonl",
+  "diagnostics": {
+    "version": "transport-diagnostics-v1",
+    "elapsedMs": 42,
+    "attemptTimeoutMs": 60000,
+    "phase": "awaiting-response-headers",
+    "httpStatus": null,
+    "abortSource": null,
+    "attemptTimeoutFired": false,
+    "callerAborted": false,
+    "errorChain": [
+      {
+        "parent": null,
+        "relation": "root",
+        "name": "TypeError",
+        "code": null
+      },
+      {
+        "parent": 0,
+        "relation": "cause",
+        "name": null,
+        "code": "UND_ERR_SOCKET"
+      }
+    ]
+  },
+  "reserveUSD": 0.31736159999999997,
+  "committedUSD": 4.710617752000002,
+  "retryWouldCommitUSD": 5.027979352000002,
+  "retryAdmitted": false,
+  "retrySent": false,
+  "generationId": null,
+  "releasedReservationsUSD": 0,
+  "generationLookups": 0,
+  "interpretation": "Underlying socket error before response headers; neither local timeout nor caller cancellation. No HTTP429 received. Which component closed the connection, request receipt by upstream and relationship to connection reuse remain unknown."
+}

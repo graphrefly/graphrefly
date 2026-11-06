@@ -1,0 +1,19 @@
+{
+  "manifestSHA": "837c281f2a4a0eb74396dae8907b0aef529ed1425e74ce25744b2d8425720a01",
+  "action": "B121-agent-api-one-shot",
+  "acceptAliasLimitation": true,
+  "acceptInputEstimateLimitation": true,
+  "model": "deepseek/deepseek-v4.1-flash",
+  "providerTag": "together",
+  "expiresAt": "2026-09-17T07:04:32.976Z",
+  "maxGenerationCalls": 1444,
+  "maxUSD": 2,
+  "priorUsageUSD": 0.41893852,
+  "retries": {
+    "capacity": 3,
+    "availability": 1
+  },
+  "priorRetiredKeyUsageUSD": 0.022818016,
+  "currentKeyStartingUsageUSD": 0.396120504,
+  "evidence": "User explicitly authorizes all related modifications and reruns until success or funds exhausted. Retain cumulative USD2 including prior spend. v8 API cumulative input200000 per session; output8000; DeepSeek v4.1 Flash Together; existing bounded retries. Offline151/151 and feasibility54/54."
+}

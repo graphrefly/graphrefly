@@ -1,0 +1,74 @@
+{
+  "kind": "offline-design-calculation-not-execution-approval",
+  "generationCalls": 0,
+  "liveAdmissionImplemented": false,
+  "proposedCeilingUSD": "4.5",
+  "historicalReservationsReleasedUSD": "0",
+  "maximumAdditionalCommittedUSD": "0.55823534",
+  "reportedSpendHeadroomBeforeFullReserve": "0.23874734",
+  "cases": [
+    {
+      "name": "Current cap blocks first request",
+      "ceilingUSD": "4",
+      "additionalReportedUSD": "0",
+      "additionalUnknownUSD": "0",
+      "committedBeforeNextUSD": "3.94176466",
+      "nextReserveUSD": "0.319488",
+      "admitted": false
+    },
+    {
+      "name": "Proposed cap admits first request",
+      "ceilingUSD": "4.5",
+      "additionalReportedUSD": "0",
+      "additionalUnknownUSD": "0",
+      "committedBeforeNextUSD": "3.94176466",
+      "nextReserveUSD": "0.319488",
+      "admitted": true
+    },
+    {
+      "name": "After one unknown attempt retry stops",
+      "ceilingUSD": "4.5",
+      "additionalReportedUSD": "0",
+      "additionalUnknownUSD": "0.319488",
+      "committedBeforeNextUSD": "4.26125266",
+      "nextReserveUSD": "0.319488",
+      "admitted": false
+    },
+    {
+      "name": "Successful requests totaling 0.2 leave room",
+      "ceilingUSD": "4.5",
+      "additionalReportedUSD": "0.2",
+      "additionalUnknownUSD": "0",
+      "committedBeforeNextUSD": "4.14176466",
+      "nextReserveUSD": "0.319488",
+      "admitted": true
+    },
+    {
+      "name": "Successful requests totaling 0.25 block next",
+      "ceilingUSD": "4.5",
+      "additionalReportedUSD": "0.25",
+      "additionalUnknownUSD": "0",
+      "committedBeforeNextUSD": "4.19176466",
+      "nextReserveUSD": "0.319488",
+      "admitted": false
+    },
+    {
+      "name": "Exact boundary admits",
+      "ceilingUSD": "4.5",
+      "additionalReportedUSD": "0.23874734",
+      "additionalUnknownUSD": "0",
+      "committedBeforeNextUSD": "4.18051200",
+      "nextReserveUSD": "0.319488",
+      "admitted": true
+    },
+    {
+      "name": "One nanodollar past boundary blocks",
+      "ceilingUSD": "4.5",
+      "additionalReportedUSD": "0.238747341",
+      "additionalUnknownUSD": "0",
+      "committedBeforeNextUSD": "4.180512001",
+      "nextReserveUSD": "0.319488",
+      "admitted": false
+    }
+  ]
+}

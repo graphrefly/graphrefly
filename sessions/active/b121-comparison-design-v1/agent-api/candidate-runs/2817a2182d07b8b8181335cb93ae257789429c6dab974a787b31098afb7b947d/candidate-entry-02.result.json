@@ -1,0 +1,38 @@
+{
+  "slot": {
+    "id": "candidate-entry-02",
+    "arm": "G",
+    "role": "diagnostic-integrator"
+  },
+  "controller": null,
+  "experiment": "entry",
+  "explanations": {
+    "A": {},
+    "B": {}
+  },
+  "entryAnswer": null,
+  "entryTiming": {
+    "startedMs": 0,
+    "submittedMs": null,
+    "elapsedMs": null,
+    "firstSourceRead": null
+  },
+  "entryStatus": "missing",
+  "usage": {
+    "inputTokens": 0,
+    "outputTokens": 0,
+    "elapsedMs": 26
+  },
+  "costUSD": 0,
+  "turns": 1,
+  "counts": 1,
+  "operations": 0,
+  "fatal": "provider cost/call ceiling",
+  "failureScope": "campaign",
+  "pendingReservation": {
+    "inputTokens": 1048576,
+    "outputTokens": 3904,
+    "costUSD": 0.3192576
+  },
+  "retryAllowed": false
+}

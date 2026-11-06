@@ -1,0 +1,64 @@
+{
+  "slot": {
+    "id": "candidate-entry-01",
+    "arm": "G",
+    "role": "tooling-integrator"
+  },
+  "controller": null,
+  "experiment": "entry",
+  "explanations": {
+    "A": {},
+    "B": {}
+  },
+  "entryAnswer": {
+    "op": "submit",
+    "snippet": "/**\n * Structural snapshot capture for a topology viewer.\n *\n * The caller supplies an existing Graph; this module only reads it. It reuses the\n * library's own pure-structure snapshot API (`Graph.topology()`, D173) instead of\n * re-projecting `describe()` output, so nested graphs, node identities, dependency\n * edges, factories and static annotations come from the library's single live\n * topology truth source.\n *\n * `Graph.topology()` is defined as `topologyFromDescribe(this.describe())`\n * (packages/ts/src/graph/graph.ts:663-665), and `topologyFromDescribe` copies only\n * id/factory/deps/name/meta per node plus edges and recursive subgraphs\n * (packages/ts/src/graph/describe.ts:63-83). Runtime `status`, cached `value` and\n * `version` live only on `DescribeNode` (packages/ts/src/graph/describe.ts:39-46)\n * and are therefore absent at every depth, including nested subgraphs, because the\n * projection recurses through `subgraphs.map(topologyFromDescribe)`\n * (packages/ts/src/graph/describe.ts:80-81).\n *\n * No node is created, subscribed, activated or modified, and no transport is\n * invoked: the only call is the read-only snapshot accessor.\n */\nimport type { Graph } from \"../../packages/ts/src/graph/graph.js\";\nimport type { GraphTopologySnapshot } from \"../../packages/ts/src/graph/index.js\";\n\n/**\n * Capture a full structural snapshot of `graph` for a topology viewer.\n *\n * The declared return type is the library's actual `GraphTopologySnapshot`\n * (re-exported from `@graphrefly/ts/graph`, packages/ts/src/graph/index.ts:58-66),\n * so the result is assignable to it without any caller cast.\n */\nexport function captureStructure(graph: Graph): GraphTopologySnapshot {\n\treturn graph.topology();\n}\n",
+    "explanation": "The task asks for a structural snapshot of an existing caller-owned Graph, reusing the library's structural snapshot API rather than reimplementing a projector. The library already exposes exactly that: `Graph.topology(): GraphTopologySnapshot` (packages/ts/src/graph/graph.ts:663-665), documented as the \"D173 pure-structure topology snapshot over the same live truth source as describe()\" with \"Runtime status/value/version remain on describe()\" (packages/ts/src/graph/graph.ts:659-662). Its implementation is `topologyFromDescribe(this.describe())`, so it is a pure read of the live topology truth source.\n\n`topologyFromDescribe` (packages/ts/src/graph/describe.ts:63-83) builds each node from `id`, `factory`, `deps` and conditionally `name` and a deep-cloned `meta` (lines 65-72), copies edges as `{from,to}` (line 76), carries `mountId`/`name` (lines 78-79) and recurses into `subgraphs` (lines 80-81). That satisfies the required preservation of nested graphs, node identities, dependency edges, factories and static annotations. The omitted fields are exactly the runtime ones: `status`, `value` and `version` are declared only on `DescribeNode` (packages/ts/src/graph/describe.ts:39-46) and are never copied by the projection, so they are absent at every depth, including nested subgraphs, because the recursion uses the same projector.\n\nThe return type is the real library type: `GraphTopologySnapshot` is declared in packages/ts/src/graph/describe.ts:30-37 and re-exported from the graph entry point (packages/ts/src/graph/index.ts:58-66), so the consumer contract (assignable without caller casts) holds by construction. The snippet imports the type from the package entry and the `Graph` class type from its module, matching the package aliases in entry/task.json.\n\nNo creation, subscription, activation, modification or transport occurs: the only operation is the read-only `topology()` accessor. The example README confirms this is the intended structural direction and that `graph.topology()` is a stable, non-mutating read (examples/spending-alerts/causal-graded-demo.ts:56-58, 72-74, 125/154).\n\nWhat this result does NOT prove: a structural snapshot is a shape/identity/edge description, not an equivalence proof. Equal topology does not establish equal implementations (two different functions can back the same factory/deps shape), equal business results (no values are included), or permission to perform an effect (no authority, admission or capability is represented). The README states a structural copy is not an issued object and that capability validation is separate (examples/spending-alerts/README.md:39-44), and the demo's own evidence block explicitly disclaims attestation of loaded source and modification provenance (examples/spending-alerts/causal-graded-demo.ts:301-310). Static annotations (`meta`) may contain caller data; this function is not a redactor and deliberately preserves them, as the task requires.",
+    "concepts": {
+      "read": [
+        "occurrence",
+        "identity",
+        "lifecycle",
+        "authority",
+        "revision",
+        "provenance"
+      ],
+      "required": [
+        "occurrence",
+        "admission",
+        "retained-evidence",
+        "identity",
+        "lifecycle",
+        "authority",
+        "revision",
+        "provenance"
+      ],
+      "firstExpansion": null
+    }
+  },
+  "entryTiming": {
+    "startedMs": 0,
+    "submittedMs": 92656,
+    "elapsedMs": 92656,
+    "firstSourceRead": {
+      "path": "examples/spending-alerts/README.md",
+      "line": 1,
+      "operation": "read",
+      "elapsedMs": 1479
+    }
+  },
+  "entryStatus": "submitted",
+  "usage": {
+    "inputTokens": 588254,
+    "outputTokens": 4264,
+    "elapsedMs": 92661
+  },
+  "costUSD": 0.024893352,
+  "turns": 21,
+  "counts": 21,
+  "operations": 57,
+  "fatal": null,
+  "failureScope": null,
+  "pendingReservation": null,
+  "retryAllowed": false
+}

@@ -1,0 +1,20 @@
+{
+  "kind": "B121-candidate-offline-check",
+  "providerCalls": 0,
+  "participantSessions": 0,
+  "formalReady": false,
+  "sourceMapFiles": 72,
+  "listIncludesOnlySourceMapAndTask": true,
+  "readmeFirstPageAccessible": true,
+  "privatePathNegativeChecks": 4,
+  "criterionSourceBindings": 12,
+  "taskSHA256": "2ff2634058620a06f03c6f292592b666b9f5c362843d40aaa8656cd6cd939850",
+  "rubricSHA256": "fd90850a312a9393558e120329eb6344d37f23590c20bcccd7d7a1a182aa655c",
+  "materialsSHA256": "74b30e6cf29b485ac0767742889c0924eeea44b1b738ecdf7936b82178471137",
+  "limitations": [
+    "Existing source broker exercised with temporary candidate map only; current campaign/grader still expects legacy task IDs and is not wired to these tasks.",
+    "No participant snippets compiled, no task/runtime success demonstrated.",
+    "Rubric physically resides outside the material map, not an OS sandbox claim."
+  ],
+  "scope": "Material path access and source-binding checks; prompt clarification reviewed before any participant dispatch. Not task-success evidence."
+}

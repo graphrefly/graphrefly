@@ -1,0 +1,83 @@
+{
+  "root": "/Users/davidchenallio/src/graphrefly",
+  "files": [
+    {
+      "path": "scripts/b121-comparison/api-campaign-entry.test.mjs",
+      "sha256": "d66299436bb7df3e04d76c60fd107ee1326c43d0e1827580228596537f9b05ed"
+    },
+    {
+      "path": "scripts/b121-comparison/api-campaign.mjs",
+      "sha256": "39ca999af30e6d7e5141d2b9ebbd1821f0d4dd82e14f18f3767fc5d6622a7176"
+    },
+    {
+      "path": "scripts/b121-comparison/api-campaign.test.mjs",
+      "sha256": "bab995fd4f1949eef05d4866595aabe5eb3837007787fc82d98cac346042c9b3"
+    },
+    {
+      "path": "scripts/b121-comparison/api-prepare.mjs",
+      "sha256": "3e8da31a20da0d3953f788537a9f74212c471c83998a77c72a4408bd98feb8b9"
+    },
+    {
+      "path": "scripts/b121-comparison/api-runner.mjs",
+      "sha256": "97137244da6ca7a326ab859b010784360ebaecda7d3014fb9b83b9229d5dc27e"
+    },
+    {
+      "path": "scripts/b121-comparison/api-runner.test.mjs",
+      "sha256": "e30cdf10e478ad71f2f56c08ac8a1620e3ffafec19bb78815913c1bc6bc28c65"
+    },
+    {
+      "path": "scripts/b121-comparison/api-transport.mjs",
+      "sha256": "cb22098b6c1b413c3bc0af969134c5b7df532fd8b0bb4bed64b0dbb76909471a"
+    },
+    {
+      "path": "scripts/b121-comparison/api-campaign-summary.test.mjs",
+      "sha256": "a61c796075b7f8f35e1201eb33a3109cb5560370c103e559de460e43c21d5220"
+    },
+    {
+      "path": "scripts/b121-comparison/candidate-campaign.mjs",
+      "sha256": "a917bd54ef405ba25302565eaf0444082d2a1bcb857f6a7e3caea7349bee759a"
+    },
+    {
+      "path": "scripts/b121-comparison/candidate-campaign.test.mjs",
+      "sha256": "49cc6d88fcdb888c7aac2a0509bc4b11ca11c4a55a75e16610559ae7d5cbf811"
+    },
+    {
+      "path": "scripts/b121-comparison/runtime-bindings.mjs",
+      "sha256": "a9958645dddd11c378fa3ddcf5ae0be271e6cf546c5894d415ea00510e33768a"
+    },
+    {
+      "path": "scripts/b121-comparison/session-graph.test.mjs",
+      "sha256": "682e7dd54aa8ae394d43b84eeed2c52e6ba6a0308536216fd5b2b075c4f8c1b8"
+    },
+    {
+      "path": "scripts/b121-comparison/transport-graph.test.mjs",
+      "sha256": "9aed2d8a593b930dff609ddb4f8f60a1a84c9e812908b2128306c78ceca91d09"
+    },
+    {
+      "path": "scripts/b121-comparison/campaign-graph.test.mjs",
+      "sha256": "d0f3594465bbde41cc7788f478f50d8c7bae2ba3ea487a68495e3f6b6cfb7e76"
+    },
+    {
+      "path": "scripts/b121-comparison/test-fixtures/graph-runtime.mjs",
+      "sha256": "c797c517e884a92f91edabb551b167c2561b0bf99cc08c2ed3c978cb42dc0ebc"
+    },
+    {
+      "path": "../graphrefly-ts/packages/ts/evals/b121/graph-runtime.mjs",
+      "sha256": "0f63689daffa3c4078cff587cc00dc16e88b0d06bc630e873fc695abdd493cb3"
+    },
+    {
+      "path": "../graphrefly-ts/packages/ts/evals/b121/session-control.mjs",
+      "sha256": "0f30d7942130fda3dd5aa0e20f1e92c1ffbce7cbb11851eb156ba98f2fe83362"
+    },
+    {
+      "path": "../graphrefly-ts/packages/ts/evals/b121/transport-control.mjs",
+      "sha256": "516f5ca5211eaff7eabed97a5d7e83e731352a377cb401daa92b60a9dd752a38"
+    },
+    {
+      "path": "../graphrefly-ts/packages/ts/evals/b121/campaign-control.mjs",
+      "sha256": "ee9985ef168299755b6c2f052e31df8333c4e1f718451bf5509e705b22770458"
+    }
+  ],
+  "codeAndTestFiles": 19,
+  "runtimeModules": 4
+}

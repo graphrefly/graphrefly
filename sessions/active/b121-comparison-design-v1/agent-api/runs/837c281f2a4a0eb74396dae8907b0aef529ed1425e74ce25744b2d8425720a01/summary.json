@@ -1,0 +1,48 @@
+{
+  "kind": "B121-agent-api-attempt-summary",
+  "manifestSHA": "837c281f2a4a0eb74396dae8907b0aef529ed1425e74ce25744b2d8425720a01",
+  "startedAt": "2026-09-16T07:04:33.046Z",
+  "finishedAt": "2026-09-16T07:07:57.944Z",
+  "qualificationPassed": true,
+  "participantSessionsStarted": 12,
+  "participantSessionsCompleted": 11,
+  "participantSessionsUnrun": 0,
+  "submittedAnswers": 185,
+  "participantFailures": [],
+  "entrySessionsStarted": 6,
+  "entrySessionsUnrun": 0,
+  "entrySessionsCompleted": 0,
+  "entryFailures": [
+    {
+      "sessionId": "agent-09-entry",
+      "message": "entry path unavailable",
+      "failureScope": "participant"
+    },
+    {
+      "sessionId": "agent-11-entry",
+      "message": "entry path unavailable",
+      "failureScope": "participant"
+    }
+  ],
+  "submittedEntries": 0,
+  "generationCalls": 143,
+  "providerReportedCostUSD": 0.1645224840000001,
+  "priorUsageUSD": 0.41893852,
+  "reservedUSD": 0.1645224839999997,
+  "unknownReservedUSD": 0,
+  "failure": null,
+  "lastResponse": {
+    "status": 200,
+    "finishReason": "tool_calls",
+    "usage": {
+      "prompt_tokens": 17282,
+      "completion_tokens": 172,
+      "total_tokens": 17454,
+      "reasoning_tokens": 0,
+      "cost": 0.00106332
+    }
+  },
+  "denominator": 1344,
+  "b121Complete": false,
+  "journalHead": "142a0686c18e715d81688e88e5ca450caf5eea7e975d944dda646502dc2bdcbb"
+}

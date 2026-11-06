@@ -1,0 +1,18 @@
+{
+  "newReportedCostUSD": 0.10938784800000004,
+  "keyUsageDeltaUSD": 0.06418330799999994,
+  "billingDeltaMatches": false,
+  "reportedCumulativeUSD": 1.102792024,
+  "keySnapshotCumulativeUSD": 1.057587484,
+  "responseReceiptCumulativeUSD": 1.102792024,
+  "unresolvedPriorReservationsUSD": 1.5931392000000013,
+  "newUnknownReservationsUSD": 0.31948799999999977,
+  "totalUnknownReservationsUSD": 1.912627200000001,
+  "conservativeCommittedUSD": 3.0154192240000013,
+  "ceilingUSD": 4,
+  "conservativeAvailableUSD": 0.9845807759999987,
+  "externalKeyRemainingUSD": 0.9352305320000001,
+  "generationCalls": 105,
+  "metadataRequests": 2,
+  "releasedReservationsUSD": 0
+}

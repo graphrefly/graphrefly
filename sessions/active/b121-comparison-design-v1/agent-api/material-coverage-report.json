@@ -1,0 +1,2073 @@
+{
+  "kind": "B121-offline-material-coverage-evidence",
+  "providerCalls": 0,
+  "formalReady": false,
+  "sourceRun": "ec081c7e1b89bf9b2997cafb0d7f86f456af8d7e39813f05eae56d98a69736a2--authorized-r1",
+  "bundleSHA256": "b05d8d91199785dda78ce62c127db3b810e68d6e8c08801d2991a50e52fdd311",
+  "auditorSHA256": "9ad3b5710fe5a8d694078eccc82d90579080262207ce4553e8a50310f7d407d1",
+  "sourceOnly": {
+    "kind": "B121-material-coverage-audit",
+    "providerCalls": 0,
+    "executionReady": false,
+    "files": [
+      {
+        "path": "examples/spending-alerts/causal-audience.examples.ts",
+        "sha256": "7f692090cc3a0e734edc2da63cd8e51860b12c37e0e8f3b5e4fcaccf1aa84d36",
+        "bytes": 1581,
+        "lines": 39,
+        "restricted": false
+      },
+      {
+        "path": "examples/spending-alerts/causal-entry.ts",
+        "sha256": "3d802f8b01c27519dbcc7b0ed77ed151bc8fa4fd2e0337b7535879e3dbf9b792",
+        "bytes": 3215,
+        "lines": 78,
+        "restricted": false
+      },
+      {
+        "path": "examples/spending-alerts/causal-focused-host.ts",
+        "sha256": "a2988bfad5108f424cbf5347e0531ead939397ab0e725ed92461c05f38310819",
+        "bytes": 17228,
+        "lines": 579,
+        "restricted": false
+      },
+      {
+        "path": "examples/spending-alerts/causal-inputs.ts",
+        "sha256": "dfb1aa266cfed9bb6400171bfba30f046cd09ef94346c18560124566a7364561",
+        "bytes": 14090,
+        "lines": 439,
+        "restricted": false
+      },
+      {
+        "path": "examples/spending-alerts/causal-preset.ts",
+        "sha256": "71f801e17e95b2f7440017048dc08d3479a341d4e5e617be8eff9f513301dd50",
+        "bytes": 6874,
+        "lines": 207,
+        "restricted": false
+      },
+      {
+        "path": "examples/spending-alerts/causal-resource.ts",
+        "sha256": "8bcda13c34aff04379d0e40491fe361cc7c812ed806925649a407be012841ec9",
+        "bytes": 8265,
+        "lines": 263,
+        "restricted": false
+      },
+      {
+        "path": "examples/spending-alerts/causal-view-binding.ts",
+        "sha256": "3a8722abf4ed783b8caa794ccb16a1d4fdfdbe26d999160805da746a62427409",
+        "bytes": 1850,
+        "lines": 57,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/graph/graph.ts",
+        "sha256": "54b3644e0de855533f9ac91621b9e4eceb0368d11a953fe0d793dfd22e8b72fe",
+        "bytes": 41610,
+        "lines": 1183,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/solutions/causal-occurrence/capabilities.ts",
+        "sha256": "606b352953fdb54f7ddc076662fc1fc8b88bed2841fdfe07bdf0b85224879fc7",
+        "bytes": 4830,
+        "lines": 149,
+        "restricted": false
+      }
+    ],
+    "entrypoints": [
+      {
+        "path": "examples/spending-alerts/README.md",
+        "status": "missing"
+      }
+    ],
+    "references": [
+      {
+        "from": "examples/spending-alerts/causal-audience.examples.ts",
+        "ref": "../../packages/ts/src/graph/graph.js",
+        "kind": "import",
+        "line": 2,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/graph.ts",
+        "candidates": [
+          "packages/ts/src/graph/graph.ts",
+          "packages/ts/src/graph/graph.tsx",
+          "packages/ts/src/graph/graph.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-audience.examples.ts",
+        "ref": "../../packages/ts/src/solutions/causal-occurrence/capabilities.js",
+        "kind": "import",
+        "line": 3,
+        "status": "included",
+        "resolved": "packages/ts/src/solutions/causal-occurrence/capabilities.ts",
+        "candidates": [
+          "packages/ts/src/solutions/causal-occurrence/capabilities.ts",
+          "packages/ts/src/solutions/causal-occurrence/capabilities.tsx",
+          "packages/ts/src/solutions/causal-occurrence/capabilities.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-audience.examples.ts",
+        "ref": "./causal-preset.js",
+        "kind": "import",
+        "line": 8,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-preset.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-preset.ts",
+          "examples/spending-alerts/causal-preset.tsx",
+          "examples/spending-alerts/causal-preset.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-audience.examples.ts",
+        "ref": "./causal-publication.js",
+        "kind": "import",
+        "line": 9,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "examples/spending-alerts/causal-publication.ts",
+          "examples/spending-alerts/causal-publication.tsx",
+          "examples/spending-alerts/causal-publication.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-audience.examples.ts",
+        "ref": "./causal-view-binding.js",
+        "kind": "import",
+        "line": 10,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-view-binding.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-view-binding.ts",
+          "examples/spending-alerts/causal-view-binding.tsx",
+          "examples/spending-alerts/causal-view-binding.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-entry.ts",
+        "ref": "../../packages/ts/src/graph/graph.js",
+        "kind": "import",
+        "line": 2,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/graph.ts",
+        "candidates": [
+          "packages/ts/src/graph/graph.ts",
+          "packages/ts/src/graph/graph.tsx",
+          "packages/ts/src/graph/graph.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-entry.ts",
+        "ref": "./causal-focused-host.js",
+        "kind": "import",
+        "line": 3,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-focused-host.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-focused-host.ts",
+          "examples/spending-alerts/causal-focused-host.tsx",
+          "examples/spending-alerts/causal-focused-host.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-entry.ts",
+        "ref": "./causal-inputs.js",
+        "kind": "import",
+        "line": 4,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-inputs.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-inputs.ts",
+          "examples/spending-alerts/causal-inputs.tsx",
+          "examples/spending-alerts/causal-inputs.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-entry.ts",
+        "ref": "./causal-resource.js",
+        "kind": "import",
+        "line": 5,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-resource.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-resource.ts",
+          "examples/spending-alerts/causal-resource.tsx",
+          "examples/spending-alerts/causal-resource.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-focused-host.ts",
+        "ref": "../../packages/ts/src/ctx/types.js",
+        "kind": "import",
+        "line": 2,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/ctx/types.ts",
+          "packages/ts/src/ctx/types.tsx",
+          "packages/ts/src/ctx/types.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-focused-host.ts",
+        "ref": "../../packages/ts/src/graph/construction-scope.js",
+        "kind": "import",
+        "line": 3,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/graph/construction-scope.ts",
+          "packages/ts/src/graph/construction-scope.tsx",
+          "packages/ts/src/graph/construction-scope.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-focused-host.ts",
+        "ref": "../../packages/ts/src/graph/graph.js",
+        "kind": "import",
+        "line": 10,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/graph.ts",
+        "candidates": [
+          "packages/ts/src/graph/graph.ts",
+          "packages/ts/src/graph/graph.tsx",
+          "packages/ts/src/graph/graph.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-focused-host.ts",
+        "ref": "../../packages/ts/src/node/node.js",
+        "kind": "import",
+        "line": 11,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/node/node.ts",
+          "packages/ts/src/node/node.tsx",
+          "packages/ts/src/node/node.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-focused-host.ts",
+        "ref": "../../packages/ts/src/solutions/causal-occurrence/contracts.js",
+        "kind": "import",
+        "line": 12,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/solutions/causal-occurrence/contracts.ts",
+          "packages/ts/src/solutions/causal-occurrence/contracts.tsx",
+          "packages/ts/src/solutions/causal-occurrence/contracts.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-focused-host.ts",
+        "ref": "./causal-inputs.js",
+        "kind": "import",
+        "line": 17,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-inputs.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-inputs.ts",
+          "examples/spending-alerts/causal-inputs.tsx",
+          "examples/spending-alerts/causal-inputs.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-focused-host.ts",
+        "ref": "./causal-preset.js",
+        "kind": "import",
+        "line": 35,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-preset.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-preset.ts",
+          "examples/spending-alerts/causal-preset.tsx",
+          "examples/spending-alerts/causal-preset.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-focused-host.ts",
+        "ref": "./causal-publication.js",
+        "kind": "import",
+        "line": 36,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "examples/spending-alerts/causal-publication.ts",
+          "examples/spending-alerts/causal-publication.tsx",
+          "examples/spending-alerts/causal-publication.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-focused-host.ts",
+        "ref": "./causal-resource.js",
+        "kind": "import",
+        "line": 43,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-resource.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-resource.ts",
+          "examples/spending-alerts/causal-resource.tsx",
+          "examples/spending-alerts/causal-resource.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-focused-host.ts",
+        "ref": "./causal-resource.js",
+        "kind": "import",
+        "line": 45,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-resource.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-resource.ts",
+          "examples/spending-alerts/causal-resource.tsx",
+          "examples/spending-alerts/causal-resource.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-inputs.ts",
+        "ref": "../../packages/ts/src/data/index.js",
+        "kind": "import",
+        "line": 2,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/data/index.ts",
+          "packages/ts/src/data/index.tsx",
+          "packages/ts/src/data/index.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-inputs.ts",
+        "ref": "../../packages/ts/src/node/node.js",
+        "kind": "import",
+        "line": 3,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/node/node.ts",
+          "packages/ts/src/node/node.tsx",
+          "packages/ts/src/node/node.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-inputs.ts",
+        "ref": "../../packages/ts/src/solutions/causal-occurrence/contracts.js",
+        "kind": "import",
+        "line": 4,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/solutions/causal-occurrence/contracts.ts",
+          "packages/ts/src/solutions/causal-occurrence/contracts.tsx",
+          "packages/ts/src/solutions/causal-occurrence/contracts.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-inputs.ts",
+        "ref": "./causal-publication.js",
+        "kind": "import",
+        "line": 9,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "examples/spending-alerts/causal-publication.ts",
+          "examples/spending-alerts/causal-publication.tsx",
+          "examples/spending-alerts/causal-publication.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-inputs.ts",
+        "ref": "./pipeline.js",
+        "kind": "import",
+        "line": 10,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "examples/spending-alerts/pipeline.ts",
+          "examples/spending-alerts/pipeline.tsx",
+          "examples/spending-alerts/pipeline.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-preset.ts",
+        "ref": "../../packages/ts/src/ctx/types.js",
+        "kind": "import",
+        "line": 2,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/ctx/types.ts",
+          "packages/ts/src/ctx/types.tsx",
+          "packages/ts/src/ctx/types.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-preset.ts",
+        "ref": "../../packages/ts/src/data/index.js",
+        "kind": "import",
+        "line": 3,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/data/index.ts",
+          "packages/ts/src/data/index.tsx",
+          "packages/ts/src/data/index.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-preset.ts",
+        "ref": "../../packages/ts/src/graph/construction-scope.js",
+        "kind": "import",
+        "line": 4,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/graph/construction-scope.ts",
+          "packages/ts/src/graph/construction-scope.tsx",
+          "packages/ts/src/graph/construction-scope.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-preset.ts",
+        "ref": "../../packages/ts/src/graph/graph.js",
+        "kind": "import",
+        "line": 8,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/graph.ts",
+        "candidates": [
+          "packages/ts/src/graph/graph.ts",
+          "packages/ts/src/graph/graph.tsx",
+          "packages/ts/src/graph/graph.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-preset.ts",
+        "ref": "../../packages/ts/src/node/node.js",
+        "kind": "import",
+        "line": 9,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/node/node.ts",
+          "packages/ts/src/node/node.tsx",
+          "packages/ts/src/node/node.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-preset.ts",
+        "ref": "../../packages/ts/src/solutions/causal-occurrence/capabilities.js",
+        "kind": "import",
+        "line": 10,
+        "status": "included",
+        "resolved": "packages/ts/src/solutions/causal-occurrence/capabilities.ts",
+        "candidates": [
+          "packages/ts/src/solutions/causal-occurrence/capabilities.ts",
+          "packages/ts/src/solutions/causal-occurrence/capabilities.tsx",
+          "packages/ts/src/solutions/causal-occurrence/capabilities.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-preset.ts",
+        "ref": "../../packages/ts/src/solutions/causal-occurrence/construction.js",
+        "kind": "import",
+        "line": 14,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/solutions/causal-occurrence/construction.ts",
+          "packages/ts/src/solutions/causal-occurrence/construction.tsx",
+          "packages/ts/src/solutions/causal-occurrence/construction.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-preset.ts",
+        "ref": "./causal-admission.js",
+        "kind": "import",
+        "line": 19,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "examples/spending-alerts/causal-admission.ts",
+          "examples/spending-alerts/causal-admission.tsx",
+          "examples/spending-alerts/causal-admission.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-preset.ts",
+        "ref": "./causal-business.js",
+        "kind": "import",
+        "line": 20,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "examples/spending-alerts/causal-business.ts",
+          "examples/spending-alerts/causal-business.tsx",
+          "examples/spending-alerts/causal-business.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-preset.ts",
+        "ref": "./causal-inputs.js",
+        "kind": "import",
+        "line": 21,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-inputs.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-inputs.ts",
+          "examples/spending-alerts/causal-inputs.tsx",
+          "examples/spending-alerts/causal-inputs.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-preset.ts",
+        "ref": "./causal-material-owner.js",
+        "kind": "import",
+        "line": 28,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "examples/spending-alerts/causal-material-owner.ts",
+          "examples/spending-alerts/causal-material-owner.tsx",
+          "examples/spending-alerts/causal-material-owner.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-preset.ts",
+        "ref": "./causal-publication.js",
+        "kind": "import",
+        "line": 29,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "examples/spending-alerts/causal-publication.ts",
+          "examples/spending-alerts/causal-publication.tsx",
+          "examples/spending-alerts/causal-publication.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-resource.ts",
+        "ref": "node:path",
+        "kind": "import",
+        "line": 2,
+        "status": "external",
+        "resolved": null
+      },
+      {
+        "from": "examples/spending-alerts/causal-resource.ts",
+        "ref": "./causal-inputs.js",
+        "kind": "import",
+        "line": 3,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-inputs.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-inputs.ts",
+          "examples/spending-alerts/causal-inputs.tsx",
+          "examples/spending-alerts/causal-inputs.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-resource.ts",
+        "ref": "node:fs/promises",
+        "kind": "import",
+        "line": 142,
+        "status": "external",
+        "resolved": null
+      },
+      {
+        "from": "examples/spending-alerts/causal-resource.ts",
+        "ref": "node:fs/promises",
+        "kind": "import",
+        "line": 250,
+        "status": "external",
+        "resolved": null
+      },
+      {
+        "from": "examples/spending-alerts/causal-view-binding.ts",
+        "ref": "../../packages/ts/src/node/node.js",
+        "kind": "import",
+        "line": 2,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/node/node.ts",
+          "packages/ts/src/node/node.tsx",
+          "packages/ts/src/node/node.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-view-binding.ts",
+        "ref": "./causal-preset.js",
+        "kind": "import",
+        "line": 3,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-preset.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-preset.ts",
+          "examples/spending-alerts/causal-preset.tsx",
+          "examples/spending-alerts/causal-preset.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "../node/runtime-accessors.js",
+        "kind": "import",
+        "line": 1,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/node/runtime-accessors.ts",
+          "packages/ts/src/node/runtime-accessors.tsx",
+          "packages/ts/src/node/runtime-accessors.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "./construction-scope.js",
+        "kind": "import",
+        "line": 2,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/graph/construction-scope.ts",
+          "packages/ts/src/graph/construction-scope.tsx",
+          "packages/ts/src/graph/construction-scope.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "../batch/batch.js",
+        "kind": "import",
+        "line": 16,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/batch/batch.ts",
+          "packages/ts/src/batch/batch.tsx",
+          "packages/ts/src/batch/batch.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "../ctx/types.js",
+        "kind": "import",
+        "line": 17,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/ctx/types.ts",
+          "packages/ts/src/ctx/types.tsx",
+          "packages/ts/src/ctx/types.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "../dispatcher/index.js",
+        "kind": "import",
+        "line": 18,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/dispatcher/index.ts",
+          "packages/ts/src/dispatcher/index.tsx",
+          "packages/ts/src/dispatcher/index.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "../node/core.js",
+        "kind": "import",
+        "line": 19,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/node/core.ts",
+          "packages/ts/src/node/core.tsx",
+          "packages/ts/src/node/core.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "../node/node.js",
+        "kind": "import",
+        "line": 20,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/node/node.ts",
+          "packages/ts/src/node/node.tsx",
+          "packages/ts/src/node/node.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "../node/owned-acquisition.js",
+        "kind": "import",
+        "line": 35,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/node/owned-acquisition.ts",
+          "packages/ts/src/node/owned-acquisition.tsx",
+          "packages/ts/src/node/owned-acquisition.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "../node/versioning.js",
+        "kind": "import",
+        "line": 40,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/node/versioning.ts",
+          "packages/ts/src/node/versioning.tsx",
+          "packages/ts/src/node/versioning.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "../protocol/messages.js",
+        "kind": "import",
+        "line": 41,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/protocol/messages.ts",
+          "packages/ts/src/protocol/messages.tsx",
+          "packages/ts/src/protocol/messages.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "./blueprint.js",
+        "kind": "import",
+        "line": 42,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/graph/blueprint.ts",
+          "packages/ts/src/graph/blueprint.tsx",
+          "packages/ts/src/graph/blueprint.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "./checkpoint.js",
+        "kind": "import",
+        "line": 50,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/graph/checkpoint.ts",
+          "packages/ts/src/graph/checkpoint.tsx",
+          "packages/ts/src/graph/checkpoint.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "./describe.js",
+        "kind": "import",
+        "line": 61,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/graph/describe.ts",
+          "packages/ts/src/graph/describe.tsx",
+          "packages/ts/src/graph/describe.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "./environment.js",
+        "kind": "import",
+        "line": 69,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/graph/environment.ts",
+          "packages/ts/src/graph/environment.tsx",
+          "packages/ts/src/graph/environment.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "./graph-lifecycle.js",
+        "kind": "import",
+        "line": 70,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/graph/graph-lifecycle.ts",
+          "packages/ts/src/graph/graph-lifecycle.tsx",
+          "packages/ts/src/graph/graph-lifecycle.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "./graph-support.js",
+        "kind": "import",
+        "line": 71,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/graph/graph-support.ts",
+          "packages/ts/src/graph/graph-support.tsx",
+          "packages/ts/src/graph/graph-support.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "./graph-topology-group.js",
+        "kind": "import",
+        "line": 80,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/graph/graph-topology-group.ts",
+          "packages/ts/src/graph/graph-topology-group.tsx",
+          "packages/ts/src/graph/graph-topology-group.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "./graph-types.js",
+        "kind": "import",
+        "line": 85,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/graph/graph-types.ts",
+          "packages/ts/src/graph/graph-types.tsx",
+          "packages/ts/src/graph/graph-types.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "./inspect.js",
+        "kind": "import",
+        "line": 86,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/graph/inspect.ts",
+          "packages/ts/src/graph/inspect.tsx",
+          "packages/ts/src/graph/inspect.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "./operators.js",
+        "kind": "import",
+        "line": 93,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/graph/operators.ts",
+          "packages/ts/src/graph/operators.tsx",
+          "packages/ts/src/graph/operators.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "./graph-topology-group.js",
+        "kind": "import",
+        "line": 95,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/graph/graph-topology-group.ts",
+          "packages/ts/src/graph/graph-topology-group.tsx",
+          "packages/ts/src/graph/graph-topology-group.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "./graph-types.js",
+        "kind": "import",
+        "line": 100,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/graph/graph-types.ts",
+          "packages/ts/src/graph/graph-types.tsx",
+          "packages/ts/src/graph/graph-types.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/solutions/causal-occurrence/capabilities.ts",
+        "ref": "../../ctx/types.js",
+        "kind": "import",
+        "line": 1,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/ctx/types.ts",
+          "packages/ts/src/ctx/types.tsx",
+          "packages/ts/src/ctx/types.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/solutions/causal-occurrence/capabilities.ts",
+        "ref": "../../data/index.js",
+        "kind": "import",
+        "line": 2,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/data/index.ts",
+          "packages/ts/src/data/index.tsx",
+          "packages/ts/src/data/index.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/solutions/causal-occurrence/capabilities.ts",
+        "ref": "../../graph/construction-scope.js",
+        "kind": "import",
+        "line": 3,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/graph/construction-scope.ts",
+          "packages/ts/src/graph/construction-scope.tsx",
+          "packages/ts/src/graph/construction-scope.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/solutions/causal-occurrence/capabilities.ts",
+        "ref": "../../graph/graph.js",
+        "kind": "import",
+        "line": 4,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/graph.ts",
+        "candidates": [
+          "packages/ts/src/graph/graph.ts",
+          "packages/ts/src/graph/graph.tsx",
+          "packages/ts/src/graph/graph.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/solutions/causal-occurrence/capabilities.ts",
+        "ref": "../../node/node.js",
+        "kind": "import",
+        "line": 5,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/node/node.ts",
+          "packages/ts/src/node/node.tsx",
+          "packages/ts/src/node/node.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/solutions/causal-occurrence/capabilities.ts",
+        "ref": "./contracts.js",
+        "kind": "import",
+        "line": 6,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/solutions/causal-occurrence/contracts.ts",
+          "packages/ts/src/solutions/causal-occurrence/contracts.tsx",
+          "packages/ts/src/solutions/causal-occurrence/contracts.js"
+        ]
+      }
+    ],
+    "manualReview": [],
+    "limitations": [
+      "Structural local path audit only; not TypeScript module resolution, link-anchor validation, answer-leak detection or proof that tasks are answerable.",
+      "External packages and computed imports need review. No reference causes a file to be added. Files with innocuous names can still contain hidden answers; human material review is required.",
+      "Restrictions are screening signals, not an isolation/security boundary. No runnable material bundle or formal freeze is produced."
+    ]
+  },
+  "readmeAuditOnly": {
+    "kind": "B121-material-coverage-audit",
+    "providerCalls": 0,
+    "executionReady": false,
+    "files": [
+      {
+        "path": "examples/spending-alerts/README.md",
+        "sha256": "f154720ef10c937a73ef923ef3f58e647d6ec336e9199f0305d9d1324b97170f",
+        "bytes": 7259,
+        "lines": 128,
+        "restricted": false
+      },
+      {
+        "path": "examples/spending-alerts/causal-audience.examples.ts",
+        "sha256": "7f692090cc3a0e734edc2da63cd8e51860b12c37e0e8f3b5e4fcaccf1aa84d36",
+        "bytes": 1581,
+        "lines": 39,
+        "restricted": false
+      },
+      {
+        "path": "examples/spending-alerts/causal-entry.ts",
+        "sha256": "3d802f8b01c27519dbcc7b0ed77ed151bc8fa4fd2e0337b7535879e3dbf9b792",
+        "bytes": 3215,
+        "lines": 78,
+        "restricted": false
+      },
+      {
+        "path": "examples/spending-alerts/causal-focused-host.ts",
+        "sha256": "a2988bfad5108f424cbf5347e0531ead939397ab0e725ed92461c05f38310819",
+        "bytes": 17228,
+        "lines": 579,
+        "restricted": false
+      },
+      {
+        "path": "examples/spending-alerts/causal-inputs.ts",
+        "sha256": "dfb1aa266cfed9bb6400171bfba30f046cd09ef94346c18560124566a7364561",
+        "bytes": 14090,
+        "lines": 439,
+        "restricted": false
+      },
+      {
+        "path": "examples/spending-alerts/causal-preset.ts",
+        "sha256": "71f801e17e95b2f7440017048dc08d3479a341d4e5e617be8eff9f513301dd50",
+        "bytes": 6874,
+        "lines": 207,
+        "restricted": false
+      },
+      {
+        "path": "examples/spending-alerts/causal-resource.ts",
+        "sha256": "8bcda13c34aff04379d0e40491fe361cc7c812ed806925649a407be012841ec9",
+        "bytes": 8265,
+        "lines": 263,
+        "restricted": false
+      },
+      {
+        "path": "examples/spending-alerts/causal-view-binding.ts",
+        "sha256": "3a8722abf4ed783b8caa794ccb16a1d4fdfdbe26d999160805da746a62427409",
+        "bytes": 1850,
+        "lines": 57,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/graph/graph.ts",
+        "sha256": "54b3644e0de855533f9ac91621b9e4eceb0368d11a953fe0d793dfd22e8b72fe",
+        "bytes": 41610,
+        "lines": 1183,
+        "restricted": false
+      },
+      {
+        "path": "packages/ts/src/solutions/causal-occurrence/capabilities.ts",
+        "sha256": "606b352953fdb54f7ddc076662fc1fc8b88bed2841fdfe07bdf0b85224879fc7",
+        "bytes": 4830,
+        "lines": 149,
+        "restricted": false
+      }
+    ],
+    "entrypoints": [
+      {
+        "path": "examples/spending-alerts/README.md",
+        "status": "included"
+      }
+    ],
+    "references": [
+      {
+        "from": "examples/spending-alerts/README.md",
+        "ref": "pipeline.ts",
+        "kind": "link",
+        "line": 20,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "examples/spending-alerts/pipeline.ts"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/README.md",
+        "ref": "causal-ordinary-panel.ts",
+        "kind": "link",
+        "line": 52,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "examples/spending-alerts/causal-ordinary-panel.ts"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/README.md",
+        "ref": "causal-view-binding.ts",
+        "kind": "link",
+        "line": 52,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-view-binding.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-view-binding.ts"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/README.md",
+        "ref": "causal-graded-demo.ts",
+        "kind": "link",
+        "line": 53,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "examples/spending-alerts/causal-graded-demo.ts"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/README.md",
+        "ref": "causal-entry.ts",
+        "kind": "link",
+        "line": 53,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-entry.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-entry.ts"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/README.md",
+        "ref": "causal-audience.examples.ts",
+        "kind": "link",
+        "line": 53,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-audience.examples.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-audience.examples.ts"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/README.md",
+        "ref": "causal-focused-host.ts",
+        "kind": "link",
+        "line": 54,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-focused-host.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-focused-host.ts"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/README.md",
+        "ref": "../../packages/ts/src/solutions/causal-occurrence/construction.ts",
+        "kind": "link",
+        "line": 54,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/solutions/causal-occurrence/construction.ts"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/README.md",
+        "ref": "../../docs/design/causal-graded-entry-implementation/README.md",
+        "kind": "link",
+        "line": 120,
+        "status": "restricted",
+        "resolved": null,
+        "candidates": [
+          "docs/design/causal-graded-entry-implementation/README.md"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-audience.examples.ts",
+        "ref": "../../packages/ts/src/graph/graph.js",
+        "kind": "import",
+        "line": 2,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/graph.ts",
+        "candidates": [
+          "packages/ts/src/graph/graph.ts",
+          "packages/ts/src/graph/graph.tsx",
+          "packages/ts/src/graph/graph.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-audience.examples.ts",
+        "ref": "../../packages/ts/src/solutions/causal-occurrence/capabilities.js",
+        "kind": "import",
+        "line": 3,
+        "status": "included",
+        "resolved": "packages/ts/src/solutions/causal-occurrence/capabilities.ts",
+        "candidates": [
+          "packages/ts/src/solutions/causal-occurrence/capabilities.ts",
+          "packages/ts/src/solutions/causal-occurrence/capabilities.tsx",
+          "packages/ts/src/solutions/causal-occurrence/capabilities.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-audience.examples.ts",
+        "ref": "./causal-preset.js",
+        "kind": "import",
+        "line": 8,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-preset.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-preset.ts",
+          "examples/spending-alerts/causal-preset.tsx",
+          "examples/spending-alerts/causal-preset.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-audience.examples.ts",
+        "ref": "./causal-publication.js",
+        "kind": "import",
+        "line": 9,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "examples/spending-alerts/causal-publication.ts",
+          "examples/spending-alerts/causal-publication.tsx",
+          "examples/spending-alerts/causal-publication.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-audience.examples.ts",
+        "ref": "./causal-view-binding.js",
+        "kind": "import",
+        "line": 10,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-view-binding.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-view-binding.ts",
+          "examples/spending-alerts/causal-view-binding.tsx",
+          "examples/spending-alerts/causal-view-binding.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-entry.ts",
+        "ref": "../../packages/ts/src/graph/graph.js",
+        "kind": "import",
+        "line": 2,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/graph.ts",
+        "candidates": [
+          "packages/ts/src/graph/graph.ts",
+          "packages/ts/src/graph/graph.tsx",
+          "packages/ts/src/graph/graph.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-entry.ts",
+        "ref": "./causal-focused-host.js",
+        "kind": "import",
+        "line": 3,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-focused-host.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-focused-host.ts",
+          "examples/spending-alerts/causal-focused-host.tsx",
+          "examples/spending-alerts/causal-focused-host.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-entry.ts",
+        "ref": "./causal-inputs.js",
+        "kind": "import",
+        "line": 4,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-inputs.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-inputs.ts",
+          "examples/spending-alerts/causal-inputs.tsx",
+          "examples/spending-alerts/causal-inputs.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-entry.ts",
+        "ref": "./causal-resource.js",
+        "kind": "import",
+        "line": 5,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-resource.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-resource.ts",
+          "examples/spending-alerts/causal-resource.tsx",
+          "examples/spending-alerts/causal-resource.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-focused-host.ts",
+        "ref": "../../packages/ts/src/ctx/types.js",
+        "kind": "import",
+        "line": 2,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/ctx/types.ts",
+          "packages/ts/src/ctx/types.tsx",
+          "packages/ts/src/ctx/types.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-focused-host.ts",
+        "ref": "../../packages/ts/src/graph/construction-scope.js",
+        "kind": "import",
+        "line": 3,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/graph/construction-scope.ts",
+          "packages/ts/src/graph/construction-scope.tsx",
+          "packages/ts/src/graph/construction-scope.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-focused-host.ts",
+        "ref": "../../packages/ts/src/graph/graph.js",
+        "kind": "import",
+        "line": 10,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/graph.ts",
+        "candidates": [
+          "packages/ts/src/graph/graph.ts",
+          "packages/ts/src/graph/graph.tsx",
+          "packages/ts/src/graph/graph.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-focused-host.ts",
+        "ref": "../../packages/ts/src/node/node.js",
+        "kind": "import",
+        "line": 11,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/node/node.ts",
+          "packages/ts/src/node/node.tsx",
+          "packages/ts/src/node/node.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-focused-host.ts",
+        "ref": "../../packages/ts/src/solutions/causal-occurrence/contracts.js",
+        "kind": "import",
+        "line": 12,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/solutions/causal-occurrence/contracts.ts",
+          "packages/ts/src/solutions/causal-occurrence/contracts.tsx",
+          "packages/ts/src/solutions/causal-occurrence/contracts.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-focused-host.ts",
+        "ref": "./causal-inputs.js",
+        "kind": "import",
+        "line": 17,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-inputs.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-inputs.ts",
+          "examples/spending-alerts/causal-inputs.tsx",
+          "examples/spending-alerts/causal-inputs.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-focused-host.ts",
+        "ref": "./causal-preset.js",
+        "kind": "import",
+        "line": 35,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-preset.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-preset.ts",
+          "examples/spending-alerts/causal-preset.tsx",
+          "examples/spending-alerts/causal-preset.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-focused-host.ts",
+        "ref": "./causal-publication.js",
+        "kind": "import",
+        "line": 36,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "examples/spending-alerts/causal-publication.ts",
+          "examples/spending-alerts/causal-publication.tsx",
+          "examples/spending-alerts/causal-publication.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-focused-host.ts",
+        "ref": "./causal-resource.js",
+        "kind": "import",
+        "line": 43,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-resource.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-resource.ts",
+          "examples/spending-alerts/causal-resource.tsx",
+          "examples/spending-alerts/causal-resource.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-focused-host.ts",
+        "ref": "./causal-resource.js",
+        "kind": "import",
+        "line": 45,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-resource.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-resource.ts",
+          "examples/spending-alerts/causal-resource.tsx",
+          "examples/spending-alerts/causal-resource.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-inputs.ts",
+        "ref": "../../packages/ts/src/data/index.js",
+        "kind": "import",
+        "line": 2,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/data/index.ts",
+          "packages/ts/src/data/index.tsx",
+          "packages/ts/src/data/index.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-inputs.ts",
+        "ref": "../../packages/ts/src/node/node.js",
+        "kind": "import",
+        "line": 3,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/node/node.ts",
+          "packages/ts/src/node/node.tsx",
+          "packages/ts/src/node/node.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-inputs.ts",
+        "ref": "../../packages/ts/src/solutions/causal-occurrence/contracts.js",
+        "kind": "import",
+        "line": 4,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/solutions/causal-occurrence/contracts.ts",
+          "packages/ts/src/solutions/causal-occurrence/contracts.tsx",
+          "packages/ts/src/solutions/causal-occurrence/contracts.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-inputs.ts",
+        "ref": "./causal-publication.js",
+        "kind": "import",
+        "line": 9,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "examples/spending-alerts/causal-publication.ts",
+          "examples/spending-alerts/causal-publication.tsx",
+          "examples/spending-alerts/causal-publication.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-inputs.ts",
+        "ref": "./pipeline.js",
+        "kind": "import",
+        "line": 10,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "examples/spending-alerts/pipeline.ts",
+          "examples/spending-alerts/pipeline.tsx",
+          "examples/spending-alerts/pipeline.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-preset.ts",
+        "ref": "../../packages/ts/src/ctx/types.js",
+        "kind": "import",
+        "line": 2,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/ctx/types.ts",
+          "packages/ts/src/ctx/types.tsx",
+          "packages/ts/src/ctx/types.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-preset.ts",
+        "ref": "../../packages/ts/src/data/index.js",
+        "kind": "import",
+        "line": 3,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/data/index.ts",
+          "packages/ts/src/data/index.tsx",
+          "packages/ts/src/data/index.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-preset.ts",
+        "ref": "../../packages/ts/src/graph/construction-scope.js",
+        "kind": "import",
+        "line": 4,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/graph/construction-scope.ts",
+          "packages/ts/src/graph/construction-scope.tsx",
+          "packages/ts/src/graph/construction-scope.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-preset.ts",
+        "ref": "../../packages/ts/src/graph/graph.js",
+        "kind": "import",
+        "line": 8,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/graph.ts",
+        "candidates": [
+          "packages/ts/src/graph/graph.ts",
+          "packages/ts/src/graph/graph.tsx",
+          "packages/ts/src/graph/graph.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-preset.ts",
+        "ref": "../../packages/ts/src/node/node.js",
+        "kind": "import",
+        "line": 9,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/node/node.ts",
+          "packages/ts/src/node/node.tsx",
+          "packages/ts/src/node/node.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-preset.ts",
+        "ref": "../../packages/ts/src/solutions/causal-occurrence/capabilities.js",
+        "kind": "import",
+        "line": 10,
+        "status": "included",
+        "resolved": "packages/ts/src/solutions/causal-occurrence/capabilities.ts",
+        "candidates": [
+          "packages/ts/src/solutions/causal-occurrence/capabilities.ts",
+          "packages/ts/src/solutions/causal-occurrence/capabilities.tsx",
+          "packages/ts/src/solutions/causal-occurrence/capabilities.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-preset.ts",
+        "ref": "../../packages/ts/src/solutions/causal-occurrence/construction.js",
+        "kind": "import",
+        "line": 14,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/solutions/causal-occurrence/construction.ts",
+          "packages/ts/src/solutions/causal-occurrence/construction.tsx",
+          "packages/ts/src/solutions/causal-occurrence/construction.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-preset.ts",
+        "ref": "./causal-admission.js",
+        "kind": "import",
+        "line": 19,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "examples/spending-alerts/causal-admission.ts",
+          "examples/spending-alerts/causal-admission.tsx",
+          "examples/spending-alerts/causal-admission.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-preset.ts",
+        "ref": "./causal-business.js",
+        "kind": "import",
+        "line": 20,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "examples/spending-alerts/causal-business.ts",
+          "examples/spending-alerts/causal-business.tsx",
+          "examples/spending-alerts/causal-business.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-preset.ts",
+        "ref": "./causal-inputs.js",
+        "kind": "import",
+        "line": 21,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-inputs.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-inputs.ts",
+          "examples/spending-alerts/causal-inputs.tsx",
+          "examples/spending-alerts/causal-inputs.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-preset.ts",
+        "ref": "./causal-material-owner.js",
+        "kind": "import",
+        "line": 28,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "examples/spending-alerts/causal-material-owner.ts",
+          "examples/spending-alerts/causal-material-owner.tsx",
+          "examples/spending-alerts/causal-material-owner.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-preset.ts",
+        "ref": "./causal-publication.js",
+        "kind": "import",
+        "line": 29,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "examples/spending-alerts/causal-publication.ts",
+          "examples/spending-alerts/causal-publication.tsx",
+          "examples/spending-alerts/causal-publication.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-resource.ts",
+        "ref": "node:path",
+        "kind": "import",
+        "line": 2,
+        "status": "external",
+        "resolved": null
+      },
+      {
+        "from": "examples/spending-alerts/causal-resource.ts",
+        "ref": "./causal-inputs.js",
+        "kind": "import",
+        "line": 3,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-inputs.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-inputs.ts",
+          "examples/spending-alerts/causal-inputs.tsx",
+          "examples/spending-alerts/causal-inputs.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-resource.ts",
+        "ref": "node:fs/promises",
+        "kind": "import",
+        "line": 142,
+        "status": "external",
+        "resolved": null
+      },
+      {
+        "from": "examples/spending-alerts/causal-resource.ts",
+        "ref": "node:fs/promises",
+        "kind": "import",
+        "line": 250,
+        "status": "external",
+        "resolved": null
+      },
+      {
+        "from": "examples/spending-alerts/causal-view-binding.ts",
+        "ref": "../../packages/ts/src/node/node.js",
+        "kind": "import",
+        "line": 2,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/node/node.ts",
+          "packages/ts/src/node/node.tsx",
+          "packages/ts/src/node/node.js"
+        ]
+      },
+      {
+        "from": "examples/spending-alerts/causal-view-binding.ts",
+        "ref": "./causal-preset.js",
+        "kind": "import",
+        "line": 3,
+        "status": "included",
+        "resolved": "examples/spending-alerts/causal-preset.ts",
+        "candidates": [
+          "examples/spending-alerts/causal-preset.ts",
+          "examples/spending-alerts/causal-preset.tsx",
+          "examples/spending-alerts/causal-preset.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "../node/runtime-accessors.js",
+        "kind": "import",
+        "line": 1,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/node/runtime-accessors.ts",
+          "packages/ts/src/node/runtime-accessors.tsx",
+          "packages/ts/src/node/runtime-accessors.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "./construction-scope.js",
+        "kind": "import",
+        "line": 2,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/graph/construction-scope.ts",
+          "packages/ts/src/graph/construction-scope.tsx",
+          "packages/ts/src/graph/construction-scope.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "../batch/batch.js",
+        "kind": "import",
+        "line": 16,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/batch/batch.ts",
+          "packages/ts/src/batch/batch.tsx",
+          "packages/ts/src/batch/batch.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "../ctx/types.js",
+        "kind": "import",
+        "line": 17,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/ctx/types.ts",
+          "packages/ts/src/ctx/types.tsx",
+          "packages/ts/src/ctx/types.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "../dispatcher/index.js",
+        "kind": "import",
+        "line": 18,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/dispatcher/index.ts",
+          "packages/ts/src/dispatcher/index.tsx",
+          "packages/ts/src/dispatcher/index.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "../node/core.js",
+        "kind": "import",
+        "line": 19,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/node/core.ts",
+          "packages/ts/src/node/core.tsx",
+          "packages/ts/src/node/core.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "../node/node.js",
+        "kind": "import",
+        "line": 20,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/node/node.ts",
+          "packages/ts/src/node/node.tsx",
+          "packages/ts/src/node/node.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "../node/owned-acquisition.js",
+        "kind": "import",
+        "line": 35,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/node/owned-acquisition.ts",
+          "packages/ts/src/node/owned-acquisition.tsx",
+          "packages/ts/src/node/owned-acquisition.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "../node/versioning.js",
+        "kind": "import",
+        "line": 40,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/node/versioning.ts",
+          "packages/ts/src/node/versioning.tsx",
+          "packages/ts/src/node/versioning.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "../protocol/messages.js",
+        "kind": "import",
+        "line": 41,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/protocol/messages.ts",
+          "packages/ts/src/protocol/messages.tsx",
+          "packages/ts/src/protocol/messages.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "./blueprint.js",
+        "kind": "import",
+        "line": 42,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/graph/blueprint.ts",
+          "packages/ts/src/graph/blueprint.tsx",
+          "packages/ts/src/graph/blueprint.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "./checkpoint.js",
+        "kind": "import",
+        "line": 50,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/graph/checkpoint.ts",
+          "packages/ts/src/graph/checkpoint.tsx",
+          "packages/ts/src/graph/checkpoint.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "./describe.js",
+        "kind": "import",
+        "line": 61,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/graph/describe.ts",
+          "packages/ts/src/graph/describe.tsx",
+          "packages/ts/src/graph/describe.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "./environment.js",
+        "kind": "import",
+        "line": 69,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/graph/environment.ts",
+          "packages/ts/src/graph/environment.tsx",
+          "packages/ts/src/graph/environment.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "./graph-lifecycle.js",
+        "kind": "import",
+        "line": 70,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/graph/graph-lifecycle.ts",
+          "packages/ts/src/graph/graph-lifecycle.tsx",
+          "packages/ts/src/graph/graph-lifecycle.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "./graph-support.js",
+        "kind": "import",
+        "line": 71,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/graph/graph-support.ts",
+          "packages/ts/src/graph/graph-support.tsx",
+          "packages/ts/src/graph/graph-support.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "./graph-topology-group.js",
+        "kind": "import",
+        "line": 80,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/graph/graph-topology-group.ts",
+          "packages/ts/src/graph/graph-topology-group.tsx",
+          "packages/ts/src/graph/graph-topology-group.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "./graph-types.js",
+        "kind": "import",
+        "line": 85,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/graph/graph-types.ts",
+          "packages/ts/src/graph/graph-types.tsx",
+          "packages/ts/src/graph/graph-types.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "./inspect.js",
+        "kind": "import",
+        "line": 86,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/graph/inspect.ts",
+          "packages/ts/src/graph/inspect.tsx",
+          "packages/ts/src/graph/inspect.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "./operators.js",
+        "kind": "import",
+        "line": 93,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/graph/operators.ts",
+          "packages/ts/src/graph/operators.tsx",
+          "packages/ts/src/graph/operators.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "./graph-topology-group.js",
+        "kind": "import",
+        "line": 95,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/graph/graph-topology-group.ts",
+          "packages/ts/src/graph/graph-topology-group.tsx",
+          "packages/ts/src/graph/graph-topology-group.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/graph/graph.ts",
+        "ref": "./graph-types.js",
+        "kind": "import",
+        "line": 100,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/graph/graph-types.ts",
+          "packages/ts/src/graph/graph-types.tsx",
+          "packages/ts/src/graph/graph-types.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/solutions/causal-occurrence/capabilities.ts",
+        "ref": "../../ctx/types.js",
+        "kind": "import",
+        "line": 1,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/ctx/types.ts",
+          "packages/ts/src/ctx/types.tsx",
+          "packages/ts/src/ctx/types.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/solutions/causal-occurrence/capabilities.ts",
+        "ref": "../../data/index.js",
+        "kind": "import",
+        "line": 2,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/data/index.ts",
+          "packages/ts/src/data/index.tsx",
+          "packages/ts/src/data/index.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/solutions/causal-occurrence/capabilities.ts",
+        "ref": "../../graph/construction-scope.js",
+        "kind": "import",
+        "line": 3,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/graph/construction-scope.ts",
+          "packages/ts/src/graph/construction-scope.tsx",
+          "packages/ts/src/graph/construction-scope.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/solutions/causal-occurrence/capabilities.ts",
+        "ref": "../../graph/graph.js",
+        "kind": "import",
+        "line": 4,
+        "status": "included",
+        "resolved": "packages/ts/src/graph/graph.ts",
+        "candidates": [
+          "packages/ts/src/graph/graph.ts",
+          "packages/ts/src/graph/graph.tsx",
+          "packages/ts/src/graph/graph.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/solutions/causal-occurrence/capabilities.ts",
+        "ref": "../../node/node.js",
+        "kind": "import",
+        "line": 5,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/node/node.ts",
+          "packages/ts/src/node/node.tsx",
+          "packages/ts/src/node/node.js"
+        ]
+      },
+      {
+        "from": "packages/ts/src/solutions/causal-occurrence/capabilities.ts",
+        "ref": "./contracts.js",
+        "kind": "import",
+        "line": 6,
+        "status": "missing",
+        "resolved": null,
+        "candidates": [
+          "packages/ts/src/solutions/causal-occurrence/contracts.ts",
+          "packages/ts/src/solutions/causal-occurrence/contracts.tsx",
+          "packages/ts/src/solutions/causal-occurrence/contracts.js"
+        ]
+      }
+    ],
+    "manualReview": [],
+    "limitations": [
+      "Structural local path audit only; not TypeScript module resolution, link-anchor validation, answer-leak detection or proof that tasks are answerable.",
+      "External packages and computed imports need review. No reference causes a file to be added. Files with innocuous names can still contain hidden answers; human material review is required.",
+      "Restrictions are screening signals, not an isolation/security boundary. No runnable material bundle or formal freeze is produced."
+    ]
+  },
+  "note": "README added only in a local audit map to measure missing links, not in any participant bundle. This does not approve the material policy."
+}

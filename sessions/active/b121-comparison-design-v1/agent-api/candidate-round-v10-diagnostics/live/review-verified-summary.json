@@ -1,0 +1,59 @@
+{
+  "denominator": 4,
+  "accepted": 0,
+  "submitted": 0,
+  "incomplete": 1,
+  "notRun": 3,
+  "formalReady": false,
+  "interpretation": "No answer submitted; no criterion verdict. Infrastructure interruption, not four incorrect answers.",
+  "rows": [
+    {
+      "sampleId": "candidate-entry-01",
+      "taskId": "display-current-values",
+      "role": "display-component",
+      "packetSHA256": "339a109438e09e6665c443834cdff7a8eee098a7b25a6fb61c3665603e513e2e",
+      "status": "incomplete",
+      "reason": null,
+      "assessmentSHA256": "220c8aaa11c8c56e0e94c45610bf0941704d48a5028151cddcd26d61dfce149a",
+      "submitted": false,
+      "accepted": false,
+      "reviewArtifact": null
+    },
+    {
+      "sampleId": "candidate-entry-02",
+      "taskId": "compose-two-instances",
+      "role": "application-integrator",
+      "packetSHA256": "537507c66a119bd04574761fbf33b8f8f935fcd1cebd271ef8dc4e2d7a37633d",
+      "status": "not-run",
+      "reason": "provider cost/call ceiling before retry",
+      "assessmentSHA256": null,
+      "submitted": false,
+      "accepted": false,
+      "reviewArtifact": null
+    },
+    {
+      "sampleId": "candidate-entry-03",
+      "taskId": "validate-before-handoff",
+      "role": "framework-integrator",
+      "packetSHA256": "e01a7bdc8f05108440827f9da96550ca059f9ea40eb9979f052ac44766834b43",
+      "status": "not-run",
+      "reason": "provider cost/call ceiling before retry",
+      "assessmentSHA256": null,
+      "submitted": false,
+      "accepted": false,
+      "reviewArtifact": null
+    },
+    {
+      "sampleId": "candidate-entry-04",
+      "taskId": "inspect-with-detached-display",
+      "role": "maintainer",
+      "packetSHA256": "5bdd880b55697994eccefc3dbb646e9ac510ee16a1c919a11ffa4a0481601254",
+      "status": "not-run",
+      "reason": "provider cost/call ceiling before retry",
+      "assessmentSHA256": null,
+      "submitted": false,
+      "accepted": false,
+      "reviewArtifact": null
+    }
+  ]
+}

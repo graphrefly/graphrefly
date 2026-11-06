@@ -1,0 +1,9 @@
+{
+  "passed": 205,
+  "failed": 0,
+  "skipped": 0,
+  "reusedModuleAndConsumerQualification": "../../candidate-round-v9-consumer-contract/offline/verification.json",
+  "reusedReason": "five artifacts identical, compiler and consumer implementation unchanged",
+  "localReview": "USD5 constant used consistently in admission; diagnostic-only change reviewed/tested previously; no new independent QA claimed",
+  "pricingMatches": true
+}

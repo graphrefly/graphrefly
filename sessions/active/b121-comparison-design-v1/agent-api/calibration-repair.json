@@ -1,0 +1,53 @@
+{
+  "kind": "B121-calibration-repair-and-run",
+  "owner": "graphrefly:B121",
+  "at": "2026-09-15T04:34:40.407Z",
+  "manifestSHA": "0b0809270a7a914097df623b19f0ca8f9573ca84a0cbd415badc67b6635b93d2",
+  "config": {
+    "model": "qwen/qwen3.8-flash",
+    "stream": false,
+    "reasoning": {
+      "enabled": false
+    },
+    "temperature": 0,
+    "seed": 42,
+    "provider": {
+      "only": [
+        "makora/fp4"
+      ],
+      "allow_fallbacks": false,
+      "require_parameters": true,
+      "max_price": {
+        "prompt": 0.15,
+        "completion": 0.47
+      }
+    }
+  },
+  "maxOutputPerRequest": 4096,
+  "fixes": [
+    "reasoning and sampling fixed",
+    "output cap coordinated across runner/transport/manifest",
+    "byte forecast calibrated; actual limits authoritative",
+    "compact ordered batching with short explanations",
+    "two fresh multi-turn qualification histories with real tool-result submission",
+    "disabled reasoning checked on every response",
+    "audited failed/truncated/overrun output charged before rejection",
+    "prior key spend included in admission",
+    "automatic frozen inputs and accurate completion summary",
+    "phase budget checkpoints"
+  ],
+  "checks": {
+    "comparisonTestsPassed": 109,
+    "independentReview": [
+      "blind",
+      "edge",
+      "verification"
+    ],
+    "dashboardExit": 0
+  },
+  "limits": {
+    "priorUsageUSD": 0.002378032,
+    "cumulativeKeyLimitUSD": 0.2
+  },
+  "remainingUncertainty": "Graph entry completion under original48k/8k cumulative budget must be observed; forecast is not exact tokenizer; no model quality claim"
+}

@@ -3,7 +3,10 @@ import { createHash } from "node:crypto";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { reviewEntry } from "./api-entry-review.mjs";
-import { createEntryAcceptance } from "./entry-tasks.mjs";
+import {
+	createEntryAcceptance,
+	createStandaloneEntryAcceptance,
+} from "./entry-tasks.mjs";
 import { createSession, hash } from "./session.mjs";
 
 const tsRoot = fileURLToPath(
@@ -154,4 +157,85 @@ test("missing Graph submission and plain arm remain distinct and unaccepted", ()
 	});
 	f.result.entryAnswer = { snippet: "const a=1;", explanation: "" };
 	assert.throws(() => reviewEntry(f), /plain arm/);
+});
+
+function standaloneFixture() {
+	const acceptance = createStandaloneEntryAcceptance({
+		experiment: "entry",
+		sessionId: "agent-01-entry",
+		role: "user",
+		tsRoot,
+	});
+	const task = acceptance.releaseTasks().tasks[0];
+	return {
+		tsRoot,
+		task,
+		entryFiles: {
+			"entry/task.json": JSON.stringify({
+				id: task.id,
+				prompt: task.prompt,
+				sourceIndex: task.sourceBindings.map((source) => ({
+					...source,
+					chunks: 1,
+				})),
+			}),
+		},
+		result: {
+			experiment: "entry",
+			slot: { id: "agent-01-entry", role: "user", arm: "G" },
+			controller: null,
+			entryAnswer: {
+				snippet: acceptance.referenceSnippets()[0].snippet,
+				explanation: "Independent fixture, no A/B evidence.",
+			},
+		},
+	};
+}
+test("independent entry compiles and binds trusted review without comparison evidence", () => {
+	const f = standaloneFixture();
+	const pending = reviewEntry(f);
+	assert.equal(pending.status, "pending-review");
+	assert.equal(pending.experiment, "entry");
+	assert.equal(pending.sessionId, "agent-01-entry");
+	assert.equal(Object.hasOwn(pending, "comparisonProof"), false);
+	const accepted = reviewEntry({ ...f, review: trustedReview(f) });
+	assert.equal(accepted.accepted, true);
+	assert.equal(accepted.experiment, "entry");
+	assert.equal(Object.hasOwn(accepted, "comparisonProof"), false);
+});
+test("independent mode requires explicit identity and rejects comparison history", () => {
+	const f = standaloneFixture();
+	delete f.result.experiment;
+	assert.throws(() => reviewEntry(f), /session binding/);
+	f.result.experiment = "entry";
+	f.result.controller = fixture().result.controller;
+	assert.throws(() => reviewEntry(f), /without a comparison controller/);
+	f.result.controller = null;
+	f.result.slot.arm = "P";
+	assert.throws(() => reviewEntry(f), /Graph-only/);
+});
+test("independent review rejects mismatched task, source, and exact reviewer bindings", () => {
+	const role = standaloneFixture();
+	role.result.slot.role = "maintainer";
+	assert.throws(() => reviewEntry(role), /role\/task binding/);
+	const source = standaloneFixture();
+	const task = JSON.parse(source.entryFiles["entry/task.json"]);
+	task.sourceIndex[0].sha256 = "drift";
+	source.entryFiles["entry/task.json"] = JSON.stringify(task);
+	assert.throws(() => reviewEntry(source), /source binding drift/);
+	for (const field of [
+		"snippetHash",
+		"explanationHash",
+		"taskId",
+		"sessionId",
+		"entryFilesHash",
+	]) {
+		const f = standaloneFixture();
+		const review = trustedReview(f);
+		review.binding[field] = "other";
+		assert.throws(
+			() => reviewEntry({ ...f, review }),
+			/submission binding mismatch/,
+		);
+	}
 });

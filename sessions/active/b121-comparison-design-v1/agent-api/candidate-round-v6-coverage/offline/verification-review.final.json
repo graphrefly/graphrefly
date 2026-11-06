@@ -1,0 +1,43 @@
+{
+  "reviewer": "v6_verification",
+  "findings": [],
+  "resolved": [
+    "Rubric explicitly requires returned retained quiescence, host records, readiness",
+    "Composition prompt no longer contains code-only/explanation contradiction",
+    "Added retained-quiescence omission C09 and host omission C10; C11 preserves false JSDoc",
+    "Verified actual C07/C08 comments corrected; C11 retains original false naming/resource statement. C07 supplies a noncontradictory positive composition control."
+  ],
+  "pinsValidated": true,
+  "participantSourcesMatchCompiler": true,
+  "packets": [
+    {
+      "taskId": "display-current-values",
+      "paths": 99,
+      "leaks": [],
+      "rejected": 4
+    },
+    {
+      "taskId": "compose-two-instances",
+      "paths": 99,
+      "leaks": [],
+      "rejected": 4
+    },
+    {
+      "taskId": "validate-before-handoff",
+      "paths": 99,
+      "leaks": [],
+      "rejected": 4
+    },
+    {
+      "taskId": "inspect-with-detached-display",
+      "paths": 99,
+      "leaks": [],
+      "rejected": 4
+    }
+  ],
+  "calibrationExpectedRead": false,
+  "network": false,
+  "submittedCodeExecuted": false,
+  "limits": "Static source, boundary and pin checks only; no runtime behavior claim.",
+  "calibrationCasesSHA256": "f4be93a0bc336a6deb26d7a75658849c9c0738f82e76590bc1958edba792acca"
+}

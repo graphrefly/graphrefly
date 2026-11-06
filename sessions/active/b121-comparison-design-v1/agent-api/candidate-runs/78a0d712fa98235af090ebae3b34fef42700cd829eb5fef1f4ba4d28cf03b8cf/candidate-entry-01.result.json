@@ -1,0 +1,39 @@
+{
+  "slot": {
+    "id": "candidate-entry-01",
+    "arm": "G",
+    "role": "diagnostic-integrator"
+  },
+  "controller": null,
+  "experiment": "entry",
+  "explanations": {
+    "A": {},
+    "B": {}
+  },
+  "entryAnswer": null,
+  "entryTiming": {
+    "startedMs": 0,
+    "submittedMs": null,
+    "elapsedMs": null,
+    "firstSourceRead": {
+      "path": "examples/spending-alerts/README.md",
+      "line": 1,
+      "operation": "read",
+      "elapsedMs": 1670
+    }
+  },
+  "entryStatus": "missing",
+  "usage": {
+    "inputTokens": 367230,
+    "outputTokens": 3904,
+    "elapsedMs": 82568
+  },
+  "costUSD": 0.018177191999999995,
+  "turns": 17,
+  "counts": 17,
+  "operations": 49,
+  "fatal": "invalid tool envelope",
+  "failureScope": "participant",
+  "pendingReservation": null,
+  "retryAllowed": false
+}

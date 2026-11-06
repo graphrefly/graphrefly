@@ -1,0 +1,37 @@
+{
+  "kind": "offline-module-smoke-check",
+  "formalReady": false,
+  "providerCalls": 0,
+  "participantSolutions": 0,
+  "binding": {
+    "materialSHA256": "a7846d59bdc5d0ca359292dceb91ef3274991bfb4afd9ce28e18c867e7554e6d",
+    "taskSHA256": "c2e7319352a9d2e663336a9c38606dbd41a6e8af39c93b5d09c3b60a90f876d9",
+    "rubricSHA256": "34414fc3f59a9ed7d269d1de8321c01a7cdc3392cb9cfae67c3aed7c52da14d2",
+    "environmentSHA256": "25c512ca2d3dd5c501f470bd4e6f63994ffbe635c402622b02180226b7302687",
+    "runnerContractSHA256": "fa13bb24115b1b14508b2d1d61fca4159d1a45ff2342b29e5e21c91c57db9625"
+  },
+  "nodeVersion": "v24.18.0",
+  "compilerVersion": "5.9.3",
+  "environmentBytes": 16827819,
+  "sourceSHA256": "e379a89fbc5d8e06d4b65ce7797c855117a3d2a97f9f3ee68abfb7ecbe94a147",
+  "readyForCandidateTypechecking": false,
+  "interpretation": "Module import probes only; not participant answers, semantic scoring or runtime behavior verification. All planned tasks retained.",
+  "rows": [
+    {
+      "taskId": "report-node-version-metadata",
+      "snippet": "import * as p0 from \"@graphrefly/ts/core\"; export type Probe0 = typeof p0;",
+      "ok": false,
+      "compilerFailure": "ENOENT: no such file or directory, mkdir 'sessions/active/b121-comparison-design-v1/agent-api/graph-led-migration/live/preflight-compiler/2110346e-c74a-4483-af94-3a06bcadfa73'",
+      "compilerReceipt": "sessions/active/b121-comparison-design-v1/agent-api/graph-led-migration/live/preflight-compiler/2110346e-c74a-4483-af94-3a06bcadfa73",
+      "process": null
+    },
+    {
+      "taskId": "consume-business-results",
+      "snippet": "import * as p0 from \"../../packages/ts/src/data/index.js\"; export type Probe0 = typeof p0;",
+      "ok": false,
+      "compilerFailure": "ENOENT: no such file or directory, mkdir 'sessions/active/b121-comparison-design-v1/agent-api/graph-led-migration/live/preflight-compiler/90ff3af7-83e8-4a8c-9b78-b975f8a2e387'",
+      "compilerReceipt": "sessions/active/b121-comparison-design-v1/agent-api/graph-led-migration/live/preflight-compiler/90ff3af7-83e8-4a8c-9b78-b975f8a2e387",
+      "process": null
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "assessmentSHA256": "af8ad66722de023edd69af981a73a3ad8538c011ca3bbfbccfcabcfe49d71d36",
+  "binding": {
+    "materialSHA256": "a7846d59bdc5d0ca359292dceb91ef3274991bfb4afd9ce28e18c867e7554e6d",
+    "taskSHA256": "cb7b5e7e2a956c21fb0ac0304dd5750cda98dbeb5feb4f93599e61c8734f3549",
+    "rubricSHA256": "af8305b29aa5665917eda5503db5f41a91a57f9ec3b95da5dadc5fb6c1a53e61",
+    "environmentSHA256": "25c512ca2d3dd5c501f470bd4e6f63994ffbe635c402622b02180226b7302687",
+    "runnerContractSHA256": "5c3b79e5f5f7a37737b3b4661f516c6236a777690fe105f8285a720461d8d4db"
+  },
+  "taskId": "compose-two-instances",
+  "sampleId": "candidate-entry-02",
+  "formalReady": false,
+  "providerCalls": 0,
+  "accepted": true,
+  "status": "accepted-candidate-session",
+  "compilerReceipt": "/Users/davidchenallio/src/graphrefly/sessions/active/b121-comparison-design-v1/agent-api/candidate-round-v6-coverage/live/review-compiler/757e5248-c7cd-4d63-9053-cee72541568a",
+  "review": {
+    "assessmentSHA256": "af8ad66722de023edd69af981a73a3ad8538c011ca3bbfbccfcabcfe49d71d36",
+    "reviewerId": "independent-v6-sample02-source-review",
+    "criteria": {
+      "distinct-instance-construction": {
+        "pass": true,
+        "evidence": "Submitted composeTwoSpendingInstances binds the caller Graph with spendingAlertsFor(graph, defaults), then preset.compose(firstInputs) and preset.compose(secondInputs, {name:\"alerts-b\", diagnostics:\"summary\"}); first inherits name alerts-a. Both supplied input/resource sets are passed intact; no input facts/resource opening or direct transport is present. Code comments correctly allow composition rather than claiming inert host behavior. Frozen causal-entry.ts:49-69 forwards given Graph, groups, resource.binding and resource unchanged. Rubric source SHA256 verified."
+      },
+      "default-override-isolation": {
+        "pass": true,
+        "evidence": "Code freezes defaults {name:\"alerts-a\",diagnostics:\"off\"}, reuses one preset, and applies name/summary overrides only to the second compose. No shared-default mutation. Frozen causal-entry.ts:36-45 merges overrides with inherited settings into a fresh frozen object, and :49-53 binds configuration separately per compose. Rubric source SHA256 verified."
+      },
+      "separate-observation-ownership": {
+        "pass": true,
+        "evidence": "Code independently calls mountSpendingView(firstApp.view, renderFirst) and mountSpendingView(secondApp.view, renderSecond), returns each original app/view plus its separate detach function. Explanation says detach only unsubscribes observations and retains original owner, capability references and retained host records. Frozen causal-view-binding.ts:16-20,32-36,38-51 confirms separate subscriptions and observation-only cleanup; README.md:91-96,143-151 confirms application ownership/obligations. Source SHA256 verified."
+      },
+      "name-resource-boundary": {
+        "pass": true,
+        "evidence": "Code passes firstInputs and secondInputs unchanged. Explanation explicitly states a name is labeling, not an authorization token; changing it neither clones input Nodes nor creates/rebinds resources, and distinguishes input facts from destination/epoch resource bindings. Frozen causal-entry.ts:54-68 forwards each supplied resource and its existing binding; README.md:85-89 states this distinction. Source SHA256 verified. An ancillary explanation claim that sharing a Node across instances would fail the distinct-node check is overstated: causal-preset.ts:73-93 only checks six nodes within one supplied instance. That does not contradict or fail this frozen criterion, which requires the naming/resource distinction and preserving independently supplied sets; no extra accuracy criterion was added."
+      }
+    }
+  }
+}

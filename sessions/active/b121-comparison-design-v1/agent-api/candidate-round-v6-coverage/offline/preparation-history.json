@@ -1,0 +1,15 @@
+{
+  "kind": "offline-preparation-history",
+  "liveCalls": 0,
+  "findingsFixed": [
+    "Missing returned host/quiescence rubric obligations",
+    "Ambiguous missing-publication criterion overlap",
+    "Compose code-only versus explanation contradiction",
+    "Positive-control false resource JSDoc"
+  ],
+  "preparationCorrections": [
+    "First broker boundary assertion expected ok:false; actual API throws ParticipantOutputError. Corrected assertion to match existing API; no harness change.",
+    "First comment replacement missed multiline source. Independent reviewers caught unchanged fixture; exact multiline replacement asserted and all final checks repeated."
+  ],
+  "evidence": "Initial reviewer reports, before-review artifacts and pre-final qualification results retained. Only final qualification and final reviews define freeze."
+}

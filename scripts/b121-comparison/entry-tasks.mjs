@@ -127,31 +127,45 @@ function closedProof(snapshot) {
 export function createEntryAcceptance({ controller, tsRoot }) {
   if (typeof controller?.snapshot !== 'function') throw new Error('trusted session controller required');
   const snapshot = controller.snapshot.bind(controller);
+  return createAcceptance({ tsRoot, releaseBinding: () => ({ comparisonProof: closedProof(snapshot()) }), tasks: specs });
+}
+
+/** Independent API entry experiment. Explicit identity is required; this is never an A/B closure bypass. */
+export function createStandaloneEntryAcceptance({ experiment, sessionId, role, tsRoot }) {
+  const roles = { user: 'ordinary', framework: 'framework', maintainer: 'maintainer' };
+  if (experiment !== 'entry' || typeof sessionId !== 'string' || !sessionId.trim() || !Object.hasOwn(roles, role))
+    throw new Error('explicit standalone entry experiment, session and role required');
+  return createAcceptance({ tsRoot,
+    releaseBinding: () => ({ experiment: 'entry', sessionId, role }),
+    tasks: specs.filter(task => task.id === roles[role]) });
+}
+
+function createAcceptance({ tsRoot, releaseBinding, tasks }) {
   let packet;
   const results = new Map();
   function releaseTasks() {
-    const proof = closedProof(snapshot());
+    const binding = releaseBinding();
     if (!packet) {
       const sources = sourcePaths.map(path => {
         const content = readFileSync(resolve(tsRoot, path), 'utf8');
         return { path, sha256: sha256(content), content };
       });
-      packet = { format: 'b121-graph-entry-acceptance-v1', scope: 'Graph-only', comparisonProof: proof,
+      packet = { format: 'b121-graph-entry-acceptance-v1', scope: 'Graph-only', ...binding,
         limitations: ['consumer-private examples; not new public library APIs',
           'static reference checks do not execute a host or prove runtime behavior',
           'trusted source/rubric review required; no participant acceptance inferred'],
-        sources, tasks: specs.map(({ reference, ...spec }) => ({ ...spec,
+        sources, tasks: tasks.map(({ reference, ...spec }) => ({ ...spec,
           sourceBindings: sources.map(({ path, sha256 }) => ({ path, sha256 })) })) };
     }
     return clone(packet);
   }
   function referenceSnippets() {
     releaseTasks();
-    return specs.map(({ id, reference }) => ({ id, snippet: reference }));
+    return tasks.map(({ id, reference }) => ({ id, snippet: reference }));
   }
   function grade({ taskId, snippet, review }) {
     const released = releaseTasks();
-    const task = specs.find(t => t.id === taskId);
+    const task = tasks.find(t => t.id === taskId);
     if (!task || results.has(taskId)) throw new Error('unknown task or result already retained');
     for (const source of released.sources) {
       if (sha256(readFileSync(resolve(tsRoot, source.path), 'utf8')) !== source.sha256)
@@ -165,7 +179,7 @@ export function createEntryAcceptance({ controller, tsRoot }) {
         throw new Error('criterion evidence required');
     }
     const compilation = validateEntrySnippet(tsRoot, snippet);
-    const result = { taskId, scope: 'Graph-only', comparisonProof: released.comparisonProof,
+    const result = { taskId, scope: 'Graph-only', ...releaseBinding(),
       snippetHash: sha256(snippet), compilation, review: clone(review),
       accepted: compilation.ok && Object.values(review.checks).every(c => c.passed),
       basis: 'static typecheck plus trusted reviewer assessment; not runtime verification' };

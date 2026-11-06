@@ -1,0 +1,107 @@
+{
+  "status": "reviewer-only-candidate",
+  "formalReady": false,
+  "taskSHA256": "e61561186dd69dc9fc25b2009dac74fe992710af10080e9638635ec84efc7cab",
+  "authorExposure": "Authored by Codex with access to prior pilot failures and documentation. Not independent authorship, not evidence of uncontaminated task design. These exact prompts have not been sent to a participant model in this preparation. Do not claim broader holdout independence.",
+  "scoring": {
+    "submission": "One initial submission per predeclared sample; any permitted transport retry fixed before launch. No grader correction or model repair turn after seeing scores.",
+    "acceptance": "Nonempty submission compiles under a frozen compiler environment AND every criterion passes a trusted source-based review. Compiler and review outcomes separate.",
+    "basis": "Static typecheck plus trusted source/rubric assessment; not runtime behavioral verification.",
+    "missing": "Missing/invalid submissions and interrupted/unrun samples remain in the full planned sample table. No replacement-until-pass or pooling best attempts.",
+    "ambiguity": "Unclear or conflicting rubric criteria make the affected evaluation invalid/pending review, not an automatic participant failure; any amendment requires a new evaluation version."
+  },
+  "tasks": [
+    {
+      "id": "display-current-values",
+      "criteria": [
+        {
+          "id": "current-values",
+          "rule": "Renders actual five-port observations; allows existing value-binding helper or equivalent subscriptions, without fabricated success values.",
+          "evidencePath": "examples/spending-alerts/causal-view-binding.ts",
+          "evidenceSHA256": "3a8722abf4ed783b8caa794ccb16a1d4fdfdbe26d999160805da746a62427409"
+        },
+        {
+          "id": "missing-values",
+          "rule": "Represents absence/invalidated facts explicitly and does not knowingly retain a stale value as current. Static review follows helper behavior or equivalent code; not a runtime proof.",
+          "evidencePath": "examples/spending-alerts/causal-view-binding.ts",
+          "evidenceSHA256": "3a8722abf4ed783b8caa794ccb16a1d4fdfdbe26d999160805da746a62427409"
+        },
+        {
+          "id": "observation-lifetime",
+          "rule": "Returns subscription cleanup only; explains that unmount does not settle obligations or terminate the application-owned run.",
+          "evidencePath": "examples/spending-alerts/README.md",
+          "evidenceSHA256": "f154720ef10c937a73ef923ef3f58e647d6ec336e9199f0305d9d1324b97170f"
+        }
+      ]
+    },
+    {
+      "id": "compose-two-instances",
+      "criteria": [
+        {
+          "id": "distinct-instance-construction",
+          "rule": "Uses the given Graph and separate prepared inputs to construct two instances with distinct names. Does not fabricate input/authority facts or invoke transport directly; normal composed-host behavior is allowed, and no guarantee of inert prepared inputs is required.",
+          "evidencePath": "examples/spending-alerts/causal-entry.ts",
+          "evidenceSHA256": "3d802f8b01c27519dbcc7b0ed77ed151bc8fa4fd2e0337b7535879e3dbf9b792"
+        },
+        {
+          "id": "default-override-isolation",
+          "rule": "Shares immutable configuration/defaults, applies summary diagnostics to only the second instance and does not mutate shared defaults to affect the first. No particular identifier spelling required.",
+          "evidencePath": "examples/spending-alerts/causal-entry.ts",
+          "evidenceSHA256": "3d802f8b01c27519dbcc7b0ed77ed151bc8fa4fd2e0337b7535879e3dbf9b792"
+        },
+        {
+          "id": "separate-observation-ownership",
+          "rule": "Observes each actual view independently, returns both instance references and separate observation cleanup, preserves application run ownership.",
+          "evidencePath": "examples/spending-alerts/causal-view-binding.ts",
+          "evidenceSHA256": "3a8722abf4ed783b8caa794ccb16a1d4fdfdbe26d999160805da746a62427409"
+        }
+      ]
+    },
+    {
+      "id": "validate-before-handoff",
+      "criteria": [
+        {
+          "id": "reject-before-recipient",
+          "rule": "Performs issued-object, owning-Graph and exact-binding validation before recipient effects. Structural copies or mismatches cannot reach recipient through an unconditional finally/catch path. Merely checking object fields is insufficient.",
+          "evidencePath": "packages/ts/src/solutions/causal-occurrence/capabilities.ts",
+          "evidenceSHA256": "606b352953fdb54f7ddc076662fc1fc8b88bed2841fdfe07bdf0b85224879fc7"
+        },
+        {
+          "id": "preserve-issued-lineage",
+          "rule": "Passes the original identity/execution/retained references and preserves their nesting relationships. Equivalent code accepted; no new registry or minted replacement handles.",
+          "evidencePath": "packages/ts/src/solutions/causal-occurrence/capabilities.ts",
+          "evidenceSHA256": "606b352953fdb54f7ddc076662fc1fc8b88bed2841fdfe07bdf0b85224879fc7"
+        },
+        {
+          "id": "execution-boundary",
+          "rule": "Does not call an arbitrary transport and explains that execution capability alone supplies no I/O method or per-request authorization.",
+          "evidencePath": "packages/ts/src/solutions/causal-occurrence/capabilities.ts",
+          "evidenceSHA256": "606b352953fdb54f7ddc076662fc1fc8b88bed2841fdfe07bdf0b85224879fc7"
+        }
+      ]
+    },
+    {
+      "id": "inspect-with-detached-display",
+      "criteria": [
+        {
+          "id": "read-only-full-inspection",
+          "rule": "Inspects the complete owning graph without filtering it to the display; retains original instance and no topology mutation, transport or close operation.",
+          "evidencePath": "packages/ts/src/graph/graph.ts",
+          "evidenceSHA256": "54b3644e0de855533f9ac91621b9e4eceb0368d11a953fe0d793dfd22e8b72fe"
+        },
+        {
+          "id": "host-boundary-evidence",
+          "rule": "Uses instance host observations and/or exposed dependencies with accurate source citations to distinguish local graph quiescence from normal host end-readiness; does not infer actual termination from readiness.",
+          "evidencePath": "examples/spending-alerts/causal-focused-host.ts",
+          "evidenceSHA256": "a2988bfad5108f424cbf5347e0531ead939397ab0e725ed92461c05f38310819"
+        },
+        {
+          "id": "unknown-outcome-conclusions",
+          "rule": "Unknown physical outcome is neither confirmed success nor confirmed no-submit; display detach does not remove retained obligation and does not justify replay or assert completed lifecycle.",
+          "evidencePath": "examples/spending-alerts/README.md",
+          "evidenceSHA256": "f154720ef10c937a73ef923ef3f58e647d6ec336e9199f0305d9d1324b97170f"
+        }
+      ]
+    }
+  ]
+}

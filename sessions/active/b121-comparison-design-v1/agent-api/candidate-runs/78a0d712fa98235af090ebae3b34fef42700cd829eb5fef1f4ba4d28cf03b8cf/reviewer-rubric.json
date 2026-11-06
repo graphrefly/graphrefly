@@ -1,0 +1,56 @@
+{
+  "status": "offline-candidate-with-consumer-probes",
+  "formalReady": false,
+  "taskSHA256": "c2e7319352a9d2e663336a9c38606dbd41a6e8af39c93b5d09c3b60a90f876d9",
+  "acceptance": "Proposed: frozen standalone and consumer typechecks plus all task static criteria. Static evidence only; no runtime proof. Ambiguous criteria invalidate the affected score until a new version is frozen.",
+  "tasks": [
+    {
+      "id": "report-node-version-metadata",
+      "criteria": [
+        {
+          "id": "union-and-absence",
+          "rule": "Uses undefined and level discrimination; returns exactly one correctly tagged report per item; no truthiness test losing counter zero. Imports the actual library NodeVersion input type, rather than copying a replacement structural union.",
+          "evidencePath": "packages/ts/src/node/versioning.ts",
+          "evidenceSHA256": "2e85ef63e93703ec3cda767dcd68e8e32b8f13f263c78d9d6b8ae551cbf8b27a"
+        },
+        {
+          "id": "preserve-fields",
+          "rule": "Preserves counter, cid and prev, including null; does not reinterpret cid as a source revision or invent a disabled hash.",
+          "evidencePath": "packages/ts/src/node/versioning.ts",
+          "evidenceSHA256": "2e85ef63e93703ec3cda767dcd68e8e32b8f13f263c78d9d6b8ae551cbf8b27a"
+        },
+        {
+          "id": "version-meaning",
+          "rule": "Explains content hash versus source/authorization; advanceNodeVersion can increment counter even when content hash remains equal. Does not claim any equality proves effect permission. Does not claim equal CIDs guarantee equal payloads: hashing is configurable and equality is not a collision-free proof.",
+          "evidencePath": "packages/ts/src/node/versioning.ts",
+          "evidenceSHA256": "2e85ef63e93703ec3cda767dcd68e8e32b8f13f263c78d9d6b8ae551cbf8b27a"
+        }
+      ],
+      "consumerProbe": "import type { NodeVersion } from \"@graphrefly/ts/core\";\nimport { summarizeVersions } from \"./__b121_entry_validation__.js\";\ndeclare const versions: readonly (NodeVersion | undefined)[];\ntype Report = {kind: \"disabled\"} | {kind: \"counter\"; counter: number} | {kind: \"content\"; counter: number; cid: string; prev: string | null};\nconst result: readonly Report[] = summarizeVersions(versions);\nvoid result;\n"
+    },
+    {
+      "id": "consume-business-results",
+      "criteria": [
+        {
+          "id": "result-branches",
+          "rule": "Collects values from ok results only, even if issues exist; error contributes its primary error before additional issues. Uses the actual imported generic DataResult<T> input type and DataIssue type.",
+          "evidencePath": "packages/ts/src/data/index.ts",
+          "evidenceSHA256": "1fa509436fb94d44052365697566b652662170c616c4ebd30753b1525eb49aa2"
+        },
+        {
+          "id": "preserve-order-identity",
+          "rule": "Preserves ordering, duplicates and object references; does not mutate input arrays/objects or substitute fabricated facts. Empty input yields empty arrays.",
+          "evidencePath": "packages/ts/src/data/index.ts",
+          "evidenceSHA256": "1fa509436fb94d44052365697566b652662170c616c4ebd30753b1525eb49aa2"
+        },
+        {
+          "id": "passive-facts",
+          "rule": "Distinguishes passive result/issue facts from protocol ERROR and run termination; retryable metadata alone does not authorize retry or execute effects.",
+          "evidencePath": "packages/ts/src/data/index.ts",
+          "evidenceSHA256": "1fa509436fb94d44052365697566b652662170c616c4ebd30753b1525eb49aa2"
+        }
+      ],
+      "consumerProbe": "import type { DataResult, DataIssue } from \"../../packages/ts/src/data/index.js\";\nimport { collectBusinessResults } from \"./__b121_entry_validation__.js\";\ndeclare const objects: readonly DataResult<{id: string}>[];\ndeclare const numbers: readonly DataResult<number>[];\nconst a: {values: readonly {id: string}[]; issues: readonly DataIssue[]} = collectBusinessResults(objects);\nconst b: {values: readonly number[]; issues: readonly DataIssue[]} = collectBusinessResults(numbers);\nconst c: {values: readonly string[]; issues: readonly DataIssue[]} = collectBusinessResults<string>([]);\nvoid [a, b, c];\n"
+    }
+  ]
+}

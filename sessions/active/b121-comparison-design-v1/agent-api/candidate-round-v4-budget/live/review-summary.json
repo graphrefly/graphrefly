@@ -1,0 +1,35 @@
+{
+  "denominator": 4,
+  "accepted": 1,
+  "submitted": 1,
+  "incomplete": 3,
+  "formalReady": false,
+  "runtimeBehaviorVerified": false,
+  "interpretation": "Previously exposed development tasks; static frozen compilation plus original source-based criteria, not a general success-rate estimate",
+  "rows": [
+    {
+      "sampleId": "candidate-entry-01",
+      "taskId": "display-current-values",
+      "status": "accepted-candidate-session",
+      "reviewArtifact": "candidate-entry-01.review.json"
+    },
+    {
+      "sampleId": "candidate-entry-02",
+      "taskId": "compose-two-instances",
+      "status": "incomplete",
+      "reviewArtifact": null
+    },
+    {
+      "sampleId": "candidate-entry-03",
+      "taskId": "validate-before-handoff",
+      "status": "incomplete",
+      "reviewArtifact": null
+    },
+    {
+      "sampleId": "candidate-entry-04",
+      "taskId": "inspect-with-detached-display",
+      "status": "incomplete",
+      "reviewArtifact": null
+    }
+  ]
+}

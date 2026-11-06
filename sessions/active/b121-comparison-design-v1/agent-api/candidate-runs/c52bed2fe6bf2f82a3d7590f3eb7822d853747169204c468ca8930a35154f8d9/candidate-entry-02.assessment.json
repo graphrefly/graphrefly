@@ -1,0 +1,61 @@
+{
+  "assessment": {
+    "kind": "candidate-session",
+    "formalReady": false,
+    "providerCalls": null,
+    "binding": {
+      "materialSHA256": "d6a39d5f0efeb272cd0d03c9b0dda085b175f9c916e7663493d8c528962914ae",
+      "taskSHA256": "e61561186dd69dc9fc25b2009dac74fe992710af10080e9638635ec84efc7cab",
+      "rubricSHA256": "90f7b71c79bd1487848d727119b3a056b36d4796a4bbeacd1be74916084adcae",
+      "environmentSHA256": "f91909c59b32fd547594bfb9702e6231d684bebf1251a7e62ca1847711fcbb9e",
+      "runnerContractSHA256": "68f68630250d2b20e31f253a1aa55a95b69a0170e188a404009f48871fde4d83"
+    },
+    "taskId": "compose-two-instances",
+    "sampleId": "candidate-entry-02",
+    "packetSHA256": "9258007981dd76137e5954347c05f2f419e82a5f09668d785e5ac09914fed862",
+    "result": {
+      "slot": {
+        "id": "candidate-entry-02",
+        "arm": "G",
+        "role": "application-integrator"
+      },
+      "controller": null,
+      "experiment": "entry",
+      "explanations": {
+        "A": {},
+        "B": {}
+      },
+      "entryAnswer": null,
+      "entryTiming": {
+        "startedMs": 0,
+        "submittedMs": null,
+        "elapsedMs": null,
+        "firstSourceRead": {
+          "path": "examples/spending-alerts/README.md",
+          "line": 1,
+          "operation": "read",
+          "elapsedMs": 952
+        }
+      },
+      "entryStatus": "missing",
+      "usage": {
+        "inputTokens": 943530,
+        "outputTokens": 2105,
+        "elapsedMs": 18050
+      },
+      "costUSD": 0.024268392000000003,
+      "turns": 28,
+      "counts": 29,
+      "operations": 34,
+      "fatal": null,
+      "failureScope": null,
+      "pendingReservation": null,
+      "retryAllowed": false
+    },
+    "compilation": null,
+    "compilerFailure": null,
+    "compilerReceipt": null,
+    "status": "incomplete"
+  },
+  "assessmentSHA256": "15cd91e83a4cfbb6ee46016c5045fce1a41a768d9a210919efa88c54e1349906"
+}

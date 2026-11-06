@@ -1,0 +1,22 @@
+{
+  "generationAttempts": 93,
+  "connectionPolicyRecordedEveryAttempt": true,
+  "providerFailures": 0,
+  "retries": 0,
+  "consumerProbeSHA256": "5f846f7a8be48ebb64561958b36259aac19536b1699a9097a98c7751ff8a5aa4",
+  "consumerProbePassed": true,
+  "accepted": 4,
+  "submitted": 4,
+  "codeBindingsVerified": 33,
+  "independentReviewedSamples": [
+    "candidate-entry-01",
+    "candidate-entry-03"
+  ],
+  "primaryReviewedSamples": [
+    "candidate-entry-02",
+    "candidate-entry-04"
+  ],
+  "secondaryReviewerUnavailableReason": "agent thread limit reached",
+  "runtimeBehaviorVerified": false,
+  "paidReruns": 0
+}

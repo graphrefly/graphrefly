@@ -1,0 +1,122 @@
+[
+  {
+    "journal": "sessions/active/b121-comparison-design-v1/agent-api/runs/a47fc6f9b79f50d6348eb8787afcf5e15d364f58cdf401661dd5b860f5294c30/journal.jsonl",
+    "rowIndex": 17,
+    "at": "2026-09-16T07:10:42.223Z",
+    "eventHash": "761fee0ea17c8f1c0835f6bc22f9a307a83eeab0ff17bc787fc266dac8e57a84",
+    "request": {
+      "index": 16,
+      "requestHash": "ddbcf12c55e618f4924d56034b87a546c068c28b36fbe7340d74944f241ac238",
+      "reserveUSD": 0.3151872,
+      "attempt": 1
+    },
+    "httpStatus": 503,
+    "generationId": "gen-1789542638-UIu9R5tKA63s9Sk8Uuwo",
+    "requestId": null,
+    "reportedCost": null,
+    "failureKind": null,
+    "billing": "unknown-reservation-retained",
+    "error": "OpenRouter HTTP response failed",
+    "status": "unresolved-record-not-found"
+  },
+  {
+    "journal": "sessions/active/b121-comparison-design-v1/agent-api/runs/ec081c7e1b89bf9b2997cafb0d7f86f456af8d7e39813f05eae56d98a69736a2--authorized-r1/journal.jsonl",
+    "rowIndex": 1250,
+    "at": "2026-09-16T07:19:29.204Z",
+    "eventHash": "aa728f93ab36f1ff6e8e9c5229c6e25f1e31515378924244a10be2216c9250a9",
+    "request": {
+      "index": 1249,
+      "requestHash": "179dc8b714e9edea1b7f9c4b18c562b9d07887607ab78a13ec1b139ba998accd",
+      "reserveUSD": 0.319488,
+      "attempt": 1
+    },
+    "httpStatus": null,
+    "generationId": null,
+    "requestId": null,
+    "reportedCost": null,
+    "failureKind": null,
+    "billing": "unknown-reservation-retained",
+    "error": "fetch failed",
+    "status": "unresolved-no-generation-id"
+  },
+  {
+    "journal": "sessions/active/b121-comparison-design-v1/agent-api/runs/ec081c7e1b89bf9b2997cafb0d7f86f456af8d7e39813f05eae56d98a69736a2--authorized-r1/journal.jsonl",
+    "rowIndex": 1863,
+    "at": "2026-09-16T07:21:14.290Z",
+    "eventHash": "ebc9842b140bb1c52f9d9ba55c328850fdbb22e6613a3324eed6210fa3bb8691",
+    "request": {
+      "index": 1862,
+      "requestHash": "9d08d88c00ac244934aabda7076629cdbd61d15394934de9749f4ab762ac0aa7",
+      "reserveUSD": 0.319488,
+      "attempt": 1
+    },
+    "httpStatus": null,
+    "generationId": null,
+    "requestId": null,
+    "reportedCost": null,
+    "failureKind": null,
+    "billing": "unknown-reservation-retained",
+    "error": "fetch failed",
+    "status": "unresolved-no-generation-id"
+  },
+  {
+    "journal": "sessions/active/b121-comparison-design-v1/agent-api/candidate-runs/d981286b1cd6cf1fe9004c79fbbc62011174b9e1a7e245b44e4f714c1011009f/journal.jsonl",
+    "rowIndex": 232,
+    "eventHash": "52ec249159b76d7799e070375203a16fc75e3c5a8a70006fa6177e488212f9f5",
+    "request": {
+      "reserveUSD": 0.319488
+    },
+    "httpStatus": null,
+    "generationId": null,
+    "error": "fetch failed",
+    "status": "unresolved-no-generation-id"
+  },
+  {
+    "journal": "sessions/active/b121-comparison-design-v1/agent-api/candidate-runs/d981286b1cd6cf1fe9004c79fbbc62011174b9e1a7e245b44e4f714c1011009f/journal.jsonl",
+    "rowIndex": 412,
+    "eventHash": "7f773e2eb9ba4b382d10697130bd81c5371fc48db376ad59b7c8763835c7f5c6",
+    "request": {
+      "reserveUSD": 0.319488
+    },
+    "httpStatus": null,
+    "generationId": null,
+    "error": "fetch failed",
+    "status": "unresolved-no-generation-id"
+  },
+  {
+    "journal": "sessions/active/b121-comparison-design-v1/agent-api/candidate-runs/f2da45f8e012b9b48444d3eac861a5e685ba6286d633ce43c79591abe0538f0b/journal.jsonl",
+    "rowIndex": 60,
+    "eventHash": "80a61e153b8857a5707d886db0e2d093745cb28302d0c6076018b42aa621f0f6",
+    "request": {
+      "reserveUSD": 0.319488
+    },
+    "httpStatus": null,
+    "generationId": null,
+    "error": "fetch failed",
+    "status": "unresolved-no-generation-id"
+  },
+  {
+    "journal": "sessions/active/b121-comparison-design-v1/agent-api/candidate-runs/62fdcba99df6d984465a2c9a43086eb2c0d38a52004bc8b449d2c9e11716d8a3/journal.jsonl",
+    "rowIndex": 163,
+    "eventHash": "39fc46485e42833d1a0b24693b1ee2177a96fc7d6e48d86a7f8120b952a7ec34",
+    "request": {
+      "reserveUSD": 0.317622
+    },
+    "httpStatus": null,
+    "generationId": null,
+    "error": "fetch failed",
+    "status": "unresolved-no-generation-id"
+  },
+  {
+    "journal": "sessions/active/b121-comparison-design-v1/agent-api/candidate-runs/62fdcba99df6d984465a2c9a43086eb2c0d38a52004bc8b449d2c9e11716d8a3/journal.jsonl",
+    "rowIndex": 530,
+    "eventHash": "94d8e93afc9d8357cd9368f2b828e67049b9400df179e34d2974ee24f6c4c83b",
+    "request": {
+      "reserveUSD": 0.3191928
+    },
+    "httpStatus": 502,
+    "generationId": "gen-1789749771-J5QRjzBTghoi2AslMNq3",
+    "error": "OpenRouter HTTP response failed",
+    "status": "unresolved-record-not-found"
+  }
+]

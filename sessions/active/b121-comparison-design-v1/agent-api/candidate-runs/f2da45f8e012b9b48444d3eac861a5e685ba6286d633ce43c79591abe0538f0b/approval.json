@@ -1,0 +1,17 @@
+{
+  "manifestSHA": "f2da45f8e012b9b48444d3eac861a5e685ba6286d633ce43c79591abe0538f0b",
+  "action": "B121-agent-api-one-shot",
+  "acceptAliasLimitation": true,
+  "acceptInputEstimateLimitation": true,
+  "expiresAt": "2026-09-18T11:06:34.640Z",
+  "maxGenerationCalls": 1444,
+  "maxUSD": 4,
+  "retries": {
+    "capacity": 3,
+    "availability": 1
+  },
+  "model": "deepseek/deepseek-v4.1-flash",
+  "providerTag": "together",
+  "priorUsageUSD": 2.586543376000001,
+  "authorizationSource": "User previously confirmed cumulative $4 including all prior usage and unknown reservations. After v3 result and proposal for dynamic budget feedback, user replied 继续. One v4 development regression of the same four exposed tasks with latest budget status; no replacements or model repair turns; preserve all prior failures."
+}

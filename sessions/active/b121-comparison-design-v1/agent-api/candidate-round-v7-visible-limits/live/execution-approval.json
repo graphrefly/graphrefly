@@ -1,0 +1,17 @@
+{
+  "manifestSHA": "62fdcba99df6d984465a2c9a43086eb2c0d38a52004bc8b449d2c9e11716d8a3",
+  "action": "B121-agent-api-one-shot",
+  "acceptAliasLimitation": true,
+  "acceptInputEstimateLimitation": true,
+  "expiresAt": "2026-09-18T22:40:55.281Z",
+  "maxGenerationCalls": 1444,
+  "maxUSD": 4,
+  "retries": {
+    "capacity": 3,
+    "availability": 1
+  },
+  "model": "deepseek/deepseek-v4.1-flash",
+  "providerTag": "together",
+  "priorUsageUSD": 3.2374753960000016,
+  "authorizationSource": "User previously confirmed cumulative $4 including all historical usage and unknown reservations. After v7 request-limit visibility freeze and notice of next real validation, user replied 继续. One fixed-four v7 development campaign within unchanged limits/provider/retry policy; no replacement or score-driven repairs. Same exposed v6 tasks/rubric; not an unseen holdout."
+}

@@ -1,0 +1,25 @@
+import {readFileSync,writeFileSync,mkdirSync,copyFileSync} from 'node:fs';
+import {join} from 'node:path';
+import assert from 'node:assert/strict';
+import {digest} from '/Users/davidchenallio/src/graphrefly/scripts/b121-comparison/frozen-compiler.mjs';
+import {prepareCandidateManifest} from '/Users/davidchenallio/src/graphrefly/scripts/b121-comparison/candidate-campaign.mjs';
+import {candidatePreflight} from '/Users/davidchenallio/src/graphrefly/scripts/b121-comparison/candidate-preflight.mjs';
+import {hash} from '/Users/davidchenallio/src/graphrefly/scripts/b121-comparison/session.mjs';
+const root='/Users/davidchenallio/src/graphrefly', parent=join(root,'sessions/active/b121-comparison-design-v1/agent-api'), prior=join(parent,'candidate-round-v6-coverage'),base=join(parent,'candidate-round-v7-visible-limits');
+mkdirSync(base);mkdirSync(join(base,'offline'));mkdirSync(join(base,'offline/compiler'));
+const read=p=>JSON.parse(readFileSync(p));const save=(p,x)=>writeFileSync(join(base,p),JSON.stringify(x,null,2)+'\n',{flag:'wx'});
+const names=['materials.json','tasks.json','reviewer-rubric.json','integration-pins.json','compiler-environment.json.gz'];
+for(const name of names)copyFileSync(join(prior,name),join(base,name));
+const priorManifest=read(join(prior,'live/manifest.json'));
+// Historical budget is used only to construct binding metadata. No live manifest/approval is issued.
+const draft=prepareCandidateManifest({candidateDirectory:base,outputRoot:priorManifest.outputRoot,budget:priorManifest.budget});
+assert.equal(hash(draft.artifactSHA256),hash(priorManifest.artifactSHA256));assert.equal(hash(draft.samples),hash(priorManifest.samples));
+const withoutFeedback=({ENTRY_INSTRUCTIONS,ENTRY_BUDGET_FEEDBACK_POLICY,...rest})=>rest;
+assert.equal(hash(withoutFeedback(draft.contract)),hash(withoutFeedback(priorManifest.contract)));
+assert.equal(hash(draft.policy),hash(priorManifest.policy));
+const changed=draft.codeBindings.filter(b=>priorManifest.codeBindings.find(p=>p.path===b.path)?.sha256!==b.sha256).map(b=>b.path);
+assert.deepEqual(changed.sort(),['scripts/b121-comparison/api-runner.mjs','scripts/b121-comparison/api-tool.mjs']);
+const qualification=await candidatePreflight(base,{receiptRoot:join(base,'offline/compiler')});assert.ok(qualification.readyForCandidateTypechecking);save('offline/module-preflight.json',qualification);
+save('preparation.json',{work:'graphrefly:B121',kind:'request-limit-visibility-development-candidate',formalReady:false,liveAuthorization:false,generationCalls:0,change:'Exact per-request output cap and unchanged answer field limits visible; native finish/field length diagnostics retained. No budget allocation, acceptance or retry changes.',sameFiveArtifactsAsV6:true,sameTaskAndSamplePacketsAsV6:true,changedExecutionFiles:changed,exposure:'Same exposed development tasks and v6 rubric; not an unseen holdout.'});
+save('frozen-candidate.json',{kind:'offline-development-candidate-freeze',work:'graphrefly:B121',formalReady:false,liveAuthorization:false,providerCalls:0,artifactSHA256:draft.artifactSHA256,samples:draft.samples,contract:draft.contract,policy:draft.policy,codeBindings:draft.codeBindings,qualificationSHA256:digest(readFileSync(join(base,'offline/module-preflight.json'))),executionBoundary:'Offline freeze only. No current money snapshot or executable campaign approval. Fresh authorization and audited budget must be bound at live dispatch.'});
+console.log(JSON.stringify({base,changed,modules:qualification.rows.length,artifactsIdentical:true,samplesIdentical:true,providerCalls:0}));

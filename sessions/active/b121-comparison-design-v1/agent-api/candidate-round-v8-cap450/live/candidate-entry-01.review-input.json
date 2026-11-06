@@ -1,0 +1,18 @@
+{
+  "assessmentSHA256": "a33f607c2a0480a905e5926e6ad0a7a0094bd0783b3f5a84606fa4f1840cac81",
+  "reviewerId": "Codex primary /root; local frozen-source static review, not independent or runtime verification",
+  "criteria": {
+    "current-values": {
+      "pass": true,
+      "evidence": "Directly subscribes all five original view ports and publishes received DATA; matches frozen causal-view-binding.ts ports and subscription logic. Formatter projects actual frames, no fabricated success."
+    },
+    "missing-values": {
+      "pass": true,
+      "evidence": "Deletes port on INVALIDATE/ERROR and rebuilds unavailable via Object.hasOwn; matches frozen causal-view-binding.ts. Initial absent values explicit."
+    },
+    "observation-lifetime": {
+      "pass": true,
+      "evidence": "Returns idempotent reverse unsubscribe cleanup only; explanation retains application run, resource and outstanding obligations per frozen README."
+    }
+  }
+}

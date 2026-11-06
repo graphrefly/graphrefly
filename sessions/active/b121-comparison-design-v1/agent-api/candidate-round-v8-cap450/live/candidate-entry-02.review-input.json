@@ -1,0 +1,22 @@
+{
+  "assessmentSHA256": "577df41d9d9344dbe8b4d52997725aa2e9cf7e458327365fc75d0e331706dc8f",
+  "reviewerId": "Codex primary /root; local frozen-source static review, not independent or runtime verification",
+  "criteria": {
+    "distinct-instance-construction": {
+      "pass": true,
+      "evidence": "One preset on supplied Graph composes firstInputs and secondInputs under alerts-a and alerts-b. No fabricated facts or direct transport; matches causal-entry.ts compose."
+    },
+    "default-override-isolation": {
+      "pass": true,
+      "evidence": "One spendingAlertsFor defaults diagnostics off; only second compose overrides summary, frozen configuration creates independent immutable options."
+    },
+    "separate-observation-ownership": {
+      "pass": true,
+      "evidence": "mountSpendingView separately receives each app.view/render callback; returns both original app references and detach functions. Explanation retains application ownership."
+    },
+    "name-resource-boundary": {
+      "pass": true,
+      "evidence": "Separate provided inputs passed unchanged; explanation explicitly distinguishes namespace, input Nodes and resource bindings, and states names do not clone inputs/resources or authorize them."
+    }
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "assessmentSHA256": "3ad10ae78962289a01b91cb91b32e8c5a437697ec0ed127099bfcd75cf973ed6",
+  "reviewerId": "Codex primary /root; local frozen-source static review, not independent or runtime verification",
+  "criteria": {
+    "read-only-full-inspection": {
+      "pass": true,
+      "evidence": "graph.describe() called without explain filter, full snapshot returned. Reads host/cache/find only; frozen graph.ts 564-568 confirms full nodes/edges."
+    },
+    "host-boundary-evidence": {
+      "pass": false,
+      "evidence": "The required actual composed target cannot be passed to this function: handwritten ComposedSpendingInstance wrongly types retainedQuiescence as SpendingAlertsView[publication] (Node<Publication>) rather than Node<CausalQuiescence>, contrary to frozen capabilities.ts 34-38. Original standalone compilation passes, but supplementary frozen consumer probe reports TS2345 on passing actual compose return. Original criterion requires returning the target instance retained quiescence; function rejects that target at its TypeScript boundary. Host/readiness explanation itself is otherwise accurate. See consumer-probe.json; original answer not edited."
+    },
+    "unknown-outcome-conclusions": {
+      "pass": true,
+      "evidence": "Explains unknown is neither success nor no-submit, detach retains obligations; no replay or termination inferred. README 138-157 supports reasoning."
+    },
+    "target-instance-authority": {
+      "pass": true,
+      "evidence": "Lookup uses instance.view.publication.cache.authorityId and graph.find exact ID; no enumeration or suffix heuristic. Frozen README 106-123."
+    },
+    "missing-publication": {
+      "pass": true,
+      "evidence": "Explicit unavailable/no-publication branch when cache undefined; does not borrow another instance or infer outcome. Node.cache getter is T|undefined; frozen README 121-123."
+    },
+    "outcome-evidence-correlation": {
+      "pass": true,
+      "evidence": "Explanation and correlateOutcome join host records with publication proposals by exact requestRef kind/id, acknowledge graph-held outcomes and non-atomic reads. Frozen README 125-130 and demo 207-230."
+    }
+  }
+}

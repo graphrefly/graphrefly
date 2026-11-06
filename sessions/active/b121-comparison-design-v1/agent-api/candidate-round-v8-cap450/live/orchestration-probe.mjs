@@ -1,0 +1,11 @@
+import {readFileSync,writeFileSync,mkdirSync} from 'node:fs';
+import {gunzipSync} from 'node:zlib';
+import {openCandidateRound} from '/Users/davidchenallio/src/graphrefly/scripts/b121-comparison/candidate-entry.mjs';
+const base='/Users/davidchenallio/src/graphrefly/sessions/active/b121-comparison-design-v1/agent-api/candidate-round-v8-cap450';
+const read=p=>JSON.parse(readFileSync(p));const outcome=read(base+'/live/outcome.json');
+mkdirSync(base+'/live/consumer-probe-compiler');
+const round=openCandidateRound({materialsJSON:readFileSync(base+'/materials.json','utf8'),tasksJSON:readFileSync(base+'/tasks.json','utf8'),rubricJSON:readFileSync(base+'/reviewer-rubric.json','utf8'),environmentJSON:gunzipSync(readFileSync(base+'/compiler-environment.json.gz')).toString(),pins:read(base+'/integration-pins.json'),receiptRoot:base+'/live/consumer-probe-compiler'});
+const original=read(outcome.directory+'/candidate-entry-04.assessment.json').assessment.result.entryAnswer.snippet;
+const probe='\nimport { spendingAlertsFor as realFactory } from "./causal-entry.js";\ndeclare const actualInstance: ReturnType<ReturnType<typeof realFactory>["compose"]>;\ndeclare const owningGraph: Graph;\ninspectSpendingInstance(owningGraph, actualInstance);\n';
+const result=await round.typecheck(original+probe,{context:{stage:'post-run-consumer-compatibility-diagnostic',taskId:'inspect-with-detached-display'}});
+writeFileSync(base+'/live/consumer-probe.json',JSON.stringify({interpretation:'Supplementary offline diagnostic of existing actual-instance task requirement; original answer/standalone compilation unchanged, no execution or model repair',probe,...result},null,2)+'\n');console.log(JSON.stringify(result.compilation));

@@ -1,0 +1,19 @@
+{
+  "manifestSHA": "2ed7b40707b08f8645d6d40e5b7709e87a10e65329b7ea43763490d154b211ab",
+  "action": "B121-agent-api-one-shot",
+  "acceptAliasLimitation": true,
+  "acceptInputEstimateLimitation": true,
+  "model": "deepseek/deepseek-v4.1-flash",
+  "providerTag": "together",
+  "expiresAt": "2026-09-17T05:44:40.929Z",
+  "maxGenerationCalls": 1444,
+  "maxUSD": 2,
+  "priorUsageUSD": 0.147538516,
+  "retries": {
+    "capacity": 3,
+    "availability": 1
+  },
+  "evidence": "User explicitly confirmed one v5 campaign: 12 comparisons, 6 independent code-entry sessions and 4 qualification calls, DeepSeek/Together, bounded retries, cumulative USD2 including prior USD0.147538516. No later rerun authorized.",
+  "priorRetiredKeyUsageUSD": 0.022818016,
+  "currentKeyStartingUsageUSD": 0.1247205
+}

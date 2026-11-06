@@ -1,0 +1,111 @@
+{
+  "kind": "b121-architecture-review-source-snapshot",
+  "date": "2026-09-18",
+  "purpose": "Review evidence only; not a live manifest, new authority schema, or test result. Dirty working-tree bytes are hashed separately from HEAD.",
+  "heads": {
+    "graphrefly": "7c8569bc31d75f743fa668eff4684418688d353f",
+    "graphrefly-ts": "dafc5ae57d446a59a7388214c31bd7a6e73d1519"
+  },
+  "sources": [
+    {
+      "owner": "graphrefly",
+      "path": "scripts/b121-comparison/api-runner.mjs",
+      "sha256": "e5e9fdad7a462c40617b83215c8ecc05865bbd7ce2be4ea62e49d2b3c8df30bb"
+    },
+    {
+      "owner": "graphrefly",
+      "path": "scripts/b121-comparison/api-transport.mjs",
+      "sha256": "ba9d28067f885a4c34926b37ddd32111d7c9c6f2bce5f62e2d2bfa3eb12d1fac"
+    },
+    {
+      "owner": "graphrefly",
+      "path": "scripts/b121-comparison/candidate-campaign.mjs",
+      "sha256": "30dba4bef458a7e5163b67e7d09d234538bc0d4bfd8f536ad195c0f5f3a205b1"
+    },
+    {
+      "owner": "graphrefly",
+      "path": "scripts/b121-comparison/candidate-entry.mjs",
+      "sha256": "bbce9e3883e4f533e57e2d9e3c2a71833b9daf987aa6ff7edd3efa0864e97943"
+    },
+    {
+      "owner": "graphrefly",
+      "path": "scripts/b121-comparison/compiler-process.mjs",
+      "sha256": "974540f2ce93c9c2bf65361c33bae11fbeee0be02abf8c6d893169285904af08"
+    },
+    {
+      "owner": "graphrefly",
+      "path": "scripts/b121-comparison/session.mjs",
+      "sha256": "b65828b9535c849c2cab92d820056164d66cc8523674b0cdf5591f8cb20b42d7"
+    },
+    {
+      "owner": "graphrefly",
+      "path": "scripts/b121-comparison/api-tool.mjs",
+      "sha256": "859c27ccf79cb045fcac8874537a121721506f9a25eac8e7ac73572c9209455d"
+    },
+    {
+      "owner": "graphrefly",
+      "path": "spec/rules.jsonl",
+      "sha256": "1d958dee3d547e9a7659b875e5e45dda27918775e6f9083e8090f353096d8f61"
+    },
+    {
+      "owner": "graphrefly",
+      "path": "authority/model.mjs",
+      "sha256": "354ee1564fea8bc47c0a2460db945ece04dda4b9b49c703a9678152966b7e7f6"
+    },
+    {
+      "owner": "graphrefly",
+      "path": "plan/backlog.jsonl",
+      "sha256": "6815d62f18cafba097f08d7e9ae9a167568362e7e81dfa7e87a5a2156965ed16"
+    },
+    {
+      "owner": "graphrefly-ts",
+      "path": "packages/ts/evals/graph-native-rerun-avoidance/architecture-acceptance.md",
+      "sha256": "a94561e4bab9a85dbbfd80f7b6bc08b562b6dda11831bc03465e2ffee7b641cf"
+    },
+    {
+      "owner": "graphrefly-ts",
+      "path": "packages/ts/evals/graph-native-rerun-avoidance/eval-topology.ts",
+      "sha256": "1efeda42213687ec8d9d38ac21dab065713680cd6801f608e30fe2cb8ebef653"
+    },
+    {
+      "owner": "graphrefly-ts",
+      "path": "packages/ts/evals/graph-native-rerun-avoidance/eval-topology-contract.ts",
+      "sha256": "9e24f09baf50e52015e686a44ffb98d1306044ae6785e71531d0e2f1dac83de7"
+    },
+    {
+      "owner": "graphrefly-ts",
+      "path": "packages/ts/evals/graph-native-rerun-avoidance/focused-async-adapters.ts",
+      "sha256": "9cf9fc01bf9e8d2bb6e8ac3ebb8196eded6475f8fa172579311685392708934c"
+    },
+    {
+      "owner": "graphrefly-ts",
+      "path": "packages/ts/evals/graph-native-rerun-avoidance/root-eval-live.ts",
+      "sha256": "bfefde738d8836da934a1eb21c5ed2139958ffd947d6dd30b065139c2afcb8e7"
+    },
+    {
+      "owner": "graphrefly-ts",
+      "path": "packages/ts/evals/graph-native-rerun-avoidance/provider-qualification.ts",
+      "sha256": "e1f833393a8f5baea0b78bac037dac0b79173dc516e5eabee72f11bb51a34348"
+    },
+    {
+      "owner": "graphrefly-ts",
+      "path": "packages/ts/evals/graph-native-rerun-avoidance/openrouter-transport.mjs",
+      "sha256": "2b08a28f3a5b3cdb411c0ca252f36546080f9de122e722c7aa57d98ec4befb34"
+    },
+    {
+      "owner": "graphrefly-ts",
+      "path": "packages/ts/evals/graph-native-rerun-avoidance/openrouter-recovery.mjs",
+      "sha256": "f3f2770996b72e5d0ccf479146e319195362df28a801d32db00612e11b63a507"
+    },
+    {
+      "owner": "graphrefly-ts",
+      "path": "packages/ts/src/__tests__/solutions-agentic-memory-work-item-root-eval-topology.test.ts",
+      "sha256": "6966a532896c7c193a0b245a6d1d6a98c4fcbb369240e98d1c5570953a72108a"
+    },
+    {
+      "owner": "graphrefly-ts",
+      "path": "decisions/decisions.jsonl",
+      "sha256": "d944714c156c099ed4257f190c6ccf1db99ef11aa6a552daa10f25cce3b653b6"
+    }
+  ]
+}

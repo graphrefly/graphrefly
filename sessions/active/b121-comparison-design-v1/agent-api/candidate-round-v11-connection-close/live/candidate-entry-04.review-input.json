@@ -1,0 +1,30 @@
+{
+  "assessmentSHA256": "b751e098607f014bf3314434bae240c7ca124db61456e8317224f597ac9e2f02",
+  "reviewerId": "Codex primary /root local frozen-source review; separate consumer compile passed",
+  "criteria": {
+    "read-only-full-inspection": {
+      "pass": true,
+      "evidence": "Returns graph.describe() complete snapshot, no filter/count projection; only reads/find/cache/inspect. Frozen graph.ts564-568 supports full structure."
+    },
+    "host-boundary-evidence": {
+      "pass": true,
+      "evidence": "Returns actual target inspect records and readiness, publication and Node<CausalQuiescence> cache; predeclared consumer compile with actual compose return passes without assertions. Explanation distinguishes host normalEndReady and local quiescence from termination. Frozen capabilities33-37, host558-576, README106-144."
+    },
+    "unknown-outcome-conclusions": {
+      "pass": true,
+      "evidence": "Explicitly denies success/no-submit/replay safety from unknown and detached display; retains outstanding obligations. Frozen README143-151 and host dispatchStopped logic support this."
+    },
+    "target-instance-authority": {
+      "pass": true,
+      "evidence": "Exact target publication.authorityId drives graph.find; no enumeration/suffix guess; both host/publication read target handles. Frozen README106-123."
+    },
+    "missing-publication": {
+      "pass": true,
+      "evidence": "publication optional lookup makes authorityId and authority undefined when absent, even with other instances. Does not infer success/no-submit/termination. Frozen README121-130."
+    },
+    "outcome-evidence-correlation": {
+      "pass": true,
+      "evidence": "sameRef compares exact kind/id of publication proposal requestRef to host retained requestRef; returns host record and outcome for comparison. Explanation identifies graph-held publication and non-atomic timing. Frozen demo207-238 and README125-130."
+    }
+  }
+}

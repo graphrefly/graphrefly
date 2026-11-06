@@ -1,0 +1,65 @@
+{
+  "assessment": {
+    "kind": "candidate-session",
+    "formalReady": false,
+    "providerCalls": null,
+    "binding": {
+      "materialSHA256": "a7846d59bdc5d0ca359292dceb91ef3274991bfb4afd9ce28e18c867e7554e6d",
+      "taskSHA256": "4cb85526391e8a15e083f1ee62df9370d65712555b5faf2116d047a89de8a1ee",
+      "rubricSHA256": "ef5013f4525bc88a9f8ac5848b2a5090378fe6c740c4619e26237ffe8e7d597b",
+      "environmentSHA256": "25c512ca2d3dd5c501f470bd4e6f63994ffbe635c402622b02180226b7302687",
+      "runnerContractSHA256": "8c304251aa7233fe97e4350d360f789312c1d72bf39054e48aa35e4b52e5809e"
+    },
+    "taskId": "display-current-values",
+    "sampleId": "candidate-entry-01",
+    "packetSHA256": "339a109438e09e6665c443834cdff7a8eee098a7b25a6fb61c3665603e513e2e",
+    "result": {
+      "slot": {
+        "id": "candidate-entry-01",
+        "arm": "G",
+        "role": "display-component"
+      },
+      "controller": null,
+      "experiment": "entry",
+      "explanations": {
+        "A": {},
+        "B": {}
+      },
+      "entryAnswer": null,
+      "entryTiming": {
+        "startedMs": 0,
+        "submittedMs": null,
+        "elapsedMs": null,
+        "firstSourceRead": {
+          "path": "examples/spending-alerts/README.md",
+          "line": 1,
+          "operation": "read",
+          "elapsedMs": 1238
+        }
+      },
+      "entryStatus": "missing",
+      "usage": {
+        "inputTokens": 59780,
+        "outputTokens": 448,
+        "elapsedMs": 5138
+      },
+      "costUSD": 0.001085616,
+      "turns": 6,
+      "counts": 6,
+      "operations": 10,
+      "fatal": "provider cost/call ceiling before retry",
+      "failureScope": "campaign",
+      "pendingReservation": {
+        "inputTokens": 1048576,
+        "outputTokens": 3456,
+        "costUSD": 0.31872
+      },
+      "retryAllowed": false
+    },
+    "compilation": null,
+    "compilerFailure": null,
+    "compilerReceipt": null,
+    "status": "incomplete"
+  },
+  "assessmentSHA256": "e0c2388aa8d0ca09b82ae1a4c7d713bbf6b9d31ce3e6e106ca5575ef5a72c5fc"
+}

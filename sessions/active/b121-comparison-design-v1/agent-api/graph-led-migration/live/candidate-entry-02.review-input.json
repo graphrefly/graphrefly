@@ -1,0 +1,18 @@
+{
+  "assessmentSHA256": "dfe3215a731d4f68a4452afe805c068fc4395ac815f9127f16f9d11b203bfd9d",
+  "reviewerId": "codex-root-static-review-not-blind",
+  "criteria": {
+    "result-branches": {
+      "pass": false,
+      "evidence": "Branch collection logic matches frozen data/index.ts, but line1 uses ../../../packages/ts/src/data/index.js from examples/spending-alerts, escaping the virtual repository root. TS2307 prevents resolving the required actual input types. Correct location and frozen source were supplied; submitted import remains unmodified."
+    },
+    "preserve-order-identity": {
+      "pass": true,
+      "evidence": "Static body loops original input order, pushes original value/error/issue references into fresh arrays, retains duplicates and handles empty input. No mutation of inputs. This is a body-level static finding, not a successful executable submission."
+    },
+    "passive-facts": {
+      "pass": true,
+      "evidence": "Explanation correctly separates passive DataError/retryable metadata from protocol ERROR, run end, automatic retry and effects, matching frozen data/index.ts header and issue definition. No subscription or transport in function."
+    }
+  }
+}

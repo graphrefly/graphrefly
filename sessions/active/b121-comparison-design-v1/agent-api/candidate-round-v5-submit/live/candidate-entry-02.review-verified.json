@@ -1,0 +1,35 @@
+{
+  "assessmentSHA256": "726b5b4ec73790a3393b14df897392af2bd0576538c698824721fa9848cfe92f",
+  "binding": {
+    "materialSHA256": "d6c54e73f9de7ad0f2dbac12107ba3550bb792d0d3fc5f8e4be5e43ad773113e",
+    "taskSHA256": "e499fdc9d9ee8cda3918d50eb643cc7355cefeaa70e7eff359594a0dd857ef5c",
+    "rubricSHA256": "e079e5c3b27d8c3cc4c775d5e893f7597bc28f25701e07c869c993cf0efb9ccd",
+    "environmentSHA256": "673b4cbe49396dd17e67a5a7d704afd7dd263d301d36e3fadc06dcc528530f87",
+    "runnerContractSHA256": "5c3b79e5f5f7a37737b3b4661f516c6236a777690fe105f8285a720461d8d4db"
+  },
+  "taskId": "compose-two-instances",
+  "sampleId": "candidate-entry-02",
+  "formalReady": false,
+  "providerCalls": 0,
+  "accepted": true,
+  "status": "accepted-candidate-session",
+  "compilerReceipt": "/Users/davidchenallio/src/graphrefly/sessions/active/b121-comparison-design-v1/agent-api/candidate-round-v5-submit/live/review-compiler/4af3fe55-db4d-402d-bc6a-bbbcb32a066e",
+  "review": {
+    "assessmentSHA256": "726b5b4ec73790a3393b14df897392af2bd0576538c698824721fa9848cfe92f",
+    "reviewerId": "Codex independent static reviewer /root/final_edges",
+    "criteria": {
+      "distinct-instance-construction": {
+        "pass": true,
+        "evidence": "Snippet45-62 uses the supplied Graph and separate firstInputs/secondInputs with effective names alerts and alerts-b; it creates no input facts/resources and calls no transport. Frozen causal-entry.ts38-45,49-69 resolves names and forwards the given input groups/resource to host composition. The snippet39/explanation wording that names yield distinct input Nodes/resource bindings is imprecise: those are independently supplied (snippet7-10; frozen README85-86), but the implementation preserves that task premise."
+      },
+      "default-override-isolation": {
+        "pass": true,
+        "evidence": "Snippet52-62 passes one defaults object with diagnostics off to spendingAlertsFor, then applies name alerts-b and diagnostics summary only to the second compose; no defaults mutation occurs. Frozen causal-entry.ts36-45 freezes resolved settings;49-53 captures defaults and independently resolves each override."
+      },
+      "separate-observation-ownership": {
+        "pass": true,
+        "evidence": "Snippet65-76 separately mounts the original firstApp.view and secondApp.view with their respective callbacks and returns both complete app references and distinct cleanup functions. Frozen causal-entry.ts70-74 preserves host/view/capability references; causal-view-binding.ts16,32-36,38-51 makes cleanup observation-only. Explanation explicitly retains application owner, diagnostics, original capabilities and outstanding obligations after detach, matching frozen README91-93,104-112."
+      }
+    }
+  }
+}

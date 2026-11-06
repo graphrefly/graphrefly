@@ -1,0 +1,35 @@
+{
+  "assessmentSHA256": "d5cb0058382dd1c4a9f41ee8116d3da339c589f5ad649735323ab7be4dea35f7",
+  "binding": {
+    "materialSHA256": "d6c54e73f9de7ad0f2dbac12107ba3550bb792d0d3fc5f8e4be5e43ad773113e",
+    "taskSHA256": "e499fdc9d9ee8cda3918d50eb643cc7355cefeaa70e7eff359594a0dd857ef5c",
+    "rubricSHA256": "e079e5c3b27d8c3cc4c775d5e893f7597bc28f25701e07c869c993cf0efb9ccd",
+    "environmentSHA256": "673b4cbe49396dd17e67a5a7d704afd7dd263d301d36e3fadc06dcc528530f87",
+    "runnerContractSHA256": "5c3b79e5f5f7a37737b3b4661f516c6236a777690fe105f8285a720461d8d4db"
+  },
+  "taskId": "inspect-with-detached-display",
+  "sampleId": "candidate-entry-04",
+  "formalReady": false,
+  "providerCalls": 0,
+  "accepted": true,
+  "status": "accepted-candidate-session",
+  "compilerReceipt": "/Users/davidchenallio/src/graphrefly/sessions/active/b121-comparison-design-v1/agent-api/candidate-round-v5-submit/live/review-compiler/a032c124-2273-444d-abff-9e460f47806b",
+  "review": {
+    "assessmentSHA256": "d5cb0058382dd1c4a9f41ee8116d3da339c589f5ad649735323ab7be4dea35f7",
+    "reviewerId": "Codex independent read-only reviewer /root/final_blind",
+    "criteria": {
+      "read-only-full-inspection": {
+        "pass": true,
+        "evidence": "Snippet69 calls owning graph.describe() without explain/filter; snippet73,76,79 reads original instance host/view/retained references, with no reconstruction, transport, close or topology mutation. Frozen graph.ts565-567,598-618 confirms complete live graph inspection. Snippet96-111 returns a summary, not the full snapshot; original criterion requires complete graph inspection, not returning the full DescribeSnapshot, so no stronger condition imposed."
+      },
+      "host-boundary-evidence": {
+        "pass": true,
+        "evidence": "Snippet73,81-93 reads host retained request/admission/outcome records;113-123 reports fault/inFlight/scheduled/delivering/normalEndReady separately from graph quiescence103-110. Explanation accurately cites frozen causal-focused-host.ts224,530-535,558-576 and distinguishes local quiescence from host readiness; snippet121,143-146 and explanation reject inference of termination/release. Source hashes verified."
+      },
+      "unknown-outcome-conclusions": {
+        "pass": true,
+        "evidence": "Snippet58,89 treats unknown/reconcile-required as unsettled. Explanation explicitly says unknown is neither success nor proof of no submission, detach retains obligations, records must be preserved, replay may duplicate a write, and readiness does not prove termination/release. Frozen README104-118 and causal-focused-host.ts224,530-535 support these statements."
+      }
+    }
+  }
+}

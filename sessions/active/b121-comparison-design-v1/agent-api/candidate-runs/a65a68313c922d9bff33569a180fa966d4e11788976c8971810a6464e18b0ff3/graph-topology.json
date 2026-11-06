@@ -1,0 +1,1881 @@
+{
+  "nodes": [
+    {
+      "id": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/facts",
+      "factory": "node",
+      "deps": [],
+      "name": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/facts"
+    },
+    {
+      "id": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/state",
+      "factory": "b121CampaignState",
+      "deps": [
+        "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/facts"
+      ],
+      "name": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/state"
+    },
+    {
+      "id": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/qualification-write-ahead",
+      "factory": "b121Campaign/qualification",
+      "deps": [
+        "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/state"
+      ],
+      "name": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/qualification-write-ahead"
+    },
+    {
+      "id": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/session-write-ahead",
+      "factory": "b121Campaign/session",
+      "deps": [
+        "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/state"
+      ],
+      "name": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/session-write-ahead"
+    },
+    {
+      "id": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/result-persistence-write-ahead",
+      "factory": "b121Campaign/result-persistence",
+      "deps": [
+        "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/state"
+      ],
+      "name": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/result-persistence-write-ahead"
+    },
+    {
+      "id": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/assessment-write-ahead",
+      "factory": "b121Campaign/assessment",
+      "deps": [
+        "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/state"
+      ],
+      "name": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/assessment-write-ahead"
+    },
+    {
+      "id": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/assessment-persistence-write-ahead",
+      "factory": "b121Campaign/assessment-persistence",
+      "deps": [
+        "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/state"
+      ],
+      "name": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/assessment-persistence-write-ahead"
+    },
+    {
+      "id": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/final-persistence-write-ahead",
+      "factory": "b121Campaign/final-persistence",
+      "deps": [
+        "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/state"
+      ],
+      "name": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/final-persistence-write-ahead"
+    },
+    {
+      "id": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/qualification-execution-admission",
+      "factory": "b121Campaign/qualification",
+      "deps": [
+        "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/state"
+      ],
+      "name": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/qualification-execution-admission"
+    },
+    {
+      "id": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/session-execution-admission",
+      "factory": "b121Campaign/session",
+      "deps": [
+        "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/state"
+      ],
+      "name": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/session-execution-admission"
+    },
+    {
+      "id": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/result-persistence-execution-admission",
+      "factory": "b121Campaign/result-persistence",
+      "deps": [
+        "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/state"
+      ],
+      "name": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/result-persistence-execution-admission"
+    },
+    {
+      "id": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/assessment-execution-admission",
+      "factory": "b121Campaign/assessment",
+      "deps": [
+        "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/state"
+      ],
+      "name": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/assessment-execution-admission"
+    },
+    {
+      "id": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/assessment-persistence-execution-admission",
+      "factory": "b121Campaign/assessment-persistence",
+      "deps": [
+        "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/state"
+      ],
+      "name": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/assessment-persistence-execution-admission"
+    },
+    {
+      "id": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/final-persistence-execution-admission",
+      "factory": "b121Campaign/final-persistence",
+      "deps": [
+        "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/state"
+      ],
+      "name": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/final-persistence-execution-admission"
+    },
+    {
+      "id": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/terminal",
+      "factory": "b121CampaignTerminal",
+      "deps": [
+        "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/state"
+      ],
+      "name": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/terminal"
+    },
+    {
+      "id": "provider/7d0dec7b-d377-4179-a07d-0acdcf86ad4b/facts",
+      "factory": "node",
+      "deps": [],
+      "name": "provider/7d0dec7b-d377-4179-a07d-0acdcf86ad4b/facts"
+    },
+    {
+      "id": "provider/7d0dec7b-d377-4179-a07d-0acdcf86ad4b/request-settlement",
+      "factory": "b121TransportState",
+      "deps": [
+        "provider/7d0dec7b-d377-4179-a07d-0acdcf86ad4b/facts"
+      ],
+      "name": "provider/7d0dec7b-d377-4179-a07d-0acdcf86ad4b/request-settlement"
+    },
+    {
+      "id": "provider/7d0dec7b-d377-4179-a07d-0acdcf86ad4b/budget-admission",
+      "factory": "derived",
+      "deps": [
+        "provider/7d0dec7b-d377-4179-a07d-0acdcf86ad4b/request-settlement"
+      ],
+      "name": "provider/7d0dec7b-d377-4179-a07d-0acdcf86ad4b/budget-admission"
+    },
+    {
+      "id": "provider/7d0dec7b-d377-4179-a07d-0acdcf86ad4b/write-ahead-request",
+      "factory": "derived",
+      "deps": [
+        "provider/7d0dec7b-d377-4179-a07d-0acdcf86ad4b/budget-admission"
+      ],
+      "name": "provider/7d0dec7b-d377-4179-a07d-0acdcf86ad4b/write-ahead-request"
+    },
+    {
+      "id": "provider/7d0dec7b-d377-4179-a07d-0acdcf86ad4b/exact-http-admission",
+      "factory": "derived",
+      "deps": [
+        "provider/7d0dec7b-d377-4179-a07d-0acdcf86ad4b/request-settlement"
+      ],
+      "name": "provider/7d0dec7b-d377-4179-a07d-0acdcf86ad4b/exact-http-admission"
+    },
+    {
+      "id": "provider/7d0dec7b-d377-4179-a07d-0acdcf86ad4b/settlement-persistence",
+      "factory": "derived",
+      "deps": [
+        "provider/7d0dec7b-d377-4179-a07d-0acdcf86ad4b/request-settlement"
+      ],
+      "name": "provider/7d0dec7b-d377-4179-a07d-0acdcf86ad4b/settlement-persistence"
+    },
+    {
+      "id": "provider/7d0dec7b-d377-4179-a07d-0acdcf86ad4b/retry-admission",
+      "factory": "derived",
+      "deps": [
+        "provider/7d0dec7b-d377-4179-a07d-0acdcf86ad4b/request-settlement"
+      ],
+      "name": "provider/7d0dec7b-d377-4179-a07d-0acdcf86ad4b/retry-admission"
+    },
+    {
+      "id": "provider/7d0dec7b-d377-4179-a07d-0acdcf86ad4b/retry-write-ahead",
+      "factory": "derived",
+      "deps": [
+        "provider/7d0dec7b-d377-4179-a07d-0acdcf86ad4b/retry-admission"
+      ],
+      "name": "provider/7d0dec7b-d377-4179-a07d-0acdcf86ad4b/retry-write-ahead"
+    },
+    {
+      "id": "provider/7d0dec7b-d377-4179-a07d-0acdcf86ad4b/exact-delay-admission",
+      "factory": "derived",
+      "deps": [
+        "provider/7d0dec7b-d377-4179-a07d-0acdcf86ad4b/request-settlement"
+      ],
+      "name": "provider/7d0dec7b-d377-4179-a07d-0acdcf86ad4b/exact-delay-admission"
+    },
+    {
+      "id": "provider/7d0dec7b-d377-4179-a07d-0acdcf86ad4b/command-result",
+      "factory": "derived",
+      "deps": [
+        "provider/7d0dec7b-d377-4179-a07d-0acdcf86ad4b/request-settlement"
+      ],
+      "name": "provider/7d0dec7b-d377-4179-a07d-0acdcf86ad4b/command-result"
+    },
+    {
+      "id": "qualification/51d89b01-5ee3-4605-af98-310fcd89a947/facts",
+      "factory": "node",
+      "deps": [],
+      "name": "qualification/51d89b01-5ee3-4605-af98-310fcd89a947/facts"
+    },
+    {
+      "id": "qualification/51d89b01-5ee3-4605-af98-310fcd89a947/conversation-and-identity",
+      "factory": "node",
+      "deps": [
+        "qualification/51d89b01-5ee3-4605-af98-310fcd89a947/facts"
+      ],
+      "name": "qualification/51d89b01-5ee3-4605-af98-310fcd89a947/conversation-and-identity"
+    },
+    {
+      "id": "qualification/51d89b01-5ee3-4605-af98-310fcd89a947/frozen-request",
+      "factory": "derived",
+      "deps": [
+        "qualification/51d89b01-5ee3-4605-af98-310fcd89a947/conversation-and-identity"
+      ],
+      "name": "qualification/51d89b01-5ee3-4605-af98-310fcd89a947/frozen-request"
+    },
+    {
+      "id": "qualification/51d89b01-5ee3-4605-af98-310fcd89a947/estimate-admission",
+      "factory": "derived",
+      "deps": [
+        "qualification/51d89b01-5ee3-4605-af98-310fcd89a947/frozen-request"
+      ],
+      "name": "qualification/51d89b01-5ee3-4605-af98-310fcd89a947/estimate-admission"
+    },
+    {
+      "id": "qualification/51d89b01-5ee3-4605-af98-310fcd89a947/generation-admission",
+      "factory": "derived",
+      "deps": [
+        "qualification/51d89b01-5ee3-4605-af98-310fcd89a947/frozen-request"
+      ],
+      "name": "qualification/51d89b01-5ee3-4605-af98-310fcd89a947/generation-admission"
+    },
+    {
+      "id": "qualification/51d89b01-5ee3-4605-af98-310fcd89a947/terminal",
+      "factory": "derived",
+      "deps": [
+        "qualification/51d89b01-5ee3-4605-af98-310fcd89a947/conversation-and-identity"
+      ],
+      "name": "qualification/51d89b01-5ee3-4605-af98-310fcd89a947/terminal"
+    },
+    {
+      "id": "session/candidate-entry-01/facts",
+      "factory": "node",
+      "deps": [],
+      "name": "session/candidate-entry-01/facts"
+    },
+    {
+      "id": "session/candidate-entry-01/state",
+      "factory": "b121SessionState",
+      "deps": [
+        "session/candidate-entry-01/facts"
+      ],
+      "name": "session/candidate-entry-01/state"
+    },
+    {
+      "id": "session/candidate-entry-01/persistence-facts",
+      "factory": "node",
+      "deps": [],
+      "name": "session/candidate-entry-01/persistence-facts"
+    },
+    {
+      "id": "session/candidate-entry-01/persisted-request-admission",
+      "factory": "b121PersistedRequestAdmission",
+      "deps": [
+        "session/candidate-entry-01/persistence-facts"
+      ],
+      "name": "session/candidate-entry-01/persisted-request-admission"
+    },
+    {
+      "id": "session/candidate-entry-01/phase-start",
+      "factory": "b121/phase-start",
+      "deps": [
+        "session/candidate-entry-01/state"
+      ],
+      "name": "session/candidate-entry-01/phase-start"
+    },
+    {
+      "id": "session/candidate-entry-01/phase-start-delivery/validated",
+      "factory": "rootEvalQuietDataValidated",
+      "deps": [
+        "session/candidate-entry-01/phase-start"
+      ],
+      "name": "session/candidate-entry-01/phase-start-delivery/validated",
+      "meta": {
+        "materialFree": true
+      }
+    },
+    {
+      "id": "session/candidate-entry-01/phase-start-delivery/released",
+      "factory": "rootEvalQuietDataPort",
+      "deps": [
+        "session/candidate-entry-01/phase-start-delivery/validated"
+      ],
+      "name": "session/candidate-entry-01/phase-start-delivery/released",
+      "meta": {
+        "boundary": "complete-domain-data-only"
+      }
+    },
+    {
+      "id": "session/candidate-entry-01/phase-start-delivery",
+      "factory": "b121ExactStageDelivery",
+      "deps": [
+        "session/candidate-entry-01/phase-start-delivery/released"
+      ],
+      "name": "session/candidate-entry-01/phase-start-delivery",
+      "meta": {
+        "boundary": "complete-domain-data-only"
+      }
+    },
+    {
+      "id": "session/candidate-entry-01/phase-start-delivery/release-events",
+      "factory": "merge",
+      "deps": [
+        "session/candidate-entry-01/phase-start-delivery",
+        "session/candidate-entry-01/phase-start-delivery/validated"
+      ],
+      "name": "session/candidate-entry-01/phase-start-delivery/release-events"
+    },
+    {
+      "id": "session/candidate-entry-01/phase-start-delivery/release-controller",
+      "factory": "rootEvalQuietDataReleaseController",
+      "deps": [
+        "session/candidate-entry-01/phase-start-delivery/release-events"
+      ],
+      "name": "session/candidate-entry-01/phase-start-delivery/release-controller"
+    },
+    {
+      "id": "session/candidate-entry-01/input-budget-admission",
+      "factory": "b121/input-budget-admission",
+      "deps": [
+        "session/candidate-entry-01/state"
+      ],
+      "name": "session/candidate-entry-01/input-budget-admission"
+    },
+    {
+      "id": "session/candidate-entry-01/input-budget-admission-delivery/validated",
+      "factory": "rootEvalQuietDataValidated",
+      "deps": [
+        "session/candidate-entry-01/input-budget-admission"
+      ],
+      "name": "session/candidate-entry-01/input-budget-admission-delivery/validated",
+      "meta": {
+        "materialFree": true
+      }
+    },
+    {
+      "id": "session/candidate-entry-01/input-budget-admission-delivery/released",
+      "factory": "rootEvalQuietDataPort",
+      "deps": [
+        "session/candidate-entry-01/input-budget-admission-delivery/validated"
+      ],
+      "name": "session/candidate-entry-01/input-budget-admission-delivery/released",
+      "meta": {
+        "boundary": "complete-domain-data-only"
+      }
+    },
+    {
+      "id": "session/candidate-entry-01/input-budget-admission-delivery",
+      "factory": "b121ExactStageDelivery",
+      "deps": [
+        "session/candidate-entry-01/input-budget-admission-delivery/released"
+      ],
+      "name": "session/candidate-entry-01/input-budget-admission-delivery",
+      "meta": {
+        "boundary": "complete-domain-data-only"
+      }
+    },
+    {
+      "id": "session/candidate-entry-01/input-budget-admission-delivery/release-events",
+      "factory": "merge",
+      "deps": [
+        "session/candidate-entry-01/input-budget-admission-delivery",
+        "session/candidate-entry-01/input-budget-admission-delivery/validated"
+      ],
+      "name": "session/candidate-entry-01/input-budget-admission-delivery/release-events"
+    },
+    {
+      "id": "session/candidate-entry-01/input-budget-admission-delivery/release-controller",
+      "factory": "rootEvalQuietDataReleaseController",
+      "deps": [
+        "session/candidate-entry-01/input-budget-admission-delivery/release-events"
+      ],
+      "name": "session/candidate-entry-01/input-budget-admission-delivery/release-controller"
+    },
+    {
+      "id": "session/candidate-entry-01/response-accounting",
+      "factory": "b121/response-accounting",
+      "deps": [
+        "session/candidate-entry-01/state"
+      ],
+      "name": "session/candidate-entry-01/response-accounting"
+    },
+    {
+      "id": "session/candidate-entry-01/response-accounting-delivery/validated",
+      "factory": "rootEvalQuietDataValidated",
+      "deps": [
+        "session/candidate-entry-01/response-accounting"
+      ],
+      "name": "session/candidate-entry-01/response-accounting-delivery/validated",
+      "meta": {
+        "materialFree": true
+      }
+    },
+    {
+      "id": "session/candidate-entry-01/response-accounting-delivery/released",
+      "factory": "rootEvalQuietDataPort",
+      "deps": [
+        "session/candidate-entry-01/response-accounting-delivery/validated"
+      ],
+      "name": "session/candidate-entry-01/response-accounting-delivery/released",
+      "meta": {
+        "boundary": "complete-domain-data-only"
+      }
+    },
+    {
+      "id": "session/candidate-entry-01/response-accounting-delivery",
+      "factory": "b121ExactStageDelivery",
+      "deps": [
+        "session/candidate-entry-01/response-accounting-delivery/released"
+      ],
+      "name": "session/candidate-entry-01/response-accounting-delivery",
+      "meta": {
+        "boundary": "complete-domain-data-only"
+      }
+    },
+    {
+      "id": "session/candidate-entry-01/response-accounting-delivery/release-events",
+      "factory": "merge",
+      "deps": [
+        "session/candidate-entry-01/response-accounting-delivery",
+        "session/candidate-entry-01/response-accounting-delivery/validated"
+      ],
+      "name": "session/candidate-entry-01/response-accounting-delivery/release-events"
+    },
+    {
+      "id": "session/candidate-entry-01/response-accounting-delivery/release-controller",
+      "factory": "rootEvalQuietDataReleaseController",
+      "deps": [
+        "session/candidate-entry-01/response-accounting-delivery/release-events"
+      ],
+      "name": "session/candidate-entry-01/response-accounting-delivery/release-controller"
+    },
+    {
+      "id": "session/candidate-entry-01/broker-phase-admission",
+      "factory": "b121/broker-phase-admission",
+      "deps": [
+        "session/candidate-entry-01/response-accounting-delivery"
+      ],
+      "name": "session/candidate-entry-01/broker-phase-admission"
+    },
+    {
+      "id": "session/candidate-entry-01/broker-phase-admission-delivery/validated",
+      "factory": "rootEvalQuietDataValidated",
+      "deps": [
+        "session/candidate-entry-01/broker-phase-admission"
+      ],
+      "name": "session/candidate-entry-01/broker-phase-admission-delivery/validated",
+      "meta": {
+        "materialFree": true
+      }
+    },
+    {
+      "id": "session/candidate-entry-01/broker-phase-admission-delivery/released",
+      "factory": "rootEvalQuietDataPort",
+      "deps": [
+        "session/candidate-entry-01/broker-phase-admission-delivery/validated"
+      ],
+      "name": "session/candidate-entry-01/broker-phase-admission-delivery/released",
+      "meta": {
+        "boundary": "complete-domain-data-only"
+      }
+    },
+    {
+      "id": "session/candidate-entry-01/broker-phase-admission-delivery",
+      "factory": "b121ExactStageDelivery",
+      "deps": [
+        "session/candidate-entry-01/broker-phase-admission-delivery/released"
+      ],
+      "name": "session/candidate-entry-01/broker-phase-admission-delivery",
+      "meta": {
+        "boundary": "complete-domain-data-only"
+      }
+    },
+    {
+      "id": "session/candidate-entry-01/broker-phase-admission-delivery/release-events",
+      "factory": "merge",
+      "deps": [
+        "session/candidate-entry-01/broker-phase-admission-delivery",
+        "session/candidate-entry-01/broker-phase-admission-delivery/validated"
+      ],
+      "name": "session/candidate-entry-01/broker-phase-admission-delivery/release-events"
+    },
+    {
+      "id": "session/candidate-entry-01/broker-phase-admission-delivery/release-controller",
+      "factory": "rootEvalQuietDataReleaseController",
+      "deps": [
+        "session/candidate-entry-01/broker-phase-admission-delivery/release-events"
+      ],
+      "name": "session/candidate-entry-01/broker-phase-admission-delivery/release-controller"
+    },
+    {
+      "id": "session/candidate-entry-01/broker-execution",
+      "factory": "b121/broker-execution",
+      "deps": [
+        "session/candidate-entry-01/persisted-request-admission"
+      ],
+      "name": "session/candidate-entry-01/broker-execution"
+    },
+    {
+      "id": "session/candidate-entry-01/broker-execution-delivery/validated",
+      "factory": "rootEvalQuietDataValidated",
+      "deps": [
+        "session/candidate-entry-01/broker-execution"
+      ],
+      "name": "session/candidate-entry-01/broker-execution-delivery/validated",
+      "meta": {
+        "materialFree": true
+      }
+    },
+    {
+      "id": "session/candidate-entry-01/broker-execution-delivery/released",
+      "factory": "rootEvalQuietDataPort",
+      "deps": [
+        "session/candidate-entry-01/broker-execution-delivery/validated"
+      ],
+      "name": "session/candidate-entry-01/broker-execution-delivery/released",
+      "meta": {
+        "boundary": "complete-domain-data-only"
+      }
+    },
+    {
+      "id": "session/candidate-entry-01/broker-execution-delivery",
+      "factory": "b121ExactStageDelivery",
+      "deps": [
+        "session/candidate-entry-01/broker-execution-delivery/released"
+      ],
+      "name": "session/candidate-entry-01/broker-execution-delivery",
+      "meta": {
+        "boundary": "complete-domain-data-only"
+      }
+    },
+    {
+      "id": "session/candidate-entry-01/broker-execution-delivery/release-events",
+      "factory": "merge",
+      "deps": [
+        "session/candidate-entry-01/broker-execution-delivery",
+        "session/candidate-entry-01/broker-execution-delivery/validated"
+      ],
+      "name": "session/candidate-entry-01/broker-execution-delivery/release-events"
+    },
+    {
+      "id": "session/candidate-entry-01/broker-execution-delivery/release-controller",
+      "factory": "rootEvalQuietDataReleaseController",
+      "deps": [
+        "session/candidate-entry-01/broker-execution-delivery/release-events"
+      ],
+      "name": "session/candidate-entry-01/broker-execution-delivery/release-controller"
+    },
+    {
+      "id": "session/candidate-entry-01/phase-advance",
+      "factory": "b121/phase-advance",
+      "deps": [
+        "session/candidate-entry-01/broker-execution-delivery"
+      ],
+      "name": "session/candidate-entry-01/phase-advance"
+    },
+    {
+      "id": "session/candidate-entry-01/phase-advance-delivery/validated",
+      "factory": "rootEvalQuietDataValidated",
+      "deps": [
+        "session/candidate-entry-01/phase-advance"
+      ],
+      "name": "session/candidate-entry-01/phase-advance-delivery/validated",
+      "meta": {
+        "materialFree": true
+      }
+    },
+    {
+      "id": "session/candidate-entry-01/phase-advance-delivery/released",
+      "factory": "rootEvalQuietDataPort",
+      "deps": [
+        "session/candidate-entry-01/phase-advance-delivery/validated"
+      ],
+      "name": "session/candidate-entry-01/phase-advance-delivery/released",
+      "meta": {
+        "boundary": "complete-domain-data-only"
+      }
+    },
+    {
+      "id": "session/candidate-entry-01/phase-advance-delivery",
+      "factory": "b121ExactStageDelivery",
+      "deps": [
+        "session/candidate-entry-01/phase-advance-delivery/released"
+      ],
+      "name": "session/candidate-entry-01/phase-advance-delivery",
+      "meta": {
+        "boundary": "complete-domain-data-only"
+      }
+    },
+    {
+      "id": "session/candidate-entry-01/phase-advance-delivery/release-events",
+      "factory": "merge",
+      "deps": [
+        "session/candidate-entry-01/phase-advance-delivery",
+        "session/candidate-entry-01/phase-advance-delivery/validated"
+      ],
+      "name": "session/candidate-entry-01/phase-advance-delivery/release-events"
+    },
+    {
+      "id": "session/candidate-entry-01/phase-advance-delivery/release-controller",
+      "factory": "rootEvalQuietDataReleaseController",
+      "deps": [
+        "session/candidate-entry-01/phase-advance-delivery/release-events"
+      ],
+      "name": "session/candidate-entry-01/phase-advance-delivery/release-controller"
+    },
+    {
+      "id": "session/candidate-entry-01/request-policy-events",
+      "factory": "merge",
+      "deps": [
+        "session/candidate-entry-01/phase-start-delivery",
+        "session/candidate-entry-01/input-budget-admission-delivery",
+        "session/candidate-entry-01/phase-advance-delivery"
+      ],
+      "name": "session/candidate-entry-01/request-policy-events"
+    },
+    {
+      "id": "session/candidate-entry-01/request-policy",
+      "factory": "b121/request-policy",
+      "deps": [
+        "session/candidate-entry-01/request-policy-events"
+      ],
+      "name": "session/candidate-entry-01/request-policy"
+    },
+    {
+      "id": "session/candidate-entry-01/request-policy-delivery/validated",
+      "factory": "rootEvalQuietDataValidated",
+      "deps": [
+        "session/candidate-entry-01/request-policy"
+      ],
+      "name": "session/candidate-entry-01/request-policy-delivery/validated",
+      "meta": {
+        "materialFree": true
+      }
+    },
+    {
+      "id": "session/candidate-entry-01/request-policy-delivery/released",
+      "factory": "rootEvalQuietDataPort",
+      "deps": [
+        "session/candidate-entry-01/request-policy-delivery/validated"
+      ],
+      "name": "session/candidate-entry-01/request-policy-delivery/released",
+      "meta": {
+        "boundary": "complete-domain-data-only"
+      }
+    },
+    {
+      "id": "session/candidate-entry-01/request-policy-delivery",
+      "factory": "b121ExactStageDelivery",
+      "deps": [
+        "session/candidate-entry-01/request-policy-delivery/released"
+      ],
+      "name": "session/candidate-entry-01/request-policy-delivery",
+      "meta": {
+        "boundary": "complete-domain-data-only"
+      }
+    },
+    {
+      "id": "session/candidate-entry-01/request-policy-delivery/release-events",
+      "factory": "merge",
+      "deps": [
+        "session/candidate-entry-01/request-policy-delivery",
+        "session/candidate-entry-01/request-policy-delivery/validated"
+      ],
+      "name": "session/candidate-entry-01/request-policy-delivery/release-events"
+    },
+    {
+      "id": "session/candidate-entry-01/request-policy-delivery/release-controller",
+      "factory": "rootEvalQuietDataReleaseController",
+      "deps": [
+        "session/candidate-entry-01/request-policy-delivery/release-events"
+      ],
+      "name": "session/candidate-entry-01/request-policy-delivery/release-controller"
+    },
+    {
+      "id": "session/candidate-entry-01/admission-events",
+      "factory": "merge",
+      "deps": [
+        "session/candidate-entry-01/request-policy-delivery",
+        "session/candidate-entry-01/input-budget-admission-delivery",
+        "session/candidate-entry-01/broker-phase-admission-delivery"
+      ],
+      "name": "session/candidate-entry-01/admission-events"
+    },
+    {
+      "id": "session/candidate-entry-01/request-execution-admission",
+      "factory": "b121ExactRequestAdmission",
+      "deps": [
+        "session/candidate-entry-01/admission-events"
+      ],
+      "name": "session/candidate-entry-01/request-execution-admission"
+    },
+    {
+      "id": "session/candidate-entry-01/terminal-events",
+      "factory": "merge",
+      "deps": [
+        "session/candidate-entry-01/phase-start-delivery",
+        "session/candidate-entry-01/input-budget-admission-delivery",
+        "session/candidate-entry-01/response-accounting-delivery",
+        "session/candidate-entry-01/broker-phase-admission-delivery",
+        "session/candidate-entry-01/broker-execution-delivery",
+        "session/candidate-entry-01/phase-advance-delivery",
+        "session/candidate-entry-01/request-policy-delivery"
+      ],
+      "name": "session/candidate-entry-01/terminal-events"
+    },
+    {
+      "id": "session/candidate-entry-01/terminal",
+      "factory": "b121SessionTerminal",
+      "deps": [
+        "session/candidate-entry-01/terminal-events"
+      ],
+      "name": "session/candidate-entry-01/terminal"
+    },
+    {
+      "id": "session/candidate-entry-01/persisted-terminal",
+      "factory": "b121PersistedSessionTerminal",
+      "deps": [
+        "session/candidate-entry-01/persistence-facts"
+      ],
+      "name": "session/candidate-entry-01/persisted-terminal"
+    },
+    {
+      "id": "session/candidate-entry-02/facts",
+      "factory": "node",
+      "deps": [],
+      "name": "session/candidate-entry-02/facts"
+    },
+    {
+      "id": "session/candidate-entry-02/state",
+      "factory": "b121SessionState",
+      "deps": [
+        "session/candidate-entry-02/facts"
+      ],
+      "name": "session/candidate-entry-02/state"
+    },
+    {
+      "id": "session/candidate-entry-02/persistence-facts",
+      "factory": "node",
+      "deps": [],
+      "name": "session/candidate-entry-02/persistence-facts"
+    },
+    {
+      "id": "session/candidate-entry-02/persisted-request-admission",
+      "factory": "b121PersistedRequestAdmission",
+      "deps": [
+        "session/candidate-entry-02/persistence-facts"
+      ],
+      "name": "session/candidate-entry-02/persisted-request-admission"
+    },
+    {
+      "id": "session/candidate-entry-02/phase-start",
+      "factory": "b121/phase-start",
+      "deps": [
+        "session/candidate-entry-02/state"
+      ],
+      "name": "session/candidate-entry-02/phase-start"
+    },
+    {
+      "id": "session/candidate-entry-02/phase-start-delivery/validated",
+      "factory": "rootEvalQuietDataValidated",
+      "deps": [
+        "session/candidate-entry-02/phase-start"
+      ],
+      "name": "session/candidate-entry-02/phase-start-delivery/validated",
+      "meta": {
+        "materialFree": true
+      }
+    },
+    {
+      "id": "session/candidate-entry-02/phase-start-delivery/released",
+      "factory": "rootEvalQuietDataPort",
+      "deps": [
+        "session/candidate-entry-02/phase-start-delivery/validated"
+      ],
+      "name": "session/candidate-entry-02/phase-start-delivery/released",
+      "meta": {
+        "boundary": "complete-domain-data-only"
+      }
+    },
+    {
+      "id": "session/candidate-entry-02/phase-start-delivery",
+      "factory": "b121ExactStageDelivery",
+      "deps": [
+        "session/candidate-entry-02/phase-start-delivery/released"
+      ],
+      "name": "session/candidate-entry-02/phase-start-delivery",
+      "meta": {
+        "boundary": "complete-domain-data-only"
+      }
+    },
+    {
+      "id": "session/candidate-entry-02/phase-start-delivery/release-events",
+      "factory": "merge",
+      "deps": [
+        "session/candidate-entry-02/phase-start-delivery",
+        "session/candidate-entry-02/phase-start-delivery/validated"
+      ],
+      "name": "session/candidate-entry-02/phase-start-delivery/release-events"
+    },
+    {
+      "id": "session/candidate-entry-02/phase-start-delivery/release-controller",
+      "factory": "rootEvalQuietDataReleaseController",
+      "deps": [
+        "session/candidate-entry-02/phase-start-delivery/release-events"
+      ],
+      "name": "session/candidate-entry-02/phase-start-delivery/release-controller"
+    },
+    {
+      "id": "session/candidate-entry-02/input-budget-admission",
+      "factory": "b121/input-budget-admission",
+      "deps": [
+        "session/candidate-entry-02/state"
+      ],
+      "name": "session/candidate-entry-02/input-budget-admission"
+    },
+    {
+      "id": "session/candidate-entry-02/input-budget-admission-delivery/validated",
+      "factory": "rootEvalQuietDataValidated",
+      "deps": [
+        "session/candidate-entry-02/input-budget-admission"
+      ],
+      "name": "session/candidate-entry-02/input-budget-admission-delivery/validated",
+      "meta": {
+        "materialFree": true
+      }
+    },
+    {
+      "id": "session/candidate-entry-02/input-budget-admission-delivery/released",
+      "factory": "rootEvalQuietDataPort",
+      "deps": [
+        "session/candidate-entry-02/input-budget-admission-delivery/validated"
+      ],
+      "name": "session/candidate-entry-02/input-budget-admission-delivery/released",
+      "meta": {
+        "boundary": "complete-domain-data-only"
+      }
+    },
+    {
+      "id": "session/candidate-entry-02/input-budget-admission-delivery",
+      "factory": "b121ExactStageDelivery",
+      "deps": [
+        "session/candidate-entry-02/input-budget-admission-delivery/released"
+      ],
+      "name": "session/candidate-entry-02/input-budget-admission-delivery",
+      "meta": {
+        "boundary": "complete-domain-data-only"
+      }
+    },
+    {
+      "id": "session/candidate-entry-02/input-budget-admission-delivery/release-events",
+      "factory": "merge",
+      "deps": [
+        "session/candidate-entry-02/input-budget-admission-delivery",
+        "session/candidate-entry-02/input-budget-admission-delivery/validated"
+      ],
+      "name": "session/candidate-entry-02/input-budget-admission-delivery/release-events"
+    },
+    {
+      "id": "session/candidate-entry-02/input-budget-admission-delivery/release-controller",
+      "factory": "rootEvalQuietDataReleaseController",
+      "deps": [
+        "session/candidate-entry-02/input-budget-admission-delivery/release-events"
+      ],
+      "name": "session/candidate-entry-02/input-budget-admission-delivery/release-controller"
+    },
+    {
+      "id": "session/candidate-entry-02/response-accounting",
+      "factory": "b121/response-accounting",
+      "deps": [
+        "session/candidate-entry-02/state"
+      ],
+      "name": "session/candidate-entry-02/response-accounting"
+    },
+    {
+      "id": "session/candidate-entry-02/response-accounting-delivery/validated",
+      "factory": "rootEvalQuietDataValidated",
+      "deps": [
+        "session/candidate-entry-02/response-accounting"
+      ],
+      "name": "session/candidate-entry-02/response-accounting-delivery/validated",
+      "meta": {
+        "materialFree": true
+      }
+    },
+    {
+      "id": "session/candidate-entry-02/response-accounting-delivery/released",
+      "factory": "rootEvalQuietDataPort",
+      "deps": [
+        "session/candidate-entry-02/response-accounting-delivery/validated"
+      ],
+      "name": "session/candidate-entry-02/response-accounting-delivery/released",
+      "meta": {
+        "boundary": "complete-domain-data-only"
+      }
+    },
+    {
+      "id": "session/candidate-entry-02/response-accounting-delivery",
+      "factory": "b121ExactStageDelivery",
+      "deps": [
+        "session/candidate-entry-02/response-accounting-delivery/released"
+      ],
+      "name": "session/candidate-entry-02/response-accounting-delivery",
+      "meta": {
+        "boundary": "complete-domain-data-only"
+      }
+    },
+    {
+      "id": "session/candidate-entry-02/response-accounting-delivery/release-events",
+      "factory": "merge",
+      "deps": [
+        "session/candidate-entry-02/response-accounting-delivery",
+        "session/candidate-entry-02/response-accounting-delivery/validated"
+      ],
+      "name": "session/candidate-entry-02/response-accounting-delivery/release-events"
+    },
+    {
+      "id": "session/candidate-entry-02/response-accounting-delivery/release-controller",
+      "factory": "rootEvalQuietDataReleaseController",
+      "deps": [
+        "session/candidate-entry-02/response-accounting-delivery/release-events"
+      ],
+      "name": "session/candidate-entry-02/response-accounting-delivery/release-controller"
+    },
+    {
+      "id": "session/candidate-entry-02/broker-phase-admission",
+      "factory": "b121/broker-phase-admission",
+      "deps": [
+        "session/candidate-entry-02/response-accounting-delivery"
+      ],
+      "name": "session/candidate-entry-02/broker-phase-admission"
+    },
+    {
+      "id": "session/candidate-entry-02/broker-phase-admission-delivery/validated",
+      "factory": "rootEvalQuietDataValidated",
+      "deps": [
+        "session/candidate-entry-02/broker-phase-admission"
+      ],
+      "name": "session/candidate-entry-02/broker-phase-admission-delivery/validated",
+      "meta": {
+        "materialFree": true
+      }
+    },
+    {
+      "id": "session/candidate-entry-02/broker-phase-admission-delivery/released",
+      "factory": "rootEvalQuietDataPort",
+      "deps": [
+        "session/candidate-entry-02/broker-phase-admission-delivery/validated"
+      ],
+      "name": "session/candidate-entry-02/broker-phase-admission-delivery/released",
+      "meta": {
+        "boundary": "complete-domain-data-only"
+      }
+    },
+    {
+      "id": "session/candidate-entry-02/broker-phase-admission-delivery",
+      "factory": "b121ExactStageDelivery",
+      "deps": [
+        "session/candidate-entry-02/broker-phase-admission-delivery/released"
+      ],
+      "name": "session/candidate-entry-02/broker-phase-admission-delivery",
+      "meta": {
+        "boundary": "complete-domain-data-only"
+      }
+    },
+    {
+      "id": "session/candidate-entry-02/broker-phase-admission-delivery/release-events",
+      "factory": "merge",
+      "deps": [
+        "session/candidate-entry-02/broker-phase-admission-delivery",
+        "session/candidate-entry-02/broker-phase-admission-delivery/validated"
+      ],
+      "name": "session/candidate-entry-02/broker-phase-admission-delivery/release-events"
+    },
+    {
+      "id": "session/candidate-entry-02/broker-phase-admission-delivery/release-controller",
+      "factory": "rootEvalQuietDataReleaseController",
+      "deps": [
+        "session/candidate-entry-02/broker-phase-admission-delivery/release-events"
+      ],
+      "name": "session/candidate-entry-02/broker-phase-admission-delivery/release-controller"
+    },
+    {
+      "id": "session/candidate-entry-02/broker-execution",
+      "factory": "b121/broker-execution",
+      "deps": [
+        "session/candidate-entry-02/persisted-request-admission"
+      ],
+      "name": "session/candidate-entry-02/broker-execution"
+    },
+    {
+      "id": "session/candidate-entry-02/broker-execution-delivery/validated",
+      "factory": "rootEvalQuietDataValidated",
+      "deps": [
+        "session/candidate-entry-02/broker-execution"
+      ],
+      "name": "session/candidate-entry-02/broker-execution-delivery/validated",
+      "meta": {
+        "materialFree": true
+      }
+    },
+    {
+      "id": "session/candidate-entry-02/broker-execution-delivery/released",
+      "factory": "rootEvalQuietDataPort",
+      "deps": [
+        "session/candidate-entry-02/broker-execution-delivery/validated"
+      ],
+      "name": "session/candidate-entry-02/broker-execution-delivery/released",
+      "meta": {
+        "boundary": "complete-domain-data-only"
+      }
+    },
+    {
+      "id": "session/candidate-entry-02/broker-execution-delivery",
+      "factory": "b121ExactStageDelivery",
+      "deps": [
+        "session/candidate-entry-02/broker-execution-delivery/released"
+      ],
+      "name": "session/candidate-entry-02/broker-execution-delivery",
+      "meta": {
+        "boundary": "complete-domain-data-only"
+      }
+    },
+    {
+      "id": "session/candidate-entry-02/broker-execution-delivery/release-events",
+      "factory": "merge",
+      "deps": [
+        "session/candidate-entry-02/broker-execution-delivery",
+        "session/candidate-entry-02/broker-execution-delivery/validated"
+      ],
+      "name": "session/candidate-entry-02/broker-execution-delivery/release-events"
+    },
+    {
+      "id": "session/candidate-entry-02/broker-execution-delivery/release-controller",
+      "factory": "rootEvalQuietDataReleaseController",
+      "deps": [
+        "session/candidate-entry-02/broker-execution-delivery/release-events"
+      ],
+      "name": "session/candidate-entry-02/broker-execution-delivery/release-controller"
+    },
+    {
+      "id": "session/candidate-entry-02/phase-advance",
+      "factory": "b121/phase-advance",
+      "deps": [
+        "session/candidate-entry-02/broker-execution-delivery"
+      ],
+      "name": "session/candidate-entry-02/phase-advance"
+    },
+    {
+      "id": "session/candidate-entry-02/phase-advance-delivery/validated",
+      "factory": "rootEvalQuietDataValidated",
+      "deps": [
+        "session/candidate-entry-02/phase-advance"
+      ],
+      "name": "session/candidate-entry-02/phase-advance-delivery/validated",
+      "meta": {
+        "materialFree": true
+      }
+    },
+    {
+      "id": "session/candidate-entry-02/phase-advance-delivery/released",
+      "factory": "rootEvalQuietDataPort",
+      "deps": [
+        "session/candidate-entry-02/phase-advance-delivery/validated"
+      ],
+      "name": "session/candidate-entry-02/phase-advance-delivery/released",
+      "meta": {
+        "boundary": "complete-domain-data-only"
+      }
+    },
+    {
+      "id": "session/candidate-entry-02/phase-advance-delivery",
+      "factory": "b121ExactStageDelivery",
+      "deps": [
+        "session/candidate-entry-02/phase-advance-delivery/released"
+      ],
+      "name": "session/candidate-entry-02/phase-advance-delivery",
+      "meta": {
+        "boundary": "complete-domain-data-only"
+      }
+    },
+    {
+      "id": "session/candidate-entry-02/phase-advance-delivery/release-events",
+      "factory": "merge",
+      "deps": [
+        "session/candidate-entry-02/phase-advance-delivery",
+        "session/candidate-entry-02/phase-advance-delivery/validated"
+      ],
+      "name": "session/candidate-entry-02/phase-advance-delivery/release-events"
+    },
+    {
+      "id": "session/candidate-entry-02/phase-advance-delivery/release-controller",
+      "factory": "rootEvalQuietDataReleaseController",
+      "deps": [
+        "session/candidate-entry-02/phase-advance-delivery/release-events"
+      ],
+      "name": "session/candidate-entry-02/phase-advance-delivery/release-controller"
+    },
+    {
+      "id": "session/candidate-entry-02/request-policy-events",
+      "factory": "merge",
+      "deps": [
+        "session/candidate-entry-02/phase-start-delivery",
+        "session/candidate-entry-02/input-budget-admission-delivery",
+        "session/candidate-entry-02/phase-advance-delivery"
+      ],
+      "name": "session/candidate-entry-02/request-policy-events"
+    },
+    {
+      "id": "session/candidate-entry-02/request-policy",
+      "factory": "b121/request-policy",
+      "deps": [
+        "session/candidate-entry-02/request-policy-events"
+      ],
+      "name": "session/candidate-entry-02/request-policy"
+    },
+    {
+      "id": "session/candidate-entry-02/request-policy-delivery/validated",
+      "factory": "rootEvalQuietDataValidated",
+      "deps": [
+        "session/candidate-entry-02/request-policy"
+      ],
+      "name": "session/candidate-entry-02/request-policy-delivery/validated",
+      "meta": {
+        "materialFree": true
+      }
+    },
+    {
+      "id": "session/candidate-entry-02/request-policy-delivery/released",
+      "factory": "rootEvalQuietDataPort",
+      "deps": [
+        "session/candidate-entry-02/request-policy-delivery/validated"
+      ],
+      "name": "session/candidate-entry-02/request-policy-delivery/released",
+      "meta": {
+        "boundary": "complete-domain-data-only"
+      }
+    },
+    {
+      "id": "session/candidate-entry-02/request-policy-delivery",
+      "factory": "b121ExactStageDelivery",
+      "deps": [
+        "session/candidate-entry-02/request-policy-delivery/released"
+      ],
+      "name": "session/candidate-entry-02/request-policy-delivery",
+      "meta": {
+        "boundary": "complete-domain-data-only"
+      }
+    },
+    {
+      "id": "session/candidate-entry-02/request-policy-delivery/release-events",
+      "factory": "merge",
+      "deps": [
+        "session/candidate-entry-02/request-policy-delivery",
+        "session/candidate-entry-02/request-policy-delivery/validated"
+      ],
+      "name": "session/candidate-entry-02/request-policy-delivery/release-events"
+    },
+    {
+      "id": "session/candidate-entry-02/request-policy-delivery/release-controller",
+      "factory": "rootEvalQuietDataReleaseController",
+      "deps": [
+        "session/candidate-entry-02/request-policy-delivery/release-events"
+      ],
+      "name": "session/candidate-entry-02/request-policy-delivery/release-controller"
+    },
+    {
+      "id": "session/candidate-entry-02/admission-events",
+      "factory": "merge",
+      "deps": [
+        "session/candidate-entry-02/request-policy-delivery",
+        "session/candidate-entry-02/input-budget-admission-delivery",
+        "session/candidate-entry-02/broker-phase-admission-delivery"
+      ],
+      "name": "session/candidate-entry-02/admission-events"
+    },
+    {
+      "id": "session/candidate-entry-02/request-execution-admission",
+      "factory": "b121ExactRequestAdmission",
+      "deps": [
+        "session/candidate-entry-02/admission-events"
+      ],
+      "name": "session/candidate-entry-02/request-execution-admission"
+    },
+    {
+      "id": "session/candidate-entry-02/terminal-events",
+      "factory": "merge",
+      "deps": [
+        "session/candidate-entry-02/phase-start-delivery",
+        "session/candidate-entry-02/input-budget-admission-delivery",
+        "session/candidate-entry-02/response-accounting-delivery",
+        "session/candidate-entry-02/broker-phase-admission-delivery",
+        "session/candidate-entry-02/broker-execution-delivery",
+        "session/candidate-entry-02/phase-advance-delivery",
+        "session/candidate-entry-02/request-policy-delivery"
+      ],
+      "name": "session/candidate-entry-02/terminal-events"
+    },
+    {
+      "id": "session/candidate-entry-02/terminal",
+      "factory": "b121SessionTerminal",
+      "deps": [
+        "session/candidate-entry-02/terminal-events"
+      ],
+      "name": "session/candidate-entry-02/terminal"
+    },
+    {
+      "id": "session/candidate-entry-02/persisted-terminal",
+      "factory": "b121PersistedSessionTerminal",
+      "deps": [
+        "session/candidate-entry-02/persistence-facts"
+      ],
+      "name": "session/candidate-entry-02/persisted-terminal"
+    }
+  ],
+  "edges": [
+    {
+      "from": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/facts",
+      "to": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/state"
+    },
+    {
+      "from": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/state",
+      "to": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/qualification-write-ahead"
+    },
+    {
+      "from": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/state",
+      "to": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/session-write-ahead"
+    },
+    {
+      "from": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/state",
+      "to": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/result-persistence-write-ahead"
+    },
+    {
+      "from": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/state",
+      "to": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/assessment-write-ahead"
+    },
+    {
+      "from": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/state",
+      "to": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/assessment-persistence-write-ahead"
+    },
+    {
+      "from": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/state",
+      "to": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/final-persistence-write-ahead"
+    },
+    {
+      "from": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/state",
+      "to": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/qualification-execution-admission"
+    },
+    {
+      "from": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/state",
+      "to": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/session-execution-admission"
+    },
+    {
+      "from": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/state",
+      "to": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/result-persistence-execution-admission"
+    },
+    {
+      "from": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/state",
+      "to": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/assessment-execution-admission"
+    },
+    {
+      "from": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/state",
+      "to": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/assessment-persistence-execution-admission"
+    },
+    {
+      "from": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/state",
+      "to": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/final-persistence-execution-admission"
+    },
+    {
+      "from": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/state",
+      "to": "campaign/a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3/terminal"
+    },
+    {
+      "from": "provider/7d0dec7b-d377-4179-a07d-0acdcf86ad4b/facts",
+      "to": "provider/7d0dec7b-d377-4179-a07d-0acdcf86ad4b/request-settlement"
+    },
+    {
+      "from": "provider/7d0dec7b-d377-4179-a07d-0acdcf86ad4b/request-settlement",
+      "to": "provider/7d0dec7b-d377-4179-a07d-0acdcf86ad4b/budget-admission"
+    },
+    {
+      "from": "provider/7d0dec7b-d377-4179-a07d-0acdcf86ad4b/budget-admission",
+      "to": "provider/7d0dec7b-d377-4179-a07d-0acdcf86ad4b/write-ahead-request"
+    },
+    {
+      "from": "provider/7d0dec7b-d377-4179-a07d-0acdcf86ad4b/request-settlement",
+      "to": "provider/7d0dec7b-d377-4179-a07d-0acdcf86ad4b/exact-http-admission"
+    },
+    {
+      "from": "provider/7d0dec7b-d377-4179-a07d-0acdcf86ad4b/request-settlement",
+      "to": "provider/7d0dec7b-d377-4179-a07d-0acdcf86ad4b/settlement-persistence"
+    },
+    {
+      "from": "provider/7d0dec7b-d377-4179-a07d-0acdcf86ad4b/request-settlement",
+      "to": "provider/7d0dec7b-d377-4179-a07d-0acdcf86ad4b/retry-admission"
+    },
+    {
+      "from": "provider/7d0dec7b-d377-4179-a07d-0acdcf86ad4b/retry-admission",
+      "to": "provider/7d0dec7b-d377-4179-a07d-0acdcf86ad4b/retry-write-ahead"
+    },
+    {
+      "from": "provider/7d0dec7b-d377-4179-a07d-0acdcf86ad4b/request-settlement",
+      "to": "provider/7d0dec7b-d377-4179-a07d-0acdcf86ad4b/exact-delay-admission"
+    },
+    {
+      "from": "provider/7d0dec7b-d377-4179-a07d-0acdcf86ad4b/request-settlement",
+      "to": "provider/7d0dec7b-d377-4179-a07d-0acdcf86ad4b/command-result"
+    },
+    {
+      "from": "qualification/51d89b01-5ee3-4605-af98-310fcd89a947/facts",
+      "to": "qualification/51d89b01-5ee3-4605-af98-310fcd89a947/conversation-and-identity"
+    },
+    {
+      "from": "qualification/51d89b01-5ee3-4605-af98-310fcd89a947/conversation-and-identity",
+      "to": "qualification/51d89b01-5ee3-4605-af98-310fcd89a947/frozen-request"
+    },
+    {
+      "from": "qualification/51d89b01-5ee3-4605-af98-310fcd89a947/frozen-request",
+      "to": "qualification/51d89b01-5ee3-4605-af98-310fcd89a947/estimate-admission"
+    },
+    {
+      "from": "qualification/51d89b01-5ee3-4605-af98-310fcd89a947/frozen-request",
+      "to": "qualification/51d89b01-5ee3-4605-af98-310fcd89a947/generation-admission"
+    },
+    {
+      "from": "qualification/51d89b01-5ee3-4605-af98-310fcd89a947/conversation-and-identity",
+      "to": "qualification/51d89b01-5ee3-4605-af98-310fcd89a947/terminal"
+    },
+    {
+      "from": "session/candidate-entry-01/facts",
+      "to": "session/candidate-entry-01/state"
+    },
+    {
+      "from": "session/candidate-entry-01/persistence-facts",
+      "to": "session/candidate-entry-01/persisted-request-admission"
+    },
+    {
+      "from": "session/candidate-entry-01/state",
+      "to": "session/candidate-entry-01/phase-start"
+    },
+    {
+      "from": "session/candidate-entry-01/phase-start",
+      "to": "session/candidate-entry-01/phase-start-delivery/validated"
+    },
+    {
+      "from": "session/candidate-entry-01/phase-start-delivery/validated",
+      "to": "session/candidate-entry-01/phase-start-delivery/released"
+    },
+    {
+      "from": "session/candidate-entry-01/phase-start-delivery/released",
+      "to": "session/candidate-entry-01/phase-start-delivery"
+    },
+    {
+      "from": "session/candidate-entry-01/phase-start-delivery",
+      "to": "session/candidate-entry-01/phase-start-delivery/release-events"
+    },
+    {
+      "from": "session/candidate-entry-01/phase-start-delivery/validated",
+      "to": "session/candidate-entry-01/phase-start-delivery/release-events"
+    },
+    {
+      "from": "session/candidate-entry-01/phase-start-delivery/release-events",
+      "to": "session/candidate-entry-01/phase-start-delivery/release-controller"
+    },
+    {
+      "from": "session/candidate-entry-01/state",
+      "to": "session/candidate-entry-01/input-budget-admission"
+    },
+    {
+      "from": "session/candidate-entry-01/input-budget-admission",
+      "to": "session/candidate-entry-01/input-budget-admission-delivery/validated"
+    },
+    {
+      "from": "session/candidate-entry-01/input-budget-admission-delivery/validated",
+      "to": "session/candidate-entry-01/input-budget-admission-delivery/released"
+    },
+    {
+      "from": "session/candidate-entry-01/input-budget-admission-delivery/released",
+      "to": "session/candidate-entry-01/input-budget-admission-delivery"
+    },
+    {
+      "from": "session/candidate-entry-01/input-budget-admission-delivery",
+      "to": "session/candidate-entry-01/input-budget-admission-delivery/release-events"
+    },
+    {
+      "from": "session/candidate-entry-01/input-budget-admission-delivery/validated",
+      "to": "session/candidate-entry-01/input-budget-admission-delivery/release-events"
+    },
+    {
+      "from": "session/candidate-entry-01/input-budget-admission-delivery/release-events",
+      "to": "session/candidate-entry-01/input-budget-admission-delivery/release-controller"
+    },
+    {
+      "from": "session/candidate-entry-01/state",
+      "to": "session/candidate-entry-01/response-accounting"
+    },
+    {
+      "from": "session/candidate-entry-01/response-accounting",
+      "to": "session/candidate-entry-01/response-accounting-delivery/validated"
+    },
+    {
+      "from": "session/candidate-entry-01/response-accounting-delivery/validated",
+      "to": "session/candidate-entry-01/response-accounting-delivery/released"
+    },
+    {
+      "from": "session/candidate-entry-01/response-accounting-delivery/released",
+      "to": "session/candidate-entry-01/response-accounting-delivery"
+    },
+    {
+      "from": "session/candidate-entry-01/response-accounting-delivery",
+      "to": "session/candidate-entry-01/response-accounting-delivery/release-events"
+    },
+    {
+      "from": "session/candidate-entry-01/response-accounting-delivery/validated",
+      "to": "session/candidate-entry-01/response-accounting-delivery/release-events"
+    },
+    {
+      "from": "session/candidate-entry-01/response-accounting-delivery/release-events",
+      "to": "session/candidate-entry-01/response-accounting-delivery/release-controller"
+    },
+    {
+      "from": "session/candidate-entry-01/response-accounting-delivery",
+      "to": "session/candidate-entry-01/broker-phase-admission"
+    },
+    {
+      "from": "session/candidate-entry-01/broker-phase-admission",
+      "to": "session/candidate-entry-01/broker-phase-admission-delivery/validated"
+    },
+    {
+      "from": "session/candidate-entry-01/broker-phase-admission-delivery/validated",
+      "to": "session/candidate-entry-01/broker-phase-admission-delivery/released"
+    },
+    {
+      "from": "session/candidate-entry-01/broker-phase-admission-delivery/released",
+      "to": "session/candidate-entry-01/broker-phase-admission-delivery"
+    },
+    {
+      "from": "session/candidate-entry-01/broker-phase-admission-delivery",
+      "to": "session/candidate-entry-01/broker-phase-admission-delivery/release-events"
+    },
+    {
+      "from": "session/candidate-entry-01/broker-phase-admission-delivery/validated",
+      "to": "session/candidate-entry-01/broker-phase-admission-delivery/release-events"
+    },
+    {
+      "from": "session/candidate-entry-01/broker-phase-admission-delivery/release-events",
+      "to": "session/candidate-entry-01/broker-phase-admission-delivery/release-controller"
+    },
+    {
+      "from": "session/candidate-entry-01/persisted-request-admission",
+      "to": "session/candidate-entry-01/broker-execution"
+    },
+    {
+      "from": "session/candidate-entry-01/broker-execution",
+      "to": "session/candidate-entry-01/broker-execution-delivery/validated"
+    },
+    {
+      "from": "session/candidate-entry-01/broker-execution-delivery/validated",
+      "to": "session/candidate-entry-01/broker-execution-delivery/released"
+    },
+    {
+      "from": "session/candidate-entry-01/broker-execution-delivery/released",
+      "to": "session/candidate-entry-01/broker-execution-delivery"
+    },
+    {
+      "from": "session/candidate-entry-01/broker-execution-delivery",
+      "to": "session/candidate-entry-01/broker-execution-delivery/release-events"
+    },
+    {
+      "from": "session/candidate-entry-01/broker-execution-delivery/validated",
+      "to": "session/candidate-entry-01/broker-execution-delivery/release-events"
+    },
+    {
+      "from": "session/candidate-entry-01/broker-execution-delivery/release-events",
+      "to": "session/candidate-entry-01/broker-execution-delivery/release-controller"
+    },
+    {
+      "from": "session/candidate-entry-01/broker-execution-delivery",
+      "to": "session/candidate-entry-01/phase-advance"
+    },
+    {
+      "from": "session/candidate-entry-01/phase-advance",
+      "to": "session/candidate-entry-01/phase-advance-delivery/validated"
+    },
+    {
+      "from": "session/candidate-entry-01/phase-advance-delivery/validated",
+      "to": "session/candidate-entry-01/phase-advance-delivery/released"
+    },
+    {
+      "from": "session/candidate-entry-01/phase-advance-delivery/released",
+      "to": "session/candidate-entry-01/phase-advance-delivery"
+    },
+    {
+      "from": "session/candidate-entry-01/phase-advance-delivery",
+      "to": "session/candidate-entry-01/phase-advance-delivery/release-events"
+    },
+    {
+      "from": "session/candidate-entry-01/phase-advance-delivery/validated",
+      "to": "session/candidate-entry-01/phase-advance-delivery/release-events"
+    },
+    {
+      "from": "session/candidate-entry-01/phase-advance-delivery/release-events",
+      "to": "session/candidate-entry-01/phase-advance-delivery/release-controller"
+    },
+    {
+      "from": "session/candidate-entry-01/phase-start-delivery",
+      "to": "session/candidate-entry-01/request-policy-events"
+    },
+    {
+      "from": "session/candidate-entry-01/input-budget-admission-delivery",
+      "to": "session/candidate-entry-01/request-policy-events"
+    },
+    {
+      "from": "session/candidate-entry-01/phase-advance-delivery",
+      "to": "session/candidate-entry-01/request-policy-events"
+    },
+    {
+      "from": "session/candidate-entry-01/request-policy-events",
+      "to": "session/candidate-entry-01/request-policy"
+    },
+    {
+      "from": "session/candidate-entry-01/request-policy",
+      "to": "session/candidate-entry-01/request-policy-delivery/validated"
+    },
+    {
+      "from": "session/candidate-entry-01/request-policy-delivery/validated",
+      "to": "session/candidate-entry-01/request-policy-delivery/released"
+    },
+    {
+      "from": "session/candidate-entry-01/request-policy-delivery/released",
+      "to": "session/candidate-entry-01/request-policy-delivery"
+    },
+    {
+      "from": "session/candidate-entry-01/request-policy-delivery",
+      "to": "session/candidate-entry-01/request-policy-delivery/release-events"
+    },
+    {
+      "from": "session/candidate-entry-01/request-policy-delivery/validated",
+      "to": "session/candidate-entry-01/request-policy-delivery/release-events"
+    },
+    {
+      "from": "session/candidate-entry-01/request-policy-delivery/release-events",
+      "to": "session/candidate-entry-01/request-policy-delivery/release-controller"
+    },
+    {
+      "from": "session/candidate-entry-01/request-policy-delivery",
+      "to": "session/candidate-entry-01/admission-events"
+    },
+    {
+      "from": "session/candidate-entry-01/input-budget-admission-delivery",
+      "to": "session/candidate-entry-01/admission-events"
+    },
+    {
+      "from": "session/candidate-entry-01/broker-phase-admission-delivery",
+      "to": "session/candidate-entry-01/admission-events"
+    },
+    {
+      "from": "session/candidate-entry-01/admission-events",
+      "to": "session/candidate-entry-01/request-execution-admission"
+    },
+    {
+      "from": "session/candidate-entry-01/phase-start-delivery",
+      "to": "session/candidate-entry-01/terminal-events"
+    },
+    {
+      "from": "session/candidate-entry-01/input-budget-admission-delivery",
+      "to": "session/candidate-entry-01/terminal-events"
+    },
+    {
+      "from": "session/candidate-entry-01/response-accounting-delivery",
+      "to": "session/candidate-entry-01/terminal-events"
+    },
+    {
+      "from": "session/candidate-entry-01/broker-phase-admission-delivery",
+      "to": "session/candidate-entry-01/terminal-events"
+    },
+    {
+      "from": "session/candidate-entry-01/broker-execution-delivery",
+      "to": "session/candidate-entry-01/terminal-events"
+    },
+    {
+      "from": "session/candidate-entry-01/phase-advance-delivery",
+      "to": "session/candidate-entry-01/terminal-events"
+    },
+    {
+      "from": "session/candidate-entry-01/request-policy-delivery",
+      "to": "session/candidate-entry-01/terminal-events"
+    },
+    {
+      "from": "session/candidate-entry-01/terminal-events",
+      "to": "session/candidate-entry-01/terminal"
+    },
+    {
+      "from": "session/candidate-entry-01/persistence-facts",
+      "to": "session/candidate-entry-01/persisted-terminal"
+    },
+    {
+      "from": "session/candidate-entry-02/facts",
+      "to": "session/candidate-entry-02/state"
+    },
+    {
+      "from": "session/candidate-entry-02/persistence-facts",
+      "to": "session/candidate-entry-02/persisted-request-admission"
+    },
+    {
+      "from": "session/candidate-entry-02/state",
+      "to": "session/candidate-entry-02/phase-start"
+    },
+    {
+      "from": "session/candidate-entry-02/phase-start",
+      "to": "session/candidate-entry-02/phase-start-delivery/validated"
+    },
+    {
+      "from": "session/candidate-entry-02/phase-start-delivery/validated",
+      "to": "session/candidate-entry-02/phase-start-delivery/released"
+    },
+    {
+      "from": "session/candidate-entry-02/phase-start-delivery/released",
+      "to": "session/candidate-entry-02/phase-start-delivery"
+    },
+    {
+      "from": "session/candidate-entry-02/phase-start-delivery",
+      "to": "session/candidate-entry-02/phase-start-delivery/release-events"
+    },
+    {
+      "from": "session/candidate-entry-02/phase-start-delivery/validated",
+      "to": "session/candidate-entry-02/phase-start-delivery/release-events"
+    },
+    {
+      "from": "session/candidate-entry-02/phase-start-delivery/release-events",
+      "to": "session/candidate-entry-02/phase-start-delivery/release-controller"
+    },
+    {
+      "from": "session/candidate-entry-02/state",
+      "to": "session/candidate-entry-02/input-budget-admission"
+    },
+    {
+      "from": "session/candidate-entry-02/input-budget-admission",
+      "to": "session/candidate-entry-02/input-budget-admission-delivery/validated"
+    },
+    {
+      "from": "session/candidate-entry-02/input-budget-admission-delivery/validated",
+      "to": "session/candidate-entry-02/input-budget-admission-delivery/released"
+    },
+    {
+      "from": "session/candidate-entry-02/input-budget-admission-delivery/released",
+      "to": "session/candidate-entry-02/input-budget-admission-delivery"
+    },
+    {
+      "from": "session/candidate-entry-02/input-budget-admission-delivery",
+      "to": "session/candidate-entry-02/input-budget-admission-delivery/release-events"
+    },
+    {
+      "from": "session/candidate-entry-02/input-budget-admission-delivery/validated",
+      "to": "session/candidate-entry-02/input-budget-admission-delivery/release-events"
+    },
+    {
+      "from": "session/candidate-entry-02/input-budget-admission-delivery/release-events",
+      "to": "session/candidate-entry-02/input-budget-admission-delivery/release-controller"
+    },
+    {
+      "from": "session/candidate-entry-02/state",
+      "to": "session/candidate-entry-02/response-accounting"
+    },
+    {
+      "from": "session/candidate-entry-02/response-accounting",
+      "to": "session/candidate-entry-02/response-accounting-delivery/validated"
+    },
+    {
+      "from": "session/candidate-entry-02/response-accounting-delivery/validated",
+      "to": "session/candidate-entry-02/response-accounting-delivery/released"
+    },
+    {
+      "from": "session/candidate-entry-02/response-accounting-delivery/released",
+      "to": "session/candidate-entry-02/response-accounting-delivery"
+    },
+    {
+      "from": "session/candidate-entry-02/response-accounting-delivery",
+      "to": "session/candidate-entry-02/response-accounting-delivery/release-events"
+    },
+    {
+      "from": "session/candidate-entry-02/response-accounting-delivery/validated",
+      "to": "session/candidate-entry-02/response-accounting-delivery/release-events"
+    },
+    {
+      "from": "session/candidate-entry-02/response-accounting-delivery/release-events",
+      "to": "session/candidate-entry-02/response-accounting-delivery/release-controller"
+    },
+    {
+      "from": "session/candidate-entry-02/response-accounting-delivery",
+      "to": "session/candidate-entry-02/broker-phase-admission"
+    },
+    {
+      "from": "session/candidate-entry-02/broker-phase-admission",
+      "to": "session/candidate-entry-02/broker-phase-admission-delivery/validated"
+    },
+    {
+      "from": "session/candidate-entry-02/broker-phase-admission-delivery/validated",
+      "to": "session/candidate-entry-02/broker-phase-admission-delivery/released"
+    },
+    {
+      "from": "session/candidate-entry-02/broker-phase-admission-delivery/released",
+      "to": "session/candidate-entry-02/broker-phase-admission-delivery"
+    },
+    {
+      "from": "session/candidate-entry-02/broker-phase-admission-delivery",
+      "to": "session/candidate-entry-02/broker-phase-admission-delivery/release-events"
+    },
+    {
+      "from": "session/candidate-entry-02/broker-phase-admission-delivery/validated",
+      "to": "session/candidate-entry-02/broker-phase-admission-delivery/release-events"
+    },
+    {
+      "from": "session/candidate-entry-02/broker-phase-admission-delivery/release-events",
+      "to": "session/candidate-entry-02/broker-phase-admission-delivery/release-controller"
+    },
+    {
+      "from": "session/candidate-entry-02/persisted-request-admission",
+      "to": "session/candidate-entry-02/broker-execution"
+    },
+    {
+      "from": "session/candidate-entry-02/broker-execution",
+      "to": "session/candidate-entry-02/broker-execution-delivery/validated"
+    },
+    {
+      "from": "session/candidate-entry-02/broker-execution-delivery/validated",
+      "to": "session/candidate-entry-02/broker-execution-delivery/released"
+    },
+    {
+      "from": "session/candidate-entry-02/broker-execution-delivery/released",
+      "to": "session/candidate-entry-02/broker-execution-delivery"
+    },
+    {
+      "from": "session/candidate-entry-02/broker-execution-delivery",
+      "to": "session/candidate-entry-02/broker-execution-delivery/release-events"
+    },
+    {
+      "from": "session/candidate-entry-02/broker-execution-delivery/validated",
+      "to": "session/candidate-entry-02/broker-execution-delivery/release-events"
+    },
+    {
+      "from": "session/candidate-entry-02/broker-execution-delivery/release-events",
+      "to": "session/candidate-entry-02/broker-execution-delivery/release-controller"
+    },
+    {
+      "from": "session/candidate-entry-02/broker-execution-delivery",
+      "to": "session/candidate-entry-02/phase-advance"
+    },
+    {
+      "from": "session/candidate-entry-02/phase-advance",
+      "to": "session/candidate-entry-02/phase-advance-delivery/validated"
+    },
+    {
+      "from": "session/candidate-entry-02/phase-advance-delivery/validated",
+      "to": "session/candidate-entry-02/phase-advance-delivery/released"
+    },
+    {
+      "from": "session/candidate-entry-02/phase-advance-delivery/released",
+      "to": "session/candidate-entry-02/phase-advance-delivery"
+    },
+    {
+      "from": "session/candidate-entry-02/phase-advance-delivery",
+      "to": "session/candidate-entry-02/phase-advance-delivery/release-events"
+    },
+    {
+      "from": "session/candidate-entry-02/phase-advance-delivery/validated",
+      "to": "session/candidate-entry-02/phase-advance-delivery/release-events"
+    },
+    {
+      "from": "session/candidate-entry-02/phase-advance-delivery/release-events",
+      "to": "session/candidate-entry-02/phase-advance-delivery/release-controller"
+    },
+    {
+      "from": "session/candidate-entry-02/phase-start-delivery",
+      "to": "session/candidate-entry-02/request-policy-events"
+    },
+    {
+      "from": "session/candidate-entry-02/input-budget-admission-delivery",
+      "to": "session/candidate-entry-02/request-policy-events"
+    },
+    {
+      "from": "session/candidate-entry-02/phase-advance-delivery",
+      "to": "session/candidate-entry-02/request-policy-events"
+    },
+    {
+      "from": "session/candidate-entry-02/request-policy-events",
+      "to": "session/candidate-entry-02/request-policy"
+    },
+    {
+      "from": "session/candidate-entry-02/request-policy",
+      "to": "session/candidate-entry-02/request-policy-delivery/validated"
+    },
+    {
+      "from": "session/candidate-entry-02/request-policy-delivery/validated",
+      "to": "session/candidate-entry-02/request-policy-delivery/released"
+    },
+    {
+      "from": "session/candidate-entry-02/request-policy-delivery/released",
+      "to": "session/candidate-entry-02/request-policy-delivery"
+    },
+    {
+      "from": "session/candidate-entry-02/request-policy-delivery",
+      "to": "session/candidate-entry-02/request-policy-delivery/release-events"
+    },
+    {
+      "from": "session/candidate-entry-02/request-policy-delivery/validated",
+      "to": "session/candidate-entry-02/request-policy-delivery/release-events"
+    },
+    {
+      "from": "session/candidate-entry-02/request-policy-delivery/release-events",
+      "to": "session/candidate-entry-02/request-policy-delivery/release-controller"
+    },
+    {
+      "from": "session/candidate-entry-02/request-policy-delivery",
+      "to": "session/candidate-entry-02/admission-events"
+    },
+    {
+      "from": "session/candidate-entry-02/input-budget-admission-delivery",
+      "to": "session/candidate-entry-02/admission-events"
+    },
+    {
+      "from": "session/candidate-entry-02/broker-phase-admission-delivery",
+      "to": "session/candidate-entry-02/admission-events"
+    },
+    {
+      "from": "session/candidate-entry-02/admission-events",
+      "to": "session/candidate-entry-02/request-execution-admission"
+    },
+    {
+      "from": "session/candidate-entry-02/phase-start-delivery",
+      "to": "session/candidate-entry-02/terminal-events"
+    },
+    {
+      "from": "session/candidate-entry-02/input-budget-admission-delivery",
+      "to": "session/candidate-entry-02/terminal-events"
+    },
+    {
+      "from": "session/candidate-entry-02/response-accounting-delivery",
+      "to": "session/candidate-entry-02/terminal-events"
+    },
+    {
+      "from": "session/candidate-entry-02/broker-phase-admission-delivery",
+      "to": "session/candidate-entry-02/terminal-events"
+    },
+    {
+      "from": "session/candidate-entry-02/broker-execution-delivery",
+      "to": "session/candidate-entry-02/terminal-events"
+    },
+    {
+      "from": "session/candidate-entry-02/phase-advance-delivery",
+      "to": "session/candidate-entry-02/terminal-events"
+    },
+    {
+      "from": "session/candidate-entry-02/request-policy-delivery",
+      "to": "session/candidate-entry-02/terminal-events"
+    },
+    {
+      "from": "session/candidate-entry-02/terminal-events",
+      "to": "session/candidate-entry-02/terminal"
+    },
+    {
+      "from": "session/candidate-entry-02/persistence-facts",
+      "to": "session/candidate-entry-02/persisted-terminal"
+    }
+  ],
+  "name": "b121-a65a68313c922d9bff33569a180fa966d4e11788976c8971810a6464e18b0ff3"
+}

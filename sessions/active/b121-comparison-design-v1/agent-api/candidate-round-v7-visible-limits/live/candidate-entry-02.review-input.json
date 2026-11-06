@@ -1,0 +1,22 @@
+{
+  "assessmentSHA256": "0400716810d2639e27f3f60c5fb0504d6fb6ae16df4c696ec0af0a12169c1dd0",
+  "reviewerId": "Codex primary /root; local source review after independent subagents hit usage limit",
+  "criteria": {
+    "distinct-instance-construction": {
+      "pass": true,
+      "evidence": "composeTwoSpendingInstances uses supplied Graph and firstInputs/secondInputs with alerts-a/alerts-b; no invented facts/resource creation or direct transport. Frozen causal-entry.ts:49-69 forwards each input set and resource."
+    },
+    "default-override-isolation": {
+      "pass": true,
+      "evidence": "Object.freeze shared defaults with diagnostics off; only second compose overrides summary. Frozen causal-entry.ts:36-45,50-53 resolves separate immutable options."
+    },
+    "separate-observation-ownership": {
+      "pass": true,
+      "evidence": "Mounts first.view/renderFirst and second.view/renderSecond; returns both original instances with separate detach callbacks and explains retained application ownership. Frozen causal-view-binding.ts:16-20,32-36; README.md:91-95,143."
+    },
+    "name-resource-boundary": {
+      "pass": true,
+      "evidence": "Code forwards given firstInputs/secondInputs; explanation explicitly distinguishes node names from caller-prepared Nodes/resources and bindings, and says names neither clone inputs nor prepare/rebind/authorize resource. Frozen causal-entry.ts:54-68 and README.md:85-89."
+    }
+  }
+}

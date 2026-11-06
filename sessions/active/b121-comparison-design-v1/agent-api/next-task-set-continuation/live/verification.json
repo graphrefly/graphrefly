@@ -1,0 +1,25 @@
+{
+  "suite": {
+    "source": "../../next-task-set-draft/offline/tests.log",
+    "passed": 207,
+    "failed": 0,
+    "skipped": 0,
+    "rerunThisTurn": false
+  },
+  "journalRowsVerified": 323,
+  "codeBindingsVerified": 33,
+  "materialArtifactsVerified": 5,
+  "feedbackRequestsVerified": 28,
+  "plannedSamples": 2,
+  "startedSamples": 2,
+  "submissions": 1,
+  "providerAttemptFailures": 1,
+  "modelSessionReruns": 0,
+  "independentReview": false,
+  "budgetChangeVerification": {
+    "source": "../../budget-standing-authorization-tests.log",
+    "passed": 104,
+    "failed": 0,
+    "rerunThisTurn": false
+  }
+}

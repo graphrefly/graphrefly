@@ -1,0 +1,566 @@
+{
+  "providerCalls": 0,
+  "formalReady": false,
+  "rows": [
+    {
+      "id": "export-structure-only-positive",
+      "review": {
+        "assessmentSHA256": "d7bd0c843f3a98b7d5e0010d2aceb724e9f8d5e08a6c4dcc278d1e0264d9f985",
+        "reviewerId": "root-integrating-new_task_rubric_review",
+        "criteria": {
+          "structural-api": {
+            "pass": true,
+            "evidence": "Source-based independent static review agrees with fixture body and explanation; see review-notes.md. Missing-export cases independently fail consumer compilation."
+          },
+          "full-structure": {
+            "pass": true,
+            "evidence": "Source-based independent static review agrees with fixture body and explanation; see review-notes.md. Missing-export cases independently fail consumer compilation."
+          },
+          "claim-boundary": {
+            "pass": true,
+            "evidence": "Source-based independent static review agrees with fixture body and explanation; see review-notes.md. Missing-export cases independently fail consumer compilation."
+          }
+        }
+      },
+      "verified": {
+        "assessmentSHA256": "d7bd0c843f3a98b7d5e0010d2aceb724e9f8d5e08a6c4dcc278d1e0264d9f985",
+        "binding": {
+          "materialSHA256": "a7846d59bdc5d0ca359292dceb91ef3274991bfb4afd9ce28e18c867e7554e6d",
+          "taskSHA256": "f0217735c7ab80bc16fbfae23190541dd3ebc696b8d7d1e4d7d1a7218aac898b",
+          "rubricSHA256": "6e0bee1dfd58b4a48052b58df656bc0d0f78fbb7744ea34cd8d5ab63f9a2277c",
+          "environmentSHA256": "25c512ca2d3dd5c501f470bd4e6f63994ffbe635c402622b02180226b7302687",
+          "runnerContractSHA256": "8c304251aa7233fe97e4350d360f789312c1d72bf39054e48aa35e4b52e5809e"
+        },
+        "taskId": "export-structure-only",
+        "sampleId": "export-structure-only-positive",
+        "formalReady": false,
+        "providerCalls": 0,
+        "accepted": true,
+        "status": "accepted-offline-replay",
+        "compilerReceipt": "/Users/davidchenallio/src/graphrefly/sessions/active/b121-comparison-design-v1/agent-api/next-task-set-draft/offline/review-01/852d5c36-3619-4098-a107-fda36f715eb1",
+        "review": {
+          "assessmentSHA256": "d7bd0c843f3a98b7d5e0010d2aceb724e9f8d5e08a6c4dcc278d1e0264d9f985",
+          "reviewerId": "root-integrating-new_task_rubric_review",
+          "criteria": {
+            "structural-api": {
+              "pass": true,
+              "evidence": "Source-based independent static review agrees with fixture body and explanation; see review-notes.md. Missing-export cases independently fail consumer compilation."
+            },
+            "full-structure": {
+              "pass": true,
+              "evidence": "Source-based independent static review agrees with fixture body and explanation; see review-notes.md. Missing-export cases independently fail consumer compilation."
+            },
+            "claim-boundary": {
+              "pass": true,
+              "evidence": "Source-based independent static review agrees with fixture body and explanation; see review-notes.md. Missing-export cases independently fail consumer compilation."
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "export-structure-only-semantic-negative",
+      "review": {
+        "assessmentSHA256": "a7074f11c0ec7185595168abb0610511dfef6dbccd146b3a6771d4d01160c6c0",
+        "reviewerId": "root-integrating-new_task_rubric_review",
+        "criteria": {
+          "structural-api": {
+            "pass": false,
+            "evidence": "Calls rich describe() without existing structural projection."
+          },
+          "full-structure": {
+            "pass": false,
+            "evidence": "Rich node status/value/version fields are retained."
+          },
+          "claim-boundary": {
+            "pass": true,
+            "evidence": "Source-based independent static review agrees with fixture body and explanation; see review-notes.md. Missing-export cases independently fail consumer compilation."
+          }
+        }
+      },
+      "verified": {
+        "assessmentSHA256": "a7074f11c0ec7185595168abb0610511dfef6dbccd146b3a6771d4d01160c6c0",
+        "binding": {
+          "materialSHA256": "a7846d59bdc5d0ca359292dceb91ef3274991bfb4afd9ce28e18c867e7554e6d",
+          "taskSHA256": "f0217735c7ab80bc16fbfae23190541dd3ebc696b8d7d1e4d7d1a7218aac898b",
+          "rubricSHA256": "6e0bee1dfd58b4a48052b58df656bc0d0f78fbb7744ea34cd8d5ab63f9a2277c",
+          "environmentSHA256": "25c512ca2d3dd5c501f470bd4e6f63994ffbe635c402622b02180226b7302687",
+          "runnerContractSHA256": "8c304251aa7233fe97e4350d360f789312c1d72bf39054e48aa35e4b52e5809e"
+        },
+        "taskId": "export-structure-only",
+        "sampleId": "export-structure-only-semantic-negative",
+        "formalReady": false,
+        "providerCalls": 0,
+        "accepted": false,
+        "status": "criteria-failed",
+        "compilerReceipt": "/Users/davidchenallio/src/graphrefly/sessions/active/b121-comparison-design-v1/agent-api/next-task-set-draft/offline/review-01/45d83850-88d5-4a3a-a551-67aa88c08223",
+        "review": {
+          "assessmentSHA256": "a7074f11c0ec7185595168abb0610511dfef6dbccd146b3a6771d4d01160c6c0",
+          "reviewerId": "root-integrating-new_task_rubric_review",
+          "criteria": {
+            "structural-api": {
+              "pass": false,
+              "evidence": "Calls rich describe() without existing structural projection."
+            },
+            "full-structure": {
+              "pass": false,
+              "evidence": "Rich node status/value/version fields are retained."
+            },
+            "claim-boundary": {
+              "pass": true,
+              "evidence": "Source-based independent static review agrees with fixture body and explanation; see review-notes.md. Missing-export cases independently fail consumer compilation."
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "export-structure-only-missing-export",
+      "review": {
+        "assessmentSHA256": "679045fd1c6b1bbea3cc4402fecd64bffa5fe0089aaf293c18e9d910b1bb2578",
+        "reviewerId": "root-integrating-new_task_rubric_review",
+        "criteria": {
+          "structural-api": {
+            "pass": true,
+            "evidence": "Source-based independent static review agrees with fixture body and explanation; see review-notes.md. Missing-export cases independently fail consumer compilation."
+          },
+          "full-structure": {
+            "pass": true,
+            "evidence": "Source-based independent static review agrees with fixture body and explanation; see review-notes.md. Missing-export cases independently fail consumer compilation."
+          },
+          "claim-boundary": {
+            "pass": true,
+            "evidence": "Source-based independent static review agrees with fixture body and explanation; see review-notes.md. Missing-export cases independently fail consumer compilation."
+          }
+        }
+      },
+      "verified": {
+        "assessmentSHA256": "679045fd1c6b1bbea3cc4402fecd64bffa5fe0089aaf293c18e9d910b1bb2578",
+        "binding": {
+          "materialSHA256": "a7846d59bdc5d0ca359292dceb91ef3274991bfb4afd9ce28e18c867e7554e6d",
+          "taskSHA256": "f0217735c7ab80bc16fbfae23190541dd3ebc696b8d7d1e4d7d1a7218aac898b",
+          "rubricSHA256": "6e0bee1dfd58b4a48052b58df656bc0d0f78fbb7744ea34cd8d5ab63f9a2277c",
+          "environmentSHA256": "25c512ca2d3dd5c501f470bd4e6f63994ffbe635c402622b02180226b7302687",
+          "runnerContractSHA256": "8c304251aa7233fe97e4350d360f789312c1d72bf39054e48aa35e4b52e5809e"
+        },
+        "taskId": "export-structure-only",
+        "sampleId": "export-structure-only-missing-export",
+        "formalReady": false,
+        "providerCalls": 0,
+        "accepted": false,
+        "status": "compile-failed",
+        "compilerReceipt": "/Users/davidchenallio/src/graphrefly/sessions/active/b121-comparison-design-v1/agent-api/next-task-set-draft/offline/review-01/e078ff06-386c-4cfa-bdc2-ed9699c77ae0",
+        "review": {
+          "assessmentSHA256": "679045fd1c6b1bbea3cc4402fecd64bffa5fe0089aaf293c18e9d910b1bb2578",
+          "reviewerId": "root-integrating-new_task_rubric_review",
+          "criteria": {
+            "structural-api": {
+              "pass": true,
+              "evidence": "Source-based independent static review agrees with fixture body and explanation; see review-notes.md. Missing-export cases independently fail consumer compilation."
+            },
+            "full-structure": {
+              "pass": true,
+              "evidence": "Source-based independent static review agrees with fixture body and explanation; see review-notes.md. Missing-export cases independently fail consumer compilation."
+            },
+            "claim-boundary": {
+              "pass": true,
+              "evidence": "Source-based independent static review agrees with fixture body and explanation; see review-notes.md. Missing-export cases independently fail consumer compilation."
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "report-node-version-metadata-positive",
+      "review": {
+        "assessmentSHA256": "527b8e4547028f98b7a8f85d27fc7245cd647919c9a229be671e27d4d78e6c58",
+        "reviewerId": "root-integrating-new_task_rubric_review",
+        "criteria": {
+          "union-and-absence": {
+            "pass": true,
+            "evidence": "Source-based independent static review agrees with fixture body and explanation; see review-notes.md. Missing-export cases independently fail consumer compilation."
+          },
+          "preserve-fields": {
+            "pass": true,
+            "evidence": "Source-based independent static review agrees with fixture body and explanation; see review-notes.md. Missing-export cases independently fail consumer compilation."
+          },
+          "version-meaning": {
+            "pass": true,
+            "evidence": "Source-based independent static review agrees with fixture body and explanation; see review-notes.md. Missing-export cases independently fail consumer compilation."
+          }
+        }
+      },
+      "verified": {
+        "assessmentSHA256": "527b8e4547028f98b7a8f85d27fc7245cd647919c9a229be671e27d4d78e6c58",
+        "binding": {
+          "materialSHA256": "a7846d59bdc5d0ca359292dceb91ef3274991bfb4afd9ce28e18c867e7554e6d",
+          "taskSHA256": "f0217735c7ab80bc16fbfae23190541dd3ebc696b8d7d1e4d7d1a7218aac898b",
+          "rubricSHA256": "6e0bee1dfd58b4a48052b58df656bc0d0f78fbb7744ea34cd8d5ab63f9a2277c",
+          "environmentSHA256": "25c512ca2d3dd5c501f470bd4e6f63994ffbe635c402622b02180226b7302687",
+          "runnerContractSHA256": "8c304251aa7233fe97e4350d360f789312c1d72bf39054e48aa35e4b52e5809e"
+        },
+        "taskId": "report-node-version-metadata",
+        "sampleId": "report-node-version-metadata-positive",
+        "formalReady": false,
+        "providerCalls": 0,
+        "accepted": true,
+        "status": "accepted-offline-replay",
+        "compilerReceipt": "/Users/davidchenallio/src/graphrefly/sessions/active/b121-comparison-design-v1/agent-api/next-task-set-draft/offline/review-01/68cf96b5-417a-4c89-9641-fed9a3d31cd9",
+        "review": {
+          "assessmentSHA256": "527b8e4547028f98b7a8f85d27fc7245cd647919c9a229be671e27d4d78e6c58",
+          "reviewerId": "root-integrating-new_task_rubric_review",
+          "criteria": {
+            "union-and-absence": {
+              "pass": true,
+              "evidence": "Source-based independent static review agrees with fixture body and explanation; see review-notes.md. Missing-export cases independently fail consumer compilation."
+            },
+            "preserve-fields": {
+              "pass": true,
+              "evidence": "Source-based independent static review agrees with fixture body and explanation; see review-notes.md. Missing-export cases independently fail consumer compilation."
+            },
+            "version-meaning": {
+              "pass": true,
+              "evidence": "Source-based independent static review agrees with fixture body and explanation; see review-notes.md. Missing-export cases independently fail consumer compilation."
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "report-node-version-metadata-semantic-negative",
+      "review": {
+        "assessmentSHA256": "dfc8b19d9d02a6bd5862def4c7e6aed53d643b871f748c867ad7f3ff3d7a6e8b",
+        "reviewerId": "root-integrating-new_task_rubric_review",
+        "criteria": {
+          "union-and-absence": {
+            "pass": true,
+            "evidence": "Source-based independent static review agrees with fixture body and explanation; see review-notes.md. Missing-export cases independently fail consumer compilation."
+          },
+          "preserve-fields": {
+            "pass": false,
+            "evidence": "Replaces prev:null with empty string."
+          },
+          "version-meaning": {
+            "pass": true,
+            "evidence": "Source-based independent static review agrees with fixture body and explanation; see review-notes.md. Missing-export cases independently fail consumer compilation."
+          }
+        }
+      },
+      "verified": {
+        "assessmentSHA256": "dfc8b19d9d02a6bd5862def4c7e6aed53d643b871f748c867ad7f3ff3d7a6e8b",
+        "binding": {
+          "materialSHA256": "a7846d59bdc5d0ca359292dceb91ef3274991bfb4afd9ce28e18c867e7554e6d",
+          "taskSHA256": "f0217735c7ab80bc16fbfae23190541dd3ebc696b8d7d1e4d7d1a7218aac898b",
+          "rubricSHA256": "6e0bee1dfd58b4a48052b58df656bc0d0f78fbb7744ea34cd8d5ab63f9a2277c",
+          "environmentSHA256": "25c512ca2d3dd5c501f470bd4e6f63994ffbe635c402622b02180226b7302687",
+          "runnerContractSHA256": "8c304251aa7233fe97e4350d360f789312c1d72bf39054e48aa35e4b52e5809e"
+        },
+        "taskId": "report-node-version-metadata",
+        "sampleId": "report-node-version-metadata-semantic-negative",
+        "formalReady": false,
+        "providerCalls": 0,
+        "accepted": false,
+        "status": "criteria-failed",
+        "compilerReceipt": "/Users/davidchenallio/src/graphrefly/sessions/active/b121-comparison-design-v1/agent-api/next-task-set-draft/offline/review-01/3e428734-08da-4ed8-a7ba-4b3fa7ff163c",
+        "review": {
+          "assessmentSHA256": "dfc8b19d9d02a6bd5862def4c7e6aed53d643b871f748c867ad7f3ff3d7a6e8b",
+          "reviewerId": "root-integrating-new_task_rubric_review",
+          "criteria": {
+            "union-and-absence": {
+              "pass": true,
+              "evidence": "Source-based independent static review agrees with fixture body and explanation; see review-notes.md. Missing-export cases independently fail consumer compilation."
+            },
+            "preserve-fields": {
+              "pass": false,
+              "evidence": "Replaces prev:null with empty string."
+            },
+            "version-meaning": {
+              "pass": true,
+              "evidence": "Source-based independent static review agrees with fixture body and explanation; see review-notes.md. Missing-export cases independently fail consumer compilation."
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "report-node-version-metadata-missing-export",
+      "review": {
+        "assessmentSHA256": "1d2afab850f63c3f0237602a9ef92f1291830c8b95070abbcb03e77ea1217fd4",
+        "reviewerId": "root-integrating-new_task_rubric_review",
+        "criteria": {
+          "union-and-absence": {
+            "pass": true,
+            "evidence": "Source-based independent static review agrees with fixture body and explanation; see review-notes.md. Missing-export cases independently fail consumer compilation."
+          },
+          "preserve-fields": {
+            "pass": true,
+            "evidence": "Source-based independent static review agrees with fixture body and explanation; see review-notes.md. Missing-export cases independently fail consumer compilation."
+          },
+          "version-meaning": {
+            "pass": true,
+            "evidence": "Source-based independent static review agrees with fixture body and explanation; see review-notes.md. Missing-export cases independently fail consumer compilation."
+          }
+        }
+      },
+      "verified": {
+        "assessmentSHA256": "1d2afab850f63c3f0237602a9ef92f1291830c8b95070abbcb03e77ea1217fd4",
+        "binding": {
+          "materialSHA256": "a7846d59bdc5d0ca359292dceb91ef3274991bfb4afd9ce28e18c867e7554e6d",
+          "taskSHA256": "f0217735c7ab80bc16fbfae23190541dd3ebc696b8d7d1e4d7d1a7218aac898b",
+          "rubricSHA256": "6e0bee1dfd58b4a48052b58df656bc0d0f78fbb7744ea34cd8d5ab63f9a2277c",
+          "environmentSHA256": "25c512ca2d3dd5c501f470bd4e6f63994ffbe635c402622b02180226b7302687",
+          "runnerContractSHA256": "8c304251aa7233fe97e4350d360f789312c1d72bf39054e48aa35e4b52e5809e"
+        },
+        "taskId": "report-node-version-metadata",
+        "sampleId": "report-node-version-metadata-missing-export",
+        "formalReady": false,
+        "providerCalls": 0,
+        "accepted": false,
+        "status": "compile-failed",
+        "compilerReceipt": "/Users/davidchenallio/src/graphrefly/sessions/active/b121-comparison-design-v1/agent-api/next-task-set-draft/offline/review-01/9711e6f8-e8a6-415a-9fe9-4b874df37f9f",
+        "review": {
+          "assessmentSHA256": "1d2afab850f63c3f0237602a9ef92f1291830c8b95070abbcb03e77ea1217fd4",
+          "reviewerId": "root-integrating-new_task_rubric_review",
+          "criteria": {
+            "union-and-absence": {
+              "pass": true,
+              "evidence": "Source-based independent static review agrees with fixture body and explanation; see review-notes.md. Missing-export cases independently fail consumer compilation."
+            },
+            "preserve-fields": {
+              "pass": true,
+              "evidence": "Source-based independent static review agrees with fixture body and explanation; see review-notes.md. Missing-export cases independently fail consumer compilation."
+            },
+            "version-meaning": {
+              "pass": true,
+              "evidence": "Source-based independent static review agrees with fixture body and explanation; see review-notes.md. Missing-export cases independently fail consumer compilation."
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "consume-business-results-positive",
+      "review": {
+        "assessmentSHA256": "8bbcdc2190f67195275b789eca30017543eb4ab8bbba99204f25580f322af86d",
+        "reviewerId": "root-integrating-new_task_rubric_review",
+        "criteria": {
+          "result-branches": {
+            "pass": true,
+            "evidence": "Source-based independent static review agrees with fixture body and explanation; see review-notes.md. Missing-export cases independently fail consumer compilation."
+          },
+          "preserve-order-identity": {
+            "pass": true,
+            "evidence": "Source-based independent static review agrees with fixture body and explanation; see review-notes.md. Missing-export cases independently fail consumer compilation."
+          },
+          "passive-facts": {
+            "pass": true,
+            "evidence": "Source-based independent static review agrees with fixture body and explanation; see review-notes.md. Missing-export cases independently fail consumer compilation."
+          }
+        }
+      },
+      "verified": {
+        "assessmentSHA256": "8bbcdc2190f67195275b789eca30017543eb4ab8bbba99204f25580f322af86d",
+        "binding": {
+          "materialSHA256": "a7846d59bdc5d0ca359292dceb91ef3274991bfb4afd9ce28e18c867e7554e6d",
+          "taskSHA256": "f0217735c7ab80bc16fbfae23190541dd3ebc696b8d7d1e4d7d1a7218aac898b",
+          "rubricSHA256": "6e0bee1dfd58b4a48052b58df656bc0d0f78fbb7744ea34cd8d5ab63f9a2277c",
+          "environmentSHA256": "25c512ca2d3dd5c501f470bd4e6f63994ffbe635c402622b02180226b7302687",
+          "runnerContractSHA256": "8c304251aa7233fe97e4350d360f789312c1d72bf39054e48aa35e4b52e5809e"
+        },
+        "taskId": "consume-business-results",
+        "sampleId": "consume-business-results-positive",
+        "formalReady": false,
+        "providerCalls": 0,
+        "accepted": true,
+        "status": "accepted-offline-replay",
+        "compilerReceipt": "/Users/davidchenallio/src/graphrefly/sessions/active/b121-comparison-design-v1/agent-api/next-task-set-draft/offline/review-01/841c96b5-3934-40b7-b5a7-2ca8008ac216",
+        "review": {
+          "assessmentSHA256": "8bbcdc2190f67195275b789eca30017543eb4ab8bbba99204f25580f322af86d",
+          "reviewerId": "root-integrating-new_task_rubric_review",
+          "criteria": {
+            "result-branches": {
+              "pass": true,
+              "evidence": "Source-based independent static review agrees with fixture body and explanation; see review-notes.md. Missing-export cases independently fail consumer compilation."
+            },
+            "preserve-order-identity": {
+              "pass": true,
+              "evidence": "Source-based independent static review agrees with fixture body and explanation; see review-notes.md. Missing-export cases independently fail consumer compilation."
+            },
+            "passive-facts": {
+              "pass": true,
+              "evidence": "Source-based independent static review agrees with fixture body and explanation; see review-notes.md. Missing-export cases independently fail consumer compilation."
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "consume-business-results-semantic-negative",
+      "review": {
+        "assessmentSHA256": "42400b666aedaf6601873cce85f6c0e0b076144fdf02accce85dbaba2c55268d",
+        "reviewerId": "root-integrating-new_task_rubric_review",
+        "criteria": {
+          "result-branches": {
+            "pass": false,
+            "evidence": "Drops ok values whenever additional issues are present."
+          },
+          "preserve-order-identity": {
+            "pass": false,
+            "evidence": "Dropping ok occurrences also loses required duplicate occurrences."
+          },
+          "passive-facts": {
+            "pass": true,
+            "evidence": "Source-based independent static review agrees with fixture body and explanation; see review-notes.md. Missing-export cases independently fail consumer compilation."
+          }
+        }
+      },
+      "verified": {
+        "assessmentSHA256": "42400b666aedaf6601873cce85f6c0e0b076144fdf02accce85dbaba2c55268d",
+        "binding": {
+          "materialSHA256": "a7846d59bdc5d0ca359292dceb91ef3274991bfb4afd9ce28e18c867e7554e6d",
+          "taskSHA256": "f0217735c7ab80bc16fbfae23190541dd3ebc696b8d7d1e4d7d1a7218aac898b",
+          "rubricSHA256": "6e0bee1dfd58b4a48052b58df656bc0d0f78fbb7744ea34cd8d5ab63f9a2277c",
+          "environmentSHA256": "25c512ca2d3dd5c501f470bd4e6f63994ffbe635c402622b02180226b7302687",
+          "runnerContractSHA256": "8c304251aa7233fe97e4350d360f789312c1d72bf39054e48aa35e4b52e5809e"
+        },
+        "taskId": "consume-business-results",
+        "sampleId": "consume-business-results-semantic-negative",
+        "formalReady": false,
+        "providerCalls": 0,
+        "accepted": false,
+        "status": "criteria-failed",
+        "compilerReceipt": "/Users/davidchenallio/src/graphrefly/sessions/active/b121-comparison-design-v1/agent-api/next-task-set-draft/offline/review-01/be8567af-03bc-4d1f-b718-45f377a46c35",
+        "review": {
+          "assessmentSHA256": "42400b666aedaf6601873cce85f6c0e0b076144fdf02accce85dbaba2c55268d",
+          "reviewerId": "root-integrating-new_task_rubric_review",
+          "criteria": {
+            "result-branches": {
+              "pass": false,
+              "evidence": "Drops ok values whenever additional issues are present."
+            },
+            "preserve-order-identity": {
+              "pass": false,
+              "evidence": "Dropping ok occurrences also loses required duplicate occurrences."
+            },
+            "passive-facts": {
+              "pass": true,
+              "evidence": "Source-based independent static review agrees with fixture body and explanation; see review-notes.md. Missing-export cases independently fail consumer compilation."
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "consume-business-results-missing-export",
+      "review": {
+        "assessmentSHA256": "83baef64149b8dfaa2344d2744c6bc39c4f1eff0a224d480df547e22f6cc6b8d",
+        "reviewerId": "root-integrating-new_task_rubric_review",
+        "criteria": {
+          "result-branches": {
+            "pass": true,
+            "evidence": "Source-based independent static review agrees with fixture body and explanation; see review-notes.md. Missing-export cases independently fail consumer compilation."
+          },
+          "preserve-order-identity": {
+            "pass": true,
+            "evidence": "Source-based independent static review agrees with fixture body and explanation; see review-notes.md. Missing-export cases independently fail consumer compilation."
+          },
+          "passive-facts": {
+            "pass": true,
+            "evidence": "Source-based independent static review agrees with fixture body and explanation; see review-notes.md. Missing-export cases independently fail consumer compilation."
+          }
+        }
+      },
+      "verified": {
+        "assessmentSHA256": "83baef64149b8dfaa2344d2744c6bc39c4f1eff0a224d480df547e22f6cc6b8d",
+        "binding": {
+          "materialSHA256": "a7846d59bdc5d0ca359292dceb91ef3274991bfb4afd9ce28e18c867e7554e6d",
+          "taskSHA256": "f0217735c7ab80bc16fbfae23190541dd3ebc696b8d7d1e4d7d1a7218aac898b",
+          "rubricSHA256": "6e0bee1dfd58b4a48052b58df656bc0d0f78fbb7744ea34cd8d5ab63f9a2277c",
+          "environmentSHA256": "25c512ca2d3dd5c501f470bd4e6f63994ffbe635c402622b02180226b7302687",
+          "runnerContractSHA256": "8c304251aa7233fe97e4350d360f789312c1d72bf39054e48aa35e4b52e5809e"
+        },
+        "taskId": "consume-business-results",
+        "sampleId": "consume-business-results-missing-export",
+        "formalReady": false,
+        "providerCalls": 0,
+        "accepted": false,
+        "status": "compile-failed",
+        "compilerReceipt": "/Users/davidchenallio/src/graphrefly/sessions/active/b121-comparison-design-v1/agent-api/next-task-set-draft/offline/review-01/761e4dd0-e994-4e64-9094-fbc8e338d2e0",
+        "review": {
+          "assessmentSHA256": "83baef64149b8dfaa2344d2744c6bc39c4f1eff0a224d480df547e22f6cc6b8d",
+          "reviewerId": "root-integrating-new_task_rubric_review",
+          "criteria": {
+            "result-branches": {
+              "pass": true,
+              "evidence": "Source-based independent static review agrees with fixture body and explanation; see review-notes.md. Missing-export cases independently fail consumer compilation."
+            },
+            "preserve-order-identity": {
+              "pass": true,
+              "evidence": "Source-based independent static review agrees with fixture body and explanation; see review-notes.md. Missing-export cases independently fail consumer compilation."
+            },
+            "passive-facts": {
+              "pass": true,
+              "evidence": "Source-based independent static review agrees with fixture body and explanation; see review-notes.md. Missing-export cases independently fail consumer compilation."
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "export-structure-helper-positive",
+      "review": {
+        "assessmentSHA256": "1cdd77002d3816e5f6c1e994bea11923fe20d103cc2ce5b0e5a670a72b034b50",
+        "reviewerId": "root-integrating-new_task_rubric_review",
+        "criteria": {
+          "structural-api": {
+            "pass": true,
+            "evidence": "Source-based independent static review agrees with fixture body and explanation; see review-notes.md. Missing-export cases independently fail consumer compilation."
+          },
+          "full-structure": {
+            "pass": true,
+            "evidence": "Source-based independent static review agrees with fixture body and explanation; see review-notes.md. Missing-export cases independently fail consumer compilation."
+          },
+          "claim-boundary": {
+            "pass": true,
+            "evidence": "Source-based independent static review agrees with fixture body and explanation; see review-notes.md. Missing-export cases independently fail consumer compilation."
+          }
+        }
+      },
+      "verified": {
+        "assessmentSHA256": "1cdd77002d3816e5f6c1e994bea11923fe20d103cc2ce5b0e5a670a72b034b50",
+        "binding": {
+          "materialSHA256": "a7846d59bdc5d0ca359292dceb91ef3274991bfb4afd9ce28e18c867e7554e6d",
+          "taskSHA256": "f0217735c7ab80bc16fbfae23190541dd3ebc696b8d7d1e4d7d1a7218aac898b",
+          "rubricSHA256": "6e0bee1dfd58b4a48052b58df656bc0d0f78fbb7744ea34cd8d5ab63f9a2277c",
+          "environmentSHA256": "25c512ca2d3dd5c501f470bd4e6f63994ffbe635c402622b02180226b7302687",
+          "runnerContractSHA256": "8c304251aa7233fe97e4350d360f789312c1d72bf39054e48aa35e4b52e5809e"
+        },
+        "taskId": "export-structure-only",
+        "sampleId": "export-structure-helper-positive",
+        "formalReady": false,
+        "providerCalls": 0,
+        "accepted": true,
+        "status": "accepted-offline-replay",
+        "compilerReceipt": "/Users/davidchenallio/src/graphrefly/sessions/active/b121-comparison-design-v1/agent-api/next-task-set-draft/offline/review-01/ee33e633-a651-443d-9caf-171399f3d848",
+        "review": {
+          "assessmentSHA256": "1cdd77002d3816e5f6c1e994bea11923fe20d103cc2ce5b0e5a670a72b034b50",
+          "reviewerId": "root-integrating-new_task_rubric_review",
+          "criteria": {
+            "structural-api": {
+              "pass": true,
+              "evidence": "Source-based independent static review agrees with fixture body and explanation; see review-notes.md. Missing-export cases independently fail consumer compilation."
+            },
+            "full-structure": {
+              "pass": true,
+              "evidence": "Source-based independent static review agrees with fixture body and explanation; see review-notes.md. Missing-export cases independently fail consumer compilation."
+            },
+            "claim-boundary": {
+              "pass": true,
+              "evidence": "Source-based independent static review agrees with fixture body and explanation; see review-notes.md. Missing-export cases independently fail consumer compilation."
+            }
+          }
+        }
+      }
+    }
+  ]
+}

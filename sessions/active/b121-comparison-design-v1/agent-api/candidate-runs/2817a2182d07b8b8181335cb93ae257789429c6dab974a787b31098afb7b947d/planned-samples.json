@@ -1,0 +1,29 @@
+[
+  {
+    "sampleId": "candidate-entry-01",
+    "taskId": "export-structure-only",
+    "role": "tooling-integrator",
+    "packetSHA256": "e8435fa9b3e8ad4dd175ca5ef6a9400468f0648c81c760916b3e160b748163de",
+    "status": "not-run",
+    "reason": "not-started",
+    "assessmentSHA256": null
+  },
+  {
+    "sampleId": "candidate-entry-02",
+    "taskId": "report-node-version-metadata",
+    "role": "diagnostic-integrator",
+    "packetSHA256": "4720c6148cf9239437e8786c614b36799616dba7b9ed7e4f639b915aef71456b",
+    "status": "not-run",
+    "reason": "not-started",
+    "assessmentSHA256": null
+  },
+  {
+    "sampleId": "candidate-entry-03",
+    "taskId": "consume-business-results",
+    "role": "application-boundary",
+    "packetSHA256": "461bfc41ca60c45bd134ed28de81b7026f8badca699533bc7ca05373d733c864",
+    "status": "not-run",
+    "reason": "not-started",
+    "assessmentSHA256": null
+  }
+]

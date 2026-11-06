@@ -1,0 +1,1 @@
+import * as p0 from "../../packages/ts/src/solutions/causal-occurrence/capabilities.js"; export type Probe0 = typeof p0;

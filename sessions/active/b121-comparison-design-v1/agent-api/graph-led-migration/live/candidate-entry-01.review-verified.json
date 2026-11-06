@@ -1,0 +1,35 @@
+{
+  "assessmentSHA256": "1d46b5b55c1eeca789c5da1f5d3b6c9004abfd00f907cb4be10c4eb4dedee6d4",
+  "binding": {
+    "materialSHA256": "a7846d59bdc5d0ca359292dceb91ef3274991bfb4afd9ce28e18c867e7554e6d",
+    "taskSHA256": "c2e7319352a9d2e663336a9c38606dbd41a6e8af39c93b5d09c3b60a90f876d9",
+    "rubricSHA256": "34414fc3f59a9ed7d269d1de8321c01a7cdc3392cb9cfae67c3aed7c52da14d2",
+    "environmentSHA256": "25c512ca2d3dd5c501f470bd4e6f63994ffbe635c402622b02180226b7302687",
+    "runnerContractSHA256": "fa13bb24115b1b14508b2d1d61fca4159d1a45ff2342b29e5e21c91c57db9625"
+  },
+  "taskId": "report-node-version-metadata",
+  "sampleId": "candidate-entry-01",
+  "formalReady": false,
+  "providerCalls": 0,
+  "accepted": true,
+  "status": "accepted-candidate-session",
+  "compilerReceipt": "/Users/davidchenallio/src/graphrefly/sessions/active/b121-comparison-design-v1/agent-api/graph-led-migration/live/review-compiler/927a3276-5df7-4aae-8aee-ae12552338f2",
+  "review": {
+    "assessmentSHA256": "1d46b5b55c1eeca789c5da1f5d3b6c9004abfd00f907cb4be10c4eb4dedee6d4",
+    "reviewerId": "codex-root-static-review-not-blind",
+    "criteria": {
+      "union-and-absence": {
+        "pass": true,
+        "evidence": "Actual NodeVersion imported from frozen core alias; readonly input array mapped once per item; explicit undefined then level===0; zero counter is preserved. Consumer typecheck passes."
+      },
+      "preserve-fields": {
+        "pass": true,
+        "evidence": "Returns counter/cid/prev directly from supplied union members; no hashing or identifier fabrication. Explanation distinguishes DATA content identifier from source revision; null prev is retained."
+      },
+      "version-meaning": {
+        "pass": true,
+        "evidence": "Explanation denies implementation/I/O authority proof and states counter increments despite unchanged CID, matching frozen versioning.ts:74-79,128-143. It does not assert equal CID proves equal payloads; criterion does not require separate collision discussion."
+      }
+    }
+  }
+}

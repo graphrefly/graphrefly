@@ -1,0 +1,17 @@
+{
+  "manifestSHA": "a704fb454e4b3dd50bd67955e92c13b656ab8a4af1f280e233c5a13b093ee7ba",
+  "action": "B121-agent-api-one-shot",
+  "acceptAliasLimitation": true,
+  "acceptInputEstimateLimitation": true,
+  "expiresAt": "2026-09-18T04:46:06.859Z",
+  "maxGenerationCalls": 1444,
+  "maxUSD": 2,
+  "retries": {
+    "capacity": 3,
+    "availability": 1
+  },
+  "model": "deepseek/deepseek-v4.1-flash",
+  "providerTag": "together",
+  "priorUsageUSD": 1.7527377880000001,
+  "authorizationSource": "Current task user: 好的，你修，然后继续; existing cumulative $2 cap retained."
+}

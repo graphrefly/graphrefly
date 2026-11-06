@@ -1,0 +1,17 @@
+{
+  "manifestSHA": "88c2fc7e66bdd554ef62ba8ab91ddbde634d4ade1f48ffe4ec424d937960f518",
+  "action": "B121-agent-api-one-shot",
+  "acceptAliasLimitation": true,
+  "acceptInputEstimateLimitation": true,
+  "expiresAt": "2026-09-19T02:02:09.015Z",
+  "maxGenerationCalls": 1444,
+  "maxUSD": 5.5,
+  "retries": {
+    "capacity": 3,
+    "availability": 1
+  },
+  "model": "deepseek/deepseek-v4.1-flash",
+  "providerTag": "together",
+  "priorUsageUSD": 4.710617752000002,
+  "authorizationSource": "User confirmed cumulative USD5.50 including all historical fees and unknown reservations, and one complete fixed-four run after B121 connection-close mitigation by 确认. External key lifetime limit1.97 unchanged, no recharge/reset. Same frozen v9/v10 artifacts and consumer contract, model/provider/session limits/retry policy; new per-attempt HTTP connection-close policy disclosed. No automatic replacement or rerun."
+}

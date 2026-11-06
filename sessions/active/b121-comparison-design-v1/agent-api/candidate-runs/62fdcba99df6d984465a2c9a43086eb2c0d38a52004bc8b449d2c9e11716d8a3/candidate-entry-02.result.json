@@ -1,0 +1,66 @@
+{
+  "slot": {
+    "id": "candidate-entry-02",
+    "arm": "G",
+    "role": "application-integrator"
+  },
+  "controller": null,
+  "experiment": "entry",
+  "explanations": {
+    "A": {},
+    "B": {}
+  },
+  "entryAnswer": {
+    "op": "submit",
+    "snippet": "/**\n * B121 entry validation: compose two independent spending instances in one Graph.\n *\n * Virtual file: examples/spending-alerts/__b121_entry_validation__.ts\n * Relative .js specifiers resolve to the provided .ts sources. Not executed here.\n */\nimport type { Graph } from \"../../packages/ts/src/graph/graph.js\";\nimport { spendingAlertsFor } from \"./causal-entry.js\";\nimport type { SpendingCreationInputs } from \"./causal-entry.js\";\nimport { mountSpendingView, type SpendingViewObservation } from \"./causal-view-binding.js\";\n\n/** One shared, immutable set of defaults for both instances. */\nexport const sharedSpendingDefaults = Object.freeze({\n\tname: \"alerts\",\n\tdiagnostics: \"off\",\n} as const);\n\nexport interface ComposedSpendingInstance {\n\t/** The original composed instance (owner, guard, source, runEndReady, built, inspect, consume). */\n\treadonly instance: ReturnType<ReturnType<typeof spendingAlertsFor>[\"compose\"]>;\n\t/** Ends observation only; run ownership stays with the application. */\n\treadonly detachDisplay: () => void;\n}\n\nexport interface ComposedSpendingPair {\n\treadonly first: ComposedSpendingInstance;\n\treadonly second: ComposedSpendingInstance;\n}\n\n/**\n * Creates both instances from the two independently prepared inputs, using the\n * shared defaults, enabling summary diagnostics only for the second instance,\n * and connecting each instance's own view to its own render callback.\n */\nexport function composeTwoSpendingInstances(\n\tgraph: Graph,\n\tfirstInputs: SpendingCreationInputs,\n\tsecondInputs: SpendingCreationInputs,\n\trenderFirst: (observation: SpendingViewObservation) => void,\n\trenderSecond: (observation: SpendingViewObservation) => void,\n): ComposedSpendingPair {\n\t// Configuration binds the immutable defaults; it allocates no graph nodes.\n\tconst preset = spendingAlertsFor(graph, sharedSpendingDefaults);\n\n\t// Each compose creates a complete runtime from its own prepared inputs and\n\t// its own resource binding. Distinct names; summary diagnostics only for B.\n\tconst first = preset.compose(firstInputs, { name: \"alerts-a\" });\n\tconst second = preset.compose(secondInputs, { name: \"alerts-b\", diagnostics: \"summary\" });\n\n\t// Each display observes only its own original view; the returned function\n\t// stops observation and does not close the instance or release its resource.\n\tconst detachFirst = mountSpendingView(first.view, renderFirst);\n\tconst detachSecond = mountSpendingView(second.view, renderSecond);\n\n\treturn Object.freeze({\n\t\tfirst: Object.freeze({ instance: first, detachDisplay: detachFirst }),\n\t\tsecond: Object.freeze({ instance: second, detachDisplay: detachSecond }),\n\t});\n}\n",
+    "explanation": "What the code does. `spendingAlertsFor(graph, defaults)` binds one immutable defaults object and returns a `compose` function; configuration itself allocates no graph nodes (causal-entry.ts:48-51, README.md:82-84). Each `compose(inputs, overrides)` call invokes the existing complete host construction with that call's own inputs and resource (causal-entry.ts:52-69), so the two calls produce two independent running instances in the same Graph. Overrides only select `name`/`diagnostics` (causal-entry.ts:36-45, README.md:84-85). The second call passes `diagnostics: \"summary\"`, which adds the `${name}/diagnosticSummary` node (causal-preset.ts:70, 180-190); the first keeps the default `\"off\"`. Each instance's own `.view` is passed to `mountSpendingView` with its own render callback; the returned function ends observation only (causal-view-binding.ts:16-20, 32-36).\n\nWhat the application must retain after either display is unmounted. Detaching a panel stops observation; the running instance keeps its outstanding obligations (README.md:143). The application must keep, per instance: the owning Graph and the original composed instance together (README.md:100-104); the original `owner` and `inspect` diagnostics (causal-graded-demo.ts:65, 140-143, 185-188); the original view and capability references, including the retained lineage (`app.capabilities.retained.execution === execution`, causal-graded-demo.ts:85-87, 283-287); and the host's retained request/admission/outcome records, which are bounded at 64 distinct records per owned epoch plus one in-flight write (causal-focused-host.ts:140, 368-373, 571-575; README.md:146-151). Panel cleanup is not recovery: an unknown or reconcile-required outcome is not success and prevents normal-end readiness (causal-focused-host.ts:224, 517-535, 563-564; README.md:149-151). The demo's final forced cleanup is test cleanup, not normal lifecycle completion (causal-graded-demo.ts:312-320; README.md:156-157).\n\nWhat the distinct names contribute. Names are the per-instance node-name prefix: `spendingNodeNames(name, diagnostics)` builds `${name}/startup`, `${name}/...`, `${name}/causal/...`, `${name}/publication` (causal-preset.ts:60-72), and the host adds `${name}/hostFacts`, `${name}/hostGuard`, `${name}/runEndReady`, `${name}/hostPackFacts` (causal-focused-host.ts:81-87). Distinct names keep the two instances' nodes and edges distinguishable in one shared Graph, so inspection can select the intended instance rather than the first node ending in `/causal/authority` (README.md:118-120). A name is not an authorization token: changing `name` does not clone input Nodes, create an independent resource or rewrite its binding (README.md:85-89).\n\nWhat the independently prepared input Nodes contribute. Each `SpendingCreationInputs` carries its own `evaluations` (pack, arrivals, current), `verification.receipts`, `localAuthority.facts` and `inbox.resource` (causal-entry.ts:15-17; causal-inputs.ts:106-115). The host requires six distinct input nodes and rejects duplicates (causal-preset.ts:73-93), and it validates each frame against the resource's binding (causal-inputs.ts:352-377). So the two inputs are separate evidence/permission lanes: separate evaluation packs, receipts, grants and current facts, each bound to its own `SpendingBinding` (causal-inputs.ts:14-17, 212-224).\n\nWhat the resource bindings contribute. `compose` requires a prepared `SpendingResource` and passes `resource.binding` and the resource itself to the host (causal-entry.ts:55-68). The host validates the binding and requires `same(resource.binding, binding)` (causal-focused-host.ts:74-77), then claims the resource for that epoch (causal-focused-host.ts:96, 110; causal-resource.ts:69-99). A resource can be claimed once per epoch (causal-resource.ts:70-72), so each instance needs its own prepared resource with its own binding; the binding's `compositionEpoch`/`hostEpoch`/`destinationRef`/digests are what the host checks against each request (causal-focused-host.ts:344-359, 388-397). Changing a name does not prepare or rebind a resource; the two supplied inputs and resources are preserved as given.\n\nScope note: the snippet only composes and mounts; it does not open resources, invent input facts, or invoke a transport directly. Normal host behavior (including the offline simulated writer) is allowed and not disabled. The snippet was not executed.",
+    "concepts": {
+      "read": [
+        "occurrence",
+        "admission",
+        "retained-evidence",
+        "identity",
+        "lifecycle",
+        "authority",
+        "revision",
+        "provenance"
+      ],
+      "required": [
+        "occurrence",
+        "admission",
+        "retained-evidence",
+        "identity",
+        "lifecycle",
+        "authority",
+        "revision",
+        "provenance"
+      ],
+      "firstExpansion": null
+    }
+  },
+  "entryTiming": {
+    "startedMs": 0,
+    "submittedMs": 21179,
+    "elapsedMs": 21179,
+    "firstSourceRead": {
+      "path": "examples/spending-alerts/README.md",
+      "line": 1,
+      "operation": "read",
+      "elapsedMs": 1094
+    }
+  },
+  "entryStatus": "submitted",
+  "usage": {
+    "inputTokens": 866233,
+    "outputTokens": 4097,
+    "elapsedMs": 21184
+  },
+  "costUSD": 0.032860284,
+  "turns": 22,
+  "counts": 23,
+  "operations": 44,
+  "fatal": null,
+  "failureScope": null,
+  "pendingReservation": null,
+  "retryAllowed": false
+}

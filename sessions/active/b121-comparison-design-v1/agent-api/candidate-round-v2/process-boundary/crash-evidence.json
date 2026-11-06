@@ -1,0 +1,53 @@
+{
+  "analysis": "Both original reports identify SIGSEGV in the same V8 GC root-pointer visitor. This locates native failure; it does not establish a V8 bug, precise trigger, or prove duplicate compiler initialization caused it. Child-process isolation contains compiler failure rather than claiming to fix V8.",
+  "reports": [
+    {
+      "source": "/Users/davidchenallio/Library/Logs/DiagnosticReports/node-2026-09-17-115348.ips",
+      "sourceSHA256": "e9c24c3c0a41ebcd7802c245571f7ebf1efd941ae98f85db5b76619ce0ff3311",
+      "exception": {
+        "codes": "0x0000000000000001, 0x0000000000000006",
+        "rawCodes": [
+          1,
+          6
+        ],
+        "type": "EXC_BAD_ACCESS",
+        "signal": "SIGSEGV",
+        "subtype": "KERN_INVALID_ADDRESS at 0x0000000000000006"
+      },
+      "topFrames": [
+        "v8::internal::ClearStaleLeftTrimmedPointerVisitor::VisitRootPointers(v8::internal::Root, char const*, v8::internal::FullObjectSlot, v8::internal::FullObjectSlot)",
+        "v8::internal::InternalFrame::Iterate(v8::internal::RootVisitor*) const",
+        "v8::internal::Isolate::Iterate(v8::internal::RootVisitor*, v8::internal::ThreadLocalTop*)",
+        "v8::internal::Heap::IterateRoots(v8::internal::RootVisitor*, v8::base::EnumSet<v8::internal::SkipRoot, int>, v8::internal::Heap::IterateRootsMode)",
+        "v8::internal::MarkCompactCollector::MarkRoots(v8::internal::RootVisitor*)",
+        "v8::internal::MarkCompactCollector::MarkLiveObjects()",
+        "v8::internal::MarkCompactCollector::CollectGarbage()",
+        "v8::internal::Heap::MarkCompact()"
+      ]
+    },
+    {
+      "source": "/Users/davidchenallio/Library/Logs/DiagnosticReports/node-2026-09-17-115530.ips",
+      "sourceSHA256": "125cd34aaf000ffd7196e69dcbf59d5c2ce0251b5bbb1c1aa5daa3fadbc661fc",
+      "exception": {
+        "codes": "0x0000000000000001, 0x0000000000000006",
+        "rawCodes": [
+          1,
+          6
+        ],
+        "type": "EXC_BAD_ACCESS",
+        "signal": "SIGSEGV",
+        "subtype": "KERN_INVALID_ADDRESS at 0x0000000000000006"
+      },
+      "topFrames": [
+        "v8::internal::ClearStaleLeftTrimmedPointerVisitor::VisitRootPointers(v8::internal::Root, char const*, v8::internal::FullObjectSlot, v8::internal::FullObjectSlot)",
+        "v8::internal::InternalFrame::Iterate(v8::internal::RootVisitor*) const",
+        "v8::internal::Isolate::Iterate(v8::internal::RootVisitor*, v8::internal::ThreadLocalTop*)",
+        "v8::internal::Heap::IterateRoots(v8::internal::RootVisitor*, v8::base::EnumSet<v8::internal::SkipRoot, int>, v8::internal::Heap::IterateRootsMode)",
+        "v8::internal::MarkCompactCollector::MarkRoots(v8::internal::RootVisitor*)",
+        "v8::internal::MarkCompactCollector::MarkLiveObjects()",
+        "v8::internal::MarkCompactCollector::CollectGarbage()",
+        "v8::internal::Heap::MarkCompact()"
+      ]
+    }
+  ]
+}

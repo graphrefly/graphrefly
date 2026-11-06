@@ -1,0 +1,66 @@
+{
+  "slot": {
+    "id": "candidate-entry-03",
+    "arm": "G",
+    "role": "framework-integrator"
+  },
+  "controller": null,
+  "experiment": "entry",
+  "explanations": {
+    "A": {},
+    "B": {}
+  },
+  "entryAnswer": {
+    "op": "submit",
+    "snippet": "/**\n * B121 entry validation: validate-before-handoff for a FullCausalCapability.\n *\n * Consumer-private source imports, not published package subpaths. The caller\n * supplies the Graph, the FullCausalCapability, the expected CausalBinding and\n * the recipient callback; this module creates none of them.\n */\nimport type { Graph } from \"../../packages/ts/src/graph/graph.js\";\nimport {\n\tassertCausalCapabilities,\n\ttype CausalBinding,\n\ttype ExecutionCapability,\n\ttype FullCausalCapability,\n\ttype IdentityCapability,\n\ttype RetainedEvidenceCapability,\n} from \"../../packages/ts/src/solutions/causal-occurrence/capabilities.js\";\n\n/** The three graded levels, delivered as the original issued handles. */\nexport interface CausalRecipient<T> {\n\treadonly identity: IdentityCapability<T>;\n\treadonly execution: ExecutionCapability<T>;\n\treadonly retained: RetainedEvidenceCapability<T>;\n}\n\n/**\n * Validate first, then hand off. `assertCausalCapabilities` is the only\n * admission gate: it rejects a structural copy (no WeakMap issuance record),\n * a capability issued by a different Graph, and a binding/epoch mismatch, and\n * it re-checks the lower-handle identity relationships. The recipient is\n * therefore never called on an invalid capability.\n */\nexport function handoffCausalCapabilities<T>(\n\tgraph: Graph,\n\tcapabilities: FullCausalCapability<T>,\n\texpected: CausalBinding,\n\trecipient: (levels: CausalRecipient<T>) => void,\n): void {\n\tassertCausalCapabilities(graph, capabilities, expected);\n\n\t// Deliver the original references, not copies: identity is preserved because\n\t// execution.identity === identity and retained.execution === execution.\n\tconst levels: CausalRecipient<T> = Object.freeze({\n\t\tidentity: capabilities.identity,\n\t\texecution: capabilities.execution,\n\t\tretained: capabilities.retained,\n\t});\n\n\trecipient(levels);\n}\n\n/**\n * Possession of the execution level does not authorize an arbitrary I/O call.\n * ExecutionCapability exposes only Node handles (terminals, conservation,\n * causalQuiescence) plus the identity subset; it has no write/transport method.\n * The offline host performs the only write, and only after its own guard checks\n * admission, verification receipt, local grant, epochs and inbox readiness.\n */\nexport function executionLevelGrantsIo(): false {\n\treturn false;\n}\n",
+    "explanation": "The snippet is a virtual file at examples/spending-alerts/__b121_entry_validation__.ts; it imports the private causal-occurrence sources with relative .js specifiers and creates no Graph, capability, binding or resource (per entry/task.json: given objects are supplied by the caller).\n\nValidation before handoff. `handoffCausalCapabilities` calls `assertCausalCapabilities(graph, capabilities, expected)` before touching the recipient. That function is the exact issued-object gate: it looks the value up in the module-private `issued` WeakMap (capabilities.ts:51) and throws when there is no record, when `root.graph !== graph`, when `root.level !== \"full\"`, or when any of contract/implementationRevision/scope/epoch differ (capabilities.ts:72-82). A structural copy or a copied lower handle has no issuance record, so it is rejected; a capability issued by another Graph or under another binding/epoch is rejected too. It then re-checks lineage: each of identity/execution/retained must be issued to the same `instance` and `graph` (capabilities.ts:83-87), and the original identity relationships must hold — `full.execution.identity === full.identity` and `full.retained.execution === full.execution` (capabilities.ts:88-89). Because the throw happens first, the recipient callback is never invoked for an invalid capability; the README states the same rule: \"A capability validation failure must be handled before passing the capabilities to a recipient; a structural copy is not an issued object\" (README.md:41-43).\n\nIdentity-preserving delivery. The three levels are passed as the original frozen handles created by `createCausalCapabilities` (capabilities.ts:122-138), which freezes identity, execution, retained and full and registers each level in the WeakMap (capabilities.ts:140-146). The snippet reuses those references rather than rebuilding objects, so the `execution.identity === identity` and `retained.execution === execution` relationships survive the handoff. The framework example does the same: validate, then return `capabilities.execution` (causal-audience.examples.ts:18-25).\n\nDoes the execution level authorize arbitrary I/O? No. `ExecutionCapability` is only `identity`, `terminals`, `conservation` and `causalQuiescence` Node handles (capabilities.ts:27-32); it exposes no write, transport or publish method. The README says capabilities have no arbitrary I/O execution method (README.md:94-95), and the audience example comments that an execution view grants no I/O method (causal-audience.examples.ts:17). The only write in the package is the offline host's `lease.write(payload)` (causal-focused-host.ts:455), reached only after its guard verifies admitted effect, exactly one passing verification receipt, exactly one unrevoked local grant, matching epochs/digests and inbox readiness (causal-focused-host.ts:404-431), and even then success is only claimed when the returned byte count matches (causal-focused-host.ts:458-470). Possession of the execution level is therefore an observation/consumption right over identity, terminal, conservation and quiescence facts, not an authorization to perform I/O.\n\nScope note: the snippet is not executed here; no code execution is available in this package.",
+    "concepts": {
+      "read": [
+        "occurrence",
+        "admission",
+        "retained-evidence",
+        "identity",
+        "lifecycle",
+        "authority",
+        "revision",
+        "provenance"
+      ],
+      "required": [
+        "occurrence",
+        "admission",
+        "retained-evidence",
+        "identity",
+        "lifecycle",
+        "authority",
+        "revision",
+        "provenance"
+      ],
+      "firstExpansion": null
+    }
+  },
+  "entryTiming": {
+    "startedMs": 0,
+    "submittedMs": 35606,
+    "elapsedMs": 35606,
+    "firstSourceRead": {
+      "path": "examples/spending-alerts/README.md",
+      "line": 1,
+      "operation": "read",
+      "elapsedMs": 1219
+    }
+  },
+  "entryStatus": "submitted",
+  "usage": {
+    "inputTokens": 858973,
+    "outputTokens": 3581,
+    "elapsedMs": 35611
+  },
+  "costUSD": 0.029122284,
+  "turns": 24,
+  "counts": 25,
+  "operations": 38,
+  "fatal": null,
+  "failureScope": null,
+  "pendingReservation": null,
+  "retryAllowed": false
+}

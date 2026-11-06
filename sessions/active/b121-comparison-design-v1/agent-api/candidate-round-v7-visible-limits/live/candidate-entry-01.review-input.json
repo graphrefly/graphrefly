@@ -1,0 +1,18 @@
+{
+  "assessmentSHA256": "e160278f7b9a0aa099acea93c067c9302e15fa40d56a34f71fe5c404556dc4ba",
+  "reviewerId": "Codex primary /root; local source review after independent subagents hit usage limit",
+  "criteria": {
+    "current-values": {
+      "pass": true,
+      "evidence": "mountSpendingAlertsDisplay delegates to mountSpendingView; toSpendingDisplay enumerates all five actual port values with Object.hasOwn. Frozen causal-view-binding.ts:14,25-30,38-45 confirms actual DATA observations."
+    },
+    "missing-values": {
+      "pass": true,
+      "evidence": "Projection recomputes available/unavailable from current own properties; INVALIDATE/ERROR delete values in frozen causal-view-binding.ts:42-43. No old display frame is retained as current."
+    },
+    "observation-lifetime": {
+      "pass": true,
+      "evidence": "Returns mountSpendingView cleanup directly; explanation preserves application ownership and outstanding obligations. Frozen causal-view-binding.ts:16,32-36,51 and README.md:143,149-157 support this."
+    }
+  }
+}

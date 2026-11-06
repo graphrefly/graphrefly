@@ -1,0 +1,10 @@
+{
+  "checkedAt": "2026-09-18T05:17:10.770914+00:00",
+  "endpoint": "GET /api/v1/key",
+  "data": {
+    "usage": 1.079974008,
+    "limit": 1.97,
+    "limit_remaining": 0.890025992,
+    "limit_reset": null
+  }
+}

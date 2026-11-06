@@ -1,0 +1,35 @@
+{
+  "assessmentSHA256": "dfe3215a731d4f68a4452afe805c068fc4395ac815f9127f16f9d11b203bfd9d",
+  "binding": {
+    "materialSHA256": "a7846d59bdc5d0ca359292dceb91ef3274991bfb4afd9ce28e18c867e7554e6d",
+    "taskSHA256": "c2e7319352a9d2e663336a9c38606dbd41a6e8af39c93b5d09c3b60a90f876d9",
+    "rubricSHA256": "34414fc3f59a9ed7d269d1de8321c01a7cdc3392cb9cfae67c3aed7c52da14d2",
+    "environmentSHA256": "25c512ca2d3dd5c501f470bd4e6f63994ffbe635c402622b02180226b7302687",
+    "runnerContractSHA256": "fa13bb24115b1b14508b2d1d61fca4159d1a45ff2342b29e5e21c91c57db9625"
+  },
+  "taskId": "consume-business-results",
+  "sampleId": "candidate-entry-02",
+  "formalReady": false,
+  "providerCalls": 0,
+  "accepted": false,
+  "status": "compile-failed",
+  "compilerReceipt": "/Users/davidchenallio/src/graphrefly/sessions/active/b121-comparison-design-v1/agent-api/graph-led-migration/live/review-compiler/fb92abde-753c-4c91-9264-cd5f6266ea57",
+  "review": {
+    "assessmentSHA256": "dfe3215a731d4f68a4452afe805c068fc4395ac815f9127f16f9d11b203bfd9d",
+    "reviewerId": "codex-root-static-review-not-blind",
+    "criteria": {
+      "result-branches": {
+        "pass": false,
+        "evidence": "Branch collection logic matches frozen data/index.ts, but line1 uses ../../../packages/ts/src/data/index.js from examples/spending-alerts, escaping the virtual repository root. TS2307 prevents resolving the required actual input types. Correct location and frozen source were supplied; submitted import remains unmodified."
+      },
+      "preserve-order-identity": {
+        "pass": true,
+        "evidence": "Static body loops original input order, pushes original value/error/issue references into fresh arrays, retains duplicates and handles empty input. No mutation of inputs. This is a body-level static finding, not a successful executable submission."
+      },
+      "passive-facts": {
+        "pass": true,
+        "evidence": "Explanation correctly separates passive DataError/retryable metadata from protocol ERROR, run end, automatic retry and effects, matching frozen data/index.ts header and issue definition. No subscription or transport in function."
+      }
+    }
+  }
+}

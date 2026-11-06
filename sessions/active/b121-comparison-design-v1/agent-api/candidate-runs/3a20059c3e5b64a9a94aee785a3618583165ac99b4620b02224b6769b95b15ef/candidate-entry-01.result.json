@@ -1,0 +1,62 @@
+{
+  "slot": {
+    "id": "candidate-entry-01",
+    "arm": "G",
+    "role": "display-component"
+  },
+  "controller": null,
+  "experiment": "entry",
+  "explanations": {
+    "A": {},
+    "B": {}
+  },
+  "entryAnswer": {
+    "op": "submit",
+    "snippet": "/**\n * Display adapter for an already-created SpendingAlertsView.\n *\n * It renders the CURRENT available business values and explicitly names the ports\n * that have no usable value. It creates no runtime, no input facts and no\n * capabilities: the view is supplied by the caller and is only observed.\n *\n * The returned function ends observation only (unmount). Run ownership, retained\n * obligations and lifecycle stay with the application.\n */\nimport type { Node } from \"../../packages/ts/src/node/node.js\";\nimport type { SpendingAlertsView } from \"./causal-preset.js\";\n\ntype ValueOf<N> = N extends Node<infer T> ? T : never;\n\n/** Latest value per port; NOT an atomic multi-port snapshot and not independent evidence. */\nexport type SpendingViewValues = {\n\treadonly [K in keyof SpendingAlertsView]?: ValueOf<SpendingAlertsView[K]>;\n};\n\nexport interface SpendingViewObservation {\n\treadonly values: SpendingViewValues;\n\t/** Ports with no current usable value (never delivered, INVALIDATE or ERROR). */\n\treadonly unavailable: readonly (keyof SpendingAlertsView)[];\n}\n\n/** The five business ports of the view, in display order. */\nconst ports = [\"assessment\", \"publication\", \"coverage\", \"issues\", \"startup\"] as const;\n\nexport interface SpendingDisplayOptions {\n\t/** Optional label for a port that has no usable value. */\n\treadonly unavailableLabel?: (port: keyof SpendingAlertsView) => string;\n}\n\n/**\n * Mount the display over an existing view.\n *\n * @param view - The already-created view (original identity; never rebuilt here).\n * @param render - Called with the current values plus the explicit unavailable list.\n * @param options - Presentation-only options.\n * @returns A cleanup function that ends observation (unmount).\n */\nexport function mountSpendingDisplay(\n\tview: SpendingAlertsView,\n\trender: (observation: SpendingViewObservation) => void,\n\toptions: SpendingDisplayOptions = {},\n): () => void {\n\tconst label = options.unavailableLabel ?? ((port: keyof SpendingAlertsView) => `unavailable: ${port}`);\n\tconst values: Record<string, unknown> = {};\n\tconst stops: (() => void)[] = [];\n\tlet mounting = true;\n\tlet closed = false;\n\n\tconst publish = () => {\n\t\tconst unavailable = ports.filter((port) => !Object.hasOwn(values, port));\n\t\trender(\n\t\t\tObject.freeze({\n\t\t\t\tvalues: Object.freeze({ ...values }) as SpendingViewValues,\n\t\t\t\tunavailable: Object.freeze(unavailable),\n\t\t\t}),\n\t\t);\n\t};\n\n\t/** Ends observation only; the running instance keeps its outstanding obligations. */\n\tconst stop = () => {\n\t\tif (closed) return;\n\t\tclosed = true;\n\t\tfor (const unsubscribe of stops.splice(0).reverse()) unsubscribe();\n\t};\n\n\ttry {\n\t\tfor (const port of ports) {\n\t\t\tstops.push(\n\t\t\t\tview[port].subscribe((message) => {\n\t\t\t\t\tif (closed) return;\n\t\t\t\t\tif (message[0] === \"DATA\") values[port] = message[1];\n\t\t\t\t\telse if (message[0] === \"INVALIDATE\" || message[0] === \"ERROR\") delete values[port];\n\t\t\t\t\telse return; // START / DIRTY / RESOLVED / COMPLETE / TEARDOWN: no new usable value\n\t\t\t\t\tif (!mounting) publish();\n\t\t\t\t}),\n\t\t\t);\n\t\t}\n\t\tmounting = false;\n\t\tpublish();\n\t\treturn stop;\n\t} catch (error) {\n\t\tstop();\n\t\tthrow error;\n\t}\n}\n\n/** Render the observation as display text, naming every port without a usable value. */\nexport function formatSpendingDisplay(\n\tobservation: SpendingViewObservation,\n\toptions: SpendingDisplayOptions = {},\n): string {\n\tconst label = options.unavailableLabel ?? ((port: keyof SpendingAlertsView) => `unavailable: ${port}`);\n\tconst { values, unavailable } = observation;\n\tconst lines: string[] = [];\n\n\tlines.push(\n\t\tvalues.startup === undefined\n\t\t\t? label(\"startup\")\n\t\t\t: `startup: ${values.startup.state} (started; not proof of authorization, success or run completion)`,\n\t);\n\n\tlines.push(\n\t\tvalues.assessment === undefined\n\t\t\t? label(\"assessment\")\n\t\t\t: values.assessment.valid\n\t\t\t\t? `assessment: ${\n\t\t\t\t\t\tvalues.assessment.rows\n\t\t\t\t\t\t\t.map(({ value }) =>\n\t\t\t\t\t\t\t\t`${value.evaluationRef}: ${value.flagged ? \"condition met (evidence and permission still required)\" : \"condition not met (not proof verification finished)\"}`,\n\t\t\t\t\t\t\t)\n\t\t\t\t\t\t\t.join(\"; \") || \"frame present, no rows yet\"\n\t\t\t\t\t}`\n\t\t\t\t: \"assessment: invalid fact\",\n\t);\n\n\tlines.push(\n\t\tvalues.publication === undefined\n\t\t\t? label(\"publication\")\n\t\t\t: `publication: ${\n\t\t\t\t\tvalues.publication.rows\n\t\t\t\t\t\t.map((row) => `${row.proposal.effectId}: ${row.recorded}`)\n\t\t\t\t\t\t.join(\"; \") || \"frame present, no rows yet (not proof of success)\"\n\t\t\t\t}`,\n\t);\n\n\tlines.push(\n\t\tvalues.coverage === undefined ? label(\"coverage\") : `coverage: ${JSON.stringify(values.coverage)}`,\n\t);\n\tlines.push(values.issues === undefined ? label(\"issues\") : `issues: ${JSON.stringify(values.issues)}`);\n\n\tlines.push(`no current value: ${unavailable.map((port) => label(port)).join(\", \") || \"none\"}`);\n\treturn lines.join(\"\\n\");\n}\n",
+    "explanation": "What the adapter does. `mountSpendingDisplay` takes an already-created `SpendingAlertsView` and a render callback, subscribes to each of the view's five business ports (`assessment`, `publication`, `coverage`, `issues`, `startup` — the exact keys of the frozen view object at examples/spending-alerts/causal-preset.ts:171-177), and calls `render` with the current values plus an explicit `unavailable` list. It never constructs a graph, node, resource, capability or input fact; the view is the caller's original object (README.md:91-96).\n\nValue semantics. `Node.subscribe` is push-on-subscribe: a new sink receives `START`, then cached `DATA` (or `DIRTY` if dirty) (packages/ts/src/node/node.ts:416-419, 445-458). The adapter therefore treats only `DATA` as a usable value, and on `INVALIDATE` or `ERROR` it deletes the stored value instead of keeping the stale one. That matches the documented meaning: \"Missing value or ERROR/INVALIDATE | No current usable fact on that port; do not retain the old displayed value\" (README.md:138). `INVALIDATE` clears the node cache to SENTINEL, drops the replay ring and broadcasts downstream (packages/ts/src/node/node-output-runtime.ts:451-459), so a later `DATA` is a genuinely new occurrence, not a replay of the old one. `START`, `DIRTY`, `RESOLVED`, `COMPLETE` and `TEARDOWN` carry no new usable value and are ignored for display; `RESOLVED` in particular is an undirty balance signal, not a value (node-output-runtime.ts:178-181).\n\nWhat \"a value becoming unavailable\" means. It is a per-port fact about the current graph state: the port has no current usable value, so the display must show it as unavailable rather than as the last value. It is not a statement that the run ended, that the instance stopped, or that an outstanding obligation was recovered. The five latest port values are explicitly not an atomic multi-port snapshot (README.md:142; causal-view-binding.ts:9-13), so the observation is a set of independent latest values, and a missing publication does not mean no request was submitted (README.md:129-130).\n\nWhat unmounting means. The returned cleanup function only ends observation: it unsubscribes every sink and is idempotent. Unsubscribing the last sink deactivates the node (node.ts:441-444), and deactivation clears compute caches and dep state (node-lifecycle-runtime.ts:76-102) — but it does not terminate the instance, release the resource, or cancel retained obligations. The README states this directly: \"Panel detach | Observation stops; the running instance retains outstanding obligations\" (README.md:143), and the application must preserve retained records instead of treating panel cleanup as recovery (README.md:146-151). The adapter also does not call `runEndReady`/`inspect().normalEndReady`, which are readiness conditions, not proof of termination or release (README.md:144).\n\nBoundaries. The adapter adds no business input facts and no new running instance; it does not reimplement view creation (task.json instructions; README.md:39-44). It also does not use the public `subscribeNodeValues` adapter, which ignores INVALIDATE and is not a substitute for this view contract (README.md:159-161).",
+    "concepts": {
+      "read": [
+        "occurrence",
+        "admission",
+        "retained-evidence",
+        "identity",
+        "lifecycle",
+        "authority",
+        "revision",
+        "provenance"
+      ],
+      "required": [
+        "occurrence",
+        "retained-evidence",
+        "identity",
+        "lifecycle"
+      ],
+      "firstExpansion": "occurrence"
+    }
+  },
+  "entryTiming": {
+    "startedMs": 0,
+    "submittedMs": 29392,
+    "elapsedMs": 29392,
+    "firstSourceRead": {
+      "path": "examples/spending-alerts/README.md",
+      "line": 1,
+      "operation": "read",
+      "elapsedMs": 1188
+    }
+  },
+  "entryStatus": "submitted",
+  "usage": {
+    "inputTokens": 855886,
+    "outputTokens": 4836,
+    "elapsedMs": 29396
+  },
+  "costUSD": 0.029250600000000005,
+  "turns": 24,
+  "counts": 25,
+  "operations": 47,
+  "fatal": null,
+  "failureScope": null,
+  "pendingReservation": null,
+  "retryAllowed": false
+}
