@@ -24,7 +24,16 @@ npm run test:reference
 
 The graph: `createGraph({ report })` takes an optional host reporter. Then `state(id, initial)`, `node(id, deps, fn, { terminal, quiet })`,
 `subscribe(sinkId, id, callback?)`, `unsubscribe`, `set`, `invalidate`, `complete`, `error`, `batch`,
-`get(id)` (`active`, `has`, `value`, `ended`) and `trace`.
+`get(id)` (`active`, `has`, `value`, `ended`), `status(id)` and `trace`.
+
+`status(id)` is K10 as R-status-enum@2 has it, decided with the user on 2026-11-06: a projection of
+what the kernel already holds, with no stored status. `cache` is `empty` (no value), `stale` (a
+notification it received or sent in the current wave is not settled yet) or `ready`; `output` is
+`open`, `completed` or `errored`; `lifecycle` is `inactive`, `active` or `closing` (its lifetime's
+cleanups are running). Since no DIRTY spans time, `stale` is visible only from inside a wave, for
+example in a sink callback. TS stores one of seven values instead (`sentinel`, `pending`, `dirty`,
+`settled`, `resolved`, `completed`, `errored`); `settled` and `resolved` (last settlement DATA or
+RESOLVED) have no counterpart here, and `pending` is never set in TS.
 
 A node function has the TS baseline's shape, `(ctx) => void` (R-fn-contract, D8):
 
@@ -57,6 +66,7 @@ registration while the lifetime is open is accepted, and `onInvalidate` hooks ar
 | `deps[i].has`/`value` are public | The dependency cache sugar reads sits behind a symbol (`CTX_DEP_CACHE`) | Interpreter shape |
 | Arrays keep written order | Every `_down` array is sorted by tier | O13 |
 | A dependent runs once on all arrays a dependency sent in the wave; they reach each subscriber after the function returned, all arrays to one subscriber, then the next | Each `_down` call is delivered to all subscribers at once, while the function runs | Delivering after the run comes from P9; one delivery per subscriber keeps a dependent from settling between two arrays of the same dependency |
+| A sink receives one array per call, `cb(msgs)` | A sink receives one message per call plus delivery metadata, `sink(msg, { wave, last })` | R-wave-boundary@2: the array is the unit. Same information; found 2026-11-07 while writing the H5 module, not listed before |
 | `signal` | No signal on ctx | R-fn-contract@2 and R-ctx-lifetime (draft) |
 | A registration after close runs once at once | Ignored | R-cleanup-hooks@2 (draft) |
 | No `up`, `upNext`, `rewireNext`, `pull`, `environment`, `track`, `persist` | Present | Not covered yet (K9, modules) |
@@ -71,10 +81,13 @@ The kernel does not know or care whether a late `ctx.down` came from async work.
 - K3 START snapshot with the retained value; idempotent subscription. A new node's activation run
   sees its dependencies' snapshots as that run's input.
 - K4 invocation view and private state; a throw becomes ERROR (P10).
+- K10 `status(id)` as above. A quiet node is settled for status once it has absorbed its input,
+  since its value changes only in its later wave. `stale` is the `pending` flag that P3 marking
+  sets, cleared where the node settles; `closing` is a lifetime that exists and is no longer open.
 - K5 terminal policy as auto or manual per kind (DS-17 O6); ended output cannot be acquired (P5).
 - K6: `invalidate` on a state, and an invalidated input, clear the retained value down the cone and
   run `onInvalidate` hooks after the value is gone. No DIRTY, no function run for the INVALIDATE. A
-  repeat, or a node with no value, is a no-op; an announced node then settles with RESOLVED. What an
+  repeat, or a node with no value, is a no-op; a pending node then settles with RESOLVED. What an
   input sent before its INVALIDATE in the wave is dropped; what it or another input sent after is
   ordinary input, and the function runs for it after the invalidation (and its hooks) took effect.
 - K7 lifetimes: each activation opens one. Closing it (last release or terminal) aborts `signal`,
@@ -97,19 +110,32 @@ The kernel does not know or care whether a late `ctx.down` came from async work.
 - P9: the invocation that started async work settles its wave at once, so no DIRTY stays open while
   the work runs. Results arrive in arrival order and combine with whatever the other inputs hold then.
 - H6: `{ quiet: true }` records its own dirty inputs but does not pass DIRTY on, so its dependents do
-  not wait for it. Everything it outputs, including an invalidation or an inherited ERROR, is a later
-  wave from it; the arrays of one settlement go out together in that wave. Silence needs no RESOLVED.
+  not wait for it. What it outputs, including an inherited ERROR, is a later wave from it; the arrays
+  of one settlement go out together in that wave. Silence needs no RESOLVED. An INVALIDATE carries no
+  DIRTY, so a quiet node passes it on at once, as TS does (since the second simplification pass).
 
 Mutations checked on 2026-11-06 for O13 and array boundaries, each failing at least one test: no
 split at INVALIDATE; tier sort restored; a run's `ctx.down` calls merged; `waves` flattened; a
 dependency's arrays delivered to a dependent one by one; the invalidation applied after the run;
 a terminal allowed anywhere; a dependent keeping what came before an INVALIDATE; resumeAll merging
-its held arrays. After aligning hooks with TS: invalidate hooks consumed after running; a late
-registration rejected; a late registration ignored.
+its held arrays. For K10: settling not clearing stale; dependents never stale; a quiet node, or a
+quiet node inheriting an ERROR, staying stale; no closing state. After aligning hooks with TS: invalidate hooks consumed after running; a late
+registration rejected; a late registration ignored. Rerun after the second simplification pass, each
+still failing at least one test: no split; merged `ctx.down` calls; arrays delivered one by one;
+invalidation after the run; a quiet INVALIDATE as a later wave; an applied INVALIDATE applied again;
+settling not clearing stale; dependents never stale; a quiet node, or one inheriting an ERROR,
+staying stale; no closing state; no kernel RESOLVED; requests run immediately; upstream writes
+allowed; activation output not published; invalidate hooks consumed. After the `apply`/`deliver`
+split: the invalidation applied again with the output (12 tests fail); applied after the run; an
+ineffective INVALIDATE kept; late output in a batch not staged; a quiet INVALIDATE delayed; no kernel
+RESOLVED; no DIRTY prefix; an ended node not closing its lifetime. The last one survived every test
+until kernel test "K5/K7: a node that ends closes its lifetime at once, while still subscribed" was
+added.
 
 Mutations checked on 2026-11-06 after the simplification pass, each failing at least one test: no
 batch-wide DIRTY prepass; no kernel RESOLVED; requests run immediately; a quiet node forwarding DIRTY,
-or publishing its output, invalidation or ERROR in the current wave; INVALIDATE always effective; an
+or publishing its output or ERROR in the current wave (the invalidation case was reversed in the
+second pass); INVALIDATE always effective; an
 invalidated input running the function; closed-lifetime output not dropped; cleanups accumulating
 across runs; own cleanups before dependency release; an async batch body accepted; `ctx.down` after
 return lost; `ctx.down` during the run treated as a later wave. The unsubscribe-during-a-wave test
@@ -130,6 +156,47 @@ questioned and, if kept, listed. Removed in this pass:
   counter and `inspect` with its `invocations` and `dropped` counters. Tests count invocations
   themselves.
 
+Second pass, 2026-11-06, after O13, array boundaries, quiet arrays and K10 had been added. Removed:
+
+- The `priorHooks` path that carried a quiet node's invalidate hooks to its later wave. A quiet
+  node now passes an INVALIDATE on at once (it carries no DIRTY, and TS does the same), so every
+  node applies an invalidation the same way. Behavior change: kernel test "H6: a quiet node passes
+  an INVALIDATE on at once...".
+- The K10 `open` flag: it was `announced` cleared at settlement. `announced` now means "notified in
+  this wave and not settled yet"; every node clears it where it settles, so the reset of all nodes
+  at the end of each wave (and the `try/finally` around it) went too.
+- The K10 `closing` flag: a closed lifetime is now dropped (`n.life = null`), so "a lifetime that
+  exists and is no longer open" is closing.
+- The `running` stack: node functions never run nested (requests during a run are queued), so one
+  variable is enough.
+- The activation run's own copy of "apply output to the node": it uses `publish`, the node having no
+  subscriber yet.
+
+`publish` split into `apply` and `deliver`, 2026-11-06, on the user's decision. `apply` writes a
+node's own output into what it holds (value, invalidation with its hooks, terminal) and returns what
+remains to send; `deliver` adds the kernel RESOLVED, announces if needed, prefixes DIRTY, hands the
+arrays to each subscriber and closes an ended lifetime. `publish` is `deliver(apply(...))`. TS has the
+same two halves (`_down` and `_emitToSubs`). Settle applies an input's invalidation with `apply`
+before the function runs and later delivers it together with the run's output, so the `applied`
+parameter, its skip-the-first-array case and settle's own copy of the invalidation code are gone.
+Without it, a second application would have found no value and dropped the INVALIDATE. The two
+helpers for later output (`publishLater`, `publishFramesLater`) became one, `later`; inside a batch
+body it stages the arrays as one accumulated array, which is what staging did before.
+
+Renamed 2026-11-07 after comparing with TS and other reactive libraries, on the user's decision:
+`publish` → `down` (TS `_down`; RxJS has a deprecated `publish()` operator with another meaning),
+`announce`/`announced`/`dirtyDeps` → `markPending`/`pending`/`pendingDeps` (TS `_markDirty`; the
+user prefers "pending", which other libraries use for "possibly stale"), `retireInputs` →
+`releaseDeps` (one verb with `release`), `life` → `lifetime` (R-ctx-lifetime). The wire message
+keeps the spec's name DIRTY; renaming it is DS-17 O15. The earlier sections above keep the names
+they were written with. `runWave` stays although TS `_runWave` runs one node's function (the
+kernel's `invoke`): here it runs the whole wave.
+
+Tried and kept: deriving an input's ended state from the dependency's own `ended`. It differs from
+what the node has received within one wave (draft R-ctx-wave-data: received, not current upstream),
+so a node completed before its dependency's own COMPLETE reached it. Kernel test "K5: automatic
+COMPLETE waits until the node has received every dependency's terminal..." now pins this.
+
 Kept although not discussed before, with the reason:
 
 | Kept | Why |
@@ -145,11 +212,12 @@ Kept although not discussed before, with the reason:
 
 Each of these is left out rather than approximated:
 
-- K9 control routing and declared control pairs; K10 node interface and status; START snapshots of an
-  unsettled node.
+- K9 upward control routing: not needed for pause or demand (control pairs, DS-17 P11); START
+  snapshots of an unsettled node; the released lifecycle of R-status-enum@2.
 - Upward INVALIDATE (R-up-at-source); INVALIDATE before a node's first invocation (R-first-run-gate).
-- Modules: replay, checkpoint, rewire, restart owners. Pause and demand are in
-  [../modules/](../modules/README.md).
+- Modules: replay, checkpoint, rewire, restart owners. Pause, demand and observation (H5) are in
+  [../modules/](../modules/README.md). H5 needed no kernel hook: a subscriber already receives
+  what a node committed.
 
 ## Observations so far
 

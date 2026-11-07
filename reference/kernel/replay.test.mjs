@@ -149,7 +149,7 @@ test("C-33: a close requested during an invocation waits until it returns; clean
   assert.deepEqual(log, ["run q2", "deliver s <- q: [DIRTY, DATA(2)]", "cleanup q2"]);
 });
 
-test("C-33: old-life output is dropped, and a fresh life gets a distinct ctx and signal", () => {
+test("C-33: old-lifetime output is dropped, and a fresh lifetime gets a distinct ctx and signal", () => {
   const g = createGraph();
   const ctxs = [];
   g.state("a", 1);

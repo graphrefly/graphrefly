@@ -94,7 +94,7 @@ The pause clauses of C-30, C-31 and C-36 are replayed in
    holds anything, and clears its own state on every INVALIDATE that matters. `id` shows nothing
    while paused. Each node keeps only its own `ctx.state`; nothing is shared through the handle.
    The `[DIRTY, RESOLVED]` that follows such an INVALIDATE on resume does not bring a value back:
-   RESOLVED settles the announced DIRTY and refers to no value, so downstream stays absent and value
+   RESOLVED settles the pending DIRTY and refers to no value, so downstream stays absent and value
    sugar does not run (R-resolved-undirty). Dropping it would leave that DIRTY open; reporting an
    error would turn every pause or resume after an INVALIDATE into an ERROR.
 4. **The two TS modes are placement, and a raw function behind a pausable still runs.** Default
@@ -165,8 +165,8 @@ id.pullDemand ──┘
 | Subscription is START-only | **Not here.** A later subscriber gets the last served value in its START, because the kernel puts the retained value in every START. Making a node START-only is DS-17 H2, a kernel option; left out until a real case needs it |
 | Output carries no ACK or guaranteed DATA | Same: `serve` may stay silent, and then nothing goes out |
 
-An INVALIDATE discards what was held before it and reaches subscribers as a later wave (the
-holder is quiet). TS passes a pull node's INVALIDATE on at once.
+An INVALIDATE discards what was held before it and reaches subscribers at once, as in TS: a quiet
+node passes an INVALIDATE on in the current wave, since it carries no DIRTY.
 
 The log works like `${id}.pauseLog`: it republishes its queue on every arrival so that it always has
 a value while holding anything, which is how its own `onInvalidate` sees every INVALIDATE.
@@ -189,3 +189,43 @@ node's arrays...").
 | The demand record `{ seq, params }` | A fresh value per pull, so every pull is DATA, and a sequence so the log can tell an old request (there before activation) from a new one |
 | `serve` gets a view of ctx: the holder's own ctx with `deps` replaced by the held input and `pull` added | Keeps the TS shape (`ctx.deps` input, `ctx.pull.params`); `down`, `state` and the hooks are the holder's own |
 
+## Observation, H5 ([observe.mjs](observe.mjs), [observe.test.mjs](observe.test.mjs))
+
+DS-17 lists H5, committed-output observation, as a kernel hook used by revision evidence, the
+flagship's evidence retention and replay. It turned out to need no hook: a kernel subscriber
+already receives exactly what a node committed, after the node applied it. An INVALIDATE that
+removed nothing never reaches it; the kernel's own RESOLVED and DIRTY do. `observe(g, ids, sink)`
+subscribes one sink per node and hands each array on as `{ id, msgs }`, in delivery order, which is
+the order the wave reached the nodes. It returns a function that stops it.
+
+It works like TS `Graph.observe` (a real subscriber: it activates a cold node and keeps it active).
+The differences:
+
+| Here | TS `Graph.observe` | Why |
+|---|---|---|
+| An event carries one array | An event carries one message | Kernel sinks receive arrays (R-wave-boundary) |
+| No `tier` | `tier: messageTier(msg[0])` | Derived: `TIER[msg[0]]` |
+| No `seq` | A graph-local sequence shared with topology events | Events arrive in order, and a log that appends keeps it. The kernel has no topology events to interleave with |
+| The caller passes ids | No path means the whole graph; a `::` prefix means a subtree | The builder knows the ids (O14); the kernel has no mount paths |
+
+What the tests pin:
+- array boundaries and propagation order;
+- an ineffective INVALIDATE is not observed, and the kernel's RESOLVED is;
+- R-node-revision evidence can be counted from the events: the START array is installation and is
+  skipped, DIRTY is skipped, an equal DATA still counts, and a repeat INVALIDATE never arrives;
+- other subscribers are unaffected; two observers are two subscribers;
+- a write from inside an observer is a later wave;
+- a quiet node's output is observed in its later wave.
+
+Mutations, each failing at least one test:
+- one sink id shared by every observer (this needed the two-observer test);
+- a stop that does nothing;
+- only the last message handed on;
+- consecutive arrays from one node merged.
+
+### New things this module introduces
+
+| New | Why it stays |
+|---|---|
+| `observe(g, ids, sink)` and the `{ id, msgs }` event | TS's envelope minus the two fields that are derived (`tier`) or not needed without topology events (`seq`) |
+| The sink id `observe#n` | The kernel's subscribe takes a sink id; one per observer keeps two observers of a node apart |

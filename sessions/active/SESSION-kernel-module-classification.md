@@ -114,7 +114,7 @@ callback registration 属于 lifetime。原来分散在各条规则里的"旧请
 | H2 | Subscription snapshot provider: what a new subscriber gets in its START array (default: the retained value) | Replay, demand | **L2-Q15** makes onSubscribe non-replaceable (O1) |
 | H3 | Invocation gate: defer a node's function call while keeping its latest input | Default pause on sources | Only if O8 keeps it |
 | H4 | Construction-time seed: retained value, private state and first-call history | Checkpoint, rewire, persist | Must stay quiescent-only unless O5 says otherwise |
-| H5 | Committed-output observation | Revision, evidence, replay | Exists (observe/inspection) |
+| H5 | Committed-output observation | Revision, evidence, replay | Exists (observe/inspection). 2026-11-07: the reference kernel needs no hook for it; an ordinary subscriber receives what a node committed, and `reference/modules/observe.mjs` wraps it like TS `Graph.observe` |
 | H6 | Quiet boundary: consume an input wave without forwarding DIRTY; publish later as a new wave | Flagship lifecycle port, demand | Today folded into R-pull; separating it is new wording, not new behavior |
 
 ## 消息类别
@@ -167,6 +167,7 @@ rewire、resubscription 和 dynamic 节点。简报也不要求 batch；batch �
 | O12 | Reject a public batch opened from an observer, initialization or lifecycle callback before its body runs (C-28)? Found in the replay. **Decided by the user 2026-11-06:** no special clause. Such a batch stages its writes and commits later as one wave, like any other request made during a wave (K8); with no DIRTY before commit there is nothing for it to disturb. | Resolved: allowed, no extra rule |
 | O13 | Does the kernel reorder one array by tier (R-tier@1/@2 "ordinary live output is stably normalized by tier"; TS sorts every `_down`)? Found while making resumeAll keep array boundaries: `[1, INV, 2, 3]` became `[1, 2, 3, INV]` and the author's final value 3 became absent. **Decided by the user 2026-11-06:** no tier sort. Messages keep their written order; a terminal must be last; DATA and RESOLVED still cannot share an array; an array is split at its last INVALIDATE, what came before it is dropped, and the INVALIDATE goes out as its own array: `[1, INV, 2, 3]` is published as `[INV]` then `[2, 3]`. So INVALIDATE never shares an array with a value, K6 ("runs no function") has no exception, and the waveData absence marker is not needed. Same day, the reference kernel was brought back to R-wave-boundary@2 and TS: each `ctx.down` call is its own array, and `ctx.deps[i].waves` keeps the per-array boundaries like TS `waveData` (the kernel had merged a run's calls and flattened the view without saying so). | Resolved: in written order, split at INVALIDATE |
 | O14 | Should a consumer be able to reach a controller without holding its handle, as TS's `ctx.up([["PULL", { pullId }]])` does? One option was routing only at wiring time (walk the declared dependencies once at construction to find the keyed node). **Decided by the user 2026-11-06:** not needed. Whoever builds the graph, a developer or an agent, already knows the pausable's or holder's id or handle, so anonymity buys nothing. | Resolved: no, the builder passes the handle |
+| O15 | Rename the wire message DIRTY to PENDING? In TS and the spec DIRTY means "possibly stale, a settlement is coming", while Vue, alien-signals, Solid and the TC39 proposal use dirty for "definitely stale" and pending/check for "possibly". The user prefers pending (2026-11-07); the reference kernel already calls the flag and the marking step `pending`/`markPending`. The spec is frozen, so the message keeps its name until the draft rules are revisited (R-two-phase, R-tier, K2, every trace). RESOLVED (Elm's `NoChange`) and settle (Promise sense) carry a similar risk and could be reviewed then. | Open: proposed, waits for the rule revision |
 
 ## 分类时发现的不一致
 
@@ -216,6 +217,18 @@ rewire、resubscription 和 dynamic 节点。简报也不要求 batch；batch �
    第二个模块 demand（PULL）：用户 2026-11-06 决定也走声明的控制对，`pull(params)` 是 bundle 的方法，写
    `${id}.pullDemand`；holder 是 H6 quiet 节点，平时下游什么都收不到，每次 pull 运行一次。于是 PAUSE、RESUME、
    PULL 都不必进内核，O2 的答案是内核没有类别 1 消息。和 TS 的差异：新订阅照样拿到上次服务的结果（START-only
-   要 H2，先不做）。顺带修了内核：quiet 节点一次 settle 发出的多个数组放在同一个稍后 wave 里。每次 pause/resume 让下游多收一次 [DIRTY, RESOLVED]，用户接受。TLA+ 的 TerminalClearsPauseState 冲突在模块模型里按
+   要 H2，先不做）。顺带修了内核：quiet 节点一次 settle 发出的多个数组放在同一个稍后 wave 里。
+   K10 节点状态：用户 2026-11-06 选了草案 R-status-enum@2 的推导式。`status(id)` 返回 cache（empty/stale/ready）、
+   output（open/completed/errored）、lifecycle（inactive/active/closing），不另存状态。因为没有 DIRTY 跨越时间，
+   stale 只在 wave 内部看得到。TS 的 settled/resolved 区分在这里没有对应。
+   第二轮精简（同日）：去掉 priorHooks（quiet 节点的 INVALIDATE 改为当场传下去，和 TS 一样，因为它不带 DIRTY）、
+   K10 的 open 和 closing 两个标记（分别并入 announced、由 lifetime 推导）、wave 结束时的全量重置、running 栈，
+   以及激活时重复的输出应用代码。试过但保留：输入的 ended 不能由上游当前状态推导（要用已收到的，R-ctx-wave-data）。
+   随后用户决定把 publish 拆成 apply（写节点自己的值、作废、终止）和 deliver（补 RESOLVED、通知、加 DIRTY、交给订阅者），
+   对应 TS 的 `_down` 和 `_emitToSubs`；`applied` 参数因此去掉，两个"稍后输出"函数合成一个 `later`。
+   2026-11-07：对照 TS 和其他响应式库改名（publish → down，announce → markPending，dirtyDeps → pendingDeps，
+   retireInputs → releaseDeps，life → lifetime）；线上消息 DIRTY 是否改名为 PENDING 记为 O15。
+   H5 已观察提交的输出：不需要内核钩子，普通订阅者收到的就是节点提交的内容；`observe` 模块按 TS
+   `Graph.observe` 的样子包了一层。发现一个以前没列出的 TS 差异：内核的 sink 每次收一个数组，TS 的 sink 每次收一条消息。每次 pause/resume 让下游多收一次 [DIRTY, RESOLVED]，用户接受。TLA+ 的 TerminalClearsPauseState 冲突在模块模型里按
    R-pause-lockset 解决：终止后锁还在控制 state 里。
 3. 然后根据结果恢复、修订或取代 B140。

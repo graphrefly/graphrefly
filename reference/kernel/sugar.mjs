@@ -11,7 +11,7 @@ const occurrences = (d) => d.waves.flat();
 
 // derived: runs once every dependency has a value; recomputes from latest values when
 // any dependency delivered DATA in this wave. All-RESOLVED settlement emits nothing, so
-// the kernel settles the announced DIRTY with RESOLVED.
+// the kernel settles the pending node with RESOLVED.
 export const derived = (f) => (ctx) => {
   if (!ctx.deps.every((d) => d.has) || !ctx.deps.some((d) => occurrences(d).length)) return;
   ctx.down([["DATA", f(...ctx.deps.map((d) => d.value))]]);

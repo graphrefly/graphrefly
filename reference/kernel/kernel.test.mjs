@@ -427,7 +427,7 @@ test("P9 sugar: latestAsync publishes only the newest request and aborts the res
   assert.equal(calls[2].signal.aborted, true, "closing the lifetime aborts the request in flight");
 });
 
-test("K7: output through a closed lifetime's ctx is dropped; the signal and late cleanup follow the old life", () => {
+test("K7: output through a closed lifetime's ctx is dropped; the signal and late cleanup follow the old lifetime", () => {
   const g = createGraph();
   g.state("a", 1);
   const ctxs = [];
@@ -475,6 +475,19 @@ test("K7: each run replaces the previous run's cleanup; close releases dependenc
   assert.deepEqual(reports, [{ source: "cleanup q", error: "leak" }]);
 });
 
+test("K5/K7: a node that ends closes its lifetime at once, while still subscribed", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  let ctx = null;
+  let closed = 0;
+  g.node("q", ["a"], (c) => { ctx = c; c.onDeactivation(() => { closed += 1; }); });
+  g.subscribe("s", "q");
+  assert.deepEqual(during(g, () => g.complete("a")), ["s <- q: [COMPLETE]"]);
+  assert.equal(closed, 1, "its cleanups ran");
+  assert.equal(ctx.signal.aborted, true, "its signal is aborted");
+  assert.equal(g.get("a").active, false, "its dependency was released");
+});
+
 test("K6: INVALIDATE clears values down the cone once, without DIRTY and without running functions", () => {
   const g = createGraph();
   const log = [];
@@ -497,7 +510,7 @@ test("K6: INVALIDATE clears values down the cone once, without DIRTY and without
   assert.equal(d.calls, 2, "activation plus the recompute; invalidation ran nothing");
 });
 
-test("K6/P4: an announced node whose invalidation is a no-op still settles with RESOLVED", () => {
+test("K6/P4: a pending node whose invalidation is a no-op still settles with RESOLVED", () => {
   const g = createGraph();
   g.state("a", 1);
   g.state("x");
@@ -522,14 +535,14 @@ test("H6: a quiet node does not make its dependents wait; its output is a later 
   ]);
 });
 
-test("H6: a quiet node's invalidation and inherited ERROR are later waves too", () => {
+test("H6: a quiet node passes an INVALIDATE on at once (it carries no DIRTY); an inherited ERROR is a later wave", () => {
   const g = createGraph();
   g.state("a", 1);
   g.node("q", ["a"], map((v) => v * 10), { quiet: true });
   g.node("f", ["q", "a"], derived((q, a) => `${q}/${a}`));
   g.subscribe("sq", "q"); // q's own sink comes first in q's delivery order
   g.subscribe("sf", "f");
-  assert.deepEqual(during(g, () => g.invalidate("a")), ["sf <- f: [INVALIDATE]", "sq <- q: [INVALIDATE]"]);
+  assert.deepEqual(during(g, () => g.invalidate("a")), ["sq <- q: [INVALIDATE]", "sf <- f: [INVALIDATE]"]);
   g.set("a", 2);
   assert.deepEqual(during(g, () => g.error("a", "down")), ["sf <- f: [ERROR(\"down\")]", "sq <- q: [ERROR(\"down\")]"]);
 });
@@ -679,4 +692,88 @@ test("H6: a quiet node's arrays from one settlement go out together, as one late
     "sy <- y: [DIRTY, RESOLVED]",
   ]);
   assert.deepEqual(seen, [[[5], [6]]], "y runs once on both arrays");
+});
+
+test("K10: status is derived: empty/stale/ready, open/completed/errored, inactive/active/closing", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  g.node("d", ["a"], map((v) => v * 2));
+  const status = (id) => Object.values(g.status(id)).join(" ");
+  assert.equal(status("d"), "empty open inactive", "reading does not activate");
+  assert.equal(g.get("d").active, false);
+  g.subscribe("s", "d");
+  assert.equal(status("d"), "ready open active");
+  g.invalidate("a");
+  assert.equal(status("d"), "empty open active");
+  g.set("a", 3);
+  g.complete("a");
+  assert.equal(status("d"), "ready completed active", "the value stays; output has ended");
+  g.state("e", 0);
+  g.subscribe("se", "e");
+  g.error("e", "x");
+  assert.equal(status("e"), "ready errored active");
+});
+
+test("K10: stale is visible only inside a wave, for a node whose notification is not settled yet", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  g.node("b", ["a"], map((v) => v + 1));
+  g.node("c", ["b"], map((v) => v + 1));
+  const seen = [];
+  // s sees a's array first; b and c are pending, not settled at that moment.
+  g.subscribe("s", "a", (msgs) => { if (msgs[0][0] === "DIRTY") seen.push(["a", "b", "c"].map((id) => g.status(id).cache)); });
+  g.subscribe("sc", "c", (msgs) => { if (msgs[0][0] === "DIRTY") seen.push(["a", "b", "c"].map((id) => g.status(id).cache)); });
+  g.set("a", 5);
+  assert.deepEqual(seen, [["ready", "stale", "stale"], ["ready", "ready", "ready"]]);
+  assert.deepEqual(["a", "b", "c"].map((id) => g.status(id).cache), ["ready", "ready", "ready"], "after the wave, never stale");
+});
+
+test("K10: lifecycle is closing while a lifetime's cleanups run, then inactive", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  let during = null;
+  g.node("q", ["a"], (ctx) => { ctx.onDeactivation(() => { during = g.status("q").lifecycle; }); });
+  g.subscribe("s", "q");
+  g.unsubscribe("s", "q");
+  assert.equal(during, "closing");
+  assert.equal(g.status("q").lifecycle, "inactive");
+});
+
+test("K10: a quiet node is not stale while its later wave is pending", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  g.node("q", ["a"], map((v) => v * 10), { quiet: true });
+  g.state("t", 0);
+  const seen = [];
+  g.subscribe("sq", "q");
+  g.subscribe("sa", "a", (msgs) => { if (msgs[0][0] === "DIRTY") seen.push(g.status("q").cache); });
+  g.set("a", 2);
+  assert.deepEqual(seen, ["ready"], "q keeps its value through this wave; its change is a later wave");
+  assert.equal(g.get("q").value, 20);
+});
+
+test("K10: a quiet node inheriting an ERROR is not stale once it has settled in that wave", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  g.state("b", 1);
+  g.node("q", ["a", "b"], (ctx) => { ctx.down([["DATA", "q"]]); }, { quiet: true });
+  const seen = [];
+  g.subscribe("sq", "q");
+  // b's subscriber runs after q settled: q was marked pending by b and got a's ERROR.
+  g.subscribe("sb", "b", (msgs) => { if (msgs[0][0] === "DIRTY") seen.push(g.status("q").cache); });
+  g.batch(() => { g.error("a", "boom"); g.set("b", 2); });
+  assert.deepEqual(seen, ["ready"], "settled; its ERROR is a later wave");
+  assert.equal(g.status("q").output, "errored");
+});
+
+test("K5: automatic COMPLETE waits until the node has received every dependency's terminal, not just until they ended", () => {
+  const g = createGraph();
+  g.state("b", 1);
+  g.node("x", ["b"], map((v) => v));
+  g.node("m", ["x", "b"], derived((x, b) => x + b));
+  g.subscribe("sx", "x");
+  g.subscribe("sb", "b");
+  g.subscribe("sm", "m"); // b delivers to x, then sb, then m
+  assert.deepEqual(during(g, () => g.complete("b")), ["sx <- x: [COMPLETE]", "sb <- b: [COMPLETE]", "sm <- m: [COMPLETE]"],
+    "m has x's COMPLETE first, but completes only when b's own COMPLETE reaches it");
 });

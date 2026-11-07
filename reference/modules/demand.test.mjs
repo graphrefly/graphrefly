@@ -89,7 +89,7 @@ test("C-32: a pull inside a batch is served after the batch commits; a throwing 
   assert.deepEqual(seen.map((x) => x.params), ["p"]);
 });
 
-test("an INVALIDATE discards what was held before it; it passes to subscribers as a later wave", () => {
+test("an INVALIDATE discards what was held before it; it reaches subscribers at once", () => {
   const g = createGraph();
   g.state("a", 0);
   const seen = [];
