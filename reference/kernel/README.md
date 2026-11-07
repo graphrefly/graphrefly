@@ -24,7 +24,11 @@ npm run test:reference
 
 The graph: `createGraph({ report })` takes an optional host reporter. Then `state(id, initial)`, `node(id, deps, fn, { terminal, quiet })`,
 `subscribe(sinkId, id, callback?)`, `unsubscribe`, `set`, `invalidate`, `complete`, `error`, `batch`,
-`get(id)` (`active`, `has`, `value`, `ended`), `status(id)` and `trace`.
+`get(id)` (`active`, `has`, `value`, `ended`), `status(id)`, `describe()` and `trace`.
+
+`describe()` is P1's "topology is data", added 2026-11-07 for the flagship (S1 compares the
+topology of a base and a candidate): every node in creation order as `{ id, kind, deps, quiet }`, a
+copy. It is the structural part of TS `describe()`, with no values, status or explain paths.
 
 `status(id)` is K10 as R-status-enum@2 has it, decided with the user on 2026-11-06: a projection of
 what the kernel already holds, with no stored status. `cache` is `empty` (no value), `stale` (a
@@ -225,6 +229,8 @@ Each of these is left out rather than approximated:
 - Modules: replay, checkpoint, rewire, restart owners. Pause, demand and observation (H5) are in
   [../modules/](../modules/README.md). H5 needed no kernel hook: a subscriber already receives
   what a node committed.
+- The flagship acceptance (B139 S1–S8) runs on this kernel in [../flagship/](../flagship/README.md);
+  its only kernel addition was `describe()`.
 
 ## Observations so far
 

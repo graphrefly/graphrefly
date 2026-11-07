@@ -694,6 +694,20 @@ test("H6: a quiet node's arrays from one settlement go out together, as one late
   assert.deepEqual(seen, [[[5], [6]]], "y runs once on both arrays");
 });
 
+test("P1: describe is the declared topology as data, in creation order", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  g.node("q", ["a"], () => {}, { quiet: true });
+  g.node("c", ["a", "q"], () => {});
+  assert.deepEqual(g.describe(), [
+    { id: "a", kind: "state", deps: [], quiet: false },
+    { id: "q", kind: "node", deps: ["a"], quiet: true },
+    { id: "c", kind: "node", deps: ["a", "q"], quiet: false },
+  ]);
+  g.describe()[2].deps.push("x");
+  assert.deepEqual(g.describe()[2].deps, ["a", "q"], "a copy: changing it changes no node");
+});
+
 test("K10: status is derived: empty/stale/ready, open/completed/errored, inactive/active/closing", () => {
   const g = createGraph();
   g.state("a", 1);

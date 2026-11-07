@@ -144,7 +144,7 @@ PAUSE/RESUME，holder 处理 PULL，处理之后 holder 的结果是一个新 wa
 
 根据 B139 简报和 D790/D791：需要 K1–K8、K10、K11，用于保留证据的钩子 H5，以及用于安静生命周期端口的
 钩子 H6。旗舰的 occurrence 身份、revision domain、currentness、按 key 汇合、业务终态和 effect 结果，
-全部是带类型的 DATA（D791 写明不改协议），所以它们依赖 P2，但不需要新的内核规则。旗舰不需要 pause、
+全部是带类型的 DATA（D791 写明不改协议），所以它们依赖 P2，但不需要新的内核规则。2026-11-07 已在参考内核上用 S1–S8 验证，见下一步第 2 条。旗舰不需要 pause、
 resumeAll、demand 服务、replay buffer、checkpoint 或 restore（崩溃恢复不在它的范围内）、surgical
 rewire、resubscription 和 dynamic 节点。简报也不要求 batch；batch 仍留在内核，是因为 UI 那类"多次写入
 保持一致"的场景依赖它。
@@ -231,4 +231,13 @@ rewire、resubscription 和 dynamic 节点。简报也不要求 batch；batch �
    H5 已观察提交的输出：不需要内核钩子，普通订阅者收到的就是节点提交的内容；`observe` 模块按 TS
    `Graph.observe` 的样子包了一层。发现一个以前没列出的 TS 差异：内核的 sink 每次收一个数组，TS 的 sink 每次收一条消息。每次 pause/resume 让下游多收一次 [DIRTY, RESOLVED]，用户接受。TLA+ 的 TerminalClearsPauseState 冲突在模块模型里按
    R-pause-lockset 解决：终止后锁还在控制 state 里。
+   旗舰验收（2026-11-07，[reference/flagship/](../../reference/flagship/README.md)）：B139 简报的 S1–S8 全部在
+   参考内核上跑通，图和 plain 两臂各 22 个测试，同一个独立 verifier，真实的本地 inbox 文件。occurrence 身份、
+   currentness、admission、按 key 汇合、业务终态、守恒和覆盖全是 DATA，D791 的"不改协议"在这个内核上成立。
+   内核只加了只读的 `describe()`（P1，S1 要比较拓扑）。用到的：state、node、私有状态、每次运行多个数组、batch、
+   H6 quiet 节点、H5 订阅/observe；没用到 INVALIDATE、PAUSE/RESUME/PULL、pause/demand 模块、cleanup 钩子。
+   H6 是承重的：把 release 改成非 quiet，变异测试就会失败（会在不放行的路径上发 DIRTY 和 RESOLVED）。
+   15 个运行时变异全部被业务/授权/守恒断言抓到；host 的一次性记录是冗余防线（admission 只决定一次），保留。
+   和 TS 的差异见该 README：按简报用 Welford、100/200 和分母修改（TS 用精确 BigInt、[1,2,3] 和 `exactZScore`）；
+   不限制同时进行的写入、不做派发时的最终检查。
 3. 然后根据结果恢复、修订或取代 B140。

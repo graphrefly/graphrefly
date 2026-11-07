@@ -561,6 +561,12 @@ export function createGraph({ report: hostReport } = {}) {
       const n = nodeOf(id);
       return { active: n.active, has: n.has, value: n.cache, ended: n.ended };
     },
+    // P1: the topology as data, in creation order: each node's id, kind, declared
+    // dependencies and whether it is quiet (H6). Read-only; a structural subset of TS
+    // describe(), without values or status.
+    describe() {
+      return [...nodes.values()].map((n) => ({ id: n.id, kind: n.kind, deps: [...n.deps], quiet: n.quiet }));
+    },
     // K10, R-status-enum@2: a read-only projection of what the kernel already holds; no
     // status is stored. cache: empty (no value), stale (a notification this node received
     // or sent in the current wave is not settled yet; outside a wave never, since no
