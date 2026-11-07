@@ -190,7 +190,14 @@ user prefers "pending", which other libraries use for "possibly stale"), `retire
 `releaseDeps` (one verb with `release`), `life` → `lifetime` (R-ctx-lifetime). The wire message
 keeps the spec's name DIRTY; renaming it is DS-17 O15. The earlier sections above keep the names
 they were written with. `runWave` stays although TS `_runWave` runs one node's function (the
-kernel's `invoke`): here it runs the whole wave.
+kernel's `invoke`): here it runs the whole wave. `settle` stays too, on the user's decision: the
+spec uses the word (R-diamond "after all changed deps settle"), and TS has no function of that name.
+It is TS's per-message dependency handling in `node-input-runtime.ts` (ERROR with error=auto,
+INVALIDATE, automatic COMPLETE) plus `_maybeRun`/`_tryRun`. The kernel calls it once per wave,
+after every input the node waits on has settled, which is `_tryRun`'s `_wave.pending > 0` check;
+it is one function because the kernel handles a wave's arrays together, not one message at a time.
+`maybeRun` was not taken: settle does not always run the function (a dependency ERROR ends the
+node without it).
 
 Tried and kept: deriving an input's ended state from the dependency's own `ended`. It differs from
 what the node has received within one wave (draft R-ctx-wave-data: received, not current upstream),
