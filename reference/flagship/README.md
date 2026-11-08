@@ -53,7 +53,7 @@ occurrences, requests, receipts ─► evidence      occurrences, terminals, led
 | `admission` | Decides once per occurrence. The occurrence is current when the current fact names its policy and the watermark has reached its revision. A flagged evaluation also needs exactly one matching receipt with verdict pass, and exactly one grant that matches and is in force and within budget. Currentness is checked again at effect admission. A missing fact waits; it never counts as yes |
 | `release` | The quiet lifecycle port. Each admission goes out once, as a later wave in its own array. Nothing is sent for pending, rejected or replayed paths |
 | `ledger` | D791 conservation. An outcome settles only its exact admitted proposal, request and admission. A wrong outcome is an issue; a repeat adds nothing |
-| `terminals` | Keyed fan-in of the declared branches: assessment, explanation and publication. Absence never counts as an end |
+| `terminals` | Keyed fan-in of the declared branches: assessment, explanation and publication, as in TS (D791). Absence never counts as an end |
 | `evidence` | Coverage per occurrence: input, code binding and verification (included, stale or unavailable). The record is bounded; past the bound it is a retention gap. Admission never reads it |
 | `runEnd` | Normal-end readiness: no gap, every occurrence ended, no active or unknown effect |
 
@@ -121,6 +121,7 @@ admission twice. The record stays as the boundary's own defense, as in TS. A thi
 | `runEnd` does not need a stop fact | `runEndReady` needs `stop` | Nothing here keeps running after the inputs |
 | Per-node source binding at file granularity (`sources` in graph-app) | A literal label marked "not attested" | S1 asks which node's implementation changed |
 | Provenance is `{ actor, patchDigest }` on an edit; it counts only for that exact patch | No provenance shape | S7 needs a provenance to delete |
+| The terminal fan-in node is `terminals`, and its third branch is `publication` | `branchTerminals`, with `requiredBranches: ["assessment", "explanation", "publication-policy"]` | Names only; the branches and the rule are the same |
 
 ## New things
 
@@ -130,7 +131,6 @@ Each was reviewed against the minimality rule and kept because a scenario needs 
 - The runner's copy-and-edit loading. TS does the same through an esbuild plugin.
 - `sources` (node → file) and the edit's `provenance`.
 - `evidence`'s retention bound, and `limits.occurrences` failing closed (S7).
-- The three declared branches of the terminal fan-in.
 
 ## Cost (S8)
 
@@ -138,11 +138,14 @@ Each was reviewed against the minimality rule and kept because a scenario needs 
 |---|---|---|
 | Code lines (non-comment) | 286 | 204 |
 | Coordination structure | 18 declared nodes, 1 of them quiet | about 14 tables and one reconcile pass |
-| One two-evaluation run, including load and file write | about 10 ms | about 6 ms |
 
-The plain arm is shorter and faster here. The graph arm's declared edges are what the runtime
-mutations above cut one by one; the plain arm has no edge to cut, so mutations were run on the graph
-arm only.
+The plain arm is shorter here. There is no timing row: one run takes a few milliseconds, mostly
+loading and the file write, and runtime is not the question here.
+
+Mutations were run on the graph arm only. The plain arm's rules could be mutated the same way: each
+one is a check in its reconcile pass. That was not done, so this comparison does not show which
+arm's tests catch more. The [operation-tree comparison](../operation-tree/README.md) mutates both
+arms.
 
 ## Not claimed
 
