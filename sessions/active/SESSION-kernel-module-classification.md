@@ -240,4 +240,11 @@ rewire、resubscription 和 dynamic 节点。简报也不要求 batch；batch �
    15 个运行时变异全部被业务/授权/守恒断言抓到；host 的一次性记录是冗余防线（admission 只决定一次），保留。
    和 TS 的差异见该 README：按简报用 Welford、100/200 和分母修改（TS 用精确 BigInt、[1,2,3] 和 `exactZScore`）；
    不限制同时进行的写入、不做派发时的最终检查。
+   第二个对比（2026-11-08，[reference/operation-tree/](../../reference/operation-tree/README.md)）：photo-scenes
+   的操作树。plain 臂是 photo-scenes 真实的 `packages/operations`（固定在 `a331d71`，原样复制），验收是它自己的
+   27 个测试，一字不改；图臂 API 相同，建在参考内核上，两臂都全部通过。photo-scenes 的三个历史版本各自恰好
+   挂在之后才加的 QA 测试上。结论：不需要改内核，也不需要模块；run 的生死是数据（holder 节点里的
+   `alive`），不是内核 lifetime（K7）；K8 让嵌套的修改不能在 sink 里同步生效，所以回调在 wave 之后由宿主运行，
+   宿主保留一个约 25 行的两路队列（plain 的 frames 约 45 行）；Q1 的"半死子树"、Q2 和 Q6 三类 bug 在图臂里
+   由结构排除，其余七类两臂都要写代码。没用到 H6、batch、lifetime 和 cleanup。
 3. 然后根据结果恢复、修订或取代 B140。
