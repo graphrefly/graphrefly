@@ -791,3 +791,138 @@ test("K5: automatic COMPLETE waits until the node has received every dependency'
   assert.deepEqual(during(g, () => g.complete("b")), ["sx <- x: [COMPLETE]", "sb <- b: [COMPLETE]", "sm <- m: [COMPLETE]"],
     "m has x's COMPLETE first, but completes only when b's own COMPLETE reaches it");
 });
+
+// ---- Replace: a node keeps its id and subscribers and gets a new instance ---------
+
+test("replace: an ended node gets a fresh instance; sinks get a START snapshot, dependents its input in one wave", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  // x ends once a reaches 2; d treats that terminal as input and stays open.
+  g.node("x", ["a"], (ctx) => ctx.down(ctx.deps[0].value < 2 ? [["DATA", ctx.deps[0].value]] : [["COMPLETE"]]));
+  g.node("d", ["x"], (ctx) => ctx.down([["DATA", ctx.deps[0].waves.flat()]]), { terminal: { complete: "manual" } });
+  g.subscribe("s", "d");
+  g.subscribe("t", "x");
+  g.set("a", 2);
+  assert.deepEqual(g.get("x").ended, ["COMPLETE"]);
+  assert.deepEqual(during(g, () => g.replace("x", ["a"], (ctx) => ctx.down([["DATA", ctx.deps[0].value * 10]]))), [
+    "t <- x: [START, DATA(20)]",
+    "s <- d: [DIRTY, DATA([20])]",
+  ]);
+  assert.deepEqual(g.get("x"), { active: true, has: true, value: 20, ended: null });
+  assert.deepEqual(during(g, () => g.set("a", 5)), ["s <- d: [DIRTY, DATA([50])]", "t <- x: [DIRTY, DATA(50)]"],
+    "the subscriber order is kept: d subscribed to x before t did");
+});
+
+test("replace: the old lifetime closes (signal, cleanups) and its late output is dropped", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  const log = [];
+  let late;
+  g.node("x", ["a"], (ctx) => {
+    late = ctx;
+    ctx.signal.addEventListener("abort", () => log.push("abort"));
+    ctx.onDeactivation(() => log.push("cleanup"));
+  });
+  g.subscribe("s", "x");
+  g.replace("x", ["a"], () => {});
+  assert.deepEqual(log, ["abort", "cleanup"]);
+  assert.deepEqual(during(g, () => late.down([["DATA", "old"]])), []);
+});
+
+test("replace: new dependencies are acquired before the old ones are released, so a shared one stays active", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  g.state("b", 2);
+  const log = [];
+  g.node("up", ["a"], (ctx) => {
+    ctx.onDeactivation(() => log.push("up closed"));
+    ctx.down([["DATA", ctx.deps[0].value]]);
+  });
+  g.node("x", ["up"], (ctx) => ctx.down([["DATA", ctx.deps[0].value]]));
+  g.subscribe("s", "x");
+  g.replace("x", ["up", "b"], (ctx) => ctx.down([["DATA", ctx.deps[0].value + ctx.deps[1].value]]));
+  assert.deepEqual(log, [], "up was never released while x still needed it");
+  assert.deepEqual(g.describe().find((d) => d.id === "x").deps, ["up", "b"]);
+  g.replace("x", ["b"], (ctx) => ctx.down([["DATA", ctx.deps[0].value]]));
+  assert.deepEqual(log, ["up closed"], "a dependency only the old instance had is released");
+});
+
+test("replace: an inactive node only changes its definition; the next subscription activates it", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  g.node("x", ["a"], (ctx) => ctx.down([["DATA", 1]]));
+  g.replace("x", ["a"], (ctx) => ctx.down([["DATA", 2]]));
+  assert.deepEqual(during(g, () => g.subscribe("s", "x")), ["s <- x: [START, DATA(2)]"]);
+});
+
+test("replace: during a wave it waits until the wave is over (K8)", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  g.node("x", ["a"], (ctx) => ctx.down([["DATA", ctx.deps[0].value]]));
+  g.subscribe("s", "x", (msgs) => { if (msgs.some((m) => m[1] === 2)) g.replace("x", ["a"], (ctx) => ctx.down([["DATA", -ctx.deps[0].value]])); });
+  g.subscribe("t", "x");
+  assert.deepEqual(during(g, () => g.set("a", 2)), [
+    "s <- x: [DIRTY, DATA(2)]",
+    "t <- x: [DIRTY, DATA(2)]",
+    "s <- x: [START, DATA(-2)]",
+    "t <- x: [START, DATA(-2)]",
+  ]);
+});
+
+test("replace: refused for a state node and for a dependency on itself", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  g.node("x", ["a"], () => {});
+  g.node("y", ["x"], () => {});
+  assert.throws(() => g.replace("a", [], () => {}), /not a computed node/);
+  assert.throws(() => g.replace("x", ["y"], () => {}), /depend on itself/);
+});
+
+test("replace: the snapshot is one wave, so a diamond below the replaced node settles once (P3)", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  g.node("x", ["a"], (ctx) => ctx.down([["DATA", ctx.deps[0].value]]));
+  g.node("l", ["x"], (ctx) => ctx.down([["DATA", ctx.deps[0].value + 1]]));
+  g.node("r", ["x"], (ctx) => ctx.down([["DATA", ctx.deps[0].value + 2]]));
+  const j = counted((ctx) => ctx.down([["DATA", [ctx.deps[0].value, ctx.deps[1].value]]]));
+  g.node("j", ["l", "r"], j);
+  g.subscribe("s", "j");
+  j.calls = 0;
+  assert.deepEqual(during(g, () => g.replace("x", ["a"], (ctx) => ctx.down([["DATA", 10]]))), ["s <- j: [DIRTY, DATA([11,12])]"]);
+  assert.equal(j.calls, 1);
+});
+
+test("replace: a dependent no longer holds the old instance's value when the new one has none yet", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  g.state("b", 0);
+  g.node("x", ["a"], (ctx) => ctx.down([["DATA", "old"]]));
+  const seen = [];
+  g.node("d", ["x", "b"], (ctx) => seen.push(ctx.deps[0].has ? ctx.deps[0].value : "none"));
+  g.subscribe("s", "d");
+  g.replace("x", ["a"], () => {});
+  g.set("b", 1);
+  assert.deepEqual(seen, ["old", "none"]);
+});
+
+test("replace: a new instance that ends at once closes its lifetime and releases its dependencies", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  const log = [];
+  g.node("up", ["a"], (ctx) => { ctx.onDeactivation(() => log.push("up closed")); ctx.down([["DATA", 1]]); });
+  g.node("x", ["up"], (ctx) => ctx.down([["DATA", ctx.deps[0].value]]));
+  g.subscribe("s", "x");
+  assert.deepEqual(during(g, () => g.replace("x", ["up"], (ctx) => ctx.down([["COMPLETE"]]))), ["s <- x: [START, COMPLETE]"]);
+  assert.deepEqual(log, ["up closed"]);
+});
+
+test("replace: an ended node that lost its subscribers can be subscribed again after a replace", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  g.node("x", ["a"], (ctx) => ctx.down([["COMPLETE"]]));
+  g.subscribe("s", "x");
+  g.unsubscribe("s", "x");
+  assert.throws(() => g.subscribe("t", "x"), /has ended/);
+  g.replace("x", ["a"], (ctx) => ctx.down([["DATA", 2]]));
+  assert.deepEqual(during(g, () => g.subscribe("t", "x")), ["t <- x: [START, DATA(2)]"]);
+});

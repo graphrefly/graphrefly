@@ -229,3 +229,67 @@ Mutations, each failing at least one test:
 |---|---|
 | `observe(g, ids, sink)` and the `{ id, msgs }` event | TS's envelope minus the two fields that are derived (`tier`) or not needed without topology events (`seq`) |
 | The sink id `observe#n` | The kernel's subscribe takes a sink id; one per observer keeps two observers of a node apart |
+
+## Restart, O7 ([restart.mjs](restart.mjs), [restart.test.mjs](restart.test.mjs))
+
+Added 2026-11-08, after the user chose the module option for O7 and graph-level replace for it.
+`restartable(g, id, { deps, fn, rounds, retries, delayMs })` returns `{ id, innerId, restart() }`.
+
+```text
+deps ──► id/inner ──► id          id.restart ──► id
+```
+
+- **One owner faces downstream for good.** `id` forwards the inner's values. When the inner ends,
+  the owner's policy restarts it or ends the owner with that same terminal, which is then final.
+  While a restart is possible no protocol terminal reaches downstream: the owner's terminals are
+  manual (O6), so it runs on the inner's COMPLETE or ERROR instead of ending with it.
+- **The inner keeps a fixed path,** `${id}/inner`. A restart is the kernel's `replace` of that node:
+  same id and subscribers, a fresh instance. So `describe()` is the same before and after, and a sink
+  on the inner sees each attempt begin with START. The inner depends on long-lived nodes outside the
+  owner with ordinary dependencies, so nothing upstream needs to be resubscribable, and a shared
+  upstream stays active across a restart.
+- **Policy is the owner's:** `rounds` is how many times the inner may complete (TS `repeat`'s count);
+  `retries` is how many ERRORs are retried in all, each after `delayMs(n)`; `restart()` writes the
+  declared control state `${id}.restart` (P11) and starts a new attempt that counts as neither.
+- **The owner asks for the replace from its own function,** and the kernel runs it after the wave
+  (K8), as TS applies `ctx.rewireNext` after the wave. A delayed retry is dropped once the owner's
+  lifetime has closed, even if a new one has opened. When the owner deactivates without having
+  ended, an inner that has ended is renewed, since it would otherwise refuse the owner's next
+  activation (P5).
+
+**Finding for DS-17: restart needs a kernel `replace`.** The reference kernel had no way to change
+topology, and only the kernel can rebind a node's dependents and subscribers to a new instance. The
+DS-17 rewire row named only hook H4 (a seed); restart does not need a seed, so none was added. See
+the kernel README for what `replace` does.
+
+**What TS has today (`dafc5ae`).** No production source sets `resubscribable: true`; only two
+lifecycle tests do. `repeat` is used only in its tests; it is already an owner, swapping a fresh
+inner per round with `ctx.rewireNext`, but each inner gets a new synthetic id. Retry is done by the
+drivers (bridge, environment outbound, websocket session, tool-provider runs): they retry outside the
+graph and publish attempt, retry and failure events as DATA, and `retryStatusBundle` projects them.
+So every current use fits this module, and retry as it is in TS does not need it at all.
+
+| Here | TS | Why |
+|---|---|---|
+| The inner at a fixed path, replaced per attempt | A fresh inner per round under a synthetic id | O7: observation goes on across attempts |
+| `rounds`, `retries`, `delayMs`, `restart()` on one owner | `repeat(factory, count)`; retry policies used by drivers | O7 puts attempts and backoff in the owner |
+| The inner's definition is reused, and each instance gets fresh private state | `factory()` mints a new node per round | A new lifetime already starts fresh (K7) |
+| A synchronous burst at activation reaches the owner as its retained value only (K3) | The inner's activation output is delivered | Kernel K3; the tests' inner plays its items after it starts |
+
+What the tests pin: `rounds` 3 and 1, as in TS's `repeat` tests; an inner ERROR or a throwing inner
+with no retry left; retries with their delays, and exhaustion; the same `describe()` and a START per
+attempt on the inner's sink; an outside restart of a live inner, with a shared upstream never
+released and the old instance's late output dropped; a closed lifetime's delayed retry dropped.
+
+Mutations, each failing at least one test: no outside restart; no signal check on a delayed retry
+(this needed the timing test); no renewal on deactivation; renewal even after the owner ended.
+
+### New things this module introduces
+
+| New | Why it stays |
+|---|---|
+| Kernel `replace(id, deps, fn)` | The only way to give a node a new instance; the finding above |
+| START at the start of each attempt on the inner's sinks | It is what a fresh subscription sends, and it tells an observer that an attempt began |
+| `${id}.restart` and `restart()` | O7: a restart request reaches the owner on a declared edge (P11) |
+| `rounds`, `retries`, `delayMs` | O7's attempts and backoff; `rounds` is TS `repeat`'s count |
+| Renewing an ended inner when the owner deactivates | Without it the owner could never be subscribed again (P5) |

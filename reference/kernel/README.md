@@ -23,7 +23,7 @@ npm run test:reference
 ## Surface
 
 The graph: `createGraph({ report })` takes an optional host reporter. Then `state(id, initial)`, `node(id, deps, fn, { terminal, quiet })`,
-`subscribe(sinkId, id, callback?)`, `unsubscribe`, `set`, `invalidate`, `complete`, `error`, `batch`,
+`subscribe(sinkId, id, callback?)`, `unsubscribe`, `replace(id, deps, fn)`, `set`, `invalidate`, `complete`, `error`, `batch`,
 `get(id)` (`active`, `has`, `value`, `ended`), `status(id)`, `describe()` and `trace`.
 
 `describe()` is P1's "topology is data", added 2026-11-07 for the flagship (S1 compares the
@@ -73,6 +73,7 @@ registration while the lifetime is open is accepted, and `onInvalidate` hooks ar
 | A sink receives one array per call, `cb(msgs)` | A sink receives one message per call plus delivery metadata, `sink(msg, { wave, last })` | R-wave-boundary@2: the array is the unit. Same information; found 2026-11-07 while writing the H5 module, not listed before |
 | `signal` | No signal on ctx | R-fn-contract@2 and R-ctx-lifetime (draft) |
 | A registration after close runs once at once | Ignored | R-cleanup-hooks@2 (draft) |
+| `replace(id, deps, fn)`: graph-level replace of one computed node, at a wave boundary | `ctx.rewireNext.subscribeDep`/`unsubscribeDep`: a node changes its own dependencies, applied after the wave (D47) | DS-17 rewire row and O4: replace is enough. Added 2026-11-08 for the restart module (O7) |
 | No `up`, `upNext`, `rewireNext`, `pull`, `environment`, `track`, `persist` | Present | Not covered yet (K9, modules) |
 
 The kernel does not know or care whether a late `ctx.down` came from async work.
@@ -113,6 +114,16 @@ The kernel does not know or care whether a late `ctx.down` came from async work.
   and a report says that writes after its first await are separate waves.
 - P9: the invocation that started async work settles its wave at once, so no DIRTY stays open while
   the work runs. Results arrive in arrival order and combine with whatever the other inputs hold then.
+- Replace (added 2026-11-08 for O7): `replace(id, deps, fn)` gives a computed node a new instance
+  under the same id, keeping its subscribers. It is a request (K8). The old lifetime closes: its signal
+  aborts, its late output is dropped, its cleanups run; no value, private state or terminal survives,
+  so an ended node can be acquired again. The new dependencies are acquired before the old ones are
+  released, so a shared one stays active. The new instance activates like a first subscription
+  (K3): its first run only sets the retained value; each sink gets a `[START, …]` snapshot and each
+  dependent receives the snapshot as its input, in one wave, so a diamond below settles once. An
+  inactive node only changes its definition. Refused for a state node and for a dependency on itself.
+  Only the kernel can do this, because it rebinds the dependents' input records; the DS-17 rewire row
+  had named only H4 (a seed), which restart does not need, so it is not implemented.
 - H6: `{ quiet: true }` records its own dirty inputs but does not pass DIRTY on, so its dependents do
   not wait for it. What it outputs, including an inherited ERROR, is a later wave from it; the arrays
   of one settlement go out together in that wave. Silence needs no RESOLVED. An INVALIDATE carries no
@@ -135,6 +146,13 @@ ineffective INVALIDATE kept; late output in a batch not staged; a quiet INVALIDA
 RESOLVED; no DIRTY prefix; an ended node not closing its lifetime. The last one survived every test
 until kernel test "K5/K7: a node that ends closes its lifetime at once, while still subscribed" was
 added.
+
+Mutations of `replace` checked on 2026-11-08, together with the restart module's tests, each failing
+at least one test: no pending mark before the snapshot wave; old dependencies released before the
+new ones are acquired; old cleanups not run; old signal not aborted; no START to sinks; dependents
+keeping the old input record; a new instance that ends at once keeping its lifetime; no cycle check;
+run at once instead of queued; an inactive node keeping its old terminal. Four of them (the pending
+mark, the input record, ending at once, the inactive terminal) survived until their tests were added.
 
 Mutations checked on 2026-11-06 after the simplification pass, each failing at least one test: no
 batch-wide DIRTY prepass; no kernel RESOLVED; requests run immediately; a quiet node forwarding DIRTY,
@@ -226,8 +244,10 @@ Each of these is left out rather than approximated:
 - K9 upward control routing: not needed for pause or demand (control pairs, DS-17 P11); START
   snapshots of an unsettled node; the released lifecycle of R-status-enum@2.
 - Upward INVALIDATE (R-up-at-source); INVALIDATE before a node's first invocation (R-first-run-gate).
-- Modules: replay, checkpoint, rewire, restart owners. Pause, demand and observation (H5) are in
-  [../modules/](../modules/README.md). H5 needed no kernel hook: a subscriber already receives
+- A topology request made inside a batch body (`subscribe`, `replace`) runs at once, not at commit.
+  Found 2026-11-08 while adding `replace`; O3 covers host inputs and late output only.
+- Modules: replay, checkpoint, and rewire beyond `replace` (a seed, H4). Pause, demand, observation
+  (H5) and restart (O7) are in [../modules/](../modules/README.md). H5 needed no kernel hook: a subscriber already receives
   what a node committed.
 - The flagship acceptance (B139 S1–S8) runs on this kernel in [../flagship/](../flagship/README.md);
   its only kernel addition was `describe()`.

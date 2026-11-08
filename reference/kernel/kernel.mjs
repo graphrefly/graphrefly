@@ -175,7 +175,8 @@ export function createGraph({ report: hostReport } = {}) {
   }
 
   function assertAcquirable(n) {
-    // P5: an ended output cannot be acquired again (restart is a module, O7).
+    // P5: an ended output cannot be acquired again; restart is a module (O7) that
+    // replaces the ended node.
     if (n.ended) throw new KernelError(`${n.id} has ended`);
     if (!n.active) for (const d of n.deps) assertAcquirable(nodeOf(d));
   }
@@ -184,6 +185,17 @@ export function createGraph({ report: hostReport } = {}) {
     n.active = true;
     if (n.kind === "state") return;
     openLifetime(n);
+    acquireDeps(n);
+    // The activation invocation sees each snapshot as this wave's input. Waiting for
+    // every dependency to have a value is a sugar policy, not a kernel gate. Nothing
+    // subscribes to this node yet, so publishing its output only sets the retained value
+    // that the new subscriber's START snapshot will carry.
+    const out = invoke(n);
+    n.inputs.forEach((input) => { input.frames = []; });
+    down(n, out);
+  }
+
+  function acquireDeps(n) {
     n.deps.forEach((depId, i) => {
       const dep = nodeOf(depId);
       if (!dep.active) activate(dep);
@@ -194,13 +206,6 @@ export function createGraph({ report: hostReport } = {}) {
       if (dep.ended) snapshot.push(dep.ended);
       n.inputs[i] = { has: dep.has, value: dep.cache, ended: dep.ended, frames: snapshot.length ? [snapshot] : [] };
     });
-    // The activation invocation sees each snapshot as this wave's input. Waiting for
-    // every dependency to have a value is a sugar policy, not a kernel gate. Nothing
-    // subscribes to this node yet, so publishing its output only sets the retained value
-    // that the new subscriber's START snapshot will carry.
-    const out = invoke(n);
-    n.inputs.forEach((input) => { input.frames = []; });
-    down(n, out);
   }
 
   function release(dep, sub) {
@@ -478,6 +483,58 @@ export function createGraph({ report: hostReport } = {}) {
     for (const { node, frames } of entries) down(node, frames);
   }
 
+  // ---- Replace (DS-17 rewire row, O4, O7) ----------------------------------
+  //
+  // Graph-level replace: the node keeps its id and its subscribers, and gets a new
+  // instance with new dependencies and a new function. The old lifetime closes (its
+  // signal aborts, its late output is dropped, its cleanups run) and nothing of the old
+  // instance survives: no value, private state or terminal. The new dependencies are
+  // acquired before the old ones are released, so a dependency shared by both stays
+  // active. The new instance is activated like a first subscription (K3): its first
+  // invocation only sets its retained value; each sink gets a START snapshot and each
+  // dependent receives the snapshot as its input, in one wave. Only the kernel can do
+  // this, because it rebinds the dependents' input records.
+
+  function replaceNode(n, deps, fn) {
+    const old = n.lifetime; // null when inactive or when the old instance has ended
+    // An ended instance already released its dependencies; an active one still holds them.
+    const held = old ? n.deps.map((depId, i) => {
+      const dep = nodeOf(depId);
+      return [dep, dep.subs.find((s) => s.kind === "node" && s.id === n.id && s.dep === i)];
+    }) : [];
+    if (old) { old.open = false; old.controller?.abort(); }
+    Object.assign(n, {
+      deps, fn, inputs: deps.map(freshInput), lifetime: null,
+      has: false, cache: undefined, ended: null, privateState: undefined, pending: false,
+    });
+    n.pendingDeps.clear();
+    if (!n.active) return; // the next subscription activates the new instance
+
+    openLifetime(n);
+    acquireDeps(n);
+    const out = invoke(n);
+    n.inputs.forEach((input) => { input.frames = []; });
+    apply(n, out); // the retained value only, as at a first activation
+    for (const [dep, sub] of held) if (sub) release(dep, sub);
+    if (old) for (const f of old.hooks.deactivation) runCleanup(n, f);
+
+    const snap = [];
+    if (n.has) snap.push(["DATA", n.cache]);
+    if (n.ended) snap.push(n.ended);
+    const nodeSubs = [];
+    for (const sub of [...n.subs]) {
+      if (sub.kind === "sink") deliverToSink(sub, n.id, [["START"], ...snap]);
+      else { nodeOf(sub.id).inputs[sub.dep] = freshInput(); nodeSubs.push(sub); }
+    }
+    if (snap.length) {
+      // One wave from n: its cone is marked pending first (P3), then each dependent
+      // receives the snapshot as its input.
+      if (hasValue([snap])) { n.pending = true; markPending(n); n.pending = false; }
+      for (const sub of nodeSubs) receive(nodeOf(sub.id), sub.dep, [snap]);
+    }
+    if (n.ended) closeLifetime(n);
+  }
+
   // ---- Host input ---------------------------------------------------------
 
   function hostInput(id, msg) {
@@ -523,6 +580,15 @@ export function createGraph({ report: hostReport } = {}) {
         const sub = n.subs.find((s) => s.kind === "sink" && s.id === sinkId);
         if (sub) release(n, sub);
       });
+    },
+    // A request like any other (K8): during a wave it waits until the wave is over.
+    replace(id, deps, fn) {
+      const n = nodeOf(id);
+      if (n.kind !== "node") throw new KernelError(`${id} is not a computed node`);
+      for (const d of deps) {
+        if (d === id || dependsOn(nodeOf(d), id)) throw new KernelError(`replace: ${id} would depend on itself through ${d}`);
+      }
+      request(() => replaceNode(n, deps, fn));
     },
     set(id, value) { hostInput(id, ["DATA", value]); },
     invalidate(id) { hostInput(id, ["INVALIDATE"]); },

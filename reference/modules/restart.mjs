@@ -1,0 +1,63 @@
+// Restart as a module over the reference kernel (DS-17 O7). Non-normative.
+//
+// One owner node `id` faces downstream for good. What may end and be restarted lives
+// inside it as an owned inner node at a fixed path, `${id}/inner`. A restart replaces that
+// node (kernel `replace`): same id, same subscribers, a fresh instance. So describe and
+// observe(`${id}/inner`) go on across attempts, and nothing upstream needs to be
+// resubscribable: the inner subscribes to long-lived nodes outside the owner with
+// ordinary dependencies.
+//
+//   deps ──► id/inner ──► id          id.restart ──► id
+//
+// The owner forwards the inner's values. When the inner ends, the owner's policy decides:
+// restart it, or end the owner with that same terminal, which is then final. While a
+// restart is possible no protocol terminal reaches downstream. The owner's terminals are
+// manual (O6), so it runs on the inner's COMPLETE or ERROR instead of ending with it.
+//
+// Policy, as in O7 (attempts and backoff are the owner's):
+//   rounds    how many times the inner may complete in all (TS repeat's count);
+//   retries   how many ERRORs are retried in all, each after delayMs(n) for the n-th;
+//   restart() a request from outside, through the declared control state `${id}.restart`
+//             (P11). It starts a new attempt and counts as neither.
+//
+// The owner asks for the replace from its own function. The kernel queues it until the
+// wave is over (K8), like TS's ctx.rewireNext. A delayed retry is dropped if the owner's
+// lifetime has closed by then. When the owner deactivates without having ended, an inner
+// that has ended is replaced too, since it would otherwise refuse the owner's next
+// activation (P5); with no other subscriber it is inactive, so only its definition is
+// renewed.
+
+export function restartable(g, id, { deps, fn, rounds = 1, retries = 0, delayMs = () => 0 }) {
+  const innerId = `${id}/inner`;
+  const restartId = `${id}.restart`;
+  g.state(restartId); // no value until the first request, so activation sees none
+  g.node(innerId, deps, fn);
+  g.node(id, [innerId, restartId], (ctx) => {
+    const [inner, request] = ctx.deps;
+    const st = ctx.state.get() ?? { round: 1, failures: 0 };
+    ctx.state.set(st);
+    // Unless the owner itself has ended for good, its next activation needs an inner that
+    // has not ended (P5).
+    ctx.onDeactivation(() => { if (!g.get(id).ended && g.get(innerId).ended) g.replace(innerId, deps, fn); });
+    for (const w of inner.waves) if (w.length) ctx.down(w.map((v) => ["DATA", v]));
+
+    const end = inner.terminal;
+    let delay = 0;
+    let again = request.waves.length > 0;
+    if (!again && end?.[0] === "COMPLETE" && st.round < rounds) { st.round += 1; again = true; }
+    if (!again && end?.[0] === "ERROR" && st.failures < retries) {
+      st.failures += 1;
+      delay = delayMs(st.failures);
+      again = true;
+    }
+    if (!again) { if (end) ctx.down([end]); return; }
+
+    const { signal } = ctx;
+    const replace = () => { if (!signal.aborted) g.replace(innerId, deps, fn); };
+    if (delay > 0) setTimeout(replace, delay);
+    else replace();
+  }, { terminal: { complete: "manual", error: "manual" } });
+
+  let seq = 0;
+  return { id, innerId, restart() { g.set(restartId, ++seq); } };
+}
