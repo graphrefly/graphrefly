@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { setTimeout as sleep } from "node:timers/promises";
 import { createGraph, format } from "../kernel/kernel.mjs";
 import { restartable } from "./restart.mjs";
+import { retryPolicy } from "./resilience.mjs";
 
 const values = (g, sinkId) => g.trace.filter((e) => e.to === sinkId).flatMap((e) => e.msgs)
   .filter((m) => m[0] === "DATA").map((m) => m[1]);
@@ -53,11 +54,10 @@ test("an inner ERROR with no retries left ends the owner with that ERROR; a thro
   assert.deepEqual(g.get("r").ended, ["ERROR", "inner boom"]);
 });
 
-test("retries: an ERROR is retried after its delay; when retries run out the ERROR is final", async () => {
-  for (const [retries, expected] of [[2, { ended: ["COMPLETE"], values: ["ok"] }], [1, { ended: ["ERROR", "fail 2"], values: [] }]]) {
+test("retry: an ERROR is retried under the policy; when no attempt is left the ERROR is final", async () => {
+  for (const [maxAttempts, expected] of [[3, { ended: ["COMPLETE"], values: ["ok"] }], [2, { ended: ["ERROR", "fail 2"], values: [] }]]) {
     const g = createGraph();
     let attempt = 0;
-    const delays = [];
     restartable(g, "r", {
       deps: [],
       fn: (ctx) => {
@@ -65,14 +65,29 @@ test("retries: an ERROR is retried after its delay; when retries run out the ERR
         if (attempt <= 2) throw new Error(`fail ${attempt}`);
         play(["ok"])(ctx);
       },
-      retries,
-      delayMs: (n) => { delays.push(n); return 2; },
+      retry: retryPolicy({ maxAttempts, initialMs: 2 }),
     });
     g.subscribe("s", "r");
     await until(() => g.get("r").ended);
-    assert.deepEqual({ ended: g.get("r").ended, values: values(g, "s") }, expected, `retries ${retries}`);
-    assert.deepEqual(delays, retries === 2 ? [1, 2] : [1]);
+    assert.deepEqual({ ended: g.get("r").ended, values: values(g, "s") }, expected, `maxAttempts ${maxAttempts}`);
+    assert.equal(attempt, Math.min(maxAttempts, 3));
   }
+});
+
+test("retry counts within a round: each round gets the policy's attempts again", async () => {
+  const g = createGraph();
+  let attempt = 0;
+  restartable(g, "r", {
+    deps: [],
+    // Every round fails once, then plays. With maxAttempts 2 that needs a fresh count per round.
+    fn: (ctx) => { attempt += 1; if (attempt % 2 === 1) throw new Error("once"); play([attempt])(ctx); },
+    rounds: 2,
+    retry: retryPolicy({ maxAttempts: 2 }),
+  });
+  g.subscribe("s", "r");
+  await until(() => g.get("r").ended);
+  assert.deepEqual(g.get("r").ended, ["COMPLETE"]);
+  assert.deepEqual(values(g, "s"), [2, 4]);
 });
 
 test("observation goes on across attempts: same topology, and the inner's sink sees each attempt start", async () => {
@@ -126,13 +141,13 @@ test("restart(): an outside request restarts a live inner; a shared upstream sta
 test("a delayed retry is dropped once the owner's lifetime has closed, even if a new one has opened", async () => {
   const g = createGraph();
   let attempts = 0;
-  const delays = [5, 40]; // the first lifetime's retry would fire long before the second's
-  restartable(g, "r", { deps: [], fn: () => { attempts += 1; throw new Error("boom"); }, retries: 1, delayMs: () => delays.shift() });
-  g.subscribe("s", "r"); // attempt 1 fails; its retry waits 5 ms
+  restartable(g, "r", { deps: [], fn: () => { attempts += 1; throw new Error("boom"); }, retry: retryPolicy({ maxAttempts: 2, initialMs: 60 }) });
+  g.subscribe("s", "r"); // attempt 1 fails; its retry would run at about 60 ms
+  await sleep(30);
   g.unsubscribe("s", "r");
-  g.subscribe("s", "r"); // a new owner lifetime: attempt 2 fails; its retry waits 40 ms
-  await sleep(20);
-  assert.equal(attempts, 2, "the closed lifetime's retry did not run");
+  g.subscribe("s", "r"); // a new owner lifetime: attempt 2 fails; its retry runs at about 90 ms
+  await sleep(45);
+  assert.equal(attempts, 2, "at about 75 ms the closed lifetime's retry has not run");
   await until(() => g.get("r").ended);
   assert.equal(attempts, 3);
   assert.deepEqual(g.get("r").ended, ["ERROR", "boom"]);

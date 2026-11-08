@@ -233,7 +233,7 @@ Mutations, each failing at least one test:
 ## Restart, O7 ([restart.mjs](restart.mjs), [restart.test.mjs](restart.test.mjs))
 
 Added 2026-11-08, after the user chose the module option for O7 and graph-level replace for it.
-`restartable(g, id, { deps, fn, rounds, retries, delayMs })` returns `{ id, innerId, restart() }`.
+`restartable(g, id, { deps, fn, rounds, retry })` returns `{ id, innerId, restart() }`.
 
 ```text
 deps ──► id/inner ──► id          id.restart ──► id
@@ -249,7 +249,9 @@ deps ──► id/inner ──► id          id.restart ──► id
   owner with ordinary dependencies, so nothing upstream needs to be resubscribable, and a shared
   upstream stays active across a restart.
 - **Policy is the owner's:** `rounds` is how many times the inner may complete (TS `repeat`'s count);
-  `retries` is how many ERRORs are retried in all, each after `delayMs(n)`; `restart()` writes the
+  `retry` is the library's retry policy (see Retry policy below): within a round, an ERROR from
+  attempt n is retried after `retryDelayMs(retry, n)`, and each round gets the policy's attempts
+  again; `restart()` writes the
   declared control state `${id}.restart` (P11) and starts a new attempt that counts as neither.
 - **The owner asks for the replace from its own function,** and the kernel runs it after the wave
   (K8), as TS applies `ctx.rewireNext` after the wave. A delayed retry is dropped once the owner's
@@ -272,17 +274,18 @@ So every current use fits this module, and retry as it is in TS does not need it
 | Here | TS | Why |
 |---|---|---|
 | The inner at a fixed path, replaced per attempt | A fresh inner per round under a synthetic id | O7: observation goes on across attempts |
-| `rounds`, `retries`, `delayMs`, `restart()` on one owner | `repeat(factory, count)`; retry policies used by drivers | O7 puts attempts and backoff in the owner |
+| `rounds`, `retry`, `restart()` on one owner | `repeat(factory, count)`; `RetryPolicy` used by drivers | O7 puts attempts and backoff in the owner; `retry` is the shared policy, rewritten (below) |
 | The inner's definition is reused, and each instance gets fresh private state | `factory()` mints a new node per round | A new lifetime already starts fresh (K7) |
 | A synchronous burst at activation reaches the owner as its retained value only (K3) | The inner's activation output is delivered | Kernel K3; the tests' inner plays its items after it starts |
 
 What the tests pin: `rounds` 3 and 1, as in TS's `repeat` tests; an inner ERROR or a throwing inner
-with no retry left; retries with their delays, and exhaustion; the same `describe()` and a START per
+with no retry left; retries under the policy, and exhaustion; a fresh count per round; the same `describe()` and a START per
 attempt on the inner's sink; an outside restart of a live inner, with a shared upstream never
 released and the old instance's late output dropped; a closed lifetime's delayed retry dropped.
 
 Mutations, each failing at least one test: no outside restart; no signal check on a delayed retry
-(this needed the timing test); no renewal on deactivation; renewal even after the owner ended.
+(this needed the timing test); no renewal on deactivation; renewal even after the owner ended; no
+fresh retry count per round; the policy's delay ignored.
 
 ### New things this module introduces
 
@@ -291,5 +294,40 @@ Mutations, each failing at least one test: no outside restart; no signal check o
 | Kernel `replace(id, deps, fn)` | The only way to give a node a new instance; the finding above |
 | START at the start of each attempt on the inner's sinks | It is what a fresh subscription sends, and it tells an observer that an attempt began |
 | `${id}.restart` and `restart()` | O7: a restart request reaches the owner on a declared edge (P11) |
-| `rounds`, `retries`, `delayMs` | O7's attempts and backoff; `rounds` is TS `repeat`'s count |
+| `rounds` and `retry` | O7's attempts and backoff; `rounds` is TS `repeat`'s count, `retry` the shared policy |
 | Renewing an ended inner when the owner deactivates | Without it the owner could never be subscribed again (P5) |
+
+## Retry policy ([resilience.mjs](resilience.mjs), [resilience.test.mjs](resilience.test.mjs))
+
+The library-wide retry vocabulary (D130/D132), shared by whoever retries: TS's drivers (bridge,
+environment outbound, websocket session, tool-provider runs) and here the restart owner. Passive
+data: it schedules nothing and owns no graph state, and it can travel as a DATA fact, as TS's
+tool-provider retry does.
+
+`retryPolicy({ maxAttempts = 1, initialMs = 0, factor = 1, maxMs })` builds a frozen policy;
+`maxAttempts` counts every attempt, the first included, and no `maxMs` means no cap.
+`retryDelayMs(policy, failedAttempt)` returns the delay before the next attempt,
+`min(initialMs * factor^(failedAttempt - 1), maxMs)`, or undefined when no attempt is left.
+
+Rewritten on 2026-11-08 with the user, not ported as it is. At `dafc5ae` no production source names a
+backoff kind (the default `none` only); tests use `constant` a dozen times and `linear` once, and
+`exponential` and `fibonacci` never. Every production caller pairs `shouldRetry` with
+`nextRetryDelayMs`: bridge, environment outbound and websocket session add `?? 0`, tool-provider
+runs report an error if no delay comes back, and `retryStatusBundle` calls both.
+
+| Here | TS `graph/resilience.ts` | Why |
+|---|---|---|
+| `retryDelayMs(policy, failedAttempt)`: a number to retry after, undefined to stop | `shouldRetry(policy, failedAttempt)` and `nextRetryDelayMs(policy, nextAttempt)`, each checking the range | One answer, so the decision and the delay cannot disagree; inside the retry range the `?? 0` and the tool-provider error never fire |
+| One backoff shape `{ initialMs, factor, maxMs? }` in the policy | `BackoffPolicy` with five kinds: none, constant, linear, exponential, fibonacci, nested as `backoff` | `factor` 1 is constant, `initialMs` 0 is none, `factor` > 1 is exponential; linear and fibonacci had no user |
+| The first retry waits `initialMs` | The delay before attempt n is the backoff of n, so the first retry waits `backoff(2)` (exponential: `initialMs * factor`) | The name says initial. Same for constant |
+| `retryPolicy` throws on an invalid value | Corrected at every computation: `factor` truncated to an integer (1.5 becomes 1), a negative, NaN or infinite number becomes 0 | Invalid input is refused where it is written; 1.5 is a common factor |
+| `retryPolicy({ … })` takes one object | `retryPolicy(maxAttempts, backoff)` | The fields are flat now |
+
+Kept as in TS: a policy is data, not a function; `maxAttempts` includes the first attempt; no jitter
+(it needs a random source, and nothing uses it). The capacity and retention vocabulary of D80
+(`CapacityPolicy`, `RetentionPolicy`, LRU order) is a separate part of the shared policies and is
+not touched here.
+
+Mutations, each failing at least one test: the last attempt allowed one more retry; the exponent
+counted from n instead of n - 1; no cap; the factor truncated as in TS; a non-integer attempt
+accepted; each of the four validations removed; the policy not frozen.

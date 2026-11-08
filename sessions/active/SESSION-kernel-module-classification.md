@@ -252,7 +252,10 @@ rewire、resubscription 和 dynamic 节点。简报也不要求 batch；batch �
    restart（2026-11-08，O7 的模块方案，[reference/modules/](../../reference/modules/README.md)）：一个 owner 节点
    一直面对下游，可能结束的部分是固定路径 `${id}/inner` 上的内部节点，每次重启就用内核新加的 `replace` 换一个新实例
    （同一个 id、同样的订阅者），所以 describe 不变，inner 的观察者每次 attempt 开头收到 START。策略在 owner：
-   `rounds`（TS repeat 的次数）、`retries` 加 `delayMs`、外部请求走声明的控制 state `${id}.restart`（P11）。
+   `rounds`（TS repeat 的次数）、库共用的 retry 策略、外部请求走声明的控制 state `${id}.restart`（P11）。
+   retry 策略按用户要求改写了 TS 的 `graph/resilience.ts`，没有原样照搬：`retryDelayMs` 一个函数同时回答重不重试、等多久；
+   五种 backoff 合成 `{ initialMs, factor, maxMs }` 一种形状（linear 和 fibonacci 没有使用者）；在构造时校验并抛错，
+   不再在每次计算时偷偷修正（TS 会把 factor 1.5 截成 1）。和 TS 的差异见 modules README。
    发现：restart 需要内核的 `replace`。参考内核原来没有任何改拓扑的手段，而把下游和订阅者接到新实例上只有内核能做；
    DS-17 的 rewire 行只写了 H4（种子），restart 用不到种子，没有加。TS 里没有生产代码用 `resubscribable: true`，
    `repeat` 只在它自己的测试里用，重试是 driver 在图外做、以 DATA 发出事件，所以现有用法都套得进这个模块。

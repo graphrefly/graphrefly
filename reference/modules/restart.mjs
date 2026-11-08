@@ -16,9 +16,11 @@
 //
 // Policy, as in O7 (attempts and backoff are the owner's):
 //   rounds    how many times the inner may complete in all (TS repeat's count);
-//   retries   how many ERRORs are retried in all, each after delayMs(n) for the n-th;
+//   retry     the library's retry policy (resilience.mjs): within a round, an ERROR from
+//             attempt n is retried after retryDelayMs(retry, n), unless that is undefined.
+//             Default retryPolicy(): one attempt, no retry;
 //   restart() a request from outside, through the declared control state `${id}.restart`
-//             (P11). It starts a new attempt and counts as neither.
+//             (P11). It starts a new attempt and counts toward neither.
 //
 // The owner asks for the replace from its own function. The kernel queues it until the
 // wave is over (K8), like TS's ctx.rewireNext. A delayed retry is dropped if the owner's
@@ -27,7 +29,9 @@
 // activation (P5); with no other subscriber it is inactive, so only its definition is
 // renewed.
 
-export function restartable(g, id, { deps, fn, rounds = 1, retries = 0, delayMs = () => 0 }) {
+import { retryDelayMs, retryPolicy } from "./resilience.mjs";
+
+export function restartable(g, id, { deps, fn, rounds = 1, retry = retryPolicy() }) {
   const innerId = `${id}/inner`;
   const restartId = `${id}.restart`;
   g.state(restartId); // no value until the first request, so activation sees none
@@ -44,11 +48,10 @@ export function restartable(g, id, { deps, fn, rounds = 1, retries = 0, delayMs 
     const end = inner.terminal;
     let delay = 0;
     let again = request.waves.length > 0;
-    if (!again && end?.[0] === "COMPLETE" && st.round < rounds) { st.round += 1; again = true; }
-    if (!again && end?.[0] === "ERROR" && st.failures < retries) {
-      st.failures += 1;
-      delay = delayMs(st.failures);
-      again = true;
+    if (!again && end?.[0] === "COMPLETE" && st.round < rounds) { st.round += 1; st.failures = 0; again = true; }
+    if (!again && end?.[0] === "ERROR") {
+      const wait = retryDelayMs(retry, st.failures + 1);
+      if (wait !== undefined) { st.failures += 1; delay = wait; again = true; }
     }
     if (!again) { if (end) ctx.down([end]); return; }
 
