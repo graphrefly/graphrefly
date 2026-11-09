@@ -926,3 +926,14 @@ test("replace: an ended node that lost its subscribers can be subscribed again a
   g.replace("x", ["a"], (ctx) => ctx.down([["DATA", 2]]));
   assert.deepEqual(during(g, () => g.subscribe("t", "x")), ["t <- x: [START, DATA(2)]"]);
 });
+
+test("replace: an active node cannot acquire an ended dependency (P5), as a subscription cannot", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  g.state("done", 0);
+  g.complete("done");
+  g.node("x", ["a"], () => {});
+  g.subscribe("s", "x");
+  assert.throws(() => g.replace("x", ["done"], () => {}), /done has ended/);
+  assert.deepEqual(g.describe().find((d) => d.id === "x").deps, ["a"], "nothing changed");
+});

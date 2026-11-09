@@ -86,7 +86,7 @@ callback registration 属于 lifetime。原来分散在各条规则里的"旧请
 | Replay | R-replay-buffer | A history node that keeps the last N published DATA and supplies them to new subscribers. | Hook H2 |
 | Checkpoint and restore | R-restore, R-snapshot, R-input-receipts, R-resource-reattach | Graph-level save and rebuild: construct nodes from recipes and seed them. | Hook H4. Scope is open decision O5. |
 | Revision evidence | R-node-revision | An observer that counts committed outputs per node, plus the optional hash. | Hook H5 (already exists as observe/inspection). D791 flagship revisions are DATA-level, not node revisions. |
-| Rewire | R-rewire, R-rewire-deferred, R-rewire-deferred-committed-boundary, R-rewire-async-live-edge, R-rewire-batch-boundary | Graph-level "replace node": tear the old instance down, build a new one with new dependencies, seed its cache. | Hook H4. Whether in-flight records must survive a rewire is O4. |
+| Rewire | R-rewire, R-rewire-deferred, R-rewire-deferred-committed-boundary, R-rewire-async-live-edge, R-rewire-batch-boundary | Graph-level "replace node": tear the old instance down, build a new one with new dependencies, seed its cache. | Hook H4. Whether in-flight records must survive a rewire is O4. 2026-11-08: the reference kernel's `replace` is a kernel request (it rebinds dependents); the seed is added when a case first needs it (user, after the C-8 replay) |
 | Value sugar policies | R-first-run-gate, R-dynamic-node | "Wait until every dependency has a value" and "read only some dependencies" are checks inside the sugar's function, not kernel gates. | Nothing |
 
 ## NodeOptions
@@ -185,7 +185,8 @@ rewire、resubscription 和 dynamic 节点。简报也不要求 batch；batch �
   message 通道）意味着：fn 只能通过 ctx.down/ctx.up 影响别的节点，在 fn 里调用别的节点的 `set` 应当被拒绝，
   或者统一当作 wave 结束后的 host 输入；选哪种还没定。探针脚本没有保留在仓库里。
   2026-11-06 起参考内核按 K8 处理：写自己的上游仍然拒绝（抛出变成它的 ERROR，和 TS 一样）；写不相关的
-  state 排队，在当前 wave 结束后作为 host 输入运行（K8/P7 测试）。这是参考内核的选择，用户还没有单独确认。
+  state 排队，在当前 wave 结束后作为 host 输入运行（K8/P7 测试）。**用户 2026-11-08 确认**：排队，不报错；拓扑请求（`replace`、
+  `subscribe`）也一样（C-8 回放的第 3 条）。
 
 ## 下一步
 
@@ -256,6 +257,11 @@ rewire、resubscription 和 dynamic 节点。简报也不要求 batch；batch �
    retry 策略按用户要求改写了 TS 的 `graph/resilience.ts`，没有原样照搬：`retryDelayMs` 一个函数同时回答重不重试、等多久；
    五种 backoff 合成 `{ initialMs, factor, maxMs }` 一种形状（linear 和 fibonacci 没有使用者）；在构造时校验并抛错，
    不再在每次计算时偷偷修正（TS 会把 factor 1.5 截成 1）。和 TS 的差异见 modules README。
+   同日用 restart 回放 C-34、用 `replace` 回放 C-8（已激活的 R-rewire），见 [REPLAY.md](../../reference/kernel/REPLAY.md)。
+   回放发现 `replace` 漏了"不能接上已结束的依赖"（P5）并已修好，restart 因此在上游结束后不再尝试重启。
+   和 C-8、C-34 不一致的五处列在 REPLAY.md 末尾，用户 2026-11-08 全部同意：用 replace，需要时再给它加 H4 种子（surgical 留作以后的性能优化）；允许 replace 已结束的节点；fn 里的请求排队；重启后订阅者保留；扇出期间的请求依赖顺序。规则修订（B140）时 C-8、C-34 要随之改。
+   同日按 owner 加 inner 的结构做了 switchMap（[switch-map.mjs](../../reference/modules/switch-map.mjs)），验证了第 1 处的前提：
+   只换一个 inner 的 operator 不用种子也能保住自己的值，因为被 replace 的只是 inner；mergeMap 仍是第一个需要种子的场景。
    发现：restart 需要内核的 `replace`。参考内核原来没有任何改拓扑的手段，而把下游和订阅者接到新实例上只有内核能做；
    DS-17 的 rewire 行只写了 H4（种子），restart 用不到种子，没有加。TS 里没有生产代码用 `resubscribable: true`，
    `repeat` 只在它自己的测试里用，重试是 driver 在图外做、以 DATA 发出事件，所以现有用法都套得进这个模块。

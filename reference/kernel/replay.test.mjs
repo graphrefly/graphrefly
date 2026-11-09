@@ -14,6 +14,13 @@ function during(g, body) {
   return g.trace.slice(start).map(format);
 }
 
+// Wraps a node function to count its invocations.
+function counted(fn) {
+  const wrapped = (ctx) => { wrapped.calls += 1; fn(ctx); };
+  wrapped.calls = 0;
+  return wrapped;
+}
+
 // A depless node is a producer: its function runs once at activation and hands out its
 // ctx, whose down later publishes from it.
 function producer(g, id) {
@@ -240,4 +247,76 @@ test("C-33/O3: output staged in a batch by a lifetime that closes before commit 
     g.unsubscribe("s", "P"); // closes P's lifetime inside the body
   });
   assert.deepEqual(during(g, () => g.subscribe("s2", "P")), ["s2 <- P: [START]"]);
+});
+
+// ---- C-8, intra-graph runtime rewire, against replace (DS-17 O4) ----------------------
+// C-8 is the activated R-rewire scenario. replace is graph-level and not surgical (O4),
+// so several clauses differ by design; REPLAY.md lists each. These tests pin what replace
+// does for each step.
+
+test("C-8 (2)(3): a new dependency's value reaches D, D recomputes, and the new dependency then drives D", () => {
+  const g = createGraph();
+  g.state("A", "a1");
+  g.state("B", "b0");
+  g.node("D", ["A"], (ctx) => ctx.down([["DATA", `f(${ctx.deps[0].value})`]]));
+  g.subscribe("s", "D");
+  assert.deepEqual(during(g, () => g.replace("D", ["A", "B"], (ctx) => ctx.down([["DATA", `f2(${ctx.deps[0].value},${ctx.deps[1].value})`]]))), [
+    "s <- D: [START, DATA(\"f2(a1,b0)\")]",
+  ]);
+  assert.deepEqual(during(g, () => g.set("B", "b1")), ["s <- D: [DIRTY, DATA(\"f2(a1,b1)\")]"]);
+});
+
+test("C-8 (4)(5): a removed dependency no longer drives D; D's value is recomputed, not preserved (O4)", () => {
+  const g = createGraph();
+  g.state("A", "a1");
+  g.state("B", "b1");
+  g.node("D", ["A", "B"], (ctx) => ctx.down([["DATA", `f2(${ctx.deps[0].value},${ctx.deps[1].value})`]]));
+  g.subscribe("s", "D");
+  assert.deepEqual(during(g, () => g.replace("D", ["B"], (ctx) => ctx.down([["DATA", `f3(${ctx.deps[0].value})`]]))), [
+    "s <- D: [START, DATA(\"f3(b1)\")]", // C-8 keeps f2(a1,b1) until B or A next drives D
+  ]);
+  assert.deepEqual(during(g, () => g.set("A", "a2")), [], "A is drained");
+});
+
+test("C-8 (6): replace to the current dependencies is not idempotent: a fresh instance runs (O4)", () => {
+  const g = createGraph();
+  g.state("B", "b1");
+  const fn = counted((ctx) => ctx.down([["DATA", ctx.deps[0].value]]));
+  g.node("D", ["B"], fn);
+  g.subscribe("s", "D");
+  assert.deepEqual(during(g, () => g.replace("D", ["B"], fn)), ["s <- D: [START, DATA(\"b1\")]"]);
+  assert.equal(fn.calls, 2);
+});
+
+test("C-8: an added dependency with no value still lets the new instance run once", () => {
+  const g = createGraph();
+  g.state("A", "a1");
+  g.state("E"); // SENTINEL: no value
+  const fn = counted((ctx) => ctx.down([["DATA", ctx.deps[1].has ? "both" : "a only"]]));
+  g.node("D", ["A"], (ctx) => ctx.down([["DATA", ctx.deps[0].value]]));
+  g.subscribe("s", "D");
+  assert.deepEqual(during(g, () => g.replace("D", ["A", "E"], fn)), ["s <- D: [START, DATA(\"a only\")]"]);
+  assert.equal(fn.calls, 1, "the new instance runs once; C-8 would wait until E emits");
+});
+
+test("C-8: a replace D asks for from its own function waits for the wave (K8) instead of being an ERROR", () => {
+  const g = createGraph();
+  g.state("A", 1);
+  let asked = false;
+  g.node("D", ["A"], (ctx) => {
+    if (ctx.deps[0].value === 2 && !asked) { asked = true; g.replace("D", ["A"], (c) => c.down([["DATA", -c.deps[0].value]])); }
+    ctx.down([["DATA", ctx.deps[0].value]]);
+  });
+  g.subscribe("s", "D");
+  assert.deepEqual(during(g, () => g.set("A", 2)), ["s <- D: [DIRTY, DATA(2)]", "s <- D: [START, DATA(-2)]"]);
+});
+
+test("C-8: replacing to no dependencies leaves D active with a function of no inputs", () => {
+  const g = createGraph();
+  g.state("A", 1);
+  g.node("D", ["A"], (ctx) => ctx.down([["DATA", ctx.deps[0].value]]));
+  g.subscribe("s", "D");
+  assert.deepEqual(during(g, () => g.replace("D", [], (ctx) => ctx.down([["DATA", "none"]]))), ["s <- D: [START, DATA(\"none\")]"]);
+  assert.equal(g.get("D").active, true);
+  assert.deepEqual(during(g, () => g.set("A", 2)), []);
 });

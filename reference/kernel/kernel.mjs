@@ -588,7 +588,11 @@ export function createGraph({ report: hostReport } = {}) {
       for (const d of deps) {
         if (d === id || dependsOn(nodeOf(d), id)) throw new KernelError(`replace: ${id} would depend on itself through ${d}`);
       }
-      request(() => replaceNode(n, deps, fn));
+      // P5, as for a subscription: an active node cannot acquire an ended dependency. An
+      // inactive node is checked when it is next subscribed.
+      const check = () => { if (n.active) for (const d of deps) assertAcquirable(nodeOf(d)); };
+      if (!busy) check(); // a queued replace reports this instead
+      request(() => { check(); replaceNode(n, deps, fn); });
     },
     set(id, value) { hostInput(id, ["DATA", value]); },
     invalidate(id) { hostInput(id, ["INVALIDATE"]); },

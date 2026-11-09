@@ -121,7 +121,9 @@ The kernel does not know or care whether a late `ctx.down` came from async work.
   released, so a shared one stays active. The new instance activates like a first subscription
   (K3): its first run only sets the retained value; each sink gets a `[START, …]` snapshot and each
   dependent receives the snapshot as its input, in one wave, so a diamond below settles once. An
-  inactive node only changes its definition. Refused for a state node and for a dependency on itself.
+  inactive node only changes its definition. Refused for a state node, for a dependency on itself,
+  and, while the node is active, for an ended dependency (P5, as a subscription is; found missing in
+  the C-8 replay). REPLAY.md lists where it differs from R-rewire (C-8).
   Only the kernel can do this, because it rebinds the dependents' input records; the DS-17 rewire row
   had named only H4 (a seed), which restart does not need, so it is not implemented.
 - H6: `{ quiet: true }` records its own dirty inputs but does not pass DIRTY on, so its dependents do
@@ -247,7 +249,7 @@ Each of these is left out rather than approximated:
 - A topology request made inside a batch body (`subscribe`, `replace`) runs at once, not at commit.
   Found 2026-11-08 while adding `replace`; O3 covers host inputs and late output only.
 - Modules: replay, checkpoint, and rewire beyond `replace` (a seed, H4). Pause, demand, observation
-  (H5) and restart (O7) are in [../modules/](../modules/README.md). H5 needed no kernel hook: a subscriber already receives
+  (H5), restart (O7) and switchMap are in [../modules/](../modules/README.md). H5 needed no kernel hook: a subscriber already receives
   what a node committed.
 - The flagship acceptance (B139 S1–S8) runs on this kernel in [../flagship/](../flagship/README.md);
   its only kernel addition was `describe()`.

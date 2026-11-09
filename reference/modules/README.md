@@ -257,7 +257,12 @@ deps ──► id/inner ──► id          id.restart ──► id
   (K8), as TS applies `ctx.rewireNext` after the wave. A delayed retry is dropped once the owner's
   lifetime has closed, even if a new one has opened. When the owner deactivates without having
   ended, an inner that has ended is renewed, since it would otherwise refuse the owner's next
-  activation (P5).
+  activation (P5). Once an upstream of the inner has ended, no restart is attempted: the fresh
+  instance could not acquire it, so the owner ends with the inner instead of waiting for good.
+- **C-34 replayed** in [restart.replay.test.mjs](restart.replay.test.mjs); see the kernel's
+  [REPLAY.md](../kernel/REPLAY.md). The next execution starts after the fanout and a request made
+  during it gets its own START, but only when the owner's replace is queued first, and the old
+  registrations go on instead of ending (O7). Both are listed there as decisions for the user.
 
 **Finding for DS-17: restart needs a kernel `replace`.** The reference kernel had no way to change
 topology, and only the kernel can rebind a node's dependents and subscribers to a new instance. The
@@ -285,7 +290,8 @@ released and the old instance's late output dropped; a closed lifetime's delayed
 
 Mutations, each failing at least one test: no outside restart; no signal check on a delayed retry
 (this needed the timing test); no renewal on deactivation; renewal even after the owner ended; no
-fresh retry count per round; the policy's delay ignored.
+fresh retry count per round; the policy's delay ignored; a restart attempted after an upstream
+ended (the owner then never ends).
 
 ### New things this module introduces
 
@@ -296,6 +302,7 @@ fresh retry count per round; the policy's delay ignored.
 | `${id}.restart` and `restart()` | O7: a restart request reaches the owner on a declared edge (P11) |
 | `rounds` and `retry` | O7's attempts and backoff; `rounds` is TS `repeat`'s count, `retry` the shared policy |
 | Renewing an ended inner when the owner deactivates | Without it the owner could never be subscribed again (P5) |
+| No restart once an upstream of the inner has ended | Without it the owner waits for good for a replace the kernel refuses (P5) |
 
 ## Retry policy ([resilience.mjs](resilience.mjs), [resilience.test.mjs](resilience.test.mjs))
 
@@ -331,3 +338,54 @@ not touched here.
 Mutations, each failing at least one test: the last attempt allowed one more retry; the exponent
 counted from n instead of n - 1; no cap; the factor truncated as in TS; a non-integer attempt
 accepted; each of the four validations removed; the policy not frozen.
+
+## switchMap ([switch-map.mjs](switch-map.mjs), [switch-map.test.mjs](switch-map.test.mjs))
+
+Added 2026-11-08 to check the claim behind the first C-8 decision ([REPLAY.md](../kernel/REPLAY.md)):
+an operator that follows one inner at a time keeps its value across switches without a seed (H4),
+because only its inner is replaced, never the operator. The claim holds: the test "the owner keeps
+its value across a switch with no seed" passes. `exhaustMap`, `concatMap` and `repeat` follow one
+inner at a time too, so they fit the same shape; `mergeMap`, with a varying number of inners, is
+still the first case for a seed.
+
+```text
+sourceId ──► id ◄── id/inner ◄── (the projected inner's dependencies)
+```
+
+`switchMap(g, id, sourceId, project)` returns `{ id, innerId }`. `project(value)` returns the inner's
+definition `{ deps, fn }`; to follow a node X that already exists, project to `{ deps: [X], fn: relay }`.
+On the last source value of a wave the owner asks for `replace(${id}/inner, …)`, which runs after the
+wave (K8). The old inner's lifetime closes, so its late output is dropped and a dependency only it
+had is released: that is the cancellation. Otherwise as TS's switch mode (`mapOperator`, D47/D81):
+the inner's values are forwarded; a source or inner ERROR, or a throwing projector, ends the owner
+with ERROR after the inner values it forwarded in that wave; the owner completes once the source has
+completed and no inner is live or pending.
+
+| Here | TS `switchMap` (`dafc5ae`) | Why |
+|---|---|---|
+| `project` returns a definition `{ deps, fn }` | `project` returns a node (or something `fromAny` turns into one) | The reference kernel cannot remove nodes, so a fresh node per value would pile up; the inner is one node at a fixed path |
+| A projection with the same `fn` and `deps` keeps the live inner | A re-projected node that is already live is kept | The same rule, by definition instead of node identity |
+| The inner is `${id}/inner` in `describe()`, its deps showing what it follows | The live inner appears under a synthetic id (D51) | O7: observation goes on across switches |
+| A projection onto an ended node is an ERROR | Rewire rejects a non-resubscribable terminal dependency (C-8) | The same outcome; the owner checks first, since a queued `replace` that is refused would leave it waiting |
+| When the owner deactivates, the inner goes back to none | A fresh activation starts with no inners | The same; an ended inner would also refuse the next activation (P5) |
+
+What the tests pin: TS's two switchMap tests (cancel the in-flight inner; a re-projected live inner
+is neither cancelled nor duplicated); the owner's value kept across a switch, and the live inner in
+`describe()`; a fresh computation's late answer dropped; completion with a live inner and with
+none; source, inner and projector ERROR, each releasing the inner; the inner values before a
+projector ERROR kept; an ended projection; a fresh activation after the inner ended; the same
+definition restarted once its inner completed; the last of several values in one wave.
+
+Mutations, each failing at least one test: no keep of the same live inner; "same" ignoring whether
+the inner is live; the first value of a wave instead of the last; errors not forwarded; inner
+completion not tracked; completion ignoring a live inner; no ended check; no renewal on
+deactivation; no catch around the projector (the kernel would turn the throw into ERROR anyway, but
+drop the inner values forwarded earlier in that run); inner values not forwarded.
+
+### New things this module introduces
+
+| New | Why it stays |
+|---|---|
+| `switchMap(g, id, sourceId, project)` with `project` returning `{ deps, fn }` | The check above; a definition because nodes cannot be removed |
+| `relay` | The definition that follows an existing node, which is what TS's tests project to |
+| Keeping the live inner when the definition is the same | TS's own rule, "re-projecting the same live inner does not cancel or duplicate it" |

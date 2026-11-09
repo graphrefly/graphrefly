@@ -152,3 +152,13 @@ test("a delayed retry is dropped once the owner's lifetime has closed, even if a
   assert.equal(attempts, 3);
   assert.deepEqual(g.get("r").ended, ["ERROR", "boom"]);
 });
+
+test("no restart once an upstream of the inner has ended: the owner ends with the inner instead of waiting", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  // The inner passes a on and ends with it (complete=auto).
+  restartable(g, "r", { deps: ["a"], fn: (ctx) => ctx.down([["DATA", ctx.deps[0].value]]), rounds: 5 });
+  g.subscribe("s", "r");
+  g.complete("a");
+  assert.deepEqual(g.get("r").ended, ["COMPLETE"]);
+});

@@ -27,7 +27,8 @@
 // lifetime has closed by then. When the owner deactivates without having ended, an inner
 // that has ended is replaced too, since it would otherwise refuse the owner's next
 // activation (P5); with no other subscriber it is inactive, so only its definition is
-// renewed.
+// renewed. No restart is attempted once an upstream of the inner has ended: the fresh
+// instance could not acquire it (P5), and the owner would wait for good.
 
 import { retryDelayMs, retryPolicy } from "./resilience.mjs";
 
@@ -47,9 +48,12 @@ export function restartable(g, id, { deps, fn, rounds = 1, retry = retryPolicy()
 
     const end = inner.terminal;
     let delay = 0;
-    let again = request.waves.length > 0;
-    if (!again && end?.[0] === "COMPLETE" && st.round < rounds) { st.round += 1; st.failures = 0; again = true; }
-    if (!again && end?.[0] === "ERROR") {
+    // A fresh inner could not acquire an ended upstream (P5), so none is attempted: the
+    // owner ends with the inner instead of waiting for a restart that cannot happen.
+    const restartable = !deps.some((d) => g.get(d).ended);
+    let again = restartable && request.waves.length > 0;
+    if (restartable && !again && end?.[0] === "COMPLETE" && st.round < rounds) { st.round += 1; st.failures = 0; again = true; }
+    if (restartable && !again && end?.[0] === "ERROR") {
       const wait = retryDelayMs(retry, st.failures + 1);
       if (wait !== undefined) { st.failures += 1; delay = wait; again = true; }
     }
