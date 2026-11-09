@@ -1161,3 +1161,26 @@ test("rewire: removing the last open dependency does not complete an auto node, 
   assert.deepEqual(during(g, () => g.rewire("d", ["a"], sumById)), []);
   assert.equal(g.get("d").ended, null);
 });
+
+test("replace: a dependency in both lists keeps its connection and its place among its dependency's subscribers", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  g.node("x", ["a"], (ctx) => ctx.down([["DATA", ctx.deps[0].value]]));
+  g.node("y", ["a"], (ctx) => ctx.down([["DATA", ctx.deps[0].value]]));
+  g.subscribe("sx", "x");
+  g.subscribe("sy", "y");
+  g.replace("x", ["a"], (ctx) => ctx.down([["DATA", ctx.deps[0].value * 10]]));
+  assert.deepEqual(during(g, () => g.set("a", 2)), ["sx <- x: [DIRTY, DATA(20)]", "sy <- y: [DIRTY, DATA(2)]"],
+    "x still comes before y in a's subscriber order");
+  assert.throws(() => g.replace("x", ["a", "a"], () => {}), /distinct/);
+});
+
+test("replace: the new instance gets a START snapshot from a dependency it keeps, as at a first subscription (K3)", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  g.node("x", ["a"], (ctx) => ctx.down([["DATA", ctx.deps[0].value]]));
+  g.subscribe("s", "x");
+  const seen = [];
+  g.replace("x", ["a"], (ctx) => { seen.push(ctx.deps[0].waves); });
+  assert.deepEqual(seen, [[[1]]], "a's value arrives as this run's wave, as it would for a relay");
+});

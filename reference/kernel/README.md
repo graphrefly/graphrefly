@@ -120,12 +120,15 @@ The kernel does not know or care whether a late `ctx.down` came from async work.
 - Replace (added 2026-11-08 for O7): `replace(id, deps, fn)` gives a computed node a new instance
   under the same id, keeping its subscribers. It is a request (K8). The old lifetime closes: its signal
   aborts, its late output is dropped, its cleanups run; no value, private state or terminal survives,
-  so an ended node can be acquired again. The new dependencies are acquired before the old ones are
-  released, so a shared one stays active. The new instance activates like a first subscription
-  (K3): its first run only sets the retained value; each sink gets a `[START, …]` snapshot and each
+  so an ended node can be acquired again. The dependencies are exchanged as by `rewire` (one shared
+  function since 2026-11-08): a dependency in both lists keeps its connection, and keeps its place
+  among its dependency's subscribers; added ones are acquired before removed ones are released, so a
+  shared one stays active; then the old cleanups run, as when a lifetime closes (K7). The new instance
+  activates like a first subscription (K3): it gets every dependency's START snapshot, kept ones
+  included; its first run only sets the retained value; each sink gets a `[START, …]` snapshot and each
   dependent receives the snapshot as its input, in one wave, so a diamond below settles once. An
   inactive node only changes its definition. Refused for a state node, for a dependency on itself,
-  and, while the node is active, for an ended dependency (P5, as a subscription is; found missing in
+  for duplicate dependencies (the exchange matches them by id), and, while the node is active, for an ended dependency (P5, as a subscription is; found missing in
   the C-8 replay). REPLAY.md lists where it differs from R-rewire (C-8).
   Only the kernel can do this, because it rebinds the dependents' input records; the DS-17 rewire row
   had named only H4 (a seed), which restart does not need, so it is not implemented.
@@ -176,6 +179,18 @@ new ones are acquired; old cleanups not run; old signal not aborted; no START to
 keeping the old input record; a new instance that ends at once keeping its lifetime; no cycle check;
 run at once instead of queued; an inactive node keeping its old terminal. Four of them (the pending
 mark, the input record, ending at once, the inactive terminal) survived until their tests were added.
+
+After `replace` and `rewire` were made to share one dependency exchange (2026-11-08, the user's
+choice), every mutation of both was run again with the module tests, 35 in all, each failing at least
+one test. Two survived at first: releasing removed dependencies before the new instance runs, which
+needs no order (the exchange already acquires first), so the exchange now releases them itself and
+the old cleanups run before the new instance, as at a lifetime's close; and a replace keeping a kept
+dependency's old input record, killed by the test "the new instance gets a START snapshot from a
+dependency it keeps". A random test (scratch, not committed) also ran 2000 sequences of set,
+complete, subscribe, unsubscribe, rewire, replace and batch, checking after every step that no node
+is pending, every connection's position points back at its dependency, an active node holds each
+dependency once, a node without a lifetime holds none, and inputs match their dependency's value;
+none failed, and a mutant that does not move a kept connection's position failed 235 of 400.
 
 Mutations of `rewire` checked on 2026-11-08, together with the C-8 replay and mergeMap, each failing
 at least one test: removed dependencies released before added ones are acquired; a kept dependency's
@@ -280,7 +295,7 @@ Each of these is left out rather than approximated:
 - A topology request made inside a batch body (`subscribe`, `replace`, `rewire`) runs at once, not at commit.
   Found 2026-11-08 while adding `replace`; O3 covers host inputs and late output only.
 - Modules: replay and checkpoint. The H4 seed is not implemented: switchMap and mergeMap were built
-  without one, mergeMap first on `replace`, then on `rewire`. Pause, demand, observation (H5), restart (O7), switchMap and mergeMap are in
+  without one, mergeMap first on `replace`, then on `rewire` (now one module with switchMap). Pause, demand, observation (H5), restart (O7), switchMap and mergeMap are in
   [../modules/](../modules/README.md). H5 needed no kernel hook: a subscriber already receives
   what a node committed.
 - The flagship acceptance (B139 S1–S8) runs on this kernel in [../flagship/](../flagship/README.md);

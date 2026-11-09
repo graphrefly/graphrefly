@@ -246,9 +246,9 @@ They change C-8 and C-34 when the draft rules are revisited (B140); `spec/` is n
    change, O(n) re-acquisition when one dependency is added (mergeMap), and the old instance's own
    async work is aborted. Single-inner operators (`switchMap`, `exhaustMap`, `concatMap`, `repeat`)
    can be an owner with a replaced inner and keep their cache without a seed; checked the same day
-   by building `switchMap` this way ([../modules/switch-map.mjs](../modules/switch-map.mjs)).
+   by building `switchMap` this way (now in [../modules/higher-order.mjs](../modules/higher-order.mjs)).
    `mergeMap`, with a varying number of inners, was expected to be the first case that needs the
-   seed; built the same day ([../modules/merge-map.mjs](../modules/merge-map.mjs)), it does not.
+   seed; built the same day (git `75ee4c8`), it does not.
    Replace costs it a fixed outward node, its state carried in the next fn's closure with a
    first-run skip of snapshots already handled, one inner per replace (K3 keeps one value per
    activation), and leaving an ended source out (P5). A seed would replace only the second; the

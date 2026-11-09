@@ -339,114 +339,86 @@ Mutations, each failing at least one test: the last attempt allowed one more ret
 counted from n instead of n - 1; no cap; the factor truncated as in TS; a non-integer attempt
 accepted; each of the four validations removed; the policy not frozen.
 
-## switchMap ([switch-map.mjs](switch-map.mjs), [switch-map.test.mjs](switch-map.test.mjs))
+## switchMap and mergeMap ([higher-order.mjs](higher-order.mjs), [higher-order.test.mjs](higher-order.test.mjs))
 
-Added 2026-11-08 to check the claim behind the first C-8 decision ([REPLAY.md](../kernel/REPLAY.md)):
-an operator that follows one inner at a time keeps its value across switches without a seed (H4),
-because only its inner is replaced, never the operator. The claim holds: the test "the owner keeps
-its value across a switch with no seed" passes. `exhaustMap`, `concatMap` and `repeat` follow one
-inner at a time too, so they fit the same shape. `mergeMap`, with a varying number of inners, was
-then expected to be the first case for a seed; it is not (next section).
+One operator for both, as TS's `mapOperator` (D47/D81). How it got here, all on 2026-11-08:
 
-```text
-sourceId ──► id ◄── id/inner ◄── (the projected inner's dependencies)
-```
-
-`switchMap(g, id, sourceId, project)` returns `{ id, innerId }`. `project(value)` returns the inner's
-definition `{ deps, fn }`; to follow a node X that already exists, project to `{ deps: [X], fn: relay }`.
-On the last source value of a wave the owner asks for `replace(${id}/inner, …)`, which runs after the
-wave (K8). The old inner's lifetime closes, so its late output is dropped and a dependency only it
-had is released: that is the cancellation. Otherwise as TS's switch mode (`mapOperator`, D47/D81):
-the inner's values are forwarded; a source or inner ERROR, or a throwing projector, ends the owner
-with ERROR after the inner values it forwarded in that wave; the owner completes once the source has
-completed and no inner is live or pending.
-
-| Here | TS `switchMap` (`dafc5ae`) | Why |
-|---|---|---|
-| `project` returns a definition `{ deps, fn }` | `project` returns a node (or something `fromAny` turns into one) | The reference kernel cannot remove nodes, so a fresh node per value would pile up; the inner is one node at a fixed path |
-| A projection with the same `fn` and `deps` keeps the live inner | A re-projected node that is already live is kept | The same rule, by definition instead of node identity |
-| The inner is `${id}/inner` in `describe()`, its deps showing what it follows | The live inner appears under a synthetic id (D51) | O7: observation goes on across switches |
-| A projection onto an ended node is an ERROR | Rewire rejects a non-resubscribable terminal dependency (C-8) | The same outcome; the owner checks first, since a queued `replace` that is refused would leave it waiting |
-| When the owner deactivates, the inner goes back to none | A fresh activation starts with no inners | The same; an ended inner would also refuse the next activation (P5) |
-
-What the tests pin: TS's two switchMap tests (cancel the in-flight inner; a re-projected live inner
-is neither cancelled nor duplicated); the owner's value kept across a switch, and the live inner in
-`describe()`; a fresh computation's late answer dropped; completion with a live inner and with
-none; source, inner and projector ERROR, each releasing the inner; the inner values before a
-projector ERROR kept; an ended projection; a fresh activation after the inner ended; the same
-definition restarted once its inner completed; the last of several values in one wave.
-
-Mutations, each failing at least one test: no keep of the same live inner; "same" ignoring whether
-the inner is live; the first value of a wave instead of the last; errors not forwarded; inner
-completion not tracked; completion ignoring a live inner; no ended check; no renewal on
-deactivation; no catch around the projector (the kernel would turn the throw into ERROR anyway, but
-drop the inner values forwarded earlier in that run); inner values not forwarded.
-
-### New things this module introduces
-
-| New | Why it stays |
-|---|---|
-| `switchMap(g, id, sourceId, project)` with `project` returning `{ deps, fn }` | The check above; a definition because nodes cannot be removed |
-| `relay` | The definition that follows an existing node, which is what TS's tests project to |
-| Keeping the live inner when the definition is the same | TS's own rule, "re-projecting the same live inner does not cancel or duplicate it" |
-
-## mergeMap ([merge-map.mjs](merge-map.mjs), [merge-map.test.mjs](merge-map.test.mjs))
-
-Added 2026-11-08 to check the other half of the first C-8 decision: that `mergeMap`, with a varying
-number of inners, is the first case that needs a seed (H4). It did not need one. Built first on
-`replace` alone (git `75ee4c8`), it passed TS's mergeMap tests but replace cost it four things: a
-fixed outward node in front of a replaced core, so the value and the single START survive; the
-core's state carried in the next fn's closure, with a first-run skip of snapshots already handled;
-one inner per replace, since an activation keeps one value (K3); and leaving an ended source out
-(P5). A seed would have removed only the second. The user then asked for the surgical form, and the
-kernel got `rewire(id, deps, fn)` ([kernel README](../kernel/README.md)); this module was rebuilt on
-it, and the four costs are gone.
+1. `switchMap` was built first as an owner with a replaced inner, to check the claim behind the first
+   C-8 decision ([REPLAY.md](../kernel/REPLAY.md)): an operator that follows one inner at a time keeps
+   its value across switches without a seed (H4), because only its inner is replaced. That held.
+2. `mergeMap`, with a varying number of inners, was expected to be the first case for a seed. Built on
+   `replace` alone (git `75ee4c8`), it passed TS's mergeMap tests without one, but replace cost it four
+   things: a fixed outward node in front of a replaced core, so the value and the single START
+   survive; the core's state carried in the next fn's closure, with a first-run skip of snapshots
+   already handled; one inner per replace, since an activation keeps one value (K3); and leaving an
+   ended source out (P5). A seed would have removed only the second.
+3. The user then asked for the surgical form, and the kernel got `rewire(id, deps, fn)`; `mergeMap`
+   was rebuilt on it as one node (`79026f7`), and the four costs were gone.
+4. With both on the same shape, the user asked for the simplification: the two modules (74 lines of code)
+   became this one (57), and `switchMap` lost its owner and its own inner reset.
 
 ```text
 sourceId ──► id ◄── id/inner/0, id/inner/1, ... ◄── (each projected inner's dependencies)
 ```
 
-`mergeMap(g, id, sourceId, project, { concurrent })` returns `{ id }`. As TS's merge mode
-(`mapOperator`, D47/D81), `id` depends on the source and on every live inner and forwards their
-values; it completes once the source has completed and no inner is live, and ends with ERROR on a
-source or inner ERROR or a throwing projector, after the inner values it forwarded in that wave.
-`concurrent` bounds the live inners; further source values wait unprojected until one completes. Each
-change of the inner set is one `rewire`, asked for during the wave and run after it (K8), as TS's
-`rewireNext` is drained at the boundary. An added inner's value arrives as an ordinary input wave.
-The function finds its dependencies by `ctx.deps[i].id`, so it keeps no position bookkeeping.
+`switchMap(g, id, sourceId, project)` and `mergeMap(g, id, sourceId, project, { concurrent })` return
+`{ id }`. `id` depends on the source and on every live inner and forwards their values. It completes
+once the source has completed and no inner is live, and ends with ERROR on a source or inner ERROR or a
+throwing projector, after the inner values it forwarded in that wave. Each change of the inner set is
+one `rewire`, asked for during the wave and run after it (K8), as TS's `rewireNext` is drained at the
+boundary; an added inner's value arrives as an ordinary input wave. The function finds its
+dependencies by `ctx.deps[i].id`. When `id` deactivates, it goes back to no inner.
 
-| Here | TS `mergeMap` (`dafc5ae`) | Why |
+`project(value)` returns the inner's definition `{ deps, fn }`; to follow a node X that already
+exists, project to `{ deps: [X], fn: relay }`. The definition goes into an inner node with `replace` (a
+new node the first time). switch projects the last source value of a wave into `${id}/inner/0`;
+replacing that node closes the live inner's lifetime, so its late output is dropped and a dependency
+only it had is released: that is the cancellation. merge projects every value into the first node
+that is not live, and `concurrent` bounds the live inners; further values wait unprojected until one
+completes.
+
+| Here | TS (`dafc5ae`) | Why |
 |---|---|---|
-| `project` returns a definition `{ deps, fn }` | `project` returns a node (or something `fromAny` turns into one) | As switchMap: nodes cannot be removed |
-| Inner nodes at `${id}/inner/k`, reused once not live | A fresh node per inner | The kernel cannot delete a node; reuse bounds them by the peak number live |
-| One `rewire` with the whole new list per change | `rewireNext.unsubscribeDep` and `subscribeDep` per inner, removes before adds so the list stays aligned with positions | The kernel compares the lists; dependencies are read by id, so there is no alignment to keep |
-| A projection with the same `fn` and `deps` as a live inner adds nothing | A projected node that is already live is skipped | The same rule, by definition |
-| A projection onto an ended node is an ERROR | A node that completed in the same wave is skipped (the test "does not re-add a just-completed inner") | As switchMap: an ended node cannot be acquired (P5) |
-| An inner that sends several values as it activates passes on its last | `mergeMap(v => [v, v + 1])` gives both | K3: an activation only sets the retained value. The same holds for switchMap's inner and for any first subscription |
-| No `flatMap` alias, no `fromAny` coercion | Both | Sugar; nothing here needs them |
+| `project` returns a definition `{ deps, fn }` | `project` returns a node (or something `fromAny` turns into one) | The kernel cannot delete a node, so a fresh node per value would pile up |
+| Inner nodes at `${id}/inner/k`, reused once not live; switch always uses `${id}/inner/0` | A fresh node per inner, under a synthetic id in `describe()` (D51) | Bounded by the peak number live; O7: observation goes on across switches |
+| One `rewire` with the whole new list per change | `rewireNext.unsubscribeDep` and `subscribeDep` per inner, removes before adds so the list stays aligned with positions | The kernel compares the lists, and dependencies are read by id |
+| A projection with the same `fn` and `deps` as a live inner keeps it | A re-projected node that is already live is kept (switch) or skipped (merge) | The same rule, by definition instead of node identity |
+| A projection onto an ended node is an ERROR | merge skips a node that completed in the same wave ("does not re-add a just-completed inner"); rewire rejects a non-resubscribable terminal dependency (C-8) | An ended node cannot be acquired (P5) |
+| An inner that sends several values as it activates passes on its last | `mergeMap(v => [v, v + 1])` gives both | K3: an activation only sets the retained value, as at any first subscription |
+| The inner node is created at the first projection | — | Nothing exists to observe before there is an inner |
+| No `concatMap`, `exhaustMap`, `flatMap`, `fromAny` | Present | Not needed so far; concat and exhaust would be further modes of the same loop, not built |
 
-What the tests pin: TS's mergeMap tests (interleaving, and release and removal of a completed inner;
-bounded concurrency; invalid `concurrent`; an already live inner merged once with later removals
-aligned; completion; source, inner and projector ERROR releasing every inner; inner DATA before its
-ERROR; the just-completed re-projection, which is an ERROR here); the operator's value and single
-START kept while inners are added; no resend of live inners' values and no reprojection of the
-source's; several inners added in one wave each passing on their value; the K3 last value of an
-inner's activation; an inner that completes as it activates; a source value queued ahead of the
-operator's rewire; node reuse, also by an inner that completes in the wave of a new source value; a
-fresh activation; inner values before a projector ERROR.
+What the tests pin. switchMap: TS's two tests (cancel the in-flight inner; a re-projected live inner
+is neither cancelled nor duplicated); the value kept across a switch, and the live inner in
+`describe()`; a fresh computation's late answer dropped; completion with a live inner and with none;
+source, inner and projector ERROR, each releasing the inner; inner values before a projector ERROR; an
+ended projection; a fresh activation after the inner ended; the same definition restarted once its
+inner completed; the last of several values in one wave. mergeMap: TS's tests (interleaving, release
+and removal of a completed inner; bounded concurrency; invalid `concurrent`; an already live inner
+merged once with later removals aligned; completion; source, inner and projector ERROR releasing
+every inner; inner DATA before its ERROR; the just-completed re-projection, an ERROR here); the value
+and single START kept while inners are added; no resend of live inners' values and no reprojection of
+the source's; several inners added in one wave; the K3 last value; an inner that completes as it
+activates; a source value queued ahead of the operator's rewire; node reuse, also by an inner that
+completes in the wave of a new source value; a fresh activation.
 
-Mutations, each failing at least one test: no "same definition" skip; no ended check; no catch
-around the projector; a completed inner kept; a removal not rewired; no renewal on deactivation; no
-concurrency bound; only the source's ERROR handled; inner values not forwarded. Two checks survived
-every test and were removed: excluding a node that completed in this wave from reuse (replacing it
-sends the operator its new value, and the rewire keeps it in place), and waiting for an empty queue
-before completing (a waiting value implies a live inner).
+Mutations, each failing at least one test: no keep of the same live inner; no ended check; no catch
+around the projector (the kernel would turn the throw into ERROR but drop the inner values forwarded
+earlier in that run); a completed inner kept; a removal not rewired; no reset on deactivation; no
+concurrency bound; only the source's ERROR handled; inner values not forwarded; switch taking the
+first value of a wave; switch keeping the old inner as well; merge reusing a live node; completion
+ignoring live inners; an invalid `concurrent` accepted. Removed because they survived every test:
+excluding a node that completed in this wave from reuse (replacing it sends the operator its new
+value, and the rewire keeps it in place), and waiting for an empty queue before completing (a waiting
+value implies a live inner).
 
 ### New things this module introduces
 
 | New | Why it stays |
 |---|---|
-| `mergeMap(g, id, sourceId, project, { concurrent })` | The check above; `concurrent` is TS's `MergeMapOptions` |
+| `switchMap`, `mergeMap` (with `concurrent`, TS's `MergeMapOptions`) over one `mapOperator` | TS's own structure |
+| `project` returning `{ deps, fn }`, and `relay` | A definition because nodes cannot be deleted; `relay` follows an existing node, which is what TS's tests project to |
+| Keeping the live inner when the definition is the same | TS's rule, by definition |
 | Inner node reuse at `${id}/inner/k` | Without it inner nodes would grow by one per source value |
 
 The kernel side, `rewire` and `ctx.deps[i].id`, is listed in the kernel README.

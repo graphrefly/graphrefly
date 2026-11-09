@@ -1,13 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createGraph } from "../kernel/kernel.mjs";
-import { mergeMap } from "./merge-map.mjs";
-import { relay } from "./switch-map.mjs";
+import { createGraph, format } from "../kernel/kernel.mjs";
+import { mergeMap, relay, switchMap } from "./higher-order.mjs";
 
 const values = (g, sinkId) => g.trace.filter((e) => e.to === sinkId).flatMap((e) => e.msgs)
   .filter((m) => m[0] === "DATA").map((m) => m[1]);
-const starts = (g, sinkId) => g.trace.filter((e) => e.to === sinkId && e.msgs[0][0] === "START").length;
 const follow = (x) => ({ deps: [x], fn: relay });
+const starts = (g, sinkId) => g.trace.filter((e) => e.to === sinkId && e.msgs[0][0] === "START").length;
 
 // A controllable inner per projection, like TS's subject(): its ctx is kept so the test can
 // send from it later.
@@ -21,7 +20,158 @@ function subjects() {
   return { made, def };
 }
 
-test("keeps all inners live and interleaves their emissions; a completed inner is released (TS)", () => {
+test("switchMap: cancels the in-flight inner on a new source value and forwards only the current one (TS)", () => {
+  const g = createGraph();
+  g.state("s"); g.state("a"); g.state("b");
+  switchMap(g, "op", "s", (v) => follow(v === 1 ? "a" : "b"));
+  g.subscribe("out", "op");
+  g.set("s", 1);
+  g.set("a", 10);
+  assert.deepEqual(values(g, "out"), [10]);
+  g.set("s", 2);
+  assert.equal(g.get("a").active, false, "a is released");
+  assert.equal(g.get("b").active, true);
+  g.set("a", 99); // the superseded inner is drained
+  g.set("b", 20);
+  assert.deepEqual(values(g, "out"), [10, 20]);
+});
+
+test("switchMap: re-projecting the same live inner does not cancel or duplicate it (TS)", () => {
+  const g = createGraph();
+  g.state("s"); g.state("inner");
+  const log = [];
+  switchMap(g, "op", "s", () => follow("inner"));
+  g.subscribe("out", "op");
+  g.set("s", 1);
+  g.subscribe("watch", "op/inner/0", (msgs) => log.push(msgs.map((m) => m[0]).join()));
+  g.set("s", 2);
+  assert.deepEqual(log, ["START"], "the inner was not restarted for s = 2");
+  g.set("inner", 10);
+  assert.deepEqual(values(g, "out"), [10]);
+});
+
+test("switchMap: the owner keeps its value across a switch with no seed: only the inner is replaced", () => {
+  const g = createGraph();
+  g.state("s"); g.state("a", 10); g.state("b");
+  switchMap(g, "op", "s", (v) => follow(v === 1 ? "a" : "b"));
+  g.subscribe("out", "op");
+  g.set("s", 1);
+  assert.equal(g.get("op").value, 10);
+  g.set("s", 2); // b has no value yet
+  assert.deepEqual(g.get("op"), { active: true, has: true, value: 10, ended: null });
+  assert.equal(g.describe().find((d) => d.id === "op/inner/0").deps[0], "b", "describe shows the live inner");
+});
+
+test("switchMap: a fresh computation per value: the old one's late output is dropped", async () => {
+  const g = createGraph();
+  g.state("s");
+  const later = [];
+  switchMap(g, "op", "s", (v) => ({ deps: [], fn: (ctx) => { later.push(() => ctx.down([["DATA", `r${v}`]])); } }));
+  g.subscribe("out", "op");
+  g.set("s", 1);
+  g.set("s", 2);
+  later[0](); // the answer for 1 arrives after the switch
+  later[1]();
+  assert.deepEqual(values(g, "out"), ["r2"]);
+});
+
+test("switchMap: COMPLETE once the source has completed and the inner has completed", () => {
+  const g = createGraph();
+  g.state("s"); g.state("a");
+  switchMap(g, "op", "s", () => follow("a"));
+  g.subscribe("out", "op");
+  g.set("s", 1);
+  g.complete("s");
+  assert.equal(g.get("op").ended, null, "the inner is still live");
+  g.complete("a");
+  assert.deepEqual(g.get("op").ended, ["COMPLETE"]);
+});
+
+test("switchMap: a source completing with no inner completes at once", () => {
+  const g = createGraph();
+  g.state("s");
+  switchMap(g, "op", "s", () => follow("x"));
+  g.subscribe("out", "op");
+  g.complete("s");
+  assert.deepEqual(g.get("op").ended, ["COMPLETE"]);
+});
+
+test("switchMap: source ERROR, inner ERROR and a throwing projector each end the owner with ERROR, releasing the inner", () => {
+  for (const [name, act, expected] of [
+    ["source", (g) => g.error("s", "src boom"), "src boom"],
+    ["inner", (g) => g.error("a", "inner boom"), "inner boom"],
+    ["projector", (g) => g.set("s", 0), "project boom"],
+  ]) {
+    const g = createGraph();
+    g.state("s"); g.state("a");
+    switchMap(g, "op", "s", (v) => { if (v === 0) throw new Error("project boom"); return follow("a"); });
+    g.subscribe("out", "op");
+    g.set("s", 1);
+    act(g);
+    assert.deepEqual(g.get("op").ended, ["ERROR", expected], name);
+    assert.equal(g.get("a").active, false, `${name}: the inner's dependency is released`);
+  }
+});
+
+test("switchMap: a projection onto an ended node is an ERROR, not a wait", () => {
+  const g = createGraph();
+  g.state("s"); g.state("done", 1);
+  g.complete("done");
+  switchMap(g, "op", "s", () => follow("done"));
+  g.subscribe("out", "op");
+  g.set("s", 1);
+  assert.deepEqual(g.get("op").ended, ["ERROR", "op: cannot follow done, which has ended"]);
+});
+
+test("switchMap: a fresh activation starts with no inner, even after the inner ended", () => {
+  const g = createGraph();
+  g.state("s", 1); g.state("a", 5);
+  switchMap(g, "op", "s", () => ({ deps: ["a"], fn: (ctx) => ctx.down([["DATA", ctx.deps[0].value], ["COMPLETE"]]) }));
+  g.subscribe("out", "op");
+  assert.deepEqual(g.get("op/inner/0").ended, ["COMPLETE"]);
+  g.unsubscribe("out", "op");
+  g.subscribe("again", "op");
+  assert.deepEqual(values(g, "again"), [5]);
+});
+
+test("switchMap: re-projecting the same definition after its inner completed starts a fresh inner", () => {
+  const g = createGraph();
+  g.state("s");
+  let runs = 0;
+  const once = { deps: [], fn: (ctx) => { runs += 1; ctx.down([["DATA", runs], ["COMPLETE"]]); } };
+  switchMap(g, "op", "s", () => once);
+  g.subscribe("out", "op");
+  g.set("s", 1);
+  g.set("s", 2);
+  assert.deepEqual(values(g, "out"), [1, 2]);
+});
+
+test("switchMap: several source values in one wave switch to the last one only", () => {
+  const g = createGraph();
+  g.state("s"); g.state("a", "A"); g.state("b", "B");
+  const seen = [];
+  switchMap(g, "op", "s", (v) => { seen.push(v); return follow(v); });
+  g.subscribe("out", "op");
+  g.batch(() => { g.set("s", "a"); g.set("s", "b"); });
+  assert.deepEqual(seen, ["b"]);
+  assert.deepEqual(values(g, "out"), ["B"]);
+});
+
+test("switchMap: a throwing projector keeps the inner values it forwarded in the same wave, then ERROR (TS D81)", () => {
+  const g = createGraph();
+  g.state("s", 1);
+  // The inner follows s itself, so a write to s reaches the inner and the source in one wave.
+  switchMap(g, "op", "s", (v) => { if (v === 2) throw new Error("project boom"); return follow("s"); });
+  g.subscribe("out", "op");
+  g.set("s", 2);
+  const tail = g.trace.filter((e) => e.to === "out").map(format).at(-1);
+  assert.equal(tail, 'out <- op: [ERROR("project boom")]');
+  assert.deepEqual(values(g, "out"), [1, 2], "the inner's 2 was forwarded before the ERROR");
+});
+
+// ---- mergeMap ----------------------------------------------------------------
+
+test("mergeMap: keeps all inners live and interleaves their emissions; a completed inner is released (TS)", () => {
   const g = createGraph();
   g.state("s"); g.state("a"); g.state("b");
   mergeMap(g, "op", "s", (v) => follow(v === 1 ? "a" : "b"));
@@ -40,7 +190,7 @@ test("keeps all inners live and interleaves their emissions; a completed inner i
   assert.deepEqual(values(g, "out"), [10, 20, 11, 21]);
 });
 
-test("limits concurrency by queueing source values until an inner completes (TS)", () => {
+test("mergeMap: limits concurrency by queueing source values until an inner completes (TS)", () => {
   const g = createGraph();
   g.state("s");
   const { made, def } = subjects();
@@ -63,13 +213,13 @@ test("limits concurrency by queueing source values until an inner completes (TS)
   assert.deepEqual(g.get("op").ended, ["COMPLETE"]);
 });
 
-test("rejects a concurrency that is not a positive integer (TS)", () => {
+test("mergeMap: rejects a concurrency that is not a positive integer (TS)", () => {
   for (const concurrent of [0, 1.5, -1, NaN]) {
     assert.throws(() => mergeMap(createGraph(), "op", "s", follow, { concurrent }), RangeError, String(concurrent));
   }
 });
 
-test("an already live inner is merged once, and later removals stay aligned (TS)", () => {
+test("mergeMap: an already live inner is merged once, and later removals stay aligned (TS)", () => {
   const g = createGraph();
   g.state("s"); g.state("x"); g.state("y");
   mergeMap(g, "op", "s", (v) => follow(v === 3 ? "y" : "x"));
@@ -83,7 +233,7 @@ test("an already live inner is merged once, and later removals stay aligned (TS)
   assert.equal(g.get("y").active, false);
 });
 
-test("COMPLETE once the source is done and every inner has completed (TS)", () => {
+test("mergeMap: COMPLETE once the source is done and every inner has completed (TS)", () => {
   const g = createGraph();
   g.state("s"); g.state("a");
   mergeMap(g, "op", "s", () => follow("a"));
@@ -97,7 +247,7 @@ test("COMPLETE once the source is done and every inner has completed (TS)", () =
   assert.deepEqual(g.get("op").ended, ["COMPLETE"]);
 });
 
-test("source ERROR, inner ERROR and a throwing projector each end it with ERROR and release every inner (TS)", () => {
+test("mergeMap: source ERROR, inner ERROR and a throwing projector each end it with ERROR and release every inner (TS)", () => {
   for (const [name, act, expected] of [
     ["source", (g) => g.error("s", "src boom"), "src boom"],
     ["inner", (g) => g.error("a", "inner boom"), "inner boom"],
@@ -121,7 +271,7 @@ test("source ERROR, inner ERROR and a throwing projector each end it with ERROR 
   }
 });
 
-test("inner DATA in the same array as its ERROR is forwarded before the ERROR (TS)", () => {
+test("mergeMap: inner DATA in the same array as its ERROR is forwarded before the ERROR (TS)", () => {
   const g = createGraph();
   g.state("s");
   const { made, def } = subjects();
@@ -133,7 +283,7 @@ test("inner DATA in the same array as its ERROR is forwarded before the ERROR (T
   assert.deepEqual(g.get("op").ended, ["ERROR", "inner boom"]);
 });
 
-test("re-projecting a node that has ended is an ERROR, as in switchMap (TS skips it)", () => {
+test("mergeMap: re-projecting a node that has ended is an ERROR, as in switchMap (TS skips it)", () => {
   const g = createGraph();
   g.state("s"); g.state("inner");
   mergeMap(g, "op", "s", () => follow("inner"), { concurrent: 1 });
@@ -143,7 +293,7 @@ test("re-projecting a node that has ended is an ERROR, as in switchMap (TS skips
   assert.deepEqual(g.get("op").ended, ["ERROR", "op: cannot follow inner, which has ended"]);
 });
 
-test("the operator keeps its value and its one START while inners are added (rewire keeps the instance)", () => {
+test("mergeMap: the operator keeps its value and its one START while inners are added (rewire keeps the instance)", () => {
   const g = createGraph();
   g.state("s"); g.state("a", 10); g.state("b");
   mergeMap(g, "op", "s", (v) => follow(v));
@@ -156,7 +306,7 @@ test("the operator keeps its value and its one START while inners are added (rew
   assert.deepEqual(g.describe().find((d) => d.id === "op").deps, ["s", "op/inner/0", "op/inner/1"]);
 });
 
-test("adding an inner does not resend the live inners' values or reproject the source's", () => {
+test("mergeMap: adding an inner does not resend the live inners' values or reproject the source's", () => {
   const g = createGraph();
   g.state("s"); g.state("a", 1); g.state("b", 2); g.state("c", 3);
   const seen = [];
@@ -167,7 +317,7 @@ test("adding an inner does not resend the live inners' values or reproject the s
   assert.deepEqual(seen, ["a", "b", "c"]);
 });
 
-test("inners added in one wave each pass on their value", () => {
+test("mergeMap: inners added in one wave each pass on their value", () => {
   const g = createGraph();
   g.state("s"); g.state("a", "A"); g.state("b", "B"); g.state("c", "C");
   mergeMap(g, "op", "s", (v) => follow(v));
@@ -176,7 +326,7 @@ test("inners added in one wave each pass on their value", () => {
   assert.deepEqual(values(g, "out"), ["A", "B", "C"]);
 });
 
-test("an inner that sends several values as it activates passes on its last (K3)", () => {
+test("mergeMap: an inner that sends several values as it activates passes on its last (K3)", () => {
   const g = createGraph();
   g.state("s");
   mergeMap(g, "op", "s", (v) => ({ deps: [], fn: (ctx) => ctx.down([["DATA", v], ["DATA", v + 1]]) }));
@@ -185,7 +335,7 @@ test("an inner that sends several values as it activates passes on its last (K3)
   assert.deepEqual(values(g, "out"), [2], "TS's [v, v + 1] inner gives 1, 2");
 });
 
-test("an inner that completes as it activates is done at once", () => {
+test("mergeMap: an inner that completes as it activates is done at once", () => {
   const g = createGraph();
   g.state("s");
   mergeMap(g, "op", "s", (v) => ({ deps: [], fn: (ctx) => ctx.down([["DATA", v], ["COMPLETE"]]) }));
@@ -196,7 +346,7 @@ test("an inner that completes as it activates is done at once", () => {
   assert.deepEqual(g.get("op").ended, ["COMPLETE"]);
 });
 
-test("a source value that arrives while an inner is being added is added after it", () => {
+test("mergeMap: a source value that arrives while an inner is being added is added after it", () => {
   const g = createGraph();
   g.state("s");
   // Subscribed before the operator, so its write is queued ahead of the operator's rewire.
@@ -209,7 +359,7 @@ test("a source value that arrives while an inner is being added is added after i
   assert.deepEqual(g.get("op").ended, ["COMPLETE"]);
 });
 
-test("a completed inner is removed, and its node reused", () => {
+test("mergeMap: a completed inner is removed, and its node reused", () => {
   const g = createGraph();
   g.state("s");
   const { made, def } = subjects();
@@ -224,7 +374,7 @@ test("a completed inner is removed, and its node reused", () => {
   assert.deepEqual(inners, ["op/inner/0"]);
 });
 
-test("a fresh activation starts with no inner", () => {
+test("mergeMap: a fresh activation starts with no inner", () => {
   const g = createGraph();
   g.state("s", "a"); g.state("a", 1); g.state("b", 2);
   mergeMap(g, "op", "s", (v) => follow(v));
@@ -239,7 +389,7 @@ test("a fresh activation starts with no inner", () => {
   assert.equal(g.get("b").active, false);
 });
 
-test("a throwing projector keeps the inner values forwarded in the same wave, then ERROR (TS D81)", () => {
+test("mergeMap: a throwing projector keeps the inner values forwarded in the same wave, then ERROR (TS D81)", () => {
   const g = createGraph();
   g.state("s", 1);
   mergeMap(g, "op", "s", (v) => { if (v === 2) throw new Error("project boom"); return follow("s"); });
@@ -249,7 +399,7 @@ test("a throwing projector keeps the inner values forwarded in the same wave, th
   assert.deepEqual(g.get("op").ended, ["ERROR", "project boom"]);
 });
 
-test("an inner that completes in the wave of a new source value hands its node to the new inner", () => {
+test("mergeMap: an inner that completes in the wave of a new source value hands its node to the new inner", () => {
   const g = createGraph();
   g.state("s"); g.state("t");
   // Each inner passes on its value, then completes on t's next value.

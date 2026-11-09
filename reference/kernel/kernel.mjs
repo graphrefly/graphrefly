@@ -174,6 +174,13 @@ export function createGraph({ report: hostReport } = {}) {
     n.lifetime = null;
   }
 
+  // exchange matches dependencies by id, so both lists must be free of repeats.
+  function assertDistinct(op, n, deps) {
+    if (new Set(deps).size !== deps.length || new Set(n.deps).size !== n.deps.length) {
+      throw new KernelError(`${op}: ${n.id} needs distinct dependencies`);
+    }
+  }
+
   function assertAcquirable(n) {
     // P5: an ended output cannot be acquired again; restart is a module (O7) that
     // replaces the ended node.
@@ -203,11 +210,15 @@ export function createGraph({ report: hostReport } = {}) {
     const dep = nodeOf(n.deps[i]);
     if (!dep.active) activate(dep);
     dep.subs.push({ kind: "node", id: n.id, dep: i });
-    // K3: the dependency's START snapshot is this node's first received input.
+    n.inputs[i] = snapshotInput(dep);
+  }
+
+  // K3: a dependency's START snapshot is the first input it gives a new connection.
+  function snapshotInput(dep) {
     const snapshot = [];
     if (dep.has) snapshot.push(["DATA", dep.cache]);
     if (dep.ended) snapshot.push(dep.ended);
-    n.inputs[i] = { has: dep.has, value: dep.cache, ended: dep.ended, frames: snapshot.length ? [snapshot] : [] };
+    return { has: dep.has, value: dep.cache, ended: dep.ended, frames: snapshot.length ? [snapshot] : [] };
   }
 
   function release(dep, sub) {
@@ -491,35 +502,32 @@ export function createGraph({ report: hostReport } = {}) {
   // Graph-level replace: the node keeps its id and its subscribers, and gets a new
   // instance with new dependencies and a new function. The old lifetime closes (its
   // signal aborts, its late output is dropped, its cleanups run) and nothing of the old
-  // instance survives: no value, private state or terminal. The new dependencies are
-  // acquired before the old ones are released, so a dependency shared by both stays
-  // active. The new instance is activated like a first subscription (K3): its first
-  // invocation only sets its retained value; each sink gets a START snapshot and each
-  // dependent receives the snapshot as its input, in one wave. Only the kernel can do
-  // this, because it rebinds the dependents' input records.
+  // instance survives: no value, private state or terminal. The dependencies are exchanged
+  // as by rewire (a dependency in both lists keeps its connection, added ones are acquired
+  // before removed ones are released), then the old cleanups run, as when a lifetime closes
+  // (K7). The new instance is activated like a first subscription (K3): it gets each
+  // dependency's START snapshot, kept ones included, and its first invocation only sets its
+  // retained value; each sink gets a START snapshot and each dependent receives the
+  // snapshot as its input, in one wave. Only the kernel can do this, because it rebinds the
+  // dependents' input records.
 
   function replaceNode(n, deps, fn) {
     const old = n.lifetime; // null when inactive or when the old instance has ended
-    // An ended instance already released its dependencies; an active one still holds them.
-    const held = old ? n.deps.map((depId, i) => {
-      const dep = nodeOf(depId);
-      return [dep, dep.subs.find((s) => s.kind === "node" && s.id === n.id && s.dep === i)];
-    }) : [];
     if (old) { old.open = false; old.controller?.abort(); }
+    if (!old) n.deps = []; // an ended instance has released its dependencies already
+    exchange(n, deps);
+    if (old) for (const f of old.hooks.deactivation) runCleanup(n, f);
     Object.assign(n, {
-      deps, fn, inputs: deps.map(freshInput), lifetime: null,
-      has: false, cache: undefined, ended: null, privateState: undefined, pending: false,
+      fn, lifetime: null, has: false, cache: undefined, ended: null, privateState: undefined, pending: false,
     });
     n.pendingDeps.clear();
     if (!n.active) return; // the next subscription activates the new instance
 
     openLifetime(n);
-    acquireDeps(n);
+    n.inputs = deps.map((depId) => snapshotInput(nodeOf(depId))); // a new instance: every record new
     const out = invoke(n);
     n.inputs.forEach((input) => { input.frames = []; });
     apply(n, out); // the retained value only, as at a first activation
-    for (const [dep, sub] of held) if (sub) release(dep, sub);
-    if (old) for (const f of old.hooks.deactivation) runCleanup(n, f);
 
     const snap = [];
     if (n.has) snap.push(["DATA", n.cache]);
@@ -541,17 +549,28 @@ export function createGraph({ report: hostReport } = {}) {
   // ---- Rewire (C-8 surgical, 2026-11-08) -----------------------------------
   //
   // The node keeps its instance: lifetime, private state, retained value and fn runs go on.
-  // A dependency in both lists keeps its connection and input record, whatever its new
-  // position; a removed one is released without a wave (between waves nothing of it is
-  // pending, K8); an added one is acquired as at activation. The added dependencies' START
-  // snapshots are this node's input in one wave, as an ordinary settlement: the fn runs and
-  // its output is delivered; if it sends nothing, nothing goes below. An added dependency
-  // with no value sends nothing, so the fn does not run for it. The new fn takes over the
-  // next run; a rewire alone causes none.
+  // The added dependencies' START snapshots are this node's input in one wave, as an
+  // ordinary settlement: the fn runs and its output is delivered; if it sends nothing,
+  // nothing goes below. An added dependency with no value sends nothing, so the fn does not
+  // run for it. The new fn takes over the next run; a rewire alone causes none.
 
   function rewireNode(n, deps, fn) {
     n.fn = fn;
-    if (!n.active) { n.deps = deps; n.inputs = deps.map(freshInput); return; }
+    const added = exchange(n, deps);
+    if (added.some((i) => n.inputs[i].frames.length)) settle(n);
+  }
+
+  // Gives n the dependency list deps; shared by replace and rewire. An inactive node only
+  // changes its list. For an active one, a dependency in both lists keeps its connection and
+  // input record at its new position; an added one is acquired as at activation, before any
+  // release, so a shared upstream stays active; then a removed one is released, without a
+  // wave (between waves nothing of it is pending, K8). Returns the added positions.
+  function exchange(n, deps) {
+    if (!n.active) {
+      n.deps = deps;
+      n.inputs = deps.map(freshInput);
+      return [];
+    }
     const held = new Map(n.deps.map((depId, i) => [depId, {
       input: n.inputs[i],
       sub: nodeOf(depId).subs.find((s) => s.kind === "node" && s.id === n.id && s.dep === i),
@@ -565,10 +584,9 @@ export function createGraph({ report: hostReport } = {}) {
       return kept.input;
     });
     n.deps = deps;
-    for (const i of added) acquire(n, i); // before any release: a shared upstream stays active
+    for (const i of added) acquire(n, i);
     for (const [depId, { sub }] of held) release(nodeOf(depId), sub);
-    // An ordinary settlement; if it sends a value, deliver marks the cone pending first (P3).
-    if (added.some((i) => n.inputs[i].frames.length)) settle(n);
+    return added;
   }
 
   // ---- Host input ---------------------------------------------------------
@@ -621,6 +639,7 @@ export function createGraph({ report: hostReport } = {}) {
     replace(id, deps, fn) {
       const n = nodeOf(id);
       if (n.kind !== "node") throw new KernelError(`${id} is not a computed node`);
+      assertDistinct("replace", n, deps);
       for (const d of deps) {
         if (d === id || dependsOn(nodeOf(d), id)) throw new KernelError(`replace: ${id} would depend on itself through ${d}`);
       }
@@ -634,9 +653,7 @@ export function createGraph({ report: hostReport } = {}) {
     rewire(id, deps, fn) {
       const n = nodeOf(id);
       if (n.kind !== "node") throw new KernelError(`${id} is not a computed node`);
-      if (new Set(deps).size !== deps.length || new Set(n.deps).size !== n.deps.length) {
-        throw new KernelError(`rewire: ${id} needs distinct dependencies`);
-      }
+      assertDistinct("rewire", n, deps);
       for (const d of deps) {
         if (d === id || dependsOn(nodeOf(d), id)) throw new KernelError(`rewire: ${id} would depend on itself through ${d}`);
       }

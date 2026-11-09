@@ -260,9 +260,9 @@ rewire、resubscription 和 dynamic 节点。简报也不要求 batch；batch �
    同日用 restart 回放 C-34、用 `replace` 回放 C-8（已激活的 R-rewire），见 [REPLAY.md](../../reference/kernel/REPLAY.md)。
    回放发现 `replace` 漏了"不能接上已结束的依赖"（P5）并已修好，restart 因此在上游结束后不再尝试重启。
    和 C-8、C-34 不一致的五处列在 REPLAY.md 末尾，用户 2026-11-08 全部同意：用 replace，需要时再给它加 H4 种子（surgical 留作以后的性能优化）；允许 replace 已结束的节点；fn 里的请求排队；重启后订阅者保留；扇出期间的请求依赖顺序。规则修订（B140）时 C-8、C-34 要随之改。
-   同日按 owner 加 inner 的结构做了 switchMap（[switch-map.mjs](../../reference/modules/switch-map.mjs)），验证了第 1 处的前提：
+   同日按 owner 加 inner 的结构做了 switchMap（当时是单独的模块，现在在 [higher-order.mjs](../../reference/modules/higher-order.mjs)），验证了第 1 处的前提：
    只换一个 inner 的 operator 不用种子也能保住自己的值，因为被 replace 的只是 inner。
-   同日又做了 mergeMap（[merge-map.mjs](../../reference/modules/merge-map.mjs)），原以为它是第一个需要种子的场景，结果不需要：
+   同日又做了 mergeMap（git `75ee4c8`），原以为它是第一个需要种子的场景，结果不需要：
    只用 replace，TS 的 mergeMap 测试都过。代价是一个固定的对外节点、core 的状态放在新 fn 的闭包里带过去并跳过已处理过的快照、
    每次 replace 只加一个 inner（K3 一次激活只留一个值）、source 结束后 replace 不再带上它（P5）。
    种子只能省掉第二项，其余三项只有原地加依赖（surgical）才能省掉。所以到目前为止没有场景需要种子。
@@ -271,6 +271,8 @@ rewire、resubscription 和 dynamic 节点。简报也不要求 batch；batch �
    所以 R-rewire 那五条规则里大部分情形（依赖的 DIRTY 还在路上时移除、跨 wave 保留记录、batch 结果）在这里不会出现。`ctx.deps[i].id` 一起加上，fn 按 id 读依赖，不用管位置。
    C-8 对 `rewire` 重放：保值、surgical、幂等、无值依赖等待、拒绝已结束的 D 都和 C-8 一致；fn 里的 rewire 照旧排队（决定 3）。
    `replace` 保留，用于 restart 这类需要新实例的场景。mergeMap 改成在 `rewire` 上的一个节点，和 TS 同形，上面四项代价都没了。
+   随后按用户要求精简：switchMap 和 mergeMap 合成一个 operator（[higher-order.mjs](../../reference/modules/higher-order.mjs)，和 TS 的 mapOperator 一样），
+   两个模块的代码从 74 行变成 57 行（不算注释和空行）；内核里 `replace` 和 `rewire` 共用一个依赖交换函数，replace 现在就是"关掉旧实例 + 像 rewire 那样换依赖 + 像第一次订阅那样启动新实例"。
    发现：restart 需要内核的 `replace`。参考内核原来没有任何改拓扑的手段，而把下游和订阅者接到新实例上只有内核能做；
    DS-17 的 rewire 行只写了 H4（种子），restart 用不到种子，没有加。TS 里没有生产代码用 `resubscribable: true`，
    `repeat` 只在它自己的测试里用，重试是 driver 在图外做、以 DATA 发出事件，所以现有用法都套得进这个模块。
