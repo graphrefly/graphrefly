@@ -31,6 +31,7 @@ Labels:
 | C-37 upstream routing | — | — | — | K9 routing, rewire |
 | C-38 restore and replay | — | — | — | checkpoint, replay modules |
 | C-39 revision evidence | — | — | — | revision observer (O9) |
+| C-22 rewire during an open batch (activated R-rewire-batch-boundary; replayed 2026-11-08) | 6 clauses, and rollback from @2 | — | only when the node has batch output: every topology request in a body waits (K8) | — |
 | C-8 runtime rewire (activated R-rewire; replayed 2026-11-08) | 6 clauses with `replace`; with `rewire` (same day) also cache kept, surgical, idempotent, sentinel wait, terminal D | mid-wave removal (K8) | mid-fn rewire queued (K8); with `replace` also the five `rewire` covers | first-run gate (sugar) |
 
 No clause that the kernel covers failed. What the replay found instead were two kernel bugs in
@@ -227,6 +228,24 @@ label:
 | Rewiring to zero dependencies: cache preserved, no auto-deactivate | Kernel | replay: "C-8 rewire: to zero dependencies..." |
 | Rejects a mid-fn rewire as the D37 feedback ERROR | Still Changed (K8): queued until the wave is over (decision 3) | kernel: "rewire: requested from inside a node function..." |
 | Removal while A's DIRTY is in flight; a removed dependency's queued INVALIDATE is drained | Still Decided away (K8) |  |
+
+### C-22 (replayed 2026-11-08 against batch-body requests)
+
+Until this replay a `subscribe`, `unsubscribe`, `replace` or `rewire` made in a batch body ran at
+once, against the uncommitted view, and was not undone when the body threw. Now each waits for the
+commit (README, O3). Tests are in [replay.test.mjs](replay.test.mjs), section "C-22", and
+[kernel.test.mjs](kernel.test.mjs), section "topology requests inside a batch body".
+
+| Clause | Label | Where |
+|---|---|---|
+| The rewire request is accepted but not applied while the batch is open | Kernel | kernel: "C-22: a rewire in a batch body waits for commit..." |
+| The pending batch wave commits first against the pre-rewire topology and fn | Kernel | same |
+| Only after the outermost batch commit does the rewire drain | Kernel | replay: "C-22: a rewire requested in a nested batch waits for the outermost commit..." |
+| It drains as a fresh boundary wave, FIFO with other queued rewires | Kernel | replay: "C-22: rewires queued in one batch drain in request order..."; kernel: "K8: a batch body's requests run in order..." |
+| Subscribers never see old-shape pending DATA committed against the new dependency set | Kernel | kernel: "C-22: a rewire in a batch body waits for commit..." |
+| Topology never mutates on an uncommitted batch view | Kernel | same |
+| @2: rollback discards batch-owned mutations | Kernel (a throwing body; there is no explicit rollback) | kernel: "O3: a throwing batch body drops its requests with its inputs" |
+| Deferred only when the node has an uncommitted settle slice; otherwise immediate | Changed (K8): every topology request in a body waits, since a topology change delivers and nothing is delivered before commit | replay: "C-22 (changed, K8): a rewire of a node the batch does not touch..." |
 
 ## Decisions from the 2026-11-08 replay
 

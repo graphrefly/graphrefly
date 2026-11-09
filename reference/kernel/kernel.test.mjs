@@ -1184,3 +1184,105 @@ test("replace: the new instance gets a START snapshot from a dependency it keeps
   g.replace("x", ["a"], (ctx) => { seen.push(ctx.deps[0].waves); });
   assert.deepEqual(seen, [[[1]]], "a's value arrives as this run's wave, as it would for a relay");
 });
+
+// ---- topology requests inside a batch body (O3, K8, C-22) -------------------
+
+test("O3/K8: a subscribe in a batch body runs after commit; the new sink starts from the committed value", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  g.node("d", ["a"], map((v) => v * 10));
+  g.subscribe("s", "a");
+  let activeInBody;
+  const out = during(g, () => g.batch(() => {
+    g.set("a", 2);
+    g.subscribe("t", "d");
+    g.batch(() => g.subscribe("u", "a")); // a nested batch's requests join the outer one
+    activeInBody = g.get("d").active;
+  }));
+  assert.equal(activeInBody, false, "nothing activates before commit");
+  assert.deepEqual(out, ["s <- a: [DIRTY, DATA(2)]", "t <- d: [START, DATA(20)]", "u <- a: [START, DATA(2)]"]);
+});
+
+test("C-22: a rewire in a batch body waits for commit; the batch's wave settles under the old shape", () => {
+  const g = createGraph();
+  g.state("a", 1); g.state("b", 5);
+  g.node("x", ["a"], sumById);
+  g.subscribe("s", "x");
+  const next = (ctx) => ctx.down([["DATA", `new:${ctx.deps.map((d) => `${d.id}=${d.value}`).join(",")}`]]);
+  let depsInBody;
+  const out = during(g, () => g.batch(() => {
+    g.set("a", 2);
+    g.rewire("x", ["b"], next);
+    depsInBody = g.describe().find((d) => d.id === "x").deps;
+  }));
+  assert.deepEqual(depsInBody, ["a"], "the topology does not change on the uncommitted view");
+  assert.deepEqual(out, ["s <- x: [DIRTY, DATA(\"a=2\")]", "s <- x: [DIRTY, DATA(\"new:b=5\")]"]);
+});
+
+test("O3/K8: a replace in a batch body waits for commit", () => {
+  const g = createGraph();
+  g.state("a", 1); g.state("b", 5);
+  g.node("x", ["a"], sumById);
+  g.subscribe("s", "x");
+  const out = during(g, () => g.batch(() => { g.set("a", 2); g.replace("x", ["b"], sumById); }));
+  assert.deepEqual(out, ["s <- x: [DIRTY, DATA(\"a=2\")]", "s <- x: [START, DATA(\"b=5\")]"]);
+});
+
+test("O3/K8: an unsubscribe in a batch body waits for commit; the sink still sees the batch", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  const log = [];
+  g.node("d", ["a"], (ctx) => { ctx.onDeactivation(() => log.push("cleanup")); ctx.down([["DATA", ctx.deps[0].value]]); });
+  g.subscribe("s", "d");
+  let logInBody;
+  const out = during(g, () => g.batch(() => { g.set("a", 2); g.unsubscribe("s", "d"); logInBody = [...log]; }));
+  assert.deepEqual(logInBody, [], "no cleanup runs before commit");
+  assert.deepEqual(out, ["s <- d: [DIRTY, DATA(2)]"]);
+  assert.deepEqual(log, ["cleanup"]);
+  assert.equal(g.get("d").active, false);
+});
+
+test("O3: a throwing batch body drops its requests with its inputs", () => {
+  const g = createGraph();
+  g.state("a", 1); g.state("b", 5);
+  g.node("x", ["a"], sumById);
+  g.subscribe("s", "x");
+  const out = during(g, () => assert.throws(() => g.batch(() => {
+    g.set("a", 2);
+    g.subscribe("t", "a");
+    g.rewire("x", ["b"], sumById);
+    g.unsubscribe("s", "x");
+    throw new Error("stop");
+  }), /stop/));
+  assert.deepEqual(out, []);
+  assert.deepEqual(g.describe().find((d) => d.id === "x").deps, ["a"]);
+  assert.deepEqual(during(g, () => g.set("a", 3)), ["s <- x: [DIRTY, DATA(\"a=3\")]"], "s stays, t never came");
+});
+
+test("K8: a batch body's requests run in order, before later requests and those of its commit wave", () => {
+  const g = createGraph();
+  g.state("a", 1); g.state("b", 1);
+  g.subscribe("s", "a", () => {
+    if (g.get("a").value !== 2) return;
+    g.batch(() => { g.set("b", 2); g.subscribe("t", "b"); }); // a batch from a callback (O12)
+    g.subscribe("u", "b");
+  });
+  g.subscribe("w", "b", () => { if (g.get("b").value === 2) g.subscribe("v", "b"); });
+  assert.deepEqual(during(g, () => g.set("a", 2)), [
+    "s <- a: [DIRTY, DATA(2)]",
+    "w <- b: [DIRTY, DATA(2)]",
+    "t <- b: [START, DATA(2)]",
+    "u <- b: [START, DATA(2)]",
+    "v <- b: [START, DATA(2)]",
+  ]);
+});
+
+test("O3/K8: a body's request that its own commit makes invalid is reported as a queued request", () => {
+  const reports = [];
+  const g = createGraph({ report: (r) => reports.push(r) });
+  g.state("a", 1);
+  const out = during(g, () => g.batch(() => { g.complete("a"); g.subscribe("t", "a"); }));
+  assert.deepEqual(out, []);
+  assert.deepEqual(reports.map((r) => r.source), ["queued request"]);
+  assert.match(reports[0].error, /a has ended/);
+});

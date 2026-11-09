@@ -71,6 +71,7 @@ export function createGraph({ report: hostReport } = {}) {
     try { hostReport(entry); } catch { /* the reporter's own failure has nowhere to go */ }
   };
   let staging = null;   // Map<nodeId, { msgs, lifetime }> while a batch body runs
+  let batchRequests = null; // requests made in that body, run after its commit (O3, K8)
   let busy = false;     // K8: the kernel is running a request (wave, activation, release)
   const queue = [];     // K8: requests that arrived while busy, run in arrival order
   let running = null;   // the node whose function is executing; runs never nest (K8)
@@ -130,6 +131,7 @@ export function createGraph({ report: hostReport } = {}) {
   // one wave's cone grow after parts of it settled.
 
   function request(op) {
+    if (batchRequests) { batchRequests.push(op); return; } // the batch's wave has not run yet
     if (busy) { queue.push(op); return; }
     let failure = null;
     busy = true;
@@ -688,15 +690,22 @@ export function createGraph({ report: hostReport } = {}) {
       };
       if (staging) return reportPromise(body()); // nested batch shares the outer accumulation
       staging = new Map();
-      let staged, result;
-      try { result = body(); staged = staging; } finally { staging = null; }
+      batchRequests = [];
+      let staged, requests, result;
+      try { result = body(); staged = staging; requests = batchRequests; } finally { staging = null; batchRequests = null; }
       reportPromise(result);
-      // Nothing was delivered before commit, so a throwing body leaves nothing to undo.
-      // Commit marks the whole cone pending (DIRTY), then delivers (O3).
-      request(() => runWave([...staged]
-        .map(([id, { msgs, lifetime }]) => ({ node: nodeOf(id), frames: prepare(msgs), lifetime }))
-        // R-ctx-lifetime: a node's staged late output is dropped if its lifetime closed.
-        .filter(({ node, lifetime }) => !lifetime || (lifetime.open && node.lifetime === lifetime))));
+      // Nothing was delivered or changed before commit, so a throwing body leaves nothing to
+      // undo: its inputs and its requests are dropped. Commit marks the whole cone pending
+      // (DIRTY), then delivers (O3). The body's requests (subscribe, unsubscribe, replace,
+      // rewire) were made during the batch's wave, so they run after it (K8), against the
+      // committed topology, and before anything the commit wave itself requests.
+      request(() => {
+        queue.unshift(...requests);
+        runWave([...staged]
+          .map(([id, { msgs, lifetime }]) => ({ node: nodeOf(id), frames: prepare(msgs), lifetime }))
+          // R-ctx-lifetime: a node's staged late output is dropped if its lifetime closed.
+          .filter(({ node, lifetime }) => !lifetime || (lifetime.open && node.lifetime === lifetime)));
+      });
     },
     // The retained value as of now. Reading never computes or activates.
     get(id) {

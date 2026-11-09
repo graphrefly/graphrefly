@@ -386,3 +386,50 @@ test("C-8 rewire: to zero dependencies, D keeps its value and stays active", () 
   assert.deepEqual(during(g, () => g.rewire("D", [], f2)), []);
   assert.deepEqual(g.get("D"), { active: true, has: true, value: "f2(a1)", ended: null });
 });
+
+// ---- C-22, a rewire requested while a batch is open (R-rewire-batch-boundary) ----------
+// A batch body's requests run after its commit (O3, K8); REPLAY.md lists the clauses.
+
+const fA = (ctx) => ctx.down([["DATA", `f(${ctx.deps.map((d) => d.value).join(",")})`]]);
+const gB = (ctx) => ctx.down([["DATA", `g(${ctx.deps.map((d) => d.value).join(",")})`]]);
+
+test("C-22: a rewire requested in a nested batch waits for the outermost commit, which settles under the old shape", () => {
+  const g = createGraph();
+  g.state("A", "a1"); g.state("B", "b0");
+  g.node("N", ["A"], fA);
+  g.subscribe("s", "N");
+  let depsAfterInner;
+  const out = during(g, () => g.batch(() => {
+    g.set("A", "a2");
+    g.batch(() => g.rewire("N", ["B"], gB));
+    depsAfterInner = g.describe().find((d) => d.id === "N").deps;
+  }));
+  assert.deepEqual(depsAfterInner, ["A"], "the inner batch's exit does not apply it");
+  assert.deepEqual(out, ["s <- N: [DIRTY, DATA(\"f(a2)\")]", "s <- N: [DIRTY, DATA(\"g(b0)\")]"]);
+});
+
+test("C-22: rewires queued in one batch drain in request order, each as its own wave", () => {
+  const g = createGraph();
+  g.state("A", "a1"); g.state("B", "b0");
+  g.node("N", ["A"], fA);
+  g.subscribe("s", "N");
+  const out = during(g, () => g.batch(() => {
+    g.set("A", "a2");
+    g.rewire("N", ["A", "B"], gB);
+    g.rewire("N", ["B"], fA);
+  }));
+  // The second removes A and adds nothing, so it sends nothing (a removal is silent).
+  assert.deepEqual(out, ["s <- N: [DIRTY, DATA(\"f(a2)\")]", "s <- N: [DIRTY, DATA(\"g(a2,b0)\")]"]);
+  assert.deepEqual(during(g, () => g.set("B", "b1")), ["s <- N: [DIRTY, DATA(\"f(b1)\")]"]);
+});
+
+test("C-22 (changed, K8): a rewire of a node the batch does not touch waits for the commit too", () => {
+  const g = createGraph();
+  g.state("A", "a1"); g.state("B", "b0"); g.state("C", "c0");
+  g.node("N", ["A"], fA);
+  g.node("M", ["C"], fA);
+  g.subscribe("s", "N");
+  g.subscribe("t", "M");
+  const out = during(g, () => g.batch(() => { g.set("A", "a2"); g.rewire("M", ["C", "B"], gB); }));
+  assert.deepEqual(out, ["s <- N: [DIRTY, DATA(\"f(a2)\")]", "t <- M: [DIRTY, DATA(\"g(c0,b0)\")]"]);
+});

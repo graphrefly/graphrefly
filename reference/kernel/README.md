@@ -77,6 +77,7 @@ registration while the lifetime is open is accepted, and `onInvalidate` hooks ar
 | A registration after close runs once at once | Ignored | R-cleanup-hooks@2 (draft) |
 | `replace(id, deps, fn)`: graph-level replace of one computed node, at a wave boundary | No counterpart: TS restarts through `resubscribable` | Added 2026-11-08 for the restart module (O7): a fresh instance under the same id |
 | `rewire(id, deps, fn)`: one request with the whole new dependency list and fn; from inside a function it is queued (K8) | `ctx.rewireNext.subscribeDep`/`unsubscribeDep`/`replaceDeps` (D47), and the immediate `subscribeDep`/`unsubscribeDep`/`replaceDeps` on a node | Added 2026-11-08 at the user's request, after mergeMap on `replace` showed what replace costs it. One form: the kernel compares the lists, so add, remove and reorder are the same request |
+| A `subscribe`, `unsubscribe`, `replace` or `rewire` made in a batch body runs after the commit, in request order; a throwing body drops it with the inputs | A rewire waits for the batch only when its node has uncommitted batch output, and is dropped on rollback; any other topology change runs at once | O3 and K8 (2026-11-08): nothing is delivered before commit, and a topology change delivers (a START snapshot, a settlement, cleanups), so it waits like any request made during a wave |
 | No `up`, `upNext`, `rewireNext`, `pull`, `environment`, `track`, `persist` | Present | Not covered yet (K9, modules) |
 
 The kernel does not know or care whether a late `ctx.down` came from async work.
@@ -114,7 +115,12 @@ The kernel does not know or care whether a late `ctx.down` came from async work.
   late `ctx.down` is staged with host inputs; a submission that would mix DATA and RESOLVED for one
   node is rejected and earlier staging kept; staged output of a lifetime that closed is dropped. A body declared `async` is
   refused before any of it runs; a plain body that returns a promise commits its synchronous part,
-  and a report says that writes after its first await are separate waves.
+  and a report says that writes after its first await are separate waves. A topology request in a
+  body (`subscribe`, `unsubscribe`, `replace`, `rewire`, from 2026-11-08) waits with the batch: it
+  runs after the commit wave, in request order and before any request that wave makes, against
+  the committed topology (C-22); a nested batch's requests join the outer one; a throwing body drops
+  its requests with its inputs, so the body changes nothing. The checks a request makes when it is
+  called still throw in the body; one that the commit makes invalid is reported as a queued request.
 - P9: the invocation that started async work settles its wave at once, so no DIRTY stays open while
   the work runs. Results arrive in arrival order and combine with whatever the other inputs hold then.
 - Replace (added 2026-11-08 for O7): `replace(id, deps, fn)` gives a computed node a new instance
@@ -201,6 +207,12 @@ kept ended dependency refused; duplicates accepted; the fn not replaced; no cycl
 `ctx.deps`. A first version marked the cone pending before the settlement; that mutant survived
 every test, since `deliver` already marks the cone when the node sends a value, so the mark was
 removed.
+
+Mutations of the batch's topology requests checked on 2026-11-08, each failing at least one kernel
+test: run at once in the body (the old kernel); appended after requests already queued; placed after
+the requests of the commit wave; run before the commit; kept when the body throws; a nested batch
+running its own at once. The random test above, extended with batches that set a state and make a
+`rewire` or `replace` and a `subscribe` or `unsubscribe`, ran 2000 sequences with no failure.
 
 Mutations checked on 2026-11-06 after the simplification pass, each failing at least one test: no
 batch-wide DIRTY prepass; no kernel RESOLVED; requests run immediately; a quiet node forwarding DIRTY,
@@ -292,8 +304,6 @@ Each of these is left out rather than approximated:
 - K9 upward control routing: not needed for pause or demand (control pairs, DS-17 P11); START
   snapshots of an unsettled node; the released lifecycle of R-status-enum@2.
 - Upward INVALIDATE (R-up-at-source); INVALIDATE before a node's first invocation (R-first-run-gate).
-- A topology request made inside a batch body (`subscribe`, `replace`, `rewire`) runs at once, not at commit.
-  Found 2026-11-08 while adding `replace`; O3 covers host inputs and late output only.
 - Modules: replay and checkpoint. The H4 seed is not implemented: switchMap and mergeMap were built
   without one, mergeMap first on `replace`, then on `rewire` (now one module with switchMap). Pause, demand, observation (H5), restart (O7), switchMap and mergeMap are in
   [../modules/](../modules/README.md). H5 needed no kernel hook: a subscriber already receives
