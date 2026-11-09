@@ -198,6 +198,8 @@ Mutations checked on 2026-11-08, each failing at least one test:
   the committed topology (C-22); a nested batch's requests join the outer one; a throwing body drops
   its requests with its inputs, so the body changes nothing. The checks a request makes when it is
   called still throw in the body; one that the commit makes invalid is reported as a queued request.
+  Called during a wave, the body runs at once and only the commit waits; `batch` returns what the body
+  returned, outer or nested, as TS does (user 2026-11-09; the outer batch returned nothing before).
 - P9: the invocation that started async work settles its wave at once, so no DIRTY stays open while
   the work runs. Results arrive in arrival order and combine with whatever the other inputs hold then.
 - Replace (added 2026-11-08 for O7): `replace(id, deps, fn)` gives a computed node a new instance

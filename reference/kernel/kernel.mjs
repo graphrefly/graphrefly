@@ -707,6 +707,9 @@ export function createGraph({ report: hostReport } = {}) {
           // R-ctx-lifetime: a node's staged late output is dropped if its lifetime closed.
           .filter(({ node, lifetime }) => !lifetime || (lifetime.open && node.lifetime === lifetime)));
       });
+      // The body ran at once, also during a wave, so its result goes back to the caller as in
+      // TS; only the commit waits (R-request-order, user 2026-11-09).
+      return result;
     },
     // The retained value as of now. Reading never computes or activates.
     get(id) {

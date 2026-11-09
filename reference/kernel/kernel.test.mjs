@@ -114,6 +114,20 @@ test("K2: a throwing batch body publishes nothing, so there is nothing to roll b
   assert.equal(g.get("a").value, 1);
 });
 
+test("K8: batch returns the body's result, outer or nested, also from a callback during a wave", () => {
+  const g = createGraph();
+  g.state("a", 0);
+  g.node("b", ["a"], (ctx) => ctx.down([["DATA", ctx.deps[0].value]]));
+  const seen = [];
+  g.subscribe("s", "b", (msgs) => {
+    if (msgs[0][0] === "START" || seen.length) return;
+    seen.push(g.batch(() => { g.set("a", 9); return g.batch(() => "inner"); }), g.get("b").value);
+  });
+  assert.equal(g.batch(() => { g.set("a", 1); return "outer"; }), "outer");
+  assert.deepEqual(seen, ["inner", 1], "the body ran during the wave; its write waited");
+  assert.equal(g.get("b").value, 9);
+});
+
 test("K5 auto: COMPLETE once every dependency has completed, without a balancing RESOLVED", () => {
   const g = createGraph();
   g.state("a", 1);

@@ -136,9 +136,9 @@ B141 同日结项，B140 的 status 随即从 deferred 改为 planned（不授�
 
 ### K7 Lifetime and cleanup
 
-> A node is active while it has a subscriber or an active dependent. A computed node's activation acquires its
-> dependencies and runs its function once on their snapshots; deactivation releases them, runs its cleanups, aborts its signal and drops
-> its private state. Every ctx and cleanup belongs to exactly one lifetime, and a request dies with the innermost
+> A node is active while it has a subscriber or a dependent that holds it. A computed node's activation acquires its
+> dependencies and runs its function once on their snapshots; its lifetime closes when it deactivates or ends, which releases them, runs
+> its cleanups and aborts its signal; deactivation also drops its private state. Each run's cleanup registrations replace the previous run's. Every ctx and cleanup belongs to exactly one lifetime, and a request dies with the innermost
 > scope it was made in.
 
 | Old | Change |
@@ -151,7 +151,7 @@ B141 同日结项，B140 的 status 随即从 deferred 改为 planned（不授�
 ### K8 Request order and topology
 
 > Requests made while a wave is being delivered wait until it ends and then run in request order: host inputs,
-> subscribe, unsubscribe, replace, rewire and batch. A batch body records host inputs and topology requests and
+> subscribe, unsubscribe, replace, rewire and a batch's commit. A batch body runs at once, records host inputs and topology requests and
 > delivers nothing; its commit is one wave, and its topology requests run after that wave in request order. A
 > throwing body commits nothing; an async function body is refused before it runs, and a body that returns a promise
 > commits its synchronous part while the host reporter is told. A nested batch joins the outer one. `replace(id, deps, fn)` closes
@@ -327,7 +327,17 @@ C-30、C-31、C-32、C-38、C-39 主要属于模块，留到写模块规则时�
 D797 formal 义务里"更新 wave_protocol"因此理解为：现在写 D797 的新模型，激活时处理旧模型；D797 本身不改。
 第一个模型 `formal/kernel_wave.tla` 覆盖 R-wave、R-messages、R-invalidation、R-terminals、R-subscription、R-failure，
 12 个不变式，两个 wave 58,287 个状态、三个 wave 5,949,762 个状态都通过；13 个变异全部被抓到，一个多余条件按等价删掉。
-R-lifetime、R-request-order 留给第二个模型。
+第二个模型 `formal/kernel_lifetime.tla` 覆盖 R-lifetime、R-request-order（激活与释放、lifetime 和清理函数、旧 ctx、请求队列、
+batch（包括在 wave 中打开的）、rewire、replace），21 个不变式，三个请求 130,683 个状态、四个请求 5,005,076 个状态都通过；
+28 个变异全部被抓到，每个不变式也单独对着它针对的变异检查过。
+
+建模时发现参考内核有三处 D797 草案文字没写到，用户 2026-11-09 逐条决定都按内核写进规则：
+1. 每次运行登记的清理函数替换上一次运行的，被替换的不运行（来自 R-cleanup-hooks@1、@2，合并时丢了）。写进 R-lifetime，C-33 加一步。
+2. wave 中调用的 batch 立即运行 body，只有提交作为请求等 wave 结束；batch 返回 body 的返回值。写进 R-request-order，C-29 加一步。
+   参考内核的外层 batch 原来不返回 body 的结果（嵌套的返回），这次按 TS 改正并加了测试。
+3. 节点结束时立即关闭 lifetime：释放依赖、运行清理函数、中止 signal，保留值、终止消息和订阅者（来自 R-terminal@2，合并时丢了）。
+   写进 R-lifetime 和 R-terminals，C-34 加一步。TS 现在等最后一个订阅者离开才释放，记入各 runtime 的实现工作。
+D797 第 (2)(3)(5)(7) 点相应补了这几句。
 
 不在本提案里：formal 模型（TLA+）的更新、各语言 runtime 的实现、O10（L0.5 和 F-NO-WEDGE-CUT）。它们分别属于
 B140 的 Formal、Owner routing 两条和一个单独的决定。

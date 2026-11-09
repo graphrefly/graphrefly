@@ -12,6 +12,7 @@ currently active rules and are retired or rescoped at activation, not edited now
 | Module | Covers | Conformance |
 |---|---|---|
 | `kernel_wave.tla` (`kernel_wave.cfg`, `kernel_wave_3.cfg`) | R-wave, R-messages, R-invalidation, R-terminals, R-subscription, R-failure: a state S and a diamond S->B,C->D under the default auto policies; host inputs to S (set, a batch of two, invalidate, complete, error); computed nodes choose outputs from a menu that includes rejected arrays; nodes settle in every order the dependencies allow. Invariants: RunOnce, SettleOnce, FanInAfterSettle, NoWedge, PendingPrefix, InvalidateAlone, NoDataWithResolved, TerminalLastAndFinal, InvalidateEffective, RetainedMatchesSent, AutoErrorNoRun, AutoTerminals. TLC-green 2026-11-09: two waves 58,287 distinct states (depth 11); three waves 5,949,762 distinct states (depth 16, 3 min). | C-28, C-34, C-36, C-40, C-41, C-42 |
+| `kernel_lifetime.tla` (`kernel_lifetime.cfg`, `kernel_lifetime_4.cfg`) | R-lifetime, R-request-order: a state S and a chain S->P->A->M, with N over A that a rewire or replace moves to {P}, {A} or {P, A}; host sinks on M and N; each request (subscribe, unsubscribe, set, complete, rewire, replace, late output) is one step, a wave is one step in which each open node of the cone runs once, and the requests made while one runs wait in a queue; runs may register a cleanup, start late work that keeps its ctx, set private state or complete; one batch body, opened at a boundary or from a callback during a request, stages writes and topology requests, then returns or throws; opened during a request, its commit waits in the queue. Invariants: ActiveIffDemand, EdgesMatchDeps, OpenIffLive, InactiveHoldsNothing, StateKeeps, PrivOfCurrentLifetime, RetainedFromCurrentLifetime, CleanupOnce, ClosedLiveRan, OpenNotRun, DroppedNotRun, LiveIsLatestRun, RunOncePerRequest, KeptUpstreamStays, RewireKeeps, FIFO, AfterMaker, IdleDrained, BodyAfterCommit, ThrownDropped, BatchThrowNothing. TLC-green 2026-11-09: three requests 130,683 distinct states (depth 14, 3 s); four requests 5,005,076 distinct states (depth 17, 2 min). | C-29, C-31, C-33, C-35, C-37, C-41 |
 
 Mutations checked on `kernel_wave.cfg`, each tripping an invariant: settling while a dependency is
 pending (FanInAfterSettle); no kernel RESOLVED (NoWedge); no PENDING prefix (PendingPrefix); no split
@@ -24,8 +25,36 @@ after a terminal was added); inbox not cleared (RunOnce); pending not cleared on
 equivalent: an ended node has released its dependencies, so nothing reaches it (same 58,287 states
 with it). Run: `java -cp <tla2tools.jar> tlc2.TLC -deadlock -config kernel_wave.cfg kernel_wave`.
 
-Not modeled yet: R-lifetime and R-request-order (lifetimes, request order, batch bodies, replace and
-rewire), manual policies, quiet nodes and async output. A second model is planned for them.
+Mutations checked on `kernel_lifetime.cfg`, 28 in all, each tripping an invariant; every invariant
+was also checked alone against the mutation aimed at it. Deactivation keeping a computed node's
+values (InactiveHoldsNothing) or private state (InactiveHoldsNothing); the state node clearing its
+value (StateKeeps); a close that does not release (EdgesMatchDeps) or run cleanups (ClosedLiveRan);
+an unsubscribe that does not deactivate (ActiveIffDemand); a terminal that does not close the lifetime
+(OpenIffLive); an ended node that opens a lifetime on activation (OpenIffLive) or accepts a rewire
+(EdgesMatchDeps); a run that keeps (LiveIsLatestRun) or fires (OpenNotRun) the previous run's
+registrations; a close that runs replaced registrations (DroppedNotRun) or runs one twice
+(CleanupOnce); late output without the lifetime check (RetainedFromCurrentLifetime); a registration
+after close that does not run at once (ClosedLiveRan); rewire releasing before it acquires
+(KeptUpstreamStays: P closes and opens again), opening a new lifetime or dropping private state
+(RewireKeeps); replace keeping private state (PrivOfCurrentLifetime) or not running the old cleanups
+(ClosedLiveRan); a LIFO queue (FIFO); a request run at once while another runs (AfterMaker); a
+boundary with requests still queued (IdleDrained); a thrown body that commits (BatchThrowNothing) or
+keeps its requests (ThrownDropped); a commit split into one wave per write (RunOncePerRequest); body
+requests run before the commit (BodyAfterCommit); the commit of a batch opened during a request run
+at once (AfterMaker). Late output and the LIFO queue need three requests,
+which is why the main configuration has three.
+
+Writing this model found three things the reference kernel did that the D797 draft text did not
+say. The user settled all three on 2026-11-09 as the kernel does them, and R-lifetime, R-terminals,
+R-request-order and D797 now say so: (1) each run replaces the previous run's cleanup registrations
+without running them (from R-cleanup-hooks@1 and @2; C-33); (2) a batch called during a wave runs its
+body at once, and only its commit waits for the wave to end, while batch returns what the body
+returned (C-29; the reference kernel's outer batch returned nothing until then); (3) a node that ends
+closes its lifetime at once, releasing its dependencies and running its cleanups while it keeps its
+values, terminal and subscribers (from R-terminal@2; C-34).
+
+Not modeled yet: manual policies, quiet nodes, async output inside a wave, nested batches and late
+output inside a batch body.
 
 ## Clean-slate module map (CSP-0)
 
