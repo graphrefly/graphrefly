@@ -474,8 +474,10 @@ ended node cannot be acquired.
    or `error`), but not an ended computed node with its dependencies. An ended computed node comes
    back as an ended state with the same value and terminal. It never runs again, and nothing can
    acquire it, as before. But `describe()` shows it as a state with no dependencies.
-2. **A node that has not ended but holds an ended dependency** (with manual COMPLETE policy). The
-   restored node would have to acquire the ended dependency, so `capture()` refuses such a graph.
+2. **A node that has not ended but holds an ended dependency**: under the default policy, any node
+   with several inputs where one has completed and another has not (auto COMPLETE waits for all), and
+   any node with manual COMPLETE. The restored node would have to acquire the ended dependency, so
+   `capture()` refuses such a graph.
    A seed alone does not fix this. Activating it needs an exception to P5 for a restored node,
    which TS has: a restored activation skips an ended dependency.
 
