@@ -202,7 +202,7 @@ B141 同日结项，B140 的 status 随即从 deferred 改为 planned（不授�
 | R-up-routing, R-up-routing-diamond | Retired (K9) | — |
 | R-replay-buffer | history module | Built |
 | R-restore, R-snapshot, R-input-receipts, R-resource-reattach | checkpoint module | Built for recipes, values, terminals and private state; C-38 replayed (6 clauses). Namespaces and native resources not built |
-| R-node-revision | revision observer (O9) | **Not built** |
+| R-node-revision | revision observer (O9) | Built 2026-11-09 (R-revision, C-39) |
 | R-first-run-gate, R-dynamic-node, and dedup (R-equals is already replaced, D49) | sugar, per language | `derived` built; dynamic and dedup not built |
 | restart (O7) | restart module | Built; C-34 replayed |
 
@@ -292,7 +292,22 @@ transition。原因：一条规则一旦带了 transition 就离开当前规则�
 
 新规则用了新的 id（按概念命名），没有沿用某条旧规则的 id：一个概念合并了好几条旧规则，用其中任何一条的旧名都只说出一部分。
 R-up-routing、R-up-routing-diamond 随 K9 退役；R-graph-lifecycle@1 早已有到 @2 的 transition（D794）；R-equals@1 早已有到
-R-resolved-undirty@1 的 transition（D49），第一稿说它"仍被 D15 激活"是错的，已改正。模块规则（第 3 节）还没写。
+R-resolved-undirty@1 的 transition（D49），第一稿说它"仍被 D15 激活"是错的，已改正。**模块规则（2026-11-09）。** 第 3 节的模块各写成一条 D797 草案，`area` 是新值 `module`，正文只引用内核规则：
+
+| Rule id | Replaces at its own activation |
+|---|---|
+| R-pause@1 | R-pause-lockset, R-pause-modes, the pause clauses of R-async-paused, R-paused-invalidate |
+| R-demand@1 | R-pull |
+| R-history@1 | R-replay-buffer |
+| R-checkpoint@1 | R-restore, R-snapshot, R-input-receipts; R-resource-reattach stays a draft, not yet specified |
+| R-restart@1 | Nothing: it is new. Resubscription, which it takes the place of, already goes with R-terminals |
+| R-revision@1 | R-node-revision |
+
+revision 观察器（O9）随后补上（[revision.mjs](../../reference/modules/revision.mjs)），规则是 R-revision，C-39 也改写为 D797 版。retry 策略的公式是库的词汇（D130/D132），
+不进规则，R-restart 只说"由 retry 策略决定是否、隔多久重试"。switchMap、mergeMap 按 D797 属于 sugar。
+场景 C-30（pause）、C-31（state 跨 close 保值、terminal 封存、锁比 pausable 活得长）、C-32（demand）、C-38（checkpoint 和 history）
+就地改写为 D797 版。核对时改正了两处说法：terminal 之后排队的写入是被丢弃并交给宿主 reporter，不是抛错；
+恢复时私有状态是节点自己拿回来的，订阅者收不到。C-32 里"一个 batch 里两次 pull 只服务一次、用最新的 params"用临时测试跑过。
 
 **Conformance（2026-11-09）。** `spec/conformance.jsonl` 没有版本或 transition 机制，所以按同一个理由分三类处理：
 

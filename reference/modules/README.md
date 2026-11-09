@@ -486,7 +486,7 @@ const r = restore(cp, registry);                            // a new graph, noth
 
 **Not covered**:
 - the replay buffer (there is no replay module);
-- version evidence (O9; there is no observer module);
+- version evidence: the revision observer (below) keeps its positions outside the graph; save them beside the checkpoint;
 - graph namespaces and mounts (the kernel has none);
 - resource reattach (R-resource-reattach).
 
@@ -607,3 +607,51 @@ bound; empty waves sending; no check of `n`; newest first.
 | New | Why it stays |
 |---|---|
 | `history(g, id, sourceId, n)` and `historyRecipe` | R-replay-buffer's bounded history, as a module (the user's decision); the recipe so a checkpoint can rebuild it |
+
+## Revision evidence, O9 ([revision.mjs](revision.mjs), [revision.test.mjs](revision.test.mjs))
+
+Built 2026-11-09. The user decided on 2026-11-08 (O9) that revision evidence is an observer module,
+not kernel state. `revisionObserver(g, ids, { hash, from })` subscribes to each node through
+`observe` (H5) and returns `{ get(id), capture(), stop() }`.
+
+- `revision` advances once per committed DATA, RESOLVED, INVALIDATE, COMPLETE or ERROR; `valueRevision`
+  is the revision of the latest DATA or INVALIDATE.
+- The START array is installation and advances nothing, so subscribing, restore and a late
+  subscriber change no position. PENDING (still DIRTY in the kernel) is not output. An equal DATA counts.
+  An INVALIDATE that removed nothing is never delivered (K6), so it cannot count.
+- Like `observe`, it is a real subscriber: it activates a node and keeps it active, so positions do
+  not reset on a disconnect while it runs.
+- `capture()` gives the positions as JSON (a copy); a new observer started with `{ from }` goes on from
+  them. Saving them beside a checkpoint and restoring both keeps them unchanged.
+- `hash(values)` is optional. It gets the node's retained values (K3), or `null` for absence, and is
+  computed when read, so it always agrees with the snapshot. The canonical encoding is open
+  (B140 Checkpoint/encoding).
+- A position never wraps: an array that would take `revision` past `Number.MAX_SAFE_INTEGER` is
+  refused whole, the positions stay, and the throw goes to the host reporter (P10). An invalid saved
+  position is refused at the start.
+
+| Here | R-node-revision (D796 draft) | Why |
+|---|---|---|
+| An observer over the ids it is given | Every node maintains revision and valueRevision | O9: whole-graph restore at a wave boundary needs no comparison, so only an inspector needs positions |
+| Positions live in the observer and are saved by the host | Checkpoints save represented evidence | The checkpoint module does not know about the observer; the host saves both |
+| No silent-rebase case | Silent retained-snapshot adoption advances revision | The kernel has no silent adoption: every change to what a node holds is a delivered message |
+
+What the tests pin: START and late subscribers advance nothing; each kind of committed message, with
+RESOLVED, COMPLETE and ERROR advancing `revision` only; several values in one array; the hash with
+values and with absence; two observers apart, and `stop`; a checkpoint round trip; the limit; invalid
+saved positions; `capture` returning a copy.
+
+Mutations checked on 2026-11-09, 17 in all, each failing at least one of the 10 tests: START counted;
+RESOLVED, a terminal or ERROR treated as a value change; INVALIDATE not treated as one; RESOLVED, a
+terminal or ERROR not counted; DIRTY counted; no limit check; one count per array; `from` ignored; the
+order and integer checks on saved positions removed; absence not passed to the hash; `capture`
+sharing its objects; `stop` doing nothing.
+
+### New things this module introduces
+
+| New | Why it stays |
+|---|---|
+| `revisionObserver(g, ids, { hash, from })` returning `{ get, capture, stop }` | O9's observer; `from` and `capture` are how positions survive a restore without the checkpoint module knowing about them |
+| `hash(values)` taking the retained values or `null` | R-node-revision's optional current-snapshot hash, with the encoding left to the caller until B140 picks one |
+| Refusing an array whole at the limit | R-node-revision's "reject numerical exhaustion rather than silently wrap", without a half-counted array |
+

@@ -30,7 +30,7 @@ Labels:
 | C-36 input frames and terminal admission | 3 clauses | — | resumeAll INVALIDATE hold (decided) | 3 clauses: pause module |
 | C-37 upstream routing | — | — | — | K9 decided away (2026-11-09); last clause is K8 |
 | C-38 restore and replay | — | — | — | checkpoint and history modules (replayed 2026-11-08: 6 clauses, see below); namespaces, resources |
-| C-39 revision evidence | — | — | — | revision observer (O9) |
+| C-39 revision evidence | — | — | — | revision observer (O9), built 2026-11-09: `../modules/revision.test.mjs` |
 | C-22 rewire during an open batch (activated R-rewire-batch-boundary; replayed 2026-11-08) | 6 clauses, and rollback from @2 | — | only when the node has batch output: every topology request in a body waits (K8) | — |
 | C-8 runtime rewire (activated R-rewire; replayed 2026-11-08) | 6 clauses with `replace`; with `rewire` (same day) also cache kept, surgical, idempotent, sentinel wait, terminal D | mid-wave removal (K8) | mid-fn rewire queued (K8); with `replace` also the five `rewire` covers | first-run gate (sugar) |
 
