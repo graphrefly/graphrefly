@@ -320,3 +320,69 @@ test("C-8: replacing to no dependencies leaves D active with a function of no in
   assert.equal(g.get("D").active, true);
   assert.deepEqual(during(g, () => g.set("A", 2)), []);
 });
+
+// ---- C-8 again, against rewire (surgical, 2026-11-08) ---------------------------------
+// rewire keeps D's instance, so C-8's surgical clauses hold; REPLAY.md lists what remains.
+
+const f2 = (ctx) => ctx.down([["DATA", `f2(${ctx.deps.map((d) => d.value).join(",")})`]]);
+
+test("C-8 rewire (2)(3): an added cached dependency reaches D without a START, D recomputes, then it drives D", () => {
+  const g = createGraph();
+  g.state("A", "a1");
+  g.state("B", "b0");
+  g.node("D", ["A"], (ctx) => ctx.down([["DATA", `f(${ctx.deps[0].value})`]]));
+  g.subscribe("s", "D");
+  assert.deepEqual(during(g, () => g.rewire("D", ["A", "B"], f2)), ["s <- D: [DIRTY, DATA(\"f2(a1,b0)\")]"]);
+  assert.deepEqual(during(g, () => g.set("B", "b1")), ["s <- D: [DIRTY, DATA(\"f2(a1,b1)\")]"]);
+});
+
+test("C-8 rewire (2): an added dependency with no value sends nothing; D recomputes when it first emits", () => {
+  const g = createGraph();
+  g.state("A", "a1");
+  g.state("E");
+  const fn = counted(f2);
+  g.node("D", ["A"], fn);
+  g.subscribe("s", "D");
+  assert.deepEqual(during(g, () => g.rewire("D", ["A", "E"], fn)), []);
+  assert.equal(fn.calls, 1, "only the activation run");
+  assert.deepEqual(during(g, () => g.set("E", "e1")), ["s <- D: [DIRTY, DATA(\"f2(a1,e1)\")]"]);
+});
+
+test("C-8 rewire (4)(5): a removed dependency no longer drives D, and D's value is preserved", () => {
+  const g = createGraph();
+  g.state("A", "a1");
+  g.state("B", "b1");
+  g.node("D", ["A", "B"], f2);
+  g.subscribe("s", "D");
+  assert.deepEqual(during(g, () => g.rewire("D", ["B"], f2)), []);
+  assert.equal(g.get("D").value, "f2(a1,b1)");
+  assert.deepEqual(during(g, () => g.set("A", "a2")), [], "A is drained");
+  assert.deepEqual(during(g, () => g.set("B", "b2")), ["s <- D: [DIRTY, DATA(\"f2(b2)\")]"]);
+});
+
+test("C-8 rewire (6): rewiring to the current set is idempotent: no run, nothing sent", () => {
+  const g = createGraph();
+  g.state("B", "b1");
+  const fn = counted(f2);
+  g.node("D", ["B"], fn);
+  g.subscribe("s", "D");
+  assert.deepEqual(during(g, () => g.rewire("D", ["B"], fn)), []);
+  assert.equal(fn.calls, 1);
+});
+
+test("C-8 rewire: a rewire on a terminal D is refused, as C-8 expects (replace stays the way to restart it)", () => {
+  const g = createGraph();
+  g.state("A", 1);
+  g.node("D", ["A"], (ctx) => ctx.down([["COMPLETE"]]));
+  g.subscribe("s", "D");
+  assert.throws(() => g.rewire("D", ["A"], f2), /D has ended/);
+});
+
+test("C-8 rewire: to zero dependencies, D keeps its value and stays active", () => {
+  const g = createGraph();
+  g.state("A", "a1");
+  g.node("D", ["A"], f2);
+  g.subscribe("s", "D");
+  assert.deepEqual(during(g, () => g.rewire("D", [], f2)), []);
+  assert.deepEqual(g.get("D"), { active: true, has: true, value: "f2(a1)", ended: null });
+});

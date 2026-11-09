@@ -937,3 +937,227 @@ test("replace: an active node cannot acquire an ended dependency (P5), as a subs
   assert.throws(() => g.replace("x", ["done"], () => {}), /done has ended/);
   assert.deepEqual(g.describe().find((d) => d.id === "x").deps, ["a"], "nothing changed");
 });
+
+// ---- rewire (surgical, C-8) -------------------------------------------------
+
+// Sums the current value of every dependency, by id, so a reorder cannot fool it.
+const sumById = (ctx) => ctx.down([["DATA", ctx.deps.map((d) => `${d.id}=${d.value}`).join(",")]]);
+
+test("rewire: the instance stays: value, private state, lifetime and sinks; no START", () => {
+  const g = createGraph();
+  g.state("a", 1); g.state("b");
+  const log = [];
+  const fn = (ctx) => {
+    ctx.state.set((ctx.state.get() ?? 0) + 1);
+    ctx.signal.addEventListener("abort", () => log.push("abort"));
+    ctx.down([["DATA", ctx.state.get()]]);
+  };
+  g.node("x", ["a"], fn);
+  g.subscribe("s", "x");
+  assert.deepEqual(during(g, () => g.rewire("x", ["a", "b"], fn)), [], "b has no value: nothing runs, nothing is sent");
+  assert.deepEqual(g.get("x"), { active: true, has: true, value: 1, ended: null });
+  assert.deepEqual(during(g, () => g.set("b", 0)), ["s <- x: [DIRTY, DATA(2)]"], "private state kept: the count goes on");
+  assert.deepEqual(log, [], "the lifetime did not close");
+});
+
+test("rewire: an added dependency's value is one ordinary input wave; the new fn runs once", () => {
+  const g = createGraph();
+  g.state("a", 1); g.state("b", 2);
+  g.node("x", ["a"], sumById);
+  g.subscribe("s", "x");
+  const fn = counted(sumById);
+  assert.deepEqual(during(g, () => g.rewire("x", ["a", "b"], fn)), ["s <- x: [DIRTY, DATA(\"a=1,b=2\")]"]);
+  assert.equal(fn.calls, 1);
+  assert.deepEqual(during(g, () => g.set("b", 3)), ["s <- x: [DIRTY, DATA(\"a=1,b=3\")]"]);
+});
+
+test("rewire: several added dependencies arrive in one wave, each value its own input", () => {
+  const g = createGraph();
+  g.state("a", 1); g.state("b", 2); g.state("c", 3);
+  const seen = [];
+  const fn = (ctx) => { seen.push(ctx.deps.map((d) => d.waves.flat())); };
+  g.node("x", ["a"], fn);
+  g.subscribe("s", "x");
+  g.rewire("x", ["a", "b", "c"], fn);
+  assert.deepEqual(seen.at(-1), [[], [2], [3]], "a was kept, so it brings no input");
+  assert.equal(seen.length, 2);
+});
+
+test("rewire: a diamond below settles once (P3)", () => {
+  const g = createGraph();
+  g.state("a", 1); g.state("b", 2);
+  g.node("x", ["a"], sumById);
+  g.node("l", ["x"], (ctx) => ctx.down([["DATA", `l:${ctx.deps[0].value}`]]));
+  g.node("r", ["x"], (ctx) => ctx.down([["DATA", `r:${ctx.deps[0].value}`]]));
+  const join = counted((ctx) => ctx.down([["DATA", ctx.deps.map((d) => d.value).join("|")]]));
+  g.node("j", ["l", "r"], join);
+  g.subscribe("s", "j");
+  const before = join.calls;
+  g.rewire("x", ["a", "b"], sumById);
+  assert.equal(join.calls, before + 1);
+  assert.equal(g.get("j").value, "l:a=1,b=2|r:a=1,b=2");
+});
+
+test("rewire: a removed dependency is released without a wave and no longer drives the node", () => {
+  const g = createGraph();
+  g.state("a", 1); g.state("b", 2);
+  const fn = counted(sumById);
+  g.node("x", ["a", "b"], fn);
+  g.subscribe("s", "x");
+  const calls = fn.calls;
+  assert.deepEqual(during(g, () => g.rewire("x", ["b"], fn)), []);
+  assert.equal(fn.calls, calls, "removing runs nothing");
+  assert.equal(g.get("a").active, false);
+  assert.equal(g.get("x").value, "a=1,b=2", "the value is kept");
+  assert.deepEqual(during(g, () => g.set("a", 5)), []);
+  assert.deepEqual(during(g, () => g.set("b", 6)), ["s <- x: [DIRTY, DATA(\"b=6\")]"]);
+});
+
+test("rewire: kept dependencies keep their records across a reorder", () => {
+  const g = createGraph();
+  g.state("a", 1); g.state("b", 2);
+  const fn = counted(sumById);
+  g.node("x", ["a", "b"], fn);
+  g.subscribe("s", "x");
+  const calls = fn.calls;
+  g.rewire("x", ["b", "a"], fn);
+  assert.equal(fn.calls, calls);
+  assert.deepEqual(during(g, () => g.set("a", 7)), ["s <- x: [DIRTY, DATA(\"b=2,a=7\")]"], "a's edge follows it to index 1");
+  assert.deepEqual(g.describe().find((d) => d.id === "x").deps, ["b", "a"]);
+});
+
+test("rewire: to the current list is a no-op; to zero dependencies keeps the value and stays active", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  const fn = counted(sumById);
+  g.node("x", ["a"], fn);
+  g.subscribe("s", "x");
+  const calls = fn.calls;
+  assert.deepEqual(during(g, () => g.rewire("x", ["a"], fn)), []);
+  assert.equal(fn.calls, calls);
+  g.rewire("x", [], fn);
+  assert.deepEqual(g.get("x"), { active: true, has: true, value: "a=1", ended: null });
+  assert.equal(g.get("a").active, false);
+});
+
+test("rewire: an added dependency is acquired before a removed one is released, so a shared upstream stays active", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  const log = [];
+  g.node("up", ["a"], (ctx) => { ctx.onDeactivation(() => log.push("up closed")); ctx.down([["DATA", ctx.deps[0].value]]); });
+  g.node("p", ["up"], (ctx) => ctx.down([["DATA", ctx.deps[0].value]]));
+  g.node("q", ["up"], (ctx) => ctx.down([["DATA", ctx.deps[0].value]]));
+  g.node("x", ["p"], sumById);
+  g.subscribe("s", "x");
+  g.rewire("x", ["q"], sumById);
+  assert.deepEqual(log, []);
+  assert.equal(g.get("p").active, false);
+  assert.equal(g.get("x").value, "q=1");
+});
+
+test("rewire: the new fn takes over the next run", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  g.node("x", ["a"], (ctx) => ctx.down([["DATA", "old"]]));
+  g.subscribe("s", "x");
+  g.rewire("x", ["a"], (ctx) => ctx.down([["DATA", "new"]]));
+  assert.equal(g.get("x").value, "old", "a fn change alone runs nothing");
+  g.set("a", 2);
+  assert.equal(g.get("x").value, "new");
+});
+
+test("rewire: an added dependency that has ended is refused (P5); a kept one that ended is fine", () => {
+  const g = createGraph();
+  g.state("a", 1); g.state("b", 2); g.state("done", 3);
+  g.complete("done");
+  g.node("x", ["a", "b"], sumById, { terminal: { complete: "manual" } });
+  g.subscribe("s", "x");
+  assert.throws(() => g.rewire("x", ["a", "done"], sumById), /done has ended/);
+  g.complete("b");
+  g.rewire("x", ["b"], sumById);
+  assert.deepEqual(g.describe().find((d) => d.id === "x").deps, ["b"]);
+});
+
+test("rewire: refused for a state node, itself, a cycle, duplicates and an ended node", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  g.node("x", ["a"], sumById);
+  g.node("y", ["x"], sumById);
+  assert.throws(() => g.rewire("a", [], sumById), /not a computed node/);
+  assert.throws(() => g.rewire("x", ["x"], sumById), /depend on itself/);
+  assert.throws(() => g.rewire("x", ["y"], sumById), /depend on itself through y/);
+  assert.throws(() => g.rewire("x", ["a", "a"], sumById), /distinct/);
+  g.node("e", ["a"], (ctx) => ctx.down([["COMPLETE"]]));
+  g.subscribe("s", "e");
+  assert.throws(() => g.rewire("e", ["a"], sumById), /e has ended/);
+});
+
+test("rewire: an inactive node only changes its definition", () => {
+  const g = createGraph();
+  g.state("a", 1); g.state("b", 2);
+  const fn = counted(sumById);
+  g.node("x", ["a"], fn);
+  g.rewire("x", ["b"], fn);
+  assert.equal(fn.calls, 0);
+  assert.equal(g.get("b").active, false);
+  g.subscribe("s", "x");
+  assert.equal(g.get("x").value, "b=2");
+});
+
+test("rewire: requested from inside a node function, it waits until the wave is over (K8)", () => {
+  const g = createGraph();
+  g.state("a", 1); g.state("b", 2);
+  const order = [];
+  const fn = (ctx) => {
+    order.push(ctx.deps.map((d) => d.id).join());
+    if (ctx.deps.length === 1 && ctx.deps[0].value === 5) g.rewire("x", ["a", "b"], fn);
+  };
+  g.node("x", ["a"], fn);
+  g.subscribe("s", "x");
+  g.set("a", 5);
+  assert.deepEqual(order, ["a", "a", "a,b"], "the run that asked finished with the old list");
+});
+
+test("rewire: an added dependency that ends as it activates passes its terminal on (K5)", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  g.node("once", [], (ctx) => ctx.down([["DATA", 9], ["ERROR", "boom"]]));
+  g.node("x", ["a"], sumById);
+  g.subscribe("s", "x");
+  g.rewire("x", ["a", "once"], sumById);
+  assert.deepEqual(g.get("x").ended, ["ERROR", "boom"]);
+  assert.equal(g.get("a").active, false, "x's lifetime closed and released a");
+});
+
+test("rewire: an added dependency that only completes as it activates sends nothing below", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  g.node("empty", [], (ctx) => ctx.down([["COMPLETE"]]));
+  const fn = counted(() => {}); // runs for the terminal, sends nothing
+  g.node("x", ["a"], fn, { terminal: { complete: "manual" } });
+  g.subscribe("s", "x");
+  assert.deepEqual(during(g, () => g.rewire("x", ["a", "empty"], fn)), [], "no value, so no DIRTY and no RESOLVED");
+  assert.equal(fn.calls, 2, "a manual terminal is input: x ran for it");
+});
+
+test("rewire: a node that stays silent for its added dependency's value sends nothing below", () => {
+  const g = createGraph();
+  g.state("a", 1); g.state("b", 2);
+  const fn = counted((ctx) => { if (!ctx.deps.some((d) => d.id === "b")) ctx.down([["DATA", "a only"]]); });
+  g.node("x", ["a"], fn);
+  g.subscribe("s", "x");
+  assert.deepEqual(during(g, () => g.rewire("x", ["a", "b"], fn)), []);
+  assert.equal(fn.calls, 2);
+});
+
+test("rewire: removing the last open dependency does not complete an auto node, as in TS", () => {
+  // Checked against TS at dafc5ae: unsubscribeDep(b) after a completed leaves d settled; only a
+  // dependency's terminal arriving triggers the auto COMPLETE (K5).
+  const g = createGraph();
+  g.state("a", 1); g.state("b", 2);
+  g.node("d", ["a", "b"], sumById);
+  g.subscribe("s", "d");
+  g.complete("a");
+  assert.deepEqual(during(g, () => g.rewire("d", ["a"], sumById)), []);
+  assert.equal(g.get("d").ended, null);
+});

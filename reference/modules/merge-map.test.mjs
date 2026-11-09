@@ -35,6 +35,7 @@ test("keeps all inners live and interleaves their emissions; a completed inner i
   g.complete("a");
   assert.equal(g.get("a").active, false, "a is released when its inner ends");
   assert.equal(g.get("b").active, true);
+  assert.deepEqual(g.describe().find((d) => d.id === "op").deps, ["s", "op/inner/1"], "the completed inner is removed");
   g.set("b", 21);
   assert.deepEqual(values(g, "out"), [10, 20, 11, 21]);
 });
@@ -142,18 +143,17 @@ test("re-projecting a node that has ended is an ERROR, as in switchMap (TS skips
   assert.deepEqual(g.get("op").ended, ["ERROR", "op: cannot follow inner, which has ended"]);
 });
 
-test("no seed: the outward node keeps its value and its one START while inners are added", () => {
+test("the operator keeps its value and its one START while inners are added (rewire keeps the instance)", () => {
   const g = createGraph();
   g.state("s"); g.state("a", 10); g.state("b");
   mergeMap(g, "op", "s", (v) => follow(v));
   g.subscribe("out", "op");
   g.set("s", "a");
   assert.equal(g.get("op").value, 10);
-  g.set("s", "b"); // b has no value: the replaced core has none
-  assert.equal(g.get("op/core").has, false);
+  g.set("s", "b"); // b has no value yet
   assert.deepEqual(g.get("op"), { active: true, has: true, value: 10, ended: null });
   assert.equal(starts(g, "out"), 1);
-  assert.deepEqual(g.describe().find((d) => d.id === "op/core").deps, ["s", "op/inner/0", "op/inner/1"]);
+  assert.deepEqual(g.describe().find((d) => d.id === "op").deps, ["s", "op/inner/0", "op/inner/1"]);
 });
 
 test("adding an inner does not resend the live inners' values or reproject the source's", () => {
@@ -167,7 +167,7 @@ test("adding an inner does not resend the live inners' values or reproject the s
   assert.deepEqual(seen, ["a", "b", "c"]);
 });
 
-test("inners added in one wave each pass on their value: one replace per inner", () => {
+test("inners added in one wave each pass on their value", () => {
   const g = createGraph();
   g.state("s"); g.state("a", "A"); g.state("b", "B"); g.state("c", "C");
   mergeMap(g, "op", "s", (v) => follow(v));
@@ -196,10 +196,10 @@ test("an inner that completes as it activates is done at once", () => {
   assert.deepEqual(g.get("op").ended, ["COMPLETE"]);
 });
 
-test("a source value that arrives while an inner is being added waits for that replace", () => {
+test("a source value that arrives while an inner is being added is added after it", () => {
   const g = createGraph();
   g.state("s");
-  // Subscribed before the operator, so its write is queued ahead of the operator's replace.
+  // Subscribed before the operator, so its write is queued ahead of the operator's rewire.
   g.subscribe("early", "s", (msgs) => { if (msgs.some((m) => m[1] === 1)) g.set("s", 2); });
   mergeMap(g, "op", "s", (v) => ({ deps: [], fn: (ctx) => ctx.down([["DATA", v], ["COMPLETE"]]) }));
   g.subscribe("out", "op");
@@ -209,7 +209,7 @@ test("a source value that arrives while an inner is being added waits for that r
   assert.deepEqual(g.get("op").ended, ["COMPLETE"]);
 });
 
-test("an inner node is reused once no instance holds it", () => {
+test("a completed inner is removed, and its node reused", () => {
   const g = createGraph();
   g.state("s");
   const { made, def } = subjects();
@@ -221,7 +221,7 @@ test("an inner node is reused once no instance holds it", () => {
   }
   assert.deepEqual(values(g, "out"), [1, 2, 3, 4]);
   const inners = g.describe().filter((d) => d.id.startsWith("op/inner/")).map((d) => d.id);
-  assert.deepEqual(inners, ["op/inner/0", "op/inner/1"], "a completed inner is held until the next replace drops it");
+  assert.deepEqual(inners, ["op/inner/0"]);
 });
 
 test("a fresh activation starts with no inner", () => {
@@ -247,4 +247,19 @@ test("a throwing projector keeps the inner values forwarded in the same wave, th
   g.set("s", 2);
   assert.deepEqual(values(g, "out"), [1, 2]);
   assert.deepEqual(g.get("op").ended, ["ERROR", "project boom"]);
+});
+
+test("an inner that completes in the wave of a new source value hands its node to the new inner", () => {
+  const g = createGraph();
+  g.state("s"); g.state("t");
+  // Each inner passes on its value, then completes on t's next value.
+  mergeMap(g, "op", "s", (v) => ({ deps: ["t"], fn: (ctx) => ctx.down(ctx.deps[0].waves.length && ctx.state.get() ? [["COMPLETE"]] : (ctx.state.set(true), [["DATA", v]])) }));
+  g.subscribe("out", "op");
+  g.set("s", 1);
+  g.batch(() => { g.set("t", 0); g.set("s", 2); });
+  assert.deepEqual(values(g, "out"), [1, 2]);
+  assert.deepEqual(g.describe().find((d) => d.id === "op").deps, ["s", "op/inner/0"]);
+  g.complete("s");
+  g.set("t", 1);
+  assert.deepEqual(g.get("op").ended, ["COMPLETE"]);
 });

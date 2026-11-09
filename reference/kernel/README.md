@@ -23,7 +23,7 @@ npm run test:reference
 ## Surface
 
 The graph: `createGraph({ report })` takes an optional host reporter. Then `state(id, initial)`, `node(id, deps, fn, { terminal, quiet })`,
-`subscribe(sinkId, id, callback?)`, `unsubscribe`, `replace(id, deps, fn)`, `set`, `invalidate`, `complete`, `error`, `batch`,
+`subscribe(sinkId, id, callback?)`, `unsubscribe`, `replace(id, deps, fn)`, `rewire(id, deps, fn)`, `set`, `invalidate`, `complete`, `error`, `batch`,
 `get(id)` (`active`, `has`, `value`, `ended`), `status(id)`, `describe()` and `trace`.
 
 `describe()` is P1's "topology is data", added 2026-11-07 for the flagship (S1 compares the
@@ -43,6 +43,7 @@ A node function has the TS baseline's shape, `(ctx) => void` (R-fn-contract, D8)
 
 | ctx member | Meaning |
 |---|---|
+| `deps[i].id` | The dependency's id (added 2026-11-08 with `rewire`, so a function need not track positions) |
 | `deps[i].waves` | The value arrays dependency `i` delivered to this invocation, each its DATA payloads in order; a RESOLVED array is `[]`; no arrays is `[]` |
 | `deps[i].terminal` | Its COMPLETE/ERROR this invocation, or `null` |
 | `deps[i].has`, `deps[i].value` | The latest value received from it |
@@ -68,12 +69,14 @@ registration while the lifetime is open is accepted, and `onInvalidate` hooks ar
 | `deps[i].waves` | `ctx.waveData[i]`, which also carries an INVALIDATE absence marker inside an array | O13: INVALIDATE never shares an array with a value, so no marker is needed |
 | `deps[i].terminal` is the message or `null` | `ctx.terminal[i]` is `false`, `true` (COMPLETE) or the ERROR payload | Interpreter shape, same information |
 | `deps[i].has`/`value` are public | The dependency cache sugar reads sits behind a symbol (`CTX_DEP_CACHE`) | Interpreter shape |
+| `deps[i].id` | No dependency identity on ctx; TS's mapOperator keeps its inner list aligned with the dependency positions by issuing removes before adds | Added with `rewire`: a dependency list that changes is read by id, and nothing depends on positions |
 | Arrays keep written order | Every `_down` array is sorted by tier | O13 |
 | A dependent runs once on all arrays a dependency sent in the wave; they reach each subscriber after the function returned, all arrays to one subscriber, then the next | Each `_down` call is delivered to all subscribers at once, while the function runs | Delivering after the run comes from P9; one delivery per subscriber keeps a dependent from settling between two arrays of the same dependency |
 | A sink receives one array per call, `cb(msgs)` | A sink receives one message per call plus delivery metadata, `sink(msg, { wave, last })` | R-wave-boundary@2: the array is the unit. Same information; found 2026-11-07 while writing the H5 module, not listed before |
 | `signal` | No signal on ctx | R-fn-contract@2 and R-ctx-lifetime (draft) |
 | A registration after close runs once at once | Ignored | R-cleanup-hooks@2 (draft) |
-| `replace(id, deps, fn)`: graph-level replace of one computed node, at a wave boundary | `ctx.rewireNext.subscribeDep`/`unsubscribeDep`: a node changes its own dependencies, applied after the wave (D47) | DS-17 rewire row and O4: replace is enough. Added 2026-11-08 for the restart module (O7) |
+| `replace(id, deps, fn)`: graph-level replace of one computed node, at a wave boundary | No counterpart: TS restarts through `resubscribable` | Added 2026-11-08 for the restart module (O7): a fresh instance under the same id |
+| `rewire(id, deps, fn)`: one request with the whole new dependency list and fn; from inside a function it is queued (K8) | `ctx.rewireNext.subscribeDep`/`unsubscribeDep`/`replaceDeps` (D47), and the immediate `subscribeDep`/`unsubscribeDep`/`replaceDeps` on a node | Added 2026-11-08 at the user's request, after mergeMap on `replace` showed what replace costs it. One form: the kernel compares the lists, so add, remove and reorder are the same request |
 | No `up`, `upNext`, `rewireNext`, `pull`, `environment`, `track`, `persist` | Present | Not covered yet (K9, modules) |
 
 The kernel does not know or care whether a late `ctx.down` came from async work.
@@ -126,6 +129,24 @@ The kernel does not know or care whether a late `ctx.down` came from async work.
   the C-8 replay). REPLAY.md lists where it differs from R-rewire (C-8).
   Only the kernel can do this, because it rebinds the dependents' input records; the DS-17 rewire row
   had named only H4 (a seed), which restart does not need, so it is not implemented.
+- Rewire (added 2026-11-08, surgical, C-8): `rewire(id, deps, fn)` keeps the node's instance: its
+  lifetime, private state, retained value and subscribers stay, and sinks get no START. A dependency in
+  both lists keeps its connection and input record at its new position; a removed one is released
+  without a wave (a request runs between waves, so nothing of it is pending, K8); an added one is
+  acquired as at activation, before any is released. The added dependencies' START snapshots are the
+  node's input in one ordinary settlement: the function runs and its output is delivered, its cone
+  marked pending first if it sends a value (P3); if it sends nothing, nothing goes below. An added
+  dependency with no value sends nothing, so the function waits for it. The new fn takes over the next
+  run; a rewire alone causes none, so the current list is a no-op. An inactive node only changes its
+  definition. Refused for a state node, for itself or a cycle, for duplicate dependencies, for an
+  ended node (`replace` gives it a new instance) and, while active, for an added dependency that has
+  ended (P5); a kept dependency that has ended is fine, since it is not acquired again. Removing the
+  last dependency still open does not complete a `complete: "auto"` node, although every remaining
+  one has ended: the auto completion is decided when a terminal arrives (K5). TS does the same
+  (checked 2026-11-08 by running `unsubscribeDep` at `dafc5ae`); such a node stays open. REPLAY.md
+  replays C-8 against it. Most of R-rewire's machinery (a removal while the dependency's DIRTY is in
+  flight, records kept across a wave, batch outcome) does not arise, because the request runs only
+  between waves.
 - H6: `{ quiet: true }` records its own dirty inputs but does not pass DIRTY on, so its dependents do
   not wait for it. What it outputs, including an inherited ERROR, is a later wave from it; the arrays
   of one settlement go out together in that wave. Silence needs no RESOLVED. An INVALIDATE carries no
@@ -155,6 +176,16 @@ new ones are acquired; old cleanups not run; old signal not aborted; no START to
 keeping the old input record; a new instance that ends at once keeping its lifetime; no cycle check;
 run at once instead of queued; an inactive node keeping its old terminal. Four of them (the pending
 mark, the input record, ending at once, the inactive terminal) survived until their tests were added.
+
+Mutations of `rewire` checked on 2026-11-08, together with the C-8 replay and mergeMap, each failing
+at least one test: removed dependencies released before added ones are acquired; a kept dependency's
+connection keeping its old position; a kept input record dropped; a pending mark before the
+settlement (a silent node would send `[DIRTY, RESOLVED]`); no settlement for the added snapshots; an
+inactive node taking the active path; an ended node accepted; an added ended dependency accepted; a
+kept ended dependency refused; duplicates accepted; the fn not replaced; no cycle check; no `id` on
+`ctx.deps`. A first version marked the cone pending before the settlement; that mutant survived
+every test, since `deliver` already marks the cone when the node sends a value, so the mark was
+removed.
 
 Mutations checked on 2026-11-06 after the simplification pass, each failing at least one test: no
 batch-wide DIRTY prepass; no kernel RESOLVED; requests run immediately; a quiet node forwarding DIRTY,
@@ -246,10 +277,10 @@ Each of these is left out rather than approximated:
 - K9 upward control routing: not needed for pause or demand (control pairs, DS-17 P11); START
   snapshots of an unsettled node; the released lifecycle of R-status-enum@2.
 - Upward INVALIDATE (R-up-at-source); INVALIDATE before a node's first invocation (R-first-run-gate).
-- A topology request made inside a batch body (`subscribe`, `replace`) runs at once, not at commit.
+- A topology request made inside a batch body (`subscribe`, `replace`, `rewire`) runs at once, not at commit.
   Found 2026-11-08 while adding `replace`; O3 covers host inputs and late output only.
-- Modules: replay, checkpoint, and rewire beyond `replace` (a seed, H4; switchMap and mergeMap were
-  built without one). Pause, demand, observation (H5), restart (O7), switchMap and mergeMap are in
+- Modules: replay and checkpoint. The H4 seed is not implemented: switchMap and mergeMap were built
+  without one, mergeMap first on `replace`, then on `rewire`. Pause, demand, observation (H5), restart (O7), switchMap and mergeMap are in
   [../modules/](../modules/README.md). H5 needed no kernel hook: a subscriber already receives
   what a node committed.
 - The flagship acceptance (B139 S1–S8) runs on this kernel in [../flagship/](../flagship/README.md);

@@ -31,7 +31,7 @@ Labels:
 | C-37 upstream routing | — | — | — | K9 routing, rewire |
 | C-38 restore and replay | — | — | — | checkpoint, replay modules |
 | C-39 revision evidence | — | — | — | revision observer (O9) |
-| C-8 runtime rewire (activated R-rewire; replayed 2026-11-08) | 6 clauses with `replace` | mid-wave removal (K8) | cache kept, surgical, idempotent, sentinel wait, terminal D, mid-fn rewire (O4, O7, K8) | first-run gate (sugar) |
+| C-8 runtime rewire (activated R-rewire; replayed 2026-11-08) | 6 clauses with `replace`; with `rewire` (same day) also cache kept, surgical, idempotent, sentinel wait, terminal D | mid-wave removal (K8) | mid-fn rewire queued (K8); with `replace` also the five `rewire` covers | first-run gate (sugar) |
 
 No clause that the kernel covers failed. What the replay found instead were two kernel bugs in
 batch, now fixed, and two places where the kernel and the draft part ways; the user settled both
@@ -209,6 +209,25 @@ and labels the clauses it does not reproduce. Tests are in [replay.test.mjs](rep
 | Rewiring to zero dependencies: no-input function, cache preserved, no auto-deactivate | Kernel for "no input, stays active"; Changed (O4) for the cache | replay: "replacing to no dependencies..." |
 | Every rewire needs an explicit function; intra-graph only | Kernel (the signature; ids are per graph) |  |
 
+### C-8 again (replayed 2026-11-08 against `rewire`)
+
+After `mergeMap` on `replace` showed what replace costs it (decision 1 below), the user asked the
+same day for the surgical form as a kernel request, `rewire(id, deps, fn)`. Tests are in
+[replay.test.mjs](replay.test.mjs), section "C-8 again, against rewire". The clauses that changed
+label:
+
+| Clause | Label with `rewire` | Where |
+|---|---|---|
+| (2) An added cached dependency's value reaches D and D recomputes | Kernel, with no START to D's sinks | replay: "C-8 rewire (2)(3)..." |
+| (2) An added dependency with no value delivers START only, with no recompute until it emits | Kernel | replay: "C-8 rewire (2): an added dependency with no value..." |
+| (4) D's cache is preserved across every rewire (R-rom-ram) | Kernel | replay: "C-8 rewire (4)(5)..." |
+| (6) Rewiring to the current set is idempotent | Kernel | replay: "C-8 rewire (6)..." |
+| Kept dependencies keep their subscription and record, no unsubscribe and resubscribe | Kernel, across a reorder too | kernel: "rewire: kept dependencies keep their records across a reorder" |
+| Rejects a rewire on a terminal D | Kernel (`replace` stays the way to give an ended node a new instance, O7) | replay: "C-8 rewire: a rewire on a terminal D is refused..." |
+| Rewiring to zero dependencies: cache preserved, no auto-deactivate | Kernel | replay: "C-8 rewire: to zero dependencies..." |
+| Rejects a mid-fn rewire as the D37 feedback ERROR | Still Changed (K8): queued until the wave is over (decision 3) | kernel: "rewire: requested from inside a node function..." |
+| Removal while A's DIRTY is in flight; a removed dependency's queued INVALIDATE is drained | Still Decided away (K8) |  |
+
 ## Decisions from the 2026-11-08 replay
 
 These follow from O4 and O7, which the user accepted with their defaults on 2026-11-08. C-8 belongs
@@ -234,7 +253,11 @@ They change C-8 and C-34 when the draft rules are revisited (B140); `spec/` is n
    first-run skip of snapshots already handled, one inner per replace (K3 keeps one value per
    activation), and leaving an ended source out (P5). A seed would replace only the second; the
    others go only with adding a dependency in place (surgical). So no case so far needs the seed.
-   Surgical stays a possible later optimization over the same semantics.
+   **Revised by the user the same day: add the surgical form now, while this is still an
+   experiment.** The kernel now has both requests: `rewire(id, deps, fn)` keeps the instance (C-8's
+   surgical clauses, section above), and `replace` gives a new one (restart, O7). mergeMap was
+   rebuilt on `rewire` as one node, as in TS, and the four costs are gone. The seed is still not
+   needed by anything.
 2. **Decided by the user 2026-11-08: replace on an ended node is allowed.** R-rewire rejects a rewire on a terminal D; restart (O7)
    needs exactly that.
 3. **Decided by the user 2026-11-08: a topology request from inside a node function is queued, not an ERROR.** R-rewire calls a mid-fn

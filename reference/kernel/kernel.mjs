@@ -196,16 +196,18 @@ export function createGraph({ report: hostReport } = {}) {
   }
 
   function acquireDeps(n) {
-    n.deps.forEach((depId, i) => {
-      const dep = nodeOf(depId);
-      if (!dep.active) activate(dep);
-      dep.subs.push({ kind: "node", id: n.id, dep: i });
-      // K3: the dependency's START snapshot is this node's first received input.
-      const snapshot = [];
-      if (dep.has) snapshot.push(["DATA", dep.cache]);
-      if (dep.ended) snapshot.push(dep.ended);
-      n.inputs[i] = { has: dep.has, value: dep.cache, ended: dep.ended, frames: snapshot.length ? [snapshot] : [] };
-    });
+    n.deps.forEach((_, i) => acquire(n, i));
+  }
+
+  function acquire(n, i) {
+    const dep = nodeOf(n.deps[i]);
+    if (!dep.active) activate(dep);
+    dep.subs.push({ kind: "node", id: n.id, dep: i });
+    // K3: the dependency's START snapshot is this node's first received input.
+    const snapshot = [];
+    if (dep.has) snapshot.push(["DATA", dep.cache]);
+    if (dep.ended) snapshot.push(dep.ended);
+    n.inputs[i] = { has: dep.has, value: dep.cache, ended: dep.ended, frames: snapshot.length ? [snapshot] : [] };
   }
 
   function release(dep, sub) {
@@ -261,7 +263,8 @@ export function createGraph({ report: hostReport } = {}) {
       // K4: per dependency, this wave's value arrays as TS waveData does it (each array
       // its DATA payloads in order; a RESOLVED array is []), its terminal this wave, and
       // the latest value received.
-      deps: n.inputs.map((input) => ({
+      deps: n.inputs.map((input, i) => ({
+        id: n.deps[i],
         waves: input.frames.filter((f) => f.some(isValue))
           .map((f) => f.filter((m) => m[0] === "DATA").map((m) => m[1])),
         terminal: input.frames.flat().find(isTerminal) ?? null,
@@ -535,6 +538,39 @@ export function createGraph({ report: hostReport } = {}) {
     if (n.ended) closeLifetime(n);
   }
 
+  // ---- Rewire (C-8 surgical, 2026-11-08) -----------------------------------
+  //
+  // The node keeps its instance: lifetime, private state, retained value and fn runs go on.
+  // A dependency in both lists keeps its connection and input record, whatever its new
+  // position; a removed one is released without a wave (between waves nothing of it is
+  // pending, K8); an added one is acquired as at activation. The added dependencies' START
+  // snapshots are this node's input in one wave, as an ordinary settlement: the fn runs and
+  // its output is delivered; if it sends nothing, nothing goes below. An added dependency
+  // with no value sends nothing, so the fn does not run for it. The new fn takes over the
+  // next run; a rewire alone causes none.
+
+  function rewireNode(n, deps, fn) {
+    n.fn = fn;
+    if (!n.active) { n.deps = deps; n.inputs = deps.map(freshInput); return; }
+    const held = new Map(n.deps.map((depId, i) => [depId, {
+      input: n.inputs[i],
+      sub: nodeOf(depId).subs.find((s) => s.kind === "node" && s.id === n.id && s.dep === i),
+    }]));
+    const added = [];
+    n.inputs = deps.map((depId, i) => {
+      const kept = held.get(depId);
+      if (!kept) { added.push(i); return freshInput(); }
+      held.delete(depId);
+      kept.sub.dep = i;
+      return kept.input;
+    });
+    n.deps = deps;
+    for (const i of added) acquire(n, i); // before any release: a shared upstream stays active
+    for (const [depId, { sub }] of held) release(nodeOf(depId), sub);
+    // An ordinary settlement; if it sends a value, deliver marks the cone pending first (P3).
+    if (added.some((i) => n.inputs[i].frames.length)) settle(n);
+  }
+
   // ---- Host input ---------------------------------------------------------
 
   function hostInput(id, msg) {
@@ -593,6 +629,25 @@ export function createGraph({ report: hostReport } = {}) {
       const check = () => { if (n.active) for (const d of deps) assertAcquirable(nodeOf(d)); };
       if (!busy) check(); // a queued replace reports this instead
       request(() => { check(); replaceNode(n, deps, fn); });
+    },
+    // Surgical: the same instance with a new dependency list and fn. A request (K8).
+    rewire(id, deps, fn) {
+      const n = nodeOf(id);
+      if (n.kind !== "node") throw new KernelError(`${id} is not a computed node`);
+      if (new Set(deps).size !== deps.length || new Set(n.deps).size !== n.deps.length) {
+        throw new KernelError(`rewire: ${id} needs distinct dependencies`);
+      }
+      for (const d of deps) {
+        if (d === id || dependsOn(nodeOf(d), id)) throw new KernelError(`rewire: ${id} would depend on itself through ${d}`);
+      }
+      const check = () => {
+        // An ended instance has nothing to keep; replace gives the node a new one.
+        if (n.ended) throw new KernelError(`rewire: ${id} has ended`);
+        // P5: an added dependency must be acquirable; a kept one is not acquired again.
+        if (n.active) for (const d of deps) if (!n.deps.includes(d)) assertAcquirable(nodeOf(d));
+      };
+      if (!busy) check(); // a queued rewire reports this instead
+      request(() => { check(); rewireNode(n, deps, fn); });
     },
     set(id, value) { hostInput(id, ["DATA", value]); },
     invalidate(id) { hostInput(id, ["INVALIDATE"]); },

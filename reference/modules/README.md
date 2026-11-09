@@ -393,70 +393,60 @@ drop the inner values forwarded earlier in that run); inner values not forwarded
 ## mergeMap ([merge-map.mjs](merge-map.mjs), [merge-map.test.mjs](merge-map.test.mjs))
 
 Added 2026-11-08 to check the other half of the first C-8 decision: that `mergeMap`, with a varying
-number of inners, is the first case that needs a seed (H4). It does not. It is built on `replace`
-alone, and TS's mergeMap tests pass on it. What replace costs it is in the first table below; a seed
-would remove only one of those costs.
+number of inners, is the first case that needs a seed (H4). It did not need one. Built first on
+`replace` alone (git `75ee4c8`), it passed TS's mergeMap tests but replace cost it four things: a
+fixed outward node in front of a replaced core, so the value and the single START survive; the
+core's state carried in the next fn's closure, with a first-run skip of snapshots already handled;
+one inner per replace, since an activation keeps one value (K3); and leaving an ended source out
+(P5). A seed would have removed only the second. The user then asked for the surgical form, and the
+kernel got `rewire(id, deps, fn)` ([kernel README](../kernel/README.md)); this module was rebuilt on
+it, and the four costs are gone.
 
 ```text
-sourceId ──► id/core ──► id          id/core's dependencies: [sourceId, id/inner/0, id/inner/1, ...]
-                ▲
-                └── id/inner/k ◄── (each projected inner's dependencies)
+sourceId ──► id ◄── id/inner/0, id/inner/1, ... ◄── (each projected inner's dependencies)
 ```
 
-`mergeMap(g, id, sourceId, project, { concurrent })` returns `{ id, coreId }`. As TS's merge mode,
-`${id}/core` depends on the source and on every live inner, and forwards their values; it completes
-once the source has completed and nothing is live or waiting, and ends with ERROR on a source or
-inner ERROR or a throwing projector, after the inner values it forwarded in that wave. `concurrent`
-bounds the live inners; further source values wait unprojected until one completes. TS adds an inner
-in place (`rewireNext.subscribeDep`); here the core is replaced with one more dependency.
-
-| What replace costs | Why | Would a seed (H4) remove it? |
-|---|---|---|
-| A fixed outward node `id` that forwards `${id}/core` | A replaced node loses its value and sends its sinks a START; `id` is never replaced, so it keeps its value and its subscribers see one START | No: a seeded replace is still a new instance with a START. Only adding a dependency in place (surgical) removes it |
-| The core's state is carried to the new instance in its fn's closure, and its first run skips the START snapshots of the dependencies it already had | The new instance starts with no private state, and its first run receives every dependency's snapshot: the source's last value (already projected) and the live inners' last values (already forwarded) | Yes: this is what H4 carries (private state and first-call history) |
-| One inner added per replace | An activation keeps only the last value it sends (K3), so two inners added at once would pass on one value | No |
-| Once the source has ended, a replace leaves it out | An ended node cannot be acquired again (P5), so the replace would be refused | No |
+`mergeMap(g, id, sourceId, project, { concurrent })` returns `{ id }`. As TS's merge mode
+(`mapOperator`, D47/D81), `id` depends on the source and on every live inner and forwards their
+values; it completes once the source has completed and no inner is live, and ends with ERROR on a
+source or inner ERROR or a throwing projector, after the inner values it forwarded in that wave.
+`concurrent` bounds the live inners; further source values wait unprojected until one completes. Each
+change of the inner set is one `rewire`, asked for during the wave and run after it (K8), as TS's
+`rewireNext` is drained at the boundary. An added inner's value arrives as an ordinary input wave.
+The function finds its dependencies by `ctx.deps[i].id`, so it keeps no position bookkeeping.
 
 | Here | TS `mergeMap` (`dafc5ae`) | Why |
 |---|---|---|
 | `project` returns a definition `{ deps, fn }` | `project` returns a node (or something `fromAny` turns into one) | As switchMap: nodes cannot be removed |
-| Inner nodes at `${id}/inner/k`, reused once no instance of the core holds them | A fresh node per inner, unsubscribed when it completes | The kernel cannot delete a node; reuse bounds them by the peak number held |
-| A completed inner stays a dependency of the core, doing nothing, until the next replace drops it | Removed at once (`unsubscribeDep`) | Its lifetime closed when it completed, so what it used is already released; dropping it at once would cost a replace |
-| A projection with the same `fn` and `deps` as a live or waiting inner adds nothing | A projected node that is already live is skipped | The same rule, by definition |
-| A projection onto an ended node is an ERROR | A node that completed in the same wave is skipped (the test "does not re-add a just-completed inner") | As switchMap; a queued `replace` that is refused would leave the operator waiting |
+| Inner nodes at `${id}/inner/k`, reused once not live | A fresh node per inner | The kernel cannot delete a node; reuse bounds them by the peak number live |
+| One `rewire` with the whole new list per change | `rewireNext.unsubscribeDep` and `subscribeDep` per inner, removes before adds so the list stays aligned with positions | The kernel compares the lists; dependencies are read by id, so there is no alignment to keep |
+| A projection with the same `fn` and `deps` as a live inner adds nothing | A projected node that is already live is skipped | The same rule, by definition |
+| A projection onto an ended node is an ERROR | A node that completed in the same wave is skipped (the test "does not re-add a just-completed inner") | As switchMap: an ended node cannot be acquired (P5) |
 | An inner that sends several values as it activates passes on its last | `mergeMap(v => [v, v + 1])` gives both | K3: an activation only sets the retained value. The same holds for switchMap's inner and for any first subscription |
 | No `flatMap` alias, no `fromAny` coercion | Both | Sugar; nothing here needs them |
 
-Known gap, shared with switchMap: an inner ended by a request queued ahead of the core's replace
-makes that replace refused (P5), and the operator then waits. Within one wave this cannot happen;
-the core keeps at most one replace on its way, and that replace's first run requests the next with
-dependencies that leave out what ended meanwhile (the test "a source value that arrives while an
-inner is being added waits for that replace").
+What the tests pin: TS's mergeMap tests (interleaving, and release and removal of a completed inner;
+bounded concurrency; invalid `concurrent`; an already live inner merged once with later removals
+aligned; completion; source, inner and projector ERROR releasing every inner; inner DATA before its
+ERROR; the just-completed re-projection, which is an ERROR here); the operator's value and single
+START kept while inners are added; no resend of live inners' values and no reprojection of the
+source's; several inners added in one wave each passing on their value; the K3 last value of an
+inner's activation; an inner that completes as it activates; a source value queued ahead of the
+operator's rewire; node reuse, also by an inner that completes in the wave of a new source value; a
+fresh activation; inner values before a projector ERROR.
 
-What the tests pin: TS's mergeMap tests (interleaving and release of a completed inner; bounded
-concurrency; invalid `concurrent`; an already live inner merged once with later removals aligned;
-completion; source, inner and projector ERROR releasing every inner; inner DATA before its ERROR;
-the just-completed re-projection, which is an ERROR here); the outward value and single START kept
-with no seed; no resend of live inners' values and no reprojection of the source's; inners added in
-one wave each passing on their value; the K3 last value of an inner's activation; an inner that
-completes as it activates; inner node reuse; a fresh activation; inner values before a projector
-ERROR.
-
-Mutations, each failing at least one test: no snapshot skip; the added inner's snapshot skipped too;
-several replaces on their way at once; the ended source kept; no renewal on deactivation; renewal on
-every replace; no "same definition" skip; reuse of an inner node an instance still holds; waiting
-inners not counted against `concurrent`; the adding flag never cleared; no catch around the
-projector; no ended check; inner completion not recorded; only the source's ERROR handled; the
-outward node not forwarding the terminal. A completion check that also waited for the adding flag
-survived: the inner being added is already counted, so the check was removed.
+Mutations, each failing at least one test: no "same definition" skip; no ended check; no catch
+around the projector; a completed inner kept; a removal not rewired; no renewal on deactivation; no
+concurrency bound; only the source's ERROR handled; inner values not forwarded. Two checks survived
+every test and were removed: excluding a node that completed in this wave from reuse (replacing it
+sends the operator its new value, and the rewire keeps it in place), and waiting for an empty queue
+before completing (a waiting value implies a live inner).
 
 ### New things this module introduces
 
 | New | Why it stays |
 |---|---|
 | `mergeMap(g, id, sourceId, project, { concurrent })` | The check above; `concurrent` is TS's `MergeMapOptions` |
-| The outward node `id` in front of `${id}/core` | The value and the single START (first cost) |
-| State carried in the next fn's closure, and the first-run snapshot skip | The second cost; an H4 seed would replace both |
-| One replace on its way at a time | Keeps each replace's dependencies current (the gap above) |
 | Inner node reuse at `${id}/inner/k` | Without it inner nodes would grow by one per source value |
 
+The kernel side, `rewire` and `ctx.deps[i].id`, is listed in the kernel README.
