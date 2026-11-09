@@ -13,14 +13,14 @@
 // and a node may send several arrays in one wave. Subscribers receive each array;
 // a dependent function sees them per dependency as ctx.deps[i].waves, like TS waveData.
 
+// The closed set of message types (K1). Control is not a message (P11, K9), and there is
+// no TEARDOWN: a lifetime ends at the last unsubscribe (K7). Both decided 2026-11-09.
 export const TIER = Object.freeze({
   START: 0,
-  PAUSE: 1, RESUME: 1, PULL: 1,
   DIRTY: 2,
   DATA: 3, RESOLVED: 3,
   INVALIDATE: 4,
   COMPLETE: 5, ERROR: 5,
-  TEARDOWN: 6,
 });
 
 export class KernelError extends Error {}

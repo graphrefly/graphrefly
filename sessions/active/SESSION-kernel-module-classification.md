@@ -97,7 +97,7 @@ callback registration 属于 lifetime。原来分散在各条规则里的"旧请
 | `partial` | Sugar | First-run completeness is a sugar policy |
 | `terminalAsRealInput`, `completeWhenDepsComplete`, `errorWhenDepsError` | Kernel (K5), simplified | Three booleans become auto or manual per kind; ignore is manual with no action (O6) |
 | `resubscribable` | Open (O7) | Either kernel execution restart under the same node identity, or removed in favor of restartable owner nodes |
-| `resetOnTeardown` | Kernel (K7), candidate to remove | One rule should say what each node kind keeps on deactivation |
+| `resetOnTeardown` | Kernel (K7), candidate to remove | One rule should say what each node kind keeps on deactivation. 2026-11-09 (user): removed with TEARDOWN |
 | `pausable` | Module | Valve or gate node |
 | `pullId` | Module | Demand holder |
 | `replayBuffer` | Module | History node, hook H2 |
@@ -131,7 +131,7 @@ TEARDOWN。每个类别的内核行为如下；行为来自 R-tier@1 的"tier < 
 | 3 value | DATA, RESOLVED | Deferred inside batch; settles a membership; DATA is an occurrence | None |
 | 4 invalidation | INVALIDATE | Deferred inside batch; removes the retained value; settles a membership | None |
 | 5 terminal | COMPLETE, ERROR | Deferred; settles a membership; ends output for good | None |
-| 6 teardown | TEARDOWN | Last; ends the lifetime | None |
+| 6 teardown | TEARDOWN | Last; ends the lifetime | None. 2026-11-09 (user): decided away; the last unsubscribe ends a lifetime |
 
 所以 PAUSE、RESUME、PULL 都在类别 1，区别只在"谁处理、处理时做什么"，这些属于模块：pausable 节点处理
 PAUSE/RESUME，holder 处理 PULL，处理之后 holder 的结果是一个新 wave 里的类别 3 消息（经过 H6 安静边界）。
@@ -167,7 +167,7 @@ rewire、resubscription 和 dynamic 节点。简报也不要求 batch；batch �
 | O12 | Reject a public batch opened from an observer, initialization or lifecycle callback before its body runs (C-28)? Found in the replay. **Decided by the user 2026-11-06:** no special clause. Such a batch stages its writes and commits later as one wave, like any other request made during a wave (K8); with no DIRTY before commit there is nothing for it to disturb. | Resolved: allowed, no extra rule |
 | O13 | Does the kernel reorder one array by tier (R-tier@1/@2 "ordinary live output is stably normalized by tier"; TS sorts every `_down`)? Found while making resumeAll keep array boundaries: `[1, INV, 2, 3]` became `[1, 2, 3, INV]` and the author's final value 3 became absent. **Decided by the user 2026-11-06:** no tier sort. Messages keep their written order; a terminal must be last; DATA and RESOLVED still cannot share an array; an array is split at its last INVALIDATE, what came before it is dropped, and the INVALIDATE goes out as its own array: `[1, INV, 2, 3]` is published as `[INV]` then `[2, 3]`. So INVALIDATE never shares an array with a value, K6 ("runs no function") has no exception, and the waveData absence marker is not needed. Same day, the reference kernel was brought back to R-wave-boundary@2 and TS: each `ctx.down` call is its own array, and `ctx.deps[i].waves` keeps the per-array boundaries like TS `waveData` (the kernel had merged a run's calls and flattened the view without saying so). | Resolved: in written order, split at INVALIDATE |
 | O14 | Should a consumer be able to reach a controller without holding its handle, as TS's `ctx.up([["PULL", { pullId }]])` does? One option was routing only at wiring time (walk the declared dependencies once at construction to find the keyed node). **Decided by the user 2026-11-06:** not needed. Whoever builds the graph, a developer or an agent, already knows the pausable's or holder's id or handle, so anonymity buys nothing. | Resolved: no, the builder passes the handle |
-| O15 | Rename the wire message DIRTY to PENDING? In TS and the spec DIRTY means "possibly stale, a settlement is coming", while Vue, alien-signals, Solid and the TC39 proposal use dirty for "definitely stale" and pending/check for "possibly". The user prefers pending (2026-11-07); the reference kernel already calls the flag and the marking step `pending`/`markPending`. The spec is frozen, so the message keeps its name until the draft rules are revisited (R-two-phase, R-tier, K2, every trace). RESOLVED (Elm's `NoChange`) and settle (Promise sense) carry a similar risk and could be reviewed then. | Open: proposed, waits for the rule revision |
+| O15 | Rename the wire message DIRTY to PENDING? In TS and the spec DIRTY means "possibly stale, a settlement is coming", while Vue, alien-signals, Solid and the TC39 proposal use dirty for "definitely stale" and pending/check for "possibly". The user prefers pending (2026-11-07); the reference kernel already calls the flag and the marking step `pending`/`markPending`. The spec is frozen, so the message keeps its name until the draft rules are revisited (R-two-phase, R-tier, K2, every trace). RESOLVED (Elm's `NoChange`) and settle (Promise sense) carry a similar risk and could be reviewed then. | Resolved (user, 2026-11-09): rename in the B140 revision; RESOLVED and settle stay |
 
 ## 分类时发现的不一致
 
@@ -314,3 +314,11 @@ rewire、resubscription 和 dynamic 节点。简报也不要求 batch；batch �
    rewire 后保持连接目标、diamond 上每个 holder 只触发一次。B140 提案里 R-ctx-up、R-up-at-source、R-up-routing、R-up-routing-diamond 列为退役；
    C-37 只剩最后一条（lifetime 关闭后旧工作作废），归 K8。
 3. 然后根据结果恢复、修订或取代 B140。
+   2026-11-09 写了第一稿提案：[PROPOSAL-B140-kernel-rule-revision.md](PROPOSAL-B140-kernel-rule-revision.md)，
+   列出每条规则的去向（合入哪个内核概念、移到哪个模块、退役）、conformance 场景的去向、和 TS 的差异，以及 Q1–Q4 四个问题。Q1–Q4 用户同日全部回答，提案正文已按答案改写（新规则正文用 PENDING）；提案整体尚未被接受。
+   Q1 用户同日定为在原处修订 B140；backlog 里的记录等提案整体被接受后再改。
+   Q2 用户同日定为模块规则放进 `spec/`，单独一个 area；模块规则只能引用内核规则，内核先激活，模块以后逐个激活。
+   Q3（即 O15）用户同日定为这次修订里把 DIRTY 改名为 PENDING，只改这一个名字；各语言包和参考内核在激活后各自改。RESOLVED 保持原名（用户同日确认）。
+   Q4 用户同日定为去掉 TEARDOWN：TS 生产代码里没有地方主动发出它（只转发），R-graph-lifecycle@2 草案也已经撤掉 `graph.destroy()` 的广播；
+   lifetime 在最后一个订阅者离开时结束（K7），想让下游 bridge 有结局就对源调用 `complete`。R-teardown-complete、R-teardown-terminal-relay 和 `resetOnTeardown` 一起去掉。
+   参考内核的消息类型随之只剩 K1 的七种，`ctx.down` 拒绝 PAUSE、RESUME、PULL 和 TEARDOWN（新测试）。

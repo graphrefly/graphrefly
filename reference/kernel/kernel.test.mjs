@@ -1422,3 +1422,18 @@ test("K3: get returns a copy of the values; changing it changes nothing", () => 
   g.get("a").values.push(99);
   assert.deepEqual(during(g, () => g.subscribe("s", "a")), ["s <- a: [START, DATA(1)]"]);
 });
+
+test("K1: PAUSE, RESUME, PULL and TEARDOWN are not message types (P11, K9, decided 2026-11-09)", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  const refused = [];
+  g.node("n", ["a"], (ctx) => {
+    for (const type of ["PAUSE", "RESUME", "PULL", "TEARDOWN"]) {
+      try { ctx.down([[type]]); } catch (e) { if (e instanceof KernelError) refused.push(type); }
+    }
+    ctx.down([["DATA", ctx.deps[0].value]]);
+  });
+  g.subscribe("s", "n");
+  assert.deepEqual(refused, ["PAUSE", "RESUME", "PULL", "TEARDOWN"]);
+  assert.deepEqual(g.get("n").values, [1]);
+});

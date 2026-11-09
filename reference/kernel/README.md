@@ -122,6 +122,7 @@ registration while the lifetime is open is accepted, and `onInvalidate` hooks ar
 | An ended node can be subscribed, depended on and added by `rewire` or `replace`; its snapshot carries its terminal | A subscription to an ended non-resubscribable node throws (R-terminal, R2.2.7.b), and rewire refuses one as a dependency (C-8) | P5 relaxed by the user, 2026-11-08 |
 | `derived` needs every input on every run: after an input is invalidated it waits for a new value | The first-run gate (`partial: false`) checks only before the first run (R-first-run-gate); later the fn runs with a missing input as SENTINEL. `partial: true` turns the gate off | The user's choice, 2026-11-08: no SENTINEL to guard, and one rule for every run. There is no `partial` option: a gate is sugar (DS-17), and a plain node fn, `merge`, `zip` or `withLatestFrom` is what `partial: true` was. R-first-run-gate@2's clause that an INVALIDATE before the first run removes eligibility holds |
 | No `ctx.up` or `upNext`: nothing travels up the graph | `ctx.up` and `ctx.upNext` route DIRTY, PAUSE, RESUME, PULL, INVALIDATE and TEARDOWN along declared connections (R-ctx-up, R-up-routing) | K9 decided away by the user, 2026-11-09. In TS's production code the only upward message is PULL from `ctx.upNext`; pause, demand and restart use declared control pairs (P11), and the builder holds the target's handle (O14) |
+| No TEARDOWN message and no `resetOnTeardown` | TEARDOWN is forwarded downstream, with a COMPLETE synthesized before it (R-teardown-complete) | Decided away by the user, 2026-11-09: TS's production code never originates it |
 | No `rewireNext`, `pull`, `environment`, `track`, `persist` | Present | `rewire` is queued from a function (K8); `pull` is the demand module; the rest are not covered yet (modules) |
 
 The kernel does not know or care whether a late `ctx.down` came from async work.
@@ -421,6 +422,11 @@ Decided away rather than left out:
   broadcast lists, connection targets kept across a rewire, and once-per-holder delivery over a
   diamond. C-37's last clause, that a closed lifetime revokes old work, is K8's rule that a
   request dies with the innermost scope it was made in.
+- TEARDOWN, with R-teardown-complete and R-teardown-terminal-relay, the user, 2026-11-09. TS's
+  production code never originates it (it only forwards it), and R-graph-lifecycle@2 already
+  withdraws `graph.destroy()`'s broadcast. A lifetime ends at the last unsubscribe (K7); a host that
+  wants downstream bridges to settle calls `complete` on the source. The message types are the
+  seven K1 lists; `ctx.down` refuses PAUSE, RESUME, PULL and TEARDOWN as unknown types.
 
 ## Observations so far
 
