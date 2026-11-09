@@ -611,7 +611,8 @@ bound; empty waves sending; no check of `n`; newest first.
 ## Revision evidence, O9 ([revision.mjs](revision.mjs), [revision.test.mjs](revision.test.mjs))
 
 Built 2026-11-09. The user decided on 2026-11-08 (O9) that revision evidence is an observer module,
-not kernel state. `revisionObserver(g, ids, { hash, from })` subscribes to each node through
+not kernel state. It has no consumer yet, so on 2026-11-09 the user held its rule, R-revision, as a
+draft until incremental checkpoints or an agent inspection tool needs it. `revisionObserver(g, ids, { hash, from })` subscribes to each node through
 `observe` (H5) and returns `{ get(id), capture(), stop() }`.
 
 - `revision` advances once per committed DATA, RESOLVED, INVALIDATE, COMPLETE or ERROR; `valueRevision`

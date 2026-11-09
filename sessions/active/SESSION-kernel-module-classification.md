@@ -320,7 +320,8 @@ rewire、resubscription 和 dynamic 节点。简报也不要求 batch；batch �
    同日按 B140 的 Decisions 一条，把用户在 DS-17 做的决定写成 [graphrefly:D797](../../decisions/decisions.jsonl)：部分取代 D796 和受影响的前身决定（D8、D9、D30、D34、D38、D65、D109 等 29 条），并写明 spec、conformance、formal 三方面的义务。
    同日用户解冻 `spec/`：内核规则作为 D797 引入的 12 条草案行写进 `spec/rules.jsonl`（R-messages、R-wave、R-subscription、R-invocation、R-terminals、R-invalidation、R-lifetime、R-request-order、R-node、R-failure，以及 R-no-imperative@2、R-node-thin@2），旧规则的 transition 留到激活时再加，见提案第 8 节。
    随后改了 conformance：C-28、C-29、C-33–C-37 就地改写为 D797 版，新增 C-40–C-42；C-1–C-27 等激活时再改，模块相关的 C-30–C-32、C-38、C-39 等写模块规则时再改。
-   接着写了模块规则：R-pause、R-demand、R-history、R-checkpoint、R-restart 五条 D797 草案（`area` 为 `module`），C-30–C-32、C-38 改写为 D797 版；随后补上 revision 观察器（O9，[revision.mjs](../../reference/modules/revision.mjs)，10 个测试，17 个变异全部被发现），规则 R-revision，C-39 改写为 D797 版。
+   接着写了模块规则：R-pause、R-demand、R-history、R-checkpoint、R-restart 五条 D797 草案（`area` 为 `module`），C-30–C-32、C-38 改写为 D797 版；随后补上 revision 观察器（O9，[revision.mjs](../../reference/modules/revision.mjs)，10 个测试，17 个变异全部被发现），规则 R-revision，C-39 改写为 D797 版。用户同日同意：参考实现里目前没有它的使用者（整图恢复不需要比较，旗舰的 revision 是 DATA），所以 R-revision 和 C-39 保持草案、暂不推进激活，等增量 checkpoint 或 agent 检查工具出现真实用途时再接纳；模块留在参考实现里。
+   formal：用户选了另写 D797 的新模型、旧模型等激活时再处理。第一个模型 `formal/kernel_wave.tla`（wave、结算、终止、INVALIDATE）TLC 通过，13 个变异全部被抓到；lifetime 和请求顺序留给第二个模型。
    Q1 用户同日定为在原处修订 B140；backlog 里的记录等提案整体被接受后再改。
    Q2 用户同日定为模块规则放进 `spec/`，单独一个 area；模块规则只能引用内核规则，内核先激活，模块以后逐个激活。
    Q3（即 O15）用户同日定为这次修订里把 DIRTY 改名为 PENDING，只改这一个名字；各语言包和参考内核在激活后各自改。RESOLVED 保持原名（用户同日确认）。

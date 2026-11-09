@@ -4,6 +4,29 @@ This directory contains the TLA+ formal specification of the GraphReFly
 wave protocol. The CANONICAL normative source is [`spec/rules.jsonl`](../spec/rules.jsonl)
 (clean-slate); each TLA+ invariant pins one or more `R-*` rules.
 
+## D797 kernel models (draft, 2026-11-09)
+
+New models for the D797 draft rules, written for graphrefly:B140. The models below verify the
+currently active rules and are retired or rescoped at activation, not edited now.
+
+| Module | Covers | Conformance |
+|---|---|---|
+| `kernel_wave.tla` (`kernel_wave.cfg`, `kernel_wave_3.cfg`) | R-wave, R-messages, R-invalidation, R-terminals, R-subscription, R-failure: a state S and a diamond S->B,C->D under the default auto policies; host inputs to S (set, a batch of two, invalidate, complete, error); computed nodes choose outputs from a menu that includes rejected arrays; nodes settle in every order the dependencies allow. Invariants: RunOnce, SettleOnce, FanInAfterSettle, NoWedge, PendingPrefix, InvalidateAlone, NoDataWithResolved, TerminalLastAndFinal, InvalidateEffective, RetainedMatchesSent, AutoErrorNoRun, AutoTerminals. TLC-green 2026-11-09: two waves 58,287 distinct states (depth 11); three waves 5,949,762 distinct states (depth 16, 3 min). | C-28, C-34, C-36, C-40, C-41, C-42 |
+
+Mutations checked on `kernel_wave.cfg`, each tripping an invariant: settling while a dependency is
+pending (FanInAfterSettle); no kernel RESOLVED (NoWedge); no PENDING prefix (PendingPrefix); no split
+at INVALIDATE (InvalidateAlone); INVALIDATE effective without a value (InvalidateEffective); no
+output check (NoDataWithResolved); auto ERROR running the function (AutoErrorNoRun); no auto COMPLETE
+(AutoTerminals); applying after a terminal (TerminalLastAndFinal, after a menu entry with an array
+after a terminal was added); inbox not cleared (RunOnce); pending not cleared on delivery
+(FanInAfterSettle, and SettleOnce when checked alone); DATA not replacing retained values
+(RetainedMatchesSent); cone not marked (RunOnce). A "not ended" clause in `Ready` was dropped as
+equivalent: an ended node has released its dependencies, so nothing reaches it (same 58,287 states
+with it). Run: `java -cp <tla2tools.jar> tlc2.TLC -deadlock -config kernel_wave.cfg kernel_wave`.
+
+Not modeled yet: R-lifetime and R-request-order (lifetimes, request order, batch bodies, replace and
+rewire), manual policies, quiet nodes and async output. A second model is planned for them.
+
 ## Clean-slate module map (CSP-0)
 
 | Module | Covers | Conformance |

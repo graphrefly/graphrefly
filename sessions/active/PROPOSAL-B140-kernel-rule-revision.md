@@ -301,7 +301,7 @@ R-resolved-undirty@1 的 transition（D49），第一稿说它"仍被 D15 激活
 | R-history@1 | R-replay-buffer |
 | R-checkpoint@1 | R-restore, R-snapshot, R-input-receipts; R-resource-reattach stays a draft, not yet specified |
 | R-restart@1 | Nothing: it is new. Resubscription, which it takes the place of, already goes with R-terminals |
-| R-revision@1 | R-node-revision |
+| R-revision@1 | R-node-revision. **Held** (user, 2026-11-09): no consumer yet; not put forward for activation until incremental checkpoints or an agent inspection tool needs it |
 
 revision 观察器（O9）随后补上（[revision.mjs](../../reference/modules/revision.mjs)），规则是 R-revision，C-39 也改写为 D797 版。retry 策略的公式是库的词汇（D130/D132），
 不进规则，R-restart 只说"由 retry 策略决定是否、隔多久重试"。switchMap、mergeMap 按 D797 属于 sugar。
@@ -322,6 +322,12 @@ C-30、C-31、C-32、C-38、C-39 主要属于模块，留到写模块规则时�
 每个新场景的预期都对照参考内核核对过；没有现成测试的几条（C-37 rewire 后迟到输出仍发出、C-40、C-41、C-42 的未捕获拒绝）
 用临时测试跑过，并据此改正了两处：宿主的 invalidate 只能用于 state 节点（R-invalidation、R-wave 的写法随之改正），
 只把 ERROR 设为 manual 的节点在依赖全部结束后仍会 auto COMPLETE。
+
+**Formal（2026-11-09）。** 用户选了另写新模型：旧模型验证的是当前生效的规则，激活时再退役或缩小，现在不改。
+D797 formal 义务里"更新 wave_protocol"因此理解为：现在写 D797 的新模型，激活时处理旧模型；D797 本身不改。
+第一个模型 `formal/kernel_wave.tla` 覆盖 R-wave、R-messages、R-invalidation、R-terminals、R-subscription、R-failure，
+12 个不变式，两个 wave 58,287 个状态、三个 wave 5,949,762 个状态都通过；13 个变异全部被抓到，一个多余条件按等价删掉。
+R-lifetime、R-request-order 留给第二个模型。
 
 不在本提案里：formal 模型（TLA+）的更新、各语言 runtime 的实现、O10（L0.5 和 F-NO-WEDGE-CUT）。它们分别属于
 B140 的 Formal、Owner routing 两条和一个单独的决定。
