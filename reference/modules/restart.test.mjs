@@ -161,4 +161,8 @@ test("no restart once an upstream of the inner has ended: the owner ends with th
   g.subscribe("s", "r");
   g.complete("a");
   assert.deepEqual(g.get("r").ended, ["COMPLETE"]);
+  // A fresh inner would start on a's ended snapshot (P5) and end at once, sending a's last
+  // value again each round; with no limit on rounds it would never stop.
+  const data = g.trace.filter((e) => e.to === "s").flatMap((e) => e.msgs).filter((m) => m[0] === "DATA");
+  assert.deepEqual(data, [["DATA", 1]]);
 });

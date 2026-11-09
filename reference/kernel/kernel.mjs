@@ -88,6 +88,9 @@ export function createGraph({ report: hostReport } = {}) {
   function makeNode(id, kind, deps, fn, opts, initial) {
     if (nodes.has(id)) throw new KernelError(`duplicate node ${id}`);
     for (const d of deps) nodeOf(d); // P1: dependencies are declared and must exist
+    // H4, optional (2026-11-08, for restore): { value?, ended?, state? } gives a computed node a
+    // retained value, terminal and private state without running its fn. Without it nothing changes.
+    const seed = opts?.seed;
     const n = {
       id, kind, deps, fn,
       terminal: { complete: "auto", error: "auto", ...(opts?.terminal ?? {}) }, // O6
@@ -96,10 +99,10 @@ export function createGraph({ report: hostReport } = {}) {
       active: false,
       lifetime: null,      // K7: the current lifetime of a computed node, see openLifetime; while it
                            // closes it is no longer open, and once closed it is gone
-      has: initial !== undefined,
-      cache: initial,
-      ended: null,         // P5: COMPLETE/ERROR message once output has ended
-      privateState: undefined,
+      has: seed ? "value" in seed : initial !== undefined,
+      cache: seed ? seed.value : initial,
+      ended: seed?.ended ?? null, // P5: COMPLETE/ERROR message once output has ended
+      privateState: seed?.state,
       pending: false,    // P3: notified in the current wave and not settled yet (stale)
       pendingDeps: new Set(),
       // Per dependency: the latest value and terminal received, and this wave's arrays.
@@ -183,25 +186,28 @@ export function createGraph({ report: hostReport } = {}) {
     }
   }
 
-  function assertAcquirable(n) {
-    // P5: an ended output cannot be acquired again; restart is a module (O7) that
-    // replaces the ended node.
-    if (n.ended) throw new KernelError(`${n.id} has ended`);
-    if (!n.active) for (const d of n.deps) assertAcquirable(nodeOf(d));
-  }
-
   function activate(n) {
     n.active = true;
-    if (n.kind === "state") return;
+    // P5: an ended node is connected and gives its snapshot, but never runs again.
+    if (n.kind === "state" || n.ended) return;
     openLifetime(n);
     acquireDeps(n);
-    // The activation invocation sees each snapshot as this wave's input. Waiting for
-    // every dependency to have a value is a sugar policy, not a kernel gate. Nothing
-    // subscribes to this node yet, so publishing its output only sets the retained value
-    // that the new subscriber's START snapshot will carry.
-    const out = invoke(n);
+    // Nothing subscribes to this node yet, so publishing its output only sets the retained
+    // value that the new subscriber's START snapshot will carry.
+    down(n, firstRun(n));
+  }
+
+  // The first invocation of a lifetime sees each dependency's snapshot as its input. Waiting
+  // for every dependency to have a value is a sugar policy, not a kernel gate. K5 applies to
+  // the terminal a snapshot carries when a dependency has ended, as in settle: with auto policy
+  // an ERROR ends the node without running its function, and once every dependency has ended,
+  // COMPLETE follows the run (dropped if the run ended the node itself).
+  function firstRun(n) {
+    const depError = n.inputs.map((input) => input.ended).find((t) => t?.[0] === "ERROR");
+    const out = depError && n.terminal.error === "auto" ? [[depError]] : invoke(n);
     n.inputs.forEach((input) => { input.frames = []; });
-    down(n, out);
+    const allEnded = n.deps.length > 0 && n.inputs.every((input) => input.ended);
+    return n.terminal.complete === "auto" && allEnded ? [...out, [["COMPLETE"]]] : out;
   }
 
   function acquireDeps(n) {
@@ -527,9 +533,7 @@ export function createGraph({ report: hostReport } = {}) {
 
     openLifetime(n);
     n.inputs = deps.map((depId) => snapshotInput(nodeOf(depId))); // a new instance: every record new
-    const out = invoke(n);
-    n.inputs.forEach((input) => { input.frames = []; });
-    apply(n, out); // the retained value only, as at a first activation
+    apply(n, firstRun(n)); // the retained value only, as at a first activation
 
     const snap = [];
     if (n.has) snap.push(["DATA", n.cache]);
@@ -617,9 +621,8 @@ export function createGraph({ report: hostReport } = {}) {
     node(id, deps, fn, opts) { makeNode(id, "node", deps, fn, opts, undefined); return id; },
     subscribe(sinkId, id, cb) {
       const n = nodeOf(id);
-      if (!busy) assertAcquirable(n); // a queued subscribe reports this instead
+      // P5: an ended node can be subscribed; its START snapshot carries its terminal.
       request(() => {
-        assertAcquirable(n);
         if (n.subs.some((s) => s.kind === "sink" && s.id === sinkId)) return; // idempotent
         if (!n.active) activate(n);
         const sub = { kind: "sink", id: sinkId, cb };
@@ -645,11 +648,7 @@ export function createGraph({ report: hostReport } = {}) {
       for (const d of deps) {
         if (d === id || dependsOn(nodeOf(d), id)) throw new KernelError(`replace: ${id} would depend on itself through ${d}`);
       }
-      // P5, as for a subscription: an active node cannot acquire an ended dependency. An
-      // inactive node is checked when it is next subscribed.
-      const check = () => { if (n.active) for (const d of deps) assertAcquirable(nodeOf(d)); };
-      if (!busy) check(); // a queued replace reports this instead
-      request(() => { check(); replaceNode(n, deps, fn); });
+      request(() => replaceNode(n, deps, fn));
     },
     // Surgical: the same instance with a new dependency list and fn. A request (K8).
     rewire(id, deps, fn) {
@@ -659,12 +658,8 @@ export function createGraph({ report: hostReport } = {}) {
       for (const d of deps) {
         if (d === id || dependsOn(nodeOf(d), id)) throw new KernelError(`rewire: ${id} would depend on itself through ${d}`);
       }
-      const check = () => {
-        // An ended instance has nothing to keep; replace gives the node a new one.
-        if (n.ended) throw new KernelError(`rewire: ${id} has ended`);
-        // P5: an added dependency must be acquirable; a kept one is not acquired again.
-        if (n.active) for (const d of deps) if (!n.deps.includes(d)) assertAcquirable(nodeOf(d));
-      };
+      // An ended instance has nothing to keep; replace gives the node a new one.
+      const check = () => { if (n.ended) throw new KernelError(`rewire: ${id} has ended`); };
       if (!busy) check(); // a queued rewire reports this instead
       request(() => { check(); rewireNode(n, deps, fn); });
     },

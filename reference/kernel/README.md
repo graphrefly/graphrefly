@@ -22,7 +22,7 @@ npm run test:reference
 
 ## Surface
 
-The graph: `createGraph({ report })` takes an optional host reporter. Then `state(id, initial)`, `node(id, deps, fn, { terminal, quiet })`,
+The graph: `createGraph({ report })` takes an optional host reporter. Then `state(id, initial)`, `node(id, deps, fn, { terminal, quiet, seed })`,
 `subscribe(sinkId, id, callback?)`, `unsubscribe`, `replace(id, deps, fn)`, `rewire(id, deps, fn)`, `set`, `invalidate`, `complete`, `error`, `batch`,
 `get(id)` (`active`, `has`, `value`, `ended`), `status(id)`, `describe()`, `idle()`, `privateState(id)` and `trace`.
 
@@ -30,6 +30,40 @@ The graph: `createGraph({ report })` takes an optional host reporter. Then `stat
 `idle()` is true at a wave boundary (no request running and no batch body open; O5 captures only
 there), and `privateState(id)` is the private state of the node's current lifetime (R-snapshot
 saves all of it). The kernel never reads either. TS reads the same through internal accessors.
+
+`seed` (H4) is optional and was added 2026-11-08 for restore, at the user's request. Before that,
+the checkpoint module built without a seed found two cases it could not restore (see the
+[modules README](../modules/README.md)).
+- What it holds: `{ value?, ended?, state? }`. It gives a computed node a retained value (present
+  when `value` is a key, so `null` is a value), a terminal and private state, without running its fn.
+  Without a seed nothing changes.
+- A seeded ended node is ended like any ended node after its last release: it keeps its declared
+  dependencies and never runs (P5).
+- A seeded node that has not ended activates as usual: its fn runs on the activation snapshots and,
+  if it sends nothing, keeps the seeded value.
+- TS does the same through `restoreStateOfNode` and a restored-activation flag. That flag makes the
+  first activation take its dependencies' values without running the fn, and skips the subscription
+  of an ended dependency. Here the first activation runs the fn as usual; not running it, and the
+  refresh on a changed input, are the checkpoint module's policy.
+
+**P5 relaxed** (the user's decision, 2026-11-08). P5 says COMPLETE and ERROR end a node's output for
+good and nothing follows them; it does not say an ended node cannot be subscribed. Until this
+change the kernel added that ban, and needed an exception to it, for seeded nodes only, to restore
+a node that held an ended dependency. Asked which reading is more uniform, the user chose to drop
+the ban:
+- An ended node is subscribed, depended on, or added by `rewire` or `replace` like any node. Its
+  START snapshot carries its last value, if any, and its terminal; it is never run again, and no
+  host input reaches it (`set` on an ended state is refused).
+- So the first run of a lifetime (activation, or replace's new instance) can see a terminal in a
+  snapshot, and K5 applies there as in a settlement: with auto policy an ERROR ends the node without
+  running its fn, and once every dependency has ended, COMPLETE follows the run.
+- A rewire of an ended node is still refused: the instance has nothing to keep, and `replace` gives
+  it a new one.
+- The same graph no longer behaves differently by when a subscription comes, before or after a
+  dependency ended, and restore needs no exception.
+- TS refuses a subscription to an ended non-resubscribable node (R-terminal, R2.2.7.b), so a new
+  dependent of one cannot activate, and its rewire refuses an ended dependency (C-8). Here both are
+  accepted. This is a rule change for B140; `spec/` is untouched.
 
 `describe()` is P1's "topology is data", added 2026-11-07 for the flagship (S1 compares the
 topology of a base and a candidate): every node in creation order as `{ id, kind, deps, quiet }`, a
@@ -83,6 +117,8 @@ registration while the lifetime is open is accepted, and `onInvalidate` hooks ar
 | `replace(id, deps, fn)`: graph-level replace of one computed node, at a wave boundary | No counterpart: TS restarts through `resubscribable` | Added 2026-11-08 for the restart module (O7): a fresh instance under the same id |
 | `rewire(id, deps, fn)`: one request with the whole new dependency list and fn; from inside a function it is queued (K8) | `ctx.rewireNext.subscribeDep`/`unsubscribeDep`/`replaceDeps` (D47), and the immediate `subscribeDep`/`unsubscribeDep`/`replaceDeps` on a node | Added 2026-11-08 at the user's request, after mergeMap on `replace` showed what replace costs it. One form: the kernel compares the lists, so add, remove and reorder are the same request |
 | A `subscribe`, `unsubscribe`, `replace` or `rewire` made in a batch body runs after the commit, in request order; a throwing body drops it with the inputs | A rewire waits for the batch only when its node has uncommitted batch output, and is dropped on rollback; any other topology change runs at once | O3 and K8 (2026-11-08): nothing is delivered before commit, and a topology change delivers (a START snapshot, a settlement, cleanups), so it waits like any request made during a wave |
+| `node(..., { seed })`: value, terminal and private state; the first activation runs the fn | `restoreStateOfNode` after construction, also restoring status, version and first-call history; the first activation does not run the fn | Added 2026-11-08 for restore. Not running the fn is the checkpoint module's wrapper; there is no first-run gate, status is derived (K10), and versions are O9 |
+| An ended node can be subscribed, depended on and added by `rewire` or `replace`; its snapshot carries its terminal | A subscription to an ended non-resubscribable node throws (R-terminal, R2.2.7.b), and rewire refuses one as a dependency (C-8) | P5 relaxed by the user, 2026-11-08 |
 | No `up`, `upNext`, `rewireNext`, `pull`, `environment`, `track`, `persist` | Present | Not covered yet (K9, modules) |
 
 The kernel does not know or care whether a late `ctx.down` came from async work.
@@ -98,7 +134,8 @@ The kernel does not know or care whether a late `ctx.down` came from async work.
 - K10 `status(id)` as above. A quiet node is settled for status once it has absorbed its input,
   since its value changes only in its later wave. `stale` is the `pending` flag that P3 marking
   sets, cleared where the node settles; `closing` is a lifetime that exists and is no longer open.
-- K5 terminal policy as auto or manual per kind (DS-17 O6); ended output cannot be acquired (P5).
+- K5 terminal policy as auto or manual per kind (DS-17 O6), also at the first run of a lifetime;
+  nothing follows a terminal, and an ended node's snapshot carries it (P5, relaxed 2026-11-08).
 - K6: `invalidate` on a state, and an invalidated input, clear the retained value down the cone and
   run `onInvalidate` hooks after the value is gone. No DIRTY, no function run for the INVALIDATE. A
   repeat, or a node with no value, is a no-op; a pending node then settles with RESOLVED. What an
@@ -131,7 +168,7 @@ The kernel does not know or care whether a late `ctx.down` came from async work.
 - Replace (added 2026-11-08 for O7): `replace(id, deps, fn)` gives a computed node a new instance
   under the same id, keeping its subscribers. It is a request (K8). The old lifetime closes: its signal
   aborts, its late output is dropped, its cleanups run; no value, private state or terminal survives,
-  so an ended node can be acquired again. The dependencies are exchanged as by `rewire` (one shared
+  so an ended node gets a new execution. The dependencies are exchanged as by `rewire` (one shared
   function since 2026-11-08): a dependency in both lists keeps its connection, and keeps its place
   among its dependency's subscribers; added ones are acquired before removed ones are released, so a
   shared one stays active; then the old cleanups run, as when a lifetime closes (K7). The new instance
@@ -139,8 +176,9 @@ The kernel does not know or care whether a late `ctx.down` came from async work.
   included; its first run only sets the retained value; each sink gets a `[START, …]` snapshot and each
   dependent receives the snapshot as its input, in one wave, so a diamond below settles once. An
   inactive node only changes its definition. Refused for a state node, for a dependency on itself,
-  for duplicate dependencies (the exchange matches them by id), and, while the node is active, for an ended dependency (P5, as a subscription is; found missing in
-  the C-8 replay). REPLAY.md lists where it differs from R-rewire (C-8).
+  for duplicate dependencies (the exchange matches them by id). An ended dependency was refused too
+  (found missing in the C-8 replay, added, then dropped with the P5 relaxation): the new instance now
+  starts on its snapshot. REPLAY.md lists where it differs from R-rewire (C-8).
   Only the kernel can do this, because it rebinds the dependents' input records; the DS-17 rewire row
   had named only H4 (a seed), which restart does not need, so it is not implemented.
 - Rewire (added 2026-11-08, surgical, C-8): `rewire(id, deps, fn)` keeps the node's instance: its
@@ -152,9 +190,9 @@ The kernel does not know or care whether a late `ctx.down` came from async work.
   marked pending first if it sends a value (P3); if it sends nothing, nothing goes below. An added
   dependency with no value sends nothing, so the function waits for it. The new fn takes over the next
   run; a rewire alone causes none, so the current list is a no-op. An inactive node only changes its
-  definition. Refused for a state node, for itself or a cycle, for duplicate dependencies, for an
-  ended node (`replace` gives it a new instance) and, while active, for an added dependency that has
-  ended (P5); a kept dependency that has ended is fine, since it is not acquired again. Removing the
+  definition. Refused for a state node, for itself or a cycle, for duplicate dependencies, and for an
+  ended node (`replace` gives it a new instance). An added dependency that has ended arrives as its
+  snapshot, with its terminal (P5 relaxed; TS and C-8 refuse it). Removing the
   last dependency still open does not complete a `complete: "auto"` node, although every remaining
   one has ended: the auto completion is decided when a terminal arrives (K5). TS does the same
   (checked 2026-11-08 by running `unsubscribeDep` at `dafc5ae`); such a node stays open. REPLAY.md
@@ -212,6 +250,18 @@ kept ended dependency refused; duplicates accepted; the fn not replaced; no cycl
 `ctx.deps`. A first version marked the cone pending before the settlement; that mutant survived
 every test, since `deliver` already marks the cone when the node sends a value, so the mark was
 removed.
+
+Mutations of the seed and the P5 relaxation checked on 2026-11-08, together with the checkpoint,
+restart, higher-order, pause, demand and observation tests, each failing at least one test:
+- the ban back, for a subscription or for a dependency; a rewire of an ended node allowed;
+- an ended node run when connected, or not marked active;
+- at the first run, no auto ERROR, or one under manual policy; no COMPLETE, one for a node with no
+  dependencies, or one under manual policy; replace's new instance skipping that policy;
+- the seed's value, `null` value, private state or terminal ignored.
+
+Removed because they could not change anything: the seeded flag and the exception (with the ban
+gone), and a check that the first run had not ended the node before COMPLETE is added (output after
+a terminal is dropped).
 
 Mutations of the batch's topology requests checked on 2026-11-08, each failing at least one kernel
 test: run at once in the body (the old kernel); appended after requests already queued; placed after
@@ -309,11 +359,10 @@ Each of these is left out rather than approximated:
 - K9 upward control routing: not needed for pause or demand (control pairs, DS-17 P11); START
   snapshots of an unsettled node; the released lifecycle of R-status-enum@2.
 - Upward INVALIDATE (R-up-at-source); INVALIDATE before a node's first invocation (R-first-run-gate).
-- Modules: replay. The H4 seed is not implemented: switchMap and mergeMap were built without one,
-  mergeMap first on `replace`, then on `rewire` (now one module with switchMap); checkpoint was built
-  without one (2026-11-08) and found the two places a seed and a P5 exception would be needed (an
-  ended computed node, a live node holding an ended dependency). Pause, demand, observation (H5),
-  restart (O7), switchMap, mergeMap and checkpoint are in
+- Modules: replay. The H4 seed exists only for restore: switchMap and mergeMap were built without
+  one (mergeMap first on `replace`, then on `rewire`, now one module with switchMap). Checkpoint
+  was first built without one, found the two cases above, and now uses it. Pause, demand,
+  observation (H5), restart (O7), switchMap, mergeMap and checkpoint are in
   [../modules/](../modules/README.md). H5 needed no kernel hook: a subscriber already receives
   what a node committed.
 - The flagship acceptance (B139 S1–S8) runs on this kernel in [../flagship/](../flagship/README.md);

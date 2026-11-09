@@ -29,7 +29,7 @@ Labels:
 | C-35 partial wiring | — | — | — | partial first-run gate, rewire, acquisition failure |
 | C-36 input frames and terminal admission | 3 clauses | — | resumeAll INVALIDATE hold (decided) | 3 clauses: pause module |
 | C-37 upstream routing | — | — | — | K9 routing, rewire |
-| C-38 restore and replay | — | — | — | checkpoint module (replayed 2026-11-08: 4 clauses, see below); replay module, namespaces, resources |
+| C-38 restore and replay | — | — | — | checkpoint module (replayed 2026-11-08: 5 clauses, see below); replay module, namespaces, resources |
 | C-39 revision evidence | — | — | — | revision observer (O9) |
 | C-22 rewire during an open batch (activated R-rewire-batch-boundary; replayed 2026-11-08) | 6 clauses, and rollback from @2 | — | only when the node has batch output: every topology request in a body waits (K8) | — |
 | C-8 runtime rewire (activated R-rewire; replayed 2026-11-08) | 6 clauses with `replace`; with `rewire` (same day) also cache kept, surgical, idempotent, sentinel wait, terminal D | mid-wave removal (K8) | mid-fn rewire queued (K8); with `replace` also the five `rewire` covers | first-run gate (sugar) |
@@ -153,9 +153,9 @@ Demand module (tests in `../modules/demand.test.mjs`, 2026-11-06):
 | Clause | Label | Where |
 |---|---|---|
 | Y receives the full old array | Kernel | replay: "during DATA+COMPLETE fanout..." |
-| Next-execution requests wait for fanout and close | Kernel (they wait; without restart they find the source ended) | same test |
+| Next-execution requests wait for fanout and close | Kernel (they wait; without restart they get the ended source's snapshot, since P5 was relaxed on 2026-11-08; before, they were refused) | same test |
 | They get their own START in a new execution | Module (restart, 2026-11-08), when the owner's replace is queued first: S/inner is replaced after the fanout, then Z subscribes and gets START | restart replay: "Y gets the whole old array; the next execution starts..." |
-| (the same) when an observer subscribed to the inner before the owner did | Module, differs: its requests are queued ahead of the replace and find the old execution ended | restart replay: "a request queued before the owner's replace..." |
+| (the same) when an observer subscribed to the inner before the owner did | Module, differs: its requests are queued ahead of the replace, get the old execution's ended snapshot, and then the new execution's START, since the replace keeps subscribers (before the P5 relaxation they were refused) | restart replay: "a request queued before the owner's replace..." |
 | Next-execution requests do not attach to a finished callback registration | Changed (O7): a replace keeps the node's subscribers, so X's registration goes on into the next execution and gets its START; the reuse request adds nothing | restart replay, first test |
 | Old releases cannot remove new registrations | Kernel for dependency edges (the old edge objects are released, the new ones stay); for sinks there is no old and new registration (O7) | kernel: "replace: new dependencies are acquired before..." |
 | Observer failure does not become S's ERROR | Kernel; also on restart | same tests |
@@ -192,7 +192,7 @@ C-38 was replayed on 2026-11-08 against the [checkpoint module](../modules/READM
 | Restore alone does not evaluate fn | Module | same, and "a chain of restored nodes..." |
 | Genuine pre-attachment changes use the latest refresh, without replaying lost history | Module (the user's choice over TS, which keeps the restored value) | "C-38: an upstream change before the first subscription runs the fn once..." |
 | Rebuild physical callbacks through a registered recipe | Module: fns come from the registry by ref | "a missing recipe fails the restore" |
-| Ended input does not bind to a new source execution | Not reached: a live node holding an ended input is refused at capture (P5) | "P5: a node that has not ended but holds an ended dependency..." |
+| Ended input does not bind to a new source execution | Kernel and module: a restored node connects to the ended input's snapshot, which does not run it (P5) | checkpoint: "a node holding an ended dependency comes back and works..."; kernel: "P5: a node over an ended node activates on its snapshot..." |
 | Replay history survives | Module not built (replay) | — |
 | Namespace watermarks, retired names, observation sequence | Not modeled: the kernel has no namespaces | — |
 | Rebuild resources | Not covered (R-resource-reattach) | — |
@@ -218,7 +218,7 @@ and labels the clauses it does not reproduce. Tests are in [replay.test.mjs](rep
 | Kept dependencies keep their subscription and record, no unsubscribe and resubscribe | Partly: a kept dependency stays subscribed throughout (acquired before release), but D gets a fresh record with a fresh snapshot (O4) | kernel: "replace: new dependencies are acquired before..." |
 | Removal while A's DIRTY is in flight; a removed dependency's queued INVALIDATE is drained | Decided away (K8: a replace runs between waves) |  |
 | Rejects self-dependency and a cycle | Kernel | kernel: "replace: refused for a state node and for a dependency on itself" |
-| Rejects adding a non-resubscribable terminal dependency | Kernel (found missing in this replay, fixed) | kernel: "replace: an active node cannot acquire an ended dependency..." |
+| Rejects adding a non-resubscribable terminal dependency | Kernel at first (found missing in this replay, fixed); Changed with the P5 relaxation (2026-11-08): an added ended dependency arrives as its snapshot | kernel: "replace: a new instance over an ended dependency starts on its snapshot"; "rewire: an added dependency that has ended arrives as its snapshot" |
 | Rejects a rewire on a terminal D | Changed (O7): replacing an ended node is how restart works | kernel: "replace: an ended node gets a fresh instance..." |
 | Rejects a mid-fn rewire as the D37 feedback ERROR, and a reentrant rewire | Changed (K8): it is queued until the wave is over, like every request made during a wave | replay: "a replace D asks for from its own function waits..." |
 | Rewiring to zero dependencies: no-input function, cache preserved, no auto-deactivate | Kernel for "no input, stays active"; Changed (O4) for the cache | replay: "replacing to no dependencies..." |
@@ -281,7 +281,9 @@ They change C-8 and C-34 when the draft rules are revisited (B140); `spec/` is n
    can be an owner with a replaced inner and keep their cache without a seed; checked the same day
    by building `switchMap` this way (now in [../modules/higher-order.mjs](../modules/higher-order.mjs)).
    `mergeMap`, with a varying number of inners, was expected to be the first case that needs the
-   seed; built the same day (git `75ee4c8`), it does not.
+   seed; built the same day (git `75ee4c8`), it does not. Checkpoint was the first case that needs
+   it (same day): the seed was added as an option, first with a P5 exception for a seeded node's
+   first activation, which went when the user relaxed P5 (kernel README).
    Replace costs it a fixed outward node, its state carried in the next fn's closure with a
    first-run skip of snapshots already handled, one inner per replace (K3 keeps one value per
    activation), and leaving an ended source out (P5). A seed would replace only the second; the
@@ -302,5 +304,6 @@ They change C-8 and C-34 when the draft rules are revisited (B140); `spec/` is n
    attempts, so a replace keeps them.
 5. **Decided by the user 2026-11-08: a next-execution request made during the terminal fanout depends on order (C-34), with no new kernel rule.** It succeeds
    only if the owner's replace is queued first, which holds when the owner subscribed to the inner
-   before the observer did. Otherwise it finds the old execution ended and is reported. The kernel
+   before the observer did. Otherwise it gets the old execution's ended snapshot first (before the
+   P5 relaxation of the same day it was refused and reported). The kernel
    could hold such a request for a pending replace, but that would be a new kernel rule.

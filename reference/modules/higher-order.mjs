@@ -17,7 +17,8 @@
 // exists, project to { deps: [X], fn: relay }. Inner nodes sit at id/inner/k, because the
 // kernel cannot delete a node: a definition goes into a node with replace (a new node the
 // first time). A projection with the same definition as a live inner keeps that inner (TS
-// keeps an already live inner). A projection onto an ended node is an ERROR (P5).
+// keeps an already live inner). A projection onto an ended node gives an inner that starts on
+// its snapshot (P5): its last value, if any, then its end (TS's rewire refuses it instead).
 //
 // switch: the last source value of a wave is projected into id/inner/0. Replacing that node
 // closes the live inner's lifetime, so its late output is dropped and a dependency only it
@@ -61,8 +62,6 @@ function mapOperator(g, id, sourceId, project, mode, concurrent) {
     while (st.queue.length && (mode === "switch" || st.inners.length < concurrent)) {
       let next;
       try { next = project(st.queue.shift()); } catch (e) { ctx.down([["ERROR", e instanceof Error ? e.message : e]]); return; }
-      const ended = next.deps.find((d) => g.get(d).ended);
-      if (ended) { ctx.down([["ERROR", `${id}: cannot follow ${ended}, which has ended`]]); return; }
       if (st.inners.some((x) => sameDef(x.def, next))) continue;
       let k = 0;
       if (mode === "merge") {

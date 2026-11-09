@@ -113,14 +113,17 @@ test("switchMap: source ERROR, inner ERROR and a throwing projector each end the
   }
 });
 
-test("switchMap: a projection onto an ended node is an ERROR, not a wait", () => {
+test("switchMap: a projection onto an ended node forwards its last value; the operator stays open (P5)", () => {
   const g = createGraph();
   g.state("s"); g.state("done", 1);
   g.complete("done");
   switchMap(g, "op", "s", () => follow("done"));
   g.subscribe("out", "op");
   g.set("s", 1);
-  assert.deepEqual(g.get("op").ended, ["ERROR", "op: cannot follow done, which has ended"]);
+  assert.deepEqual(values(g, "out"), [1]);
+  assert.equal(g.get("op").ended, null, "the inner ended at once; the source is still open");
+  g.complete("s");
+  assert.deepEqual(g.get("op").ended, ["COMPLETE"]);
 });
 
 test("switchMap: a fresh activation starts with no inner, even after the inner ended", () => {
@@ -283,14 +286,14 @@ test("mergeMap: inner DATA in the same array as its ERROR is forwarded before th
   assert.deepEqual(g.get("op").ended, ["ERROR", "inner boom"]);
 });
 
-test("mergeMap: re-projecting a node that has ended is an ERROR, as in switchMap (TS skips it)", () => {
+test("mergeMap: re-projecting a node that has ended gives an inner that ends at once (TS skips it)", () => {
   const g = createGraph();
   g.state("s"); g.state("inner");
   mergeMap(g, "op", "s", () => follow("inner"), { concurrent: 1 });
   g.subscribe("out", "op");
   g.batch(() => { g.set("s", 1); g.set("s", 2); g.complete("s"); });
-  g.complete("inner"); // frees the slot; the queued 2 projects onto the ended inner
-  assert.deepEqual(g.get("op").ended, ["ERROR", "op: cannot follow inner, which has ended"]);
+  g.complete("inner"); // frees the slot; the queued 2 projects onto the ended inner, which ends at once
+  assert.deepEqual(g.get("op").ended, ["COMPLETE"]);
 });
 
 test("mergeMap: the operator keeps its value and its one START while inners are added (rewire keeps the instance)", () => {

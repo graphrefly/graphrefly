@@ -42,7 +42,7 @@ test("C-34 on restart: Y gets the whole old array; the next execution starts aft
   assert.deepEqual(reports, [{ source: "sink X", error: "X failed" }], "not S's ERROR; X's reuse request added nothing");
 });
 
-test("C-34 on restart: a request queued before the owner's replace finds the old execution ended", () => {
+test("C-34 on restart: a request queued before the owner's replace gets the old execution's ended snapshot, then the new one", () => {
   // X and Y subscribed to the inner before the owner did, so X's requests are queued
   // ahead of the replace the owner asks for in the same fanout.
   const { trace, reports } = scene({ ownerFirst: false });
@@ -50,12 +50,10 @@ test("C-34 on restart: a request queued before the owner's replace finds the old
     "X <- S/inner: [DIRTY, DATA(1), COMPLETE]",
     "Y <- S/inner: [DIRTY, DATA(1), COMPLETE]",
     "down <- S: [DIRTY, DATA(1)]",
+    "Z <- S/inner: [START, DATA(1), COMPLETE]", // queued ahead of the replace (order-dependent)
     "X <- S/inner: [START]",
     "Y <- S/inner: [START]",
+    "Z <- S/inner: [START]", // the replace keeps subscribers (decision 4)
   ]);
-  assert.deepEqual(reports, [
-    { source: "sink X", error: "X failed" },
-    { source: "queued request", error: "S/inner has ended" }, // Z
-    { source: "queued request", error: "S/inner has ended" }, // X's reuse
-  ]);
+  assert.deepEqual(reports, [{ source: "sink X", error: "X failed" }]);
 });

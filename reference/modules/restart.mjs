@@ -25,10 +25,11 @@
 // The owner asks for the replace from its own function. The kernel queues it until the
 // wave is over (K8), like TS's ctx.rewireNext. A delayed retry is dropped if the owner's
 // lifetime has closed by then. When the owner deactivates without having ended, an inner
-// that has ended is replaced too, since it would otherwise refuse the owner's next
-// activation (P5); with no other subscriber it is inactive, so only its definition is
-// renewed. No restart is attempted once an upstream of the inner has ended: the fresh
-// instance could not acquire it (P5), and the owner would wait for good.
+// that has ended is replaced too, so the owner's next activation starts a fresh inner, as a
+// new subscription does in TS, rather than on the ended inner's snapshot; with no other
+// subscriber it is inactive, so only its definition is renewed. No restart is attempted once
+// an upstream of the inner has ended: a fresh inner would start on its ended snapshot (P5)
+// and end at once, sending its last value again, round after round.
 
 import { retryDelayMs, retryPolicy } from "./resilience.mjs";
 
@@ -41,15 +42,14 @@ export function restartable(g, id, { deps, fn, rounds = 1, retry = retryPolicy()
     const [inner, request] = ctx.deps;
     const st = ctx.state.get() ?? { round: 1, failures: 0 };
     ctx.state.set(st);
-    // Unless the owner itself has ended for good, its next activation needs an inner that
-    // has not ended (P5).
+    // Unless the owner itself has ended for good, its next activation starts a fresh inner.
     ctx.onDeactivation(() => { if (!g.get(id).ended && g.get(innerId).ended) g.replace(innerId, deps, fn); });
     for (const w of inner.waves) if (w.length) ctx.down(w.map((v) => ["DATA", v]));
 
     const end = inner.terminal;
     let delay = 0;
-    // A fresh inner could not acquire an ended upstream (P5), so none is attempted: the
-    // owner ends with the inner instead of waiting for a restart that cannot happen.
+    // A fresh inner over an ended upstream would end at once (P5), so none is attempted:
+    // the owner ends with the inner.
     const restartable = !deps.some((d) => g.get(d).ended);
     let again = restartable && request.waves.length > 0;
     if (restartable && !again && end?.[0] === "COMPLETE" && st.round < rounds) { st.round += 1; st.failures = 0; again = true; }

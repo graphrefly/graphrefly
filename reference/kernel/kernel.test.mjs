@@ -183,14 +183,46 @@ test("K7: a computed node clears on last release; plain state keeps its value", 
   assert.deepEqual(during(g, () => g.subscribe("s", "d")), ["s <- d: [START, DATA(8)]"]);
 });
 
-test("P5: an ended output cannot be acquired again (restart belongs to a module, O7)", () => {
+test("P5: an ended node can be subscribed; its snapshot carries the terminal, and nothing follows it", () => {
   const g = createGraph();
   g.state("a", 1);
-  g.node("d", ["a"], map((v) => v));
   g.subscribe("s", "a");
   g.complete("a");
-  assert.throws(() => g.subscribe("s2", "a"), KernelError);
-  assert.throws(() => g.subscribe("s3", "d"), KernelError);
+  assert.deepEqual(during(g, () => g.subscribe("s2", "a")), ["s2 <- a: [START, DATA(1), COMPLETE]"]);
+  assert.throws(() => g.set("a", 2), /a has ended/);
+});
+
+test("P5: a node over an ended node activates on its snapshot; the ended node does not run", () => {
+  const g = createGraph();
+  g.state("a", 1); g.state("b", 2);
+  const done = counted((ctx) => ctx.down([["DATA", ctx.deps[0].value]]));
+  g.node("e", ["a"], done);
+  g.subscribe("s", "e");
+  g.complete("a");
+  g.unsubscribe("s", "e");
+  assert.deepEqual(g.get("e"), { active: false, has: true, value: 1, ended: ["COMPLETE"] });
+  const runs = done.calls;
+  g.node("d", ["e"], map((v) => v * 10)); // auto: ends at once, all its inputs have
+  g.node("x", ["e", "b"], sumById); // auto: stays open while b is
+  assert.deepEqual(during(g, () => g.subscribe("t", "d")), ["t <- d: [START, DATA(10), COMPLETE]"]);
+  assert.deepEqual(during(g, () => g.subscribe("u", "x")), ["u <- x: [START, DATA(\"e=1,b=2\")]"]);
+  assert.equal(done.calls, runs, "the ended node was connected, not run");
+  assert.equal(g.get("e").active, true);
+  assert.deepEqual(during(g, () => g.set("b", 3)), ["u <- x: [DIRTY, DATA(\"e=1,b=3\")]"]);
+  g.unsubscribe("u", "x");
+  assert.equal(g.get("e").active, false);
+});
+
+test("K5 at activation: over an ended ERROR an auto node ends without running; manual runs and stays open", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  g.error("a", "boom");
+  const fn = counted((ctx) => ctx.down([["DATA", ctx.deps[0].terminal?.[0] ?? "-"]]));
+  g.node("auto", ["a"], fn);
+  g.node("manual", ["a"], fn, { terminal: { complete: "manual", error: "manual" } });
+  assert.deepEqual(during(g, () => g.subscribe("s", "auto")), ["s <- auto: [START, ERROR(\"boom\")]"]);
+  assert.equal(fn.calls, 0);
+  assert.deepEqual(during(g, () => g.subscribe("t", "manual")), ["t <- manual: [START, DATA(\"ERROR\")]"]);
 });
 
 // ---- K8: requests that arrive while the kernel is busy ---------------------
@@ -916,26 +948,27 @@ test("replace: a new instance that ends at once closes its lifetime and releases
   assert.deepEqual(log, ["up closed"]);
 });
 
-test("replace: an ended node that lost its subscribers can be subscribed again after a replace", () => {
+test("replace: an ended node gives its terminal snapshot; after a replace a new instance runs", () => {
   const g = createGraph();
   g.state("a", 1);
   g.node("x", ["a"], (ctx) => ctx.down([["COMPLETE"]]));
   g.subscribe("s", "x");
   g.unsubscribe("s", "x");
-  assert.throws(() => g.subscribe("t", "x"), /has ended/);
+  assert.deepEqual(during(g, () => g.subscribe("t", "x")), ["t <- x: [START, COMPLETE]"]);
+  g.unsubscribe("t", "x");
   g.replace("x", ["a"], (ctx) => ctx.down([["DATA", 2]]));
   assert.deepEqual(during(g, () => g.subscribe("t", "x")), ["t <- x: [START, DATA(2)]"]);
 });
 
-test("replace: an active node cannot acquire an ended dependency (P5), as a subscription cannot", () => {
+test("replace: a new instance over an ended dependency starts on its snapshot (P5)", () => {
   const g = createGraph();
   g.state("a", 1);
   g.state("done", 0);
   g.complete("done");
   g.node("x", ["a"], () => {});
   g.subscribe("s", "x");
-  assert.throws(() => g.replace("x", ["done"], () => {}), /done has ended/);
-  assert.deepEqual(g.describe().find((d) => d.id === "x").deps, ["a"], "nothing changed");
+  assert.deepEqual(during(g, () => g.replace("x", ["done"], sumById)), ["s <- x: [START, DATA(\"done=0\"), COMPLETE]"],
+    "auto: every dependency has ended, so the new instance completes after its run");
 });
 
 // ---- rewire (surgical, C-8) -------------------------------------------------
@@ -1066,13 +1099,13 @@ test("rewire: the new fn takes over the next run", () => {
   assert.equal(g.get("x").value, "new");
 });
 
-test("rewire: an added dependency that has ended is refused (P5); a kept one that ended is fine", () => {
+test("rewire: an added dependency that has ended arrives as its snapshot (P5); a kept one that ended stays", () => {
   const g = createGraph();
   g.state("a", 1); g.state("b", 2); g.state("done", 3);
   g.complete("done");
   g.node("x", ["a", "b"], sumById, { terminal: { complete: "manual" } });
   g.subscribe("s", "x");
-  assert.throws(() => g.rewire("x", ["a", "done"], sumById), /done has ended/);
+  assert.deepEqual(during(g, () => g.rewire("x", ["a", "b", "done"], sumById)), ["s <- x: [DIRTY, DATA(\"a=1,b=2,done=3\")]"]);
   g.complete("b");
   g.rewire("x", ["b"], sumById);
   assert.deepEqual(g.describe().find((d) => d.id === "x").deps, ["b"]);
@@ -1281,10 +1314,11 @@ test("O3/K8: a body's request that its own commit makes invalid is reported as a
   const reports = [];
   const g = createGraph({ report: (r) => reports.push(r) });
   g.state("a", 1);
-  const out = during(g, () => g.batch(() => { g.complete("a"); g.subscribe("t", "a"); }));
-  assert.deepEqual(out, []);
+  g.node("x", ["a"], sumById); // auto: ends with a
+  g.subscribe("s", "x");
+  g.batch(() => { g.complete("a"); g.rewire("x", ["a"], sumById); });
   assert.deepEqual(reports.map((r) => r.source), ["queued request"]);
-  assert.match(reports[0].error, /a has ended/);
+  assert.match(reports[0].error, /rewire: x has ended/);
 });
 
 // ---- reads for a checkpoint (O5, R-snapshot) ---------------------------------
@@ -1302,4 +1336,37 @@ test("O5: idle is false inside a wave and a batch body; privateState reads the c
   assert.equal(g.privateState("t"), 3);
   g.unsubscribe("s", "t");
   assert.equal(g.privateState("t"), undefined, "a closed lifetime's private state is gone (K7)");
+});
+
+// ---- H4 seed, optional, and P5's exception for it (2026-11-08, for restore) -----------
+
+test("H4: a seed gives a node its value and private state without running its fn; activation runs it as usual", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  const fn = counted((ctx) => { if (ctx.deps[0].value > 1) ctx.down([["DATA", ctx.state.get() + ctx.deps[0].value]]); });
+  g.node("x", ["a"], fn, { seed: { value: 10, state: 100 } });
+  assert.deepEqual(g.get("x"), { active: false, has: true, value: 10, ended: null });
+  assert.equal(g.privateState("x"), 100);
+  assert.equal(fn.calls, 0);
+  assert.deepEqual(during(g, () => g.subscribe("s", "x")), ["s <- x: [START, DATA(10)]"], "a silent activation keeps the seed");
+  assert.equal(fn.calls, 1);
+  assert.deepEqual(during(g, () => g.set("a", 2)), ["s <- x: [DIRTY, DATA(102)]"]);
+  g.node("n", ["a"], fn, { seed: { value: null } });
+  assert.deepEqual(g.get("n"), { active: false, has: true, value: null, ended: null }, "null is a value");
+  g.node("v", ["a"], fn, { seed: {} });
+  assert.equal(g.get("v").has, false, "a seed without a value holds none");
+});
+
+test("H4: a seeded ended node is ended with its dependencies and never runs (P5)", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  const fn = counted(() => {});
+  g.node("e", ["a"], fn, { seed: { value: 3, ended: ["COMPLETE"] } });
+  assert.deepEqual(g.get("e"), { active: false, has: true, value: 3, ended: ["COMPLETE"] });
+  assert.deepEqual(g.describe().find((d) => d.id === "e").deps, ["a"]);
+  assert.deepEqual(during(g, () => g.subscribe("k", "e")), ["k <- e: [START, DATA(3), COMPLETE]"]);
+  assert.equal(g.get("a").active, false, "an ended node holds none of its dependencies");
+  g.node("d", ["e", "a"], sumById, { terminal: { complete: "manual" } });
+  assert.deepEqual(during(g, () => g.subscribe("s", "d")), ["s <- d: [START, DATA(\"e=3,a=1\")]"]);
+  assert.equal(fn.calls, 0);
 });

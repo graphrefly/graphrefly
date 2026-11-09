@@ -136,7 +136,8 @@ test("C-31: a terminal seals the state; a write queued behind the terminal is dr
   g.set("t", 1);
   assert.deepEqual(g.get("s"), { active: true, has: true, value: 20, ended: ["COMPLETE"] });
   assert.deepEqual(reports, [{ source: "queued request", error: "s has ended" }]);
-  assert.throws(() => g.subscribe("o2", "s"), KernelError, "no reset revives a sealed output");
+  assert.deepEqual(during(g, () => g.subscribe("o2", "s")), ["o2 <- s: [START, DATA(20), COMPLETE]"],
+    "no reset revives a sealed output: a new subscriber gets its terminal snapshot (P5)");
 });
 
 test("C-33: a close requested during an invocation waits until it returns; cleanup runs after delivery", () => {
@@ -171,7 +172,7 @@ test("C-33: old-lifetime output is dropped, and a fresh lifetime gets a distinct
   assert.deepEqual(during(g, () => ctxs[0].down([["DATA", "old"]])), []);
 });
 
-test("C-34: during DATA+COMPLETE fanout every observer gets the whole array; a subscribe request waits and finds the source ended", () => {
+test("C-34: during DATA+COMPLETE fanout every observer gets the whole array; a subscribe request waits and gets the ended snapshot", () => {
   const reports = [];
   const g = createGraph({ report: (r) => reports.push(r) });
   const S = producer(g, "S");
@@ -184,11 +185,9 @@ test("C-34: during DATA+COMPLETE fanout every observer gets the whole array; a s
   assert.deepEqual(during(g, () => S.ctx.down([["DATA", 1], ["COMPLETE"]])), [
     "X <- S: [DIRTY, DATA(1), COMPLETE]",
     "Y <- S: [DIRTY, DATA(1), COMPLETE]",
+    "Z <- S: [START, DATA(1), COMPLETE]", // after the wave; no resubscribable in the kernel (O7)
   ]);
-  assert.deepEqual(reports, [
-    { source: "sink X", error: "X failed" },          // not S's ERROR
-    { source: "queued request", error: "S has ended" }, // no resubscribable in the kernel (O7)
-  ]);
+  assert.deepEqual(reports, [{ source: "sink X", error: "X failed" }]); // not S's ERROR
 });
 
 test("C-36: one invocation sees the admitted DATA and the terminal of the same array (complete=manual)", () => {

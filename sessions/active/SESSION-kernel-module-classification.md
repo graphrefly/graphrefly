@@ -31,7 +31,7 @@ D796 的 50 条草案规则平均每条约 700 字符，大多数都会提到好
 | P2 | Every DATA is an occurrence. The kernel delivers every DATA a node emits to each subscriber unchanged and in order, and never merges, drops, reorders or replaces DATA on a node's behalf. Transforming, filtering and combining (map, filter, zip, merge) are what a node's own function does. (D49) |
 | P3 | DIRTY means "this may change in this wave". Only a source about to emit DATA, or a node one of whose dependencies announced DIRTY, announces it. Each announced DIRTY is settled exactly once, by DATA or RESOLVED. A node runs at most once per wave, after every dependency that announced DIRTY has settled. |
 | P4 | A node's output is only what its function emits, plus the one RESOLVED the kernel adds to settle a DIRTY it announced and left unanswered. |
-| P5 | COMPLETE and ERROR end a node's output for good. Nothing follows them. |
+| P5 | COMPLETE and ERROR end a node's output for good. Nothing follows them. (Reference kernel, user's decision 2026-11-08: an ended node can still be subscribed, depended on and added by rewire or replace; its START snapshot carries its terminal, and it never runs again. TS refuses these, R-terminal R2.2.7.b.) |
 | P6 | Lifetimes nest. A node is active while something needs it; activation acquires dependencies, deactivation releases them, and every ctx and cleanup belongs to exactly one lifetime. |
 | P7 | Delivery inside a graph has one total order. Requests made while a wave is being delivered wait until it finishes. A running function is never reentered. |
 | P8 | The kernel does nothing on its own: no retry, deduplication, buffering, timing, demand or persistence. Each of those is a node. |
@@ -113,7 +113,7 @@ callback registration 属于 lifetime。原来分散在各条规则里的"旧请
 | H1 | Control reaches its target in one of two declared ways: (1) a keyed upward message along declared connections, handled by the node that declares the key and forwarded by the others; (2) a declared control pair, where the controller calls its target outside the message channel. Either way the relation is declared, so describe can draw it as a control edge. | Pause, demand, restart | K9 routes PULL by pullId today; (2) is the user's 2026-11-05 relaxation (O8) |
 | H2 | Subscription snapshot provider: what a new subscriber gets in its START array (default: the retained value) | Replay, demand | **L2-Q15** makes onSubscribe non-replaceable (O1) |
 | H3 | Invocation gate: defer a node's function call while keeping its latest input | Default pause on sources | Only if O8 keeps it |
-| H4 | Construction-time seed: retained value, private state and first-call history | Checkpoint, rewire, persist | Must stay quiescent-only unless O5 says otherwise |
+| H4 | Construction-time seed: retained value, private state and first-call history | Checkpoint, rewire, persist | Must stay quiescent-only unless O5 says otherwise. Implemented 2026-11-08 in the reference kernel as an optional `node(..., { seed })` (value, terminal, private state; no first-call history, since there is no first-run gate); its first version also had a P5 exception for a seeded node's first activation, gone when the user relaxed P5 the same day. Only checkpoint needed it; rewire did not (surgical `rewire` instead) |
 | H5 | Committed-output observation | Revision, evidence, replay | Exists (observe/inspection). 2026-11-07: the reference kernel needs no hook for it; an ordinary subscriber receives what a node committed, and `reference/modules/observe.mjs` wraps it like TS `Graph.observe` |
 | H6 | Quiet boundary: consume an input wave without forwarding DIRTY; publish later as a new wave | Flagship lifecycle port, demand | Today folded into R-pull; separating it is new wording, not new behavior |
 
@@ -286,5 +286,15 @@ rewire、resubscription 和 dynamic 节点。简报也不要求 batch；batch �
    发现：没有种子时，有两处做不到忠实恢复，都来自 P5（已结束的节点不能再接）：
    已结束的计算节点只能恢复成一个已结束的 state（值和 terminal 一样，但 describe 里没有依赖）；
    一个没结束的节点如果还持有已结束的依赖，capture 直接拒绝。后一处光有种子还不够，还要给恢复出来的节点开一个 P5 例外（TS 就是这样做的）。
-   **用户 2026-11-08 决定先留着**：内核仍不加种子，这两处作为 B140 的证据；按决定 1，等有场景真正需要时再加种子和 P5 例外。
+   用户先决定留着；随后发现第二处范围更大：默认策略下，多输入节点只要有一个输入结束了，整张图就 capture 不了。
+   于是**用户同日决定加种子**：`node()` 多一个可选的 `seed`（值、terminal、私有状态），不传时行为不变。
+   带种子的节点在第一次激活前，可以接上已结束的依赖（P5 唯一的例外），只拿它的快照，不运行它。
+   这样两处都修好了：已结束的计算节点带着原来的依赖恢复，持有已结束依赖的节点也能恢复。
+   模块的包装 fn 只剩比较输入、需要时重算这一步。这是第一个需要种子（H4）的场景，对应决定 1。
+   随后用户问能否精简，并从语义统一的角度**决定彻底放宽 P5**：已结束的节点可以被订阅、被依赖，也可以被 rewire/replace 加成依赖，
+   它的 START 快照带着最后的值和 terminal，它自己不会再运行。理由是 P5 原文只说"terminal 之后什么都没有"，没有禁止订阅；
+   同一张图不再因为订阅时机（依赖结束之前还是之后）给出不同结果；restore 也不再需要例外。
+   代价是和 TS（R-terminal R2.2.7.b：订阅已结束的非 resubscribable 节点会抛错）以及 C-8（rewire 拒绝已结束的依赖）不一致，B140 要写明。
+   内核随之删掉了 `assertAcquirable`、`seeded` 标志和例外，并在每个 lifetime 的第一次运行时也按 K5 处理快照里的 terminal。
+   switchMap 投影到已结束节点不再是 ERROR，而是 inner 发出最后的值后结束；restart 的两处检查保留，理由改写。
 3. 然后根据结果恢复、修订或取代 B140。

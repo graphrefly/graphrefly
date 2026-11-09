@@ -1,7 +1,10 @@
-// Checkpoint and restore over the reference kernel, without a kernel seed (H4). Non-normative.
+// Checkpoint and restore over the reference kernel. Non-normative.
 //
 // Built 2026-11-08 (DS-17 O5: capture at a wave boundary, no pending-FIFO or receipt capture
-// in the kernel). The user chose to do it in the module only, to test whether H4 is needed.
+// in the kernel). Built first without a kernel seed (git b6468e6); that left an ended computed
+// node coming back as a state and refused any graph where a node held an ended dependency. The
+// same day the user had the optional seed (H4) added to the kernel and P5 relaxed, so a node
+// can be activated over an ended dependency.
 //
 // A node is restorable when it is built through `recipes(g, registry)`: a state, or a computed
 // node whose fn is `registry[ref](config)`. Function bodies are never saved (R-snapshot). Any
@@ -13,19 +16,11 @@
 // from each dependency, if it had a lifetime (an inactive computed node holds nothing, K7).
 //
 // restore(checkpoint, registry) builds a new graph with no subscribers, as TS's restoreGraph,
-// and runs no fn. A saved lifetime of a node that has not ended is put back when the node is
-// first activated, by a wrapper around its fn (K3: activation output only sets the retained
-// value): the private state is set and the saved value sent, and the real fn does not run,
-// unless a dependency's value differs from what the node had received (an upstream
-// change before the first subscription). Then the real fn runs once, with only the changed
-// dependencies as input, as a live wave would have had them (C-38, R-input-receipts). Every
-// later run is the real fn's.
-//
-// Without a seed the kernel cannot create an ended computed node with its dependencies, so an
-// ended node comes back as an ended state with its value: it never runs again and nothing can
-// acquire it (P5), as before, but describe() shows it as a state with no dependencies. For the
-// same reason (P5) a graph where a node that has not ended holds an ended dependency is refused
-// at capture: the restored node could not acquire it.
+// and runs no fn: each saved computed node gets its value, terminal and private state as a
+// kernel seed. On its first activation the real fn does not run, unless a dependency's value or
+// terminal differs from what the node had received (an upstream change before the first
+// subscription). Then the real fn runs once, with only the changed dependencies as input, as a
+// live wave would have had them (C-38, R-input-receipts; TS keeps the restored value instead).
 
 import { isDeepStrictEqual } from "node:util";
 import { createGraph } from "../kernel/kernel.mjs";
@@ -36,13 +31,12 @@ const json = (v, where) => {
   return v;
 };
 
-// A terminal cannot differ: no saved input has ended (refused at capture), and an input that
-// ended since cannot be acquired (P5).
-const sameInput = (d, saved) => d.has === saved.has && (!d.has || isDeepStrictEqual(d.value, saved.value));
+const sameInput = (d, saved) => d.has === saved.has && (!d.has || isDeepStrictEqual(d.value, saved.value))
+  && isDeepStrictEqual(d.terminal, saved.ended);
 
 export function recipes(g, registry) {
-  // id -> { kind, deps, ref, config, opts } and, until the node's first activation puts it
-  // back, `entry`: its checkpoint entry. An ended node keeps its entry for good.
+  // id -> { deps, ref, config, opts } and, until the node's first activation, `entry`: its
+  // checkpoint entry, whose saved inputs that activation compares.
   const made = new Map();
   const lookup = (ref) => {
     if (typeof registry[ref] !== "function") throw new Error(`restore: no recipe ${ref}`);
@@ -54,47 +48,47 @@ export function recipes(g, registry) {
       const saved = rec.entry?.saved;
       rec.entry = null;
       if (!saved) { real(ctx); return; }
-      ctx.state.set(saved.state);
-      if (saved.has) ctx.down([["DATA", saved.value]]);
       const changed = ctx.deps.map((d, i) => !sameInput(d, saved.inputs[i]));
-      if (!changed.some(Boolean)) return;
-      const deps = ctx.deps.map((d, i) => (changed[i] ? d : { ...d, waves: [] }));
+      if (!changed.some(Boolean)) return; // the seed already holds the value and private state
+      const deps = ctx.deps.map((d, i) => (changed[i] ? d : { ...d, waves: [], terminal: null }));
       real(Object.create(ctx, { deps: { value: deps } }));
     };
+  }
+
+  function addState(id, initial) {
+    g.state(id, initial);
+    made.set(id, { deps: [] });
+    return id;
+  }
+
+  function addNode(id, deps, rec, seed) {
+    g.node(id, deps, restorable(rec, lookup(rec.ref)(rec.config)), { ...rec.opts, ...(seed && { seed }) });
+    made.set(id, rec);
+    return id;
   }
 
   function live(id, kind, deps) {
     const { active, has, value, ended } = g.get(id);
     if (kind === "state") return { has, ...(has && { value }), ended };
     if (!active && !ended) return null; // no lifetime, nothing held
-    const held = !ended && deps.find((d) => g.get(d).ended);
-    if (held) throw new Error(`capture: ${id} holds ${held}, which has ended; a restored ${id} could not acquire it (P5)`);
     const state = g.privateState(id);
     return {
       has, ...(has && { value }), ended, ...(state !== undefined && { state }),
       // What it received from each dependency: at a wave boundary, the dependency's value.
-      inputs: deps.map((d) => { const x = g.get(d); return { has: x.has, ...(x.has && { value: x.value }) }; }),
+      inputs: deps.map((d) => { const x = g.get(d); return { has: x.has, ...(x.has && { value: x.value }), ended: x.ended }; }),
     };
   }
 
   return {
     g,
-    state(id, initial) {
-      g.state(id, initial);
-      made.set(id, { kind: "state", deps: [] });
-      return id;
-    },
+    state: addState,
     node(id, deps, ref, config, opts) {
-      const rec = { kind: "node", deps: [...deps], ref, config: json(config ?? null, `${id} config`), opts: json(opts ?? {}, `${id} opts`) };
-      g.node(id, deps, restorable(rec, lookup(ref)(rec.config)), rec.opts);
-      made.set(id, rec);
-      return id;
+      return addNode(id, deps, { deps: [...deps], ref, config: json(config ?? null, `${id} config`), opts: json(opts ?? {}, `${id} opts`) });
     },
     capture() {
       if (!g.idle()) throw new Error("capture: a wave or batch is running; capture at a wave boundary (O5)");
       return { nodes: g.describe().map(({ id, kind, deps }) => {
         const rec = made.get(id);
-        if (rec?.entry?.saved?.ended) return rec.entry; // an ended node, restored as a state
         if (!rec || !isDeepStrictEqual(rec.deps, deps)) return { id, kind, deps, local: true };
         if (rec.entry) return rec.entry; // restored, not activated since
         const saved = live(id, kind, deps);
@@ -105,16 +99,13 @@ export function recipes(g, registry) {
     put(n) {
       if (n.local) throw new Error(`restore: ${n.id} is local-only (no recipe, or rewired since it was built)`);
       const { saved } = n;
-      if (n.kind === "state" || saved?.ended) {
-        g.state(n.id, saved?.has ? saved.value : undefined);
+      if (n.kind === "state") {
+        addState(n.id, saved?.has ? saved.value : undefined);
         if (saved?.ended) g[saved.ended[0] === "COMPLETE" ? "complete" : "error"](n.id, saved.ended[1]);
-        made.set(n.id, { kind: "state", deps: [], ...(saved?.ended && { entry: n }) });
         return n.id;
       }
-      const rec = { kind: "node", deps: [...n.deps], ref: n.ref, config: n.config, opts: n.opts, entry: saved ? n : null };
-      g.node(n.id, n.deps, restorable(rec, lookup(n.ref)(n.config)), n.opts);
-      made.set(n.id, rec);
-      return n.id;
+      const rec = { deps: [...n.deps], ref: n.ref, config: n.config, opts: n.opts, entry: saved ? n : null };
+      return addNode(n.id, n.deps, rec, saved && { ...(saved.has && { value: saved.value }), ended: saved.ended, state: saved.state });
     },
   };
 }

@@ -256,9 +256,11 @@ deps ──► id/inner ──► id          id.restart ──► id
 - **The owner asks for the replace from its own function,** and the kernel runs it after the wave
   (K8), as TS applies `ctx.rewireNext` after the wave. A delayed retry is dropped once the owner's
   lifetime has closed, even if a new one has opened. When the owner deactivates without having
-  ended, an inner that has ended is renewed, since it would otherwise refuse the owner's next
-  activation (P5). Once an upstream of the inner has ended, no restart is attempted: the fresh
-  instance could not acquire it, so the owner ends with the inner instead of waiting for good.
+  ended, an inner that has ended is renewed, so its next activation starts a fresh inner, as a new
+  subscription does in TS, rather than on the ended inner's snapshot. Once an upstream of the inner
+  has ended, no restart is attempted: a fresh inner would start on that ended snapshot (P5) and end
+  at once, sending the upstream's last value again each round. Both reasons were rewritten when P5
+  was relaxed (2026-11-08); before, the kernel refused these acquisitions.
 - **C-34 replayed** in [restart.replay.test.mjs](restart.replay.test.mjs); see the kernel's
   [REPLAY.md](../kernel/REPLAY.md). The next execution starts after the fanout and a request made
   during it gets its own START, but only when the owner's replace is queued first, and the old
@@ -301,8 +303,8 @@ ended (the owner then never ends).
 | START at the start of each attempt on the inner's sinks | It is what a fresh subscription sends, and it tells an observer that an attempt began |
 | `${id}.restart` and `restart()` | O7: a restart request reaches the owner on a declared edge (P11) |
 | `rounds` and `retry` | O7's attempts and backoff; `rounds` is TS `repeat`'s count, `retry` the shared policy |
-| Renewing an ended inner when the owner deactivates | Without it the owner could never be subscribed again (P5) |
-| No restart once an upstream of the inner has ended | Without it the owner waits for good for a replace the kernel refuses (P5) |
+| Renewing an ended inner when the owner deactivates | Without it the owner's next activation would start on the ended inner's snapshot |
+| No restart once an upstream of the inner has ended | Without it each round would end at once and resend the upstream's last value; with unlimited rounds, for good |
 
 ## Retry policy ([resilience.mjs](resilience.mjs), [resilience.test.mjs](resilience.test.mjs))
 
@@ -383,7 +385,7 @@ completes.
 | Inner nodes at `${id}/inner/k`, reused once not live; switch always uses `${id}/inner/0` | A fresh node per inner, under a synthetic id in `describe()` (D51) | Bounded by the peak number live; O7: observation goes on across switches |
 | One `rewire` with the whole new list per change | `rewireNext.unsubscribeDep` and `subscribeDep` per inner, removes before adds so the list stays aligned with positions | The kernel compares the lists, and dependencies are read by id |
 | A projection with the same `fn` and `deps` as a live inner keeps it | A re-projected node that is already live is kept (switch) or skipped (merge) | The same rule, by definition instead of node identity |
-| A projection onto an ended node is an ERROR | merge skips a node that completed in the same wave ("does not re-add a just-completed inner"); rewire rejects a non-resubscribable terminal dependency (C-8) | An ended node cannot be acquired (P5) |
+| A projection onto an ended node gives an inner that starts on its snapshot: its last value, then its end | merge skips a node that completed in the same wave ("does not re-add a just-completed inner"); rewire rejects a non-resubscribable terminal dependency (C-8), an ERROR | P5 relaxed (2026-11-08); until then this was an ERROR here too |
 | An inner that sends several values as it activates passes on its last | `mergeMap(v => [v, v + 1])` gives both | K3: an activation only sets the retained value, as at any first subscription |
 | The inner node is created at the first projection | — | Nothing exists to observe before there is an inner |
 | No `concatMap`, `exhaustMap`, `flatMap`, `fromAny` | Present | Not needed so far; concat and exhaust would be further modes of the same loop, not built |
@@ -392,17 +394,18 @@ What the tests pin. switchMap: TS's two tests (cancel the in-flight inner; a re-
 is neither cancelled nor duplicated); the value kept across a switch, and the live inner in
 `describe()`; a fresh computation's late answer dropped; completion with a live inner and with none;
 source, inner and projector ERROR, each releasing the inner; inner values before a projector ERROR; an
-ended projection; a fresh activation after the inner ended; the same definition restarted once its
+ended projection (its last value, the operator open); a fresh activation after the inner ended; the same definition restarted once its
 inner completed; the last of several values in one wave. mergeMap: TS's tests (interleaving, release
 and removal of a completed inner; bounded concurrency; invalid `concurrent`; an already live inner
 merged once with later removals aligned; completion; source, inner and projector ERROR releasing
-every inner; inner DATA before its ERROR; the just-completed re-projection, an ERROR here); the value
+every inner; inner DATA before its ERROR; the just-completed re-projection, an inner that ends at once here); the value
 and single START kept while inners are added; no resend of live inners' values and no reprojection of
 the source's; several inners added in one wave; the K3 last value; an inner that completes as it
 activates; a source value queued ahead of the operator's rewire; node reuse, also by an inner that
 completes in the wave of a new source value; a fresh activation.
 
-Mutations, each failing at least one test: no keep of the same live inner; no ended check; no catch
+Mutations, each failing at least one test: no keep of the same live inner; no ended check (removed
+with the P5 relaxation); no catch
 around the projector (the kernel would turn the throw into ERROR but drop the inner values forwarded
 earlier in that run); a completed inner kept; a removal not rewired; no reset on deactivation; no
 concurrency bound; only the source's ERROR handled; inner values not forwarded; switch taking the
@@ -426,14 +429,25 @@ The kernel side, `rewire` and `ctx.deps[i].id`, is listed in the kernel README.
 ## Checkpoint and restore, O5 ([checkpoint.mjs](checkpoint.mjs), [checkpoint.test.mjs](checkpoint.test.mjs))
 
 Built 2026-11-08. O5 had been decided the same day with its default: capture at a wave boundary, no
-pending-FIFO or receipt capture in the kernel. Before building, the user made two choices:
+pending-FIFO or receipt capture in the kernel. The user's choices, in order:
 
-- **The module only, no kernel seed (H4)**, to test whether the seed is needed. TS puts restored
-  state in through `restoreStateOfNode`, plus a flag that makes the first activation record its
-  dependencies without running the fn: that is H4.
-- **An upstream change before the first subscription runs the fn once** (the C-38 and
-  R-input-receipts draft). TS keeps the restored value and records the dependencies' current
-  values as received, so the value does not match its inputs until the next change.
+1. **The module first, without a kernel seed (H4)**, to test whether the seed is needed (git
+   `b6468e6`). It was, in two places, both because the kernel then refused to acquire an ended
+   node:
+   - An ended computed node could only come back as an ended state, so `describe()` showed no
+     dependencies.
+   - A node that had not ended but held an ended dependency could not be activated again, so
+     `capture()` refused the whole graph. With the default policy that is any node with several
+     inputs where one has completed: auto COMPLETE waits for all of them.
+2. **Then the seed, as an option**, added to the kernel the same day once the second gap turned out
+   this wide, first with an exception to that refusal for a seeded node's first activation. Asked
+   whether to simplify, the user then had the refusal dropped altogether (P5 relaxed): an ended node
+   can be subscribed and depended on, and its snapshot carries its terminal. The exception went with
+   it. The kernel side is in the kernel README.
+3. **An upstream change before the first subscription runs the fn once.** This follows the C-38
+   and R-input-receipts draft rather than TS. TS keeps the restored value and records the
+   dependencies' current values as received, so its value does not match its inputs until the next
+   change.
 
 ```js
 const b = recipes(createGraph(), { sum: () => sumFn, plus: ({ k }) => plusFn(k) });
@@ -446,73 +460,90 @@ const r = restore(cp, registry);                            // a new graph, noth
 
 - A node is restorable when built through `recipes`: a state, or a computed node whose fn is
   `registry[ref](config)`. Function bodies are never saved. A node built another way, or a recipe
-  node whose dependencies were changed since (by `rewire` or `replace`, as `mapOperator` does), is
+  node whose dependencies have changed since (by `rewire` or `replace`, as `mapOperator` does), is
   saved as local-only, and restoring it fails, as R-snapshot has it.
 - `capture()` saves what the kernel holds per node:
   - a state's value and terminal;
   - a computed node's value, terminal and private state, and what it received from each dependency,
     when it had a lifetime. An inactive computed node holds nothing (K7) and comes back fresh.
 
-  It is refused unless the kernel is idle (`g.idle()`: no wave and no batch body). Values must be
+  Capture is refused unless the kernel is idle (`g.idle()`: no wave and no batch body). Values must be
   JSON.
-- `restore()` builds the graph in checkpoint order with no subscribers, as TS's `restoreGraph`, and
-  runs no fn. A saved lifetime is put back on the node's first activation by a wrapper around its fn.
-  K3 makes this possible: activation output only sets the retained value. The wrapper:
-  - sets the private state and sends the saved value, without running the real fn;
-  - if a dependency's value differs from what the node had received, then runs the real fn once,
-    with only the changed dependencies as input. That is the input a live wave would have given it,
-    so a running total adds only the change. If that run sends nothing, the saved value stays.
-
-  After this first run, every run is the real fn's.
+- `restore()` builds the graph in checkpoint order, with no subscribers, as TS's `restoreGraph` does,
+  and runs no fn.
+  - Ended state: restored by `state` then `complete` or `error`.
+  - Saved computed node: gets its value, terminal and private state as a kernel seed. An ended one
+    stays ended, with its dependencies.
+  - First activation of a seeded node: a wrapper around its fn compares each dependency with what
+    the node had received. If all are the same, the real fn does not run. Otherwise it runs once,
+    with only the changed dependencies as input (unchanged ones have no wave and no terminal). That
+    is what a live wave would have given it, so a running total adds only the change, and a run that
+    sends nothing keeps the seeded value.
+  - A seeded node, like any node, can be activated although a dependency has ended (P5). The ended
+    dependency's fn does not run again.
 - A restored graph captured again before anything subscribes gives back the saved lifetimes as they
-  were.
+  were. Once a node has been activated, capture saves its live lifetime.
 
-**What it found: without a seed, two things cannot be restored faithfully.** Both come from P5: an
-ended node cannot be acquired.
+**Not covered**:
+- the replay buffer (there is no replay module);
+- version evidence (O9; there is no observer module);
+- graph namespaces and mounts (the kernel has none);
+- resource reattach (R-resource-reattach).
 
-1. **An ended computed node.** The module can create an ended state (`state` and then `complete`
-   or `error`), but not an ended computed node with its dependencies. An ended computed node comes
-   back as an ended state with the same value and terminal. It never runs again, and nothing can
-   acquire it, as before. But `describe()` shows it as a state with no dependencies.
-2. **A node that has not ended but holds an ended dependency**: under the default policy, any node
-   with several inputs where one has completed and another has not (auto COMPLETE waits for all), and
-   any node with manual COMPLETE. The restored node would have to acquire the ended dependency, so
-   `capture()` refuses such a graph.
-   A seed alone does not fix this. Activating it needs an exception to P5 for a restored node,
-   which TS has: a restored activation skips an ended dependency.
-
-Decided by the user 2026-11-08: both stay as they are. The kernel still has no seed; these two are
-evidence for B140, and a seed with a P5 exception is added when a case first needs it (decision 1
-in [REPLAY.md](../kernel/REPLAY.md)).
-
-**Not covered**: the replay buffer (no replay module), version evidence (O9, no observer module),
-graph namespaces and mounts (the kernel has none), and resource reattach (R-resource-reattach).
-Pending async work is lost rather than re-issued: the kernel does not know about it, and a restored
-lifetime is new, so a late result of the old one cannot arrive. O5 asked for an in-flight call to be
-re-issued or recorded as unknown.
+Pending async work is lost rather than re-issued. The kernel does not know about it, and a restored
+lifetime is new, so a late result from the old lifetime cannot arrive. O5 asked for an in-flight call
+to be re-issued or recorded as unknown.
 
 ### What the tests pin
 
 - Restore runs no fn, sends nothing, and gives the same `describe()`.
-- A first subscription gets the saved value and private state with no fn run; later waves run the
-  real fn.
-- After an upstream change: one run with only the changed input; a silent run keeps the saved value.
-- A chain of restored nodes runs nothing.
-- An inactive node starts fresh.
-- Ended nodes: same `get()`, P5 kept, the `describe()` difference.
-- Refusals: a held ended dependency, local-only nodes (built without a recipe, or rewired, including
-  rewired after restore and before activation), a missing recipe, capture inside a wave or a batch
-  body, values that are not JSON.
+- A first subscription gets the saved value and private state without running the fn; later waves
+  run the real fn; once a node is activated, capture saves its live lifetime.
+- After an upstream change:
+  - the fn runs once, with only the changed input;
+  - a run that sends nothing keeps the saved value;
+  - an input that ended after restore reaches the fn, while one that had ended before capture does
+    not reach it again.
+- A chain of restored nodes runs no fn; an inactive node starts fresh.
+- Ended nodes come back ended with their dependencies; a subscriber gets their terminal snapshot.
+- A node holding an ended dependency comes back and works; the ended node does not run, also when a
+  new subscriber gets its snapshot.
+- Refusals:
+  - local-only nodes: built without a recipe, or rewired, including rewired after restore and before
+    activation;
+  - a missing recipe;
+  - capture inside a wave or a batch body;
+  - values that are not JSON.
 - Recapture before activation.
 
-Mutations checked on 2026-11-08, each failing at least one test: the real fn always run; no private
-state; no saved value sent; unchanged dependencies not masked; never or always refreshing; the saved
-lifetime not cleared after use; no idle check; no held-ended check; no local-only check, or a
-local-only node restored; no recapture of a saved lifetime, or one kept after a rewire; an ended node
-not ended, or not kept for recapture; no JSON check; an inactive node saving a lifetime. The rewire
-case survived until the test "a restored node rewired before its first activation" was added.
-Removed because nothing could reach them: comparing terminals of inputs (no saved input has ended,
-and one that ended since cannot be acquired), and the "has private state" check before setting it.
+**Mutations checked on 2026-11-08** against the seeded version, together with the kernel, replay,
+restart and higher-order tests. 25 in all, each failing at least one test.
+
+- Kernel side:
+  - the seed's value, `null` value, private state or terminal ignored;
+  - (in the version with the exception, since replaced by the relaxed P5) no exception, one for every
+    node, or one kept after the first activation; an ended dependency activated, or left inactive;
+  - replace keeping the seed flag.
+- Module side:
+  - the real fn always run;
+  - terminals not compared, or not masked;
+  - unchanged inputs not masked;
+  - never or always refreshing;
+  - no seed passed, or one without private state;
+  - no recapture before activation;
+  - the saved entry not cleared after activation (survived until the test "once activated, capture
+    saves the live lifetime" was added);
+  - no idle check;
+  - no local-only check;
+  - an ended state not ended;
+  - no JSON check;
+  - an inactive node saving a lifetime.
+
+Removed because they could not change anything:
+- the seed flag being off for an ended seed: an ended node is never activated;
+- keeping the saved entry only for nodes that have not ended;
+- from the version without a seed: the wrapper's own sending of the saved value and private state,
+  and the "has private state" check.
 
 ### New things this module introduces
 
@@ -520,7 +551,7 @@ and one that ended since cannot be acquired), and the "has private state" check 
 |---|---|
 | `recipes(g, registry)` with `node(id, deps, ref, config, opts)`, and `restore(checkpoint, registry)` | R-snapshot's factory reference; TS's `restoreGraph(checkpoint, { registry })` |
 | Per computed node, the inputs it received | Needed for the change check, and for capturing a restored graph again before activation, when a dependency may have changed after restore. Equal to the dependencies' values at a wave boundary, so the kernel need not expose its input records |
-| The first-activation wrapper | It stands in for the seed (the user's choice); with a seed it would go |
-| Ended nodes as ended states; the held-ended refusal | What P5 leaves without a seed and an exception; see the finding above |
+| The first-activation wrapper, which only compares inputs | The refresh on a pre-attachment change is the user's choice (point 3 above), a policy rather than kernel behavior; without it the seed alone gives TS's behavior |
 
-The kernel side, `idle()` and `privateState(id)`, is listed in the kernel README.
+The kernel side, `idle()`, `privateState(id)`, the optional seed and the P5 relaxation, is listed in the
+kernel README.

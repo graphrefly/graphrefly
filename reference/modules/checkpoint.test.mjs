@@ -62,6 +62,7 @@ test("a first subscription gets the saved value without running the fn; later wa
   assert.deepEqual(during(r.g, () => r.g.set("b", 10)), ["ks <- s: [DIRTY, DATA(13)]", "kt <- t: [DIRTY, DATA(16)]"],
     "t's private state came back: 6 + 10");
   assert.deepEqual(reg.calls, { sum: 1, scan: 1 });
+  assert.equal(r.capture().nodes.find((n) => n.id === "t").saved.value, 16, "once activated, capture saves the live lifetime");
 });
 
 test("C-38: an upstream change before the first subscription runs the fn once, with only the changed input", () => {
@@ -111,30 +112,62 @@ test("a computed node without a lifetime saves nothing and starts fresh", () => 
   assert.deepEqual(during(r.g, () => r.g.subscribe("k", "p")), ["k <- p: [START, DATA(11)]"]);
 });
 
-test("an ended node comes back as an ended state with its value; nothing can acquire it, as before", () => {
+test("an ended node comes back ended, with its dependencies; a subscriber gets its terminal snapshot, as before", () => {
   const reg = { ...registry(), last: () => (ctx) => { if (ctx.deps[0].waves.length) ctx.down([["DATA", ctx.deps[0].value]]); } };
   const b = recipes(createGraph(), reg);
   b.state("a", 1);
-  b.node("e", ["a"], "last"); // auto: completes with a
+  b.node("e", ["a"], "last"); // auto: ends with a
   b.g.subscribe("ke", "e");
   b.g.set("a", 2); b.g.error("a", "boom");
   const r = restore(roundTrip(b.capture()), reg);
   for (const id of ["a", "e"]) {
-    assert.deepEqual(r.g.get(id), { active: false, has: true, value: 2, ended: ["ERROR", "boom"] });
-    assert.throws(() => r.g.subscribe("k", id), /has ended/);
+    assert.deepEqual({ ...r.g.get(id), active: null }, { ...b.g.get(id), active: null }, "sinks are not restored");
+    assert.deepEqual(during(r.g, () => r.g.subscribe("k", id)), [`k <- ${id}: [START, DATA(2), ERROR("boom")]`]);
   }
-  // The difference: without a seed the kernel cannot create an ended computed node.
-  assert.deepEqual(r.g.describe().find((n) => n.id === "e"), { id: "e", kind: "state", deps: [], quiet: false });
+  assert.deepEqual(r.g.describe(), b.g.describe());
   assert.deepEqual(roundTrip(r.capture()), roundTrip(b.capture()), "captured again, it is the same checkpoint");
 });
 
-test("P5: a node that has not ended but holds an ended dependency is refused at capture", () => {
-  const b = recipes(createGraph(), registry());
-  b.state("a", 1); b.state("c", 0);
-  b.node("m", ["a", "c"], "sum", null, { terminal: { complete: "manual" } });
-  b.g.subscribe("km", "m");
-  b.g.complete("a");
-  assert.throws(() => b.capture(), /m holds a, which has ended/);
+// w reports which inputs' terminals arrived in its run.
+const ends = () => (ctx) => ctx.down([["DATA", ctx.deps.filter((d) => d.terminal).map((d) => d.id).join(",") || "-"]]);
+
+test("a node holding an ended dependency comes back and works; the ended node does not run", () => {
+  const reg = registry();
+  let lastCalls = 0;
+  reg.last = () => (ctx) => { lastCalls += 1; if (ctx.deps[0].waves.length) ctx.down([["DATA", ctx.deps[0].value]]); };
+  const b = recipes(createGraph(), reg);
+  b.state("config", 1); b.state("input", 0);
+  b.node("e", ["config"], "last");
+  b.node("s", ["e", "input"], "sum"); // default policy: open while input is
+  b.g.subscribe("k", "s");
+  b.g.complete("config");
+  assert.deepEqual([b.g.get("e").ended, b.g.get("s").ended], [["COMPLETE"], null]);
+  const r = restore(roundTrip(b.capture()), reg);
+  const before = { ...reg.calls };
+  lastCalls = 0;
+  assert.deepEqual(during(r.g, () => r.g.subscribe("k", "s")), ["k <- s: [START, DATA(1)]"]);
+  assert.deepEqual(during(r.g, () => r.g.set("input", 5)), ["k <- s: [DIRTY, DATA(6)]"]);
+  assert.deepEqual([reg.calls.sum - before.sum, lastCalls], [1, 0]);
+  assert.deepEqual(during(r.g, () => r.g.subscribe("k2", "e")), ["k2 <- e: [START, DATA(1), COMPLETE]"]);
+  assert.equal(lastCalls, 0);
+});
+
+test("an input that ended before the first subscription reaches the fn; one that had ended before capture does not again", () => {
+  const reg = { ...registry(), ends };
+  const b = recipes(createGraph(), reg);
+  b.state("config", 1); b.state("input", 0);
+  b.node("w", ["config", "input"], "ends");
+  b.g.subscribe("k", "w");
+  const open = roundTrip(b.capture());
+  b.g.complete("config");
+  b.g.set("input", 1);
+  const closed = roundTrip(b.capture());
+  const r1 = restore(open, reg);
+  r1.g.complete("config");
+  assert.deepEqual(during(r1.g, () => r1.g.subscribe("k", "w")), ["k <- w: [START, DATA(\"config\")]"]);
+  const r2 = restore(closed, reg);
+  r2.g.set("input", 2);
+  assert.deepEqual(during(r2.g, () => r2.g.subscribe("k", "w")), ["k <- w: [START, DATA(\"-\")]"]);
 });
 
 test("a node without a recipe, or rewired since, is local-only and cannot be restored", () => {
