@@ -72,7 +72,7 @@ B141 同日结项，B140 的 status 随即从 deferred 改为 planned（不授�
 | R-same-wave-merge@1, draft @2 | Merged as "a node runs at most once per wave"; arrays from several dependencies are kept apart, not merged (O13) |
 | R-output-ownership (draft @1) | Only its non-notification parts merge into K2 (O11) |
 | R-undirty-settle-timing@1 (active), draft @2 | Leaves the kernel (O11): with kernel-only PENDING nothing waits to settle. Still to be rechecked for the pause module, where resumeAll can hold a balancing RESOLVED (O11); not done yet |
-| R-equals@1 (active, by D15) | Retired. D49 already removed equals substitution from the substrate and superseded D15, but the rule is still activated by D15; this is an existing inconsistency, not a new decision. Dedup is sugar |
+| R-equals@1 | Nothing to do: it already carries a replace transition to R-resolved-undirty@1 by D49, so it is not current. (The first draft of this proposal wrongly called it still activated; corrected 2026-11-09.) Dedup is sugar |
 | H6 quiet boundary (part of R-pull) | Joins K2 as its last sentence. Kept in the kernel because the flagship needs it (DS-17) |
 
 ### K3 Subscription and snapshot
@@ -153,7 +153,8 @@ B141 同日结项，B140 的 status 随即从 deferred 改为 planned（不授�
 > Requests made while a wave is being delivered wait until it ends and then run in request order: host inputs,
 > subscribe, unsubscribe, replace, rewire and batch. A batch body records host inputs and topology requests and
 > delivers nothing; its commit is one wave, and its topology requests run after that wave in request order. A
-> throwing or asynchronous body commits nothing. A nested batch joins the outer one. `replace(id, deps, fn)` closes
+> throwing body commits nothing; an async function body is refused before it runs, and a body that returns a promise
+> commits its synchronous part while the host reporter is told. A nested batch joins the outer one. `replace(id, deps, fn)` closes
 > the node's instance and starts a new one under the same id and subscribers. `rewire(id, deps, fn)` keeps the
 > instance, its values, private state and subscribers: kept dependencies keep their records, removed ones are
 > released, and added ones are acquired and their snapshots given to the function as one input wave.
@@ -202,7 +203,7 @@ B141 同日结项，B140 的 status 随即从 deferred 改为 planned（不授�
 | R-replay-buffer | history module | Built |
 | R-restore, R-snapshot, R-input-receipts, R-resource-reattach | checkpoint module | Built for recipes, values, terminals and private state; C-38 replayed (6 clauses). Namespaces and native resources not built |
 | R-node-revision | revision observer (O9) | **Not built** |
-| R-first-run-gate, R-dynamic-node, R-equals | sugar, per language | `derived` built; dynamic and dedup not built |
+| R-first-run-gate, R-dynamic-node, and dedup (R-equals is already replaced, D49) | sugar, per language | `derived` built; dynamic and dedup not built |
 | restart (O7) | restart module | Built; C-34 replayed |
 
 ## 4. DS-17 没有归类、但受这些决定影响的规则
@@ -224,13 +225,13 @@ R-no-polling, R-no-raw-async, R-data-not-peek, R-primary-api-clean.
 | Scenario | Proposed |
 |---|---|
 | C-28 | Revise: keep its 6 kernel clauses; drop the standalone-DIRTY prefixes (O11), callback batch rejection (O12), early-DIRTY observer requests and rollback (O3) |
-| C-29 | Retire (O3, O11) |
+| C-29 | Rewritten as the D797 batch scenario (section 8); its D796 rollback clauses are decided away (O3, O11) |
 | C-30, C-31, C-36 | Split: kernel clauses stay; pause clauses move to the pause module's scenarios; C-36's resumeAll INVALIDATE hold changes (decided 2026-11-06) |
 | C-32 | Demand module; the routed diamond clause is retired with K9 |
 | C-33 | Keep the 5 kernel clauses; public `node.down` and native listener failure are not modeled |
 | C-34 | Revise: old registrations detached; next execution becomes the restart module (O7) |
 | C-35 | Sugar (first-run gate) and K8 (rewire) |
-| C-37 | Retire, except its last clause, which joins the K7 scenarios |
+| C-37 | Rewritten around its last clause, under K7 (section 8); the routing clauses are retired with K9 |
 | C-38 | Checkpoint module |
 | C-39 | Revision observer (not built) |
 | C-8 (activated R-rewire) | Revise for `rewire`: ended dependency accepted, function request queued; the five replay decisions |
@@ -268,6 +269,44 @@ Every trace in the reference tests can become a scenario. That conversion is the
 | Q2 | Where do module contracts live: as module rules in `spec/rules.jsonl` with their own area, or in non-normative module docs until a runtime owner needs them? | In `spec/`, in their own area. Module rules may cite kernel rules, not the reverse; the kernel set is activated first, each module later on its own. Sugar stays per language |
 | Q3 | Rename DIRTY to PENDING in the same revision (O15)? | Yes, in this revision. Every kernel rule that names DIRTY is rewritten anyway (22 rules, 53 mentions; 67 in conformance), the meaning narrowed with O11, and the packages are before 1.0. Only this name: RESOLVED and settle stay. The packages and the reference kernel rename after activation, each by its owner |
 | Q4 | TEARDOWN: the reference kernel never sends it. Keep TEARDOWN as the graph-destroy message (R-teardown-complete, R-teardown-terminal-relay), or retire it in favor of "the last unsubscribe ends a lifetime"? | Retire it. TS's production code never originates TEARDOWN (it only forwards it, and `firstValueFrom` rejects on it; four test files send it), and R-graph-lifecycle@2 already withdraws `graph.destroy()`'s broadcast. Lost: forcing downstream lifetimes to end while they still have subscribers; the host owns those subscriptions and can end them. Graph disposal stays with R-graph-lifecycle@2, outside this revision |
+
+## 8. 已写进 spec 的草案（2026-11-09）
+
+用户解冻 `spec/` 后，第 2 节的规则作为 D797 引入的草案行加进了 `spec/rules.jsonl`，没有 `activated_by`，也没有给旧规则加
+transition。原因：一条规则一旦带了 transition 就离开当前规则集，而 B140 要求新版被明确接纳之前旧版保持有效，所以 transition
+等到激活那一步一起加。加完之后当前规则集仍是 23 条，草案从 94 条变成 106 条。
+
+| Concept | Rule id | Replaces at activation |
+|---|---|---|
+| K1 | R-messages@1 | R-msg-format, R-msg-closed-set, R-tier, R-data-payload; retires R-ctx-up |
+| K2 | R-wave@1 | R-wave-boundary, R-dirty-before-data, R-two-phase, R-diamond, R-resolved-undirty, R-terminal-settles-dirty, R-same-wave-merge, R-output-ownership; retires R-undirty-settle-timing |
+| K3 | R-subscription@1 | R-push-subscribe, R-subscription-ownership, R-initial |
+| K4 | R-invocation@1 | R-fn-contract, R-ctx-wave-data, R-ctx-state, R-reentrancy |
+| K5 | R-terminals@1 | R-terminal, R-deps-terminal; retires R-teardown-complete, R-teardown-terminal-relay |
+| K6 | R-invalidation@1 | R-invalidate-idempotent; retires R-up-at-source |
+| K7 | R-lifetime@1 | R-ctx-lifetime, R-cleanup-hooks, R-rom-ram |
+| K8 | R-request-order@1 | R-observer-boundary, R-rewire, R-rewire-batch-boundary; retires R-rewire-deferred, R-rewire-deferred-committed-boundary, R-rewire-async-live-edge |
+| K10 | R-node@1 | R-node-iface, R-status-enum |
+| K11 | R-failure@1 | R-operation-failure |
+| — | R-no-imperative@2, R-node-thin@2 | Revise their @1 (section 4) |
+
+新规则用了新的 id（按概念命名），没有沿用某条旧规则的 id：一个概念合并了好几条旧规则，用其中任何一条的旧名都只说出一部分。
+R-up-routing、R-up-routing-diamond 随 K9 退役；R-graph-lifecycle@1 早已有到 @2 的 transition（D794）；R-equals@1 早已有到
+R-resolved-undirty@1 的 transition（D49），第一稿说它"仍被 D15 激活"是错的，已改正。模块规则（第 3 节）还没写。
+
+**Conformance（2026-11-09）。** `spec/conformance.jsonl` 没有版本或 transition 机制，所以按同一个理由分三类处理：
+
+- C-1 到 C-27 不动：它们验证的是当前生效的规则（三种 runtime 都标了 pass），改了就不再对应当前规则；激活时随旧规则的 transition 一起改或退役。
+- D796 的内核草案场景就地改写为 D797 版（`ref` 改成 D797，`covers` 指向新规则 id，旧文本在 git 历史里）。它们从未被验证过。
+  C-28 改为完整数组、内核加 PENDING 前缀和写入顺序；C-29 改为 batch 在 commit 前不投递、拓扑请求在 commit 之后（C-22 的后继）；
+  C-33 改为旧 lifetime 的 ctx 作废、清理函数的失败相互隔离；C-34 改为终止扇出和获取已结束节点；C-35 改为 rewire 保留实例（C-8 的后继）；
+  C-36 只保留内核条款；C-37 改为 lifetime 关闭让旧工作作废（原来最后一条）。原来"退役 C-29、C-37"的打算因此不需要了，也就不用给场景发明一个 retired 状态。
+- 新增 C-40（已结束节点可以订阅、可以被依赖）、C-41（快照是最后一个带 DATA 的数组）、C-42（消息集合封闭，没有向上的通道）。
+
+C-30、C-31、C-32、C-38、C-39 主要属于模块，留到写模块规则时再改（C-31 里属于内核的三条也在那时拆出来）。
+每个新场景的预期都对照参考内核核对过；没有现成测试的几条（C-37 rewire 后迟到输出仍发出、C-40、C-41、C-42 的未捕获拒绝）
+用临时测试跑过，并据此改正了两处：宿主的 invalidate 只能用于 state 节点（R-invalidation、R-wave 的写法随之改正），
+只把 ERROR 设为 manual 的节点在依赖全部结束后仍会 auto COMPLETE。
 
 不在本提案里：formal 模型（TLA+）的更新、各语言 runtime 的实现、O10（L0.5 和 F-NO-WEDGE-CUT）。它们分别属于
 B140 的 Formal、Owner routing 两条和一个单独的决定。
