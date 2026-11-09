@@ -261,7 +261,11 @@ rewire、resubscription 和 dynamic 节点。简报也不要求 batch；batch �
    回放发现 `replace` 漏了"不能接上已结束的依赖"（P5）并已修好，restart 因此在上游结束后不再尝试重启。
    和 C-8、C-34 不一致的五处列在 REPLAY.md 末尾，用户 2026-11-08 全部同意：用 replace，需要时再给它加 H4 种子（surgical 留作以后的性能优化）；允许 replace 已结束的节点；fn 里的请求排队；重启后订阅者保留；扇出期间的请求依赖顺序。规则修订（B140）时 C-8、C-34 要随之改。
    同日按 owner 加 inner 的结构做了 switchMap（[switch-map.mjs](../../reference/modules/switch-map.mjs)），验证了第 1 处的前提：
-   只换一个 inner 的 operator 不用种子也能保住自己的值，因为被 replace 的只是 inner；mergeMap 仍是第一个需要种子的场景。
+   只换一个 inner 的 operator 不用种子也能保住自己的值，因为被 replace 的只是 inner。
+   同日又做了 mergeMap（[merge-map.mjs](../../reference/modules/merge-map.mjs)），原以为它是第一个需要种子的场景，结果不需要：
+   只用 replace，TS 的 mergeMap 测试都过。代价是一个固定的对外节点、core 的状态放在新 fn 的闭包里带过去并跳过已处理过的快照、
+   每次 replace 只加一个 inner（K3 一次激活只留一个值）、source 结束后 replace 不再带上它（P5）。
+   种子只能省掉第二项，其余三项只有原地加依赖（surgical）才能省掉。所以到目前为止没有场景需要种子。
    发现：restart 需要内核的 `replace`。参考内核原来没有任何改拓扑的手段，而把下游和订阅者接到新实例上只有内核能做；
    DS-17 的 rewire 行只写了 H4（种子），restart 用不到种子，没有加。TS 里没有生产代码用 `resubscribable: true`，
    `repeat` 只在它自己的测试里用，重试是 driver 在图外做、以 DATA 发出事件，所以现有用法都套得进这个模块。

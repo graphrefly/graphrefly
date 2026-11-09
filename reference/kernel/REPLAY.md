@@ -227,9 +227,14 @@ They change C-8 and C-34 when the draft rules are revisited (B140); `spec/` is n
    change, O(n) re-acquisition when one dependency is added (mergeMap), and the old instance's own
    async work is aborted. Single-inner operators (`switchMap`, `exhaustMap`, `concatMap`, `repeat`)
    can be an owner with a replaced inner and keep their cache without a seed; checked the same day
-   by building `switchMap` this way ([../modules/switch-map.mjs](../modules/switch-map.mjs));
-   `mergeMap`, with a varying number of inners, is the first case that needs the seed. Surgical
-   stays a possible later optimization over the same semantics.
+   by building `switchMap` this way ([../modules/switch-map.mjs](../modules/switch-map.mjs)).
+   `mergeMap`, with a varying number of inners, was expected to be the first case that needs the
+   seed; built the same day ([../modules/merge-map.mjs](../modules/merge-map.mjs)), it does not.
+   Replace costs it a fixed outward node, its state carried in the next fn's closure with a
+   first-run skip of snapshots already handled, one inner per replace (K3 keeps one value per
+   activation), and leaving an ended source out (P5). A seed would replace only the second; the
+   others go only with adding a dependency in place (surgical). So no case so far needs the seed.
+   Surgical stays a possible later optimization over the same semantics.
 2. **Decided by the user 2026-11-08: replace on an ended node is allowed.** R-rewire rejects a rewire on a terminal D; restart (O7)
    needs exactly that.
 3. **Decided by the user 2026-11-08: a topology request from inside a node function is queued, not an ERROR.** R-rewire calls a mid-fn

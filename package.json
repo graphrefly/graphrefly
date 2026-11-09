@@ -8,7 +8,7 @@
     "work:check": "node authority/work-check.mjs",
     "work:check:workspace": "node authority/work-check.mjs --workspace",
     "test:authority": "node --test authority/*.test.mjs",
-    "test:reference": "node --test reference/kernel/kernel.test.mjs reference/kernel/replay.test.mjs reference/modules/pause.test.mjs reference/modules/pause.replay.test.mjs reference/modules/demand.test.mjs reference/modules/observe.test.mjs reference/modules/restart.test.mjs reference/modules/restart.replay.test.mjs reference/modules/resilience.test.mjs reference/modules/switch-map.test.mjs reference/flagship/flagship.test.mjs reference/flagship/mutants.test.mjs reference/operation-tree/spec.test.mjs reference/operation-tree/mutants.test.mjs",
+    "test:reference": "node --test reference/kernel/kernel.test.mjs reference/kernel/replay.test.mjs reference/modules/pause.test.mjs reference/modules/pause.replay.test.mjs reference/modules/demand.test.mjs reference/modules/observe.test.mjs reference/modules/restart.test.mjs reference/modules/restart.replay.test.mjs reference/modules/resilience.test.mjs reference/modules/switch-map.test.mjs reference/modules/merge-map.test.mjs reference/flagship/flagship.test.mjs reference/flagship/mutants.test.mjs reference/operation-tree/spec.test.mjs reference/operation-tree/mutants.test.mjs",
     "dashboard": "node dashboard/build.mjs",
     "dashboard:workspace": "node dashboard/build.mjs --workspace",
     "dashboard:check": "node dashboard/build.mjs --check",

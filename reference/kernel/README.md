@@ -248,8 +248,9 @@ Each of these is left out rather than approximated:
 - Upward INVALIDATE (R-up-at-source); INVALIDATE before a node's first invocation (R-first-run-gate).
 - A topology request made inside a batch body (`subscribe`, `replace`) runs at once, not at commit.
   Found 2026-11-08 while adding `replace`; O3 covers host inputs and late output only.
-- Modules: replay, checkpoint, and rewire beyond `replace` (a seed, H4). Pause, demand, observation
-  (H5), restart (O7) and switchMap are in [../modules/](../modules/README.md). H5 needed no kernel hook: a subscriber already receives
+- Modules: replay, checkpoint, and rewire beyond `replace` (a seed, H4; switchMap and mergeMap were
+  built without one). Pause, demand, observation (H5), restart (O7), switchMap and mergeMap are in
+  [../modules/](../modules/README.md). H5 needed no kernel hook: a subscriber already receives
   what a node committed.
 - The flagship acceptance (B139 S1–S8) runs on this kernel in [../flagship/](../flagship/README.md);
   its only kernel addition was `describe()`.
