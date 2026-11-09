@@ -1,9 +1,10 @@
 # 协议面的内核与模块分类
 
 DS-17，用户于 2026-11-05 开启。对应工作项：[graphrefly:B141](../../plan/backlog.jsonl)。
-状态：**Claude 写的第一稿，用户尚未审阅。** 非规范性文档：不激活、不修订、不退役任何规则，不改动任何
-formal 模型或 conformance 场景，也不授权任何实现。
-[graphrefly:B140](../../plan/backlog.jsonl)（激活 D796 草案）暂缓，等本分类定下来再说。
+状态：**分类已定。** 用户 2026-11-05 至 11-09 逐项审阅，O1–O15 全部决定（O10 另作单独决定），每条规则的去向见用户
+2026-11-09 接受的 [B140 修订提案](PROPOSAL-B140-kernel-rule-revision.md)。B141 同日结项。非规范性文档：不激活、不修订、
+不退役任何规则，不改动任何 formal 模型或 conformance 场景，也不授权任何实现。
+[graphrefly:B140](../../plan/backlog.jsonl) 已按提案在原处修订，2026-11-09 从暂缓改为 planned。
 
 ## 为什么要做
 
@@ -96,7 +97,7 @@ callback registration 属于 lifetime。原来分散在各条规则里的"旧请
 | `initial` | Kernel (K3) | Seeds the retained value |
 | `partial` | Sugar | First-run completeness is a sugar policy |
 | `terminalAsRealInput`, `completeWhenDepsComplete`, `errorWhenDepsError` | Kernel (K5), simplified | Three booleans become auto or manual per kind; ignore is manual with no action (O6) |
-| `resubscribable` | Open (O7) | Either kernel execution restart under the same node identity, or removed in favor of restartable owner nodes |
+| `resubscribable` | Removed (O7, resolved 2026-11-08) | Restart is the owner module, which replaces an inner node; no kernel execution restart |
 | `resetOnTeardown` | Kernel (K7), candidate to remove | One rule should say what each node kind keeps on deactivation. 2026-11-09 (user): removed with TEARDOWN |
 | `pausable` | Module | Valve or gate node |
 | `pullId` | Module | Demand holder |
@@ -315,7 +316,7 @@ rewire、resubscription 和 dynamic 节点。简报也不要求 batch；batch �
    C-37 只剩最后一条（lifetime 关闭后旧工作作废），归 K8。
 3. 然后根据结果恢复、修订或取代 B140。
    2026-11-09 写了第一稿提案：[PROPOSAL-B140-kernel-rule-revision.md](PROPOSAL-B140-kernel-rule-revision.md)，
-   列出每条规则的去向（合入哪个内核概念、移到哪个模块、退役）、conformance 场景的去向、和 TS 的差异，以及 Q1–Q4 四个问题。Q1–Q4 用户同日全部回答，提案正文已按答案改写（新规则正文用 PENDING）；提案整体尚未被接受。
+   列出每条规则的去向（合入哪个内核概念、移到哪个模块、退役）、conformance 场景的去向、和 TS 的差异，以及 Q1–Q4 四个问题。Q1–Q4 用户同日全部回答，提案正文已按答案改写（新规则正文用 PENDING）。用户同日接受整份提案，B140 记录随即在原处改写（outcome 和 acceptance 按提案）；B141 同日结项，B140 改为 planned。
    Q1 用户同日定为在原处修订 B140；backlog 里的记录等提案整体被接受后再改。
    Q2 用户同日定为模块规则放进 `spec/`，单独一个 area；模块规则只能引用内核规则，内核先激活，模块以后逐个激活。
    Q3（即 O15）用户同日定为这次修订里把 DIRTY 改名为 PENDING，只改这一个名字；各语言包和参考内核在激活后各自改。RESOLVED 保持原名（用户同日确认）。

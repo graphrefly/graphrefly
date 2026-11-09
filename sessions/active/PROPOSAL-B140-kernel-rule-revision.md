@@ -1,8 +1,8 @@
 # B140 规则修订提案
 
-DS-17 下一步第 3 条，2026-11-09。对应工作项：[graphrefly:B140](../../plan/backlog.jsonl)（暂缓）和
+DS-17 下一步第 3 条，2026-11-09。对应工作项：[graphrefly:B140](../../plan/backlog.jsonl)（2026-11-09 起 planned）和
 [graphrefly:B141](../../plan/backlog.jsonl)。
-状态：**Claude 写的第一稿。第 7 节的四个问题用户已于 2026-11-09 全部回答，正文已按答案改写；提案整体尚未被接受。** 非规范性文档。`spec/rules.jsonl` 和 `spec/conformance.jsonl`
+状态：**用户 2026-11-09 接受。** 第 7 节的四个问题用户同日全部回答，正文已按答案改写。 非规范性文档。`spec/rules.jsonl` 和 `spec/conformance.jsonl`
 冻结，本文不改它们，也不激活、修订或退役任何规则；这里只写"修订时打算怎么改"。
 
 输入：[DS-17](SESSION-kernel-module-classification.md) 的原则、分类和 O1–O15；参考内核
@@ -21,9 +21,10 @@ B140 的 outcome 是"激活 D796 草案规则集"。分类之后要激活的东�
 **用户 2026-11-09 定为在原处修订 B140**（Q1），保留 id、governing_refs 和 B141 前置。outcome 改成"激活 DS-17 的内核规则集，
 并给出每条旧规则的去向"。acceptance 里改两条：Rules 一条按第 2–4 节写；Conformance 一条按第 5 节写。
 其余几条照旧：Formal、Owner routing、Evidence gaps、Activation and handoff。Checkpoint/encoding 一条
-移到 checkpoint 模块的工作里。
-没有选新开工作项取代它：那样引用 B140 的地方都要改。`plan/backlog.jsonl` 里的 B140 记录等整份提案被接受后再改，
-现在不动。
+改成写 checkpoint 模块规则时的要求，仍留在 B140 里（没有单独的 checkpoint 工作项可以接收它）。
+没有选新开工作项取代它：那样引用 B140 的地方都要改。用户同日接受了整份提案，`plan/backlog.jsonl` 里的 B140 记录随即改写：
+outcome 和八条 acceptance 都按本提案写；B140 负责写出内核和模块规则、激活内核规则集，模块规则以后各自作为单独接纳的工作激活。
+B141 同日结项，B140 的 status 随即从 deferred 改为 planned（不授权激活或实现）。
 
 ## 2. 内核规则：每个概念一条
 
