@@ -4,7 +4,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createGraph, format } from "./kernel.mjs";
-import { combineLatest, merge, withLatestFrom, zip } from "./sugar.mjs";
+import { combineLatest, derived, merge, withLatestFrom, zip } from "./sugar.mjs";
 
 function during(g, body) {
   const start = g.trace.length;
@@ -108,4 +108,20 @@ test("zip: RESOLVED is not an occurrence, so a diamond with a filter pairs value
   g.set("x", 1); // b: RESOLVED
   g.set("x", 2);
   assert.deepEqual(g.get("z").values, [["a1", "b2"]], "a1 waited for b's next value, as in TS and RxJS");
+});
+
+test("derived: every run needs every input, before the first run and after an INVALIDATE (the user's choice over TS)", () => {
+  const g = createGraph();
+  g.state("a", 1); g.state("b");
+  const f = (a, b) => a + b;
+  g.node("d", ["a", "b"], derived(f));
+  g.subscribe("s", "d");
+  g.invalidate("a"); // before the first run: a no longer counts as having a value (R-first-run-gate@2)
+  assert.deepEqual(during(g, () => g.set("b", 2)), ["s <- d: [DIRTY, RESOLVED]"]);
+  g.set("a", 1);
+  assert.equal(g.get("d").value, 3);
+  g.invalidate("a");
+  // TS runs the function here with a missing (SENTINEL); derived waits instead.
+  assert.deepEqual(during(g, () => g.set("b", 5)), ["s <- d: [DIRTY, RESOLVED]"]);
+  assert.deepEqual(during(g, () => g.set("a", 10)), ["s <- d: [DIRTY, DATA(15)]"]);
 });

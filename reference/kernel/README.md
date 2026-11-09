@@ -120,7 +120,9 @@ registration while the lifetime is open is accepted, and `onInvalidate` hooks ar
 | `node(..., { seed })`: value, terminal and private state; the first activation runs the fn | `restoreStateOfNode` after construction, also restoring status, version and first-call history; the first activation does not run the fn | Added 2026-11-08 for restore. Not running the fn is the checkpoint module's wrapper; there is no first-run gate, status is derived (K10), and versions are O9 |
 | A START snapshot carries every DATA value of the node's last array that had any | It carries the cached value only, unless the node has `replayBuffer: N`; a new dependent's fn runs once per replayed value | K3 changed by the user, 2026-11-08: the array is the unit (R-wave-boundary), so a late subscriber sees what the node last sent. History across arrays is a module, not `replayBuffer` |
 | An ended node can be subscribed, depended on and added by `rewire` or `replace`; its snapshot carries its terminal | A subscription to an ended non-resubscribable node throws (R-terminal, R2.2.7.b), and rewire refuses one as a dependency (C-8) | P5 relaxed by the user, 2026-11-08 |
-| No `up`, `upNext`, `rewireNext`, `pull`, `environment`, `track`, `persist` | Present | Not covered yet (K9, modules) |
+| `derived` needs every input on every run: after an input is invalidated it waits for a new value | The first-run gate (`partial: false`) checks only before the first run (R-first-run-gate); later the fn runs with a missing input as SENTINEL. `partial: true` turns the gate off | The user's choice, 2026-11-08: no SENTINEL to guard, and one rule for every run. There is no `partial` option: a gate is sugar (DS-17), and a plain node fn, `merge`, `zip` or `withLatestFrom` is what `partial: true` was. R-first-run-gate@2's clause that an INVALIDATE before the first run removes eligibility holds |
+| No `ctx.up` or `upNext`: nothing travels up the graph | `ctx.up` and `ctx.upNext` route DIRTY, PAUSE, RESUME, PULL, INVALIDATE and TEARDOWN along declared connections (R-ctx-up, R-up-routing) | K9 decided away by the user, 2026-11-09. In TS's production code the only upward message is PULL from `ctx.upNext`; pause, demand and restart use declared control pairs (P11), and the builder holds the target's handle (O14) |
+| No `rewireNext`, `pull`, `environment`, `track`, `persist` | Present | `rewire` is queued from a function (K8); `pull` is the demand module; the rest are not covered yet (modules) |
 
 The kernel does not know or care whether a late `ctx.down` came from async work.
 
@@ -394,9 +396,7 @@ Kept although not discussed before, with the reason:
 
 Each of these is left out rather than approximated:
 
-- K9 upward control routing: not needed for pause or demand (control pairs, DS-17 P11); START
-  snapshots of an unsettled node; the released lifecycle of R-status-enum@2.
-- Upward INVALIDATE (R-up-at-source); INVALIDATE before a node's first invocation (R-first-run-gate).
+- START snapshots of an unsettled node; the released lifecycle of R-status-enum@2.
 - Modules: history across waves (R-replay-buffer) is the history module; there is no kernel
   option for it (the user's decision, 2026-11-08). The H4 seed exists only for restore: switchMap and mergeMap were built without
   one (mergeMap first on `replace`, then on `rewire`, now one module with switchMap). Checkpoint
@@ -406,6 +406,21 @@ Each of these is left out rather than approximated:
   what a node committed.
 - The flagship acceptance (B139 S1–S8) runs on this kernel in [../flagship/](../flagship/README.md);
   its only kernel addition was `describe()`.
+
+Decided away rather than left out:
+
+- Upward INVALIDATE (R-up-at-source), the user, 2026-11-08: TS's production code never sends it
+  (only a benchmark does). A node that wants a source invalidated goes through a declared control
+  edge (P11), or the host calls `invalidate`.
+- K9 upward control routing as a whole (R-ctx-up, R-up-at-source, R-up-routing,
+  R-up-routing-diamond), the user, 2026-11-09. TS's production code sends only PULL upward, through
+  `ctx.upNext`; nothing sends PAUSE, RESUME, DIRTY or TEARDOWN up. Pause, demand and restart
+  each run on a declared control pair, and a pull made from a function is a state write queued
+  until the wave ends (K8), as `upNext` deferred it to the wave boundary. What goes with it:
+  anonymous routing to a holder (O14 already said the builder passes the handle), frozen
+  broadcast lists, connection targets kept across a rewire, and once-per-holder delivery over a
+  diamond. C-37's last clause, that a closed lifetime revokes old work, is K8's rule that a
+  request dies with the innermost scope it was made in.
 
 ## Observations so far
 

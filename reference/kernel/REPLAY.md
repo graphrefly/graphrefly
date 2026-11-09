@@ -28,7 +28,7 @@ Labels:
 | C-34 terminal fanout and acquisition | 3 clauses | — | old registrations detached (O7) | next execution: restart module (2 clauses, order-dependent); acquisition failure |
 | C-35 partial wiring | — | — | — | partial first-run gate, rewire, acquisition failure |
 | C-36 input frames and terminal admission | 3 clauses | — | resumeAll INVALIDATE hold (decided) | 3 clauses: pause module |
-| C-37 upstream routing | — | — | — | K9 routing, rewire |
+| C-37 upstream routing | — | — | — | K9 decided away (2026-11-09); last clause is K8 |
 | C-38 restore and replay | — | — | — | checkpoint and history modules (replayed 2026-11-08: 6 clauses, see below); namespaces, resources |
 | C-39 revision evidence | — | — | — | revision observer (O9) |
 | C-22 rewire during an open batch (activated R-rewire-batch-boundary; replayed 2026-11-08) | 6 clauses, and rollback from @2 | — | only when the node has batch output: every topology request in a body waits (K8) | — |
@@ -180,8 +180,12 @@ clauses about early partial work and abandoned wiring are Not modeled; rewire is
 
 ### C-37, C-38, C-39
 
-Upstream connection routing is K9, not covered; rewire, checkpoint, replay and revision evidence are
-modules. Nothing in these three is kernel-only.
+C-37 is upstream connection routing, K9, which the user decided away on 2026-11-09: the kernel has
+no `ctx.up`, and control goes through declared control pairs (P11). Its clauses on reorder,
+removal and re-add, directed targets and broadcast candidates have nothing left to route. Its last
+clause, that closing a lifetime revokes old work even while the node and topology remain, is K8:
+a request dies with the innermost scope it was made in. Rewire, checkpoint, replay and revision
+evidence in C-38 and C-39 are modules. Nothing in these three is kernel-only.
 
 C-38 was replayed on 2026-11-08 against the [checkpoint module](../modules/README.md), in
 [checkpoint.test.mjs](../modules/checkpoint.test.mjs):
@@ -208,7 +212,7 @@ and labels the clauses it does not reproduce. Tests are in [replay.test.mjs](rep
 |---|---|---|
 | (1) The first-run gate opens on A's value | Not modeled (a gate is sugar, as in C-35) |  |
 | (2) An added cached dependency's value reaches D and D recomputes | Kernel | replay: "C-8 (2)(3)..." |
-| (2) The first-run gate is not re-armed | Not modeled (no gate) |  |
+| (2) The first-run gate is not re-armed | Not modeled (no gate in the kernel). `derived` checks every run instead, by the user's choice (2026-11-08) | sugar: "derived: every run needs every input..." |
 | (2) An added dependency with no value delivers START only, with no recompute until it emits | Changed (O4): the new instance runs once at once | replay: "an added dependency with no value..." |
 | (3) The new dependency drives D | Kernel | replay: "C-8 (2)(3)..." |
 | (4) A removed dependency's record and dirty contribution are discarded | Kernel (a replace never runs mid-wave, so there is no dirty contribution to clear) | replay: "C-8 (4)(5)..." |
