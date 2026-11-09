@@ -177,7 +177,7 @@ test("K7: a computed node clears on last release; plain state keeps its value", 
   g.node("d", ["a"], map((v) => v * 2));
   g.subscribe("s", "d");
   g.unsubscribe("s", "d");
-  assert.deepEqual(g.get("d"), { active: false, has: false, value: undefined, ended: null });
+  assert.deepEqual(g.get("d"), { active: false, has: false, value: undefined, values: [], ended: null });
   g.set("a", 4);
   assert.equal(g.get("a").value, 4);
   assert.deepEqual(during(g, () => g.subscribe("s", "d")), ["s <- d: [START, DATA(8)]"]);
@@ -200,7 +200,7 @@ test("P5: a node over an ended node activates on its snapshot; the ended node do
   g.subscribe("s", "e");
   g.complete("a");
   g.unsubscribe("s", "e");
-  assert.deepEqual(g.get("e"), { active: false, has: true, value: 1, ended: ["COMPLETE"] });
+  assert.deepEqual(g.get("e"), { active: false, has: true, value: 1, values: [1], ended: ["COMPLETE"] });
   const runs = done.calls;
   g.node("d", ["e"], map((v) => v * 10)); // auto: ends at once, all its inputs have
   g.node("x", ["e", "b"], sumById); // auto: stays open while b is
@@ -840,7 +840,7 @@ test("replace: an ended node gets a fresh instance; sinks get a START snapshot, 
     "t <- x: [START, DATA(20)]",
     "s <- d: [DIRTY, DATA([20])]",
   ]);
-  assert.deepEqual(g.get("x"), { active: true, has: true, value: 20, ended: null });
+  assert.deepEqual(g.get("x"), { active: true, has: true, value: 20, values: [20], ended: null });
   assert.deepEqual(during(g, () => g.set("a", 5)), ["s <- d: [DIRTY, DATA([50])]", "t <- x: [DIRTY, DATA(50)]"],
     "the subscriber order is kept: d subscribed to x before t did");
 });
@@ -988,7 +988,7 @@ test("rewire: the instance stays: value, private state, lifetime and sinks; no S
   g.node("x", ["a"], fn);
   g.subscribe("s", "x");
   assert.deepEqual(during(g, () => g.rewire("x", ["a", "b"], fn)), [], "b has no value: nothing runs, nothing is sent");
-  assert.deepEqual(g.get("x"), { active: true, has: true, value: 1, ended: null });
+  assert.deepEqual(g.get("x"), { active: true, has: true, value: 1, values: [1], ended: null });
   assert.deepEqual(during(g, () => g.set("b", 0)), ["s <- x: [DIRTY, DATA(2)]"], "private state kept: the count goes on");
   assert.deepEqual(log, [], "the lifetime did not close");
 });
@@ -1069,7 +1069,7 @@ test("rewire: to the current list is a no-op; to zero dependencies keeps the val
   assert.deepEqual(during(g, () => g.rewire("x", ["a"], fn)), []);
   assert.equal(fn.calls, calls);
   g.rewire("x", [], fn);
-  assert.deepEqual(g.get("x"), { active: true, has: true, value: "a=1", ended: null });
+  assert.deepEqual(g.get("x"), { active: true, has: true, value: "a=1", values: ["a=1"], ended: null });
   assert.equal(g.get("a").active, false);
 });
 
@@ -1340,19 +1340,19 @@ test("O5: idle is false inside a wave and a batch body; privateState reads the c
 
 // ---- H4 seed, optional, and P5's exception for it (2026-11-08, for restore) -----------
 
-test("H4: a seed gives a node its value and private state without running its fn; activation runs it as usual", () => {
+test("H4: a seed gives a node its last array's values and private state without running its fn; activation runs it as usual", () => {
   const g = createGraph();
   g.state("a", 1);
   const fn = counted((ctx) => { if (ctx.deps[0].value > 1) ctx.down([["DATA", ctx.state.get() + ctx.deps[0].value]]); });
-  g.node("x", ["a"], fn, { seed: { value: 10, state: 100 } });
-  assert.deepEqual(g.get("x"), { active: false, has: true, value: 10, ended: null });
+  g.node("x", ["a"], fn, { seed: { values: [9, 10], state: 100 } });
+  assert.deepEqual(g.get("x"), { active: false, has: true, value: 10, values: [9, 10], ended: null });
   assert.equal(g.privateState("x"), 100);
   assert.equal(fn.calls, 0);
-  assert.deepEqual(during(g, () => g.subscribe("s", "x")), ["s <- x: [START, DATA(10)]"], "a silent activation keeps the seed");
+  assert.deepEqual(during(g, () => g.subscribe("s", "x")), ["s <- x: [START, DATA(9), DATA(10)]"], "a silent activation keeps the seed");
   assert.equal(fn.calls, 1);
   assert.deepEqual(during(g, () => g.set("a", 2)), ["s <- x: [DIRTY, DATA(102)]"]);
-  g.node("n", ["a"], fn, { seed: { value: null } });
-  assert.deepEqual(g.get("n"), { active: false, has: true, value: null, ended: null }, "null is a value");
+  g.node("n", ["a"], fn, { seed: { values: [null] } });
+  assert.deepEqual(g.get("n"), { active: false, has: true, value: null, values: [null], ended: null }, "null is a value");
   g.node("v", ["a"], fn, { seed: {} });
   assert.equal(g.get("v").has, false, "a seed without a value holds none");
 });
@@ -1361,12 +1361,64 @@ test("H4: a seeded ended node is ended with its dependencies and never runs (P5)
   const g = createGraph();
   g.state("a", 1);
   const fn = counted(() => {});
-  g.node("e", ["a"], fn, { seed: { value: 3, ended: ["COMPLETE"] } });
-  assert.deepEqual(g.get("e"), { active: false, has: true, value: 3, ended: ["COMPLETE"] });
+  g.node("e", ["a"], fn, { seed: { values: [3], ended: ["COMPLETE"] } });
+  assert.deepEqual(g.get("e"), { active: false, has: true, value: 3, values: [3], ended: ["COMPLETE"] });
   assert.deepEqual(g.describe().find((d) => d.id === "e").deps, ["a"]);
   assert.deepEqual(during(g, () => g.subscribe("k", "e")), ["k <- e: [START, DATA(3), COMPLETE]"]);
   assert.equal(g.get("a").active, false, "an ended node holds none of its dependencies");
   g.node("d", ["e", "a"], sumById, { terminal: { complete: "manual" } });
   assert.deepEqual(during(g, () => g.subscribe("s", "d")), ["s <- d: [START, DATA(\"e=3,a=1\")]"]);
   assert.equal(fn.calls, 0);
+});
+
+// ---- K3: a node retains the values of its last wave (2026-11-08) ----------------------
+
+test("K3: a new subscriber gets the values of the node's last array that had any; INVALIDATE clears them", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  g.node("b", ["a"], (ctx) => {
+    const v = ctx.deps[0].value;
+    if (v === 0) return; // silent: the retained values stay
+    ctx.down([["DATA", v * 10]]);
+    ctx.down([["DATA", v * 10 + 1], ["DATA", v * 10 + 2]]); // a second array of the same run
+  });
+  g.subscribe("s", "b");
+  g.batch(() => { g.set("a", 2); g.set("a", 3); });
+  assert.deepEqual(g.get("a").values, [2, 3], "a batch is one array: both occurrences");
+  assert.deepEqual(g.get("b").values, [31, 32], "the last array only, not merged with the one before");
+  g.set("a", 0);
+  assert.deepEqual(during(g, () => g.subscribe("t", "b")), ["t <- b: [START, DATA(31), DATA(32)]"],
+    "a silent run keeps the last values");
+  const seen = [];
+  g.node("d", ["b"], (ctx) => { seen.push(ctx.deps[0].waves); });
+  g.subscribe("u", "d");
+  assert.deepEqual(seen, [[[31, 32]]], "a new dependent gets them as one array of its first run");
+  g.set("a", 4);
+  assert.deepEqual(g.get("b").values, [41, 42]);
+  g.invalidate("a");
+  assert.deepEqual(g.get("b").values, []);
+  assert.deepEqual(during(g, () => g.subscribe("v", "b")), ["v <- b: [START]"]);
+});
+
+test("K3: values after an INVALIDATE in the same wave are the retained ones", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  g.subscribe("s", "a");
+  g.batch(() => { g.set("a", 2); g.invalidate("a"); g.set("a", 3); g.set("a", 4); });
+  assert.deepEqual(g.get("a").values, [3, 4]);
+});
+
+test("K3: a node's own INVALIDATE between two of its arrays drops the values before it", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  g.node("b", ["a"], (ctx) => { ctx.down([["DATA", 1]]); ctx.down([["INVALIDATE"]]); ctx.down([["DATA", 2]]); });
+  g.subscribe("s", "b");
+  assert.deepEqual(g.get("b").values, [2]);
+});
+
+test("K3: get returns a copy of the values; changing it changes nothing", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  g.get("a").values.push(99);
+  assert.deepEqual(during(g, () => g.subscribe("s", "a")), ["s <- a: [START, DATA(1)]"]);
 });

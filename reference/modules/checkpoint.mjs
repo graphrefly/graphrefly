@@ -12,7 +12,7 @@
 // saved as local-only, and restoring a local-only node fails.
 //
 // capture() runs at a wave boundary only and saves, per node, what the kernel holds: a state's
-// value and terminal; a computed node's value, terminal, private state and the input it received
+// last array's values and terminal; a computed node's values, terminal, private state and the input it received
 // from each dependency, if it had a lifetime (an inactive computed node holds nothing, K7).
 //
 // restore(checkpoint, registry) builds a new graph with no subscribers, as TS's restoreGraph,
@@ -68,12 +68,12 @@ export function recipes(g, registry) {
   }
 
   function live(id, kind, deps) {
-    const { active, has, value, ended } = g.get(id);
-    if (kind === "state") return { has, ...(has && { value }), ended };
+    const { active, values, ended } = g.get(id);
+    if (kind === "state") return { values, ended };
     if (!active && !ended) return null; // no lifetime, nothing held
     const state = g.privateState(id);
     return {
-      has, ...(has && { value }), ended, ...(state !== undefined && { state }),
+      values, ended, ...(state !== undefined && { state }),
       // What it received from each dependency: at a wave boundary, the dependency's value.
       inputs: deps.map((d) => { const x = g.get(d); return { has: x.has, ...(x.has && { value: x.value }), ended: x.ended }; }),
     };
@@ -100,12 +100,14 @@ export function recipes(g, registry) {
       if (n.local) throw new Error(`restore: ${n.id} is local-only (no recipe, or rewired since it was built)`);
       const { saved } = n;
       if (n.kind === "state") {
-        addState(n.id, saved?.has ? saved.value : undefined);
+        addState(n.id, undefined);
+        // Its last array's values come back as one array (a batch), with no subscriber to see it.
+        if (saved?.values.length) g.batch(() => saved.values.forEach((v) => g.set(n.id, v)));
         if (saved?.ended) g[saved.ended[0] === "COMPLETE" ? "complete" : "error"](n.id, saved.ended[1]);
         return n.id;
       }
       const rec = { deps: [...n.deps], ref: n.ref, config: n.config, opts: n.opts, entry: saved ? n : null };
-      return addNode(n.id, n.deps, rec, saved && { ...(saved.has && { value: saved.value }), ended: saved.ended, state: saved.state });
+      return addNode(n.id, n.deps, rec, saved && { values: saved.values, ended: saved.ended, state: saved.state });
     },
   };
 }

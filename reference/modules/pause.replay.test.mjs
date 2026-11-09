@@ -117,7 +117,7 @@ test("C-31: under resumeAll, DATA in the same array as a terminal is discarded a
   const lock = p.pause();
   assert.deepEqual(during(g, () => src.ctx.down([["DATA", 30], ["COMPLETE"]])), ["o <- p: [COMPLETE]"]);
   assert.deepEqual(during(g, () => p.resume(lock)), []);
-  assert.deepEqual(g.get("p"), { active: true, has: true, value: 20, ended: ["COMPLETE"] }, "sealed at 20");
+  assert.deepEqual(g.get("p"), { active: true, has: true, value: 20, values: [20], ended: ["COMPLETE"] }, "sealed at 20");
 });
 
 test("C-36: D paused at both inputs: INVALIDATE goes through at once; one resume runs D once with the latest", () => {

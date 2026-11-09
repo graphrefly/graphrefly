@@ -386,7 +386,6 @@ completes.
 | One `rewire` with the whole new list per change | `rewireNext.unsubscribeDep` and `subscribeDep` per inner, removes before adds so the list stays aligned with positions | The kernel compares the lists, and dependencies are read by id |
 | A projection with the same `fn` and `deps` as a live inner keeps it | A re-projected node that is already live is kept (switch) or skipped (merge) | The same rule, by definition instead of node identity |
 | A projection onto an ended node gives an inner that starts on its snapshot: its last value, then its end | merge skips a node that completed in the same wave ("does not re-add a just-completed inner"); rewire rejects a non-resubscribable terminal dependency (C-8), an ERROR | P5 relaxed (2026-11-08); until then this was an ERROR here too |
-| An inner that sends several values as it activates passes on its last | `mergeMap(v => [v, v + 1])` gives both | K3: an activation only sets the retained value, as at any first subscription |
 | The inner node is created at the first projection | — | Nothing exists to observe before there is an inner |
 | No `concatMap`, `exhaustMap`, `flatMap`, `fromAny` | Present | Not needed so far; concat and exhaust would be further modes of the same loop, not built |
 
@@ -400,7 +399,7 @@ and removal of a completed inner; bounded concurrency; invalid `concurrent`; an 
 merged once with later removals aligned; completion; source, inner and projector ERROR releasing
 every inner; inner DATA before its ERROR; the just-completed re-projection, an inner that ends at once here); the value
 and single START kept while inners are added; no resend of live inners' values and no reprojection of
-the source's; several inners added in one wave; the K3 last value; an inner that completes as it
+the source's; several inners added in one wave; an inner that sends several values as it activates in one array passing them all on, as TS (since K3 keeps the last array); an inner that completes as it
 activates; a source value queued ahead of the operator's rewire; node reuse, also by an inner that
 completes in the wave of a new source value; a fresh activation.
 
@@ -463,16 +462,17 @@ const r = restore(cp, registry);                            // a new graph, noth
   node whose dependencies have changed since (by `rewire` or `replace`, as `mapOperator` does), is
   saved as local-only, and restoring it fails, as R-snapshot has it.
 - `capture()` saves what the kernel holds per node:
-  - a state's value and terminal;
-  - a computed node's value, terminal and private state, and what it received from each dependency,
+  - a state's last array's values (K3) and terminal;
+  - a computed node's last array's values, terminal and private state, and what it received from each dependency,
     when it had a lifetime. An inactive computed node holds nothing (K7) and comes back fresh.
 
   Capture is refused unless the kernel is idle (`g.idle()`: no wave and no batch body). Values must be
   JSON.
 - `restore()` builds the graph in checkpoint order, with no subscribers, as TS's `restoreGraph` does,
   and runs no fn.
-  - Ended state: restored by `state` then `complete` or `error`.
-  - Saved computed node: gets its value, terminal and private state as a kernel seed. An ended one
+  - State: its saved values come back as one batch (one wave, with no subscriber), then `complete`
+    or `error` if it had ended.
+  - Saved computed node: gets its values, terminal and private state as a kernel seed. An ended one
     stays ended, with its dependencies.
   - First activation of a seeded node: a wrapper around its fn compares each dependency with what
     the node had received. If all are the same, the real fn does not run. Otherwise it runs once,
@@ -555,3 +555,55 @@ Removed because they could not change anything:
 
 The kernel side, `idle()`, `privateState(id)`, the optional seed and the P5 relaxation, is listed in the
 kernel README.
+
+## History, R-replay-buffer ([history.mjs](history.mjs), [history.test.mjs](history.test.mjs))
+
+Built 2026-11-08. The user made two decisions before it was built:
+- **The kernel's START snapshot carries the last array.** A new subscriber gets every DATA value of
+  the node's last array that had any, not only the last value; arrays are not merged (K3, kernel
+  README).
+- **History across arrays is a module, not a kernel option.** In TS, `replayBuffer` is used only by
+  the occurrence solutions (`solutions/occurrence.ts`, `solutions/causal-occurrence`), never by
+  ordinary nodes or operators, so it does not belong on every node.
+
+`history(g, id, sourceId, n)` is a node whose value is the list of the last `n` DATA occurrences the
+source has published since the history node was activated, oldest first, with equal values
+included.
+- Each wave that brings values sends the new list. A wave without any (RESOLVED, or a terminal
+  alone) sends nothing.
+- A new subscriber gets the list in its START snapshot, like any value. This holds for sinks and
+  dependents alike.
+- The list lives in private state:
+  - an INVALIDATE from the source clears the value (K6) and the list (an `onInvalidate` hook), as
+    TS's BH6 does;
+  - deactivation drops the list (K7), as TS drops its ring;
+  - built from `historyRecipe` through the checkpoint module's `recipes`, the list is saved and
+    restored, and goes on from there.
+- On activation the list starts with the source's last array, since that is all the source's START
+  snapshot holds.
+- The source's terminal ends the history node (auto policy). A late subscriber gets the list, then
+  the terminal (P5).
+
+| Here | TS (`dafc5ae`) | Why |
+|---|---|---|
+| A separate node whose value is the list | `replayBuffer: N` on the node itself; a late sink gets N separate DATA after START, and a late dependent's fn runs once per value | The user's decision: one value that sinks and dependents see alike, and no kernel option for one use |
+| The list starts at the history node's activation | The ring starts when the node is active, and is cleared on deactivation (BH6) | The same, except that the list begins with the source's last array |
+
+**What the tests pin**:
+- TS's replayBuffer test: the last 3 of 4 values, oldest first;
+- equal values counted as occurrences, and a batch adding all of its values;
+- a dependent getting the list;
+- a wave without values sending nothing;
+- INVALIDATE clearing the list, and deactivation dropping it;
+- the source's end;
+- `n` validated;
+- a checkpoint round trip that goes on from the saved list.
+
+**Mutations checked on 2026-11-08**, each failing at least one test: no clear on INVALIDATE; no
+bound; empty waves sending; no check of `n`; newest first.
+
+### New things this module introduces
+
+| New | Why it stays |
+|---|---|
+| `history(g, id, sourceId, n)` and `historyRecipe` | R-replay-buffer's bounded history, as a module (the user's decision); the recipe so a checkpoint can rebuild it |

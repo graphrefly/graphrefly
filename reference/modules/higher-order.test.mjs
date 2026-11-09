@@ -58,7 +58,7 @@ test("switchMap: the owner keeps its value across a switch with no seed: only th
   g.set("s", 1);
   assert.equal(g.get("op").value, 10);
   g.set("s", 2); // b has no value yet
-  assert.deepEqual(g.get("op"), { active: true, has: true, value: 10, ended: null });
+  assert.deepEqual(g.get("op"), { active: true, has: true, value: 10, values: [10], ended: null });
   assert.equal(g.describe().find((d) => d.id === "op/inner/0").deps[0], "b", "describe shows the live inner");
 });
 
@@ -304,7 +304,7 @@ test("mergeMap: the operator keeps its value and its one START while inners are 
   g.set("s", "a");
   assert.equal(g.get("op").value, 10);
   g.set("s", "b"); // b has no value yet
-  assert.deepEqual(g.get("op"), { active: true, has: true, value: 10, ended: null });
+  assert.deepEqual(g.get("op"), { active: true, has: true, value: 10, values: [10], ended: null });
   assert.equal(starts(g, "out"), 1);
   assert.deepEqual(g.describe().find((d) => d.id === "op").deps, ["s", "op/inner/0", "op/inner/1"]);
 });
@@ -329,13 +329,13 @@ test("mergeMap: inners added in one wave each pass on their value", () => {
   assert.deepEqual(values(g, "out"), ["A", "B", "C"]);
 });
 
-test("mergeMap: an inner that sends several values as it activates passes on its last (K3)", () => {
+test("mergeMap: an inner that sends several values as it activates passes them all on, as TS (K3)", () => {
   const g = createGraph();
   g.state("s");
   mergeMap(g, "op", "s", (v) => ({ deps: [], fn: (ctx) => ctx.down([["DATA", v], ["DATA", v + 1]]) }));
   g.subscribe("out", "op");
   g.set("s", 1);
-  assert.deepEqual(values(g, "out"), [2], "TS's [v, v + 1] inner gives 1, 2");
+  assert.deepEqual(values(g, "out"), [1, 2], "TS's [v, v + 1] inner gives 1, 2");
 });
 
 test("mergeMap: an inner that completes as it activates is done at once", () => {

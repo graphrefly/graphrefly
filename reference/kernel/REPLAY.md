@@ -29,7 +29,7 @@ Labels:
 | C-35 partial wiring | — | — | — | partial first-run gate, rewire, acquisition failure |
 | C-36 input frames and terminal admission | 3 clauses | — | resumeAll INVALIDATE hold (decided) | 3 clauses: pause module |
 | C-37 upstream routing | — | — | — | K9 routing, rewire |
-| C-38 restore and replay | — | — | — | checkpoint module (replayed 2026-11-08: 5 clauses, see below); replay module, namespaces, resources |
+| C-38 restore and replay | — | — | — | checkpoint and history modules (replayed 2026-11-08: 6 clauses, see below); namespaces, resources |
 | C-39 revision evidence | — | — | — | revision observer (O9) |
 | C-22 rewire during an open batch (activated R-rewire-batch-boundary; replayed 2026-11-08) | 6 clauses, and rollback from @2 | — | only when the node has batch output: every topology request in a body waits (K8) | — |
 | C-8 runtime rewire (activated R-rewire; replayed 2026-11-08) | 6 clauses with `replace`; with `rewire` (same day) also cache kept, surgical, idempotent, sentinel wait, terminal D | mid-wave removal (K8) | mid-fn rewire queued (K8); with `replace` also the five `rewire` covers | first-run gate (sugar) |
@@ -193,7 +193,7 @@ C-38 was replayed on 2026-11-08 against the [checkpoint module](../modules/READM
 | Genuine pre-attachment changes use the latest refresh, without replaying lost history | Module (the user's choice over TS, which keeps the restored value) | "C-38: an upstream change before the first subscription runs the fn once..." |
 | Rebuild physical callbacks through a registered recipe | Module: fns come from the registry by ref | "a missing recipe fails the restore" |
 | Ended input does not bind to a new source execution | Kernel and module: a restored node connects to the ended input's snapshot, which does not run it (P5) | checkpoint: "a node holding an ended dependency comes back and works..."; kernel: "P5: a node over an ended node activates on its snapshot..." |
-| Replay history survives | Module not built (replay) | — |
+| Replay history survives | Module: the history node's list is private state, saved and restored by checkpoint (2026-11-08) | history: "built from its recipe, checkpoint saves the list..." |
 | Namespace watermarks, retired names, observation sequence | Not modeled: the kernel has no namespaces | — |
 | Rebuild resources | Not covered (R-resource-reattach) | — |
 

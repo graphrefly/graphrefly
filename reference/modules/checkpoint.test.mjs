@@ -62,7 +62,7 @@ test("a first subscription gets the saved value without running the fn; later wa
   assert.deepEqual(during(r.g, () => r.g.set("b", 10)), ["ks <- s: [DIRTY, DATA(13)]", "kt <- t: [DIRTY, DATA(16)]"],
     "t's private state came back: 6 + 10");
   assert.deepEqual(reg.calls, { sum: 1, scan: 1 });
-  assert.equal(r.capture().nodes.find((n) => n.id === "t").saved.value, 16, "once activated, capture saves the live lifetime");
+  assert.deepEqual(r.capture().nodes.find((n) => n.id === "t").saved.values, [16], "once activated, capture saves the live lifetime");
 });
 
 test("C-38: an upstream change before the first subscription runs the fn once, with only the changed input", () => {
@@ -202,7 +202,7 @@ test("O5: capture is refused inside a wave and inside a batch body", () => {
   b.g.set("a", 4);
   assert.match(seen, /wave boundary/);
   assert.throws(() => b.g.batch(() => b.capture()), /wave boundary/);
-  assert.equal(b.capture().nodes.find((n) => n.id === "a").saved.value, 4, "between waves it is allowed");
+  assert.deepEqual(b.capture().nodes.find((n) => n.id === "a").saved.values, [4], "between waves it is allowed");
 });
 
 test("a value or private state that is not JSON is refused at capture", () => {
@@ -222,4 +222,16 @@ test("a restored graph captured again before anything subscribes keeps the saved
   const twice = restore(roundTrip(once.capture()), reg);
   assert.deepEqual(during(twice.g, () => twice.g.subscribe("kt", "t")), ["kt <- t: [START, DATA(11)]"]);
   assert.equal(reg.calls.scan, 1);
+});
+
+test("K3: every value of a node's last array is saved and comes back in its snapshot", () => {
+  const reg = { ...registry(), pair: () => (ctx) => { const v = ctx.deps[0].value; ctx.down([["DATA", v], ["DATA", -v]]); } };
+  const b = recipes(createGraph(), reg);
+  b.state("a", 0);
+  b.node("p", ["a"], "pair");
+  b.g.subscribe("k", "p");
+  b.g.batch(() => { b.g.set("a", 1); b.g.set("a", 2); });
+  const r = restore(roundTrip(b.capture()), reg);
+  assert.deepEqual(r.g.get("a").values, [1, 2], "a state's last array, back as one array");
+  assert.deepEqual(during(r.g, () => r.g.subscribe("k", "p")), ["k <- p: [START, DATA(2), DATA(-2)]"]);
 });

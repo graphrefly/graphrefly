@@ -83,7 +83,7 @@ callback registration 属于 lifetime。原来分散在各条规则里的"旧请
 | Pause, resumeAll | R-pause-lockset, R-pause-modes, R-async-paused (pause clauses), R-paused-invalidate | Pausable valve or gate nodes are placed in the graph in advance. Each one is controlled by a declared controller (for example a resumable node), either through keyed ctx.up messages or through a declared control pair (O8). The valve holds DATA in its own FIFO (resumeAll) or keeps only the latest input (default), passes terminals, and releases on the final RESUME. Precedent: callbag-recharge `pipe(source, pausable())`, where `pause()` returns a lock id and `resume(lockId)` emits the latest value. | H1, or a declared control pair. A source that must actually stop working handles pause itself (O8). |
 | Quiet release | the "quiet outside service" part of R-pull | A node that consumes its input wave without forwarding DIRTY and publishes a release in a new wave. | Hook H6. **The flagship needs this** (D790's "pull-quiet release" lifecycle port). |
 | Demand (PULL) | R-pull (demand parts), R-up-routing-diamond | A holder node that reacts to PULL arriving on the upstream channel, keeps only the latest unserved demand, and serves it as an ordinary invocation. | K9 for routing, H6 for quietness, H2 for START-only subscription |
-| Replay | R-replay-buffer | A history node that keeps the last N published DATA and supplies them to new subscribers. | Hook H2 |
+| Replay | R-replay-buffer | A history node that keeps the last N published DATA and supplies them to new subscribers. | Hook H2. 2026-11-08 (user): no hook and no kernel option. The START snapshot carries the node's last array (K3); history across waves is `reference/modules/history.mjs`, a node whose value is the list |
 | Checkpoint and restore | R-restore, R-snapshot, R-input-receipts, R-resource-reattach | Graph-level save and rebuild: construct nodes from recipes and seed them. | Hook H4. Scope is open decision O5. |
 | Revision evidence | R-node-revision | An observer that counts committed outputs per node, plus the optional hash. | Hook H5 (already exists as observe/inspection). D791 flagship revisions are DATA-level, not node revisions. |
 | Rewire | R-rewire, R-rewire-deferred, R-rewire-deferred-committed-boundary, R-rewire-async-live-edge, R-rewire-batch-boundary | Graph-level "replace node": tear the old instance down, build a new one with new dependencies, seed its cache. | Hook H4. Whether in-flight records must survive a rewire is O4. 2026-11-08: the reference kernel's `replace` is a kernel request (it rebinds dependents); the seed is added when a case first needs it (user, after the C-8 replay). Same day, after mergeMap on replace: the user asked for surgical `rewire(id, deps, fn)` as a kernel request too; it keeps the instance and runs between waves (K8). No case needs the seed |
@@ -297,4 +297,13 @@ rewire、resubscription 和 dynamic 节点。简报也不要求 batch；batch �
    代价是和 TS（R-terminal R2.2.7.b：订阅已结束的非 resubscribable 节点会抛错）以及 C-8（rewire 拒绝已结束的依赖）不一致，B140 要写明。
    内核随之删掉了 `assertAcquirable`、`seeded` 标志和例外，并在每个 lifetime 的第一次运行时也按 K5 处理快照里的 terminal。
    switchMap 投影到已结束节点不再是 ERROR，而是 inner 发出最后的值后结束；restart 的两处检查保留，理由改写。
+   同日做 replay。先查了 TS：`replayBuffer` 只在 occurrence 那两个 solution 里用，普通节点和 operator 都没用。用户决定：
+   (1) K3 的快照改成带上节点最后一个（带值的）数组里的全部 DATA（不只最后一个值），数组之间不合并：发过 `[DATA 1]`、`[DATA 2, DATA 3]` 的节点，
+   新订阅者拿到 `[START, DATA 2, DATA 3]`，新依赖节点在第一次运行时拿到 `[[2, 3]]`。第一版按"最后一轮"把同一轮的数组合并了，用户当天纠正为以数组为单位；
+   (2) 跨 wave 的历史放进模块（[history.mjs](../../reference/modules/history.mjs)），历史节点的值就是最近 N 个 occurrence 组成的列表，
+   存在私有状态里，所以 checkpoint 能直接保存。不需要 H2 钩子，也不需要内核的 replay 选项。
+   和 TS 的不同：TS 的快照只有最后一个值，晚到的依赖节点每个回放的值各跑一次 fn；这里的种子也从 `value` 改成了 `values`。
+   同日和用户定了合并多个依赖的 operator 发哪些数组：取最新状态的（combineLatest / derived）每轮一个数组；逐个处理 occurrence 的（map、filter、merge、withLatestFrom 的主依赖）
+   一个输入数组对应一个输出数组；跨依赖配对的（zip）每轮一个数组，装下这一轮配出的所有结果。merge、withLatestFrom、zip 已加进 sugar，例子见 sugar.test.mjs。
+   TS 在这三个上都是一个值一个数组。
 3. 然后根据结果恢复、修订或取代 B140。

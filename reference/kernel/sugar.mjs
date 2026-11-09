@@ -58,3 +58,48 @@ export const latestAsync = (f) => (ctx) => {
       (e) => { if (!ctrl.signal.aborted) ctx.down([["ERROR", e instanceof Error ? e.message : e]]); },
     );
 };
+
+// ---- Combining several dependencies (2026-11-08) ------------------------------------
+//
+// The array is the unit (R-wave-boundary, K3), so each combinator says which arrays it sends,
+// by one of three rules the user agreed on:
+// - a state combinator reads the latest values and sends one array per run (derived, which
+//   is combineLatest);
+// - an occurrence combinator sends one output array per input array (map, filter, merge,
+//   withLatestFrom on its primary);
+// - a pairing combinator sends one array per run, holding every result formed in it (zip).
+// Arrays of several dependencies in one run are taken in declaration order. TS sends one array
+// per value in merge, withLatestFrom and zip.
+
+// combineLatest: the same as derived, under its RxJS name.
+export const combineLatest = (f = (...vs) => vs) => derived(f);
+
+// merge: every dependency's arrays, as they came.
+export const merge = () => (ctx) => {
+  for (const d of ctx.deps) for (const w of d.waves) if (w.length) ctx.down(w.map((v) => ["DATA", v]));
+};
+
+// withLatestFrom: each array of the primary (dependency 0) becomes one array of
+// [value, latest secondary] pairs; nothing while the secondary has no value, and a secondary
+// change alone sends nothing. Ends with the primary: requires { terminal: { complete: "manual" } }.
+export const withLatestFrom = () => (ctx) => {
+  const [primary, secondary] = ctx.deps;
+  if (secondary.has) for (const w of primary.waves) if (w.length) ctx.down(w.map((v) => ["DATA", [v, secondary.value]]));
+  if (primary.terminal?.[0] === "COMPLETE") ctx.down([["COMPLETE"]]);
+};
+
+// zip: queues each dependency's values and sends, in one array, every tuple that can be formed
+// in this run. Completes once a dependency has completed and its queue is empty, since no tuple
+// can form after that: requires { terminal: { complete: "manual" } }.
+export const zip = () => (ctx) => {
+  const st = ctx.state.get() ?? { queues: ctx.deps.map(() => []), done: ctx.deps.map(() => false) };
+  ctx.state.set(st);
+  ctx.deps.forEach((d, i) => {
+    st.queues[i].push(...occurrences(d));
+    if (d.terminal?.[0] === "COMPLETE") st.done[i] = true;
+  });
+  const out = [];
+  while (st.queues.every((q) => q.length)) out.push(["DATA", st.queues.map((q) => q.shift())]);
+  if (st.done.some((done, i) => done && !st.queues[i].length)) out.push(["COMPLETE"]);
+  if (out.length) ctx.down(out); // this run's one array
+};

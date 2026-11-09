@@ -118,7 +118,7 @@ test("C-31: ordinary last-off keeps the state's intrinsic value, and a write que
     g.set("s", 30);          // ... then the queued write
   });
   g.set("t", 1);
-  assert.deepEqual(g.get("s"), { active: false, has: true, value: 30, ended: null });
+  assert.deepEqual(g.get("s"), { active: false, has: true, value: 30, values: [30], ended: null });
   assert.deepEqual(during(g, () => g.subscribe("o", "s")), ["o <- s: [START, DATA(30)]"]);
 });
 
@@ -134,7 +134,7 @@ test("C-31: a terminal seals the state; a write queued behind the terminal is dr
     g.set("s", 40);
   });
   g.set("t", 1);
-  assert.deepEqual(g.get("s"), { active: true, has: true, value: 20, ended: ["COMPLETE"] });
+  assert.deepEqual(g.get("s"), { active: true, has: true, value: 20, values: [20], ended: ["COMPLETE"] });
   assert.deepEqual(reports, [{ source: "queued request", error: "s has ended" }]);
   assert.deepEqual(during(g, () => g.subscribe("o2", "s")), ["o2 <- s: [START, DATA(20), COMPLETE]"],
     "no reset revives a sealed output: a new subscriber gets its terminal snapshot (P5)");
@@ -383,7 +383,7 @@ test("C-8 rewire: to zero dependencies, D keeps its value and stays active", () 
   g.node("D", ["A"], f2);
   g.subscribe("s", "D");
   assert.deepEqual(during(g, () => g.rewire("D", [], f2)), []);
-  assert.deepEqual(g.get("D"), { active: true, has: true, value: "f2(a1)", ended: null });
+  assert.deepEqual(g.get("D"), { active: true, has: true, value: "f2(a1)", values: ["f2(a1)"], ended: null });
 });
 
 // ---- C-22, a rewire requested while a batch is open (R-rewire-batch-boundary) ----------

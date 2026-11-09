@@ -16,7 +16,7 @@ npm run test:reference
 | File | Contents |
 |---|---|
 | [kernel.mjs](kernel.mjs) | The kernel. Every delivery to a sink is appended to `graph.trace` |
-| [sugar.mjs](sugar.mjs) | `derived`, `map`, `filter`, `reduce`, `latestAsync` as ordinary node functions. They show that a policy can live outside the kernel; they are not a chosen operator set |
+| [sugar.mjs](sugar.mjs), [sugar.test.mjs](sugar.test.mjs) | `derived` (also `combineLatest`), `map`, `filter`, `reduce`, `latestAsync`, `merge`, `withLatestFrom`, `zip` as ordinary node functions. They show that a policy can live outside the kernel; they are not a chosen operator set |
 | [kernel.test.mjs](kernel.test.mjs) | One trace test per implemented behavior |
 | [replay.test.mjs](replay.test.mjs), [REPLAY.md](REPLAY.md) | The kernel-applicable clauses of C-28 to C-39, and where every other clause belongs |
 
@@ -34,8 +34,8 @@ saves all of it). The kernel never reads either. TS reads the same through inter
 `seed` (H4) is optional and was added 2026-11-08 for restore, at the user's request. Before that,
 the checkpoint module built without a seed found two cases it could not restore (see the
 [modules README](../modules/README.md)).
-- What it holds: `{ value?, ended?, state? }`. It gives a computed node a retained value (present
-  when `value` is a key, so `null` is a value), a terminal and private state, without running its fn.
+- What it holds: `{ values?, ended?, state? }`. It gives a computed node its last array's values
+  (K3; `[null]` is a value, `[]` none), a terminal and private state, without running its fn.
   Without a seed nothing changes.
 - A seeded ended node is ended like any ended node after its last release: it keeps its declared
   dependencies and never runs (P5).
@@ -118,18 +118,50 @@ registration while the lifetime is open is accepted, and `onInvalidate` hooks ar
 | `rewire(id, deps, fn)`: one request with the whole new dependency list and fn; from inside a function it is queued (K8) | `ctx.rewireNext.subscribeDep`/`unsubscribeDep`/`replaceDeps` (D47), and the immediate `subscribeDep`/`unsubscribeDep`/`replaceDeps` on a node | Added 2026-11-08 at the user's request, after mergeMap on `replace` showed what replace costs it. One form: the kernel compares the lists, so add, remove and reorder are the same request |
 | A `subscribe`, `unsubscribe`, `replace` or `rewire` made in a batch body runs after the commit, in request order; a throwing body drops it with the inputs | A rewire waits for the batch only when its node has uncommitted batch output, and is dropped on rollback; any other topology change runs at once | O3 and K8 (2026-11-08): nothing is delivered before commit, and a topology change delivers (a START snapshot, a settlement, cleanups), so it waits like any request made during a wave |
 | `node(..., { seed })`: value, terminal and private state; the first activation runs the fn | `restoreStateOfNode` after construction, also restoring status, version and first-call history; the first activation does not run the fn | Added 2026-11-08 for restore. Not running the fn is the checkpoint module's wrapper; there is no first-run gate, status is derived (K10), and versions are O9 |
+| A START snapshot carries every DATA value of the node's last array that had any | It carries the cached value only, unless the node has `replayBuffer: N`; a new dependent's fn runs once per replayed value | K3 changed by the user, 2026-11-08: the array is the unit (R-wave-boundary), so a late subscriber sees what the node last sent. History across arrays is a module, not `replayBuffer` |
 | An ended node can be subscribed, depended on and added by `rewire` or `replace`; its snapshot carries its terminal | A subscription to an ended non-resubscribable node throws (R-terminal, R2.2.7.b), and rewire refuses one as a dependency (C-8) | P5 relaxed by the user, 2026-11-08 |
 | No `up`, `upNext`, `rewireNext`, `pull`, `environment`, `track`, `persist` | Present | Not covered yet (K9, modules) |
 
 The kernel does not know or care whether a late `ctx.down` came from async work.
+
+**Which arrays a combinator sends** (agreed with the user 2026-11-08, once K3 kept the last array).
+The array is the unit, so each combinator in [sugar.mjs](sugar.mjs) follows one of three rules:
+- **State**: reads the latest values and sends one array per run. `derived`, also named
+  `combineLatest`: when `a` sends `[2, 3]`, the output is one tuple with 3; 2 is never combined.
+- **Occurrence**: one output array per input array. `map`, `filter`, `merge` (each dependency's
+  arrays as they came, in declaration order), `withLatestFrom` (each primary array becomes one array
+  of `[value, latest secondary]` pairs).
+- **Pairing**: one array per run, holding every result formed in it. `zip` (with the COMPLETE in
+  the same array once a completed dependency's queue is empty).
+
+The tests in [sugar.test.mjs](sugar.test.mjs) are the examples agreed on.
+- TS sends one array per value in `merge`, `withLatestFrom` and `zip`. Its `combine` is the same.
+- RESOLVED is not an occurrence, so `zip` skips it. A diamond with a filter therefore pairs values
+  from different source waves, as in TS and RxJS; that does not come from the array being the unit.
+
+Mutations checked on 2026-11-08, each failing at least one test:
+- `merge` sending one array per value, merging one dependency's arrays, or reversing their order
+  (merging the arrays survived until a test with two arrays in one run was added);
+- `withLatestFrom` with no secondary check, one array per value, no COMPLETE, or completing on the
+  secondary;
+- `zip` with one array per tuple, completing at once, or never completing;
+- `combineLatest` not giving a tuple by default.
 
 ## Covered so far
 
 - K1 the closed message set, in written order with the O13 split at INVALIDATE; K2 waves, DIRTY
   prepass, one leading DIRTY per value array, kernel RESOLVED, separate arrays per `ctx.down` call,
   batch as one accumulated array per node with every occurrence kept, DATA/RESOLVED exclusivity.
-- K3 START snapshot with the retained value; idempotent subscription. A new node's activation run
-  sees its dependencies' snapshots as that run's input.
+- K3 START snapshot with the retained values; idempotent subscription. A new node's activation run
+  sees its dependencies' snapshots as that run's input. Since 2026-11-08 (the user's decision) a
+  node retains the DATA values of its last array that had any, not only the last value; arrays are
+  not merged, since the array is the unit (R-wave-boundary). A node that sent `[DATA 1]` and then
+  `[DATA 2, DATA 3]`, in one run or two, gives a new subscriber `[START, DATA 2, DATA 3]`, and a new
+  dependent `[[2, 3]]` as its first run's input. `get(id).values` reads them (`value` is still the
+  last). An array without values keeps them; an INVALIDATE clears them; a computed node drops them on
+  its last release (K7), a state keeps them; a batch is one array, so all its occurrences stay. A
+  first version kept every value of the last wave, merging its arrays; the user corrected that the
+  same day.
 - K4 invocation view and private state; a throw becomes ERROR (P10).
 - K10 `status(id)` as above. A quiet node is settled for status once it has absorbed its input,
   since its value changes only in its later wave. `stale` is the `pending` flag that P3 marking
@@ -251,6 +283,12 @@ kept ended dependency refused; duplicates accepted; the fn not replaced; no cycl
 every test, since `deliver` already marks the cone when the node sends a value, so the mark was
 removed.
 
+Mutations of last-array retention checked on 2026-11-08, with the module tests, each failing at
+least one test: values merged across arrays; only the last value kept; values never replaced after
+the first array; an INVALIDATE keeping them; deactivation or replace keeping them; the seed's values
+ignored; a snapshot of the last value only; `get` handing out the kernel's own array (killed after
+the copy test was added).
+
 Mutations of the seed and the P5 relaxation checked on 2026-11-08, together with the checkpoint,
 restart, higher-order, pause, demand and observation tests, each failing at least one test:
 - the ban back, for a subscription or for a dependency; a rewire of an ended node allowed;
@@ -359,10 +397,11 @@ Each of these is left out rather than approximated:
 - K9 upward control routing: not needed for pause or demand (control pairs, DS-17 P11); START
   snapshots of an unsettled node; the released lifecycle of R-status-enum@2.
 - Upward INVALIDATE (R-up-at-source); INVALIDATE before a node's first invocation (R-first-run-gate).
-- Modules: replay. The H4 seed exists only for restore: switchMap and mergeMap were built without
+- Modules: history across waves (R-replay-buffer) is the history module; there is no kernel
+  option for it (the user's decision, 2026-11-08). The H4 seed exists only for restore: switchMap and mergeMap were built without
   one (mergeMap first on `replace`, then on `rewire`, now one module with switchMap). Checkpoint
   was first built without one, found the two cases above, and now uses it. Pause, demand,
-  observation (H5), restart (O7), switchMap, mergeMap and checkpoint are in
+  observation (H5), restart (O7), switchMap, mergeMap, checkpoint and history are in
   [../modules/](../modules/README.md). H5 needed no kernel hook: a subscriber already receives
   what a node committed.
 - The flagship acceptance (B139 S1–S8) runs on this kernel in [../flagship/](../flagship/README.md);

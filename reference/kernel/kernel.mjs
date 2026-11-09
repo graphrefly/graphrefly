@@ -88,9 +88,10 @@ export function createGraph({ report: hostReport } = {}) {
   function makeNode(id, kind, deps, fn, opts, initial) {
     if (nodes.has(id)) throw new KernelError(`duplicate node ${id}`);
     for (const d of deps) nodeOf(d); // P1: dependencies are declared and must exist
-    // H4, optional (2026-11-08, for restore): { value?, ended?, state? } gives a computed node a
-    // retained value, terminal and private state without running its fn. Without it nothing changes.
+    // H4, optional (2026-11-08, for restore): { values?, ended?, state? } gives a computed node
+    // its last array's values, terminal and private state without running its fn.
     const seed = opts?.seed;
+    const values = seed ? [...(seed.values ?? [])] : initial !== undefined ? [initial] : [];
     const n = {
       id, kind, deps, fn,
       terminal: { complete: "auto", error: "auto", ...(opts?.terminal ?? {}) }, // O6
@@ -99,8 +100,11 @@ export function createGraph({ report: hostReport } = {}) {
       active: false,
       lifetime: null,      // K7: the current lifetime of a computed node, see openLifetime; while it
                            // closes it is no longer open, and once closed it is gone
-      has: seed ? "value" in seed : initial !== undefined,
-      cache: seed ? seed.value : initial,
+      // K3 (2026-11-08): the DATA values of the last array that had any, in order. The retained
+      // value is the last of them; a new subscriber's START snapshot carries them all.
+      values,
+      has: values.length > 0,
+      cache: values.at(-1),
       ended: seed?.ended ?? null, // P5: COMPLETE/ERROR message once output has ended
       privateState: seed?.state,
       pending: false,    // P3: notified in the current wave and not settled yet (stale)
@@ -221,11 +225,14 @@ export function createGraph({ report: hostReport } = {}) {
     n.inputs[i] = snapshotInput(dep);
   }
 
+  // K3: what a new subscriber gets after START: the retained values, then the terminal (P5).
+  function snapshotOf(n) {
+    return [...n.values.map((v) => ["DATA", v]), ...(n.ended ? [n.ended] : [])];
+  }
+
   // K3: a dependency's START snapshot is the first input it gives a new connection.
   function snapshotInput(dep) {
-    const snapshot = [];
-    if (dep.has) snapshot.push(["DATA", dep.cache]);
-    if (dep.ended) snapshot.push(dep.ended);
+    const snapshot = snapshotOf(dep);
     return { has: dep.has, value: dep.cache, ended: dep.ended, frames: snapshot.length ? [snapshot] : [] };
   }
 
@@ -253,6 +260,7 @@ export function createGraph({ report: hostReport } = {}) {
       // K7: a computed node clears its output for a fresh activation.
       n.has = false;
       n.cache = undefined;
+      n.values = [];
     }
   }
 
@@ -381,8 +389,9 @@ export function createGraph({ report: hostReport } = {}) {
     for (const frame of frames) {
       if (n.ended) break; // P5: nothing after a terminal
       const f = [];
+      const values = [];
       for (const m of frame) {
-        if (m[0] === "DATA") { n.has = true; n.cache = m[1]; }
+        if (m[0] === "DATA") { n.has = true; n.cache = m[1]; values.push(m[1]); }
         if (m[0] === "INVALIDATE") {
           // K6: effective only while a value is retained; a repeat is a no-op, as in TS
           // (nothing downstream still holds a value from this node). This is also why a
@@ -390,12 +399,14 @@ export function createGraph({ report: hostReport } = {}) {
           if (!n.has) continue;
           n.has = false;
           n.cache = undefined;
+          n.values = [];
           // R-invalidate-idempotent: the value is already absent when these run.
           for (const h of invalidateHooks(n)) runCleanup(n, h);
         }
         if (isTerminal(m)) n.ended = m;
         f.push(m);
       }
+      if (values.length) n.values = values; // K3: an array with values replaces the retained ones
       if (f.length) out.push(f);
     }
     return out;
@@ -526,7 +537,7 @@ export function createGraph({ report: hostReport } = {}) {
     exchange(n, deps);
     if (old) for (const f of old.hooks.deactivation) runCleanup(n, f);
     Object.assign(n, {
-      fn, lifetime: null, has: false, cache: undefined, ended: null, privateState: undefined, pending: false,
+      fn, lifetime: null, values: [], has: false, cache: undefined, ended: null, privateState: undefined, pending: false,
     });
     n.pendingDeps.clear();
     if (!n.active) return; // the next subscription activates the new instance
@@ -535,9 +546,7 @@ export function createGraph({ report: hostReport } = {}) {
     n.inputs = deps.map((depId) => snapshotInput(nodeOf(depId))); // a new instance: every record new
     apply(n, firstRun(n)); // the retained value only, as at a first activation
 
-    const snap = [];
-    if (n.has) snap.push(["DATA", n.cache]);
-    if (n.ended) snap.push(n.ended);
+    const snap = snapshotOf(n);
     const nodeSubs = [];
     for (const sub of [...n.subs]) {
       if (sub.kind === "sink") deliverToSink(sub, n.id, [["START"], ...snap]);
@@ -627,10 +636,7 @@ export function createGraph({ report: hostReport } = {}) {
         if (!n.active) activate(n);
         const sub = { kind: "sink", id: sinkId, cb };
         n.subs.push(sub);
-        const snap = [["START"]];
-        if (n.has) snap.push(["DATA", n.cache]);
-        if (n.ended) snap.push(n.ended);
-        deliverToSink(sub, id, snap);
+        deliverToSink(sub, id, [["START"], ...snapshotOf(n)]);
       });
     },
     unsubscribe(sinkId, id) {
@@ -705,7 +711,7 @@ export function createGraph({ report: hostReport } = {}) {
     // The retained value as of now. Reading never computes or activates.
     get(id) {
       const n = nodeOf(id);
-      return { active: n.active, has: n.has, value: n.cache, ended: n.ended };
+      return { active: n.active, has: n.has, value: n.cache, values: [...n.values], ended: n.ended };
     },
     // True at a wave boundary: no request running or queued and no batch body open (O5).
     idle() { return !busy && !staging; }, // the queue drains before busy clears
