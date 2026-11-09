@@ -24,7 +24,12 @@ npm run test:reference
 
 The graph: `createGraph({ report })` takes an optional host reporter. Then `state(id, initial)`, `node(id, deps, fn, { terminal, quiet })`,
 `subscribe(sinkId, id, callback?)`, `unsubscribe`, `replace(id, deps, fn)`, `rewire(id, deps, fn)`, `set`, `invalidate`, `complete`, `error`, `batch`,
-`get(id)` (`active`, `has`, `value`, `ended`), `status(id)`, `describe()` and `trace`.
+`get(id)` (`active`, `has`, `value`, `ended`), `status(id)`, `describe()`, `idle()`, `privateState(id)` and `trace`.
+
+`idle()` and `privateState(id)` were added 2026-11-08 for the checkpoint module, as reads only:
+`idle()` is true at a wave boundary (no request running and no batch body open; O5 captures only
+there), and `privateState(id)` is the private state of the node's current lifetime (R-snapshot
+saves all of it). The kernel never reads either. TS reads the same through internal accessors.
 
 `describe()` is P1's "topology is data", added 2026-11-07 for the flagship (S1 compares the
 topology of a base and a candidate): every node in creation order as `{ id, kind, deps, quiet }`, a
@@ -304,8 +309,11 @@ Each of these is left out rather than approximated:
 - K9 upward control routing: not needed for pause or demand (control pairs, DS-17 P11); START
   snapshots of an unsettled node; the released lifecycle of R-status-enum@2.
 - Upward INVALIDATE (R-up-at-source); INVALIDATE before a node's first invocation (R-first-run-gate).
-- Modules: replay and checkpoint. The H4 seed is not implemented: switchMap and mergeMap were built
-  without one, mergeMap first on `replace`, then on `rewire` (now one module with switchMap). Pause, demand, observation (H5), restart (O7), switchMap and mergeMap are in
+- Modules: replay. The H4 seed is not implemented: switchMap and mergeMap were built without one,
+  mergeMap first on `replace`, then on `rewire` (now one module with switchMap); checkpoint was built
+  without one (2026-11-08) and found the two places a seed and a P5 exception would be needed (an
+  ended computed node, a live node holding an ended dependency). Pause, demand, observation (H5),
+  restart (O7), switchMap, mergeMap and checkpoint are in
   [../modules/](../modules/README.md). H5 needed no kernel hook: a subscriber already receives
   what a node committed.
 - The flagship acceptance (B139 S1–S8) runs on this kernel in [../flagship/](../flagship/README.md);

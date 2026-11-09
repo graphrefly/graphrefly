@@ -712,6 +712,11 @@ export function createGraph({ report: hostReport } = {}) {
       const n = nodeOf(id);
       return { active: n.active, has: n.has, value: n.cache, ended: n.ended };
     },
+    // True at a wave boundary: no request running or queued and no batch body open (O5).
+    idle() { return !busy && !staging; }, // the queue drains before busy clears
+    // The private state of the node's current lifetime, as of now (undefined without one).
+    // Read for a checkpoint (R-snapshot); the kernel keeps no copy and never reads it.
+    privateState(id) { return nodeOf(id).privateState; },
     // P1: the topology as data, in creation order: each node's id, kind, declared
     // dependencies and whether it is quiet (H6). Read-only; a structural subset of TS
     // describe(), without values or status.

@@ -1286,3 +1286,20 @@ test("O3/K8: a body's request that its own commit makes invalid is reported as a
   assert.deepEqual(reports.map((r) => r.source), ["queued request"]);
   assert.match(reports[0].error, /a has ended/);
 });
+
+// ---- reads for a checkpoint (O5, R-snapshot) ---------------------------------
+
+test("O5: idle is false inside a wave and a batch body; privateState reads the current lifetime's", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  g.node("t", ["a"], (ctx) => { ctx.state.set((ctx.state.get() ?? 0) + ctx.deps[0].value); ctx.down([["DATA", ctx.state.get()]]); });
+  const seen = [];
+  g.subscribe("s", "t", () => seen.push(g.idle()));
+  g.set("a", 2);
+  g.batch(() => seen.push(g.idle()));
+  assert.deepEqual(seen, [false, false, false], "the START snapshot, the wave, the batch body");
+  assert.equal(g.idle(), true);
+  assert.equal(g.privateState("t"), 3);
+  g.unsubscribe("s", "t");
+  assert.equal(g.privateState("t"), undefined, "a closed lifetime's private state is gone (K7)");
+});

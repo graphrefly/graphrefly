@@ -279,4 +279,12 @@ rewire、resubscription 和 dynamic 节点。简报也不要求 batch；batch �
    发现：restart 需要内核的 `replace`。参考内核原来没有任何改拓扑的手段，而把下游和订阅者接到新实例上只有内核能做；
    DS-17 的 rewire 行只写了 H4（种子），restart 用不到种子，没有加。TS 里没有生产代码用 `resubscribable: true`，
    `repeat` 只在它自己的测试里用，重试是 driver 在图外做、以 DATA 发出事件，所以现有用法都套得进这个模块。
+   同日做了 checkpoint 和 restore 模块（[checkpoint.mjs](../../reference/modules/checkpoint.mjs)）。用户选了：只在模块里做，内核不加种子；
+   restore 后、第一次订阅前上游变了就重算一次（按 C-38 草案，不跟 TS）。内核只加了两个只读接口：`idle()`（是否在 wave 边界，O5）和 `privateState(id)`（R-snapshot）。
+   做法：restore 不运行任何 fn；节点第一次激活时，由一层包装 fn 写回私有状态、发出保存的值（K3：激活时的输出只设置保留值）。
+   如果依赖的值和保存时收到的不同，就只把变化的依赖交给真正的 fn，运行一次。
+   发现：没有种子时，有两处做不到忠实恢复，都来自 P5（已结束的节点不能再接）：
+   已结束的计算节点只能恢复成一个已结束的 state（值和 terminal 一样，但 describe 里没有依赖）；
+   一个没结束的节点如果还持有已结束的依赖，capture 直接拒绝。后一处光有种子还不够，还要给恢复出来的节点开一个 P5 例外（TS 就是这样做的）。
+   **用户 2026-11-08 决定先留着**：内核仍不加种子，这两处作为 B140 的证据；按决定 1，等有场景真正需要时再加种子和 P5 例外。
 3. 然后根据结果恢复、修订或取代 B140。

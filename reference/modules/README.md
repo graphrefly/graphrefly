@@ -422,3 +422,103 @@ value implies a live inner).
 | Inner node reuse at `${id}/inner/k` | Without it inner nodes would grow by one per source value |
 
 The kernel side, `rewire` and `ctx.deps[i].id`, is listed in the kernel README.
+
+## Checkpoint and restore, O5 ([checkpoint.mjs](checkpoint.mjs), [checkpoint.test.mjs](checkpoint.test.mjs))
+
+Built 2026-11-08. O5 had been decided the same day with its default: capture at a wave boundary, no
+pending-FIFO or receipt capture in the kernel. Before building, the user made two choices:
+
+- **The module only, no kernel seed (H4)**, to test whether the seed is needed. TS puts restored
+  state in through `restoreStateOfNode`, plus a flag that makes the first activation record its
+  dependencies without running the fn: that is H4.
+- **An upstream change before the first subscription runs the fn once** (the C-38 and
+  R-input-receipts draft). TS keeps the restored value and records the dependencies' current
+  values as received, so the value does not match its inputs until the next change.
+
+```js
+const b = recipes(createGraph(), { sum: () => sumFn, plus: ({ k }) => plusFn(k) });
+b.state("a", 1); b.node("p", ["a"], "plus", { k: 10 });   // a recipe: ref and JSON config
+const cp = b.capture();                                     // JSON; at a wave boundary only
+const r = restore(cp, registry);                            // a new graph, nothing subscribed
+```
+
+**Semantics**
+
+- A node is restorable when built through `recipes`: a state, or a computed node whose fn is
+  `registry[ref](config)`. Function bodies are never saved. A node built another way, or a recipe
+  node whose dependencies were changed since (by `rewire` or `replace`, as `mapOperator` does), is
+  saved as local-only, and restoring it fails, as R-snapshot has it.
+- `capture()` saves what the kernel holds per node:
+  - a state's value and terminal;
+  - a computed node's value, terminal and private state, and what it received from each dependency,
+    when it had a lifetime. An inactive computed node holds nothing (K7) and comes back fresh.
+
+  It is refused unless the kernel is idle (`g.idle()`: no wave and no batch body). Values must be
+  JSON.
+- `restore()` builds the graph in checkpoint order with no subscribers, as TS's `restoreGraph`, and
+  runs no fn. A saved lifetime is put back on the node's first activation by a wrapper around its fn.
+  K3 makes this possible: activation output only sets the retained value. The wrapper:
+  - sets the private state and sends the saved value, without running the real fn;
+  - if a dependency's value differs from what the node had received, then runs the real fn once,
+    with only the changed dependencies as input. That is the input a live wave would have given it,
+    so a running total adds only the change. If that run sends nothing, the saved value stays.
+
+  After this first run, every run is the real fn's.
+- A restored graph captured again before anything subscribes gives back the saved lifetimes as they
+  were.
+
+**What it found: without a seed, two things cannot be restored faithfully.** Both come from P5: an
+ended node cannot be acquired.
+
+1. **An ended computed node.** The module can create an ended state (`state` and then `complete`
+   or `error`), but not an ended computed node with its dependencies. An ended computed node comes
+   back as an ended state with the same value and terminal. It never runs again, and nothing can
+   acquire it, as before. But `describe()` shows it as a state with no dependencies.
+2. **A node that has not ended but holds an ended dependency** (with manual COMPLETE policy). The
+   restored node would have to acquire the ended dependency, so `capture()` refuses such a graph.
+   A seed alone does not fix this. Activating it needs an exception to P5 for a restored node,
+   which TS has: a restored activation skips an ended dependency.
+
+Decided by the user 2026-11-08: both stay as they are. The kernel still has no seed; these two are
+evidence for B140, and a seed with a P5 exception is added when a case first needs it (decision 1
+in [REPLAY.md](../kernel/REPLAY.md)).
+
+**Not covered**: the replay buffer (no replay module), version evidence (O9, no observer module),
+graph namespaces and mounts (the kernel has none), and resource reattach (R-resource-reattach).
+Pending async work is lost rather than re-issued: the kernel does not know about it, and a restored
+lifetime is new, so a late result of the old one cannot arrive. O5 asked for an in-flight call to be
+re-issued or recorded as unknown.
+
+### What the tests pin
+
+- Restore runs no fn, sends nothing, and gives the same `describe()`.
+- A first subscription gets the saved value and private state with no fn run; later waves run the
+  real fn.
+- After an upstream change: one run with only the changed input; a silent run keeps the saved value.
+- A chain of restored nodes runs nothing.
+- An inactive node starts fresh.
+- Ended nodes: same `get()`, P5 kept, the `describe()` difference.
+- Refusals: a held ended dependency, local-only nodes (built without a recipe, or rewired, including
+  rewired after restore and before activation), a missing recipe, capture inside a wave or a batch
+  body, values that are not JSON.
+- Recapture before activation.
+
+Mutations checked on 2026-11-08, each failing at least one test: the real fn always run; no private
+state; no saved value sent; unchanged dependencies not masked; never or always refreshing; the saved
+lifetime not cleared after use; no idle check; no held-ended check; no local-only check, or a
+local-only node restored; no recapture of a saved lifetime, or one kept after a rewire; an ended node
+not ended, or not kept for recapture; no JSON check; an inactive node saving a lifetime. The rewire
+case survived until the test "a restored node rewired before its first activation" was added.
+Removed because nothing could reach them: comparing terminals of inputs (no saved input has ended,
+and one that ended since cannot be acquired), and the "has private state" check before setting it.
+
+### New things this module introduces
+
+| New | Why it stays |
+|---|---|
+| `recipes(g, registry)` with `node(id, deps, ref, config, opts)`, and `restore(checkpoint, registry)` | R-snapshot's factory reference; TS's `restoreGraph(checkpoint, { registry })` |
+| Per computed node, the inputs it received | Needed for the change check, and for capturing a restored graph again before activation, when a dependency may have changed after restore. Equal to the dependencies' values at a wave boundary, so the kernel need not expose its input records |
+| The first-activation wrapper | It stands in for the seed (the user's choice); with a seed it would go |
+| Ended nodes as ended states; the held-ended refusal | What P5 leaves without a seed and an exception; see the finding above |
+
+The kernel side, `idle()` and `privateState(id)`, is listed in the kernel README.

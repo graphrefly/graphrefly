@@ -29,7 +29,7 @@ Labels:
 | C-35 partial wiring | — | — | — | partial first-run gate, rewire, acquisition failure |
 | C-36 input frames and terminal admission | 3 clauses | — | resumeAll INVALIDATE hold (decided) | 3 clauses: pause module |
 | C-37 upstream routing | — | — | — | K9 routing, rewire |
-| C-38 restore and replay | — | — | — | checkpoint, replay modules |
+| C-38 restore and replay | — | — | — | checkpoint module (replayed 2026-11-08: 4 clauses, see below); replay module, namespaces, resources |
 | C-39 revision evidence | — | — | — | revision observer (O9) |
 | C-22 rewire during an open batch (activated R-rewire-batch-boundary; replayed 2026-11-08) | 6 clauses, and rollback from @2 | — | only when the node has batch output: every topology request in a body waits (K8) | — |
 | C-8 runtime rewire (activated R-rewire; replayed 2026-11-08) | 6 clauses with `replace`; with `rewire` (same day) also cache kept, surgical, idempotent, sentinel wait, terminal D | mid-wave removal (K8) | mid-fn rewire queued (K8); with `replace` also the five `rewire` covers | first-run gate (sugar) |
@@ -182,6 +182,20 @@ clauses about early partial work and abandoned wiring are Not modeled; rewire is
 
 Upstream connection routing is K9, not covered; rewire, checkpoint, replay and revision evidence are
 modules. Nothing in these three is kernel-only.
+
+C-38 was replayed on 2026-11-08 against the [checkpoint module](../modules/README.md), in
+[checkpoint.test.mjs](../modules/checkpoint.test.mjs):
+
+| Clause | Label | Where |
+|---|---|---|
+| Actual live receipts survive without PULL or invented live DATA | Module: restore sends nothing; the saved value is a START snapshot | "restore builds the topology, runs no fn and sends nothing"; "a first subscription gets the saved value..." |
+| Restore alone does not evaluate fn | Module | same, and "a chain of restored nodes..." |
+| Genuine pre-attachment changes use the latest refresh, without replaying lost history | Module (the user's choice over TS, which keeps the restored value) | "C-38: an upstream change before the first subscription runs the fn once..." |
+| Rebuild physical callbacks through a registered recipe | Module: fns come from the registry by ref | "a missing recipe fails the restore" |
+| Ended input does not bind to a new source execution | Not reached: a live node holding an ended input is refused at capture (P5) | "P5: a node that has not ended but holds an ended dependency..." |
+| Replay history survives | Module not built (replay) | — |
+| Namespace watermarks, retired names, observation sequence | Not modeled: the kernel has no namespaces | — |
+| Rebuild resources | Not covered (R-resource-reattach) | — |
 
 ### C-8 (replayed 2026-11-08 against `replace`)
 
