@@ -88,7 +88,12 @@ export function createGraph({ report: hostReport } = {}) {
   };
 
   // True when node n depends, directly or transitively, on node targetId.
-  const dependsOn = (n, targetId) => n.deps.some((d) => d === targetId || dependsOn(nodeOf(d), targetId));
+  // Through current or declared dependencies: a node's dependencies go back to the declared ones
+  // when its lifetime closes (F7), so a path on either could form a cycle later. Found by the
+  // migration of the rewire tests (2026-11-10): checking current ones only let a rewire and a
+  // later end leave a cycle.
+  const edgesOf = (n) => [...new Set([...n.deps, ...n.declaredDeps])];
+  const dependsOn = (n, targetId) => edgesOf(n).some((d) => d === targetId || dependsOn(nodeOf(d), targetId));
 
   function makeNode(id, kind, deps, fn, opts, initial) {
     if (nodes.has(id)) throw new KernelError(`duplicate node ${id}`);
@@ -99,6 +104,10 @@ export function createGraph({ report: hostReport } = {}) {
     const values = seed ? [...(seed.values ?? [])] : initial !== undefined ? [initial] : [];
     const n = {
       id, kind, deps, fn,
+      // F7 (decided by the user 2026-11-10): the declared dependencies, the definition's; `deps` is
+      // the current lifetime's, which ctx.rewire may change and which goes back to these when the
+      // lifetime closes.
+      declaredDeps: deps,
       terminal: { complete: "auto", error: "auto", ...(opts?.terminal ?? {}) }, // O6
       // K6 (decided by the user 2026-11-09): auto, an input's INVALIDATE invalidates this node
       // without running its function; manual, it is the function's input (ctx.deps[i].invalidated).
@@ -189,6 +198,10 @@ export function createGraph({ report: hostReport } = {}) {
     lifetime.open = false;
     lifetime.controller?.abort();
     releaseDeps(n);
+    // F7: a rewire belongs to the lifetime that asked for it; the next one starts from the
+    // declared dependencies.
+    n.deps = n.declaredDeps;
+    n.inputs = n.deps.map(freshInput);
     const { cleanup } = lifetime;
     lifetime.cleanup = null;
     if (cleanup) runCleanup(n, cleanup);
@@ -320,6 +333,14 @@ export function createGraph({ report: hostReport } = {}) {
           if (!lifetime.open) lifetime.controller.abort();
         }
         return lifetime.controller.signal;
+      },
+      rewire(deps) {
+        if (!lifetime.open) return; // as ctx.down after close, before any check
+        assertDistinct("rewire", n, deps);
+        for (const d of deps) {
+          if (d === n.id || dependsOn(nodeOf(d), n.id)) throw new KernelError(`rewire: ${n.id} would depend on itself through ${d}`);
+        }
+        request(() => { if (lifetime.open && n.lifetime === lifetime) rewireNode(n, [...deps]); });
       },
     };
     running = n;
@@ -555,7 +576,7 @@ export function createGraph({ report: hostReport } = {}) {
     exchange(n, deps);
     if (old?.cleanup) runCleanup(n, old.cleanup);
     Object.assign(n, {
-      fn, lifetime: null, values: [], has: false, cache: undefined, ended: null, privateState: undefined, pending: false,
+      fn, declaredDeps: deps, lifetime: null, values: [], has: false, cache: undefined, ended: null, privateState: undefined, pending: false,
     });
     n.pendingDeps.clear();
     if (!n.active) return; // the next subscription activates the new instance
@@ -579,16 +600,20 @@ export function createGraph({ report: hostReport } = {}) {
     if (n.ended) closeLifetime(n);
   }
 
-  // ---- Rewire (C-8 surgical, 2026-11-08) -----------------------------------
+  // ---- Rewire (C-8 surgical, 2026-11-08; on ctx since 2026-11-10, F7) ---------
   //
-  // The node keeps its instance: lifetime, private state, retained value and fn runs go on.
-  // The added dependencies' START snapshots are this node's input in one wave, as an
-  // ordinary settlement: the fn runs and its output is delivered; if it sends nothing,
-  // nothing goes below. An added dependency with no value sends nothing, so the fn does not
-  // run for it. The new fn takes over the next run; a rewire alone causes none.
+  // ctx.rewire(deps): a node changes its own dependencies for the current lifetime. It keeps
+  // its instance and lifetime: private state, retained value and function go on. The added
+  // dependencies' START snapshots are this node's input in one wave, as an ordinary
+  // settlement: the fn runs and its output is delivered; if it sends nothing, nothing goes
+  // below. An added dependency with no value sends nothing, so the fn does not run for it.
+  // It is a request (K8), dropped if its lifetime has closed by the time it runs or was
+  // closed when it was asked for, as ctx.down is; when the lifetime closes, the dependencies
+  // go back to the declared ones. Until 2026-11-10 rewire was a graph request that could also
+  // change the function and outlived the lifetime, so mapOperator rewired itself back in a
+  // cleanup.
 
-  function rewireNode(n, deps, fn) {
-    n.fn = fn;
+  function rewireNode(n, deps) {
     const added = exchange(n, deps);
     if (added.some((i) => n.inputs[i].frames.length)) settle(n);
   }
@@ -697,19 +722,6 @@ export function createGraph({ report: hostReport } = {}) {
       }
       request(() => replaceNode(n, deps, fn));
     },
-    // Surgical: the same instance with a new dependency list and fn. A request (K8).
-    rewire(id, deps, fn) {
-      const n = nodeOf(id);
-      if (n.kind !== "node") throw new KernelError(`${id} is not a computed node`);
-      assertDistinct("rewire", n, deps);
-      for (const d of deps) {
-        if (d === id || dependsOn(nodeOf(d), id)) throw new KernelError(`rewire: ${id} would depend on itself through ${d}`);
-      }
-      // An ended instance has nothing to keep; replace gives the node a new one.
-      const check = () => { if (n.ended) throw new KernelError(`rewire: ${id} has ended`); };
-      if (!busy) check(); // a queued rewire reports this instead
-      request(() => { check(); rewireNode(n, deps, fn); });
-    },
     set(id, value) { hostInput(id, ["DATA", typeof value === "function" ? new Deferred(value) : value]); },
     invalidate(id) { hostInput(id, ["INVALIDATE"]); },
     complete(id) { hostInput(id, ["COMPLETE"]); },
@@ -767,13 +779,14 @@ export function createGraph({ report: hostReport } = {}) {
     // definition its recipe built (C6, decided by the user 2026-11-10); reading changes nothing.
     definition(id) {
       const n = nodeOf(id);
-      return { deps: [...n.deps], fn: n.fn };
+      return { deps: [...n.declaredDeps], fn: n.fn };
     },
     // The private state of the node's current lifetime, as of now (undefined without one).
     // Read for a checkpoint (R-snapshot); the kernel keeps no copy and never reads it.
     privateState(id) { return nodeOf(id).privateState; },
-    // P1: the topology as data, in creation order: each node's id, kind, declared
-    // dependencies and whether it is quiet (H6). Read-only; a structural subset of TS
+    // P1: the topology as data, in creation order: each node's id, kind, current
+    // dependencies (its lifetime's, which a ctx.rewire may have changed; definition(id) gives
+    // the declared ones) and whether it is quiet (H6). Read-only; a structural subset of TS
     // describe(), without values or status.
     describe() {
       return [...nodes.values()].map((n) => ({ id: n.id, kind: n.kind, deps: [...n.deps], quiet: n.quiet }));

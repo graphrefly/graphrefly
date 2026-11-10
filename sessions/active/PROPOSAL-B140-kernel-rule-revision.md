@@ -527,5 +527,9 @@ replace（请求，不是消息）给节点新实例，它的 sink 会再收到 
 "没有 execution 层"删掉。C6：内核加 `definition(id)`（依赖和当前实例的函数，只读），checkpoint 在定义（不只是依赖）和 recipe
 当初建的不同时把节点判为 local-only；只换函数的 replace 或 rewire 不再被当作旧 recipe 恢复。没有做 recipe 层的 replace。
 
-接下来按顺序讨论
-模块组合（F6）、函数经闭包发请求（F7），最后是数组快照（F4）。
+**F7 已定（用户，2026-11-10）：rewire 搬到 ctx 上。** `ctx.rewire(deps)` 只改自己的依赖、不改函数，属于发起它的 lifetime（lifetime
+关闭后发出或执行的都丢掉），lifetime 关闭时依赖还原为声明的那组；图上的 `rewire(id, deps, fn)` 去掉，宿主改定义只用 replace。
+mapOperator 不再在清理里把自己 rewire 回去；`definition(id)` 给声明的依赖，`describe()` 给当前的。经图发的其他请求（replace
+别的节点、写 state）仍然没有作用域，由函数自己用 signal 管；"声明写入目标"等有消费者再说，R-no-imperative 写明这一点。
+
+接下来做模块组合（F6：四种模块都要能恢复，用户 2026-11-10 定），最后讨论数组快照（F4）。

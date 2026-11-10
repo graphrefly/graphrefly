@@ -424,9 +424,11 @@ sourceId ──► id ◄── id/inner/0, id/inner/1, ... ◄── (each proj
 `{ id }`. `id` depends on the source and on every live inner and forwards their values. It completes
 once the source has completed and no inner is live, and ends with ERROR on a source or inner ERROR or a
 throwing projector, after the inner values it forwarded in that wave. Each change of the inner set is
-one `rewire`, asked for during the wave and run after it (K8), as TS's `rewireNext` is drained at the
-boundary; an added inner's value arrives as an ordinary input wave. The function finds its
-dependencies by `ctx.deps[i].id`. When `id` deactivates, it goes back to no inner.
+one `ctx.rewire`, asked for during the wave and run after it (K8), as TS's `rewireNext` is drained at
+the boundary; an added inner's value arrives as an ordinary input wave. The function finds its
+dependencies by `ctx.deps[i].id`. When `id` deactivates, it goes back to no inner: the rewire belongs
+to the lifetime, so closing it puts back `[sourceId]` (F7, 2026-11-10; until then a cleanup rewired
+the operator back).
 
 `project(value)` returns the inner's definition `{ deps, fn }`; to follow a node X that already
 exists, project to `{ deps: [X], fn: relay }`. The definition goes into an inner node with `replace` (a
@@ -532,8 +534,9 @@ const r = restore(cp, registry);                            // a new graph, noth
 - A node is restorable when built through `recipes`: a state, or a computed node whose fn is
   `registry[ref](config)`, which returns the function or `{ fn, setup }`. Function bodies are never
   saved. A node built another way, or a recipe
-  node whose definition has changed since (its dependencies or its function, by `rewire` or
-  `replace`, as `mapOperator` does), is saved as local-only, and restoring it fails, as R-snapshot
+  node whose definition has changed since (its dependencies or its function, by `replace`), or
+  that is rewired for its current lifetime (`ctx.rewire`, as `mapOperator` does), is saved as
+  local-only, and restoring it fails, as R-snapshot
   has it. The function is compared through the kernel's `definition(id)`, so a change made by any
   path is seen; until 2026-11-10 only the dependencies were compared, and a replace that kept them
   but changed the function restored as the old recipe (C6, from the Codex review).
@@ -601,8 +604,8 @@ to be re-issued or recorded as unknown.
 - A node holding an ended dependency comes back and works; the ended node does not run, also when a
   new subscriber gets its snapshot.
 - Refusals:
-  - local-only nodes: built without a recipe, or rewired, including rewired after restore and before
-    activation, or given a new function by replace or rewire with the same dependencies;
+  - local-only nodes: built without a recipe, rewired for the current lifetime, or given a new
+    function by replace with the same dependencies;
   - a missing recipe;
   - capture inside a wave or a batch body;
   - values that are not JSON.

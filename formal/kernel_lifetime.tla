@@ -14,7 +14,10 @@ belongs to, when cleanups run, and in what order requests run.
 
 Topology: a state S, computed P over S, A over P, M over A, and N over {A} at
 first. A rewire or replace may give N the dependencies {P}, {A} or {P, A}, so
-P is shared between A and N. Host sinks can subscribe to M and N. All nodes
+P is shared between A and N. A rewire is N's own, through a ctx (decided by the
+user 2026-11-10, F7): it carries the lifetime it was asked in and is dropped
+unless that lifetime is still N's open one, and closing a lifetime puts back
+N's declared dependencies, which only a replace changes. Host sinks can subscribe to M and N. All nodes
 use the default auto terminal policies.
 
 Every request is one step that runs to its end; the requests a sink callback,
@@ -71,6 +74,10 @@ Invariants, each mutation-checked (see formal/README.md):
   KeptUpstreamStays      no node's lifetime closes and opens again within one
                          request, other than the node a replace renews: rewire
                          and replace acquire before they release
+  DeclaredWhenClosed     a computed node without an open lifetime is on its
+                         declared dependencies: a rewire lasts for its lifetime
+  RewireOfThisLifetime   a node off its declared dependencies was rewired in its
+                         current lifetime, never by a request from an older one
   RewireKeeps            rewire keeps the instance: its lifetime, private
                          state, values and sinks (R-request-order)
   FIFO                   requests run in the order they were made
@@ -105,9 +112,12 @@ ChoiceFns == {[P |-> "plain", A |-> "plain", M |-> "plain", N |-> x] :
 
 Rq(t, n, d) == [t |-> t, n |-> n, d |-> d, w |-> <<"", 0>>, s |-> 0, c |-> FALSE]
 TopoReq == {Rq("sub", x, {}) : x \in Sinks} \cup {Rq("unsub", x, {}) : x \in Sinks}
-           \cup {Rq("rewire", "N", D) : D \in DepChoices}
            \cup {Rq("replace", "N", D) : D \in DepChoices}
 Req == TopoReq \cup {Rq("set", "S", {}), Rq("complete", "S", {})}
+\* A rewire through N's ctx of its latest lifetime, open or already closed.
+RwReq(s) == {[Rq("rewire", "N", D) EXCEPT !.w = <<"N", s.life["N"]>>] : D \in DepChoices}
+TopoReqNow(s) == TopoReq \cup RwReq(s)
+ReqNow(s) == Req \cup RwReq(s)
 LateReq(w) == [Rq("late", w[1], {}) EXCEPT !.w = w]
 CommitReq(s, c) == [Rq("commit", "S", {}) EXCEPT !.s = s, !.c = c]
 
@@ -154,7 +164,8 @@ AutoComplete(s, n) ==
 CloseLife(s, n) ==
   IF ~s.open[n] THEN s
   ELSE LET s1 == [s EXCEPT !.open[n] = FALSE, !.closedNow = @ \cup {n}]
-       IN RunCleanups(ReleaseAll(s1, n, s1.deps[n]), n, s.life[n])
+           s2 == ReleaseAll(s1, n, s1.deps[n])
+       IN RunCleanups([s2 EXCEPT !.deps[n] = s2.decl[n]], n, s.life[n])   \* a rewire ends here
 
 ReleaseAll(s, m, D) ==
   IF D = {} THEN s ELSE LET d == Min(D) IN ReleaseAll(Release(s, d, m), m, D \ {d})
@@ -237,9 +248,9 @@ Exchange(s, n, D, c) ==
        IN ReleaseAll(AcquireAll(s1, n, added, c), n, removed)
 
 \* Rewire keeps the instance; the added dependencies' snapshots are one input wave.
-\* An ended node refuses a rewire.
-Rewire(s, D, c) ==
-  IF s.ended["N"] THEN s
+\* It is dropped unless the lifetime it was asked in is N's open one (an ended N has none).
+Rewire(s, D, c, lid) ==
+  IF ~(s.open["N"] /\ s.life["N"] = lid) THEN s
   ELSE LET added == D \ s.deps["N"]
            s1    == Exchange(s, "N", D, c)
            s2    == IF s.active["N"] /\ \E d \in added : s1.has[d] \/ s1.ended[d]
@@ -250,7 +261,7 @@ Rewire(s, D, c) ==
                        /\ (s.priv["N"] # 0 => s2.priv["N"] = s.priv["N"])
                        /\ (s.has["N"] => s2.has["N"])
                        /\ s2.sink = s.sink
-       IN [s2 EXCEPT !.rwOK = @ /\ keeps]
+       IN [s2 EXCEPT !.rwOK = @ /\ keeps, !.rwLife = lid]
 
 \* Replace closes the instance (its late output is dropped, its cleanups run after the
 \* exchange) and starts a new one under the same subscribers, as on a first activation.
@@ -262,7 +273,7 @@ Replace(s, D, c) ==
              ELSE [s0 EXCEPT !.deps[n] = {}]   \* an ended instance has released its dependencies
       s2  == Exchange(s1, n, D, c)
       s3  == IF old THEN RunCleanups(s2, n, s.life[n]) ELSE s2
-      s4  == [s3 EXCEPT !.has[n] = FALSE, !.ended[n] = FALSE, !.priv[n] = 0]
+      s4  == [s3 EXCEPT !.has[n] = FALSE, !.ended[n] = FALSE, !.priv[n] = 0, !.decl[n] = D]
   IN IF ~s4.active[n] THEN s4 ELSE FirstRun(OpenLife(s4, n), n, c)
 
 Exec(s, r, c) ==
@@ -270,7 +281,7 @@ Exec(s, r, c) ==
     [] r.t = "unsub"    -> Unsub(s, r.n)
     [] r.t = "set"      -> SourceWave(s, c, 1, FALSE)
     [] r.t = "complete" -> SourceWave(s, c, 0, TRUE)
-    [] r.t = "rewire"   -> Rewire(s, r.d, c)
+    [] r.t = "rewire"   -> Rewire(s, r.d, c, r.w[2])
     [] r.t = "replace"  -> Replace(s, r.d, c)
     [] r.t = "late"     -> LateOut(s, r.w, c)
     [] r.t = "commit"   -> SourceWave(s, c, r.s, r.c)
@@ -299,13 +310,13 @@ Issued(s, e) == [s EXCEPT !.nid = @ + 1]
 \* The host makes a request at a wave boundary; it runs at once.
 HostRequest ==
   /\ k.phase = "idle" /\ k.nid < MaxReq
-  /\ \E r \in Req, c \in ChoiceFns :
+  /\ \E r \in ReqNow(k), c \in ChoiceFns :
        LET e == Entry(k, r, 0) IN k' = Start(Issued(k, e), e, c)
 
 \* A sink callback, node function or cleanup makes a request while one runs: it waits.
 CallbackRequest ==
   /\ k.phase = "busy" /\ k.nid < MaxReq
-  /\ \E r \in Req :
+  /\ \E r \in ReqNow(k) :
        LET e == Entry(k, r, 0) IN k' = [Issued(k, e) EXCEPT !.queue = Append(@, e)]
 
 \* Late work calls its old ctx.down: a request like any other.
@@ -329,7 +340,7 @@ EndRequest ==
 \* ---- batch ----
 NoBatch == [id |-> 0, from |-> "idle", sets |-> 0, term |-> FALSE, reqs |-> <<>>, snap |-> <<>>]
 
-Proj(s) == <<s.active, s.sink, s.deps, s.edge, s.has, s.valLife, s.ended, s.life, s.open,
+Proj(s) == <<s.active, s.sink, s.deps, s.decl, s.edge, s.has, s.valLife, s.ended, s.life, s.open,
              s.priv, s.cl, s.late, s.sGen, s.queue, s.nid, s.lastDone, s.finished>>
 
 \* The body runs at once, at a boundary or from a callback while a request runs.
@@ -350,7 +361,7 @@ BodyComplete ==
 
 BodyRequest ==
   /\ k.phase = "body" /\ k.nid + Len(k.batch.reqs) + 2 <= MaxReq
-  /\ \E r \in TopoReq : k' = [k EXCEPT !.batch.reqs = Append(@, r)]
+  /\ \E r \in TopoReqNow(k) : k' = [k EXCEPT !.batch.reqs = Append(@, r)]
 
 BodyThrow ==
   /\ k.phase = "body"
@@ -373,7 +384,7 @@ BodyReturn ==
 Init ==
   \E sa, sn \in BOOLEAN :
   k = [setup |-> [n \in Nodes |-> (n = "A" /\ sa) \/ (n = "N" /\ sn)], active |-> [n \in Nodes |-> FALSE], sink |-> [x \in Sinks |-> FALSE],
-       deps |-> InitDeps, edge |-> {},
+       deps |-> InitDeps, decl |-> InitDeps, rwLife |-> 0, edge |-> {},
        has |-> [n \in Nodes |-> n = "S"], valLife |-> Zero, ended |-> [n \in Nodes |-> FALSE],
        life |-> Zero, open |-> [n \in Nodes |-> FALSE], priv |-> Zero,
        cl |-> <<>>, late |-> {}, sGen |-> 0,
@@ -413,6 +424,8 @@ OneCleanupPerLifetime ==
 RunOncePerRequest == k.runOK
 KeptUpstreamStays == k.reopenOK
 RewireKeeps == k.rwOK
+DeclaredWhenClosed == \A m \in Computed : ~k.open[m] => k.deps[m] = k.decl[m]
+RewireOfThisLifetime == k.deps["N"] # k.decl["N"] => k.rwLife = k.life["N"]
 \* Ids are given in the order requests are made (a batch's requests right after its
 \* commit), so FIFO is: each request that starts is the next id.
 FIFO == k.fifoOK

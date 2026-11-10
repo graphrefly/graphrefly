@@ -231,7 +231,8 @@ and labels the clauses it does not reproduce. Tests are in [replay.test.mjs](rep
 ### C-8 again (replayed 2026-11-08 against `rewire`)
 
 After `mergeMap` on `replace` showed what replace costs it (decision 1 below), the user asked the
-same day for the surgical form as a kernel request, `rewire(id, deps, fn)`. Tests are in
+same day for the surgical form as a kernel request, `rewire(id, deps, fn)`; since 2026-11-10 it is
+`ctx.rewire(deps)`, the node's own and for its lifetime (F7). Tests are in
 [replay.test.mjs](replay.test.mjs), section "C-8 again, against rewire". The clauses that changed
 label:
 
@@ -242,7 +243,7 @@ label:
 | (4) D's cache is preserved across every rewire (R-rom-ram) | Kernel | replay: "C-8 rewire (4)(5)..." |
 | (6) Rewiring to the current set is idempotent | Kernel | replay: "C-8 rewire (6)..." |
 | Kept dependencies keep their subscription and record, no unsubscribe and resubscribe | Kernel, across a reorder too | kernel: "rewire: kept dependencies keep their records across a reorder" |
-| Rejects a rewire on a terminal D | Kernel (`replace` stays the way to give an ended node a new instance, O7) | replay: "C-8 rewire: a rewire on a terminal D is refused..." |
+| Rejects a rewire on a terminal D | Differs since 2026-11-10 (F7): the rewire is D's own, through its ctx, and an ended D's lifetime has closed, so it is dropped, not refused; `replace` stays the way to give an ended node a new instance (O7) | replay: "C-8 rewire: a rewire on a terminal D is dropped..." |
 | Rewiring to zero dependencies: cache preserved, no auto-deactivate | Kernel | replay: "C-8 rewire: to zero dependencies..." |
 | Rejects a mid-fn rewire as the D37 feedback ERROR | Still Changed (K8): queued until the wave is over (decision 3) | kernel: "rewire: requested from inside a node function..." |
 | Removal while A's DIRTY is in flight; a removed dependency's queued INVALIDATE is drained | Still Decided away (K8) |  |

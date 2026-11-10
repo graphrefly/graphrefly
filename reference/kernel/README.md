@@ -23,7 +23,7 @@ npm run test:reference
 ## Surface
 
 The graph: `createGraph({ report })` takes an optional host reporter. Then `state(id, initial)`, `node(id, deps, fn, { terminal, quiet, seed })`,
-`subscribe(sinkId, id, callback?)`, `unsubscribe`, `replace(id, deps, fn)`, `rewire(id, deps, fn)`, `set`, `invalidate`, `complete`, `error`, `batch`,
+`subscribe(sinkId, id, callback?)`, `unsubscribe`, `replace(id, deps, fn)`, `set`, `invalidate`, `complete`, `error`, `batch`,
 `get(id)` (`active`, `has`, `value`, `ended`), `status(id)`, `describe()`, `idle()`, `privateState(id)`, `definition(id)` and `trace`.
 
 `idle()` and `privateState(id)` were added 2026-11-08 for the checkpoint module, as reads only:
@@ -31,7 +31,7 @@ The graph: `createGraph({ report })` takes an optional host reporter. Then `stat
 there), and `privateState(id)` is the private state of the node's current lifetime (R-snapshot
 saves all of it). The kernel never reads either. TS reads the same through internal accessors.
 `definition(id)` was added 2026-11-10 for the same module, also a read: a node's dependencies and
-its current instance's function (null for a state), so checkpoint can tell that a replace or rewire
+its current instance's function (null for a state), so checkpoint can tell that a replace
 changed the function even with the dependencies unchanged (C6).
 
 Three scopes nest (R-node, stated 2026-11-10 after the reviews found "no execution layer" untrue):
@@ -66,8 +66,8 @@ the ban:
 - So the first run of a lifetime (activation, or replace's new instance) can see a terminal in a
   snapshot, and K5 applies there as in a settlement: with auto policy an ERROR ends the node without
   running its fn, and once every dependency has ended, COMPLETE follows the run.
-- A rewire of an ended node is still refused: the instance has nothing to keep, and `replace` gives
-  it a new one.
+- A rewire of an ended node is dropped (refused until 2026-11-10, when rewire moved onto ctx): its
+  lifetime has closed, and `replace` gives it a new instance.
 - The same graph no longer behaves differently by when a subscription comes, before or after a
   dependency ended, and restore needs no exception.
 - TS refuses a subscription to an ended non-resubscribable node (R-terminal, R2.2.7.b), so a new
@@ -135,7 +135,7 @@ registration while the lifetime is open is accepted, and `onInvalidate` hooks we
 | A registration after close runs once at once | Ignored | R-cleanup-hooks@2 (draft) |
 | `replace(id, deps, fn)`: graph-level replace of one computed node, at a wave boundary | No counterpart: TS restarts through `resubscribable` | Added 2026-11-08 for the restart module (O7): a fresh instance under the same id |
 | `set(id, fn)`: given a function, the value is computed from the state's value when the write runs in request order (in a batch, from the writes staged before it, at the commit); a function that returns the value it was given writes nothing; a throw fails the write, in a batch the whole commit; a plain value is always written, and a function is written as a value only wrapped (`set(id, () => f)`) | TS's state `set` takes a value only (only TS's adapter store has `update(fn)`); TS's pause lock set lives inside the paused node | Added 2026-11-10 at the user's choice (root cause 3 of the D797 review), first as a separate `update(id, fn)` and folded into `set` the same day, as React's `setState`: `set` replaces the whole value and cannot read a write still queued, so the pause handle kept its own lock set and demand and restart kept request counters in closures, outside the graph and lost on restore. The identity bail-out follows React's `setState(prev => prev)`, so a resume of a lock nobody holds starts no wave |
-| `rewire(id, deps, fn)`: one request with the whole new dependency list and fn; from inside a function it is queued (K8) | `ctx.rewireNext.subscribeDep`/`unsubscribeDep`/`replaceDeps` (D47), and the immediate `subscribeDep`/`unsubscribeDep`/`replaceDeps` on a node | Added 2026-11-08 at the user's request, after mergeMap on `replace` showed what replace costs it. One form: the kernel compares the lists, so add, remove and reorder are the same request |
+| `ctx.rewire(deps)` (on ctx since 2026-11-10, F7; a graph `rewire(id, deps, fn)` before): one request with the node's whole new dependency list, for its current lifetime; queued from inside the function (K8), dropped once the lifetime has closed, and undone when it closes | `ctx.rewireNext.subscribeDep`/`unsubscribeDep`/`replaceDeps` (D47), and the immediate `subscribeDep`/`unsubscribeDep`/`replaceDeps` on a node | Added 2026-11-08 at the user's request, after mergeMap on `replace` showed what replace costs it. One form: the kernel compares the lists, so add, remove and reorder are the same request |
 | A `subscribe`, `unsubscribe`, `replace` or `rewire` made in a batch body runs after the commit, in request order; a throwing body drops it with the inputs | A rewire waits for the batch only when its node has uncommitted batch output, and is dropped on rollback; any other topology change runs at once | O3 and K8 (2026-11-08): nothing is delivered before commit, and a topology change delivers (a START snapshot, a settlement, cleanups), so it waits like any request made during a wave |
 | `node(..., { seed })`: value, terminal and private state; the first activation runs the fn | `restoreStateOfNode` after construction, also restoring status, version and first-call history; the first activation does not run the fn | Added 2026-11-08 for restore. Not running the fn is the checkpoint module's wrapper; there is no first-run gate, status is derived (K10), and versions are O9 |
 | A START snapshot carries every DATA value of the node's last array that had any | It carries the cached value only, unless the node has `replayBuffer: N`; a new dependent's fn runs once per replayed value | K3 changed by the user, 2026-11-08: the array is the unit (R-wave-boundary), so a late subscriber sees what the node last sent. History across arrays is a module, not `replayBuffer` |
@@ -143,7 +143,7 @@ registration while the lifetime is open is accepted, and `onInvalidate` hooks we
 | `derived` needs every input on every run: after an input is invalidated it waits for a new value | The first-run gate (`partial: false`) checks only before the first run (R-first-run-gate); later the fn runs with a missing input as SENTINEL. `partial: true` turns the gate off | The user's choice, 2026-11-08: no SENTINEL to guard, and one rule for every run. There is no `partial` option: a gate is sugar (DS-17), and a plain node fn, `merge`, `zip` or `withLatestFrom` is what `partial: true` was. R-first-run-gate@2's clause that an INVALIDATE before the first run removes eligibility holds |
 | No `ctx.up` or `upNext`: nothing travels up the graph | `ctx.up` and `ctx.upNext` route DIRTY, PAUSE, RESUME, PULL, INVALIDATE and TEARDOWN along declared connections (R-ctx-up, R-up-routing) | K9 decided away by the user, 2026-11-09. In TS's production code the only upward message is PULL from `ctx.upNext`; pause, demand and restart use declared control pairs (P11), and the builder holds the target's handle (O14) |
 | No TEARDOWN message and no `resetOnTeardown` | TEARDOWN is forwarded downstream, with a COMPLETE synthesized before it (R-teardown-complete) | Decided away by the user, 2026-11-09: TS's production code never originates it |
-| No `rewireNext`, `pull`, `environment`, `track`, `persist` | Present | `rewire` is queued from a function (K8); `pull` is the demand module; the rest are not covered yet (modules) |
+| No `rewireNext`, `pull`, `environment`, `track`, `persist` | Present | `ctx.rewire` is TS's `rewireNext` in one request, queued from a function (K8); `pull` is the demand module; the rest are not covered yet (modules) |
 
 The kernel does not know or care whether a late `ctx.down` came from async work.
 
@@ -249,17 +249,21 @@ Mutations checked on 2026-11-08, each failing at least one test:
   starts on its snapshot. REPLAY.md lists where it differs from R-rewire (C-8).
   Only the kernel can do this, because it rebinds the dependents' input records; the DS-17 rewire row
   had named only H4 (a seed), which restart does not need, so it is not implemented.
-- Rewire (added 2026-11-08, surgical, C-8): `rewire(id, deps, fn)` keeps the node's instance: its
-  lifetime, private state, retained value and subscribers stay, and sinks get no START. A dependency in
+- Rewire (added 2026-11-08, surgical, C-8; on ctx since 2026-11-10, F7): `ctx.rewire(deps)` changes
+  the node's own dependencies for its current lifetime and keeps the instance: its lifetime, private
+  state, function, retained value and subscribers stay, and sinks get no START. It is dropped if the
+  lifetime has closed when it is asked for or when it runs, and closing the lifetime puts back the
+  declared dependencies, which `definition(id)` gives while `describe()` gives the current ones.
+  Until then it was a graph request `rewire(id, deps, fn)` that could change the function and
+  outlived the lifetime, so mapOperator rewired itself back in a cleanup. A dependency in
   both lists keeps its connection and input record at its new position; a removed one is released
   without a wave (a request runs between waves, so nothing of it is pending, K8); an added one is
   acquired as at activation, before any is released. The added dependencies' START snapshots are the
   node's input in one ordinary settlement: the function runs and its output is delivered, its cone
   marked pending first if it sends a value (P3); if it sends nothing, nothing goes below. An added
-  dependency with no value sends nothing, so the function waits for it. The new fn takes over the next
-  run; a rewire alone causes none, so the current list is a no-op. An inactive node only changes its
-  definition. Refused for a state node, for itself or a cycle, for duplicate dependencies, and for an
-  ended node (`replace` gives it a new instance). An added dependency that has ended arrives as its
+  dependency with no value sends nothing, so the function waits for it. A rewire alone runs nothing,
+  so the current list is a no-op. Refused for itself or a cycle and for duplicate dependencies; an
+  ended node's rewire is dropped (`replace` gives it a new instance). An added dependency that has ended arrives as its
   snapshot, with its terminal (P5 relaxed; TS and C-8 refuse it). Removing the
   last dependency still open does not complete a `complete: "auto"` node, although every remaining
   one has ended: the auto completion is decided when a terminal arrives (K5). TS does the same

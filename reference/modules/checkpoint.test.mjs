@@ -171,38 +171,52 @@ test("an input that ended before the first subscription reaches the fn; one that
   assert.deepEqual(during(r2.g, () => r2.g.subscribe("k", "w")), ["k <- w: [START, DATA(\"-\")]"]);
 });
 
+// Adds to a registry a recipe `grab` that sums as `sum` does and keeps the ctx of its last run,
+// so a test can rewire the node through it (F7: a node rewires itself through ctx.rewire).
+function grabbing(reg, as = "sum") {
+  const seen = { ctx: null };
+  return { seen, reg: { ...reg, grab: (config) => { const fn = reg[as](config); return (ctx) => { seen.ctx = ctx; fn(ctx); }; } } };
+}
+
 test("a node without a recipe, or rewired since, is local-only and cannot be restored", () => {
-  const reg = registry();
+  const { seen, reg } = grabbing(registry());
   const b = recipes(createGraph(), reg);
   b.state("a", 1); b.state("b", 2);
-  b.node("s", ["a"], "sum");
+  b.node("s", ["a"], "grab");
   b.g.node("raw", ["a"], (ctx) => ctx.down([["DATA", 0]]));
-  b.g.rewire("s", ["a", "b"], reg.sum());
+  b.g.subscribe("k", "s");
+  seen.ctx.rewire(["a", "b"]);
   const cp = b.capture();
   assert.deepEqual(cp.nodes.filter((n) => n.local).map((n) => n.id), ["s", "raw"]);
   assert.throws(() => restore(cp, reg), /s is local-only/);
 });
 
-test("a restored node rewired before its first activation is local-only too", () => {
-  const reg = registry();
-  const r = restore(roundTrip(original().capture()), reg);
-  r.g.rewire("t", ["a"], reg.scan());
+// F7: an inactive restored node has no lifetime, so it cannot be rewired before its first
+// activation; after it, the rewire lasts for that lifetime only.
+test("a restored node rewired after its first activation (through its ctx) is local-only while the rewire lasts", () => {
+  const { seen, reg } = grabbing(registry(), "scan");
+  const r = restore(roundTrip(original().capture()), { ...reg, scan: reg.grab });
+  r.g.subscribe("kt", "t"); // the saved value, without running the fn
+  r.g.set("a", 4); // the fn runs, and its ctx is kept
+  seen.ctx.rewire(["a"]);
+  assert.deepEqual(r.g.describe().find((d) => d.id === "t").deps, ["a"]);
   assert.deepEqual(r.capture().nodes.filter((n) => n.local).map((n) => n.id), ["t"]);
+  r.g.unsubscribe("kt", "t"); // the lifetime closes: t is back to its recipe's dependencies
+  assert.deepEqual(r.capture().nodes.filter((n) => n.local).map((n) => n.id), []);
 });
 
 // C6 (Codex review; decided by the user 2026-11-10): the definition is the dependencies and the function.
-test("a replace or rewire that keeps the dependencies but changes the function makes the node local-only", () => {
+// Since F7 only replace can change the function; a rewire changes the dependencies only.
+test("a replace that keeps the dependencies but changes the function makes the node local-only", () => {
   const reg = { times: ({ k }) => (ctx) => { if (ctx.deps[0].has) ctx.down([["DATA", ctx.deps[0].value * k]]); } };
   const times3 = (ctx) => { if (ctx.deps[0].has) ctx.down([["DATA", ctx.deps[0].value * 3]]); };
-  for (const op of ["replace", "rewire"]) {
-    const b = recipes(createGraph(), reg);
-    b.state("a", 1); b.node("p", ["a"], "times", { k: 2 }); b.node("q", ["a"], "times", { k: 2 });
-    b.g.subscribe("s", "p");
-    b.g[op]("p", ["a"], times3);
-    const cp = roundTrip(b.capture());
-    assert.deepEqual(cp.nodes.filter((n) => n.local).map((n) => n.id), ["p"], `${op}: q keeps its recipe's definition`);
-    assert.throws(() => restore(cp, reg), /p is local-only/, `${op}: restoring it as the old recipe would give 4 where the original gives 6`);
-  }
+  const b = recipes(createGraph(), reg);
+  b.state("a", 1); b.node("p", ["a"], "times", { k: 2 }); b.node("q", ["a"], "times", { k: 2 });
+  b.g.subscribe("s", "p");
+  b.g.replace("p", ["a"], times3);
+  const cp = roundTrip(b.capture());
+  assert.deepEqual(cp.nodes.filter((n) => n.local).map((n) => n.id), ["p"], "q keeps its recipe's definition");
+  assert.throws(() => restore(cp, reg), /p is local-only/, "restoring it as the old recipe would give 4 where the original gives 6");
 });
 
 test("a missing recipe fails the restore", () => {

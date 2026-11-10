@@ -115,8 +115,11 @@ export function recipes(g, registry) {
       if (!g.idle()) throw new Error("capture: a wave or batch is running; capture at a wave boundary (O5)");
       return { nodes: g.describe().map(({ id, kind, deps }) => {
         const rec = made.get(id);
+        // `deps` (from describe) are the current lifetime's; a ctx.rewire changes them for the
+        // lifetime only (F7), and they are not saved, so a rewired node is local-only too.
         const current = g.definition(id);
-        if (!rec || !isDeepStrictEqual(rec.deps, deps) || (kind === "node" && current.fn !== rec.fn)) return { id, kind, deps, local: true };
+        const same = rec && isDeepStrictEqual(rec.deps, deps) && isDeepStrictEqual(rec.deps, current.deps);
+        if (!same || (kind === "node" && current.fn !== rec.fn)) return { id, kind, deps, local: true };
         if (rec.entry) return rec.entry; // restored, not activated since
         const saved = live(id, kind, deps);
         return json({ id, kind, deps, ...(kind === "node" && { ref: rec.ref, config: rec.config, opts: rec.opts }), ...(saved && { saved }) }, `node ${id}`);

@@ -9,7 +9,7 @@
 // `id` depends on the source and on every live inner and forwards the inners' values. It
 // completes once the source has completed and no inner is live, and ends with ERROR on a
 // source or inner ERROR or a throwing projector, after the inner values it forwarded in that
-// wave. A change of the inner set is one rewire, asked for during the wave and run after it
+// wave. A change of the inner set is one ctx.rewire, asked for during the wave and run after it
 // (K8), as TS's rewireNext is drained at the boundary; an added inner's value arrives as an
 // ordinary input wave. Dependencies are read by id (ctx.deps[i].id).
 //
@@ -73,13 +73,14 @@ function mapOperator(g, id, sourceId, project, mode, concurrent) {
       st.inners = mode === "switch" ? [added] : [...st.inners, added];
       changed = true;
     }
-    if (changed) g.rewire(id, [sourceId, ...st.inners.map((x) => x.node)], fn);
+    if (changed) ctx.rewire([sourceId, ...st.inners.map((x) => x.node)]);
     if (st.sourceDone && !st.inners.length) ctx.down([["COMPLETE"]]); // a waiting value implies a live inner
   };
 
-  // A fresh activation starts with no inner, as TS's does. Not after the operator ended.
-  const setup = () => () => { if (!g.get(id).ended) g.rewire(id, [sourceId], fn); };
-  g.node(id, [sourceId], fn, { terminal: { complete: "manual", error: "manual" }, setup });
+  // A fresh activation starts with no inner, as TS's does: the rewire belongs to the lifetime
+  // (F7, 2026-11-10), so the operator's dependencies go back to [sourceId] when it closes. Until
+  // then a cleanup rewired the operator back.
+  g.node(id, [sourceId], fn, { terminal: { complete: "manual", error: "manual" } });
   return { id };
 }
 
