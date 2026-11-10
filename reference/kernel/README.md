@@ -11,6 +11,10 @@ are meant to become conformance scenarios for them.
 npm run test:reference
 ```
 
+Since 2026-11-10, when the D797 kernel set was activated (graphrefly:D798), the kernel sends
+PENDING, the rules' name, where it sent DIRTY; the tests say PENDING too. Text below written before
+then still says DIRTY for the same message.
+
 ## Files
 
 | File | Contents |
@@ -405,7 +409,7 @@ Renamed 2026-11-07 after comparing with TS and other reactive libraries, on the 
 `announce`/`announced`/`dirtyDeps` → `markPending`/`pending`/`pendingDeps` (TS `_markDirty`; the
 user prefers "pending", which other libraries use for "possibly stale"), `retireInputs` →
 `releaseDeps` (one verb with `release`), `life` → `lifetime` (R-ctx-lifetime). The wire message
-keeps the spec's name DIRTY; renaming it is DS-17 O15. The earlier sections above keep the names
+kept the spec's name DIRTY until the rename (DS-17 O15) landed with the activation on 2026-11-10. The earlier sections above keep the names
 they were written with. `runWave` stays although TS `_runWave` runs one node's function (the
 kernel's `invoke`): here it runs the whole wave. `settle` stays too, on the user's decision: the
 spec uses the word (R-diamond "after all changed deps settle"), and TS has no function of that name.

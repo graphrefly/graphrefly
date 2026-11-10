@@ -4,14 +4,14 @@ This directory contains the TLA+ formal specification of the GraphReFly
 wave protocol. The CANONICAL normative source is [`spec/rules.jsonl`](../spec/rules.jsonl)
 (clean-slate); each TLA+ invariant pins one or more `R-*` rules.
 
-## D797 kernel models (draft, 2026-11-09)
+## D797 kernel models (active since 2026-11-10, graphrefly:D798; module models check draft module rules)
 
 New models for the D797 draft rules, written for graphrefly:B140. The models below verify the
 currently active rules and are retired or rescoped at activation, not edited now.
 
 | Module | Covers | Conformance |
 |---|---|---|
-| `kernel_wave.tla` (`kernel_wave.cfg`, `kernel_wave_3.cfg`) | R-wave, R-messages, R-invalidation, R-terminals, R-subscription, R-failure: a state S and a diamond S->B,C->D, B and C under the default auto policies and D under each combination of auto and manual COMPLETE, ERROR and INVALIDATE, chosen at Init; host inputs to S (set, a batch of two, invalidate, complete, error); computed nodes choose outputs from a menu that includes rejected arrays; nodes settle in every order the dependencies allow. Invariants: RunOnce, SettleOnce, FanInAfterSettle, NoWedge, PendingPrefix, InvalidateAlone, NoDataWithResolved, NoDataWithResolvedInRun, TerminalLastAndFinal, InvalidateEffective, RetainedMatchesSent, AutoErrorNoRun, AutoTerminals, ManualEndsByFunction, ManualSeesInput, ManualInvalidateKept, InvalidatedNotKept. TLC-green 2026-11-09 with the INVALIDATE policy and INVALIDATE marking the cone: two waves 990,778 distinct states (depth 11); three waves 114,655,914 distinct states (depth 16). 2026-11-10, with one run's output kept from carrying both DATA and RESOLVED (B140 evidence gaps; B's menu gained [RES],[D1] and [D1],[INV],[RES]): two waves 1,270,120 distinct states (depth 11); three waves not rerun yet (the last run needed about 19 GB of states and the larger menu needs more). | C-28, C-34, C-36, C-40, C-41, C-42, C-44 |
+| `kernel_wave.tla` (`kernel_wave.cfg`, `kernel_wave_3.cfg`) | R-wave, R-messages, R-invalidation, R-terminals, R-subscription, R-failure: a state S and a diamond S->B,C->D, B and C under the default auto policies and D under each combination of auto and manual COMPLETE, ERROR and INVALIDATE, chosen at Init; host inputs to S (set, a batch of two, invalidate, complete, error); computed nodes choose outputs from a menu that includes rejected arrays; nodes settle in every order the dependencies allow. Invariants: RunOnce, SettleOnce, FanInAfterSettle, NoWedge, PendingPrefix, InvalidateAlone, NoDataWithResolved, NoDataWithResolvedInRun, TerminalLastAndFinal, InvalidateEffective, RetainedMatchesSent, AutoErrorNoRun, AutoTerminals, ManualEndsByFunction, ManualSeesInput, ManualInvalidateKept, InvalidatedNotKept. TLC-green 2026-11-09 with the INVALIDATE policy and INVALIDATE marking the cone: two waves 990,778 distinct states (depth 11); three waves 114,655,914 distinct states (depth 16). 2026-11-10, with one run's output kept from carrying both DATA and RESOLVED (B140 evidence gaps; B's menu gained [RES],[D1] and [D1],[INV],[RES]): two waves 1,270,120 distinct states (depth 11); three waves 170,970,276 distinct states (depth 16, 48 min). | C-28, C-34, C-36, C-40, C-41, C-42, C-44 |
 | `kernel_lifetime.tla` (`kernel_lifetime.cfg`, `kernel_lifetime_4.cfg`) | R-lifetime, R-request-order: a state S and a chain S->P->A->M, with N over A that a rewire or replace moves to {P}, {A} or {P, A}; host sinks on M and N; each request (subscribe, unsubscribe, set, complete, rewire, replace, late output) is one step, a wave is one step in which each open node of the cone runs once, and the requests made while one runs wait in a queue; A and N may have a setup (chosen at Init) that registers the lifetime's one cleanup before the first run; runs may start late work that keeps its ctx, set private state or complete; one batch body, opened at a boundary or from a callback during a request, stages writes and topology requests, then returns or throws; opened during a request, its commit waits in the queue. Invariants: ActiveIffDemand, EdgesMatchDeps, OpenIffLive, InactiveHoldsNothing, StateKeeps, PrivOfCurrentLifetime, RetainedFromCurrentLifetime, CleanupOnce, ClosedRan, OpenNotRun, OneCleanupPerLifetime, RunOncePerRequest, KeptUpstreamStays, RewireKeeps, DeclaredWhenClosed, RewireOfThisLifetime, FIFO, AfterMaker, IdleDrained, BodyAfterCommit, ThrownDropped, BatchThrowNothing. TLC-green 2026-11-10 with the per-lifetime setup and N's rewire on its ctx (it carries its lifetime, and closing the lifetime puts back the declared dependencies): three requests 99,380 distinct states (depth 11, 3 s); four requests 2,242,372 distinct states (depth 13, 2 min). | C-29, C-31, C-33, C-35, C-37, C-41 |
 | `module_pause.tla` (`module_pause.cfg`, `module_pause_6.cfg`) | R-pause: the one-node pausable of `reference/modules/pause.mjs` (pausableFn over the input and a lock state, manual COMPLETE, ERROR and INVALIDATE) run over the kernel's settle semantics beside a pausable written from R-pause's text; each wave is one host batch to the input (writes, INVALIDATE, a terminal) and/or a new lock set. Every array the input sends marks the pausable pending, an INVALIDATE included; an INVALIDATE the pausable sends while it has no value is dropped, and the wave settles with RESOLVED. The two-node version (pauseLog, then release) was retired on 2026-11-09, when INVALIDATE got a manual policy. Invariants: Refines (wave-by-wave output equal, a trailing terminal compared in an array of its own), HeldMatches, NoValueWhilePaused, EndsWithInput. TLC-green 2026-11-09: four waves 1,542 distinct states (depth 5); six waves 12,823 distinct states (depth 7, 4 s). | C-30 |
 | `module_demand.tla` (`module_demand.cfg`, `module_demand_7.cfg`) | R-demand: the one-node pullable of `reference/modules/demand.mjs` (the quiet holder over the input and a demand state, manual COMPLETE and INVALIDATE, auto ERROR) run over the kernel's settle semantics beside a holder written from R-demand's text; a step is a host batch writing the input and making zero, one or two pulls, or the sink subscribing or unsubscribing; the service sends one DATA or stays silent. Nothing goes out in the wave; the holder's INVALIDATE, service output and terminal go out as a later wave, the INVALIDATE dropped while the holder has no value. The two-node version (pullLog, then the holder) was retired on 2026-11-09, when INVALIDATE got a manual policy. Invariants: Serves, OutputMatches, HeldMatches, ServeOnlyOnPull, InactiveHoldsNothing, EndsWithInput. TLC-green 2026-11-09: five steps 15,678 distinct states (depth 6); seven steps 140,323 distinct states (depth 8, 1 min). | C-32 |
@@ -184,458 +184,58 @@ fanout timing, a request and an inner terminal in one wave, and U's lifetime: th
 on the inner's dependencies (C5a, 2026-11-10) keeps U active across attempts is pinned by the
 restart tests; this model's U has no lifetime, only whether it has ended.
 
-## Clean-slate module map (CSP-0)
+## Retired models (deleted at the D797 kernel activation, graphrefly:D798, 2026-11-10)
 
-> Note (2026-11-10, B140 evidence gaps): everything from here on describes the models of the
-> currently active rules; they are retired or rescoped when the D797 kernel set activates (D798).
-> Two exercise MCs named in the batch notes below, `wave_protocol_custom_equals_MC` and
-> `wave_protocol_equals_false_MC`, no longer exist, and `wave_protocol_q14_MC.tla` (the DS-13.5.A Q14
-> INVALIDATE coverage, with no `.cfg`) is in none of the tables.
+These models checked the rules the D797 kernel set replaced. They were deleted when that set was
+activated (the user's choice, 2026-11-09: authority counts formal coverage by the rule ids that files
+under `formal/` mention, so a model left in place would count as coverage of rules it no longer
+checks). Git history keeps them, with the README sections that described them. Each one's destination:
 
-| Module | Covers | Conformance |
-|---|---|---|
-| `wave_protocol.tla` (+ 16 MCs) | core wave protocol — R-dirty-before-data, R-two-phase, R-diamond, R-terminal, R-ctx-up, R-pause-*, R-invalidate-*, R-cleanup-*, R-deps-terminal | C-3, C-5 |
-| `wave_xgraph.tla` | cross-graph diamond — R-diamond + R-graph-domain across a wire bridge (L2.F) | **C-1** |
-| `wave_async.tla` | mixed sync/async diamond — R-graph-domain + R-first-run-gate with a LocalAsync leg | **C-4** |
-| `wave_async_paused.tla` | async-result-at-paused-node — R-async-paused + R-pause-lockset | **C-2** |
-| `wave_reentrancy.tla` | synchronous feedback-cycle rejection — R-reentrancy (node-local in-wave reject; cyclic→ERROR at the cycle-closing compute node, acyclic→clean) | **C-6** |
-| `wave_up_source.tla` | upstream control at a depless source — R-up-at-source (INVALIDATE→honor: self-invalidate + down-cascade; DIRTY/TEARDOWN→drop) | **C-7** |
-| `wave_paused_invalidate.tla` | INVALIDATE arriving at a paused compute node — R-paused-invalidate (D50; INVALIDATE supersedes the buffered paused dep-wave, attributed cancellation; ChangedImpliesLive mutation-verified) | **C-13** |
-| `wave_rewire.tla` | intra-graph runtime rewire (dep side) — R-rewire (replaceDeps/subscribeDep/unsubscribeDep; modeled by the internal SetDeps action for replace semantics plus subscribe/unsubscribe special cases; per-node Q1–Q7 + rewire×INVALIDATE drain + rewire×terminal reject) | **C-8** |
-| `wave_rewire_emit.tla` | rewire cross-axis (emit side) — R-rewire (rewire×multi-sink fanout + cache-integrity across rewire; the downstream-emit dimension wave_rewire.tla omits) | **C-8** |
-| `wave_rewire_deferred.tla` | wave-boundary deferred SELF-rewire — R-rewire-deferred (ctx.rewireNext.subscribeDep/unsubscribeDep, queued during a fn run, drained at the committed boundary even if the owner goes terminal: deferral / drain-exactly-once / removed-dep silencing / no-op termination / terminal output guard) | **C-11** |
-| `wave_terminal_dirty.tla` | a dep's terminal (COMPLETE/ERROR) releases its in-wave DIRTY contribution — R-terminal-settles-dirty (B35; the exactly-one-settle invariant: PendingCountsDirty + NoWedge, terminal joins the settle-class like DATA/RESOLVED/INVALIDATE; mutation-verified — drop the release → PendingCountsDirty trips) | **C-15** |
-| `wave_deps_complete.tla` | completeWhenDepsComplete auto-COMPLETE counts an ABSORBED-ERROR dep as TERMINAL-done — R-deps-terminal (B42; AllDepsTerminalCompletes: once every dep is terminal (COMPLETE or absorbed-ERROR) the node auto-completes, order-independent across the COMPLETE/absorbed-ERROR arms; TLC-green 9 states; mutation-verified — count only "complete" (exclude "errored") in WouldComplete → AllDepsTerminalCompletes trips). The orthogonal DIRTY-release is `wave_terminal_dirty.tla`. | **C-17** |
-| `wave_pull.tla` (+ `wave_pull_resumeall.cfg`) | pull-mode holder service — R-pull (D55, revised by D269/D278; quiet ABSORBS the upstream DIRTY without relaying it = the wedge fix; an explicit PULL({pullId,params?}) invokes the holder with ctx.pull/PullDemand when serviceable; downstream DATA is holder/helper policy, so pending change emits DIRTY-before-DATA latest/backlog while no-change parameterized retained views may emit one params-driven output and plain snapshots may stay silent; if PULL is owed while the holder is not settle-ready, later separate PULL params overwrite the owed params = latest owed params wins; RESUME is pause-only and does not demand; invariants: NoWedgeWhileQuiet + OneDeliveryPerDemand + OneHolderInvocationPerDemand + OneDownstreamOutputPerInvocation + PullParamsDelivered + LatestOwedParamsWins + NoOwedPullWhileUnquiet + ResumeDoesNotDemand + TrueModeOnePerDelivery + NoChangeLost). The self-demand deferral rides `wave_rewire_deferred.tla` (DeferredAppliedAtBoundary). TLC-green 2026-06-15: true 26,088 distinct states; resumeAll 49,680 distinct states. | **C-16/C-26/C-27** |
-| `wave_pull_routing.tla` (+ `wave_pull_routing.cfg` Target=PF / `wave_pull_routing_sib.cfg` Target=PH) | pull DEMAND ROUTING — R-up-routing / R-pull (D269; a PULL({pullId,params?}) issued WITHOUT a node reference routes UP the declared cone DEMAND-IF-PULL-HOLDER-ELSE-FORWARD-UP to the pullId-holder, which fires; siblings disambiguated by pullId identity; F/H topology). RoutedPullReachesHolder + DisambiguatesSiblings + OneDeliveryRouted. Models a strict TREE; diamond idempotence lives in `wave_pull_routing_diamond.tla`. | **C-16/C-26** |
-| `wave_pull_routing_diamond.tla` | routed PULL demand over a DAG diamond — R-up-routing-diamond (D63/B47 revised by D269; a broadcast PULL(pullId) reaching the same holder through two declared paths fires that holder at most once per routed wave; duplicate same-wave arrivals are consumed silently). DemandHolderFiresOnce + OnlyHolderFires + DemandReachesHolder. | **C-18/C-26** |
-| `wave_undirty_settle_timing.tla` | undirty RESOLVED timing — R-undirty-settle-timing (D64/B39; a balancing substrate RESOLVED follows normal gates: default true may deliver immediately, resumeAll buffers until final RESUME, open batch defers until commit). NoDeliverWhileBatchOpen + NoDeliverWhileResumeAllPaused + ReadyImpliesDelivered, TLC-green. | **C-19** |
-| `wave_teardown_terminal.tla` | TEARDOWN relay through terminal intermediate — R-teardown-terminal-relay (D65/B33; terminal seals value output but relays TEARDOWN for bridge/resource unwire; already-terminal nodes do not re-COMPLETE). TerminalRelaysTeardown + AlreadyTerminalDoesNotRecomplete + NoResurrection, TLC-green. | **C-20** |
-| `wave_rewire_async_ctx.tla` | late async ctx after rewire — R-rewire-async-live-edge (D66/B17; an async callback's captured ctx routes through live deps at emission time, not an invocation-time hidden snapshot). LateAfterRewireUsesLiveDeps + NoHiddenSnapshotEdge, TLC-green. | **C-21** |
-| `wave_rewire_batch.tla` | rewire requested during open batch — R-rewire-batch-boundary (D67/B19; pending batch wave commits against old topology before queued rewire applies as a fresh boundary wave). NoRewireOnUncommittedView + CommitPrecedesRewire + OldPendingNeverCommitsAgainstNewShape, TLC-green. | **C-22** |
-| `wave_rewire_deferred_committed.tla` | deferred self-boundary task committed-view gating — R-rewire-deferred-committed-boundary (B24/D110; ctx.rewireNext/ctx.upNext tasks drain only after run-end + batch commit + final RESUME, and rollback drops uncommitted boundary tasks including cleanup-shaped unsubscribeDep). NoDrainDuringRun + NoDrainBeforeBatchCommit + NoDrainAfterRollback + NoDrainWhilePaused + AppliedOnlyOnCommittedView + DroppedTaskDoesNotMutate + OldShapeUntilReady, TLC-green. | **C-25** |
-| `wave_ctx_wave_data.tla` | raw ctx dep input view — R-fn-contract + R-ctx-wave-data (D77/D78; `ctx.waveData` is the sole two-dimensional dep-value input: dep -> waves -> per-wave projection, distinguishing no-wave `[]`, RESOLVED `[[]]`, DATA(null), DATA([]), and DATA+INVALIDATE `[[1,2,SENTINEL]]` without stored latest/prevData aliases; `ctx.terminal` is separate lightweight metadata using false/no-terminal, true/COMPLETE, and non-boolean ERROR payload). NoWaveIsEmptyOuter + ResolvedIsOneEmptyInnerWave + EmptyArrayDataIsNotResolved + DataInvalidateSameWaveKeepsOrder + TerminalErrorPayloadIsDistinctFromFalseTrueShorthand, TLC-green. | **C-23** |
-| `wave_snapshot_restore.tla` | snapshot / hydration / restore lifecycle — R-snapshot + R-restore (D83/D117; async load/decode does not partially mutate the graph, restore commits once at a graph boundary, preserves checkpointed cache/ctx.state/topology, late subscribe observes the restored cache directly without a fresh-lifecycle recompute, and local-only or missing factory refs reject honestly). AsyncLoadDoesNotMutateGraph + RestorePreservesCheckpoint + RestoreIsNotFreshLifecycle + RestoredLateSubscribeUsesRestoredCache + LocalOnlyOrMissingRejects, TLC-green. | **C-24** |
-
-The focused modules are single-wave-serialized models (status: draft); they
-flip active alongside the impl that exercises them (wire bridge → backlog B2;
-LocalAsync pool → CSP-1; re-entrancy reject + up-at-source → CSP-1/CSP-2; rewire →
-CSP-2.5; deferred self-rewire → CSP-2.7). See each module header for its invariant set + abstraction boundary. Run any module:
-`java -cp <tla2tools.jar> tlc2.TLC -config <name>.cfg <name>`.
-
-`wave_up_source.tla` exercises all three upstream-allowed non-pause control kinds
-in one run (`upKind ∈ {INVALIDATE, DIRTY, TEARDOWN}`): `InvalidateHonored` (source
-clears + onInvalidate + down-cascade) and `DirtyDropped` / `TeardownDropped`
-(source untouched, no down-effect). `InvalidateHonored` is load-bearing — making
-the terminus not clear the cache trips it (mutation-verified). D620 removes the
-archived, unimplemented per-node guard opt-out; honor is the clean-slate rule.
-
-`wave_reentrancy.tla` ships two cfgs: `wave_reentrancy.cfg` (cyclic, `HasFeedback=TRUE`
-— the cycle is rejected at E) and `wave_reentrancy_acyclic.cfg` (`HasFeedback=FALSE`
-— the forward chain quiesces with no ERROR, proving the guard does not false-positive
-on an acyclic graph). Core invariant `NoReentrantCompute` is load-bearing: removing the
-reject lets a compute node re-enter and it trips immediately (verified by mutation).
-
-`wave_rewire.tla` (D42 / C-8) ports the TLA+-verified port-model rewire design
-(`graphrefly-ts/docs/research/wave_protocol_rewire.tla`, Q1–Q7) and EXTENDS it with
-two cross-axes: rewire×INVALIDATE (`NoStaleEdgeMessages` — a removed dep's queued
-messages, incl INVALIDATE, are drained) and rewire×terminal (`RewireOnlyOnLiveNode`
-— internal SetDeps action is rejected on a terminal `this`). 3-node topology A,B→C; TLC-green at
-603k states / depth 11. Both new invariants are mutation-verified load-bearing:
-disabling the removed-dep drain trips `NoStaleEdgeMessages` (33 states), and removing
-the terminal-this guard (with C terminable) trips `RewireOnlyOnLiveNode` (163 states).
-ABSTRACTION BOUNDARY: `wave_rewire.tla` has no downstream fn-fire-emit, so the
-rewire×multi-sink cross-axis (D42 SD-2) lives in the companion
-`wave_rewire_emit.tla` (below), not here. "adding a non-resubscribable terminal dep
-is rejected" is guard-modeled (the internal SetDeps guard, not a standing invariant — a kept
-dep that terminates later is permitted).
-
-`wave_rewire_emit.tla` (D42 / C-8 / B14) supplies the downstream-emit dimension
-`wave_rewire.tla` omits and composes it with rewire — discharging the D42
-SD-2 rewire×multi-sink cross-axis (`MultiSinkConsistent` — every sink observes the
-same drained++queued stream; rewire is upstream-only so it never desyncs them) and
-witnessing cache integrity across rewire (`CacheMatchesLastData` — cache equals the
-last emitted DATA; per D49 every value-occurrence emits DATA, and a rewire never
-corrupts cache since it preserves it per Q7). 2 sinks; TLC-green at 3003 states /
-depth 10. Both invariants mutation-verified load-bearing: a single-sink Emit trips
-`MultiSinkConsistent` (2 states), a cache-corrupting Rewire trips
-`CacheMatchesLastData` (4 states). Rewire is abstracted to the emit side (preserves
-cache, doesn't touch sinks); the dep-side mechanics are `wave_rewire.tla`'s job —
-the two modules together cover all three cross-axes (INVALIDATE / terminal /
-multi-sink).
-
-`wave_rewire_deferred.tla` (D47+D62 / C-11) models the self-rewire path: a fn issues
-`ctx.rewireNext.subscribeDep/unsubscribeDep` DURING its run (`insideRunWave`), the requests are QUEUED,
-and the dispatcher drains them at the committed wave boundary (`insideRunWave` false) in
-per-node FIFO order — the only legal self-triggered rewire (an immediate in-fn self-rewire
-is the D37 reject, `wave_reentrancy.tla`). Single node over a 2-dep candidate set;
-TLC-green at 15367 distinct states / depth 24 after the D62 terminal-drains amendment. The prior
-four invariants remain the same load-bearing set, and D62 adds the fifth terminal-output guard:
-neutralizing the `~insideRunWave` drain guard trips `DeferredAppliedAtBoundary`; applying
-without dequeuing trips `DrainExactlyOnce`; dropping the removed-dep edge drain trips
-`RemovedDepSilenced` (the boundary analog of `wave_rewire.tla` `NoStaleEdgeMessages`); a
-non-dequeuing DrainOne trips `NoBoundaryDrainLoop`; `NoPostTerminalOutput` pins that a terminal
-owner absorbs later dep messages after the queued topology drains. D62 changed the terminal facet from
-"terminal discards pending queue" to "terminal seals output; queued topology still drains",
-which covers timer/interval helper cleanup without a special owned-dep API. The mutation pass
-also caught a real latent `=` vs `\/` precedence bug in the ghost assignments (RHS now parenthesized).
-ABSTRACTION: the fn body is a black box; the batch/pause-deferred-drain timing
-(committed-boundary gating under an open batch / held pause) lives in
-`wave_rewire_deferred_committed.tla`.
-
-`wave_rewire_deferred_committed.tla` (B24+D110 / C-25) composes the focused
-deferred boundary with batch and pause gates. A task queued during a run cannot
-apply until the run has ended, any owning batch has committed, and final-lock
-RESUME has released the owner. The D110 rollback action closes the uncommitted
-batch view while discarding queued boundary tasks, including cleanup-shaped
-`unsubscribeDep`, so rollback cannot leave a hidden topology/demand side effect.
-TLC-green at 33 distinct states / depth 6 after the D110 rollback extension.
-The rollback guard is mutation-verified load-bearing: preserving a queued task
-through rollback and allowing it to drain trips the committed-view invariant
-(`AppliedOnlyOnCommittedView`). Other guards pin the run, commit, rollback, and
-pause readiness predicates (`NoDrainDuringRun`, `NoDrainBeforeBatchCommit`,
-`NoDrainAfterRollback`, `NoDrainWhilePaused`, `DroppedTaskDoesNotMutate`).
-
-TLA+ provides **exhaustive model checking** over bounded instances: TLC
-enumerates every reachable state sequence of the protocol and verifies
-each invariant holds. Counter-examples are concrete traces that show how
-an invariant was violated — when one appears, port it to a new
-[fast-check property](../../graphrefly-ts/src/__tests__/properties/_invariants.ts)
-so the regression is covered in both layers.
-
-## Files
-
-| File | Role |
+| Model (and its configs) | Destination |
 |---|---|
-| [`wave_protocol.tla`](wave_protocol.tla) | The spec itself — state, actions, invariants. Topology-agnostic; defaults to a 4-node diamond via the `Compute` operator. Parametric over `GapAwareActivation` (bool), `SinkNestedEmits` (set of nested-emit triples), `LockIds` (pause lockset domain), `Pausable` (per-node mode), `ResubscribableNodes` (subset), `MaxPauseActions` (bound), `UpOriginators` / `MaxUpActions` (§1.4 up-axis), `ExtraSinks` (§2.4 multi-sink axis). |
-| [`wave_protocol_MC.tla`](wave_protocol_MC.tla) + [`wave_protocol.cfg`](wave_protocol.cfg) | **Clean model.** `GapAwareActivation = FALSE`, `SinkNestedEmits = {}`, pause axis off (`LockIds = {}`), up-axis off (`UpOriginators = {}`), multi-sink off (`ExtraSinks = [n |-> 0]`). All invariants hold. |
-| [`wave_protocol_gap_MC.tla`](wave_protocol_gap_MC.tla) + [`wave_protocol_gap.cfg`](wave_protocol_gap.cfg) | **Substrate-faithful model for item 3.** `GapAwareActivation = TRUE` — multi-parent derived handshake synthesizes the real substrate's `<START, DIRTY, RESOLVED, DIRTY, DATA>` shape. `MultiDepHandshakeClean` FAILS with counter-example — matches the bug. |
-| [`wave_protocol_nested_MC.tla`](wave_protocol_nested_MC.tla) + [`wave_protocol_nested.cfg`](wave_protocol_nested.cfg) | **Nested-drain regression guard for item 2.** `SinkNestedEmits = {<<B, A, 2>>}` models a sink callback running `batch(() => A.emit(2))`. `NestedDrainPeerConsistency` holds — tier ordering prevents §32-class peer-read glitch in the simple 3-node topology. |
-| [`wave_protocol_pause_MC.tla`](wave_protocol_pause_MC.tla) + [`wave_protocol_pause.cfg`](wave_protocol_pause.cfg) | **§2.6 PAUSE/RESUME multi-pauser axis (added 2026-04-23).** 3-node linear chain, `Pausable = "on"` everywhere, `LockIds = {10, 11}`, `MaxPauseActions = 3`. Exhaustive coverage of tier-2 PAUSE/RESUME propagation, multi-pauser lockset tracking, and unknown-lockId RESUME swallow at intermediate nodes. |
-| [`wave_protocol_bufferall_MC.tla`](wave_protocol_bufferall_MC.tla) + [`wave_protocol_bufferall.cfg`](wave_protocol_bufferall.cfg) | **§2.6 bufferAll axis (added 2026-04-23).** 3-node linear chain, `Pausable = "resumeAll"` everywhere, `LockIds = {10}`, `MaxPauseActions = 2`. Verifies tier-3 capture into `pauseBuffer` during pause, drain-then-forward ordering on final-lock RESUME, and the `BufferImpliesLockedAndResumeAll` / `BufferHoldsOnlyDeferredTiers` structural invariants. |
-| [`wave_protocol_resubscribe_MC.tla`](wave_protocol_resubscribe_MC.tla) + [`wave_protocol_resubscribe.cfg`](wave_protocol_resubscribe.cfg) | **§2.6 resubscribable-lifecycle axis (added 2026-04-23).** 2-node chain `A → B`, `ResubscribableNodes = {B}`, pause axis enabled so lock-leak-across-terminal scenarios are exercised. Verifies `TerminalClearsPauseState` (hard-reset clears locks/buffer) and `ResubscribeYieldsCleanState` (post-reset state matches fresh-init). |
-| [`wave_protocol_up_MC.tla`](wave_protocol_up_MC.tla) + [`wave_protocol_up.cfg`](wave_protocol_up.cfg) | **§1.4 `up()` upstream-direction axis (added 2026-04-23).** 2-node chain `A → B`, `UpOriginators = {B}`, `MaxUpActions = 2`, `LockIds = {10}`, `Pausable = "on"` everywhere. Exercises `UpPause` / `UpResume` originators plus `DeliverUp(c, p)` integration with the existing `pauseLocks[p]` model. Verifies the two new up-axis structural invariants (`UpQueuesCarryControlPlane`, `UpPauseOriginatorBound`) plus the baseline 13 still hold when upstream and downstream PAUSE/RESUME compose. |
-| [`wave_protocol_multisink_MC.tla`](wave_protocol_multisink_MC.tla) + [`wave_protocol_multisink.cfg`](wave_protocol_multisink.cfg) | **§2.4 multi-sink iteration axis (added 2026-04-23).** 2-node chain `A → B`, `ExtraSinks[B] = 1` (one extra subscriber at B beyond the primary), `SinkNestedEmits = {<<A, A, 1>>}` to exercise mid-iteration nested emits. New `DeliverToExtraSink(n, i)` action drains `pendingExtraDelivery[n][i]`; `MultiSinkTracesConverge` structurally checks that primary and extra sinks observe the same message sequence at full drain. |
-| [`wave_protocol_invalidate_diamond_MC.tla`](wave_protocol_invalidate_diamond_MC.tla) + [`wave_protocol_invalidate_diamond.cfg`](wave_protocol_invalidate_diamond.cfg) | **§1.4 INVALIDATE diamond-fan-in axis (added 2026-04-23, batch 5 B).** 4-node diamond `A → {B, C} → D`, `InvalidateOriginators = {A}`, `MaxInvalidates = 1`. Exercises the fan-in where D receives INVALIDATE from both parents; the second delivery lands on an already-reset cache and must NOT append a spurious witness entry. `CleanupWitnessNotSentinel` is load-bearing here — reverting the batch-5 guard on `DeliverInvalidate` trips this invariant. 2555 distinct states, < 1s runtime. |
-| [`wave_protocol_replay_resubscribe_MC.tla`](wave_protocol_replay_resubscribe_MC.tla) + [`wave_protocol_replay_resubscribe.cfg`](wave_protocol_replay_resubscribe.cfg) | **§2.5 replay × §2.6 resubscribable cross-axis (added 2026-04-23, batch 6 G).** 2-node chain `A → B`, `ReplayBufferSize[B] = 1`, `ResubscribableNodes = {B}`. Makes the batch-6-G extension of `ResubscribeYieldsCleanState` (#13) — the `replaySnapshot[sid] = <<>>` post-resubscribe check — load-bearing: `DeliverSettle(A, B)` populates `replayBuffer[B]`, initial `SubscribeSink(B)` captures a non-empty snapshot, Resubscribe must clear it. Reverting the batch-5 `replaySnapshot' = <<>>` clear in `Resubscribe` trips `ResubscribeYieldsCleanState` here. 550 distinct states, < 1s runtime. |
+| `wave_protocol.tla`, `wave_protocol_MC`, `wave_protocol_invalidate_MC`, `wave_protocol_invalidate_diamond_MC` | Succeeded by `kernel_wave.tla` (wave, settlement, INVALIDATE, terminals); the protocol's actions changed nearly everywhere, so it was replaced rather than updated |
+| `wave_protocol_nested_MC` | Succeeded by `kernel_lifetime.tla` (requests made during a request, batches opened from a callback) |
+| `wave_protocol_rescue_MC`, `wave_deps_complete.tla` | Succeeded by `kernel_wave.tla`'s manual COMPLETE and ERROR policies |
+| `wave_terminal_dirty.tla` | Succeeded by `kernel_wave.tla` (NoWedge: a terminal settles its pending mark) |
+| `wave_protocol_replay_MC` | Succeeded by `module_history.tla` (history is a module node) |
+| `wave_pull.tla` (and the resumeAll config) | Succeeded by `module_demand.tla` |
+| `wave_paused_invalidate.tla` | Succeeded by `module_pause.tla` (INVALIDATE through a pausable) |
+| `wave_snapshot_restore.tla` | Succeeded by `module_checkpoint.tla` |
+| `wave_reentrancy.tla` (and the acyclic config) | Succeeded by `kernel_lifetime.tla`: a function's write to its own upstream is a queued request (RunOncePerRequest, FIFO, AfterMaker) |
+| `wave_rewire.tla`, `wave_rewire_batch.tla` | Succeeded by `kernel_lifetime.tla` (RewireKeeps, DeclaredWhenClosed, RewireOfThisLifetime, BodyAfterCommit) |
+| `wave_protocol_pause_MC`, `wave_protocol_bufferall_MC`, `wave_protocol_gap_MC`, `wave_protocol_q14_MC` | Retired: pause modes and PAUSE as a message are gone (pause is placement, `module_pause.tla`) |
+| `wave_protocol_resubscribe_MC`, `wave_protocol_replay_resubscribe_MC` | Retired: there is no resubscription (R-terminals); restart is a module (`module_restart.tla`) |
+| `wave_protocol_multisink_MC`, `wave_protocol_multisink_batch_MC` | Retired: delivery to several sinks is one step in the D797 models; each subscriber receiving a whole array before the next is pinned by C-34 and the kernel tests |
+| `wave_protocol_up_MC`, `wave_up_source.tla`, `wave_pull_routing.tla` (with the sibling config), `wave_pull_routing_diamond.tla` | Retired: nothing travels up the graph (K9 decided away) |
+| `wave_protocol_meta_teardown_MC`, `wave_teardown_terminal.tla` | Retired: TEARDOWN decided away |
+| `wave_undirty_settle_timing.tla` | Retired: no notification outlives its wave |
+| `wave_rewire_deferred.tla`, `wave_rewire_deferred_committed.tla`, `wave_rewire_async_ctx.tla`, `wave_rewire_emit.tla` | Retired: a rewire is the node's own request, run between waves and scoped to its lifetime (`kernel_lifetime.tla`) |
+| `wave_async.tla`, `wave_async_paused.tla` (with its ignore, leaf and resumeAll configs) | Retired: an async result is a later wave from the node (`kernel_lifetime.tla`'s late output); a pausable holds it like any array (`module_pause.tla`) |
+| `wave_xgraph.tla` | Retired: its two-phase wire gate does not hold under D797 (PENDING only prefixes a settling array). R-graph-domain@2 puts cross-graph consistency in the bridge's release of one cause as one batch (C-1); the bridge module gets a new model when it is written, so R-graph-domain@2 has no model until then |
 
-## The 28 TLC invariants across 17 MCs — batch 11 QA (2026-04-24)
+Kept: `wave_ctx_wave_data.tla` (`wave_ctx_wave_data.cfg`), the raw ctx encoding of the replaced
+R-ctx-wave-data@1, as a porting reference: no D797 model checks the shape of `ctx.deps` yet (C-23
+and the kernel tests do).
 
-**Batch 11 QA (2026-04-24)** adversarial review surfaced a latent zombie-ghost class + accounting issue introduced by the batch-11 refactor:
+Active rules without a model after the activation: R-sentinel@1 (the absence value is each
+language's own, with no cross-language behavior to model), R-node@1, R-node-thin@2,
+R-no-imperative@2 and R-graph-domain@2.
 
-- **F-A. `TerminatedImpliesBatchIdle` (#28)** + five `batchActive' = [... idle ...]` resets. `Teardown` / `DeliverTeardown` now guard on `batchActive[n].status = "idle"` like `Terminate` / `Emit` / `SinkNestedEmit` did. `Resubscribe(sid)` now clears `batchActive[sid]` alongside the other per-sid lifecycle resets. `DeliverTerminal`'s gate=TRUE branch clears `batchActive[c]` when it cascades to "terminated". Closes a latent hole where a zombie `[status: "running", pending: <vs>]` could persist across a resubscribe.
-- **F-B. `emitCount` reservation moved to `BatchEmitBegin`.** Previously bounded but not reserved; a concurrent `Emit(other-src, v)` could starve the batch's final Step. Fix: reserve `emitCount += Len(vs)` at Begin atomically. Per-step `emitCount` increment removed. `perSourceEmitCount` stays in Step for `EqualsFaithful` lockstep.
-- **F-C through F-F.** Dead-helper sweep (~75 LOC), stale `BatchEmitMulti` docblock / `AllExtraPendingEmpty` gate list / `#21 DEFERRED` note updates, batch-10 cross-ref, `EqualsPairs` purity-assumption note.
-
-All 15 clean MCs green with state-space counts unchanged from batch 11. #28 is vacuous in every MC today (regression catcher for MCs that cross `BatchSeqs` × `MetaCompanions` axes in the future).
-
-## The 27 TLC invariants across 17 MCs — batch 11 BatchEmit step-action refactor (2026-04-24)
-
-**Batch 11 (2026-04-24)** closes the single largest remaining rigor-infra follow-on: the atomic `BatchEmitMulti` action that blocked the strict drift-catching invariant since batch 3:
-
-- **Refactor.** `BatchEmitMulti(src, vs)` → `BatchEmitBegin(src, vs)` + `BatchEmitStep(src)` state machine. New ghost `batchActive: NodeIds -> [status, pending]` tracks in-flight batches; `BatchEmitBegin` enqueues the K-DIRTY tier-1 prefix at pre-batch cache and transitions batchActive to "running", then K `BatchEmitStep` actions each consume one pending value, advance cache one step, enqueue one settle to primary + extras (with post-emit snap), and decrement pending. Both actions gated on `AllExtraPendingEmpty` so every step's extra-sink items drain before the next step fires.
-- **New invariant #27 `MultiSinkIterationDriftClean`.** `\A n, i, j : pendingExtraDelivery[n][i][j].msg.type = DATA => pendingExtraDelivery[n][i][j].msg.value = cache[n]`. Stronger than `MultiSinkIterationCoherent` (#18, snap/value agreement): pins pending-head DATA to current runtime cache at every delivery boundary. Load-bearing: reverting `BatchEmitStep`'s drain gate trips it in `multisink_batch_MC` within ~6 steps.
-- **Adjusted invariant: `BalancedWaves` (#2)** now gates on `NoActiveBatch` alongside `AllQueuesEmpty /\ AllBuffersEmpty` to skip the transient Begin→Step window where DIRTYs are enqueued but settles haven't fired yet.
-- **State-space growth:** baseline MC 76984 → 105715 (+37%); `nested_MC` 123732 → 273515 (+121%, biggest — BatchSeqs × SinkNestedEmit cross-interleaving); other MCs +0–33%. Total sweep still under 30s.
-
-## The 26 TLC invariants across 17 MCs — batch 9 custom EqualsPairs + operator fast-check (2026-04-24)
-
-**Batch 9 (2026-04-24)** generalizes the §2.5 equality axis from boolean to relation, closes a pre-existing modeling gap where most emission sites bypassed the axis, and adds a new surface of fast-check operator-layer invariants:
-
-- **E. `EqualsAbsorbs` boolean → `EqualsPairs: NodeIds -> SUBSET (Values \X Values)` relation.** Pre-batch-9, only `Emit` was gated by `EqualsAbsorbs[src]`; `BatchEmitMulti` / `SinkNestedEmit` / `DeliverSettle` (and `DeliverTerminal`'s rescue recompute) used raw `=` — contradicting batch 6 F's claim that all four were parameterized. New `IsAbsorbed(n, prev, next)` helper routes every emission site through `EqualsPairs[n]`. Canonical encodings: `{<<v, v>> : v \in Values}` = identity diagonal (legacy `TRUE`); `{}` = empty (legacy `FALSE`); arbitrary subset = custom `equals` fn. New exercise MC `wave_protocol_custom_equals_MC` (2-node chain, `Values = {0, 1, 2}`, `EqualsPairs[A] = identity ∪ {<<0,1>>, <<1,0>>}` — 0 and 1 interchangeable, 2 distinct). 3409 distinct states. Load-bearing: reverting `BuildSettleSeq`'s `IsAbsorbed` to raw `=` while leaving `FinalCache` / `CountDataEmits` intact trips `VersionPerChange` (#6) because the bundle emits DATA where the relation dictates RESOLVED but the version counter reflects the relation.
-
-- **G. Operator-layer fast-check invariants (separate surface).** Three new fast-check invariants (not TLC) exercising higher-order operator lifecycle semantics — added to `src/__tests__/properties/_invariants.ts`: #18 `switchmap-stale-inner-suppressed` (post-supersede inner emits don't leak downstream), #19 `mergemap-all-live-inners-contribute` (no inner-subscription drops), #20 `exhaustmap-drops-while-active` (gate bypass regressions caught). Fast-check invariant count: 20 (up from 17).
-
-## The 26 TLC invariants across 16 MCs — batch 8 Package 5 + accounting (2026-04-24)
-
-**Batch 8 (2026-04-24)** closes two of the four "Remaining rigor-infra coverage gaps" tracked in `docs/optimizations.md` — Package 5's rescue semantic and a counting-law companion to the existing INVALIDATE witness invariants:
-
-- **A. `NoDepCascadeTerminalWhenGateFalse` (#25, Package 5 rescue).** New ghost `terminatedBy: NodeIds -> TerminationCauseDomain` classifies every status→"terminated" transition by cause ("self-source-terminate" / "self-teardown" / "teardown-cascade" / "dep-cascade-complete" / "dep-cascade-error"). `DeliverTerminal`'s gate=TRUE branch classifies by `m.type`; gate-FALSE and rescue-recompute branches leave the prior value (typically "none"). Invariant asserts dep-cascade-complete implies `AutoCompleteOnDepsComplete[n] = TRUE` and dep-cascade-error implies `AutoErrorOnDepsError[n] = TRUE`. Load-bearing in `wave_protocol_rescue_MC` where `AutoCompleteOnDepsComplete[B] = FALSE`: dropping the `IF gate` wrapper on `terminatedBy'` in `DeliverTerminal` trips the invariant. Vacuous in every MC where both gate maps are TRUE everywhere (legacy baseline). Resubscribe clears the slot to "none" so a fresh lifecycle starts clean.
-- **D. `CleanupWitnessAccounting` (#26, counting law).** New ghost counter `nonVacuousInvalidateCount: NodeIds -> Nat` incremented by `Invalidate` / `DeliverInvalidate` only when `cache[n] # DefaultInitial` at action time — the same `wasReset` guard that gates the `cleanupWitness` append (batch 5 B). Invariant asserts `Len(cleanupWitness[n]) = nonVacuousInvalidateCount[n]`. Complements the value-domain invariants `CleanupWitnessInValueDomain` (#19) and `CleanupWitnessNotSentinel` (#24) with a quantitative law. Load-bearing in `wave_protocol_invalidate_diamond_MC`: dropping the `wasReset` guard on the counter alone (witness guard intact) produces `Len(cleanupWitness[D]) = 1 /\ nonVacuousInvalidateCount[D] = 2` at the diamond join, tripping the equality.
-
-State-space counts unchanged across all 15 clean MCs (new ghost values are either constant in non-rescue / non-invalidate MCs or take one value per terminated node).
-
-## The 24 TLC invariants across 16 MCs — batch 7 tightening (2026-04-23)
-
-**Batch 7 (2026-04-23)** tightens `SinkNestedEmit`'s firing window to match the §32 bug semantic precisely:
-
-- **H. `SinkNestedEmit` `ObserverHasReceivedData` → `ObserverCallbackActive`.** The prior guard allowed the action to fire any time after any DATA had appeared in observer's trace — including long after the sink callback completed. The §32 bug class only lives in the narrow window where the sink callback is actually running (i.e. the DATA that triggered it has just been delivered and no subsequent tier-3 message has fired on observer). The new `ObserverCallbackActive(observer)` predicate requires `trace[observer][Len(...)].type = DATA` — the last trace entry must be DATA. State-space effect on `wave_protocol_nested_MC`: 125216 → 123732 distinct states (~1.2% shrink) — the action still fires meaningfully (nested-wave interleaving is still explored) but only in the callback-active window, eliminating spurious firings that didn't correspond to any runtime scenario. All invariants continue to hold, confirming the protocol-layer tier ordering is sound within the §32 window as well. Tracked in `docs/optimizations.md` strategy update 2026-04-23 as the #1 deferred item.
-
-## The 24 TLC invariants across 16 MCs (batch-6, 2026-04-23)
-
-**Batch 6 (2026-04-23)** makes two previously-vacuous axes load-bearing by cross-cutting them in dedicated MCs + extends one existing invariant:
-
-- **F. Dedicated `EqualsAbsorbs = FALSE` exercise MC.** Batch 3 Package 3 shipped the `EqualsAbsorbs` axis but no MC flipped it off — so the `equals: () => false` code path in `Emit` / `BatchEmitMulti` / `SinkNestedEmit` / `DeliverSettle` was entirely unexercised. New `wave_protocol_equals_false_MC` (2-node chain `A → B`, `EqualsAbsorbs[A] = FALSE`, BatchSeqs include same-value sequences) forces every emit at A to produce DATA (never RESOLVED). Makes `EqualsFaithful` (#5) load-bearing via a different semantic path — same contract, DATA counts just like RESOLVED did. 2391 distinct states; a regression that drops the `EqualsAbsorbs[n]` guard would produce RESOLVED where DATA is required and trip `EqualsFaithful` here.
-- **G. `ResubscribeYieldsCleanState` (#13) extended with `replaySnapshot[sid] = <<>>`.** Batch 5 A added the `replaySnapshot' = <<>>` clear to `Resubscribe` but the structural invariant didn't check it — a future refactor dropping the clear would silently regress. Added the check in lockstep with the existing `cleanupWitness` / `teardownWitness` / `replayBuffer` post-resubscribe checks. Load-bearing via the new `wave_protocol_replay_resubscribe_MC` (2-node chain `A → B`, `ResubscribableNodes = {B}`, `ReplayBufferSize[B] = 1`) which cross-cuts the replay-ring and resubscribable axes so pre-resubscribe `replaySnapshot[B]` can be non-empty. 550 distinct states; reverting the `Resubscribe` clear immediately trips `ResubscribeYieldsCleanState` here.
-
-Total runtime across all 15 green MCs: ~40s. State-space deltas vs. batch-5: existing MCs unchanged; two new MCs add ~3K distinct states.
-
-## The 23 TLC invariants across 14 MCs (batch-5, 2026-04-23)
-
-**Batch 5 (2026-04-23)** adds two invariants and one new MC, continuing the systematic protocol-mapping per the 2026-04-23 strategy update:
-
-- **A. §2.5 replayBuffer consumption side.** `SubscribeSink(sid)` now appends `replayBuffer[sid]` contents as DATA messages after the base handshake (for non-terminated sinks). New ghost `replaySnapshot: NodeIds -> Seq(Values)` captures the buffer at subscribe time and is cleared by `Resubscribe`. New invariant `LateSubscriberReceivesReplay` verifies the handshake tail matches the snapshot. `StartHandshakeValid` was extended with a `baseLen = Len(H) - Len(replaySnapshot[sid])` decomposition so its shape check runs over the base handshake and the replay tail is validated separately. `wave_protocol_replay_MC` state space grew from ~1912 → 2265 distinct states — the new snapshot ghost captures different ring contents across interleavings of Emit/BatchEmitMulti before SubscribeSink fires.
-- **B. Diamond `DeliverInvalidate` witness guard.** Both `Invalidate(n)` and `DeliverInvalidate(p, c)` now skip the cleanup-witness append when `cache[n] = DefaultInitial` / `cache[c] = DefaultInitial` (cache already at the reset sentinel). Mirrors the runtime's `cleanupHook` no-op on already-reset `prevData`. New invariant `CleanupWitnessNotSentinel` verifies every witness entry is non-default. New MC `wave_protocol_invalidate_diamond_MC` (4-node `A → {B, C} → D`, `InvalidateOriginators = {A}`, `MaxInvalidates = 1`) exercises the fan-in scenario where the second `DeliverInvalidate(C, D)` — arriving after `DeliverInvalidate(B, D)` has reset `cache[D]` — would have appended the sentinel as a spurious second witness pre-batch-5. 2555 distinct states; reverting the guard in `wave_protocol.tla` immediately fails `CleanupWitnessNotSentinel`.
-
-**Batch 4** added full cascades for Packages 6 + 7 + tier-1 ordering guard:
-- `DeliverInvalidate` now forwards INVALIDATE to grandchildren (full cascade).
-- `DeliverTeardown` action added for DAG-child TEARDOWN fan-out; `Teardown(parent)` now enqueues TEARDOWN to DAG children. Subgraph-wide §2.3 ordering exercised.
-- `NoInvalidateAnywhere` guard added to `DeliverSettle` + `DeliverTerminal` — tier-1 INVALIDATE drains before tier-3/4 per spec §1.4.
-- `invalidate_MC` promoted to 3-node chain (A→B→C) exercising full cascade; `meta_teardown_MC` promoted to 4-node (A→B, A→M meta, B→N meta) exercising `DeliverTeardown` witness at cascaded nodes.
-
-
-
-**Batch-3 QA round 2 adds 4 dedicated exercise MCs** so every Package 3/5/6/7 invariant is load-bearing (not just vacuous on disabled defaults). New MCs:
-
-| MC | Axis enabled | Distinct states | Purpose |
-|---|---|---|---|
-| `wave_protocol_rescue_MC` | `AutoCompleteOnDepsComplete[B] = FALSE` | 464 | Exercises Package 5 rescue/catchError path + the D1 rescue recompute (B absorbs A's COMPLETE without cascading; D1 recompute restores B to "settled"). |
-| `wave_protocol_meta_teardown_MC` | `MetaCompanions[A] = {M}` | 350 | Exercises Package 7 meta TEARDOWN ordering: `Teardown(A)` records witness at M BEFORE A transitions to "terminated". `MetaTeardownObservedPreReset` is now load-bearing. |
-| `wave_protocol_replay_MC` | `ReplayBufferSize[A] = 2` + `BatchSeqs = {<<1, 0>>}` | 1912 | Exercises Package 3 replay ring — drop-oldest-on-cap verified via `ReplayBufferBounded` across multiple Emit + BatchEmitMulti firings. |
-| `wave_protocol_invalidate_MC` | `InvalidateOriginators = {A}` | 2139 | Exercises Package 6 INVALIDATE queue propagation — `Invalidate(A)` records witness + resets cache + enqueues to B; `DeliverInvalidate(A, B)` records witness at B + resets cache[B]. |
-
-Total state space across 13 MCs: ~420K distinct states / ~40 seconds runtime.
-
-
-
-Invariants #1–#7 correspond 1-1 to [fast-check properties](../../graphrefly-ts/src/__tests__/properties/_invariants.ts). Fast-check invariants 8 and 9 (`throw-recovery-consistency` and `subscribe-unsubscribe-reentry`) concern JS-level exception handling and multiple-subscriber registration, not protocol-observable. Invariants #8–#9 are the TLA+-side multi-dep/nested-drain extensions. Invariants #10–#13 are the §2.6 PAUSE/RESUME + resubscribable-lifecycle extensions. Invariants #14–#17 are the batch-2 additions — §1.4 up-axis, §2.4 multi-sink traces, §2.6 pausable:off structural.
-
-**Batch-3 (2026-04-23)** adds invariants #18–#22 and parametric axes for `replayBuffer`, `equals` variance, `resetOnTeardown`, `completeWhenDepsComplete`/`errorWhenDepsError`, source-side INVALIDATE cleanup, and meta TEARDOWN fan-out. Also: `EqualsFaithful` (#5) was **generalized to per-source** via new `perSourceEmitCount` (I4 fix), re-enabled in `wave_protocol_nested_MC`. The `AllExtraPendingEmpty` emission gate ships and models the runtime's atomic `_deliverToSinks` iteration; the stricter drift-catching form of multi-sink iteration (comparing pending DATA to current `cache[n]`) is deferred — it false-positives on `BatchEmitMulti`'s atomic K-emit cache advance. One new MC: `wave_protocol_multisink_batch_MC` — verifies the per-item snapshot fix on the `BatchEmitMulti` × `ExtraSinks[src] > 0` cross-axis.
-
-| # | TLA+ name | Status | Description |
-|---|---|---|---|
-| 1 | `NoDataWithoutDirty` | clean ✓ / gap ✓ / nested ✓ / pause ✓ / bufferall ✓ / resub ✓ | Every DATA/RESOLVED at a sink is preceded by an unmatched DIRTY. |
-| 2 | `BalancedWaves` | clean ✓ / gap ✓ / nested ✓ / pause ✓ / bufferall ✓ / resub ✓ | When all queues AND all pauseBuffers drain, DIRTY count = settlement count at every pre-terminal sink. **Weakened 2026-04-23**: precondition now `AllQueuesEmpty /\ AllBuffersEmpty` (upstream buffers can hold a downstream's owed settlement); terminated sinks are excluded because §2.6 hard-resets discard in-flight DATA. In legacy MCs (pause axis off) buffers are always empty, so the precondition reduces to the original. |
-| 3 | `TerminalAbsorbing` | clean ✓ / gap ✓ / nested ✓ / pause ✓ / bufferall ✓ / resub ✓ | After COMPLETE/ERROR, no further DIRTY/DATA/RESOLVED. |
-| 4 | `DiamondConvergence` | clean ✓ / gap ✓ / nested ✓ / pause ✓ / bufferall ✓ / resub ✓ | Fan-in settlements bounded by source emits — no 2× per dep edge. Now counts buffered settlements too (via the extended `SettlementCount` helper). |
-| 6 | `VersionPerChange` | clean ✓ / gap ✓ / nested ✓ / pause ✓ / bufferall ✓ / resub ✓ | Source `version` = count of DATA in its trace + count of DATA in its pauseBuffer (pre-terminal only). |
-| 7 | `StartHandshakeValid` | clean ✓ / gap ✓ / nested ✓ / pause ✓ / bufferall ✓ / resub ✓ | `handshake[sid]` matches one of: source `<START,DATA>`, single-parent derived `<START,DIRTY,DATA>`, multi-parent derived (clean `<START,DIRTY,DATA>` OR gap-aware `<START,DIRTY,RESOLVED,DIRTY,DATA>`), terminated `<START,COMPLETE>`. **Loosened 2026-04-23** to accept the gap-aware shape, matching fast-check invariant #7. |
-| 8 | `MultiDepHandshakeClean` | clean ✓ / **gap ✗** / nested ✓ / pause ✓ / bufferall ✓ / resub ✓ | No RESOLVED between first DIRTY and DATA in a multi-parent derived's handshake. Fails under `GapAwareActivation = TRUE` — TLA+-side mirror of fast-check #10. Counter-example: any multi-parent derived subscribe in 2 steps. |
-| 9 | `NestedDrainPeerConsistency` | clean ✓ / gap ✓ / nested ✓ / pause ✓ / bufferall ✓ / resub ✓ | After all queues AND buffers AND locks drain, every multi-parent derived's recorded DATA matches `Compute(n, finalCache)`. Mirror of fast-check #11 — regression guard against any relaxation of tier ordering in `DeliverSettle`. |
-| 10 | `TerminalClearsPauseState` | clean ✓ / gap ✓ / nested ✓ / pause ✓ / bufferall ✓ / resub ✓ | Non-resubscribable terminated nodes MUST have empty `pauseLocks` and `pauseBuffer`. Catches the lock-leak-across-terminal class the spec §2.6 "Teardown" warning targets. |
-| 11 | `BufferImpliesLockedAndResumeAll` | clean ✓ / gap ✓ / nested ✓ / pause ✓ / bufferall ✓ / resub ✓ | `pauseBuffer[n] ≠ <<>>` implies `pauseLocks[n] ≠ {}` AND `Pausable[n] = "resumeAll"`. Structural invariant — catches buffer leaks into wrong modes or survival past final-lock release. |
-| 12 | `BufferHoldsOnlyDeferredTiers` | clean ✓ / gap ✓ / nested ✓ / pause ✓ / bufferall ✓ / resub ✓ | Every message in `pauseBuffer[n]` has `type ∈ {DATA, RESOLVED, COMPLETE, ERROR}` (tier 3/4 only). Catches accidental capture of control-plane messages (DIRTY, PAUSE, RESUME, TEARDOWN) into the buffer. |
-| 13 | `ResubscribeYieldsCleanState` | clean ✓ / gap ✓ / nested ✓ / pause ✓ / bufferall ✓ / resub ✓ / up ✓ / multisink ✓ / replay_resub ✓ | Post-`Resubscribe` state matches fresh-init: `pauseLocks = {}`, `pauseBuffer = <<>>`, `dirtyMask = {}`, `handshake = <<>>`, `trace = <<>>`, `cleanupWitness = <<>>`, `teardownWitness = <<>>`, `replayBuffer = <<>>`, `replaySnapshot = <<>>` (batch 6 G adds the last clause). Exercised actively by `wave_protocol_resubscribe_MC` (pause-lock leak) AND `wave_protocol_replay_resubscribe_MC` (replay-snapshot leak, batch 6). |
-| 14 | `UpQueuesCarryControlPlane` | clean ✓ / gap ✓ / nested ✓ / pause ✓ / bufferall ✓ / resub ✓ / up ✓ / multisink ✓ | Spec §1.4: `up()` carries only tier-1/2/5 control-plane (DIRTY/PAUSE/RESUME). Structural regression guard — `upQueues` never holds tier-3 (DATA/RESOLVED) or tier-4 (COMPLETE/ERROR). Exercised actively by `wave_protocol_up_MC`; vacuous when `UpOriginators = {}`. |
-| 15 | `UpPauseOriginatorBound` | clean ✓ / gap ✓ / nested ✓ / pause ✓ / bufferall ✓ / resub ✓ / up ✓ / multisink ✓ | `pauseLocks[n] # {}` implies `pauseActionCount + upActionCount > 0` — rules out "lock appears from nowhere." Composes the downstream `Pause` and upstream `UpPause` origination counters. |
-| 16 | `MultiSinkTracesConverge` | clean ✓ / gap ✓ / nested ✓ / pause ✓ / bufferall ✓ / resub ✓ / up ✓ / multisink ✓ | At full drain (all queues empty AND all `pendingExtraDelivery[n][i] = <<>>`), `extraSinkTrace[n][i] = trace[n]` for every extra sink. Structural regression guard — if a future refactor drops an `EnqueuePendingExtra` call from any emission action, primary and extra traces diverge and this invariant trips. Exercised actively by `wave_protocol_multisink_MC`; vacuous when `ExtraSinks = [n |-> 0]`. |
-| 17 | `PausableOffStructural` | clean ✓ / gap ✓ / nested ✓ / pause ✓ / bufferall ✓ / resub ✓ / up ✓ / multisink ✓ | Spec §2.6 "pausable: false" opts out of lock tracking: `Pausable[n] = "off"` implies `pauseLocks[n] = {}` AND `pauseBuffer[n] = <<>>`. Structural regression guard — traps refactor accidents that would route a lock or buffer entry into an opted-out node (e.g. the `fromTimer`-class sources that must keep ticking regardless of downstream pause). |
-| 18 | `MultiSinkIterationCoherent` | all ✓ | Every pending DATA in `pendingExtraDelivery[n][i]` carries a snapshot whose `snap[n]` matches its own `msg.value`. **Batch 3 addition (2026-04-23).** Per-item faithfulness contract — catches `BatchEmitMulti`'s stamp-all-with-final-cache bug structurally. Validated load-bearing by the dedicated `wave_protocol_multisink_batch_MC` (`ExtraSinks[A] = 1` + `BatchSeqs = {<<1, 0>>}`). |
-| 19 | `CleanupWitnessInValueDomain` | all ✓ | Every `cleanupWitness[n]` entry holds a value in `Values` — the cleanup hook observed a real cached state, not a post-reset sentinel. Batch 3 Package 6 (§1.4). Vacuous when `InvalidateOriginators = {}` (all existing MCs default). |
-| 20 | `ReplayBufferBounded` | all ✓ | `Len(replayBuffer[n]) <= ReplayBufferSize[n]` — the ring's drop-oldest-on-cap logic. Batch 3 Package 3 (§2.5). Vacuous when `ReplayBufferSize[n] = 0`. |
-| 22 | `MetaTeardownObservedPreReset` | all ✓ | Every meta-child `teardownWitness` entry records `status \in {"settled","dirty"}` and `cache \in Values` — the meta child observed the parent PRE-reset. Batch 3 Package 7 (§2.3). Vacuous when `MetaCompanions = [n \|-> {}]`. |
-| 23 | `LateSubscriberReceivesReplay` | all ✓ | After `SubscribeSink(sid)` fires, the handshake's tail contains a DATA message for every entry in the captured `replaySnapshot[sid]`, in order. Batch 5 A (§2.5 replayBuffer consumption side). Vacuous when `ReplayBufferSize = [n \|-> 0]`; exercised actively by `wave_protocol_replay_MC`. |
-| 24 | `CleanupWitnessNotSentinel` | all ✓ | Every `cleanupWitness[n]` entry is non-default — catches the diamond fan-in bug where a second `DeliverInvalidate` arriving at an already-reset node would have appended the sentinel as a spurious second witness. Batch 5 B (§1.4 INVALIDATE cascade). Vacuous when `InvalidateOriginators = {}`; exercised by `wave_protocol_invalidate_MC` (chain — holds by construction) and actively load-bearing in `wave_protocol_invalidate_diamond_MC` (fan-in topology). |
-| — | `MultiSinkIterationDriftClean` | **DEFERRED** | Stricter §32 drift form — compares pending DATA to current `cache[n]`. Does NOT ship: false-positives on `BatchEmitMulti`'s atomic K-emit cache advance (intermediate DATAs appear to drift without any §32 nested-emit interference). Clean fix requires refactoring `BatchEmitMulti` into K step actions. The `AllExtraPendingEmpty` gate ships alongside — structurally models the runtime's atomic iteration even without the drift invariant. |
+`formal/states/` holds TLC state directories from earlier runs; it is not tracked by git.
 
 ## Running TLC
 
-### One-shot (CLI, matches the authoring workflow)
-
 ```bash
-# Requires the TLA+ Toolbox installed — ships tla2tools.jar:
 TLA_JAR="/Applications/TLA+ Toolbox.app/Contents/Eclipse/tla2tools.jar"
-
 cd ~/src/graphrefly/formal
-
-# Clean model — all invariants must hold.
-java -XX:+UseParallelGC -cp "$TLA_JAR" tlc2.TLC \
-    -config wave_protocol.cfg wave_protocol_MC
-
-# Substrate-faithful (item 3) — MultiDepHandshakeClean MUST fail.
-# Flipping this green is the TLA+-side gate for the substrate fix.
-java -XX:+UseParallelGC -cp "$TLA_JAR" tlc2.TLC \
-    -config wave_protocol_gap.cfg wave_protocol_gap_MC
-
-# Nested-drain regression guard (item 2) — all invariants must hold.
-java -XX:+UseParallelGC -cp "$TLA_JAR" tlc2.TLC \
-    -config wave_protocol_nested.cfg wave_protocol_nested_MC
-
-# §2.6 PAUSE/RESUME axes (added 2026-04-23) — all invariants must hold.
-java -XX:+UseParallelGC -cp "$TLA_JAR" tlc2.TLC \
-    -config wave_protocol_pause.cfg wave_protocol_pause_MC
-java -XX:+UseParallelGC -cp "$TLA_JAR" tlc2.TLC \
-    -config wave_protocol_bufferall.cfg wave_protocol_bufferall_MC
-java -XX:+UseParallelGC -cp "$TLA_JAR" tlc2.TLC \
-    -config wave_protocol_resubscribe.cfg wave_protocol_resubscribe_MC
-
-# Batch 2 (added 2026-04-23) — §1.4 up-axis + §2.4 multi-sink axis.
-java -XX:+UseParallelGC -cp "$TLA_JAR" tlc2.TLC \
-    -config wave_protocol_up.cfg wave_protocol_up_MC
-java -XX:+UseParallelGC -cp "$TLA_JAR" tlc2.TLC \
-    -config wave_protocol_multisink.cfg wave_protocol_multisink_MC
-
-# Batch 5 (added 2026-04-23) — §1.4 INVALIDATE diamond fan-in guard.
-java -XX:+UseParallelGC -cp "$TLA_JAR" tlc2.TLC \
-    -config wave_protocol_invalidate_diamond.cfg wave_protocol_invalidate_diamond_MC
-
-# Batch 6 (added 2026-04-23) — §2.5 replay×resubscribe cross-axis.
-java -XX:+UseParallelGC -cp "$TLA_JAR" tlc2.TLC \
-    -config wave_protocol_replay_resubscribe.cfg wave_protocol_replay_resubscribe_MC
+java -XX:+UseParallelGC -cp "$TLA_JAR" tlc2.TLC -workers auto -deadlock -config kernel_wave.cfg kernel_wave
 ```
 
-Expected output (success):
-
-```
-Model checking completed. No error has been found.
-  Estimates of the probability that TLC did not check all reachable states
-  calculated (optimistic):  val = …(very small)…
-NNNN states generated, NNNN distinct states found, 0 states left on queue.
-```
-
-Approximate state-space sizes (2026-04-23):
-
-| MC | Distinct states | Runtime |
-|----|-----------------|---------|
-| `wave_protocol_MC` (clean) | ~77K | ~5s |
-| `wave_protocol_gap_MC` (expected fail) | ~10 (counter-example found immediately) | <1s |
-| `wave_protocol_nested_MC` | ~124K (batch 7 tightened from 125K) | ~6s |
-| `wave_protocol_pause_MC` | ~23K | ~1s |
-| `wave_protocol_bufferall_MC` | ~11K | ~1s |
-| `wave_protocol_resubscribe_MC` | ~13K | ~1s |
-| `wave_protocol_up_MC` | ~160K | ~4s |
-| `wave_protocol_multisink_MC` | ~1K | <1s |
-| `wave_protocol_replay_MC` | ~2.3K (batch 5 grew from 1.9K via `replaySnapshot`) | <1s |
-| `wave_protocol_invalidate_MC` | ~1.7K | <1s |
-| `wave_protocol_invalidate_diamond_MC` | ~2.6K (batch 5) | <1s |
-| `wave_protocol_replay_resubscribe_MC` | ~550 (batch 6) | <1s |
-
-The pause-axis MCs use smaller topologies (3-node chain, 2-node chain for resubscribe) because pause invariants are per-node, and combinatorial interleavings of Pause/Resume × emit × edges × multiple lockIds blow up the state space on the 4-node diamond (a probe with `MaxPauseActions = 4` on the diamond exceeded 8M distinct states in 10 minutes and still had 1M+ on queue). Topology coverage of the pause invariants is orthogonal to pause-axis coverage.
-
-### In the TLA+ Toolbox GUI
-
-1. Open `wave_protocol.tla` in the Toolbox.
-2. `File` → `Open Spec` → point at this directory.
-3. `TLC Model Checker` → `New Model` → point at `wave_protocol.cfg`.
-4. Run. Counter-examples appear as clickable trace states.
-
-### Deeper probes
-
-Edit `wave_protocol_MC.tla`:
-
-```tla
-ValuesMC      == {0, 1, 2, 3}   \* larger alphabet
-MaxEmitsMC    == 4              \* longer emit sequences
-```
-
-State space grows roughly as `|Values|^MaxEmits × topology` — keep it
-under ~1M states for sub-minute runs. Probed up to `MaxEmits = 4` +
-`|Values| = 3` (~26K distinct states) during authoring; all invariants
-hold.
-
-## Scope — what the spec covers and what it doesn't
-
-**Covered:**
-- Message protocol (START, DIRTY, DATA, RESOLVED, COMPLETE, ERROR, PAUSE, RESUME)
-- Per-node cache, status, version, dirtyMask
-- Per-edge FIFO message queues with tier-ordered delivery
-- Equals-substitution at the source and at derived recomputes
-- Diamond fan-in with bitmask-style dep tracking
-- Terminal propagation
-- Subscribe handshake per sink (§2.2) — source, derived, and terminated variants
-- **§2.6 PAUSE/RESUME lock semantics (added 2026-04-23)** — `pauseLocks` as a per-node set keyed by opaque `lockId`, tier-2 propagation via `DeliverPauseResume`, unknown-lockId RESUME swallowing, `Pausable ∈ {"off", "on", "resumeAll"}` per-node modes.
-- **§2.6 bufferAll mode (added 2026-04-23)** — `pauseBuffer` capture of outgoing tier-3/4 during pause, atomic drain-then-forward on final-lock RESUME, tier-1/2/5 synchronous dispatch while paused.
-- **§2.6 resubscribable lifecycle (added 2026-04-23)** — `Resubscribe(sid)` action clears lifecycle-owned state so a new subscribe on a resubscribable terminated node starts fresh.
-- **§1.4 `up()` upstream direction (added 2026-04-23, batch 2)** — per-edge `upQueues` mirror of downstream `queues`, `UpPause` / `UpResume` originators at sinks, `DeliverUp(c, p)` integrates with existing `pauseLocks[p]` model. Composes with the existing downstream-origin PAUSE/RESUME model.
-- **§2.4 multi-sink iteration (added 2026-04-23, batch 2)** — per-node `ExtraSinks[n]` count, `extraSinkTrace[n][i]` per-extra-sink trace, `pendingExtraDelivery[n][i]` FIFO queue populated by every emission action and drained by `DeliverToExtraSink(n, i)`. Models the runtime's `_deliverToSinks` iteration at the primitive level.
-
-**Not covered (out of scope by design — compose on top):**
-- Operators (`map`, `filter`, `switchMap`, …)
-- Sugar constructors, sources, patterns layer
-- Persistence, versioning-V1, content-addressed cids
-- INVALIDATE / RESET propagation (tracked as a future MC axis)
-- Meta companion TEARDOWN fan-out (§2.3, future MC axis)
-- Mount / unmount topology (future MC axis)
-- Nested batch drain interleavings (partial coverage via `BatchEmitMulti`; deeper nested-batch modeling deferred)
-- Tight multi-sink iteration-coherence invariant (`cache[n] == pending-head.value` at DeliverToExtraSink time) — the current permissive model allows benign wave-lag between primary and extra sinks, so the stricter form false-positives on legitimate behavior. Tightening requires per-node pending-drain gating on emission actions to mirror the runtime's atomic `_deliverToSinks` iteration — tracked in `graphrefly-ts/docs/optimizations.md` as "Multi-sink iteration cache coherence — tighten TLA+ invariant."
-
-**Batch coalescing is now modeled** via the `BatchEmitMulti(src, vs)`
-action (added 2026-04-17 alongside the Bug 2 fix in `graphrefly-ts`).
-A batch of K emits to the same source enqueues ONE coalesced bundle per
-child edge: `<<K DIRTYs, K DATAs>>` (tier-sorted; per D49 every
-value-occurrence emits DATA — no value-equality substitution).
-`DeliverDirty` / `DeliverSettle`
-consume the same-tier prefix atomically, matching the runtime's
-"one sink() call per tier group, fn runs once" post-Bug-1-fix behaviour.
-TLC verifies the 7 invariants hold under this model at 3 batched emits
-over a 3-value alphabet — 77K distinct states, no counter-examples.
-
-**PAUSE/RESUME + resubscribable lifecycle is now modeled** via the
-`Pause` / `Resume` / `DeliverPauseResume` / `Resubscribe` actions (added
-2026-04-23). Each node carries `pauseLocks` (SUBSET LockIds) and
-`pauseBuffer` (Seq of messages). The bufferAll mode diverts outgoing
-tier-3 settlements from `Emit` / `BatchEmitMulti` / `SinkNestedEmit` /
-`DeliverSettle` into the buffer when `Pausable[n] = "resumeAll"` and
-`pauseLocks[n] # {}`. On final-lock RESUME, the buffer drains atomically
-to child queues BEFORE the RESUME forwards — per-edge FIFO then
-guarantees downstream sinks observe buffered settlements strictly before
-the RESUME. `Terminate` / `DeliverTerminal` hard-reset pauseLocks and
-pauseBuffer per §2.6 "Teardown". `Resubscribe` clears lifecycle-owned
-state so a new subscribe on a resubscribable terminated node cannot
-inherit a stale lock. Four new invariants (#10–#13) encode the §2.6
-structural contracts; three corresponding fast-check properties
-(#10 `pause-multi-pauser`, #11 `buffer-all-replay-ordering`,
-#12 `resubscribe-clears-pause-state`) mirror the observable behaviour.
-
-## Modeling simplifications worth knowing
-
-1. **Tier ordering is enforced globally.** Per GRAPHREFLY-SPEC § 1.3
-   invariant 7, DIRTY (tier 1) is immediate and DATA/RESOLVED (tier 3)
-   is deferred. The spec enforces this with `NoDirtyAnywhere` guards on
-   `DeliverSettle`, and `NoSettleAnywhere` guards on `DeliverTerminal`.
-   Without these guards TLC finds "glitches" that are artifacts of the
-   interleaving model, not real runtime behaviour.
-
-2. **`trace[n]` records self-emissions, not incoming messages.** This
-   matches what an external `subscribe(n, cb)` observer would see in
-   the runtime — the fast-check harness does the same.
-
-3. **Batch semantics are not modeled.** The fast-check harness already
-   surfaces a Tier-B finding for multi-emit batches at the fan-in
-   (K + 1 settlements instead of ≤ K); see
-   [graphrefly-ts/docs/optimizations.md](../../graphrefly-ts/docs/optimizations.md)
-   for the investigation hint. Adding batch-frame modeling to this
-   spec is a future step if that finding evolves.
-
-## When an invariant fails
-
-TLC prints a minimal counter-example trace. Example skeleton:
-
-```
-Error: Invariant DiamondConvergence is violated.
-Error: The behavior up to this point is:
-State 1: <Initial predicate>
-  /\ cache = [A |-> 0, ..., D |-> 0]
-  /\ ...
-State 2: <Emit line NN>
-  /\ ...
-State 3: ...
-```
-
-To port the counter-example to fast-check:
-
-1. Identify the offending sequence of `Emit` / `DeliverDirty` /
-   `DeliverSettle` actions.
-2. Encode the same sequence as a fast-check `Event[]` in
-   [`graphrefly-ts/src/__tests__/properties/_invariants.ts`](../../graphrefly-ts/src/__tests__/properties/_invariants.ts).
-3. Wrap it in a new invariant (or tighten an existing one) that would
-   trip on the same property violation.
-4. Run the fast-check suite. It should fail in the same way.
-5. Fix the substrate. Both TLC and fast-check should go green.
+Each model's row above names its configs, invariants and the state counts of its last green run.
+Pass `-metadir <dir>` to keep TLC's state files out of this directory; a three-wave `kernel_wave`
+run needs tens of gigabytes.
 
 ## Adding a new invariant
 
-1. Add the operator to `wave_protocol.tla` under the invariants block.
-2. Reference it in the `INVARIANTS` list in `wave_protocol.cfg`.
-3. Add the fast-check mirror to
-   [`_invariants.ts`](../../graphrefly-ts/src/__tests__/properties/_invariants.ts)
-   — keep the catalog indices aligned so the two checkers evolve
-   together.
-
-## References
-
-- [`../GRAPHREFLY-SPEC.md`](../GRAPHREFLY-SPEC.md) — the prose spec.
-- [`graphrefly-ts/src/__tests__/properties/`](../../graphrefly-ts/src/__tests__/properties/) — the fast-check harness.
-- `graphrefly-ts/archive/docs/SESSION-rigor-infrastructure-plan.md` §
-  "Project 3" — strategic motivation for this spec.
-- [Leslie Lamport's TLA+ home page](https://lamport.azurewebsites.net/tla/tla.html) — language reference.
+Add the operator to the model it belongs to, list it in each of that model's configs, check that a
+mutation aimed at it trips it alone, and record the run and the mutation in that model's row above.

@@ -48,7 +48,7 @@ test("history: a RESOLVED array is not recorded, and a wave without values sends
   history(g, "h", "f", 3);
   g.subscribe("k", "h");
   g.set("s", 2);
-  assert.deepEqual(during(g, () => g.set("s", 3)), ["k <- h: [DIRTY, RESOLVED]"]);
+  assert.deepEqual(during(g, () => g.set("s", 3)), ["k <- h: [PENDING, RESOLVED]"]);
   assert.deepEqual(g.get("h").value, [[[2]]]);
 });
 
@@ -86,7 +86,7 @@ test("history: n counts waves; an entry keeps how its wave was split into arrays
   history(g, "h", "x", 2);
   g.subscribe("k", "h");
   assert.deepEqual(g.get("h").value, [[[1]]], "activation: one wave of one array");
-  assert.deepEqual(during(g, () => g.set("s", [2, 3])), ["k <- h: [DIRTY, DATA([[[1]],[[2],[3]]])]"],
+  assert.deepEqual(during(g, () => g.set("s", [2, 3])), ["k <- h: [PENDING, DATA([[[1]],[[2],[3]]])]"],
     "two arrays in one wave are one entry, and the list is sent once");
   g.set("s", [4]);
   assert.deepEqual(g.get("h").value, [[[2], [3]], [[4]]], "n = 2 keeps two waves, not two arrays");

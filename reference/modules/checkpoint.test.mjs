@@ -60,7 +60,7 @@ test("a first subscription gets the saved value without running the fn; later wa
     "kt <- t: [START, DATA(6)]",
   ]);
   assert.deepEqual(reg.calls, { sum: 0, scan: 0 });
-  assert.deepEqual(during(r.g, () => r.g.set("b", 10)), ["ks <- s: [DIRTY, DATA(13)]", "kt <- t: [DIRTY, DATA(16)]"],
+  assert.deepEqual(during(r.g, () => r.g.set("b", 10)), ["ks <- s: [PENDING, DATA(13)]", "kt <- t: [PENDING, DATA(16)]"],
     "t's private state came back: 6 + 10");
   assert.deepEqual(reg.calls, { sum: 1, scan: 1 });
   assert.deepEqual(r.capture().nodes.find((n) => n.id === "t").saved.values, [16], "once activated, capture saves the live lifetime");
@@ -99,7 +99,7 @@ test("a chain of restored nodes: each gets its dependency's saved value, so no f
   const r = restore(roundTrip(b.capture()), reg2);
   assert.deepEqual(during(r.g, () => r.g.subscribe("ku", "u")), ["ku <- u: [START, DATA(111)]"]);
   assert.deepEqual(reg2.calls, { sum: 0, scan: 0 });
-  assert.deepEqual(during(r.g, () => r.g.set("a", 4)), ["ku <- u: [DIRTY, DATA(116)]"]); // q 106, t 6 + 4
+  assert.deepEqual(during(r.g, () => r.g.set("a", 4)), ["ku <- u: [PENDING, DATA(116)]"]); // q 106, t 6 + 4
 });
 
 test("a computed node without a lifetime saves nothing and starts fresh", () => {
@@ -147,7 +147,7 @@ test("a node holding an ended dependency comes back and works; the ended node do
   const before = { ...reg.calls };
   lastCalls = 0;
   assert.deepEqual(during(r.g, () => r.g.subscribe("k", "s")), ["k <- s: [START, DATA(1)]"]);
-  assert.deepEqual(during(r.g, () => r.g.set("input", 5)), ["k <- s: [DIRTY, DATA(6)]"]);
+  assert.deepEqual(during(r.g, () => r.g.set("input", 5)), ["k <- s: [PENDING, DATA(6)]"]);
   assert.deepEqual([reg.calls.sum - before.sum, lastCalls], [1, 0]);
   assert.deepEqual(during(r.g, () => r.g.subscribe("k2", "e")), ["k2 <- e: [START, DATA(1), COMPLETE]"]);
   assert.equal(lastCalls, 0);
@@ -386,7 +386,7 @@ test("F6: a paused pausable is restored with its locks and held arrays, and the 
   const resumed = (g, handle) => after(g, "s", () => handle.resume("L"));
   const restored = resumed(r.g, rp);
   assert.deepEqual(restored, resumed(b.g, p));
-  assert.deepEqual(restored, ["s <- p: [DIRTY, DATA(2)]", "s <- p: [DIRTY, DATA(3)]"], "both held arrays, as they arrived");
+  assert.deepEqual(restored, ["s <- p: [PENDING, DATA(2)]", "s <- p: [PENDING, DATA(3)]"], "both held arrays, as they arrived");
   assert.deepEqual(resumed(r.g, rp), [], "a second resume changes nothing");
   assert.deepEqual(after(r.g, "s", () => r.g.set("a", 4)), after(b.g, "s", () => b.g.set("a", 4)));
 });
@@ -406,7 +406,7 @@ test("F6: a demand holder is restored with its queue and request number, and the
   assert.deepEqual(during(r.g, () => r.g.subscribe("s", "h")), ['s <- h: [START, DATA("p1:0,1")]'], "no run, nothing old served");
   const served = after(r.g, "s", () => rh.pull("p2"));
   assert.deepEqual(served, after(b.g, "s", () => h.pull("p2")));
-  assert.deepEqual(served, ['s <- h: [DIRTY, DATA("p2:2,3")]']);
+  assert.deepEqual(served, ['s <- h: [PENDING, DATA("p2:2,3")]']);
   assert.deepEqual(r.g.get(rh.demandId).value, b.g.get(h.demandId).value, "the request numbers go on");
 });
 

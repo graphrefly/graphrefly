@@ -233,7 +233,7 @@ for (const arm of ARMS) {
       // The quiet lifecycle port sent only the release of r1; nothing for r2, and never RESOLVED.
       const arrays = run.app.events.release.filter((m) => m[0][0] !== "START");
       assert.deepEqual(run.app.released().map((r) => r.key), [key(occs[0])]);
-      assert.ok(arrays.every((m) => m.length === 2 && m[0][0] === "DIRTY" && m[1][0] === "DATA"));
+      assert.ok(arrays.every((m) => m.length === 2 && m[0][0] === "PENDING" && m[1][0] === "DATA"));
     }
   });
 

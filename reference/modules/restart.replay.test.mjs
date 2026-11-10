@@ -15,7 +15,7 @@ function scene({ ownerFirst }) {
   const inner = {};
   restartable(g, "S", { deps: [], fn: (ctx) => { inner.ctx = ctx; }, rounds: 2 });
   const X = (msgs) => {
-    if (msgs[0][0] !== "DIRTY") return;
+    if (msgs[0][0] !== "PENDING") return;
     g.subscribe("Z", "S/inner");
     g.subscribe("X", "S/inner", X);
     throw new Error("X failed");
@@ -32,9 +32,9 @@ function scene({ ownerFirst }) {
 test("C-34 on restart: Y gets the whole old array; the next execution starts after the fanout; Z gets its own START", () => {
   const { trace, reports } = scene({ ownerFirst: true });
   assert.deepEqual(trace, [
-    "down <- S: [DIRTY, DATA(1)]",               // the owner forwards the value, not the COMPLETE
-    "X <- S/inner: [DIRTY, DATA(1), COMPLETE]",
-    "Y <- S/inner: [DIRTY, DATA(1), COMPLETE]",  // the full old array, although X threw
+    "down <- S: [PENDING, DATA(1)]",               // the owner forwards the value, not the COMPLETE
+    "X <- S/inner: [PENDING, DATA(1), COMPLETE]",
+    "Y <- S/inner: [PENDING, DATA(1), COMPLETE]",  // the full old array, although X threw
     "X <- S/inner: [START]",                     // the replace: X's registration goes on (O7)
     "Y <- S/inner: [START]",
     "Z <- S/inner: [START]",                     // Z, after the fanout and the old close
@@ -47,9 +47,9 @@ test("C-34 on restart: a request queued before the owner's replace gets the old 
   // ahead of the replace the owner asks for in the same fanout.
   const { trace, reports } = scene({ ownerFirst: false });
   assert.deepEqual(trace, [
-    "X <- S/inner: [DIRTY, DATA(1), COMPLETE]",
-    "Y <- S/inner: [DIRTY, DATA(1), COMPLETE]",
-    "down <- S: [DIRTY, DATA(1)]",
+    "X <- S/inner: [PENDING, DATA(1), COMPLETE]",
+    "Y <- S/inner: [PENDING, DATA(1), COMPLETE]",
+    "down <- S: [PENDING, DATA(1)]",
     "Z <- S/inner: [START, DATA(1), COMPLETE]", // queued ahead of the replace (order-dependent)
     "X <- S/inner: [START]",
     "Y <- S/inner: [START]",

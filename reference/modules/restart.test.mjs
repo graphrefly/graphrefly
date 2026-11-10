@@ -100,11 +100,11 @@ test("observation goes on across attempts: same topology, and the inner's sink s
   assert.equal(JSON.stringify(g.describe()), before);
   assert.deepEqual(msgsOf(g, "o"), [
     "o <- r/inner: [START]",
-    "o <- r/inner: [DIRTY, DATA(1)]",
-    "o <- r/inner: [DIRTY, COMPLETE]",
+    "o <- r/inner: [PENDING, DATA(1)]",
+    "o <- r/inner: [PENDING, COMPLETE]",
     "o <- r/inner: [START]",
-    "o <- r/inner: [DIRTY, DATA(1)]",
-    "o <- r/inner: [DIRTY, COMPLETE]",
+    "o <- r/inner: [PENDING, DATA(1)]",
+    "o <- r/inner: [PENDING, COMPLETE]",
   ]);
 });
 

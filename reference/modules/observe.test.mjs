@@ -35,11 +35,11 @@ test("H5: an observer sees each node's committed arrays, with their boundaries, 
   r.clear();
   g.set("a", 2);
   assert.deepEqual(r.shown(), [
-    "a: DIRTY, DATA(2)",
-    "b: DIRTY, DATA(20)",
-    "b: DIRTY, DATA(21)",
-    "c: DIRTY, DATA(21)",
-    "c: DIRTY, DATA(22)",
+    "a: PENDING, DATA(2)",
+    "b: PENDING, DATA(20)",
+    "b: PENDING, DATA(21)",
+    "c: PENDING, DATA(21)",
+    "c: PENDING, DATA(22)",
   ]);
 });
 
@@ -53,11 +53,11 @@ test("H5: what a node did not commit is not observed; what the kernel adds is", 
   observe(g, ["a", "odd"], r.sink);
   r.clear();
   g.set("a", 2);
-  assert.deepEqual(r.shown(), ["a: DIRTY, DATA(2)", "odd: DIRTY, RESOLVED"], "the kernel's RESOLVED is committed output");
+  assert.deepEqual(r.shown(), ["a: PENDING, DATA(2)", "odd: PENDING, RESOLVED"], "the kernel's RESOLVED is committed output");
   r.clear();
   g.invalidate("a");
   g.invalidate("a");
-  assert.deepEqual(r.shown(), ["a: DIRTY, INVALIDATE", "odd: DIRTY, INVALIDATE"], "the repeat removed nothing and is not observed");
+  assert.deepEqual(r.shown(), ["a: PENDING, INVALIDATE", "odd: PENDING, INVALIDATE"], "the repeat removed nothing and is not observed");
 });
 
 test("H5: the observed order is enough to keep R-node-revision evidence", () => {
@@ -68,7 +68,7 @@ test("H5: the observed order is enough to keep R-node-revision evidence", () => 
     const r = revisions.get(id) ?? { revision: 0, valueRevision: 0 };
     if (msgs[0][0] === "START") { revisions.set(id, r); return; } // installation advances neither
     for (const [type] of msgs) {
-      if (type === "DIRTY") continue; // a notification, not output
+      if (type === "PENDING") continue; // a notification, not output
       r.revision += 1;
       if (type === "DATA" || type === "INVALIDATE") r.valueRevision += 1;
     }
@@ -92,7 +92,7 @@ test("H5: observing is a subscription: it activates a cold node, others see the 
   other.clear();
   r.clear();
   g.set("a", 3);
-  assert.deepEqual(other.shown(), ["c: DIRTY, DATA(31)", "c: DIRTY, DATA(32)"], "the other subscriber is unaffected");
+  assert.deepEqual(other.shown(), ["c: PENDING, DATA(31)", "c: PENDING, DATA(32)"], "the other subscriber is unaffected");
   stop();
   assert.equal(g.get("b").active, true, "b stays active for c's observer");
   g.node("d", ["a"], (ctx) => ctx.down([["DATA", ctx.deps[0].value]]));
@@ -114,10 +114,10 @@ test("H5: a write from inside an observer is a later wave, after the one it obse
   r.clear();
   g.set("a", 4);
   assert.deepEqual(r.shown(), [
-    "a: DIRTY, DATA(4)",
-    "c: DIRTY, DATA(41)",
-    "c: DIRTY, DATA(42)",
-    "log: DIRTY, DATA(1)",
+    "a: PENDING, DATA(4)",
+    "c: PENDING, DATA(41)",
+    "c: PENDING, DATA(42)",
+    "log: PENDING, DATA(1)",
   ]);
 });
 
@@ -131,7 +131,7 @@ test("H5: a quiet node's output is observed in its later wave", () => {
   observe(g, ["a", "q"], r.sink);
   r.clear();
   g.set("a", 2);
-  assert.deepEqual(r.shown(), ["a: DIRTY, DATA(2)", "q: DIRTY, DATA(2)"]);
+  assert.deepEqual(r.shown(), ["a: PENDING, DATA(2)", "q: PENDING, DATA(2)"]);
 });
 
 test("H5: two observers of one node are two subscribers; stopping one leaves the other", () => {
@@ -144,5 +144,5 @@ test("H5: two observers of one node are two subscribers; stopping one leaves the
   stop1();
   g.set("a", 2);
   assert.deepEqual(r1.shown(), ["a: START, DATA(1)"]);
-  assert.deepEqual(r2.shown(), ["a: START, DATA(1)", "a: DIRTY, DATA(2)"]);
+  assert.deepEqual(r2.shown(), ["a: START, DATA(1)", "a: PENDING, DATA(2)"]);
 });

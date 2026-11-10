@@ -41,9 +41,9 @@ test("C-28: one array of three occurrences stays intact, and the diamond fan-in 
   g.subscribe("sd", "D");
   seen.length = 0;
   assert.deepEqual(during(g, () => A.ctx.down([["DATA", 23], ["DATA", 23], ["DATA", 30]])), [
-    "o1 <- A: [DIRTY, DATA(23), DATA(23), DATA(30)]",
-    "o2 <- A: [DIRTY, DATA(23), DATA(23), DATA(30)]",
-    "sd <- D: [DIRTY, RESOLVED]",
+    "o1 <- A: [PENDING, DATA(23), DATA(23), DATA(30)]",
+    "o2 <- A: [PENDING, DATA(23), DATA(23), DATA(30)]",
+    "sd <- D: [PENDING, RESOLVED]",
   ]);
   assert.deepEqual(seen, [[[[23, 23, 30]], [[23, 23, 30]]]], "one invocation, every occurrence, one array per dependency");
 });
@@ -53,11 +53,11 @@ test("C-28: separate explicit calls stay separate waves; a batch is its declared
   const A = producer(g, "A");
   g.subscribe("o", "A");
   assert.deepEqual(during(g, () => { A.ctx.down([["DATA", 23]]); A.ctx.down([["DATA", 30]]); }), [
-    "o <- A: [DIRTY, DATA(23)]",
-    "o <- A: [DIRTY, DATA(30)]",
+    "o <- A: [PENDING, DATA(23)]",
+    "o <- A: [PENDING, DATA(30)]",
   ]);
   assert.deepEqual(during(g, () => g.batch(() => { A.ctx.down([["DATA", 23]]); A.ctx.down([["DATA", 30]]); })), [
-    "o <- A: [DIRTY, DATA(23), DATA(30)]",
+    "o <- A: [PENDING, DATA(23), DATA(30)]",
   ]);
 });
 
@@ -66,7 +66,7 @@ test("C-28: observer requests apply only after the complete fanout; no peer is c
   const A = producer(g, "A");
   let first = true;
   g.subscribe("o1", "A", (msgs) => {
-    if (!first || msgs[0][0] !== "DIRTY") return;
+    if (!first || msgs[0][0] !== "PENDING") return;
     first = false;
     g.unsubscribe("o2", "A");      // would cut o2 off if applied now
     g.subscribe("o3", "A");
@@ -74,11 +74,11 @@ test("C-28: observer requests apply only after the complete fanout; no peer is c
   });
   g.subscribe("o2", "A");
   assert.deepEqual(during(g, () => A.ctx.down([["DATA", 1]])), [
-    "o1 <- A: [DIRTY, DATA(1)]",
-    "o2 <- A: [DIRTY, DATA(1)]",   // still receives the whole array
+    "o1 <- A: [PENDING, DATA(1)]",
+    "o2 <- A: [PENDING, DATA(1)]",   // still receives the whole array
     "o3 <- A: [START, DATA(1)]",   // requests then apply in issue order
-    "o1 <- A: [DIRTY, DATA(99)]",
-    "o3 <- A: [DIRTY, DATA(99)]",
+    "o1 <- A: [PENDING, DATA(99)]",
+    "o3 <- A: [PENDING, DATA(99)]",
   ]);
 });
 
@@ -89,11 +89,11 @@ test("C-28: a rejected conflicting submission leaves earlier batch staging uncha
   assert.deepEqual(during(g, () => g.batch(() => {
     A.ctx.down([["DATA", 1]]);
     assert.throws(() => A.ctx.down([["RESOLVED"]]), KernelError);
-  })), ["o <- A: [DIRTY, DATA(1)]"]);
+  })), ["o <- A: [PENDING, DATA(1)]"]);
   assert.deepEqual(during(g, () => g.batch(() => {
     A.ctx.down([["RESOLVED"]]);
     assert.throws(() => A.ctx.down([["DATA", 2]]), KernelError);
-  })), ["o <- A: [DIRTY, RESOLVED]"]);
+  })), ["o <- A: [PENDING, RESOLVED]"]);
 });
 
 test("C-28: an observer failure after commit does not roll back the committed output", () => {
@@ -101,7 +101,7 @@ test("C-28: an observer failure after commit does not roll back the committed ou
   const g = createGraph({ report: (r) => reports.push(r) });
   g.state("a", 1);
   g.node("d", ["a"], map((v) => v * 2));
-  g.subscribe("o", "d", (msgs) => { if (msgs[0][0] === "DIRTY") throw new Error("observer"); });
+  g.subscribe("o", "d", (msgs) => { if (msgs[0][0] === "PENDING") throw new Error("observer"); });
   g.batch(() => g.set("a", 5));
   assert.deepEqual([g.get("a").value, g.get("d").value], [5, 10]);
   assert.deepEqual(reports, [{ source: "sink o", error: "observer" }]);
@@ -113,7 +113,7 @@ test("C-31: ordinary last-off keeps the state's intrinsic value, and a write que
   g.state("t", 0);
   g.subscribe("o", "s");
   g.subscribe("ot", "t", (msgs) => {
-    if (msgs[0][0] !== "DIRTY") return;
+    if (msgs[0][0] !== "PENDING") return;
     g.unsubscribe("o", "s"); // close first ...
     g.set("s", 30);          // ... then the queued write
   });
@@ -129,7 +129,7 @@ test("C-31: a terminal seals the state; a write queued behind the terminal is dr
   g.state("t", 0);
   g.subscribe("o", "s");
   g.subscribe("ot", "t", (msgs) => {
-    if (msgs[0][0] !== "DIRTY") return;
+    if (msgs[0][0] !== "PENDING") return;
     g.complete("s");
     g.set("s", 40);
   });
@@ -154,7 +154,7 @@ test("C-33: a close requested during an invocation waits until it returns; clean
   g.subscribe("s", "q", (msgs) => log.push(`deliver ${format({ to: "s", from: "q", msgs })}`));
   log.length = 0;
   g.set("a", 2);
-  assert.deepEqual(log, ["run q2", "deliver s <- q: [DIRTY, DATA(2)]", "cleanup q2"]);
+  assert.deepEqual(log, ["run q2", "deliver s <- q: [PENDING, DATA(2)]", "cleanup q2"]);
 });
 
 test("C-33: old-lifetime output is dropped, and a fresh lifetime gets a distinct ctx and signal", () => {
@@ -177,14 +177,14 @@ test("C-34: during DATA+COMPLETE fanout every observer gets the whole array; a s
   const g = createGraph({ report: (r) => reports.push(r) });
   const S = producer(g, "S");
   g.subscribe("X", "S", (msgs) => {
-    if (msgs[0][0] !== "DIRTY") return;
+    if (msgs[0][0] !== "PENDING") return;
     g.subscribe("Z", "S");
     throw new Error("X failed");
   });
   g.subscribe("Y", "S");
   assert.deepEqual(during(g, () => S.ctx.down([["DATA", 1], ["COMPLETE"]])), [
-    "X <- S: [DIRTY, DATA(1), COMPLETE]",
-    "Y <- S: [DIRTY, DATA(1), COMPLETE]",
+    "X <- S: [PENDING, DATA(1), COMPLETE]",
+    "Y <- S: [PENDING, DATA(1), COMPLETE]",
     "Z <- S: [START, DATA(1), COMPLETE]", // after the wave; no resubscribable in the kernel (O7)
   ]);
   assert.deepEqual(reports, [{ source: "sink X", error: "X failed" }]); // not S's ERROR
@@ -202,7 +202,7 @@ test("C-36: one invocation sees the admitted DATA and the terminal of the same a
   g.subscribe("s", "r");
   views.length = 0;
   assert.deepEqual(during(g, () => A.ctx.down([["DATA", 5], ["DATA", 6], ["COMPLETE"]])), [
-    "s <- r: [DIRTY, DATA(2), COMPLETE]",
+    "s <- r: [PENDING, DATA(2), COMPLETE]",
   ]);
   assert.deepEqual(views, [[[[5, 6]], ["COMPLETE"]]]);
 });
@@ -213,8 +213,8 @@ test("C-36: under complete=auto the terminal ends the node after its run, with n
   g.node("d", ["A"], derived((v) => v * 10));
   g.subscribe("s", "d");
   assert.deepEqual(during(g, () => A.ctx.down([["DATA", 5], ["COMPLETE"]])), [
-    "s <- d: [DIRTY, DATA(50)]",
-    "s <- d: [DIRTY, COMPLETE]",
+    "s <- d: [PENDING, DATA(50)]",
+    "s <- d: [PENDING, COMPLETE]",
   ]);
 });
 
@@ -229,8 +229,8 @@ test("C-36: a trailing INVALIDATE in the same array leaves the value absent for 
   runs.length = 0;
   // O13: DATA(7) comes before the INVALIDATE in its array, so it is removed (DS-17 O13).
   assert.deepEqual(during(g, () => A.ctx.down([["DATA", 7], ["INVALIDATE"]])), [
-    "sa <- A: [DIRTY, INVALIDATE]",
-    "sd <- d: [DIRTY, INVALIDATE]",
+    "sa <- A: [PENDING, INVALIDATE]",
+    "sd <- d: [PENDING, INVALIDATE]",
   ]);
   assert.deepEqual(runs, [], "the function does not run on an invalidated input");
   assert.equal(g.get("A").has, false);
@@ -262,7 +262,7 @@ test("C-8 (2)(3): a new dependency's value reaches D, D recomputes, and the new 
   assert.deepEqual(during(g, () => g.replace("D", ["A", "B"], (ctx) => ctx.down([["DATA", `f2(${ctx.deps[0].value},${ctx.deps[1].value})`]]))), [
     "s <- D: [START, DATA(\"f2(a1,b0)\")]",
   ]);
-  assert.deepEqual(during(g, () => g.set("B", "b1")), ["s <- D: [DIRTY, DATA(\"f2(a1,b1)\")]"]);
+  assert.deepEqual(during(g, () => g.set("B", "b1")), ["s <- D: [PENDING, DATA(\"f2(a1,b1)\")]"]);
 });
 
 test("C-8 (4)(5): a removed dependency no longer drives D; D's value is recomputed, not preserved (O4)", () => {
@@ -307,7 +307,7 @@ test("C-8: a replace D asks for from its own function waits for the wave (K8) in
     ctx.down([["DATA", ctx.deps[0].value]]);
   });
   g.subscribe("s", "D");
-  assert.deepEqual(during(g, () => g.set("A", 2)), ["s <- D: [DIRTY, DATA(2)]", "s <- D: [START, DATA(-2)]"]);
+  assert.deepEqual(during(g, () => g.set("A", 2)), ["s <- D: [PENDING, DATA(2)]", "s <- D: [START, DATA(-2)]"]);
 });
 
 test("C-8: replacing to no dependencies leaves D active with a function of no inputs", () => {
@@ -340,8 +340,8 @@ test("C-8 rewire (2)(3): an added cached dependency reaches D without a START, D
   const D = withCtx(f2);
   g.node("D", ["A"], D);
   g.subscribe("s", "D");
-  assert.deepEqual(during(g, () => D.ctx.rewire(["A", "B"])), ["s <- D: [DIRTY, DATA(\"f2(a1,b0)\")]"]);
-  assert.deepEqual(during(g, () => g.set("B", "b1")), ["s <- D: [DIRTY, DATA(\"f2(a1,b1)\")]"]);
+  assert.deepEqual(during(g, () => D.ctx.rewire(["A", "B"])), ["s <- D: [PENDING, DATA(\"f2(a1,b0)\")]"]);
+  assert.deepEqual(during(g, () => g.set("B", "b1")), ["s <- D: [PENDING, DATA(\"f2(a1,b1)\")]"]);
 });
 
 test("C-8 rewire (2): an added dependency with no value sends nothing; D recomputes when it first emits", () => {
@@ -354,7 +354,7 @@ test("C-8 rewire (2): an added dependency with no value sends nothing; D recompu
   g.subscribe("s", "D");
   assert.deepEqual(during(g, () => D.ctx.rewire(["A", "E"])), []);
   assert.equal(fn.calls, 1, "only the activation run");
-  assert.deepEqual(during(g, () => g.set("E", "e1")), ["s <- D: [DIRTY, DATA(\"f2(a1,e1)\")]"]);
+  assert.deepEqual(during(g, () => g.set("E", "e1")), ["s <- D: [PENDING, DATA(\"f2(a1,e1)\")]"]);
 });
 
 test("C-8 rewire (4)(5): a removed dependency no longer drives D, and D's value is preserved", () => {
@@ -367,7 +367,7 @@ test("C-8 rewire (4)(5): a removed dependency no longer drives D, and D's value 
   assert.deepEqual(during(g, () => D.ctx.rewire(["B"])), []);
   assert.equal(g.get("D").value, "f2(a1,b1)");
   assert.deepEqual(during(g, () => g.set("A", "a2")), [], "A is drained");
-  assert.deepEqual(during(g, () => g.set("B", "b2")), ["s <- D: [DIRTY, DATA(\"f2(b2)\")]"]);
+  assert.deepEqual(during(g, () => g.set("B", "b2")), ["s <- D: [PENDING, DATA(\"f2(b2)\")]"]);
 });
 
 test("C-8 rewire (6): rewiring to the current set is idempotent: no run, nothing sent", () => {
@@ -423,7 +423,7 @@ test("C-22: a rewire requested in a nested batch waits for the outermost commit,
     depsAfterInner = g.describe().find((d) => d.id === "N").deps;
   }));
   assert.deepEqual(depsAfterInner, ["A"], "the inner batch's exit does not apply it");
-  assert.deepEqual(out, ["s <- N: [DIRTY, DATA(\"A=a2\")]", "s <- N: [DIRTY, DATA(\"B=b0\")]"]);
+  assert.deepEqual(out, ["s <- N: [PENDING, DATA(\"A=a2\")]", "s <- N: [PENDING, DATA(\"B=b0\")]"]);
 });
 
 test("C-22: rewires queued in one batch drain in request order, each as its own wave", () => {
@@ -438,8 +438,8 @@ test("C-22: rewires queued in one batch drain in request order, each as its own 
     N.ctx.rewire(["B"]);
   }));
   // The second removes A and adds nothing, so it sends nothing (a removal is silent).
-  assert.deepEqual(out, ["s <- N: [DIRTY, DATA(\"A=a2\")]", "s <- N: [DIRTY, DATA(\"A=a2,B=b0\")]"]);
-  assert.deepEqual(during(g, () => g.set("B", "b1")), ["s <- N: [DIRTY, DATA(\"B=b1\")]"]);
+  assert.deepEqual(out, ["s <- N: [PENDING, DATA(\"A=a2\")]", "s <- N: [PENDING, DATA(\"A=a2,B=b0\")]"]);
+  assert.deepEqual(during(g, () => g.set("B", "b1")), ["s <- N: [PENDING, DATA(\"B=b1\")]"]);
 });
 
 test("C-22 (changed, K8): a rewire of a node the batch does not touch waits for the commit too", () => {
@@ -451,5 +451,5 @@ test("C-22 (changed, K8): a rewire of a node the batch does not touch waits for 
   g.subscribe("s", "N");
   g.subscribe("t", "M");
   const out = during(g, () => g.batch(() => { g.set("A", "a2"); M.ctx.rewire(["C", "B"]); }));
-  assert.deepEqual(out, ["s <- N: [DIRTY, DATA(\"A=a2\")]", "t <- M: [DIRTY, DATA(\"C=c0,B=b0\")]"]);
+  assert.deepEqual(out, ["s <- N: [PENDING, DATA(\"A=a2\")]", "t <- M: [PENDING, DATA(\"C=c0,B=b0\")]"]);
 });

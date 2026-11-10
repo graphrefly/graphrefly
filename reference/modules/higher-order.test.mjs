@@ -168,7 +168,7 @@ test("switchMap: a throwing projector keeps the inner values it forwarded in the
   g.subscribe("out", "op");
   g.set("s", 2);
   const tail = g.trace.filter((e) => e.to === "out").map(format).at(-1);
-  assert.equal(tail, 'out <- op: [DIRTY, ERROR("project boom")]');
+  assert.equal(tail, 'out <- op: [PENDING, ERROR("project boom")]');
   assert.deepEqual(values(g, "out"), [1, 2], "the inner's 2 was forwarded before the ERROR");
 });
 

@@ -64,7 +64,7 @@ const scenarios = {
     await run.app.drain();
     assert.equal(writes(run), 0);
     const arrays = run.app.events.release.filter((m) => m[0][0] !== "START");
-    assert.ok(arrays.every((m) => m.length === 2 && m[0][0] === "DIRTY" && m[1][0] === "DATA"), "the quiet port sent only releases");
+    assert.ok(arrays.every((m) => m.length === 2 && m[0][0] === "PENDING" && m[1][0] === "DATA"), "the quiet port sent only releases");
   },
   async shortWatermark(edits) {
     const occs = pack({ zThreshold: 0.7 });

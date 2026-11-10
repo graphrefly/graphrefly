@@ -2,11 +2,11 @@
 (***************************************************************************
 GraphReFly D797 kernel — waves, settlement, terminals and invalidation.
 
-A candidate model for the D797 draft rules R-wave, R-messages, R-invalidation,
-R-terminals, R-subscription (retained values) and R-failure (a rejected output
-array becomes the node's ERROR). Written 2026-11-09 for graphrefly:B140; the
-older wave_protocol models verify the currently active rules and are retired or
-rescoped at activation. Status: draft, like the rules it checks.
+The model of the D797 rules R-wave, R-messages, R-invalidation, R-terminals,
+R-subscription (retained values) and R-failure (a rejected output array becomes
+the node's ERROR). Written 2026-11-09 for graphrefly:B140; the rules it checks
+are active since 2026-11-10 (graphrefly:D798), when it succeeded wave_protocol
+and its MCs (deleted then; see formal/README.md).
 
 Topology: a state S and a diamond S -> B, S -> C, B,C -> D. B and C have the
 default auto policies; D's three policies (COMPLETE, ERROR, INVALIDATE) are chosen at Init,

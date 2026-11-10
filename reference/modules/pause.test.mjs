@@ -21,21 +21,21 @@ test("nothing is forwarded while paused; the final resume sends every held array
     p.resume(lock);
   });
   assert.deepEqual(out, [
-    "s <- p: [DIRTY, RESOLVED]",
-    "s <- p: [DIRTY, RESOLVED]",
-    "s <- p: [DIRTY, DATA(1)]",
-    "s <- p: [DIRTY, DATA(2)]",
+    "s <- p: [PENDING, RESOLVED]",
+    "s <- p: [PENDING, RESOLVED]",
+    "s <- p: [PENDING, DATA(1)]",
+    "s <- p: [PENDING, DATA(2)]",
   ]);
 });
 
-test("every pause and resume is a wave that reaches downstream as DIRTY then RESOLVED", () => {
+test("every pause and resume is a wave that reaches downstream as PENDING then RESOLVED", () => {
   const g = createGraph();
   g.state("a", 0);
   const p = pausable(g, "p", "a");
   g.subscribe("s", "p");
   assert.deepEqual(during(g, () => { const l = p.pause(); p.resume(l); }), [
-    "s <- p: [DIRTY, RESOLVED]",
-    "s <- p: [DIRTY, RESOLVED]",
+    "s <- p: [PENDING, RESOLVED]",
+    "s <- p: [PENDING, RESOLVED]",
   ]);
 });
 
@@ -51,8 +51,8 @@ test("locks compose: only the last release opens; acquiring and releasing are id
   g.set("a", 1);
   assert.deepEqual(during(g, () => p.resume("nobody")), [], "releasing a lock nobody holds is no wave at all");
   p.resume("ui");
-  assert.deepEqual(during(g, () => g.set("a", 2)), ["s <- p: [DIRTY, RESOLVED]"], "still held by sync");
-  assert.deepEqual(during(g, () => p.resume("sync")), ["s <- p: [DIRTY, DATA(1)]", "s <- p: [DIRTY, DATA(2)]"]);
+  assert.deepEqual(during(g, () => g.set("a", 2)), ["s <- p: [PENDING, RESOLVED]"], "still held by sync");
+  assert.deepEqual(during(g, () => p.resume("sync")), ["s <- p: [PENDING, DATA(1)]", "s <- p: [PENDING, DATA(2)]"]);
 });
 
 test("pause is directed: pausing p2 leaves p1 and p3 flowing", () => {
@@ -62,9 +62,9 @@ test("pause is directed: pausing p2 leaves p1 and p3 flowing", () => {
   for (const p of ps) g.subscribe(`s${p.id}`, p.id);
   ps[1].pause();
   assert.deepEqual(during(g, () => g.set("a", 5)), [
-    "sp1 <- p1: [DIRTY, DATA(5)]",
-    "sp2 <- p2: [DIRTY, RESOLVED]",
-    "sp3 <- p3: [DIRTY, DATA(5)]",
+    "sp1 <- p1: [PENDING, DATA(5)]",
+    "sp2 <- p2: [PENDING, RESOLVED]",
+    "sp3 <- p3: [PENDING, DATA(5)]",
   ]);
 });
 
@@ -75,12 +75,12 @@ test("a pause issued during a wave applies at the wave boundary", () => {
   g.subscribe("s1", "p", (msgs) => { if (msgs.some((m) => m[0] === "DATA" && m[1] === 1)) p.pause("late"); });
   g.subscribe("s2", "p");
   assert.deepEqual(during(g, () => g.set("a", 1)), [
-    "s1 <- p: [DIRTY, DATA(1)]",
-    "s2 <- p: [DIRTY, DATA(1)]",      // the wave finishes unpaused
-    "s1 <- p: [DIRTY, RESOLVED]",     // then the pause applies as its own wave
-    "s2 <- p: [DIRTY, RESOLVED]",
+    "s1 <- p: [PENDING, DATA(1)]",
+    "s2 <- p: [PENDING, DATA(1)]",      // the wave finishes unpaused
+    "s1 <- p: [PENDING, RESOLVED]",     // then the pause applies as its own wave
+    "s2 <- p: [PENDING, RESOLVED]",
   ]);
-  assert.deepEqual(during(g, () => g.set("a", 2)), ["s1 <- p: [DIRTY, RESOLVED]", "s2 <- p: [DIRTY, RESOLVED]"]);
+  assert.deepEqual(during(g, () => g.set("a", 2)), ["s1 <- p: [PENDING, RESOLVED]", "s2 <- p: [PENDING, RESOLVED]"]);
 });
 
 test("paused before activation: the first subscription gets no value until resume", () => {
@@ -90,7 +90,7 @@ test("paused before activation: the first subscription gets no value until resum
   const lock = p.pause(); // the pausable is not active yet; pausing does not activate it
   assert.equal(g.get("p").active, false);
   assert.deepEqual(during(g, () => g.subscribe("s", "p")), ["s <- p: [START]"]);
-  assert.deepEqual(during(g, () => p.resume(lock)), ["s <- p: [DIRTY, DATA(7)]"]);
+  assert.deepEqual(during(g, () => p.resume(lock)), ["s <- p: [PENDING, DATA(7)]"]);
 });
 
 test("locks survive the pausable's close; a new subscription is still paused", () => {
@@ -102,7 +102,7 @@ test("locks survive the pausable's close; a new subscription is still paused", (
   g.unsubscribe("s", "p");
   g.set("a", 2);
   assert.deepEqual(during(g, () => g.subscribe("s", "p")), ["s <- p: [START]"]);
-  assert.deepEqual(during(g, () => p.resume(lock)), ["s <- p: [DIRTY, DATA(2)]"]);
+  assert.deepEqual(during(g, () => p.resume(lock)), ["s <- p: [PENDING, DATA(2)]"]);
 });
 
 test("a terminal passes while paused and discards what was held", () => {
@@ -112,7 +112,7 @@ test("a terminal passes while paused and discards what was held", () => {
   g.subscribe("s", "p");
   p.pause();
   g.set("a", 5);
-  assert.deepEqual(during(g, () => g.complete("a")), ["s <- p: [DIRTY, COMPLETE]"]);
+  assert.deepEqual(during(g, () => g.complete("a")), ["s <- p: [PENDING, COMPLETE]"]);
 });
 
 test("unpaused, an array with DATA and a terminal passes unchanged; paused, only the terminal passes", () => {
@@ -120,13 +120,13 @@ test("unpaused, an array with DATA and a terminal passes unchanged; paused, only
     const g = createGraph();
     g.state("a", 0);
     g.subscribe("s", pausable(g, "p", "a").id);
-    assert.deepEqual(during(g, () => g.batch(() => { g.set("a", 5); end(g); })), [`s <- p: [DIRTY, DATA(5), ${shown}]`]);
+    assert.deepEqual(during(g, () => g.batch(() => { g.set("a", 5); end(g); })), [`s <- p: [PENDING, DATA(5), ${shown}]`]);
     const h = createGraph();
     h.state("a", 0);
     const q = pausable(h, "p", "a");
     h.subscribe("s", "p");
     q.pause();
-    assert.deepEqual(during(h, () => h.batch(() => { h.set("a", 5); end(h); })), [`s <- p: [DIRTY, ${shown}]`]);
+    assert.deepEqual(during(h, () => h.batch(() => { h.set("a", 5); end(h); })), [`s <- p: [PENDING, ${shown}]`]);
   }
 });
 
@@ -137,11 +137,11 @@ test("an INVALIDATE while paused passes at once, and the resume then has nothing
   g.subscribe("s", "p");
   const lock = p.pause();
   g.set("a", 2);
-  assert.deepEqual(during(g, () => g.invalidate("a")), ["s <- p: [DIRTY, INVALIDATE]"]);
-  assert.deepEqual(during(g, () => p.resume(lock)), ["s <- p: [DIRTY, RESOLVED]"]);
+  assert.deepEqual(during(g, () => g.invalidate("a")), ["s <- p: [PENDING, INVALIDATE]"]);
+  assert.deepEqual(during(g, () => p.resume(lock)), ["s <- p: [PENDING, RESOLVED]"]);
   p.pause("again");
   g.set("a", 3);
-  assert.deepEqual(during(g, () => p.resume("again")), ["s <- p: [DIRTY, DATA(3)]"], "DATA after the INVALIDATE is sent");
+  assert.deepEqual(during(g, () => p.resume("again")), ["s <- p: [PENDING, DATA(3)]"], "DATA after the INVALIDATE is sent");
 });
 
 test("every array that arrives while paused goes out on resume, in order, each as it arrived", () => {
@@ -152,7 +152,7 @@ test("every array that arrives while paused goes out on resume, in order, each a
   const lock = p.pause();
   g.set("a", 1);
   g.batch(() => { g.set("a", 2); g.set("a", 2); });
-  assert.deepEqual(during(g, () => p.resume(lock)), ["s <- p: [DIRTY, DATA(1)]", "s <- p: [DIRTY, DATA(2), DATA(2)]"]);
+  assert.deepEqual(during(g, () => p.resume(lock)), ["s <- p: [PENDING, DATA(1)]", "s <- p: [PENDING, DATA(2), DATA(2)]"]);
 });
 
 test("an INVALIDATE that reaches downstream discards what was held before it", () => {
@@ -171,9 +171,9 @@ test("an INVALIDATE that reaches downstream discards what was held before it", (
   // is older than it and is dropped, so downstream never gets a value older than an
   // INVALIDATE it already has.
   assert.deepEqual(out, [
-    "s <- p: [DIRTY, INVALIDATE]",
-    "s <- p: [DIRTY, RESOLVED]",
-    "s <- p: [DIRTY, DATA(2)]",
+    "s <- p: [PENDING, INVALIDATE]",
+    "s <- p: [PENDING, RESOLVED]",
+    "s <- p: [PENDING, DATA(2)]",
   ]);
 });
 
@@ -192,9 +192,9 @@ test("every INVALIDATE discards what was held before it, including one downstrea
     p.resume(lock);
   });
   assert.deepEqual(out, [
-    "s <- p: [DIRTY, RESOLVED]",          // the INVALIDATE wave: p's own INVALIDATE is dropped
-    "s <- p: [DIRTY, RESOLVED]",          // the DATA(3) wave
-    "s <- p: [DIRTY, DATA(3)]",
+    "s <- p: [PENDING, RESOLVED]",          // the INVALIDATE wave: p's own INVALIDATE is dropped
+    "s <- p: [PENDING, RESOLVED]",          // the DATA(3) wave
+    "s <- p: [PENDING, DATA(3)]",
   ]);
 });
 
@@ -233,10 +233,10 @@ test("a source that must stop working declares the control dependency and stops 
   });
   assert.deepEqual(log, ["start", "stop", "start"]);
   assert.deepEqual(out, [
-    "s <- ticker: [DIRTY, DATA(1)]",
-    "s <- ticker: [DIRTY, RESOLVED]", // the pause wave
-    "s <- ticker: [DIRTY, RESOLVED]", // the resume wave; tick(2) while stopped sent nothing
-    "s <- ticker: [DIRTY, DATA(3)]",
+    "s <- ticker: [PENDING, DATA(1)]",
+    "s <- ticker: [PENDING, RESOLVED]", // the pause wave
+    "s <- ticker: [PENDING, RESOLVED]", // the resume wave; tick(2) while stopped sent nothing
+    "s <- ticker: [PENDING, DATA(3)]",
   ]);
 });
 
@@ -247,14 +247,14 @@ test("several pauses issued inside one wave keep every lock", () => {
   const p = pausable(g, "p", "a");
   g.subscribe("s", "p");
   g.subscribe("st", "t", (msgs) => {
-    if (msgs[0][0] !== "DIRTY") return;
+    if (msgs[0][0] !== "PENDING") return;
     p.pause("x");
     p.pause("y");
   });
   g.set("t", 1);
   assert.deepEqual(g.get("p.pauseLocks").value, ["x", "y"]);
   p.resume("x");
-  assert.deepEqual(during(g, () => g.set("a", 1)), ["s <- p: [DIRTY, RESOLVED]"], "y still holds");
+  assert.deepEqual(during(g, () => g.set("a", 1)), ["s <- p: [PENDING, RESOLVED]"], "y still holds");
 });
 
 test("values held before an INVALIDATE that nothing followed are dropped on resume", () => {
@@ -268,7 +268,7 @@ test("values held before an INVALIDATE that nothing followed are dropped on resu
     g.invalidate("a");
     p.resume(lock);
   });
-  assert.deepEqual(out, ["s <- p: [DIRTY, INVALIDATE]", "s <- p: [DIRTY, RESOLVED]"]);
+  assert.deepEqual(out, ["s <- p: [PENDING, INVALIDATE]", "s <- p: [PENDING, RESOLVED]"]);
   assert.equal(g.get("p").has, false, "downstream ends absent, like upstream");
 });
 
@@ -283,7 +283,7 @@ test("paused before p had a value, values held before an INVALIDATE are dropped 
     g.invalidate("a");
     p.resume(lock);
   });
-  assert.deepEqual(out, ["s <- p: [DIRTY, RESOLVED]", "s <- p: [DIRTY, RESOLVED]"], "the INVALIDATE wave, then the resume");
+  assert.deepEqual(out, ["s <- p: [PENDING, RESOLVED]", "s <- p: [PENDING, RESOLVED]"], "the INVALIDATE wave, then the resume");
   assert.equal(g.get("p").has, false, "downstream ends absent, like upstream");
 });
 
@@ -300,8 +300,8 @@ test("after a resume nothing is sent twice, unpaused or in the next pause", () =
     const second = p.pause();
     g.set("a", 3);
     p.resume(second);
-  }).filter((x) => !x.endsWith("[DIRTY, RESOLVED]"));
-  assert.deepEqual(out, ["s <- p: [DIRTY, DATA(1)]", "s <- p: [DIRTY, DATA(2)]", "s <- p: [DIRTY, DATA(3)]"]);
+  }).filter((x) => !x.endsWith("[PENDING, RESOLVED]"));
+  assert.deepEqual(out, ["s <- p: [PENDING, DATA(1)]", "s <- p: [PENDING, DATA(2)]", "s <- p: [PENDING, DATA(3)]"]);
 });
 
 test("arrays keep their boundaries; an INVALIDATE drops the ones before it ([1], [INV], [2, 3], [4, 5])", () => {
@@ -318,9 +318,9 @@ test("arrays keep their boundaries; an INVALIDATE drops the ones before it ([1],
     src.ctx.down([["DATA", 4], ["DATA", 5]]);
     p.resume(lock);
   });
-  assert.deepEqual(out.filter((x) => !x.endsWith("[DIRTY, RESOLVED]")), [
-    "s <- p: [DIRTY, DATA(2), DATA(3)]",
-    "s <- p: [DIRTY, DATA(4), DATA(5)]",
+  assert.deepEqual(out.filter((x) => !x.endsWith("[PENDING, RESOLVED]")), [
+    "s <- p: [PENDING, DATA(2), DATA(3)]",
+    "s <- p: [PENDING, DATA(4), DATA(5)]",
   ]);
 });
 
@@ -335,11 +335,11 @@ test("placed before a node (TS default pause): no value reaches the node while p
   const lock = p.pause();
   g.set("a", 1);
   g.batch(() => { g.set("a", 2); g.set("a", 3); });
-  // A raw function still runs on each [DIRTY, RESOLVED] the pause causes (P8), but sees
+  // A raw function still runs on each [PENDING, RESOLVED] the pause causes (P8), but sees
   // no value; value sugar such as derived does not run at all. In TS it does not run.
   assert.ok(seen.every((waves) => waves.flat().length === 0), "no value reaches it while paused");
   seen.length = 0;
-  assert.deepEqual(during(g, () => p.resume(lock)), ["s <- n: [DIRTY, DATA(3)]"]);
+  assert.deepEqual(during(g, () => p.resume(lock)), ["s <- n: [PENDING, DATA(3)]"]);
   assert.deepEqual(seen, [[[1], [2, 3]]], "one invocation, every held array, boundaries kept");
 });
 

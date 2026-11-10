@@ -17,7 +17,7 @@ function pageHolder(g, seen) {
   });
 }
 
-test("quiet: input that arrives between pulls reaches no subscriber, not even DIRTY", () => {
+test("quiet: input that arrives between pulls reaches no subscriber, not even PENDING", () => {
   const g = createGraph();
   g.state("a", 0);
   const seen = [];
@@ -35,7 +35,7 @@ test("a pull runs the holder once with every array held since the last INVALIDAT
   g.subscribe("s", "h");
   g.set("a", 1);
   g.batch(() => { g.set("a", 2); g.set("a", 3); });
-  assert.deepEqual(during(g, () => h.pull("p1")), ['s <- h: [DIRTY, DATA("p1:0,1,2,3")]']);
+  assert.deepEqual(during(g, () => h.pull("p1")), ['s <- h: [PENDING, DATA("p1:0,1,2,3")]']);
   assert.deepEqual(seen, [{ waves: [[0], [1], [2, 3]], params: "p1" }], "the activation snapshot 0 is held too");
 });
 
@@ -59,7 +59,7 @@ test("a pull at an inactive holder neither activates it nor is kept for later", 
   assert.equal(g.get("h").active, false);
   assert.deepEqual(during(g, () => g.subscribe("s", "h")), ["s <- h: [START]"]);
   assert.deepEqual(seen, [], "the early request is not served on activation");
-  assert.deepEqual(during(g, () => h.pull("now")), ['s <- h: [DIRTY, DATA("now:0")]']);
+  assert.deepEqual(during(g, () => h.pull("now")), ['s <- h: [PENDING, DATA("now:0")]']);
 });
 
 test("C-32: several pulls before one service keep only the latest params", () => {
@@ -82,8 +82,8 @@ test("C-32: a pull inside a batch is served after the batch commits; a throwing 
   g.subscribe("s", "h");
   g.subscribe("sb", "b");
   assert.deepEqual(during(g, () => g.batch(() => { g.set("b", 1); h.pull("p"); })), [
-    "sb <- b: [DIRTY, DATA(1)]",                // the batch's own wave
-    's <- h: [DIRTY, DATA("p:0")]',            // the service, a later wave
+    "sb <- b: [PENDING, DATA(1)]",                // the batch's own wave
+    's <- h: [PENDING, DATA("p:0")]',            // the service, a later wave
   ]);
   assert.throws(() => g.batch(() => { h.pull("lost"); throw new Error("rollback"); }), /rollback/);
   assert.deepEqual(seen.map((x) => x.params), ["p"]);
@@ -97,9 +97,9 @@ test("an INVALIDATE discards what was held before it; it reaches subscribers at 
   g.subscribe("s", "h");
   h.pull("first");
   g.set("a", 1);
-  assert.deepEqual(during(g, () => g.invalidate("a")), ["s <- h: [DIRTY, INVALIDATE]"]);
+  assert.deepEqual(during(g, () => g.invalidate("a")), ["s <- h: [PENDING, INVALIDATE]"]);
   g.set("a", 2);
-  assert.deepEqual(during(g, () => h.pull("second")), ['s <- h: [DIRTY, DATA("second:2")]']);
+  assert.deepEqual(during(g, () => h.pull("second")), ['s <- h: [PENDING, DATA("second:2")]']);
 });
 
 test("START: the first subscriber gets START only; a later one gets the last served value (differs from TS)", () => {
@@ -118,8 +118,8 @@ test("a pull issued during a wave is served after it (K8), and the method can be
   const seen = [];
   const h = pageHolder(g, seen);
   g.subscribe("s", "h");
-  g.subscribe("st", "t", (msgs) => { if (msgs[0][0] === "DIRTY") h.pull("from a callback"); });
-  assert.deepEqual(during(g, () => g.set("t", 1)), ["st <- t: [DIRTY, DATA(1)]", 's <- h: [DIRTY, DATA("from a callback:0")]']);
+  g.subscribe("st", "t", (msgs) => { if (msgs[0][0] === "PENDING") h.pull("from a callback"); });
+  assert.deepEqual(during(g, () => g.set("t", 1)), ["st <- t: [PENDING, DATA(1)]", 's <- h: [PENDING, DATA("from a callback:0")]']);
 });
 
 test("closing the holder discards what it held; after reactivation it holds the input's current value", () => {
@@ -144,7 +144,7 @@ test("the input's COMPLETE ends the holder and discards what was held", () => {
   const h = pageHolder(g, seen);
   g.subscribe("s", "h");
   g.set("a", 1);
-  assert.deepEqual(during(g, () => g.complete("a")), ["s <- h: [DIRTY, COMPLETE]"]);
+  assert.deepEqual(during(g, () => g.complete("a")), ["s <- h: [PENDING, COMPLETE]"]);
   assert.deepEqual(during(g, () => h.pull("late")), []);
   assert.deepEqual(seen, []);
 });
@@ -191,7 +191,7 @@ test("C-32: with a pausable before the holder, a resume without a pull neither r
   g.set("src", 1);
   assert.deepEqual(during(g, () => p.resume(lock)), [], "the released array is held by the holder");
   assert.deepEqual(seen, []);
-  assert.deepEqual(during(g, () => h.pull("p")), ['s <- h: [DIRTY, DATA("p:0,1")]']);
+  assert.deepEqual(during(g, () => h.pull("p")), ['s <- h: [PENDING, DATA("p:0,1")]']);
 });
 
 test("the request number lives in the demand state, so a pull after a restored request is served", () => {
@@ -202,6 +202,6 @@ test("the request number lives in the demand state, so a pull after a restored r
   g.set(h.demandId, Object.freeze({ seq: 5, params: "old" })); // as a restore would bring it back
   g.subscribe("s", "h");
   assert.deepEqual(seen, [], "the request already there counts as served");
-  assert.deepEqual(during(g, () => h.pull("p1")), ['s <- h: [DIRTY, DATA("p1:0")]']);
+  assert.deepEqual(during(g, () => h.pull("p1")), ['s <- h: [PENDING, DATA("p1:0")]']);
   assert.deepEqual(g.get(h.demandId).value, { seq: 6, params: "p1" });
 });

@@ -567,7 +567,7 @@ D797 第 (9) 点把首跑门槛和相等去重放进各语言的 sugar，R-invoc
 | DS-15 的条目 | 现在 |
 |---|---|
 | 相等的 DATA 保留为 DATA；RESOLVED 是结算不是相等 | R-wave；kernel 测试"equal values stay DATA"；C-28 |
-| 同一节点同一 wave 里 DATA 和 RESOLVED 互斥 | D797 草案收窄成了一个数组之内，一次运行里 `[RESOLVED]` 再 `[DATA]` 能发出去（复现过）。**用户 2026-11-10 定为一次运行之内互斥**：R-wave 改了这句，内核在 `ctx.down` 里检查，kernel 测试三种情况，kernel_wave 加了 NoDataWithResolvedInRun（菜单多两项，2 个 wave 1,270,120 个状态，24 个变异全抓到，3 个 wave 未重跑），C-28 加了这几种情况。batch 里的冲突原来就会被拒绝（replay C-28） |
+| 同一节点同一 wave 里 DATA 和 RESOLVED 互斥 | D797 草案收窄成了一个数组之内，一次运行里 `[RESOLVED]` 再 `[DATA]` 能发出去（复现过）。**用户 2026-11-10 定为一次运行之内互斥**：R-wave 改了这句，内核在 `ctx.down` 里检查，kernel 测试三种情况，kernel_wave 加了 NoDataWithResolvedInRun（菜单多两项，2 个 wave 1,270,120 个状态，24 个变异全抓到；3 个 wave 170,970,276 个状态，48 分钟），C-28 加了这几种情况。batch 里的冲突原来就会被拒绝（replay C-28） |
 | R-initial@1、R-ctx-wave-data@1 没有 activation | 并进 R-subscription 和 R-invocation（第 2 节），激活时由 D798 的 transition 处理 |
 | 全是 RESOLVED 的 wave 仍运行函数，一个或几个依赖 | R-wave、R-invocation；kernel 测试（P8 等）；replay C-28；kernel_wave 的 RunOnce、FanInAfterSettle |
 | batch 累积保留几个 DATA | R-request-order；kernel 测试（含嵌套 batch，C-29）；replay 测试；kernel_wave 的两次写入一个 batch。嵌套 batch 不在 kernel_lifetime 里，只由测试覆盖 |
@@ -588,3 +588,20 @@ D797 第 (9) 点把首跑门槛和相等去重放进各语言的 sugar，R-invoc
 **留给激活的。** 参考内核还发 `DIRTY`，规则里叫 PENDING；第 1 节 Q3 定了这次修订里改名，所以改名和 D798 的 transition 一起做。
 
 Evidence gaps 到此都有了结论：两项范围外（job pool 由用户暂缓，SENTINEL 的模型），其余给了证据或改了规则。
+
+### 9.8 激活（2026-11-10，D798）
+
+用户批准激活。kernel_wave 的 3 个 wave 先重跑通过（170,970,276 个状态）。graphrefly:D798 激活 D797 的内核集：
+- 规则：公开规则从 23 条变为 14 条（10 条内核规则、R-no-imperative@2、R-node-thin@2、R-graph-domain@2，R-sentinel@1 照旧）；
+  合并进来的每条旧规则的每个版本都加了 replace，R-no-imperative、R-node-thin、R-graph-domain 是 revise，12 个 id retire，
+  理由写在 D798 里；四条 pause 规则 replace 到草案 R-pause@1。模块规则仍是草案。激活后没有场景的：R-node-thin@2（行为上测不出）；
+  没有模型的：R-sentinel@1、R-node@1、R-node-thin@2、R-no-imperative@2、R-graph-domain@2（bridge 模块写出来时再给模型）。
+- 场景：删了 C-7、C-18、C-19、C-20、C-25（退役）和 C-8、C-14、C-21、C-22（已被 C-35、C-33、C-37、C-29 接替）；C-1、C-3、C-4、C-6、
+  C-11、C-12、C-15、C-16、C-17、C-23、C-26 按 D797 改写、三种 runtime 都是 todo；C-1b 的 wire 帧改叫 PENDING、重置为 todo；
+  C-2、C-5、C-9、C-10、C-13、C-24、C-27 等各自的模块激活再处理。R-sentinel 改由 C-23 覆盖。
+- 模型：退役的 wave_* 都删了，formal/README 列出每个的去向。9.4 第 3 点留作参照的五个里，四个已经有了接替者，按"新模型写好前保留"
+  这个条件一起删了，只留 wave_ctx_wave_data。
+- `spec/protocol.proto`：MSG_DIRTY 改名 MSG_PENDING，8 到 11 号保留，删去 Tier、Direction 和 PAUSE/PULL 的字段，WIRE_EDGE_KIND_DIRTY
+  改名 PENDING。参考内核和测试都改说 PENDING。
+
+B140 剩下的：owner routing（各 runtime 各自接纳自己的那部分、记录 source-bound 证据）和各模块规则的激活。

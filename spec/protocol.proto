@@ -15,66 +15,49 @@ syntax = "proto3";
 
 package graphrefly.protocol.v1;
 
-// ── Message types — CLOSED set (R-msg-closed-set / D9 / D269) ──
-// 11 types: START handshake + 10 protocol types. No open set, no custom types.
+// ── Message types — CLOSED set (R-messages; graphrefly:D797, active by D798) ──
+// 7 types: START handshake + 6 protocol types. No open set, no custom types.
 // Adding a type is a constitutional spec change, not a wire-compatible extension.
+// Control (pausing, demand, restart) is not a message: a controller writes a state node
+// its target declares as a dependency, so control is DATA on a declared edge (D797).
 enum MessageType {
   MESSAGE_TYPE_UNSPECIFIED = 0;  // proto3 zero guard — never a valid wire type
-  MSG_START = 1;                 // subscribe handshake (R-push-subscribe)
-  MSG_DIRTY = 2;                 // phase-1 notification (R-two-phase)
+  MSG_START = 1;                 // subscribe handshake, then the snapshot (R-subscription)
+  MSG_PENDING = 2;               // kernel-only first message of each settling array (R-wave); was MSG_DIRTY
   MSG_DATA = 3;                  // value delivery (payload required, non-SENTINEL)
-  MSG_RESOLVED = 4;              // undirty/no-occurrence settle (R-resolved-undirty)
-  MSG_INVALIDATE = 5;            // clear cached state, no auto-emit (R-invalidate-idempotent)
-  MSG_COMPLETE = 6;              // clean terminal (R-terminal)
-  MSG_ERROR = 7;                 // error terminal (payload required, non-SENTINEL)
-  MSG_TEARDOWN = 8;              // lifecycle destruction (R-teardown-complete)
-  MSG_PAUSE = 9;                 // flow control, lock_id required (R-pause-lockset)
-  MSG_RESUME = 10;               // flow control, lock_id required (R-pause-lockset)
-  MSG_PULL = 11;                 // explicit demand, pull_id required (R-pull)
+  MSG_RESOLVED = 4;              // settles a pending node that sent nothing (R-wave)
+  MSG_INVALIDATE = 5;            // clears the retained value (R-invalidation)
+  MSG_COMPLETE = 6;              // clean end of the current instance (R-terminals)
+  MSG_ERROR = 7;                 // error end of the current instance (payload required, non-SENTINEL)
+  // TEARDOWN, PAUSE, RESUME and PULL were decided away by D797 (no upward channel,
+  // no TEARDOWN; pause and demand are modules). Their numbers stay reserved.
+  reserved 8, 9, 10, 11;
+  reserved "MSG_DIRTY", "MSG_TEARDOWN", "MSG_PAUSE", "MSG_RESUME", "MSG_PULL";
 }
 
-// ── Tier const table (R-tier / D34) — batch-ordering ranks, distinct from the
-// MessageType enum. Tiers < TIER_VALUE dispatch immediately; tiers >= TIER_VALUE
-// are batch-deferred. This is a compile-time const table (D18), not runtime config.
-enum Tier {
-  TIER_START = 0;     // START — handshake, immediate
-  TIER_CONTROL = 1;   // PAUSE/RESUME/PULL — immediate
-  TIER_NOTIFY = 2;    // DIRTY — immediate
-  TIER_VALUE = 3;     // DATA/RESOLVED — deferred in batch (settle slice)
-  TIER_SETTLE = 4;    // INVALIDATE — deferred alongside the settle slice
-  TIER_TERMINAL = 5;  // COMPLETE/ERROR — deferred after the settle slice
-  TIER_TEARDOWN = 6;  // TEARDOWN — deferred last
-}
+// There is no Tier table and no Direction since D798 (2026-11-10): an array keeps the
+// order its author wrote (R-wave), so nothing is sorted by class, and nothing travels
+// up the graph (R-messages), so every wave goes toward sinks.
 
-// Direction of a wave (R-ctx-up / DR-5). DOWN = toward sinks (all tiers).
-// UP = toward deps — restricted to control/demand tiers (DIRTY/PAUSE/RESUME/PULL/
-// INVALIDATE/TEARDOWN); DATA/RESOLVED/COMPLETE/ERROR are down-only.
-enum Direction {
-  DIRECTION_DOWN = 0;
-  DIRECTION_UP = 1;
-}
-
-// One protocol message = the tuple [Type, Data?] (R-msg-format).
+// One protocol message = the tuple [Type, Data?] (R-messages).
 message Message {
   MessageType type = 1;
   // Present only for DATA / ERROR. Opaque codec-encoded value bytes — the value
-  // type is per-language; the protocol never inspects it (R-data-payload). Absence
+  // type is per-language; the protocol never inspects it (R-messages). Absence
   // of `data` on a DATA/ERROR message is a violation; SENTINEL is never encoded.
   optional bytes data = 2;
-  // Present only for PAUSE / RESUME. Caller-generated, opaque (R-pause-lockset).
-  optional string lock_id = 3;
-  // Present only for PULL. Caller-generated holder id (R-pull / D269).
-  optional string pull_id = 4;
-  // Present only for PULL when demand params exist. Opaque codec-encoded bytes;
-  // params remain demand context and are never DATA-up.
-  optional bytes params = 5;
+  // lock_id (PAUSE/RESUME), pull_id and params (PULL) went with those types.
+  reserved 3, 4, 5;
+  reserved "lock_id", "pull_id", "params";
 }
 
-// One array of messages delivered in one call = one Wave (R-wave-boundary).
-// A wave may mix tiers (e.g. [[DATA,v],[COMPLETE]]); the receiver tier-sorts.
+// One array of messages delivered in one call (R-wave). It keeps its written order:
+// a terminal is last, DATA and RESOLVED never share it, and it is split at its last
+// INVALIDATE before delivery.
 message Wave {
   repeated Message messages = 1;
-  Direction direction = 2;
+  reserved 2;
+  reserved "direction";
 }
 
 // Dispatcher handle — pure data, no methods (R-handle / D7). A serializable index
@@ -153,10 +136,14 @@ message WireBridgeEnvelope {
 // ── Wire-edge adapter payload (D496 / C-1) ──
 // WireEdgeFrame is the minimal cross-graph reactive edge fact carried over the
 // bridge envelope. It has no graph wave id: cause_id is bridge-local.
+// PENDING announces a cause's edge to the bridge's grouped release (R-graph-domain): it is a
+// frame of the bridge protocol, not a graph message. Renamed from DIRTY by D798 (2026-11-10),
+// which makes old and new wire peers incompatible; each runtime's bridge follows.
 enum WireEdgeKind {
   WIRE_EDGE_KIND_UNSPECIFIED = 0;
-  WIRE_EDGE_KIND_DIRTY = 1;
+  WIRE_EDGE_KIND_PENDING = 1;
   WIRE_EDGE_KIND_DATA = 2;
+  reserved "WIRE_EDGE_KIND_DIRTY";
 }
 
 message WireEdgeFrame {

@@ -17,7 +17,7 @@
 // no TEARDOWN: a lifetime ends at the last unsubscribe (K7). Both decided 2026-11-09.
 export const TIER = Object.freeze({
   START: 0,
-  DIRTY: 2,
+  PENDING: 2,
   DATA: 3, RESOLVED: 3,
   INVALIDATE: 4,
   COMPLETE: 5, ERROR: 5,
@@ -114,7 +114,7 @@ export function createGraph({ report: hostReport } = {}) {
       // K6 (decided by the user 2026-11-09): auto, an input's INVALIDATE invalidates this node
       // without running its function; manual, it is the function's input (ctx.deps[i].invalidated).
       invalidate: opts?.invalidate ?? "auto",
-      quiet: Boolean(opts?.quiet), // H6: consumes input waves without forwarding DIRTY
+      quiet: Boolean(opts?.quiet), // H6: consumes input waves without forwarding PENDING
       // K7 (decided by the user 2026-11-10): setup(ctx) runs once per lifetime, before the
       // function's first run in it; a function it returns is the lifetime's cleanup. It stays
       // with the node across replace, as the policies do.
@@ -319,10 +319,10 @@ export function createGraph({ report: hostReport } = {}) {
       })),
       state: { get: () => n.privateState, set: (v) => { n.privateState = v; } },
       down(msgs) {
-        // DS-17 O11: DIRTY is sent by the kernel only, as the prefix of a value array.
+        // DS-17 O11: PENDING is sent by the kernel only, as the prefix of a value array.
         // A node cannot open a notification and settle it later, so none spans time.
-        if (msgs.some((m) => m[0] === "DIRTY")) {
-          throw new KernelError(`${n.id}: DIRTY is sent by the kernel, not by node output`);
+        if (msgs.some((m) => m[0] === "PENDING")) {
+          throw new KernelError(`${n.id}: PENDING is sent by the kernel, not by node output`);
         }
         const frames = prepare(msgs);
         if (invoking) {
@@ -434,8 +434,8 @@ export function createGraph({ report: hostReport } = {}) {
         if (m[0] === "DATA") { n.has = true; n.cache = m[1]; values.push(m[1]); }
         if (m[0] === "INVALIDATE") {
           // K6: effective only while a value is retained; a repeat is a no-op, as in TS
-          // (nothing downstream still holds a value from this node). This is also why a
-          // diamond invalidates its fan-in once without any DIRTY.
+          // (nothing downstream still holds a value from this node). Since 2026-11-09 an
+          // INVALIDATE also marks the cone, so a diamond's fan-in settles it once (K2).
           if (!n.has) continue;
           n.has = false;
           n.cache = undefined;
@@ -463,7 +463,7 @@ export function createGraph({ report: hostReport } = {}) {
       markPending(n);
     }
     n.pending = false; // settled: its subscribers now see its new state
-    out = out.map((f) => (f.some(marks) ? [["DIRTY"], ...f] : f)); // K2: one per marking array
+    out = out.map((f) => (f.some(marks) ? [["PENDING"], ...f] : f)); // K2: one per marking array
     // K3: deliver to the subscriber list as it was when publication began.
     for (const sub of [...n.subs]) {
       if (sub.kind === "sink") for (const f of out) deliverToSink(sub, n.id, f);
@@ -476,7 +476,7 @@ export function createGraph({ report: hostReport } = {}) {
     if (m.ended) return;
     const input = m.inputs[i];
     for (const frame of frames) {
-      const f = frame.filter((msg) => msg[0] !== "DIRTY");
+      const f = frame.filter((msg) => msg[0] !== "PENDING");
       for (const msg of f) {
         if (msg[0] === "DATA") { input.has = true; input.value = msg[1]; }
         if (msg[0] === "INVALIDATE") { input.has = false; input.value = undefined; }
@@ -539,7 +539,7 @@ export function createGraph({ report: hostReport } = {}) {
     if (m.quiet) {
       // H6: what a quiet node outputs is a later wave, its arrays of one settlement
       // together; nothing downstream waits on it, so silence needs no RESOLVED. Only an
-      // INVALIDATE, which carries no DIRTY, goes on now (as in TS).
+      // auto INVALIDATE goes on now (R-wave), with its PENDING prefix.
       if (lead.length) deliver(m, lead);
       m.pending = false;
       later(m, m.lifetime, out);
@@ -765,7 +765,7 @@ export function createGraph({ report: hostReport } = {}) {
       reportPromise(result);
       // Nothing was delivered or changed before commit, so a throwing body leaves nothing to
       // undo: its inputs and its requests are dropped. Commit marks the whole cone pending
-      // (DIRTY), then delivers (O3). The body's requests (subscribe, unsubscribe, replace,
+      // (PENDING), then delivers (O3). The body's requests (subscribe, unsubscribe, replace,
       // rewire) were made during the batch's wave, so they run after it (K8), against the
       // committed topology, and before anything the commit wave itself requests.
       request(() => {
@@ -809,7 +809,7 @@ export function createGraph({ report: hostReport } = {}) {
     // K10, R-status-enum@2: a read-only projection of what the kernel already holds; no
     // status is stored. cache: empty (no value), stale (a notification this node received
     // or sent in the current wave is not settled yet; outside a wave never, since no
-    // DIRTY spans time), ready. output: open, completed, errored. lifecycle: inactive,
+    // PENDING spans time), ready. output: open, completed, errored. lifecycle: inactive,
     // active (subscribed, whether running or settled), closing (its lifetime is closing).
     status(id) {
       const n = nodeOf(id);

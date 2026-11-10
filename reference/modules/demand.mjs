@@ -1,7 +1,7 @@
 // Demand (PULL) as a module over the reference kernel (DS-17 O2, R-pull). Non-normative.
 //
 // A pullable holder `id` sits after an input and stays quiet until it is pulled: input
-// that arrives is held, and nothing reaches the holder's subscribers, not even DIRTY.
+// that arrives is held, and nothing reaches the holder's subscribers, not even PENDING.
 // `pull(params)`, a method of the returned bundle, asks for one service: the holder's
 // function runs once with everything held since the last INVALIDATE and with the
 // params, and what it sends goes out as a later wave. It runs even when nothing changed.

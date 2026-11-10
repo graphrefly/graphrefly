@@ -188,7 +188,7 @@ export function createApp({ binding, inboxPath, fs, limits: given = {} }) {
   // ---- Release: the quiet lifecycle port (D791, H6) -------------------------
   // An admission goes out in its own array, as a later wave. Admission decides each
   // occurrence once, so each goes out once. Pending, rejected and replayed paths send
-  // nothing here: no DIRTY, DATA or RESOLVED.
+  // nothing here: no PENDING, DATA or RESOLVED.
   node("release", ["admission"], (ctx) => {
     for (const r of rows(ctx.deps[0])) {
       if (r.state === "admitted") ctx.down([["DATA", { key: r.key, occurrence: r.occurrence, effect: r.effect }]]);

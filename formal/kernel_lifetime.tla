@@ -2,10 +2,10 @@
 (***************************************************************************
 GraphReFly D797 kernel — lifetimes, request order, batch, rewire and replace.
 
-A candidate model for the D797 draft rules R-lifetime and R-request-order,
-the second D797 model beside kernel_wave. Written 2026-11-09 for
-graphrefly:B140; the older wave_* models verify the currently active rules and
-are retired or rescoped at activation. Status: draft, like the rules it checks.
+The model of the D797 rules R-lifetime and R-request-order, the second D797
+model beside kernel_wave. Written 2026-11-09 for graphrefly:B140; the rules it
+checks are active since 2026-11-10 (graphrefly:D798), when it succeeded the
+nested MC, wave_rewire, wave_rewire_batch and wave_reentrancy (deleted then).
 
 kernel_wave checks what happens inside a wave. Here a wave is one step: each
 open node in the cone of its source runs once, in dependency order. What this

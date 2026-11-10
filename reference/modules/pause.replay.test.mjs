@@ -13,7 +13,7 @@ function during(g, body) {
   return g.trace.slice(start).map(format);
 }
 const settled = () => new Promise((r) => setTimeout(r, 0));
-const values = (trace) => trace.filter((x) => !x.endsWith("[DIRTY, RESOLVED]"));
+const values = (trace) => trace.filter((x) => !x.endsWith("[PENDING, RESOLVED]"));
 
 test("C-30: a source paused before its first activation starts no work; its function only reads the lock", () => {
   const g = createGraph();
@@ -27,7 +27,7 @@ test("C-30: a source paused before its first activation starts no work; its func
   const lock = control.pause();
   assert.deepEqual(during(g, () => g.subscribe("s", "src")), ["s <- src: [START]"]);
   assert.deepEqual(started, [], "activation ran the function, which did no work");
-  assert.deepEqual(values(during(g, () => control.resume(lock))), ['s <- src: [DIRTY, DATA("first")]']);
+  assert.deepEqual(values(during(g, () => control.resume(lock))), ['s <- src: [PENDING, DATA("first")]']);
 });
 
 test("C-30: earlier started deferred work may still publish while paused", async () => {
@@ -43,7 +43,7 @@ test("C-30: earlier started deferred work may still publish while paused", async
   const start = g.trace.length;
   finish("late");
   await settled();
-  assert.deepEqual(g.trace.slice(start).map(format), ['s <- src: [DIRTY, DATA("late")]']);
+  assert.deepEqual(g.trace.slice(start).map(format), ['s <- src: [PENDING, DATA("late")]']);
   control.resume(lock);
 });
 
@@ -58,7 +58,7 @@ test("C-30: resumeAll lets upstream compute while paused and holds only publicat
   runs = 0;
   assert.deepEqual(values(during(g, () => { g.set("a", 2); g.set("a", 3); })), []);
   assert.equal(runs, 2, "upstream computed while paused");
-  assert.deepEqual(values(during(g, () => p.resume(lock))), ["s <- p: [DIRTY, DATA(20)]", "s <- p: [DIRTY, DATA(30)]"]);
+  assert.deepEqual(values(during(g, () => p.resume(lock))), ["s <- p: [PENDING, DATA(20)]", "s <- p: [PENDING, DATA(30)]"]);
   assert.equal(runs, 2, "resume reruns no consumed input");
 });
 
@@ -75,7 +75,7 @@ test("C-30: resumeAll releases the held arrays in one wave; a re-pause from a de
   g.set("a", 2);
   // The draft lets the re-pause stop before the second array; here both arrays go out in
   // the resume wave, and the re-pause, a request, waits for that wave to end (K8).
-  assert.deepEqual(values(during(g, () => p.resume(first))), ["s <- p: [DIRTY, DATA(1)]", "s <- p: [DIRTY, DATA(2)]"]);
+  assert.deepEqual(values(during(g, () => p.resume(first))), ["s <- p: [PENDING, DATA(1)]", "s <- p: [PENDING, DATA(2)]"]);
   assert.equal(again, "again");
   assert.deepEqual(values(during(g, () => g.set("a", 3))), [], "the re-pause holds what comes next");
 });
@@ -108,7 +108,7 @@ test("C-31: under resumeAll the lock survives close, and a new subscription is h
   assert.equal(g.get("s").value, 30, "the state keeps its intrinsic value across close");
   assert.deepEqual(g.get("p.pauseLocks").value, [lock], "the lock survives");
   assert.deepEqual(during(g, () => g.subscribe("o", "p")), ["o <- p: [START]"], "new admission respects the lock");
-  assert.deepEqual(values(during(g, () => p.resume(lock))), ["o <- p: [DIRTY, DATA(30)]"]);
+  assert.deepEqual(values(during(g, () => p.resume(lock))), ["o <- p: [PENDING, DATA(30)]"]);
 });
 
 test("C-31: under resumeAll, DATA in the same array as a terminal is discarded and never leaks on resume", () => {
@@ -118,7 +118,7 @@ test("C-31: under resumeAll, DATA in the same array as a terminal is discarded a
   const p = pausable(g, "p", "src");
   g.subscribe("o", "p");
   const lock = p.pause();
-  assert.deepEqual(during(g, () => src.ctx.down([["DATA", 30], ["COMPLETE"]])), ["o <- p: [DIRTY, COMPLETE]"]);
+  assert.deepEqual(during(g, () => src.ctx.down([["DATA", 30], ["COMPLETE"]])), ["o <- p: [PENDING, COMPLETE]"]);
   assert.deepEqual(during(g, () => p.resume(lock)), []);
   assert.deepEqual(g.get("p"), { active: true, has: true, value: 20, values: [20], ended: ["COMPLETE"] }, "sealed at 20");
 });
@@ -141,9 +141,9 @@ test("C-36: D paused at both inputs: INVALIDATE goes through at once; one resume
     g.set("A", 40);
     g.set("B", "b1");
   }));
-  assert.deepEqual(paused, ["s <- D: [DIRTY, INVALIDATE]"], "the INVALIDATE does not wait for resume");
+  assert.deepEqual(paused, ["s <- D: [PENDING, INVALIDATE]"], "the INVALIDATE does not wait for resume");
   assert.deepEqual(runs, [], "no new invocation while paused");
-  assert.deepEqual(values(during(g, () => control.resume(lock))), ['s <- D: [DIRTY, DATA("40b1")]']);
+  assert.deepEqual(values(during(g, () => control.resume(lock))), ['s <- D: [PENDING, DATA("40b1")]']);
   assert.deepEqual(runs, [[40, "b1"]], "one invocation, superseded A values gone");
 });
 
@@ -156,7 +156,7 @@ test("C-36: a throw in the invocation after resume ends the node; consumed input
   g.subscribe("s", "D");
   const lock = p.pause();
   g.set("A", 2);
-  assert.deepEqual(values(during(g, () => p.resume(lock))), ['s <- D: [DIRTY, ERROR("boom")]']);
+  assert.deepEqual(values(during(g, () => p.resume(lock))), ['s <- D: [PENDING, ERROR("boom")]']);
   const again = p.pause();
   p.resume(again);
   assert.equal(runs, 2);

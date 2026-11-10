@@ -2,7 +2,7 @@
 //
 // The kernel needs no hook for it. A subscriber already receives exactly what a node
 // committed, after the node applied it: an INVALIDATE that removed nothing is not sent, and
-// the kernel's own RESOLVED and DIRTY are. observe() subscribes one sink per node and hands
+// the kernel's own RESOLVED and PENDING are. observe() subscribes one sink per node and hands
 // each array on as { id, msgs }, in the order the kernel delivers them, which is the order
 // the wave reaches them. Like TS Graph.observe it is a real subscriber: observing a cold
 // node activates it, and the node stays active while observed. A write from inside the
