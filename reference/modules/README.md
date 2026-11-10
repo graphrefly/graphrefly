@@ -268,6 +268,24 @@ deps ──► id/inner ──► id          id.restart ──► id
   has ended, no restart is attempted: a fresh inner would start on that ended snapshot (P5) and end
   at once, sending the upstream's last value again each round. Both reasons were rewritten when P5
   was relaxed (2026-11-08); before, the kernel refused these acquisitions.
+- **Three gaps found on 2026-11-09** while preparing the formal model, by probing the module
+  against R-restart's text; all three are fixed and tested.
+  - A request was seen again: the restart state keeps its value, so after a `restart()` the
+    owner's next activation found it in its snapshot and replaced the fresh inner it had just
+    activated. A request is now served once: at activation the owner takes the state's current
+    value as served (`seen`), as the demand log does with its pulls. A request made while the owner
+    is inactive therefore does nothing, which is right, since the next activation starts a fresh
+    inner anyway. (The user's decision; R-restart gained a sentence.)
+  - A stale retry: an ERROR had a delayed retry pending, `restart()` started a new attempt, and the
+    retry then replaced that attempt too. A delayed retry now belongs to the attempt that failed and
+    is dropped once another has started (`attempt`, a count of the replaces this lifetime asked
+    for). (The user's decision; R-restart's sentence on a closed lifetime was widened.)
+  - A retry after the upstream ended: the ended inner no longer hears its upstream, so an upstream
+    that ended while a retry waited went unseen, and the retry started a fresh inner over it, which
+    resent the upstream's last value and ended the owner with COMPLETE instead of the ERROR. The
+    check is now made again when the retry fires; the owner then ends with the inner's ERROR. This
+    was a module bug against R-restart as written ("No restart is attempted once a dependency of
+    the inner has ended").
 - **C-34 replayed** in [restart.replay.test.mjs](restart.replay.test.mjs); see the kernel's
   [REPLAY.md](../kernel/REPLAY.md). The next execution starts after the fanout and a request made
   during it gets its own START, but only when the owner's replace is queued first, and the old
@@ -295,12 +313,20 @@ So every current use fits this module, and retry as it is in TS does not need it
 What the tests pin: `rounds` 3 and 1, as in TS's `repeat` tests; an inner ERROR or a throwing inner
 with no retry left; retries under the policy, and exhaustion; a fresh count per round; the same `describe()` and a START per
 attempt on the inner's sink; an outside restart of a live inner, with a shared upstream never
-released and the old instance's late output dropped; a closed lifetime's delayed retry dropped.
+released and the old instance's late output dropped; a closed lifetime's delayed retry dropped; a
+request served once, also across a reactivation and while inactive; a pending retry dropped once a
+request has started another attempt; no retry over an upstream that ended while it waited.
 
 Mutations, each failing at least one test: no outside restart; no signal check on a delayed retry
 (this needed the timing test); no renewal on deactivation; renewal even after the owner ended; no
 fresh retry count per round; the policy's delay ignored; a restart attempted after an upstream
 ended (the owner then never ends).
+
+Mutations checked on 2026-11-09 after the three fixes, 12 in all, each failing at least one test: a
+request seen again at activation (the old `request.waves` check, or `seen` not taken at
+activation, or not updated); a stale retry not dropped; the signal check dropped; no renewal; a
+restart after an upstream ended; unlimited rounds; no fresh retry count per round; requests never
+served; the check on the retry's firing dropped, or the owner then not ended.
 
 ### New things this module introduces
 
@@ -312,6 +338,7 @@ ended (the owner then never ends).
 | `rounds` and `retry` | O7's attempts and backoff; `rounds` is TS `repeat`'s count, `retry` the shared policy |
 | Renewing an ended inner when the owner deactivates | Without it the owner's next activation would start on the ended inner's snapshot |
 | No restart once an upstream of the inner has ended | Without it each round would end at once and resend the upstream's last value; with unlimited rounds, for good |
+| `seen` and `attempt` in the owner's private state | A request is served once, and a delayed retry only replaces the attempt that failed; both are per lifetime, like the rest of the owner's state |
 
 ## Retry policy ([resilience.mjs](resilience.mjs), [resilience.test.mjs](resilience.test.mjs))
 

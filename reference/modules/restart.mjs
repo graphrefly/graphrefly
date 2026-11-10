@@ -20,11 +20,16 @@
 //             attempt n is retried after retryDelayMs(retry, n), unless that is undefined.
 //             Default retryPolicy(): one attempt, no retry;
 //   restart() a request from outside, through the declared control state `${id}.restart`
-//             (P11). It starts a new attempt and counts toward neither.
+//             (P11). It starts a new attempt and counts toward neither. A request is served
+//             once: at activation the owner takes the state's current value as served, as
+//             the demand log does with its pulls, so a request made before, or while the
+//             owner was inactive, does not restart the inner it has just activated (decided
+//             by the user 2026-11-09).
 //
 // The owner asks for the replace from its own function. The kernel queues it until the
-// wave is over (K8), like TS's ctx.rewireNext. A delayed retry is dropped if the owner's
-// lifetime has closed by then. When the owner deactivates without having ended, an inner
+// wave is over (K8), like TS's ctx.rewireNext. A delayed retry belongs to the attempt that
+// failed: it is dropped if the owner's lifetime has closed by then, or if another attempt has
+// started meanwhile, as an outside request does (decided by the user 2026-11-09). When the owner deactivates without having ended, an inner
 // that has ended is replaced too, so the owner's next activation starts a fresh inner, as a
 // new subscription does in TS, rather than on the ended inner's snapshot; with no other
 // subscriber it is inactive, so only its definition is renewed. No restart is attempted once
@@ -40,7 +45,8 @@ export function restartable(g, id, { deps, fn, rounds = 1, retry = retryPolicy()
   g.node(innerId, deps, fn);
   g.node(id, [innerId, restartId], (ctx) => {
     const [inner, request] = ctx.deps;
-    const st = ctx.state.get() ?? { round: 1, failures: 0 };
+    // `seen` is the last request served; `attempt` counts the replaces this lifetime asked for.
+    const st = ctx.state.get() ?? { round: 1, failures: 0, seen: request.value, attempt: 0 };
     ctx.state.set(st);
     // Unless the owner itself has ended for good, its next activation starts a fresh inner.
     ctx.onDeactivation(() => { if (!g.get(id).ended && g.get(innerId).ended) g.replace(innerId, deps, fn); });
@@ -51,7 +57,8 @@ export function restartable(g, id, { deps, fn, rounds = 1, retry = retryPolicy()
     // A fresh inner over an ended upstream would end at once (P5), so none is attempted:
     // the owner ends with the inner.
     const restartable = !deps.some((d) => g.get(d).ended);
-    let again = restartable && request.waves.length > 0;
+    let again = restartable && request.value !== st.seen;
+    st.seen = request.value;
     if (restartable && !again && end?.[0] === "COMPLETE" && st.round < rounds) { st.round += 1; st.failures = 0; again = true; }
     if (restartable && !again && end?.[0] === "ERROR") {
       const wait = retryDelayMs(retry, st.failures + 1);
@@ -60,7 +67,14 @@ export function restartable(g, id, { deps, fn, rounds = 1, retry = retryPolicy()
     if (!again) { if (end) ctx.down([end]); return; }
 
     const { signal } = ctx;
-    const replace = () => { if (!signal.aborted) g.replace(innerId, deps, fn); };
+    const attempt = ++st.attempt;
+    const replace = () => {
+      if (signal.aborted || st.attempt !== attempt) return;
+      // An upstream may have ended while a retry waited; the ended inner no longer hears it, so
+      // the check is made again here. Then no attempt is made and the owner ends with the inner.
+      if (deps.some((d) => g.get(d).ended)) { if (end) ctx.down([end]); return; }
+      g.replace(innerId, deps, fn);
+    };
     if (delay > 0) setTimeout(replace, delay);
     else replace();
   }, { terminal: { complete: "manual", error: "manual" } });

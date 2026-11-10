@@ -357,6 +357,11 @@ TS 的 ring 只存值、数的是值，迟到的订阅者收到 n 个单独的 D
 跑一次，只给变了的依赖；只结束的依赖只带终止；订阅前的 INVALIDATE 看不到，宿主应先订阅再写上游；R-invocation 加了
 "一次运行可能不带新输入"。R-checkpoint、R-invocation、D797、C-38 和模块都按此改了；模型七步 88,981 个状态、九步
 304,480 个状态通过，6 个变异全部被抓到。和 TS 的不同：TS 恢复后不跑函数，这些清理也就丢了。
+第五个模块模型 `formal/module_restart.tla`：写之前按 R-restart 原文对模块做了探测，发现三处：调过 restart() 后，owner
+重新激活时把快照里的旧请求又执行一次；延迟重试等待时外部 restart 开了新 attempt，旧重试仍会再换掉 inner；重试等待时
+上游结束，重试照样在结束的上游上起新 inner，owner 以 COMPLETE 而不是 ERROR 结束。前两处用户决定：请求只服务一次
+（激活时 restart state 的当前值算已服务），重试属于失败的那次 attempt、别的 attempt 开始后作废；R-restart 补了这两句。
+第三处是模块违反现有规则的 bug，已修。模型七步 4,638 个状态、十步 25,974 个状态通过，11 个变异全部被抓到。R-restart 原来没有 conformance 场景，新增 C-43 覆盖它。
 
 不在本提案里：formal 模型（TLA+）的更新、各语言 runtime 的实现、O10（L0.5 和 F-NO-WEDGE-CUT）。它们分别属于
 B140 的 Formal、Owner routing 两条和一个单独的决定。

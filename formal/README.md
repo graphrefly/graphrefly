@@ -17,6 +17,7 @@ currently active rules and are retired or rescoped at activation, not edited now
 | `module_demand.tla` (`module_demand.cfg`, `module_demand_7.cfg`) | R-demand: the pullable of `reference/modules/demand.mjs` (pullLog over the input and a demand state, manual COMPLETE and auto ERROR, and the quiet holder over it) run over the kernel's settle semantics beside a holder written from R-demand's text; a step is a host batch writing the input and making zero, one or two pulls, or the sink subscribing or unsubscribing; the service sends one DATA or stays silent. Invariants: Serves, OutputMatches, HeldMatches, ServeOnlyOnPull, InactiveHoldsNothing, EndsWithInput. TLC-green 2026-11-09: five steps 12,103 distinct states (depth 6); seven steps 90,769 distinct states (depth 8, 24 s). | C-32 |
 | `module_history.tla` (`module_history.cfg`) | R-history: the history node of `reference/modules/history.mjs` (auto policies, the onInvalidate hook emptying its list) over a computed source X kept active by its own sink, run over the kernel's settle semantics beside a history written from R-history's text; a step is a wave of X (one entry of a menu: several arrays, an array with two values, RESOLVED alone or before values, INVALIDATE and values, values with a terminal) or H's sink subscribing or unsubscribing; N = 2, and the list's entries are waves of arrays. Invariants: Refines, ListMatches, ValueIsList, InactiveEmpty. TLC-green 2026-11-09: eight steps 651 distinct states (depth 9, 1 s). | C-38 |
 | `module_checkpoint.tla` (`module_checkpoint.cfg`, `module_checkpoint_9.cfg`) | R-checkpoint, R-invocation: states A and B and a recipe node P over them, whose run keeps the last N input values in private state and, when Hook (chosen at Init), registers an onInvalidate that empties it; the original graph takes host steps live, then one capture and restore, a window in which host steps reach only the states, and the restored P's first subscription through the module's seed and wrapper (A2), after which both graphs take the same steps. The reference is the original P given the window's net change as one live wave. Invariants: StateMatches, HookMatches, OutMatches, NoNeedlessRun. TLC-green 2026-11-09: seven steps 88,981 distinct states (depth 8, 2 s); nine steps 304,480 distinct states (depth 10, 4 s). | C-38 |
+| `module_restart.tla` (`module_restart.cfg`, `module_restart_10.cfg`) | R-restart: the owner of `reference/modules/restart.mjs` (manual terminals, private round, failures, last request served and attempt count, the lifetime's signal, the onDeactivation renewal, replace at the end of the wave) over an inner on an upstream U, beside an owner written from R-restart's text that numbers attempts and lifetimes; a step is the sink subscribing or unsubscribing, the inner sending a value, COMPLETE, ERROR or a value with COMPLETE, U ending, a restart request, or a pending retry's timer; retries wait for a timer or not (chosen at Init). Invariants: Refines, CountsMatch, PendingMatches, TerminalOnlyWhenFinal. TLC-green 2026-11-09: two rounds and two attempts, seven steps 4,638 distinct states (depth 8); three attempts, ten steps 25,974 distinct states (depth 11, 1 s). | C-43 |
 
 Mutations checked on `kernel_wave.cfg`, each tripping an invariant: settling while a dependency is
 pending (FanInAfterSettle); no kernel RESOLVED (NoWedge); no PENDING prefix (PendingPrefix); no split
@@ -111,6 +112,20 @@ alone bringing its values again, unchanged inputs brought as new, the seed witho
 counted as a change (no recipe here sees an end under the auto policy), and the seed's terminal
 ignored (an ended P implies ended states). Not modeled: a manual terminal policy, chains of
 restored nodes, recapture before activation, local-only nodes and refusals.
+
+Before `module_restart.tla` was written, probing the module against R-restart's text found three
+gaps: an old restart request restarted the fresh inner at the owner's next activation; a pending
+retry replaced the attempt an outside request had started; and a retry fired after the inner's
+upstream had ended, starting an inner over it. The user chose to serve a request once (the restart
+state's value at activation counting as served) and to drop a retry once another attempt has
+started; the third was a module bug against the rule as written. Mutations checked on
+`module_restart.cfg`, 11 in all, each tripping an invariant, every invariant also alone: the old
+request served again, a stale retry not dropped, the retry's upstream check dropped, no renewal of
+an ended inner, unlimited rounds, a restart over an ended upstream, requests never served,
+unlimited retries, the first COMPLETE always final (Refines; the last also TerminalOnlyWhenFinal
+alone); no fresh retry count per round (CountsMatch); the retry kept across a deactivation
+(PendingMatches). Not modeled: several upstreams, the inner's own values and late output, C-34's
+fanout timing, a request and an inner terminal in one wave.
 
 ## Clean-slate module map (CSP-0)
 

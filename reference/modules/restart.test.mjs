@@ -166,3 +166,57 @@ test("no restart once an upstream of the inner has ended: the owner ends with th
   const data = g.trace.filter((e) => e.to === "s").flatMap((e) => e.msgs).filter((m) => m[0] === "DATA");
   assert.deepEqual(data, [["DATA", 1]]);
 });
+
+test("a request is served once: the owner's next activation does not restart the inner it activates", () => {
+  const g = createGraph();
+  let starts = 0;
+  const r = restartable(g, "r", { deps: [], fn: (ctx) => {
+    if (!ctx.state.get()) { ctx.state.set(true); starts += 1; }
+    ctx.down([["DATA", starts]]);
+  } });
+  g.subscribe("s", "r");
+  r.restart();
+  assert.equal(starts, 2, "the request restarted the live inner");
+  g.unsubscribe("s", "r");
+  g.subscribe("s", "r");
+  assert.equal(starts, 3, "one fresh inner for the new activation, not a second one for the old request");
+  g.unsubscribe("s", "r");
+  r.restart(); // while inactive: the next activation starts a fresh inner anyway
+  g.subscribe("s", "r");
+  assert.equal(starts, 4);
+  r.restart();
+  assert.equal(starts, 5, "a new request after activation is served");
+});
+
+test("a pending retry is dropped once another attempt has started, as an outside request does", async () => {
+  const g = createGraph();
+  let attempts = 0;
+  const r = restartable(g, "r", {
+    deps: [],
+    fn: (ctx) => { attempts += 1; if (attempts === 1) throw new Error("boom"); ctx.down([["DATA", attempts]]); },
+    retry: retryPolicy({ maxAttempts: 3, initialMs: 20 }),
+  });
+  g.subscribe("s", "r"); // attempt 1 fails; its retry is due at about 20 ms
+  r.restart(); // attempt 2 starts now
+  assert.equal(attempts, 2);
+  await sleep(50);
+  assert.equal(attempts, 2, "the retry of attempt 1 did not replace attempt 2");
+  assert.deepEqual(values(g, "s"), [2]);
+});
+
+test("no restart once an upstream has ended, also when it ends while a retry waits: the owner ends with the ERROR", async () => {
+  const g = createGraph();
+  g.state("a", 1);
+  let attempts = 0;
+  restartable(g, "r", {
+    deps: ["a"],
+    fn: (ctx) => { attempts += 1; if (attempts === 1) throw new Error("boom"); ctx.down([["DATA", ctx.deps[0].value]]); },
+    retry: retryPolicy({ maxAttempts: 3, initialMs: 20 }),
+  });
+  g.subscribe("s", "r"); // attempt 1 fails; its retry is due at about 20 ms
+  g.complete("a");
+  await until(() => g.get("r").ended);
+  assert.equal(attempts, 1, "no fresh inner over the ended upstream");
+  assert.deepEqual(g.get("r").ended, ["ERROR", "boom"]);
+  assert.deepEqual(values(g, "s"), []);
+});
