@@ -144,7 +144,7 @@ test("the input's COMPLETE ends the holder and discards what was held", () => {
   const h = pageHolder(g, seen);
   g.subscribe("s", "h");
   g.set("a", 1);
-  assert.deepEqual(during(g, () => g.complete("a")), ["s <- h: [COMPLETE]"]);
+  assert.deepEqual(during(g, () => g.complete("a")), ["s <- h: [DIRTY, COMPLETE]"]);
   assert.deepEqual(during(g, () => h.pull("late")), []);
   assert.deepEqual(seen, []);
 });

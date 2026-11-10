@@ -185,9 +185,17 @@ Mutations checked on 2026-11-08, each failing at least one test:
   effective INVALIDATE without a rerun runs them again. Computed nodes clear on last release; plain state keeps its value.
 - K8: a request that arrives while the kernel is busy waits and runs afterwards in arrival order: a
   late `ctx.down`, and `set`, `batch`, `subscribe`, `unsubscribe` reached through a captured graph
-  reference. A function writing its own upstream is rejected, and the throw becomes its ERROR. A
+  reference. A function writing its own upstream makes an ordinary request too: it runs after the
+  wave and reaches the function in a later wave, so the function is never reentered and a feedback
+  loop of completed waves is the composition's to end (decided by the user 2026-11-09; until then
+  the write was rejected and the throw became the function's ERROR). A
   failing sink or queued request goes to the host reporter. Without a reporter the kernel keeps no
   failure history (R-operation-failure); a reporter that throws is ignored.
+- K2 as decided on 2026-11-09: an array carrying a terminal marks the sender's cone pending and gets
+  the PENDING prefix like a value array, under auto and manual policies alike, so a fan-in waits for
+  a wave's terminals and a manual one runs once on all of them; INVALIDATE does neither. An auto
+  COMPLETE goes out in the same delivery as the run's output, so it does not mark the cone again.
+  Both were found by `formal/kernel_wave.tla` once it had manual policies.
 - O3 as decided on 2026-11-06: batch delivers no DIRTY before commit. Inside a batch body a node's
   late `ctx.down` is staged with host inputs; a submission that would mix DATA and RESOLVED for one
   node is rejected and earlier staging kept; staged output of a lifetime that closed is dropped. A body declared `async` is

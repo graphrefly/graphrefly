@@ -128,14 +128,16 @@ test("K8: batch returns the body's result, outer or nested, also from a callback
   assert.equal(g.get("b").value, 9);
 });
 
-test("K5 auto: COMPLETE once every dependency has completed, without a balancing RESOLVED", () => {
+test("K5 auto: COMPLETE once every dependency has completed; an earlier terminal settles the node with RESOLVED", () => {
   const g = createGraph();
   g.state("a", 1);
   g.state("b", 2);
   g.node("d", ["a", "b"], derived((a, b) => a + b));
   g.subscribe("s", "d");
-  assert.deepEqual(during(g, () => g.complete("a")), []);
-  assert.deepEqual(during(g, () => g.complete("b")), ["s <- d: [COMPLETE]"]);
+  // A terminal marks the cone pending like a value (K2, 2026-11-09), so d, still open, settles
+  // with the kernel's RESOLVED.
+  assert.deepEqual(during(g, () => g.complete("a")), ["s <- d: [DIRTY, RESOLVED]"]);
+  assert.deepEqual(during(g, () => g.complete("b")), ["s <- d: [DIRTY, COMPLETE]"]);
 });
 
 test("K5 manual: the function receives COMPLETE as input and ends the node itself", () => {
@@ -159,9 +161,9 @@ test("K5/P10: a dependency ERROR propagates; a throw becomes this node's ERROR",
   g.subscribe("st", "t");
   assert.deepEqual(during(g, () => g.set("a", 13)), [
     "sd <- d: [DIRTY, DATA(13)]",
-    "st <- t: [ERROR(\"bad\")]",
+    "st <- t: [DIRTY, ERROR(\"bad\")]",
   ]);
-  assert.deepEqual(during(g, () => g.error("a", "boom")), ["sd <- d: [ERROR(\"boom\")]"]);
+  assert.deepEqual(during(g, () => g.error("a", "boom")), ["sd <- d: [DIRTY, ERROR(\"boom\")]"]);
 });
 
 test("K2: DATA and RESOLVED in one output array is rejected as a computation failure", () => {
@@ -169,7 +171,7 @@ test("K2: DATA and RESOLVED in one output array is rejected as a computation fai
   g.state("a", 1);
   g.node("x", ["a"], (ctx) => { if (ctx.deps[0].value === 2) ctx.down([["DATA", 1], ["RESOLVED"]]); });
   g.subscribe("s", "x");
-  assert.deepEqual(during(g, () => g.set("a", 2)), ["s <- x: [ERROR(\"DATA and RESOLVED in one array\")]"]);
+  assert.deepEqual(during(g, () => g.set("a", 2)), ["s <- x: [DIRTY, ERROR(\"DATA and RESOLVED in one array\")]"]);
 });
 
 test("O11: DIRTY in node output is rejected: during the run it becomes ERROR, after the run the caller gets it", () => {
@@ -182,7 +184,7 @@ test("O11: DIRTY in node output is rejected: during the run it becomes ERROR, af
   });
   g.subscribe("s", "x");
   assert.throws(() => kept.down([["DIRTY"], ["DATA", 5]]), /DIRTY is sent by the kernel/);
-  assert.deepEqual(during(g, () => g.set("a", 2)), ["s <- x: [ERROR(\"x: DIRTY is sent by the kernel, not by node output\")]"]);
+  assert.deepEqual(during(g, () => g.set("a", 2)), ["s <- x: [DIRTY, ERROR(\"x: DIRTY is sent by the kernel, not by node output\")]"]);
 });
 
 test("K7: a computed node clears on last release; plain state keeps its value", () => {
@@ -271,15 +273,22 @@ test("K8/P7: a function's write to another node waits for the next wave, in eith
   assert.deepEqual(fOnly, ["sf <- f: [DIRTY, DATA(\"2/0\")]", "sf <- f: [DIRTY, DATA(\"2/2\")]"]);
 });
 
-test("K8: a function writing its own upstream is rejected, and the throw becomes its ERROR", () => {
+test("K8: a function writing its own upstream makes a request that reaches it in a later wave, not a reentry", () => {
   const g = createGraph();
   g.state("a", 1);
+  const seen = [];
   g.node("x", ["a"], (ctx) => {
-    if (ctx.deps[0].value === 2) g.set("a", 0);
+    const v = ctx.deps[0].value;
+    seen.push(v);
+    if (v > 1 && v < 4) g.set("a", v + 1); // a feedback loop the composition ends at 4
+    ctx.down([["DATA", v]]);
   });
   g.subscribe("s", "x");
-  assert.deepEqual(during(g, () => g.set("a", 2)), ["s <- x: [ERROR(\"x wrote its upstream a\")]"]);
-  assert.equal(g.get("a").value, 2);
+  assert.deepEqual(during(g, () => g.set("a", 2)),
+    ["s <- x: [DIRTY, DATA(2)]", "s <- x: [DIRTY, DATA(3)]", "s <- x: [DIRTY, DATA(4)]"],
+    "each write runs after the wave that made it, as its own wave");
+  assert.deepEqual(seen, [1, 2, 3, 4], "one run per wave, never nested");
+  assert.equal(g.get("a").value, 4);
 });
 
 test("K8: a batch opened by a function during a wave commits later as one wave", () => {
@@ -528,7 +537,7 @@ test("K5/K7: a node that ends closes its lifetime at once, while still subscribe
   let closed = 0;
   g.node("q", ["a"], (c) => { ctx = c; c.onDeactivation(() => { closed += 1; }); });
   g.subscribe("s", "q");
-  assert.deepEqual(during(g, () => g.complete("a")), ["s <- q: [COMPLETE]"]);
+  assert.deepEqual(during(g, () => g.complete("a")), ["s <- q: [DIRTY, COMPLETE]"]);
   assert.equal(closed, 1, "its cleanups ran");
   assert.equal(ctx.signal.aborted, true, "its signal is aborted");
   assert.equal(g.get("a").active, false, "its dependency was released");
@@ -590,7 +599,7 @@ test("H6: a quiet node passes an INVALIDATE on at once (it carries no DIRTY); an
   g.subscribe("sf", "f");
   assert.deepEqual(during(g, () => g.invalidate("a")), ["sq <- q: [INVALIDATE]", "sf <- f: [INVALIDATE]"]);
   g.set("a", 2);
-  assert.deepEqual(during(g, () => g.error("a", "down")), ["sf <- f: [ERROR(\"down\")]", "sq <- q: [ERROR(\"down\")]"]);
+  assert.deepEqual(during(g, () => g.error("a", "down")), ["sf <- f: [DIRTY, ERROR(\"down\")]", "sq <- q: [DIRTY, ERROR(\"down\")]"]);
 });
 
 test("R-wave-boundary: each ctx.down call is its own array; a dependent sees them as waves and runs once", () => {
@@ -834,7 +843,7 @@ test("K5: automatic COMPLETE waits until the node has received every dependency'
   g.subscribe("sx", "x");
   g.subscribe("sb", "b");
   g.subscribe("sm", "m"); // b delivers to x, then sb, then m
-  assert.deepEqual(during(g, () => g.complete("b")), ["sx <- x: [COMPLETE]", "sb <- b: [COMPLETE]", "sm <- m: [COMPLETE]"],
+  assert.deepEqual(during(g, () => g.complete("b")), ["sx <- x: [DIRTY, COMPLETE]", "sb <- b: [DIRTY, COMPLETE]", "sm <- m: [DIRTY, COMPLETE]"],
     "m has x's COMPLETE first, but completes only when b's own COMPLETE reaches it");
 });
 
@@ -1450,4 +1459,109 @@ test("K1: PAUSE, RESUME, PULL and TEARDOWN are not message types (P11, K9, decid
   g.subscribe("s", "n");
   assert.deepEqual(refused, ["PAUSE", "RESUME", "PULL", "TEARDOWN"]);
   assert.deepEqual(g.get("n").values, [1]);
+});
+
+// Clauses added to C-29, C-33, C-35 and C-44 for the activation plan (2026-11-09).
+test("C-35: a rewire adding a dependency with no snapshot runs nothing; one onto a node depending on D is refused; to no dependencies releases them", () => {
+  const g = createGraph();
+  g.state("B", 1); g.state("G");
+  let runs = 0;
+  const fD = (ctx) => { runs += 1; ctx.down([["DATA", ctx.deps.map((d) => d.value ?? null)]]); };
+  g.node("D", ["B"], fD);
+  g.subscribe("s", "D");
+  runs = 0;
+  assert.deepEqual(during(g, () => g.rewire("D", ["B", "G"], fD)), []);
+  assert.equal(runs, 0);
+  assert.deepEqual(during(g, () => g.set("G", 5)), ["s <- D: [DIRTY, DATA([1,5])]"]);
+  g.node("H", ["D"], (ctx) => ctx.down([["DATA", 1]]));
+  g.subscribe("sh", "H");
+  assert.throws(() => g.rewire("D", ["B", "H"], fD), /would depend on itself through H/);
+  assert.deepEqual(during(g, () => g.rewire("D", [], fD)), []);
+  assert.deepEqual([g.get("D").value, g.get("B").active], [[1, 5], false]);
+  assert.deepEqual(during(g, () => g.set("B", 9)), []);
+});
+
+test("C-29: a nested batch joins the outer one and returns its body's value", () => {
+  const g = createGraph();
+  g.state("A", 1); g.state("B", 1);
+  const sum = counted(derived((a, b) => a + b));
+  g.node("S", ["A", "B"], sum);
+  g.subscribe("s", "S");
+  let inner;
+  assert.deepEqual(during(g, () => g.batch(() => { g.set("A", 2); inner = g.batch(() => { g.set("B", 3); return "in"; }); })),
+    ["s <- S: [DIRTY, DATA(5)]"]);
+  assert.equal(inner, "in");
+  assert.equal(sum.calls, 2, "activation and one commit wave");
+});
+
+test("C-33: only the last run's onInvalidate runs, and status is derived from what the node holds", () => {
+  const g = createGraph();
+  g.state("A");
+  const log = [];
+  g.node("N", ["A"], (ctx) => {
+    const v = ctx.deps[0].value;
+    ctx.onInvalidate(() => log.push(`inv ${v}`));
+    ctx.onDeactivation(() => log.push(`closing: ${g.status("N").lifecycle}`));
+    if (ctx.deps[0].has) ctx.down([["DATA", v]]);
+  });
+  const st = () => g.status("N");
+  assert.deepEqual(st(), { cache: "empty", output: "open", lifecycle: "inactive" });
+  g.subscribe("s", "N");
+  g.set("A", 1); g.set("A", 2);
+  assert.deepEqual(st(), { cache: "ready", output: "open", lifecycle: "active" });
+  g.invalidate("A");
+  assert.deepEqual([st().cache, log], ["empty", ["inv 2"]]);
+  g.set("A", 3);
+  g.unsubscribe("s", "N");
+  assert.deepEqual([st().lifecycle, log.at(-1)], ["inactive", "closing: closing"]);
+  g.subscribe("s", "N");
+  g.complete("A");
+  assert.deepEqual(st(), { cache: "ready", output: "completed", lifecycle: "active" });
+});
+
+test("C-44: the kernel adds only the settling RESOLVED, and a quiet node never holds a wave", () => {
+  const g = createGraph();
+  g.state("A", 1);
+  g.node("F", ["A"], (ctx) => { if (ctx.deps[0].value % 2 === 0) ctx.down([["DATA", ctx.deps[0].value]]); });
+  let kept;
+  g.node("Q", ["A"], (ctx) => { kept = ctx; if (ctx.deps[0].value === 2) ctx.down([["DATA", "in-run"]]); }, { quiet: true });
+  g.node("D", ["A", "Q"], (ctx) => ctx.down([["DATA", ctx.deps.map((d) => d.value ?? null)]]));
+  g.subscribe("sf", "F"); g.subscribe("sq", "Q"); g.subscribe("sd", "D");
+  assert.deepEqual(during(g, () => g.set("A", 3)), ["sf <- F: [DIRTY, RESOLVED]", "sd <- D: [DIRTY, DATA([3,null])]"]);
+  assert.deepEqual(during(g, () => g.set("A", 2)), [
+    "sf <- F: [DIRTY, DATA(2)]", "sd <- D: [DIRTY, DATA([2,null])]",
+    "sq <- Q: [DIRTY, DATA(\"in-run\")]", "sd <- D: [DIRTY, DATA([2,\"in-run\"])]",
+  ]);
+  assert.deepEqual(during(g, () => kept.down([["DATA", "late"]])), ["sq <- Q: [DIRTY, DATA(\"late\")]", "sd <- D: [DIRTY, DATA([2,\"late\"])]"]);
+  assert.deepEqual(during(g, () => g.set("A", 5)), ["sf <- F: [DIRTY, RESOLVED]", "sd <- D: [DIRTY, DATA([5,\"late\"])]"]);
+  assert.deepEqual(during(g, () => g.invalidate("A")), ["sf <- F: [INVALIDATE]", "sq <- Q: [INVALIDATE]", "sd <- D: [INVALIDATE]"]);
+});
+
+test("K2: a wave of terminals marks the cone pending, so a manual fan-in runs once on both terminals", () => {
+  for (const [end, policy] of [["complete", { complete: "manual" }], ["error", { error: "manual" }]]) {
+    const g = createGraph();
+    g.state("S", 1);
+    g.node("B", ["S"], (ctx) => ctx.down([["DATA", ctx.deps[0].value]]));
+    g.node("C", ["S"], (ctx) => ctx.down([["DATA", ctx.deps[0].value]]));
+    const runs = [];
+    g.node("D", ["B", "C"], (ctx) => { runs.push(ctx.deps.map((d) => d.terminal?.[0] ?? "-").join(",")); }, { terminal: policy });
+    g.subscribe("s", "D");
+    runs.length = 0;
+    if (end === "complete") g.complete("S"); else g.error("S", "e");
+    assert.deepEqual(runs, end === "complete" ? ["COMPLETE,COMPLETE"] : ["ERROR,ERROR"], `${end}: one run that sees both legs`);
+  }
+});
+
+test("K2/K5: an auto COMPLETE goes out with the run's output, so a manual dependent runs once on both", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  g.node("d", ["a"], (ctx) => ctx.down([["DATA", ctx.deps[0].value]]));
+  const runs = [];
+  g.node("e", ["d"], (ctx) => runs.push(`${JSON.stringify(ctx.deps[0].waves)} ${ctx.deps[0].terminal?.[0] ?? "-"}`), { terminal: { complete: "manual" } });
+  g.subscribe("s", "e");
+  g.subscribe("sd", "d");
+  runs.length = 0;
+  assert.deepEqual(during(g, () => g.batch(() => { g.set("a", 2); g.complete("a"); })),
+    ["s <- e: [DIRTY, RESOLVED]", "sd <- d: [DIRTY, DATA(2)]", "sd <- d: [DIRTY, COMPLETE]"]);
+  assert.deepEqual(runs, ["[[2]] COMPLETE"]);
 });

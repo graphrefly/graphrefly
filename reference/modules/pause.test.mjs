@@ -112,7 +112,7 @@ test("a terminal passes while paused and discards what was held", () => {
   g.subscribe("s", "p");
   p.pause();
   g.set("a", 5);
-  assert.deepEqual(during(g, () => g.complete("a")), ["s <- p: [COMPLETE]"]);
+  assert.deepEqual(during(g, () => g.complete("a")), ["s <- p: [DIRTY, COMPLETE]"]);
 });
 
 test("unpaused, an array with DATA and a terminal passes unchanged; paused, only the terminal passes", () => {
@@ -126,7 +126,7 @@ test("unpaused, an array with DATA and a terminal passes unchanged; paused, only
     const q = pausable(h, "p", "a");
     h.subscribe("s", "p");
     q.pause();
-    assert.deepEqual(during(h, () => h.batch(() => { h.set("a", 5); end(h); })), [`s <- p: [${shown}]`]);
+    assert.deepEqual(during(h, () => h.batch(() => { h.set("a", 5); end(h); })), [`s <- p: [DIRTY, ${shown}]`]);
   }
 });
 

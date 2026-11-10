@@ -101,10 +101,10 @@ test("observation goes on across attempts: same topology, and the inner's sink s
   assert.deepEqual(msgsOf(g, "o"), [
     "o <- r/inner: [START]",
     "o <- r/inner: [DIRTY, DATA(1)]",
-    "o <- r/inner: [COMPLETE]",
+    "o <- r/inner: [DIRTY, COMPLETE]",
     "o <- r/inner: [START]",
     "o <- r/inner: [DIRTY, DATA(1)]",
-    "o <- r/inner: [COMPLETE]",
+    "o <- r/inner: [DIRTY, COMPLETE]",
   ]);
 });
 

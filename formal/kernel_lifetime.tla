@@ -19,7 +19,10 @@ use the default auto terminal policies.
 
 Every request is one step that runs to its end; the requests a sink callback,
 a node function or a cleanup makes while it runs (phase "busy") wait in the
-queue and run after it, in the order they were made. A node's function, each
+queue and run after it, in the order they were made. A write to S from a node
+function is one of them, also when S is that node's own upstream: it reaches
+the node in a later wave and never reenters it (R-invocation, decided by the
+user 2026-11-09; RunOncePerRequest, FIFO, AfterMaker). A node's function, each
 time it runs, sends DATA and chooses one more effect: none, register one
 onDeactivation cleanup, start late work that keeps its ctx, set private
 state, or send COMPLETE. P and M choose none; A chooses none or a cleanup; N

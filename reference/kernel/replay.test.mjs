@@ -214,7 +214,7 @@ test("C-36: under complete=auto the terminal ends the node after its run, with n
   g.subscribe("s", "d");
   assert.deepEqual(during(g, () => A.ctx.down([["DATA", 5], ["COMPLETE"]])), [
     "s <- d: [DIRTY, DATA(50)]",
-    "s <- d: [COMPLETE]",
+    "s <- d: [DIRTY, COMPLETE]",
   ]);
 });
 

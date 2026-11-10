@@ -301,7 +301,9 @@ They change C-8 and C-34 when the draft rules are revisited (B140); `spec/` is n
    needs exactly that.
 3. **Decided by the user 2026-11-08: a topology request from inside a node function is queued, not an ERROR.** R-rewire calls a mid-fn
    rewire the D37 feedback ERROR. This settles the same question for a `set` from inside a function
-   (DS-17): a write to the function's own upstream is still rejected, anything else is queued (K8).
+   (DS-17): a write to the function's own upstream was still rejected, anything else queued (K8).
+   Revised by the user 2026-11-09: that write is queued too and reaches the function in a later
+   wave, as D796's R-reentrancy@2 allowed feedback loops of completed waves.
    Restart's owner relies on the queue.
 4. **Decided by the user 2026-11-08: subscribers survive a restart (C-34).** C-34 wants next-execution requests to get new
    registrations and old ones to end with the old execution. O7 wants observation to go on across

@@ -31,7 +31,12 @@ const isTerminal = (m) => m[0] === "COMPLETE" || m[0] === "ERROR";
 const settles = (m) => isValue(m) || isTerminal(m) || m[0] === "INVALIDATE";
 const messageOf = (e) => (e instanceof Error ? e.message : e);
 const freshInput = () => ({ has: false, value: undefined, ended: null, frames: [] });
-const hasValue = (frames) => frames.some((f) => f.some(isValue));
+// K2 (decided by the user 2026-11-09): an array that carries DATA, RESOLVED or a terminal
+// marks the sender's cone pending and gets the kernel's prefix, auto or manual policy alike,
+// so a fan-in waits for all of a wave's terminals too and runs once on them. INVALIDATE
+// does neither: it runs no function and is idempotent, so a fan-in needs no wait for it.
+const marks = (m) => isValue(m) || isTerminal(m);
+const hasMark = (frames) => frames.some((f) => f.some(marks));
 
 // One submitted array, checked and split into the arrays that are published. Messages
 // keep the order the author wrote; nothing is sorted by tier (DS-17 O13). A terminal
@@ -418,14 +423,14 @@ export function createGraph({ report: hostReport } = {}) {
     // P4: a pending node that ends up with nothing settling still settles.
     if (n.pending && !out.some((f) => f.some(settles))) out = [...out, [["RESOLVED"]]];
     if (!out.length) return;
-    if (hasValue(out) && !n.pending) {
-      // A node emitting a value without being pending (a source, later output, or a
-      // node answering a terminal-only wave) marks its own cone pending first (P3).
+    if (hasMark(out) && !n.pending) {
+      // A node emitting a value or a terminal without being pending (a source, later output,
+      // or a node answering a wave it was not marked in) marks its own cone pending first (P3).
       n.pending = true;
       markPending(n);
     }
     n.pending = false; // settled: its subscribers now see its new state
-    out = out.map((f) => (f.some(isValue) ? [["DIRTY"], ...f] : f)); // K2: one per value array
+    out = out.map((f) => (f.some(marks) ? [["DIRTY"], ...f] : f)); // K2: one per marking array
     // K3: deliver to the subscriber list as it was when publication began.
     for (const sub of [...n.subs]) {
       if (sub.kind === "sink") for (const f of out) deliverToSink(sub, n.id, f);
@@ -496,9 +501,10 @@ export function createGraph({ report: hostReport } = {}) {
       if (postlude.length) later(m, m.lifetime, [postlude]);
       return;
     }
-    const frames = [...lead, ...apply(m, out)];
-    if (frames.length || !postlude.length) deliver(m, frames); // P4: adds RESOLVED if silent
-    if (postlude.length) down(m, [postlude]);
+    // The postlude goes out in the same delivery as the run's output, so dependents settle
+    // once on both: delivered on its own, a terminal would mark the cone pending a second
+    // time in this wave (K2), and a manual dependent would run twice (formal/kernel_wave.tla).
+    deliver(m, [...lead, ...apply(m, postlude.length ? [...out, postlude] : out)]); // P4: adds RESOLVED if silent
   }
 
   function runWave(entries) {
@@ -508,7 +514,7 @@ export function createGraph({ report: hostReport } = {}) {
     // Every pending node settles in this wave and clears its own flag and memberships, so
     // nothing is reset afterwards.
     for (const { node, frames } of entries) {
-      if (hasValue(frames) && !node.pending) {
+      if (hasMark(frames) && !node.pending) {
         node.pending = true;
         markPending(node);
       }
@@ -555,7 +561,7 @@ export function createGraph({ report: hostReport } = {}) {
     if (snap.length) {
       // One wave from n: its cone is marked pending first (P3), then each dependent
       // receives the snapshot as its input.
-      if (hasValue([snap])) { n.pending = true; markPending(n); n.pending = false; }
+      if (hasMark([snap])) { n.pending = true; markPending(n); n.pending = false; }
       for (const sub of nodeSubs) receive(nodeOf(sub.id), sub.dep, [snap]);
     }
     if (n.ended) closeLifetime(n);
@@ -609,12 +615,10 @@ export function createGraph({ report: hostReport } = {}) {
   function hostInput(id, msg) {
     const n = nodeOf(id);
     if (n.kind !== "state") throw new KernelError(`${id} is not a state node`);
-    const fn = running;
-    if (fn && dependsOn(fn, id)) {
-      // A function writing its own upstream would feed its output back into its
-      // input. Rejected; inside a node function the throw becomes its ERROR (P10).
-      throw new KernelError(`${fn.id} wrote its upstream ${id}`);
-    }
+    // A function writing its own upstream is an ordinary request (decided by the user
+    // 2026-11-09): it waits for the wave to end like any other, so the function is never
+    // reentered, and it reaches the function again in a later wave. A feedback loop of
+    // completed waves is the composition's to end, as D796's R-reentrancy@2 had it.
     if (n.ended) throw new KernelError(`${id} has ended`);
     if (staging) { stage(n, null, [msg]); return; }
     request(() => {

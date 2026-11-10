@@ -365,3 +365,124 @@ TS 的 ring 只存值、数的是值，迟到的订阅者收到 n 个单独的 D
 
 不在本提案里：formal 模型（TLA+）的更新、各语言 runtime 的实现、O10（L0.5 和 F-NO-WEDGE-CUT）。它们分别属于
 B140 的 Formal、Owner routing 两条和一个单独的决定。
+
+## 9. 激活准备（2026-11-09）
+
+五个模块模型都写完之后，用户选了先做激活准备：把旧规则的 transition、C-1 到 C-27、旧的 TLA+ 模型逐一对照 D797，
+找出激活之前还要定的事。这一节只是计划，`spec/` 和 `formal/` 都还没动。
+
+### 9.1 Transition 演练
+
+用一个 scratch 脚本把第 8 节的映射作为 transition 加到 `spec/rules.jsonl` 的副本上，再用 `authority/model.mjs`
+算出公开规则集：每条旧规则的每个版本都 replace 到它的新规则，或者 retire；内核那 10 条新规则加上 R-no-imperative@2、
+R-node-thin@2 加 `activated_by`。两种做法都没有错误：
+
+| | 激活后的公开规则 | 留下的旧规则 |
+|---|---|---|
+| 只激活内核 | 16 条 | R-sentinel、R-graph-domain，以及 **R-async-paused@1、R-paused-invalidate@1** |
+| 内核加 R-pause 一起激活 | 15 条 | R-sentinel、R-graph-domain |
+
+只激活内核时，R-async-paused 和 R-paused-invalidate 还是公开的，它们讲的是 PAUSE 消息和 pausable 模式，
+而 R-messages 已经把 PAUSE 移出了消息集合，公开规则集里会自相矛盾。第 3 节给 R-async-paused 两个去处（暂停部分去 pause 模块、
+延迟结果的义务退役），而 transition 只能有一个去处。
+
+激活后没有 conformance 的公开规则：R-node@1、R-node-thin@2、R-no-imperative@2；没有 formal 的：这三条加 R-sentinel@1。
+R-first-run-gate@1（现在是公开的）和 R-dynamic-node@1 去 sugar，演练里给的是 retire。
+
+### 9.2 C-1 到 C-27
+
+| 处理 | 场景 |
+|---|---|
+| 退役 | C-7（K9、TEARDOWN）、C-9、C-10（暂停模式改成位置）、C-18（K9）、C-19（O11）、C-20（TEARDOWN）、C-25（O3、O4、K9） |
+| 由新场景接替 | C-2→C-30、C-8→C-35、C-14→C-33、C-21→C-37、C-22→C-29、C-24→C-38、C-27→C-32 |
+| 改写 | C-1、C-3、C-6、C-15、C-17（内核）；C-5（pause 模块） |
+| 拆分 | C-4、C-11、C-12、C-16、C-23、C-26：内核部分改写或由新场景接替，sugar 部分留给各语言包，路由部分退役 |
+| 部分接替 | C-13：(a)(b) 由 C-30 接替，(c) 改写为 pause 模块的场景 |
+| 不受影响 | C-1a、C-1b、C-1c（`covers` 为空），但 C-1b 的 wire 帧里有 DIRTY |
+
+27 条里 18 条在内核激活时变；C-2、C-5、C-9、C-10、C-13、C-24、C-27 跟着各自的模块规则激活；C-16、C-26 两边都有。
+接替时新场景少了几条：C-35 缺 C-8 的三条（新加的依赖还没有值、拒绝成环、rewire 成零个依赖），C-29 缺嵌套 batch，
+C-33 只查 onDeactivation（C-14 还查 onInvalidate 每次运行替换），C-32 缺"没有新输入的 pull 用自己的 params"；
+没有内核场景检查 R-wave 的 quiet 节点和内核补的 RESOLVED；没有 pause 场景检查几个 pausable 共用一个锁状态。
+
+### 9.3 旧的 TLA+ 模型
+
+没有一个能原样保留：
+
+| 处理 | 模型 |
+|---|---|
+| 退役（D797 点名的） | wave_protocol_up_MC、wave_up_source、wave_pull_routing（含 _sib）、wave_pull_routing_diamond、wave_teardown_terminal、wave_protocol_meta_teardown_MC、wave_undirty_settle_timing、wave_rewire_deferred、wave_rewire_deferred_committed、wave_rewire_async_ctx |
+| 退役（规则退役或去了模块） | wave_async、wave_async_paused（含各 cfg）、wave_paused_invalidate、pause/bufferall/resubscribe/replay_resubscribe/gap/q14 MC、wave_rewire_emit、wave_protocol_multisink（两个） |
+| 由新模型覆盖 | wave_protocol_MC、invalidate 两个 MC、wave_terminal_dirty → kernel_wave；nested MC、wave_rewire、wave_rewire_batch → kernel_lifetime；wave_pull → module_demand；replay MC → module_history |
+| 需要改范围 | wave_xgraph（R-graph-domain 还公开、还引用它，但它依赖的"DIRTY 先过 wire"没了）；wave_reentrancy（并入 kernel_lifetime）；wave_deps_complete、rescue MC（并入 kernel_wave 的 manual 策略）；wave_ctx_wave_data；wave_snapshot_restore（它的 RestoredLateSubscribeUsesRestoredCache 和 A2 冲突） |
+
+`wave_protocol.tla` 本身建议退役而不是更新：要改的几乎是每个 action，改完就是 kernel_wave。它的 17 个 MC 都 EXTENDS 它，一起退役。
+研究时在 kernel_wave 的副本里让 terminal 不再结算依赖的 pending，NoWedge 在 153 个状态后失败，说明 kernel_wave 确实覆盖了
+wave_terminal_dirty（auto 策略下）。
+
+新模型没有覆盖、旧模型查过的性质，按重要性：跨图 diamond（C-1）；内核的 manual 终止策略；函数写自己的上游时抛错；
+一个节点有几个订阅者（R-wave 的顺序）；订阅时 START 数组的形状；内核 wave 里的 quiet 节点；checkpoint 的拒绝；
+带值的 diamond 里的迟到 `ctx.down`；rewire 的正向路径（新依赖的快照、rewire 后的迟到输出）；pause 的几种变体；ctx 的编码；
+R-revision（暂缓）。
+
+formal/README 有两处过时：提到的 `wave_protocol_custom_equals_MC`、`wave_protocol_equals_false_MC` 不存在；
+`wave_protocol_q14_MC` 不在文件表里。
+
+### 9.4 激活前要定的事
+
+1. 两条 PAUSE 规则。**已定（用户，2026-11-09）：先指向，后激活。** 内核激活时 R-async-paused、R-paused-invalidate
+   （各版本）replace 到 R-pause@1，R-pause 本身不激活，留到它自己激活。演练：公开规则 14 条，无错误。authority model 只要求
+   transition 的目标存在，不要求已激活，所以两条旧规则离开公开集，R-pause 仍是草案；每条规则只有一个去处，R-async-paused
+   的延迟结果义务在 transition 的理由里说明退役。其他做法：一起激活（违反"模块各自激活"，pause 场景的剩余工作要提前）、
+   retire（同样没有 pause 规则，还丢了来龙去脉）、保留（公开规则自相矛盾）。在 R-pause 激活之前公开规则里没有 pause，
+   和 demand、history、checkpoint 一样。
+2. R-first-run-gate、R-dynamic-node。**已定（用户，2026-11-09）：retire**，理由写"sugar，归各语言包（D797 (9)）"；
+   场景里关于 first-run gate 和 dynamicNode 的子句留在各包自己的测试里。不改写成根上的 sugar 规则（违反 D797 (9)），
+   也不保留（R-first-run-gate 要求等所有依赖，和 R-lifetime 的"激活时在快照上运行一次"冲突）。
+3. 旧模型。**已定（用户，2026-11-09）：退役的模型在激活时删掉**，git 历史保留，formal/README 记下每个旧模型的去向和接替者。
+   authority 按 `formal/` 顶层文件里出现的规则 id 算 formal 覆盖，留在原处会把已经失效的模型算成覆盖。五个要改范围的模型
+   （wave_xgraph、wave_reentrancy、wave_deps_complete 和 rescue MC、wave_ctx_wave_data、wave_snapshot_restore）在新模型写好前保留，
+   作为移植的参照。"退役 wave_protocol 是否完成 D797 的 update 义务"用户早已定过（B140：现有模型在激活时退役或改范围，
+   就是这项义务的读法）；激活时在 D797 里补一句 wave_protocol 由 kernel_wave、kernel_lifetime 取代。
+4. 激活前要补的覆盖。**已定（用户，2026-11-09）：内核部分都补完再激活。** 场景：C-35 补 C-8 的三条（拒绝成环等第 5 件），
+   C-29 补嵌套 batch，C-33 补 onInvalidate 每次运行替换，新增内核 quiet 节点和内核补 RESOLVED 的场景，R-no-imperative 加进 C-42，
+   R-node 的 status 推导加一步；R-node-thin 行为上测不出，不给场景，写明原因。模型：kernel_wave 加 manual 终止策略（并入
+   wave_deps_complete 和 rescue MC）和 D 的第二个 sink；kernel_lifetime 加函数写自己上游时抛错（并入 wave_reentrancy）。
+   模块的缺口（C-32 的 params、pause 共用锁状态、C-5、C-13(c)）随各模块激活再补。
+   **进展（2026-11-09）：** 场景都已补（C-29、C-33 含 R-node、C-35、C-42、新增 C-44），各自写成参考内核的测试。kernel_wave
+   加了 D 的 manual 策略，随即发现两处内核问题：只有 terminal 的 wave 里 manual fan-in 每个 terminal 跑一次（只有带值的数组
+   标记 pending）；auto COMPLETE 的 postlude 单独发出时又标记一次 cone。用户决定带 terminal 的数组和值一样标记 cone、带 PENDING
+   前缀，auto 和 manual 一样，INVALIDATE 不带；postlude 和运行的输出一起发出。R-wave、内核、测试、C-36、C-44 都已改，19 个变异
+   全部被抓到。kernel_lifetime 本来就把函数写自己上游当作排队的请求（CallbackRequest），只补了说明。多订阅者：两个模型都把
+   发给所有订阅者当作一步，加第二个 sink 查不出东西；每个订阅者先收完整个数组的顺序由 C-34 和内核测试固定。
+5. 规则文字的缺口。(a) rewire 和 replace 的拒绝（state 节点、重复依赖、自依赖或成环；rewire 已结束的节点，排队的 rewire
+   执行时节点已结束也拒绝并告诉宿主）、(b) 新依赖都没有快照时 rewire 不跑函数、(c) INVALIDATE 保留 private state、由
+   onInvalidate hook 决定是否清掉：建议照参考内核写进 R-request-order 和 R-invalidation。(d) 函数写自己的上游。
+   **已定（用户，2026-11-09）：允许**，当作普通请求，等 wave 结束后执行，在下一个 wave 里触发自己；函数仍不会被重入。
+   D797 草案和参考内核原来让它抛错，比 TS（R-reentrancy@1 只禁止同步重入）和 D796 的 R-reentrancy@2（允许已完成 wave 的
+   反馈循环，由组合者负责终止）都严格，没有找到用户决定过的记录。这样依赖 holder 的节点可以在函数里 pull（分页），内核少一个
+   特例；代价是每次运行都无条件写上游的函数会让 wave 一直跑下去，由组合者负责终止。R-invocation 去掉抛错那句，参考内核去掉
+   `wrote its upstream` 检查；第 4 件里 kernel_lifetime 要加的改为"写上游在下一个 wave 生效、不重入"。
+6. 跨图。**已定（用户，2026-11-09）：一致性交给 bridge 的按 cause 成组放行。** R-graph-domain 的"two-phase wire gate"
+   在 D797 下不成立（PENDING 只作为值数组的前缀，不先行）；C-1b 里 bridge 本来就等同一个 cause 的所有边到齐才放行，
+   放行作为对面图里的一次 host batch，跨图 diamond 就只汇合一次。激活时：R-graph-domain 改成这句；`spec/protocol.proto`
+   的 MSG_DIRTY 改名 MSG_PENDING，TEARDOWN、PAUSE、RESUME、PULL 的编号标为 reserved，删去 Tier 和 Direction；
+   WIRE_EDGE_KIND_DIRTY 改名为 PENDING，说明它是 bridge 协议的预告帧，不是图消息；wave_xgraph 退役，C-1 按成组放行改写，
+   bridge 模块写出来时再给它新模型。代价是 wire 不兼容，各语言 bridge 跟着改（和 PENDING 改名一起归各 runtime owner）。
+7. 场景的处理。**已定（用户，2026-11-09）：** 改写或拆分后保留的场景保留编号、改写正文、三种 runtime 都重置为 `todo`
+   （旧 pass 对的是旧文本），拆出去的 sugar 部分从根场景删去、归各语言包；退役和被接替的场景删掉这些行，和旧模型一样，
+   git 历史保留，接替关系记在 9.2 和 D797 里。不新加 `retired` 状态。TS 测试里引用这些编号的地方由 TS owner 改。
+8. **已定（用户，2026-11-09）：** (a) 关闭 O10：没有能力因为"旗舰用不着"被丢掉，旗舰不需要的都做成了模块（参考实现、测试、
+   TLA+ 模型、场景齐全），去掉的只有 K9 和 TEARDOWN，各有用户的理由；参考实现服务两个无关的领域（B139 旗舰 S1–S8，
+   photo-scenes operation tree 的 27 个测试原样通过）；"first kernel"只在 O4 出现，当天已改。D797 补一句，不改规则。
+   (b) Evidence gaps 在补完覆盖之后做，不卡激活，B140 结束前完成。(c) 激活用一条新决定 D798（接纳 D797 内核集并激活）
+   作为 `activated_by` 和 `transition.by`，像 D794 那样。
+
+### 9.5 接下来的顺序
+
+1. 规则文字：5a–5c 照内核写进 R-request-order 和 R-invalidation；5d 从 R-invocation 去掉抛错，参考内核去掉
+   `wrote its upstream` 检查并补测试；R-graph-domain 写一个 D797 的 @2 草案（第 6 件）。
+2. 补内核覆盖（第 4 件）：场景和模型，各自跑参考内核、TLC 和变异检查。
+3. Evidence gaps（第 8b 件）。
+4. 激活（等用户批准 D798）：加 transition 和 `activated_by`；删退役的模型和场景；改写保留的 C-1 到 C-27 并重置为 todo；
+   改 `spec/protocol.proto`；D797 补 wave_protocol 的接替说明。

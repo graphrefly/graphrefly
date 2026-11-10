@@ -115,7 +115,7 @@ test("C-31: under resumeAll, DATA in the same array as a terminal is discarded a
   const p = pausable(g, "p", "src");
   g.subscribe("o", "p");
   const lock = p.pause();
-  assert.deepEqual(during(g, () => src.ctx.down([["DATA", 30], ["COMPLETE"]])), ["o <- p: [COMPLETE]"]);
+  assert.deepEqual(during(g, () => src.ctx.down([["DATA", 30], ["COMPLETE"]])), ["o <- p: [DIRTY, COMPLETE]"]);
   assert.deepEqual(during(g, () => p.resume(lock)), []);
   assert.deepEqual(g.get("p"), { active: true, has: true, value: 20, values: [20], ended: ["COMPLETE"] }, "sealed at 20");
 });
@@ -153,7 +153,7 @@ test("C-36: a throw in the invocation after resume ends the node; consumed input
   g.subscribe("s", "D");
   const lock = p.pause();
   g.set("A", 2);
-  assert.deepEqual(values(during(g, () => p.resume(lock))), ['s <- D: [ERROR("boom")]']);
+  assert.deepEqual(values(during(g, () => p.resume(lock))), ['s <- D: [DIRTY, ERROR("boom")]']);
   const again = p.pause();
   p.resume(again);
   assert.equal(runs, 2);
