@@ -54,8 +54,10 @@ export function controlPair(g, id) {
 // `control` lets several pausables share one lock state, so that a node pausing at each
 // of its inputs is released by one resume, in one wave (C-36).
 export function pausable(g, id, inputId, { control = controlPair(g, id) } = {}) {
-  // The lock state never completes; only the input ends these nodes, hence manual complete.
-  const opts = { terminal: { complete: "manual" } };
+  // Manual terminals: only the input's terminal ends these nodes (the lock state's is ignored),
+  // and it passes with whatever came in its array, so an unpaused pausable forwards an array
+  // like [DATA, COMPLETE] or [DATA, ERROR] unchanged instead of dropping its DATA.
+  const opts = { terminal: { complete: "manual", error: "manual" } };
   g.node(`${id}.pauseLog`, [inputId, control.locksId], pauseLog, opts);
   g.node(id, [`${id}.pauseLog`, control.locksId], releaseLog, opts);
   return { id, ...control };
@@ -73,27 +75,38 @@ export const isPaused = (control) => control.has && control.value.length > 0;
 // each as it arrived. While paused, every arrival republishes the whole queue, so it has
 // a value whenever it holds anything; every INVALIDATE that matters then invalidates it
 // and clears its own state. While unpaused it publishes each wave's arrays (or, on
-// resume, the queue it held).
+// resume, the queue it held). The input's terminal goes out at once: paused, alone,
+// discarding what was held; unpaused, after the arrays that came with it.
 function pauseLog(ctx) {
   const [input, control] = ctx.deps;
   ctx.onInvalidate(() => ctx.state.set([]));
-  if (input.terminal?.[0] === "COMPLETE") { ctx.down([["COMPLETE"]]); return; }
+  const end = input.terminal;
   const arrived = input.waves.filter((w) => w.length);
   const queue = [...(ctx.state.get() ?? []), ...arrived];
   if (isPaused(control)) {
-    ctx.state.set(queue);
-    if (arrived.length) ctx.down([["DATA", queue]]);
+    ctx.state.set(end ? [] : queue);
+    if (end) ctx.down([end]);
+    else if (arrived.length) ctx.down([["DATA", queue]]);
     return;
   }
   ctx.state.set([]);
-  if (queue.length) ctx.down([["DATA", queue]]);
+  const out = queue.length ? [["DATA", queue]] : [];
+  if (end) out.push(end);
+  if (out.length) ctx.down(out);
 }
 
-// `${id}`: nothing while paused; unpaused, the queue the log just published, one array
-// per held array, so the arrays keep the boundaries they arrived with.
+// `${id}`: nothing while paused but a terminal; unpaused, the queue the log just
+// published, one array per held array, so the arrays keep the boundaries they arrived
+// with, and the log's terminal in the last of them.
 function releaseLog(ctx) {
   const [log, control] = ctx.deps;
-  if (log.terminal?.[0] === "COMPLETE") { ctx.down([["COMPLETE"]]); return; }
-  if (isPaused(control) || !log.waves.flat().length) return;
-  for (const w of log.value) ctx.down(w.map((v) => ["DATA", v]));
+  const end = log.terminal;
+  const paused = isPaused(control);
+  if (paused && !end) return;
+  const arrays = !paused && log.waves.flat().length ? log.value.map((w) => w.map((v) => ["DATA", v])) : [];
+  if (end) {
+    if (arrays.length) arrays[arrays.length - 1] = [...arrays.at(-1), end];
+    else arrays.push([end]);
+  }
+  for (const a of arrays) ctx.down(a);
 }

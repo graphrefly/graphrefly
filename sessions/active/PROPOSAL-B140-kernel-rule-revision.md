@@ -71,7 +71,7 @@ B141 同日结项，B140 的 status 随即从 deferred 改为 planned（不授�
 | R-terminal-settles-dirty@1 (active), draft @2 | Merged |
 | R-same-wave-merge@1, draft @2 | Merged as "a node runs at most once per wave"; arrays from several dependencies are kept apart, not merged (O13) |
 | R-output-ownership (draft @1) | Only its non-notification parts merge into K2 (O11) |
-| R-undirty-settle-timing@1 (active), draft @2 | Leaves the kernel (O11): with kernel-only PENDING nothing waits to settle. Still to be rechecked for the pause module, where resumeAll can hold a balancing RESOLVED (O11); not done yet |
+| R-undirty-settle-timing@1 (active), draft @2 | Leaves the kernel (O11): with kernel-only PENDING nothing waits to settle. Rechecked for the pause module 2026-11-09 with `formal/module_pause.tla`: a pending pausable that holds settles with RESOLVED in its wave, so no balancing RESOLVED is held; nothing to keep |
 | R-equals@1 | Nothing to do: it already carries a replace transition to R-resolved-undirty@1 by D49, so it is not current. (The first draft of this proposal wrongly called it still activated; corrected 2026-11-09.) Dedup is sugar |
 | H6 quiet boundary (part of R-pull) | Joins K2 as its last sentence. Kept in the kernel because the flagship needs it (DS-17) |
 
@@ -338,6 +338,19 @@ batch（包括在 wave 中打开的）、rewire、replace），21 个不变式�
 3. 节点结束时立即关闭 lifetime：释放依赖、运行清理函数、中止 signal，保留值、终止消息和订阅者（来自 R-terminal@2，合并时丢了）。
    写进 R-lifetime 和 R-terminals，C-34 加一步。TS 现在等最后一个订阅者离开才释放，记入各 runtime 的实现工作。
 D797 第 (2)(3)(5)(7) 点相应补了这几句。
+
+模块的第一个模型 `formal/module_pause.tla`：把 `reference/modules/pause.mjs` 的两节点 pausable 放在内核的结算语义上，
+和按 R-pause 原文写的 pausable 逐 wave 比较输出，4 个不变式，四个 wave 2,543 个状态、六个 wave 23,306 个状态都通过；
+12 个变异全部被抓到。写模型时发现 pause 模块的一个 bug：未暂停时 `[DATA 5, COMPLETE]` 只发出 COMPLETE，DATA 丢了，
+ERROR 也一样。已修正（两个节点改用 manual 终止策略，终止跟在同一数组的值后面），加了测试，C-30 加了一步。
+R-undirty-settle-timing 对 pause 的复查也由这个模型完成：暂停中的 pausable 每个 wave 都用 RESOLVED 结算，不会扣住。
+第二个模块模型 `formal/module_demand.tla`：`reference/modules/demand.mjs` 的 pullable 对照 R-demand 原文，6 个不变式，
+五步 12,103 个状态、七步 90,769 个状态都通过；12 个变异全部被抓到；没有发现 demand 模块的 bug。
+第三个模块模型 `formal/module_history.tla`：`reference/modules/history.mjs` 对照 R-history 原文。第一版发现草案文字是
+源的每个数组发一次列表，模块是每个 wave 发一次（只在计算源一个 wave 发多个数组时不同）。用户选了每个 wave 一次，
+并把列表改成 wave 的列表：每项是一个带 DATA 的 wave 的 `ctx.deps[0].waves`（保留 wave 内数组的分隔），n 数 wave 数，
+RESOLVED 数组不记。规则文字、模块、测试和模型都按此改了；八步 651 个状态通过，12 个变异全部被抓到。和 TS 的不同：
+TS 的 ring 只存值、数的是值，迟到的订阅者收到 n 个单独的 DATA；这里是一个 DATA，值是 wave 的列表。
 
 不在本提案里：formal 模型（TLA+）的更新、各语言 runtime 的实现、O10（L0.5 和 F-NO-WEDGE-CUT）。它们分别属于
 B140 的 Formal、Owner routing 两条和一个单独的决定。

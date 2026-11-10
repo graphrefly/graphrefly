@@ -64,6 +64,13 @@ no value and misses an INVALIDATE); the log keeping its queue after a resume; `i
 paused; either node swallowing COMPLETE; `control` ignored; the release node merging the held
 arrays, or releasing only the latest. Each fails at least one of the 20 tests or the 9 replay tests.
 
+Fixed 2026-11-09, found while writing `formal/module_pause.tla`: unpaused, an array such as
+`[DATA 5, COMPLETE]` came out as `[COMPLETE]`, losing its DATA, because the log answered a terminal
+without looking at what came with it, and auto ERROR dropped the DATA beside an ERROR the same way.
+Both nodes now use manual COMPLETE and ERROR, and the terminal goes out after the arrays that came
+with it (while paused, alone, discarding what was held). New test: "unpaused, an array with DATA and
+a terminal passes unchanged; paused, only the terminal passes"; it fails on the old module.
+
 The pause clauses of C-30, C-31 and C-36 are replayed in
 [pause.replay.test.mjs](pause.replay.test.mjs); [REPLAY.md](../kernel/REPLAY.md) labels each one.
 
@@ -566,11 +573,15 @@ Built 2026-11-08. The user made two decisions before it was built:
   the occurrence solutions (`solutions/occurrence.ts`, `solutions/causal-occurrence`), never by
   ordinary nodes or operators, so it does not belong on every node.
 
-`history(g, id, sourceId, n)` is a node whose value is the list of the last `n` DATA occurrences the
-source has published since the history node was activated, oldest first, with equal values
-included.
-- Each wave that brings values sends the new list. A wave without any (RESOLVED, or a terminal
-  alone) sends nothing.
+`history(g, id, sourceId, n)` is a node whose value is the list of the last `n` waves in which the
+source published DATA since the history node was activated, oldest first.
+- Each entry is that wave's `ctx.deps[0].waves`: the arrays that carried DATA, each as its DATA
+  payloads in order. So the list keeps both the waves and how each wave was split into arrays:
+  `[[[2]], [[3], [4]], [[5, 6]]]` is a wave with one array `[2]`, a wave with two arrays `[3]` and
+  `[4]`, and a wave with one array of two values. `n` counts waves. Equal values are included; a
+  RESOLVED array is left out. (The user's decision, 2026-11-09; the list was flat before.)
+- Each wave that brings values sends the new list once. A wave without any (RESOLVED, or a
+  terminal alone) is not an entry and sends nothing.
 - A new subscriber gets the list in its START snapshot, like any value. This holds for sinks and
   dependents alike.
 - The list lives in private state:
@@ -579,28 +590,33 @@ included.
   - deactivation drops the list (K7), as TS drops its ring;
   - built from `historyRecipe` through the checkpoint module's `recipes`, the list is saved and
     restored, and goes on from there.
-- On activation the list starts with the source's last array, since that is all the source's START
-  snapshot holds.
+- On activation the list starts with one entry, a wave holding the source's last array, since that
+  is all the source's START snapshot holds.
 - The source's terminal ends the history node (auto policy). A late subscriber gets the list, then
   the terminal (P5).
 
 | Here | TS (`dafc5ae`) | Why |
 |---|---|---|
 | A separate node whose value is the list | `replayBuffer: N` on the node itself; a late sink gets N separate DATA after START, and a late dependent's fn runs once per value | The user's decision: one value that sinks and dependents see alike, and no kernel option for one use |
+| The list holds waves of arrays, and `n` counts waves | The ring holds the last N DATA values; wave and array boundaries are lost | The user's decision: each entry has the shape a dependent reads in `ctx.deps[i].waves` |
 | The list starts at the history node's activation | The ring starts when the node is active, and is cleared on deactivation (BH6) | The same, except that the list begins with the source's last array |
 
 **What the tests pin**:
-- TS's replayBuffer test: the last 3 of 4 values, oldest first;
-- equal values counted as occurrences, and a batch adding all of its values;
+- TS's replayBuffer test: the last 3 of 4 waves, oldest first;
+- equal values counted as occurrences, and a batch's writes kept as one wave of one array;
+- `n` counting waves, a wave of two arrays kept as one entry with both arrays and sent once, and
+  one array with two values kept as one array;
 - a dependent getting the list;
-- a wave without values sending nothing;
+- a RESOLVED array not recorded, and a wave without values sending nothing;
 - INVALIDATE clearing the list, and deactivation dropping it;
 - the source's end;
 - `n` validated;
 - a checkpoint round trip that goes on from the saved list.
 
-**Mutations checked on 2026-11-08**, each failing at least one test: no clear on INVALIDATE; no
-bound; empty waves sending; no check of `n`; newest first.
+**Mutations checked on 2026-11-08, and again on 2026-11-09 after the change of shape**, each
+failing at least one test: no clear on INVALIDATE; no bound; empty waves sending; no check of `n`;
+newest first; a flat list (the old shape); arrays as entries instead of waves; a wave's arrays
+merged into one; RESOLVED arrays recorded as `[]`.
 
 ### New things this module introduces
 

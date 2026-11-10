@@ -115,6 +115,21 @@ test("a terminal passes while paused and discards what was held", () => {
   assert.deepEqual(during(g, () => g.complete("a")), ["s <- p: [COMPLETE]"]);
 });
 
+test("unpaused, an array with DATA and a terminal passes unchanged; paused, only the terminal passes", () => {
+  for (const [end, shown] of [[(g) => g.complete("a"), "COMPLETE"], [(g) => g.error("a", "boom"), "ERROR(\"boom\")"]]) {
+    const g = createGraph();
+    g.state("a", 0);
+    g.subscribe("s", pausable(g, "p", "a").id);
+    assert.deepEqual(during(g, () => g.batch(() => { g.set("a", 5); end(g); })), [`s <- p: [DIRTY, DATA(5), ${shown}]`]);
+    const h = createGraph();
+    h.state("a", 0);
+    const q = pausable(h, "p", "a");
+    h.subscribe("s", "p");
+    q.pause();
+    assert.deepEqual(during(h, () => h.batch(() => { h.set("a", 5); end(h); })), [`s <- p: [${shown}]`]);
+  }
+});
+
 test("an INVALIDATE while paused passes at once, and the resume then has nothing to send", () => {
   const g = createGraph();
   g.state("a", 1);

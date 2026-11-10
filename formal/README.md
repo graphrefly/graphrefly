@@ -13,6 +13,9 @@ currently active rules and are retired or rescoped at activation, not edited now
 |---|---|---|
 | `kernel_wave.tla` (`kernel_wave.cfg`, `kernel_wave_3.cfg`) | R-wave, R-messages, R-invalidation, R-terminals, R-subscription, R-failure: a state S and a diamond S->B,C->D under the default auto policies; host inputs to S (set, a batch of two, invalidate, complete, error); computed nodes choose outputs from a menu that includes rejected arrays; nodes settle in every order the dependencies allow. Invariants: RunOnce, SettleOnce, FanInAfterSettle, NoWedge, PendingPrefix, InvalidateAlone, NoDataWithResolved, TerminalLastAndFinal, InvalidateEffective, RetainedMatchesSent, AutoErrorNoRun, AutoTerminals. TLC-green 2026-11-09: two waves 58,287 distinct states (depth 11); three waves 5,949,762 distinct states (depth 16, 3 min). | C-28, C-34, C-36, C-40, C-41, C-42 |
 | `kernel_lifetime.tla` (`kernel_lifetime.cfg`, `kernel_lifetime_4.cfg`) | R-lifetime, R-request-order: a state S and a chain S->P->A->M, with N over A that a rewire or replace moves to {P}, {A} or {P, A}; host sinks on M and N; each request (subscribe, unsubscribe, set, complete, rewire, replace, late output) is one step, a wave is one step in which each open node of the cone runs once, and the requests made while one runs wait in a queue; runs may register a cleanup, start late work that keeps its ctx, set private state or complete; one batch body, opened at a boundary or from a callback during a request, stages writes and topology requests, then returns or throws; opened during a request, its commit waits in the queue. Invariants: ActiveIffDemand, EdgesMatchDeps, OpenIffLive, InactiveHoldsNothing, StateKeeps, PrivOfCurrentLifetime, RetainedFromCurrentLifetime, CleanupOnce, ClosedLiveRan, OpenNotRun, DroppedNotRun, LiveIsLatestRun, RunOncePerRequest, KeptUpstreamStays, RewireKeeps, FIFO, AfterMaker, IdleDrained, BodyAfterCommit, ThrownDropped, BatchThrowNothing. TLC-green 2026-11-09: three requests 130,683 distinct states (depth 14, 3 s); four requests 5,005,076 distinct states (depth 17, 2 min). | C-29, C-31, C-33, C-35, C-37, C-41 |
+| `module_pause.tla` (`module_pause.cfg`, `module_pause_6.cfg`) | R-pause: the two-node pausable of `reference/modules/pause.mjs` (pauseLog over the input and a lock state, release over pauseLog and the lock state, manual terminals) run over the kernel's settle semantics beside a pausable written from R-pause's text; each wave is one host batch to the input (writes, INVALIDATE, a terminal) and/or a new lock set. Invariants: Refines (wave-by-wave output equal, a trailing terminal compared in an array of its own), HeldMatches, NoValueWhilePaused, EndsWithInput. TLC-green 2026-11-09: four waves 2,543 distinct states (depth 5); six waves 23,306 distinct states (depth 7, 10 s). | C-30 |
+| `module_demand.tla` (`module_demand.cfg`, `module_demand_7.cfg`) | R-demand: the pullable of `reference/modules/demand.mjs` (pullLog over the input and a demand state, manual COMPLETE and auto ERROR, and the quiet holder over it) run over the kernel's settle semantics beside a holder written from R-demand's text; a step is a host batch writing the input and making zero, one or two pulls, or the sink subscribing or unsubscribing; the service sends one DATA or stays silent. Invariants: Serves, OutputMatches, HeldMatches, ServeOnlyOnPull, InactiveHoldsNothing, EndsWithInput. TLC-green 2026-11-09: five steps 12,103 distinct states (depth 6); seven steps 90,769 distinct states (depth 8, 24 s). | C-32 |
+| `module_history.tla` (`module_history.cfg`) | R-history: the history node of `reference/modules/history.mjs` (auto policies, the onInvalidate hook emptying its list) over a computed source X kept active by its own sink, run over the kernel's settle semantics beside a history written from R-history's text; a step is a wave of X (one entry of a menu: several arrays, an array with two values, RESOLVED alone or before values, INVALIDATE and values, values with a terminal) or H's sink subscribing or unsubscribing; N = 2, and the list's entries are waves of arrays. Invariants: Refines, ListMatches, ValueIsList, InactiveEmpty. TLC-green 2026-11-09: eight steps 651 distinct states (depth 9, 1 s). | C-38 |
 
 Mutations checked on `kernel_wave.cfg`, each tripping an invariant: settling while a dependency is
 pending (FanInAfterSettle); no kernel RESOLVED (NoWedge); no PENDING prefix (PendingPrefix); no split
@@ -55,6 +58,42 @@ values, terminal and subscribers (from R-terminal@2; C-34).
 
 Not modeled yet: manual policies, quiet nodes, async output inside a wave, nested batches and late
 output inside a batch body.
+
+Mutations checked on `module_pause.cfg`, 12 in all, each tripping an invariant, every invariant also
+alone: the log answering a terminal without the arrays beside it, and auto ERROR (Refines; both were
+the module's behavior before the 2026-11-09 fix); no invalidate hook (Refines, HeldMatches); the
+release sending only the latest array (Refines); held arrays sent with a terminal while paused
+(Refines); the log silent while paused, so it misses an INVALIDATE (Refines); the queue reversed
+(Refines, HeldMatches); release while paused (NoValueWhilePaused); a terminal not ending the release
+(EndsWithInput); the lock value from before the wave (HeldMatches); no kernel RESOLVED (Refines);
+INVALIDATE after the released arrays (Refines). The model also settles the pause recheck of
+R-undirty-settle-timing: a pending pausable that holds still settles with RESOLVED in its wave, so no
+balancing RESOLVED is ever held. A function sees a dependency's terminal apart from its DATA arrays
+(R-invocation), so no node can tell whether a terminal shared an array with the last DATA; outputs are
+compared up to that boundary. Not modeled: lifetimes, a source reading the lock state, several
+pausables on one lock state, placement before a node.
+
+Mutations checked on `module_demand.cfg`, 12 in all, each tripping an invariant, every invariant also
+alone: no invalidate hook, the queue kept after a service, the log silent between pulls (so it misses
+an INVALIDATE), the queue reversed, no snapshot at activation (HeldMatches, and Serves alone); the
+pull already in the demand state served at activation, the first params of a batch served instead
+of the latest, a service before the input's COMPLETE in the same wave (Serves); a service without a
+pull (Serves, and ServeOnlyOnPull alone); the holder not quiet, sending its service output in the
+wave (OutputMatches); deactivation keeping the queue (InactiveHoldsNothing); COMPLETE not ending the
+log (EndsWithInput). No module bug was found. Not modeled: a pull during a wave (kernel_lifetime),
+a pausable before the holder, a later subscriber's START, activation after the input ended.
+
+`module_history.tla`'s first version, with a flat list, found that R-history's draft text sent one
+list per source array while `history.mjs` sends one per wave (the two differ only when a computed
+source sends several arrays in one wave). The user chose one per wave and, on the same day, a list
+of waves, each entry a wave's `ctx.deps[0].waves` without RESOLVED arrays, `n` counting waves; the
+rule text, the module and the model were changed to match. Mutations checked on
+`module_history.cfg`, 12 in all, each tripping an invariant, every invariant also alone: a wave's
+arrays merged into one, RESOLVED arrays recorded as `[]`, arrays as entries instead of waves, one
+list per array, no bound, newest first, a wave without values sending, no snapshot at activation
+(Refines); no invalidate hook, the list kept when an INVALIDATE leaves
+nothing (ListMatches); the value not the list (ValueIsList); deactivation keeping the list
+(InactiveEmpty). Not modeled: checkpoint and restore of the list (C-38), several sources.
 
 ## Clean-slate module map (CSP-0)
 
