@@ -538,4 +538,8 @@ pause、demand、restart、higher-order 通过 `builder(g)` 建节点、导出�
 定义 replace，恢复出来的 owner 若 inner 已结束则在首次激活时换新（和停用时一样），待定重试的计时器在 lifetime 关闭时清掉；
 higher-order 从图里读已有的 inner 槽位。R-checkpoint 写明 checkpoint 是建图服务，列出为它开的读接口。
 
-接下来讨论数组快照（F4），最后一条。
+**F4 已定（用户，2026-11-10）：保留数组快照。** 试过把快照改成只留最后一个值：两个消费者的测试都照常通过，但 mergeMap 里一个
+在激活时用一个数组发出一串值的 inner 只剩最后一个，TS 会全部传下去。R-subscription 加了一句作者指引：一次要发出的一串值放在
+一个数组里。`ctx.deps[i].waves` 改名为 `arrays` 没有做。
+
+两份审查的条目到此都处理完了。接下来是 §9.5 里剩下的：evidence gaps，然后激活（D798）。
