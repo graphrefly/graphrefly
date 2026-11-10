@@ -325,7 +325,19 @@ export function createGraph({ report: hostReport } = {}) {
           throw new KernelError(`${n.id}: DIRTY is sent by the kernel, not by node output`);
         }
         const frames = prepare(msgs);
-        if (invoking) { out.push(...frames); return; }
+        if (invoking) {
+          // K2 (decided by the user 2026-11-10, restoring R-resolved-undirty@1's intent): one run's
+          // output carries DATA or RESOLVED, not both, also across arrays; what came before an
+          // INVALIDATE no longer counts, as within an array.
+          const all = [...out, ...frames];
+          const cut = all.findLastIndex((f) => f.length === 1 && f[0][0] === "INVALIDATE");
+          const rest = all.slice(cut + 1).flat();
+          if (rest.some((m) => m[0] === "DATA") && rest.some((m) => m[0] === "RESOLVED")) {
+            throw new KernelError(`${n.id}: DATA and RESOLVED in one run`);
+          }
+          out.push(...frames);
+          return;
+        }
         later(n, lifetime, frames);
       },
       // Aborted when this lifetime closes; not by INVALIDATE or by a rerun. Created on

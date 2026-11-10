@@ -80,7 +80,9 @@ campaign changes. Codegraph archive/evals results were excluded as runtime evide
 Actual checks during this task:
 
 1. From current TS root: `./node_modules/.bin/vitest run packages/ts/src/__tests__/core.test.ts -t 'occurrences stay DATA' --cache=false`.
-   Result: 3 passed, 29 skipped; equal, changed and multi-DATA emission.
+   Result: 3 passed, 29 skipped; equal, changed and multi-DATA emission. (The 29 are tests the `-t`
+   name filter left out, not skipped tests: the TS baseline has no `.skip`, `.todo` or `xit`;
+   checked 2026-11-10 for B140's evidence gaps.)
 2. Source-import probe via installed tsx loader, after initialization:
    source(23) -> distinctUntilChanged -> parallel raw/map/derived/effect.
    Repeated DATA(23): equality called once. Explicit RESOLVED: equality called zero times.

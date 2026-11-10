@@ -543,3 +543,48 @@ higher-order 从图里读已有的 inner 槽位。R-checkpoint 写明 checkpoint
 一个数组里。`ctx.deps[i].waves` 改名为 `arrays` 没有做。
 
 两份审查的条目到此都处理完了。接下来是 §9.5 里剩下的：evidence gaps，然后激活（D798）。
+
+### 9.7 Evidence gaps（2026-11-10）
+
+B140 的 Evidence gaps 一条要求找回最早的两个消费者和 G9 报告的出处，把 DS-15 里 invalidation、batch、多依赖的历史对到现在的覆盖上，
+剩下的每一条要么给出证据，要么写明范围；过时的 skipped-test、工作、状态说法只用实际证据去改。逐条结果：
+
+**消费者。** 出处链：DS-15/DS-16 起于用户贴进 Codex 线程 `01a0b138…`（2026-09-17）的一份消费者报告摘要，它的来源是 LexQ 那边的
+`jobkit-experiment/REPORT.md` v2、`GRAPHREFLY-GAPS.md` v2（`@graphrefly/ts@0.10.0`）和 dependency manager 的评估。这台机器上只有
+`~/Downloads` 里的 v1（REPORT.md、GRAPHREFLY-GAPS.md，2026-09-15，只到 G8）。
+- workflow dependency manager：用户 2026-11-10 指出它就是 photo-scenes 的 operation tree，已经有实现：`reference/operation-tree`
+  原样运行 photo-scenes `packages/operations` 的 27 个 spec 测试，两条臂都通过，另有 37 个变异；vendored 的是 `a331d71`，
+  photo-scenes 现在的 HEAD（`f6ea317`）里 `packages/operations` 和这份 spec 都没变过。它就是 D797 的两个消费者之一。
+- job pool（LexQ `src/tabs/base/job-pool`，实验分支 `experiment/graphrefly-jobkit`，代码在另一台机器的 LexQ 仓库）：用户定为先不做。
+
+**G9。** G9 说 `derived`/`effect` 在不带新值的 RESOLVED wave 上会重跑而 `map` 不会，摘要把它归为"sugar 层未决"，不是规则和代码的冲突。
+它只在那份摘要里，v2 原文不在这台机器上。DS-15 在 TS `dafc5ae` 上探测确认过（DS-15 第 84–92 行）。现在它不再是根协议的问题：
+D797 第 (9) 点把首跑门槛和相等去重放进各语言的 sugar，R-invocation 写明"函数不能把每次运行当作有新输入"，参考的 `derived`
+在没有新值时直接返回、`map` 按 occurrence 处理。TS 的 `derived`/`effect` 怎么做归 TS owner。
+
+**DS-15 的历史对照。**
+
+| DS-15 的条目 | 现在 |
+|---|---|
+| 相等的 DATA 保留为 DATA；RESOLVED 是结算不是相等 | R-wave；kernel 测试"equal values stay DATA"；C-28 |
+| 同一节点同一 wave 里 DATA 和 RESOLVED 互斥 | D797 草案收窄成了一个数组之内，一次运行里 `[RESOLVED]` 再 `[DATA]` 能发出去（复现过）。**用户 2026-11-10 定为一次运行之内互斥**：R-wave 改了这句，内核在 `ctx.down` 里检查，kernel 测试三种情况，kernel_wave 加了 NoDataWithResolvedInRun（菜单多两项，2 个 wave 1,270,120 个状态，24 个变异全抓到，3 个 wave 未重跑），C-28 加了这几种情况。batch 里的冲突原来就会被拒绝（replay C-28） |
+| R-initial@1、R-ctx-wave-data@1 没有 activation | 并进 R-subscription 和 R-invocation（第 2 节），激活时由 D798 的 transition 处理 |
+| 全是 RESOLVED 的 wave 仍运行函数，一个或几个依赖 | R-wave、R-invocation；kernel 测试（P8 等）；replay C-28；kernel_wave 的 RunOnce、FanInAfterSettle |
+| batch 累积保留几个 DATA | R-request-order；kernel 测试（含嵌套 batch，C-29）；replay 测试；kernel_wave 的两次写入一个 batch。嵌套 batch 不在 kernel_lifetime 里，只由测试覆盖 |
+| TS 的 waveData 编码（INVALIDATE 的 `[[undefined]]`、depBatch 拍平） | 被 D797 接替：`ctx.deps[i]` 的数组加 manual 下的 `invalidated`，没有数组里的缺席标记；TS 的编码是包内 API |
+| INVALIDATE 的各种交互 | R-invalidation；kernel 和 replay 测试；C-36、C-41、C-44；kernel_wave 的 InvalidateAlone、InvalidateEffective、InvalidatedNotKept、ManualInvalidateKept；module_history、module_demand |
+| SENTINEL | R-messages 要求 DATA 和 ERROR 的载荷不是 SENTINEL；R-sentinel@1 仍是公开规则，没有 D797 模型。**范围外**：缺席值是各语言自己的表示，参考内核用 `has` 而不用哨兵值，没有可建模的跨语言行为 |
+| D15→D49 的 equals 链、wrapper 策略、B13 | 被 D797 接替（相等去重是 sugar）；R-equals@1 已有 transition；B13 归 TS owner |
+
+**过时说法（已按证据改）。**
+- DS-15 第 82–83 行的"29 skipped"和 DS-16 的"41 skipped"是 `-t` 名字过滤掉的测试，不是被跳过的：TS 基线 `dafc5ae` 的 packages/
+  里没有 `.skip`、`.todo`、`xit`；参考测试 0 个 skipped。两处都加了说明。
+- DS-16 开头和 sessions.jsonl 里 DS-16 的 note 还把 D796 草案和 C-28..C-39 写成现状：各加了一句现状说明（不改 `locks`）。
+- D797 第 (7) 点和 A2 那句还写着按运行替换清理登记：原处标注"2026-11-10 由每个 lifetime 一次的 setup 取代"。
+- formal/README：kernel_lifetime 段里同样的旧说法标注了取代；旧模型一节加了说明，指出两个已不存在的 MC
+  （`wave_protocol_custom_equals_MC`、`wave_protocol_equals_false_MC`）和不在表里的 `wave_protocol_q14_MC.tla`，这些旧模型在激活时退役或改范围。
+- B140 改为 in-progress（用户 2026-11-10），note 补了现状；B33（TEARDOWN 越过终止传递）按 D797 关为 superseded（用户同日）。
+
+**留给激活的。** 参考内核还发 `DIRTY`，规则里叫 PENDING；第 1 节 Q3 定了这次修订里改名，所以改名和 D798 的 transition 一起做。
+
+Evidence gaps 到此都有了结论：两项范围外（job pool 由用户暂缓，SENTINEL 的模型），其余给了证据或改了规则。

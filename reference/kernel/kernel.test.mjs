@@ -661,6 +661,24 @@ test("O13: messages keep their written order; an array is split at its INVALIDAT
   assert.equal(g.get("src").value, 3);
 });
 
+// Evidence-gap review (decided by the user 2026-11-10): R-resolved-undirty@1 kept DATA and RESOLVED
+// apart for a whole wave; the D797 draft had narrowed it to one array.
+test("K2: one run cannot send DATA and RESOLVED even in separate arrays; after an INVALIDATE it starts over", () => {
+  const run = (out) => {
+    const g = createGraph();
+    g.state("a", 1);
+    g.node("x", ["a"], (ctx) => { if (ctx.deps[0].value === 2) out(ctx); else ctx.down([["DATA", 1]]); });
+    g.subscribe("s", "x");
+    return during(g, () => g.set("a", 2));
+  };
+  const refused = ["s <- x: [DIRTY, ERROR(\"x: DATA and RESOLVED in one run\")]"];
+  assert.deepEqual(run((ctx) => { ctx.down([["RESOLVED"]]); ctx.down([["DATA", 2]]); }), refused);
+  assert.deepEqual(run((ctx) => { ctx.down([["DATA", 2]]); ctx.down([["RESOLVED"]]); }), refused);
+  assert.deepEqual(run((ctx) => { ctx.down([["DATA", 2]]); ctx.down([["INVALIDATE"]]); ctx.down([["RESOLVED"]]); }),
+    ["s <- x: [DIRTY, DATA(2)]", "s <- x: [DIRTY, INVALIDATE]", "s <- x: [DIRTY, RESOLVED]"],
+    "the DATA before the INVALIDATE no longer counts");
+});
+
 test("O13: a terminal must be last in its array; DATA and RESOLVED still cannot share one", () => {
   const g = createGraph();
   const src = {};

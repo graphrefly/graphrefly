@@ -6,6 +6,13 @@ User-authorized scope: walkthrough review, followed by the 2026-11-05 Rules/Deci
 reconciliation. Runtime implementation, commit and push are not part of this slice.
 The accepted directions now have D796 draft rule revisions; B140 tracks verification and explicit activation.
 
+> Status note (2026-11-10, B140 evidence gaps): this session's D796 drafts and C-28..C-39 are the
+> input of the DS-17 revision. The current drafts are D797's (graphrefly:D797, 19 rules introduced
+> by D797 in spec/rules.jsonl, C-28..C-44 rewritten for them; see
+> sessions/active/PROPOSAL-B140-kernel-rule-revision.md). The 50 D796 rows stay unactivated and get
+> their transitions when the D797 set activates (D798). The table below describes this session's
+> state as it closed.
+
 Current reading entry: [review map and current cursor](#review-map-and-current-cursor).
 The [2026-10-05 continuation and handoff](#continuation-reconciliation-and-migration-handoff-2026-10-05)
 is historical migration context, not the current review cursor. Later explicitly accepted refinements
@@ -166,7 +173,8 @@ Source: packages/ts/src/node/node.ts:447 (subscription delivery branches).
 Tests: packages/ts/src/__tests__/core.test.ts:28 and pull.test.ts:200.
 Executed from current TS root:
 `./node_modules/.bin/vitest run packages/ts/src/__tests__/core.test.ts packages/ts/src/__tests__/pull.test.ts -t 'push-on-subscribe delivers|pull node never push-on-subscribes' --cache=false`
-Result: 2 tests passed, 41 skipped; no broader runtime or formal qualification claimed.
+Result: 2 tests passed, 41 skipped; no broader runtime or formal qualification claimed. (The 41
+are tests the `-t` name filter left out, not skipped tests; checked 2026-11-10.)
 
 Root owner candidate: reconcile activation and current normative dependency gaps after all
 walkthroughs. Acceptance: readers determine legal demand/composition from current Rules alone.
