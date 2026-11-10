@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createGraph, format } from "../kernel/kernel.mjs";
 import { recipes, restore } from "./checkpoint.mjs";
+import { historyRecipe } from "./history.mjs";
 
 function during(g, body) {
   const start = g.trace.length;
@@ -234,4 +235,93 @@ test("K3: every value of a node's last array is saved and comes back in its snap
   const r = restore(roundTrip(b.capture()), reg);
   assert.deepEqual(r.g.get("a").values, [1, 2], "a state's last array, back as one array");
   assert.deepEqual(during(r.g, () => r.g.subscribe("k", "p")), ["k <- p: [START, DATA(2), DATA(-2)]"]);
+});
+
+// A2 (the user's choice, 2026-11-09): a cleanup is a closure registered by a run and cannot be
+// saved, so a node whose last run registered one runs once at its first activation after restore.
+
+// history over s, n = 3, after 1, 2, 3; the same steps on the original and on its restore.
+function historyPair() {
+  const reg = { history: historyRecipe };
+  const b = recipes(createGraph(), reg);
+  b.state("s"); b.node("h", ["s"], "history", { n: 3 });
+  b.g.subscribe("k", "h");
+  for (const v of [1, 2, 3]) b.g.set("s", v);
+  return { b, reg, cp: roundTrip(b.capture()) };
+}
+
+test("A2: a restored node whose last run registered a cleanup runs once with no new input, so an INVALIDATE still clears it", () => {
+  const { b, reg, cp } = historyPair();
+  assert.equal(cp.nodes.find((n) => n.id === "h").saved.cleanups, true);
+  const r = restore(cp, reg);
+  assert.deepEqual(during(r.g, () => r.g.subscribe("k", "h")), ["k <- h: [START, DATA([[[1]],[[2]],[[3]]])]"],
+    "the run brings no new array, so the list is not appended to");
+  for (const g of [b.g, r.g]) { g.invalidate("s"); g.set("s", 9); }
+  assert.deepEqual(r.g.get("h").value, [[[9]]]);
+  assert.deepEqual(r.g.get("h").value, b.g.get("h").value);
+});
+
+test("A2: a restored source that keeps a timer starts a new one and goes on from its saved count", () => {
+  const timers = new Set();
+  let runs = 0;
+  const tick = () => [...timers].forEach((t) => t());
+  const reg = { interval: () => (ctx) => {
+    runs += 1;
+    const t = () => { const n = (ctx.state.get() ?? 0) + 1; ctx.state.set(n); ctx.down([["DATA", n]]); };
+    timers.add(t);
+    ctx.onDeactivation(() => timers.delete(t));
+  } };
+  const b = recipes(createGraph(), reg);
+  b.node("i", [], "interval");
+  b.g.subscribe("k", "i");
+  tick(); tick();
+  const cp = roundTrip(b.capture());
+  b.g.unsubscribe("k", "i");
+  runs = 0;
+  const r = restore(cp, reg);
+  r.g.subscribe("k", "i");
+  assert.deepEqual([runs, timers.size, r.g.get("i").value], [1, 1, 2], "one run, one timer, the saved value");
+  tick();
+  assert.equal(r.g.get("i").value, 3, "the count goes on; the run itself added nothing");
+});
+
+test("A2: only the last run's registrations count, so a node whose last run registered none does not run", () => {
+  let runs = 0;
+  const reg = { odd: () => (ctx) => {
+    runs += 1;
+    const v = ctx.deps[0].value;
+    if (v % 2) ctx.onInvalidate(() => {});
+    ctx.down([["DATA", v]]);
+  } };
+  const b = recipes(createGraph(), reg);
+  b.state("a", 1); b.node("o", ["a"], "odd");
+  b.g.subscribe("k", "o");
+  b.g.set("a", 2);
+  const cp = roundTrip(b.capture());
+  assert.equal(cp.nodes.find((n) => n.id === "o").saved.cleanups, undefined);
+  runs = 0;
+  restore(cp, reg).g.subscribe("k", "o");
+  assert.equal(runs, 0);
+});
+
+test("an input that only ended before the first subscription brings its end, not its values again", () => {
+  const { b, reg, cp } = historyPair();
+  const r = restore(cp, reg);
+  for (const g of [b.g, r.g]) g.complete("s");
+  r.g.subscribe("k", "h");
+  assert.deepEqual([r.g.get("h").value, r.g.get("h").ended], [[[[1]], [[2]], [[3]]], ["COMPLETE"]]);
+  assert.deepEqual([r.g.get("h").value, r.g.get("h").ended], [b.g.get("h").value, b.g.get("h").ended]);
+});
+
+test("R-checkpoint: before the first subscription only values are compared; subscribed first, an INVALIDATE is seen", () => {
+  const { b, reg, cp } = historyPair();
+  b.g.invalidate("s"); b.g.set("s", 9);
+  const early = restore(cp, reg);
+  early.g.invalidate("s"); early.g.set("s", 9);
+  early.g.subscribe("k", "h");
+  assert.deepEqual(early.g.get("h").value, [[[2]], [[3]], [[9]]], "the INVALIDATE before the subscription is not seen");
+  const first = restore(cp, reg);
+  first.g.subscribe("k", "h");
+  first.g.invalidate("s"); first.g.set("s", 9);
+  assert.deepEqual(first.g.get("h").value, b.g.get("h").value, "subscribed first, the restore behaves as the original");
 });

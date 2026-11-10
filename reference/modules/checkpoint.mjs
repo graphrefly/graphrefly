@@ -17,10 +17,19 @@
 //
 // restore(checkpoint, registry) builds a new graph with no subscribers, as TS's restoreGraph,
 // and runs no fn: each saved computed node gets its value, terminal and private state as a
-// kernel seed. On its first activation the real fn does not run, unless a dependency's value or
-// terminal differs from what the node had received (an upstream change before the first
-// subscription). Then the real fn runs once, with only the changed dependencies as input, as a
-// live wave would have had them (C-38, R-input-receipts; TS keeps the restored value instead).
+// kernel seed. On its first activation the real fn runs once only when
+// - a dependency's value or terminal differs from what the node had received (an upstream
+//   change before the first subscription); a changed value comes with its snapshot arrays, an
+//   end alone without them (C-38, R-input-receipts; TS keeps the restored value instead); or
+// - the node's last run before capture had registered a cleanup (onInvalidate, onDeactivation).
+//   A cleanup is a closure and cannot be saved, so the checkpoint saves only that there was one,
+//   and the run registers it again; a timer source starts a new timer, history can be cleared by
+//   an INVALIDATE again (A2, the user's choice 2026-11-09; TS does not run and so loses them).
+// The run gets only the changed dependencies, so with none it brings no new array; a run that
+// sends nothing keeps the saved value. Otherwise the real fn does not run.
+// Before the first subscription a restored node is inactive and receives no waves, so only the
+// values and ends then are compared: an INVALIDATE followed by a write is seen as the write. A
+// host that must not lose such an INVALIDATE subscribes before writing upstream (R-checkpoint).
 
 import { isDeepStrictEqual } from "node:util";
 import { createGraph } from "../kernel/kernel.mjs";
@@ -31,8 +40,8 @@ const json = (v, where) => {
   return v;
 };
 
-const sameInput = (d, saved) => d.has === saved.has && (!d.has || isDeepStrictEqual(d.value, saved.value))
-  && isDeepStrictEqual(d.terminal, saved.ended);
+const sameValue = (d, saved) => d.has === saved.has && (!d.has || isDeepStrictEqual(d.value, saved.value));
+const sameEnd = (d, saved) => isDeepStrictEqual(d.terminal, saved.ended);
 
 export function recipes(g, registry) {
   // id -> { deps, ref, config, opts } and, until the node's first activation, `entry`: its
@@ -43,15 +52,38 @@ export function recipes(g, registry) {
     return registry[ref];
   };
 
+  // Each run of the real fn records whether it registered a cleanup; as with the kernel's
+  // registrations, a run's record replaces the previous run's (R-lifetime). A cleanup is a
+  // closure and cannot be saved, so a checkpoint saves only that the last run had one.
+  function observed(rec, ctx, deps) {
+    rec.cleanups = false;
+    const register = (kind) => (f) => { rec.cleanups = true; ctx[kind](f); };
+    return Object.create(ctx, {
+      deps: { value: deps },
+      onInvalidate: { value: register("onInvalidate") },
+      onDeactivation: { value: register("onDeactivation") },
+    });
+  }
+
   function restorable(rec, real) {
     return (ctx) => {
       const saved = rec.entry?.saved;
       rec.entry = null;
-      if (!saved) { real(ctx); return; }
-      const changed = ctx.deps.map((d, i) => !sameInput(d, saved.inputs[i]));
-      if (!changed.some(Boolean)) return; // the seed already holds the value and private state
-      const deps = ctx.deps.map((d, i) => (changed[i] ? d : { ...d, waves: [], terminal: null }));
-      real(Object.create(ctx, { deps: { value: deps } }));
+      if (!saved) { real(observed(rec, ctx, ctx.deps)); return; }
+      // Per dependency, what it brings: a changed value comes with its snapshot arrays; an end
+      // alone comes without them, since those values were already received; an unchanged
+      // dependency brings nothing.
+      let changed = false;
+      const deps = ctx.deps.map((d, i) => {
+        const was = saved.inputs[i];
+        const value = !sameValue(d, was), end = !sameEnd(d, was);
+        if (value || end) changed = true;
+        return value ? d : { ...d, waves: [], terminal: end ? d.terminal : null };
+      });
+      // The seed holds the value and private state. The fn runs anyway when its last run had
+      // registered a cleanup, since running is the only way to register it again (C-38).
+      if (!changed && !saved.cleanups) { rec.cleanups = false; return; }
+      real(observed(rec, ctx, deps));
     };
   }
 
@@ -73,7 +105,7 @@ export function recipes(g, registry) {
     if (!active && !ended) return null; // no lifetime, nothing held
     const state = g.privateState(id);
     return {
-      values, ended, ...(state !== undefined && { state }),
+      values, ended, ...(state !== undefined && { state }), ...(made.get(id)?.cleanups && { cleanups: true }),
       // What it received from each dependency: at a wave boundary, the dependency's value.
       inputs: deps.map((d) => { const x = g.get(d); return { has: x.has, ...(x.has && { value: x.value }), ended: x.ended }; }),
     };

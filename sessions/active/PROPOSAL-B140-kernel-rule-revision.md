@@ -351,6 +351,12 @@ R-undirty-settle-timing 对 pause 的复查也由这个模型完成：暂停中�
 并把列表改成 wave 的列表：每项是一个带 DATA 的 wave 的 `ctx.deps[0].waves`（保留 wave 内数组的分隔），n 数 wave 数，
 RESOLVED 数组不记。规则文字、模块、测试和模型都按此改了；八步 651 个状态通过，12 个变异全部被抓到。和 TS 的不同：
 TS 的 ring 只存值、数的是值，迟到的订阅者收到 n 个单独的 DATA；这里是一个 DATA，值是 wave 的列表。
+第四个模块模型 `formal/module_checkpoint.tla` 之前，先拿恢复后的图和原图对比，发现恢复后没跑过的节点没有清理登记
+（清理是运行登记的闭包，存不进 checkpoint）：history 恢复后 INVALIDATE 清不掉旧值，定时器 source 恢复后不再 tick；
+另外依赖只结束时快照被重复追加。另开会话调研了各系统的做法后，用户选了 A2：上次运行登记过清理的节点在恢复后第一次激活时
+跑一次，只给变了的依赖；只结束的依赖只带终止；订阅前的 INVALIDATE 看不到，宿主应先订阅再写上游；R-invocation 加了
+"一次运行可能不带新输入"。R-checkpoint、R-invocation、D797、C-38 和模块都按此改了；模型七步 88,981 个状态、九步
+304,480 个状态通过，6 个变异全部被抓到。和 TS 的不同：TS 恢复后不跑函数，这些清理也就丢了。
 
 不在本提案里：formal 模型（TLA+）的更新、各语言 runtime 的实现、O10（L0.5 和 F-NO-WEDGE-CUT）。它们分别属于
 B140 的 Formal、Owner routing 两条和一个单独的决定。

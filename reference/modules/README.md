@@ -454,6 +454,18 @@ pending-FIFO or receipt capture in the kernel. The user's choices, in order:
    and R-input-receipts draft rather than TS. TS keeps the restored value and records the
    dependencies' current values as received, so its value does not match its inputs until the next
    change.
+4. **A node whose last run registered a cleanup runs once at its first activation (A2,
+   2026-11-09).** Probing for the formal model found that a restored node that had not run had no
+   cleanups: a restored history kept stale entries after an INVALIDATE, a restored pause or demand
+   log too, and a restored timer source never fired again. A cleanup is a closure, so no checkpoint
+   can hold it; running is the only way to register it again. A research session compared running
+   every node (A), clearing private state in the kernel on INVALIDATE (breaks demand's `seen`),
+   declaring hooks outside the run (a second registration mechanism), a run whose output is
+   discarded (a new kind of run), and a hold that keeps restored nodes active until the host
+   releases them (fixes the INVALIDATE before the first subscription, but adds a new concept and
+   differs from TS). The user chose A2, with two more points: an end alone brings no repeated
+   values, and an INVALIDATE before the first subscription is not seen, so a host subscribes before
+   writing upstream.
 
 ```js
 const b = recipes(createGraph(), { sum: () => sumFn, plus: ({ k }) => plusFn(k) });
@@ -476,16 +488,27 @@ const r = restore(cp, registry);                            // a new graph, noth
   Capture is refused unless the kernel is idle (`g.idle()`: no wave and no batch body). Values must be
   JSON.
 - `restore()` builds the graph in checkpoint order, with no subscribers, as TS's `restoreGraph` does,
-  and runs no fn.
+  and runs no recipe fn.
   - State: its saved values come back as one batch (one wave, with no subscriber), then `complete`
     or `error` if it had ended.
   - Saved computed node: gets its values, terminal and private state as a kernel seed. An ended one
     stays ended, with its dependencies.
   - First activation of a seeded node: a wrapper around its fn compares each dependency with what
-    the node had received. If all are the same, the real fn does not run. Otherwise it runs once,
-    with only the changed dependencies as input (unchanged ones have no wave and no terminal). That
-    is what a live wave would have given it, so a running total adds only the change, and a run that
-    sends nothing keeps the seeded value.
+    the node had received. The real fn runs once if any differs, or if the node's last run before
+    capture had registered a cleanup (`cleanups: true` in the checkpoint; the wrapper records it on
+    every run, each run's record replacing the last). Otherwise it does not run. The run gets only
+    the changed dependencies as input:
+    - a changed value comes with its snapshot arrays;
+    - an end alone comes without them, since those values were already received;
+    - an unchanged dependency has no wave and no terminal, so with nothing changed the run brings
+      no new array, as an activation over unchanged inputs or a RESOLVED wave does live.
+
+    That is what a live wave would have given it, so a running total adds only the change, a run
+    that sends nothing keeps the seeded value, history registers its INVALIDATE hook without
+    appending, and a timer source starts a new timer and counts on from its saved state.
+  - Until its first activation a restored node receives no waves, so only the values and ends then
+    are compared: an INVALIDATE followed by a write is seen as the write. A host that must not lose
+    it subscribes before writing upstream.
   - A seeded node, like any node, can be activated although a dependency has ended (P5). The ended
     dependency's fn does not run again.
 - A restored graph captured again before anything subscribes gives back the saved lifetimes as they
@@ -510,7 +533,13 @@ to be re-issued or recorded as unknown.
   - the fn runs once, with only the changed input;
   - a run that sends nothing keeps the saved value;
   - an input that ended after restore reaches the fn, while one that had ended before capture does
-    not reach it again.
+    not reach it again;
+  - an input that only ended brings its end without its values again.
+- A2: a node whose last run registered a cleanup runs once with no new input, so a restored history
+  is cleared by a later INVALIDATE as the original is, and a restored timer source starts one timer
+  and counts on; only the last run's registrations count.
+- Before the first subscription an INVALIDATE is not seen; subscribed first, the restore behaves as
+  the original.
 - A chain of restored nodes runs no fn; an inactive node starts fresh.
 - Ended nodes come back ended with their dependencies; a subscriber gets their terminal snapshot.
 - A node holding an ended dependency comes back and works; the ended node does not run, also when a
@@ -522,6 +551,11 @@ to be re-issued or recorded as unknown.
   - capture inside a wave or a batch body;
   - values that are not JSON.
 - Recapture before activation.
+
+**Mutations checked on 2026-11-09** for A2 and the end-alone fix, with the history and revision
+tests, 8 in all, each failing at least one test: A2 off; every node always run; the record not
+reset per run; the record not saved; the first, unrestored run not observed; an end alone bringing
+its values again; an end alone dropped; an end alone not counted as a change.
 
 **Mutations checked on 2026-11-08** against the seeded version, together with the kernel, replay,
 restart and higher-order tests. 25 in all, each failing at least one test.
@@ -558,6 +592,7 @@ Removed because they could not change anything:
 |---|---|
 | `recipes(g, registry)` with `node(id, deps, ref, config, opts)`, and `restore(checkpoint, registry)` | R-snapshot's factory reference; TS's `restoreGraph(checkpoint, { registry })` |
 | Per computed node, the inputs it received | Needed for the change check, and for capturing a restored graph again before activation, when a dependency may have changed after restore. Equal to the dependencies' values at a wave boundary, so the kernel need not expose its input records |
+| Per computed node, whether its last run registered a cleanup (`cleanups`) | A2: a cleanup cannot be saved, so the checkpoint saves that there was one and the node runs once to register it again. Observed by the wrapper, so the kernel need not expose its registrations; TS has no such field and does not run |
 | The first-activation wrapper, which only compares inputs | The refresh on a pre-attachment change is the user's choice (point 3 above), a policy rather than kernel behavior; without it the seed alone gives TS's behavior |
 
 The kernel side, `idle()`, `privateState(id)`, the optional seed and the P5 relaxation, is listed in the

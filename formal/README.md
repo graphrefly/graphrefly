@@ -16,6 +16,7 @@ currently active rules and are retired or rescoped at activation, not edited now
 | `module_pause.tla` (`module_pause.cfg`, `module_pause_6.cfg`) | R-pause: the two-node pausable of `reference/modules/pause.mjs` (pauseLog over the input and a lock state, release over pauseLog and the lock state, manual terminals) run over the kernel's settle semantics beside a pausable written from R-pause's text; each wave is one host batch to the input (writes, INVALIDATE, a terminal) and/or a new lock set. Invariants: Refines (wave-by-wave output equal, a trailing terminal compared in an array of its own), HeldMatches, NoValueWhilePaused, EndsWithInput. TLC-green 2026-11-09: four waves 2,543 distinct states (depth 5); six waves 23,306 distinct states (depth 7, 10 s). | C-30 |
 | `module_demand.tla` (`module_demand.cfg`, `module_demand_7.cfg`) | R-demand: the pullable of `reference/modules/demand.mjs` (pullLog over the input and a demand state, manual COMPLETE and auto ERROR, and the quiet holder over it) run over the kernel's settle semantics beside a holder written from R-demand's text; a step is a host batch writing the input and making zero, one or two pulls, or the sink subscribing or unsubscribing; the service sends one DATA or stays silent. Invariants: Serves, OutputMatches, HeldMatches, ServeOnlyOnPull, InactiveHoldsNothing, EndsWithInput. TLC-green 2026-11-09: five steps 12,103 distinct states (depth 6); seven steps 90,769 distinct states (depth 8, 24 s). | C-32 |
 | `module_history.tla` (`module_history.cfg`) | R-history: the history node of `reference/modules/history.mjs` (auto policies, the onInvalidate hook emptying its list) over a computed source X kept active by its own sink, run over the kernel's settle semantics beside a history written from R-history's text; a step is a wave of X (one entry of a menu: several arrays, an array with two values, RESOLVED alone or before values, INVALIDATE and values, values with a terminal) or H's sink subscribing or unsubscribing; N = 2, and the list's entries are waves of arrays. Invariants: Refines, ListMatches, ValueIsList, InactiveEmpty. TLC-green 2026-11-09: eight steps 651 distinct states (depth 9, 1 s). | C-38 |
+| `module_checkpoint.tla` (`module_checkpoint.cfg`, `module_checkpoint_9.cfg`) | R-checkpoint, R-invocation: states A and B and a recipe node P over them, whose run keeps the last N input values in private state and, when Hook (chosen at Init), registers an onInvalidate that empties it; the original graph takes host steps live, then one capture and restore, a window in which host steps reach only the states, and the restored P's first subscription through the module's seed and wrapper (A2), after which both graphs take the same steps. The reference is the original P given the window's net change as one live wave. Invariants: StateMatches, HookMatches, OutMatches, NoNeedlessRun. TLC-green 2026-11-09: seven steps 88,981 distinct states (depth 8, 2 s); nine steps 304,480 distinct states (depth 10, 4 s). | C-38 |
 
 Mutations checked on `kernel_wave.cfg`, each tripping an invariant: settling while a dependency is
 pending (FanInAfterSettle); no kernel RESOLVED (NoWedge); no PENDING prefix (PendingPrefix); no split
@@ -94,6 +95,22 @@ list per array, no bound, newest first, a wave without values sending, no snapsh
 (Refines); no invalidate hook, the list kept when an INVALIDATE leaves
 nothing (ListMatches); the value not the list (ValueIsList); deactivation keeping the list
 (InactiveEmpty). Not modeled: checkpoint and restore of the list (C-38), several sources.
+
+Before `module_checkpoint.tla` was written, probing the module against the original graph found that
+a restored node that had not run had no cleanups (a cleanup is a closure registered by a run, and no
+checkpoint holds it): a restored history kept stale entries after an INVALIDATE, and a restored timer
+source never fired again. It also found that a dependency that only ended before the first
+subscription brought its values again, so history appended its snapshot twice. The user chose A2 (a
+node whose last run registered a cleanup runs once at its first activation, with only the changed
+inputs), an end alone without its values, and a host convention for what the restored node cannot
+see before its first subscription. Mutations checked on `module_checkpoint.cfg`, 6 in all, each
+tripping an invariant, every invariant also alone: A2 off, the cleanup record not saved
+(HookMatches, StateMatches, OutMatches); every restored node always run (NoNeedlessRun); an end
+alone bringing its values again, unchanged inputs brought as new, the seed without private state
+(StateMatches). Equivalent in this model and pinned by the module tests instead: an end alone not
+counted as a change (no recipe here sees an end under the auto policy), and the seed's terminal
+ignored (an ended P implies ended states). Not modeled: a manual terminal policy, chains of
+restored nodes, recapture before activation, local-only nodes and refusals.
 
 ## Clean-slate module map (CSP-0)
 
