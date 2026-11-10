@@ -532,8 +532,11 @@ const r = restore(cp, registry);                            // a new graph, noth
 - A node is restorable when built through `recipes`: a state, or a computed node whose fn is
   `registry[ref](config)`, which returns the function or `{ fn, setup }`. Function bodies are never
   saved. A node built another way, or a recipe
-  node whose dependencies have changed since (by `rewire` or `replace`, as `mapOperator` does), is
-  saved as local-only, and restoring it fails, as R-snapshot has it.
+  node whose definition has changed since (its dependencies or its function, by `rewire` or
+  `replace`, as `mapOperator` does), is saved as local-only, and restoring it fails, as R-snapshot
+  has it. The function is compared through the kernel's `definition(id)`, so a change made by any
+  path is seen; until 2026-11-10 only the dependencies were compared, and a replace that kept them
+  but changed the function restored as the old recipe (C6, from the Codex review).
 - `capture()` saves what the kernel holds per node:
   - a state's last array's values (K3) and terminal;
   - a computed node's last array's values, terminal and private state, and what it received from each dependency,
@@ -599,7 +602,7 @@ to be re-issued or recorded as unknown.
   new subscriber gets its snapshot.
 - Refusals:
   - local-only nodes: built without a recipe, or rewired, including rewired after restore and before
-    activation;
+    activation, or given a new function by replace or rewire with the same dependencies;
   - a missing recipe;
   - capture inside a wave or a batch body;
   - values that are not JSON.

@@ -1674,3 +1674,18 @@ test("set with a function that returns the value it was given writes nothing, al
   g.set("a", () => f);
   assert.equal(g.get("a").value, f, "a function is written as a value by wrapping it");
 });
+
+test("definition(id) reads a node's dependencies and its current instance's function", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  const f = (ctx) => ctx.down([["DATA", 1]]);
+  const h = (ctx) => ctx.down([["DATA", 2]]);
+  g.node("p", ["a"], f);
+  assert.deepEqual(g.definition("a"), { deps: [], fn: null });
+  assert.equal(g.definition("p").fn, f);
+  g.replace("p", ["a"], h);
+  assert.deepEqual(g.definition("p"), { deps: ["a"], fn: h });
+  const d = g.definition("p");
+  d.deps.push("x");
+  assert.deepEqual(g.definition("p").deps, ["a"], "a copy: reading changes nothing");
+});

@@ -24,12 +24,21 @@ npm run test:reference
 
 The graph: `createGraph({ report })` takes an optional host reporter. Then `state(id, initial)`, `node(id, deps, fn, { terminal, quiet, seed })`,
 `subscribe(sinkId, id, callback?)`, `unsubscribe`, `replace(id, deps, fn)`, `rewire(id, deps, fn)`, `set`, `invalidate`, `complete`, `error`, `batch`,
-`get(id)` (`active`, `has`, `value`, `ended`), `status(id)`, `describe()`, `idle()`, `privateState(id)` and `trace`.
+`get(id)` (`active`, `has`, `value`, `ended`), `status(id)`, `describe()`, `idle()`, `privateState(id)`, `definition(id)` and `trace`.
 
 `idle()` and `privateState(id)` were added 2026-11-08 for the checkpoint module, as reads only:
 `idle()` is true at a wave boundary (no request running and no batch body open; O5 captures only
 there), and `privateState(id)` is the private state of the node's current lifetime (R-snapshot
 saves all of it). The kernel never reads either. TS reads the same through internal accessors.
+`definition(id)` was added 2026-11-10 for the same module, also a read: a node's dependencies and
+its current instance's function (null for a state), so checkpoint can tell that a replace or rewire
+changed the function even with the dependencies unchanged (C6).
+
+Three scopes nest (R-node, stated 2026-11-10 after the reviews found "no execution layer" untrue):
+the node under its id keeps its subscribers, policies and setup; an instance, from creation or a
+`replace` to the next `replace`, has the dependencies and function, the retained values and the
+terminal; a lifetime, one activation, has the ctx, private state, signal and cleanup. A terminal
+ends the instance, and a `replace` of an ended node gives its sinks START again.
 
 `seed` (H4) is optional and was added 2026-11-08 for restore, at the user's request. Before that,
 the checkpoint module built without a seed found two cases it could not restore (see the

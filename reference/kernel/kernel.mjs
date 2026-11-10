@@ -762,6 +762,13 @@ export function createGraph({ report: hostReport } = {}) {
     },
     // True at a wave boundary: no request running or queued and no batch body open (O5).
     idle() { return !busy && !staging; }, // the queue drains before busy clears
+    // The node's current definition: its dependencies and, for a computed node, the function of
+    // its current instance (null for a state). Read for a checkpoint, which compares it with the
+    // definition its recipe built (C6, decided by the user 2026-11-10); reading changes nothing.
+    definition(id) {
+      const n = nodeOf(id);
+      return { deps: [...n.deps], fn: n.fn };
+    },
     // The private state of the node's current lifetime, as of now (undefined without one).
     // Read for a checkpoint (R-snapshot); the kernel keeps no copy and never reads it.
     privateState(id) { return nodeOf(id).privateState; },

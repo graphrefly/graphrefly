@@ -190,6 +190,21 @@ test("a restored node rewired before its first activation is local-only too", ()
   assert.deepEqual(r.capture().nodes.filter((n) => n.local).map((n) => n.id), ["t"]);
 });
 
+// C6 (Codex review; decided by the user 2026-11-10): the definition is the dependencies and the function.
+test("a replace or rewire that keeps the dependencies but changes the function makes the node local-only", () => {
+  const reg = { times: ({ k }) => (ctx) => { if (ctx.deps[0].has) ctx.down([["DATA", ctx.deps[0].value * k]]); } };
+  const times3 = (ctx) => { if (ctx.deps[0].has) ctx.down([["DATA", ctx.deps[0].value * 3]]); };
+  for (const op of ["replace", "rewire"]) {
+    const b = recipes(createGraph(), reg);
+    b.state("a", 1); b.node("p", ["a"], "times", { k: 2 }); b.node("q", ["a"], "times", { k: 2 });
+    b.g.subscribe("s", "p");
+    b.g[op]("p", ["a"], times3);
+    const cp = roundTrip(b.capture());
+    assert.deepEqual(cp.nodes.filter((n) => n.local).map((n) => n.id), ["p"], `${op}: q keeps its recipe's definition`);
+    assert.throws(() => restore(cp, reg), /p is local-only/, `${op}: restoring it as the old recipe would give 4 where the original gives 6`);
+  }
+});
+
 test("a missing recipe fails the restore", () => {
   const cp = original().capture();
   const { scan, ...withoutScan } = registry();

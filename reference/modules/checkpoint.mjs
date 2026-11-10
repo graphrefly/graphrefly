@@ -9,8 +9,11 @@
 // A node is restorable when it is built through `recipes(g, registry)`: a state, or a computed
 // node whose fn is `registry[ref](config)`, which returns the function or { fn, setup }.
 // Function bodies are never saved (R-snapshot). Any
-// other node, or a recipe node whose dependencies were changed since (by rewire or replace), is
-// saved as local-only, and restoring a local-only node fails.
+// other node, or a recipe node whose definition was changed since (its dependencies or its
+// function, by rewire or replace), is saved as local-only, and restoring a local-only node fails.
+// The function is compared with the kernel's definition(id), so a change made through any path
+// is seen (C6, decided by the user 2026-11-10: a replace that kept the dependencies but changed
+// the function used to restore as the old recipe).
 //
 // capture() runs at a wave boundary only and saves, per node, what the kernel holds: a state's
 // last array's values and terminal; a computed node's values, terminal, private state and the input it received
@@ -84,7 +87,8 @@ export function recipes(g, registry) {
   function addNode(id, deps, rec, seed) {
     const built = lookup(rec.ref)(rec.config);
     const { fn, setup } = typeof built === "function" ? { fn: built } : built;
-    g.node(id, deps, restorable(rec, fn), { ...rec.opts, ...(setup && { setup }), ...(seed && { seed }) });
+    rec.fn = restorable(rec, fn); // the function the kernel runs while the recipe's definition stands
+    g.node(id, deps, rec.fn, { ...rec.opts, ...(setup && { setup }), ...(seed && { seed }) });
     made.set(id, rec);
     return id;
   }
@@ -111,7 +115,8 @@ export function recipes(g, registry) {
       if (!g.idle()) throw new Error("capture: a wave or batch is running; capture at a wave boundary (O5)");
       return { nodes: g.describe().map(({ id, kind, deps }) => {
         const rec = made.get(id);
-        if (!rec || !isDeepStrictEqual(rec.deps, deps)) return { id, kind, deps, local: true };
+        const current = g.definition(id);
+        if (!rec || !isDeepStrictEqual(rec.deps, deps) || (kind === "node" && current.fn !== rec.fn)) return { id, kind, deps, local: true };
         if (rec.entry) return rec.entry; // restored, not activated since
         const saved = live(id, kind, deps);
         return json({ id, kind, deps, ...(kind === "node" && { ref: rec.ref, config: rec.config, opts: rec.opts }), ...(saved && { saved }) }, `node ${id}`);
@@ -119,7 +124,7 @@ export function recipes(g, registry) {
     },
     // Builds one checkpoint entry into this graph (restore calls it in checkpoint order).
     put(n) {
-      if (n.local) throw new Error(`restore: ${n.id} is local-only (no recipe, or rewired since it was built)`);
+      if (n.local) throw new Error(`restore: ${n.id} is local-only (no recipe, or its definition changed since it was built)`);
       const { saved } = n;
       if (n.kind === "state") {
         addState(n.id, undefined);

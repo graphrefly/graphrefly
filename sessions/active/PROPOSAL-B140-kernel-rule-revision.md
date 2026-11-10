@@ -521,5 +521,11 @@ state"：它能去掉 seen，却去不掉锁集合的影子。和 TS 的不同�
 没有别人持有的上游原来每一轮都关掉再重开；现在三轮之间上游只开一次。排在 inner 后面不行：激活时 inner 在第一次运行里就结束，
 会在 owner 拿到之前先放开上游。不改内核，R-restart 加了一句，C-43 加了上游开关次数的期望。
 
-接下来按顺序讨论根源 4（身份，含 C6）、
+**根源 4 已定（用户，2026-11-10）：规则写明三层范围，内核加一个读取。** 节点（id 下：订阅者、策略、setup）、实例（从创建或一次 replace
+到下一次 replace：依赖、函数、保留的值、终止）、lifetime（一次激活：ctx、私有状态、signal、清理）。终止结束的是当前实例；只有
+replace（请求，不是消息）给节点新实例，它的 sink 会再收到 START。R-node、R-terminals、R-subscription 改了文字，R-node 的
+"没有 execution 层"删掉。C6：内核加 `definition(id)`（依赖和当前实例的函数，只读），checkpoint 在定义（不只是依赖）和 recipe
+当初建的不同时把节点判为 local-only；只换函数的 replace 或 rewire 不再被当作旧 recipe 恢复。没有做 recipe 层的 replace。
+
+接下来按顺序讨论
 模块组合（F6）、函数经闭包发请求（F7），最后是数组快照（F4）。
