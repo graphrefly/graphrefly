@@ -8,6 +8,14 @@ finding about the DS-17 classification, not something to patch in quietly.
 npm run test:reference
 ```
 
+Every module builds its nodes through [build.mjs](build.mjs)'s `builder(g)`, where `g` is a kernel
+graph or a checkpoint bundle (`recipes(g, registry)`), so a graph with any module can be captured and
+restored (F6, the user's choice, 2026-11-10). Each module exports its recipes (`pauseRecipes`,
+`demandRecipes`, `restartRecipes`, `higherOrderRecipes`), which a restore's registry must include, and
+a handle over a restored graph (`pauseControl`, `pausableOf`, `pullableOf`, `restartableOf`). Through a
+bundle, a function a module takes from its user is a registered recipe named by reference: demand's
+`serve`, restart's `inner: { ref, config }`, a higher-order `project` returning `{ deps, ref, config }`.
+
 ## Pause ([pause.mjs](pause.mjs), [pause.test.mjs](pause.test.mjs))
 
 First module, 2026-11-06, for DS-17 O8 and the R-pause-lockset / R-pause-modes /
@@ -485,6 +493,35 @@ value implies a live inner).
 The kernel side, `rewire` and `ctx.deps[i].id`, is listed in the kernel README.
 
 ## Checkpoint and restore, O5 ([checkpoint.mjs](checkpoint.mjs), [checkpoint.test.mjs](checkpoint.test.mjs))
+
+**Module graphs (F6, 2026-11-10).** Fable's review found that no graph with a module could be
+restored: the modules built their nodes on the kernel directly, and a node that rewired itself or
+had an inner replaced was local-only. With the user's choice that every module be supported:
+
+- A recipe factory is called as `factory(config, { g, id })`, where `g` is the bundle, so a function
+  that builds or replaces nodes keeps them restorable. The bundle has `replace(id, deps, ref, config)`,
+  which records the new recipe (the node keeps its opts and setup), and `make(ref, config)`, for a
+  recipe that takes another one by reference.
+- A node that a `ctx.rewire` moved for its lifetime (F7) is saved with those dependencies
+  (`saved.deps`), and the kernel's seed gives them to its first lifetime; closing it puts back the
+  declared ones.
+- restart replaces its inner with the inner's own definition (`definition(id).fn`), so only the
+  instance changes and the inner stays restorable. A restored owner whose inner had ended was
+  waiting for a retry no checkpoint holds; its setup renews the inner at its first activation, as a
+  deactivation does (only a restored owner has private state then). A pending retry's timer is now
+  cleared when the lifetime closes; before, it fired into nothing and kept the process alive.
+- The higher-order operator reads which inner slots exist from the graph instead of a counter in
+  its closure; `concurrent: Infinity` is saved as `null`, since JSON has no Infinity.
+- Restart's private state no longer holds `seen: undefined` before the first request (it is 0), so
+  it is JSON.
+
+Tests: a paused pausable, a demand holder after a pull, a restart owner after a request, a restart
+owner waiting for a retry, a switchMap with a live inner (captured again after it switched) and a
+mergeMap with a waiting value, each restored and given the same steps as the original. Mutations,
+8, each failing at least one test: the lifetime dependencies not saved; the seed's dependencies
+ignored; no renewal after a restore; renewal at every activation; a restart replacing its inner with
+a new function; the slot count kept in a closure; a bundle replace not recorded; demand's request
+number kept in a closure.
 
 Built 2026-11-08. O5 had been decided the same day with its default: capture at a wave boundary, no
 pending-FIFO or receipt capture in the kernel. The user's choices, in order:

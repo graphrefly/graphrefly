@@ -40,7 +40,9 @@ the node under its id keeps its subscribers, policies and setup; an instance, fr
 terminal; a lifetime, one activation, has the ctx, private state, signal and cleanup. A terminal
 ends the instance, and a `replace` of an ended node gives its sinks START again.
 
-`seed` (H4) is optional and was added 2026-11-08 for restore, at the user's request. Before that,
+`seed` (H4) is optional and was added 2026-11-08 for restore, at the user's request. Since
+2026-11-10 it may also carry `deps`, the dependencies a `ctx.rewire` had given the saved lifetime;
+the node's first lifetime starts on them, and closing it puts back the declared ones (F6). Before that,
 the checkpoint module built without a seed found two cases it could not restore (see the
 [modules README](../modules/README.md)).
 - What it holds: `{ values?, ended?, state? }`. It gives a computed node its last array's values

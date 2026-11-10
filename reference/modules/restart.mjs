@@ -42,25 +42,53 @@
 // one has ended with ERROR.
 
 import { retryDelayMs, retryPolicy } from "./resilience.mjs";
+import { builder } from "./build.mjs";
 
-export function restartable(g, id, { deps, fn, rounds = 1, retry = retryPolicy() }) {
+// `g` is a kernel graph or a checkpoint bundle (F6, 2026-11-10). Through a bundle the owner and
+// its inner can be restored: the inner is then given as a registered recipe, `inner: { ref,
+// config }`, instead of `fn`, and restartRecipes must be in the restore's registry. A restart
+// replaces the inner with its own current definition, so only its instance changes and it stays
+// restorable. After a restore, restartableOf(g, id) gives the handle.
+export function restartable(g, id, { deps, fn, inner, rounds = 1, retry = retryPolicy() }) {
+  const b = builder(g);
   const innerId = `${id}/inner`;
-  const ends = () => deps.map((d) => g.get(d).ended);
+  const restartId = `${id}.restart`;
+  b.state(restartId); // no value until the first request, so activation sees none
+  b.node(innerId, deps, b.restorable ? inner : { factory: () => fn });
+  // The owner holds the inner's dependencies too, ahead of the inner, so an inner that ends does
+  // not release the last hold on them: upstream stays active across attempts (C5a, 2026-11-10).
+  // The owner reads only the inner and the restart state.
+  b.node(id, [...deps, innerId, restartId],
+    { ref: "restart.owner", config: { deps, rounds, retry }, factory: restartRecipes["restart.owner"] },
+    { terminal: { complete: "manual", error: "manual" } });
+  return restartableOf(g, id);
+}
+
+export function restartableOf(g, id) {
+  const kernel = builder(g).kernel;
+  const restartId = `${id}.restart`;
+  // The request number is the state's value, so it goes on after a restore (a set with a function, 2026-11-10).
+  return { id, innerId: `${id}/inner`, restart() { kernel.set(restartId, (n) => (n ?? 0) + 1); } };
+}
+
+function owner({ deps, rounds, retry }, { g, id }) {
+  const kernel = builder(g).kernel;
+  const innerId = `${id}/inner`;
+  const restartId = `${id}.restart`;
+  const ends = () => deps.map((d) => kernel.get(d).ended);
   const wouldEndAtOnce = () => {
     const e = ends();
     return (e.length > 0 && e.every(Boolean)) || e.some((t) => t?.[0] === "ERROR");
   };
-  const restartId = `${id}.restart`;
-  g.state(restartId); // no value until the first request, so activation sees none
-  g.node(innerId, deps, fn);
-  // The owner holds the inner's dependencies too, ahead of the inner, so an inner that ends does
-  // not release the last hold on them: upstream stays active across attempts (C5a, 2026-11-10).
-  // The owner reads only the inner and the restart state.
-  g.node(id, [...deps, innerId, restartId], (ctx) => {
+  // A new instance of the inner's own definition.
+  const renew = () => kernel.replace(innerId, deps, kernel.definition(innerId).fn);
+  const fn = (ctx) => {
     const inner = ctx.deps.find((d) => d.id === innerId);
     const request = ctx.deps.find((d) => d.id === restartId);
     // `seen` is the last request served; `attempt` counts the replaces this lifetime asked for.
-    const st = ctx.state.get() ?? { round: 1, failures: 0, seen: request.value, attempt: 0 };
+    // No request yet counts as 0, the number the first one follows, so the state stays JSON.
+    const requested = request.value ?? 0;
+    const st = ctx.state.get() ?? { round: 1, failures: 0, seen: requested, attempt: 0 };
     ctx.state.set(st);
     for (const w of inner.waves) if (w.length) ctx.down(w.map((v) => ["DATA", v]));
 
@@ -71,8 +99,8 @@ export function restartable(g, id, { deps, fn, rounds = 1, retry = retryPolicy()
     // owner ends with the inner. One ended dependency among open ones does not stop a retry
     // (fixed 2026-11-09 after a review found a completed config blocking every retry).
     const restartable = !wouldEndAtOnce();
-    let again = restartable && request.value !== st.seen;
-    st.seen = request.value;
+    let again = restartable && requested !== st.seen;
+    st.seen = requested;
     if (restartable && !again && end?.[0] === "COMPLETE" && st.round < rounds) { st.round += 1; st.failures = 0; again = true; }
     if (restartable && !again && end?.[0] === "ERROR") {
       const wait = retryDelayMs(retry, st.failures + 1);
@@ -87,16 +115,24 @@ export function restartable(g, id, { deps, fn, rounds = 1, retry = retryPolicy()
       // An upstream may have ended while a retry waited; the ended inner no longer hears it, so
       // the check is made again here. Then no attempt is made and the owner ends with the inner.
       if (wouldEndAtOnce()) { if (end) ctx.down([end]); return; }
-      g.replace(innerId, deps, fn);
+      renew();
     };
-    if (delay > 0) setTimeout(replace, delay);
-    else replace();
-  }, {
-    terminal: { complete: "manual", error: "manual" },
+    if (delay > 0) {
+      // The timer goes with the lifetime: a pending retry is dropped at close, and its timer
+      // cleared then rather than left to fire into nothing (2026-11-10).
+      const timer = setTimeout(replace, delay);
+      signal.addEventListener("abort", () => clearTimeout(timer), { once: true });
+    } else replace();
+  };
+  const setup = (ctx) => {
+    // A restored owner (it has private state before its first run) whose inner had ended was
+    // waiting for a retry, whose timer no checkpoint holds: as at a deactivation, the pending
+    // retry is gone and the inner is renewed (F6, 2026-11-10). A fresh activation has no state.
+    if (ctx.state.get() !== undefined && !kernel.get(id).ended && kernel.get(innerId).ended) renew();
     // Unless the owner itself has ended for good, its next activation starts a fresh inner.
-    setup: () => () => { if (!g.get(id).ended && g.get(innerId).ended) g.replace(innerId, deps, fn); },
-  });
-
-  // The request number is the state's value, so it goes on after a restore (a set with a function, 2026-11-10).
-  return { id, innerId, restart() { g.set(restartId, (n) => (n ?? 0) + 1); } };
+    return () => { if (!kernel.get(id).ended && kernel.get(innerId).ended) renew(); };
+  };
+  return { fn, setup };
 }
+
+export const restartRecipes = Object.freeze({ "restart.owner": owner });

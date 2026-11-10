@@ -178,31 +178,38 @@ function grabbing(reg, as = "sum") {
   return { seen, reg: { ...reg, grab: (config) => { const fn = reg[as](config); return (ctx) => { seen.ctx = ctx; fn(ctx); }; } } };
 }
 
-test("a node without a recipe, or rewired since, is local-only and cannot be restored", () => {
+test("a node without a recipe is local-only and cannot be restored", () => {
+  const reg = registry();
+  const b = recipes(createGraph(), reg);
+  b.state("a", 1);
+  b.node("s", ["a"], "sum");
+  b.g.node("raw", ["a"], (ctx) => ctx.down([["DATA", 0]]));
+  const cp = b.capture();
+  assert.deepEqual(cp.nodes.filter((n) => n.local).map((n) => n.id), ["raw"]);
+  assert.throws(() => restore(cp, reg), /raw is local-only/);
+});
+
+// F6 (the user's choice, 2026-11-10): a rewire belongs to the lifetime (F7), so it is saved with the
+// lifetime's state and gives the restored node's first lifetime its dependencies back.
+test("a node rewired for its lifetime is saved with those dependencies and restored onto them", () => {
   const { seen, reg } = grabbing(registry());
   const b = recipes(createGraph(), reg);
   b.state("a", 1); b.state("b", 2);
   b.node("s", ["a"], "grab");
-  b.g.node("raw", ["a"], (ctx) => ctx.down([["DATA", 0]]));
   b.g.subscribe("k", "s");
   seen.ctx.rewire(["a", "b"]);
-  const cp = b.capture();
-  assert.deepEqual(cp.nodes.filter((n) => n.local).map((n) => n.id), ["s", "raw"]);
-  assert.throws(() => restore(cp, reg), /s is local-only/);
-});
-
-// F7: an inactive restored node has no lifetime, so it cannot be rewired before its first
-// activation; after it, the rewire lasts for that lifetime only.
-test("a restored node rewired after its first activation (through its ctx) is local-only while the rewire lasts", () => {
-  const { seen, reg } = grabbing(registry(), "scan");
-  const r = restore(roundTrip(original().capture()), { ...reg, scan: reg.grab });
-  r.g.subscribe("kt", "t"); // the saved value, without running the fn
-  r.g.set("a", 4); // the fn runs, and its ctx is kept
-  seen.ctx.rewire(["a"]);
-  assert.deepEqual(r.g.describe().find((d) => d.id === "t").deps, ["a"]);
-  assert.deepEqual(r.capture().nodes.filter((n) => n.local).map((n) => n.id), ["t"]);
-  r.g.unsubscribe("kt", "t"); // the lifetime closes: t is back to its recipe's dependencies
-  assert.deepEqual(r.capture().nodes.filter((n) => n.local).map((n) => n.id), []);
+  assert.equal(b.g.get("s").value, 3);
+  const cp = roundTrip(b.capture());
+  const entry = cp.nodes.find((n) => n.id === "s");
+  assert.deepEqual([entry.local, entry.deps, entry.saved.deps], [undefined, ["a"], ["a", "b"]], "declared deps, then the lifetime's");
+  const r = restore(cp, reg);
+  assert.deepEqual(r.g.definition("s").deps, ["a"]);
+  assert.deepEqual(during(r.g, () => r.g.subscribe("k", "s")), ["k <- s: [START, DATA(3)]"], "no run: nothing changed");
+  assert.deepEqual(r.g.describe().find((d) => d.id === "s").deps, ["a", "b"], "the first lifetime is on the saved dependencies");
+  r.g.set("b", 5);
+  assert.equal(r.g.get("s").value, 6, "b still drives s");
+  r.g.unsubscribe("k", "s");
+  assert.deepEqual(r.g.describe().find((d) => d.id === "s").deps, ["a"], "closing it puts back the declared ones");
 });
 
 // C6 (Codex review; decided by the user 2026-11-10): the definition is the dependencies and the function.
@@ -354,4 +361,144 @@ test("a dependency's snapshot is compared as a whole array: [1, 2] -> [3, 2] is 
   const same = restore(cp, reg);
   same.g.subscribe("k", "d");
   assert.deepEqual(same.g.get("d").value, [1, 2], "an unchanged array is no change");
+});
+
+// ---- F6 (the user's choice, 2026-11-10): every module's graph can be captured and restored ----
+import { pausable, pausableOf, pauseRecipes } from "./pause.mjs";
+import { pullable, pullableOf, demandRecipes } from "./demand.mjs";
+
+// After capture, the same steps on the original and on its restore send the same arrays.
+const after = (g, sinkId, body) => { const start = g.trace.length; body(); return g.trace.slice(start).filter((e) => e.to === sinkId).map(format); };
+
+test("F6: a paused pausable is restored with its locks and held arrays, and the resume sends them as the original's does", () => {
+  const b = recipes(createGraph(), pauseRecipes);
+  b.state("a", 1);
+  const p = pausable(b, "p", "a");
+  b.g.subscribe("s", "p");
+  p.pause("L");
+  b.g.set("a", 2); b.g.set("a", 3);
+  const cp = roundTrip(b.capture());
+  assert.deepEqual(cp.nodes.filter((n) => n.local), []);
+  const r = restore(cp, pauseRecipes);
+  const rp = pausableOf(r, "p");
+  assert.deepEqual(r.g.get(rp.locksId).value, ["L"]);
+  r.g.subscribe("s", "p");
+  const resumed = (g, handle) => after(g, "s", () => handle.resume("L"));
+  const restored = resumed(r.g, rp);
+  assert.deepEqual(restored, resumed(b.g, p));
+  assert.deepEqual(restored, ["s <- p: [DIRTY, DATA(2)]", "s <- p: [DIRTY, DATA(3)]"], "both held arrays, as they arrived");
+  assert.deepEqual(resumed(r.g, rp), [], "a second resume changes nothing");
+  assert.deepEqual(after(r.g, "s", () => r.g.set("a", 4)), after(b.g, "s", () => b.g.set("a", 4)));
+});
+
+test("F6: a demand holder is restored with its queue and request number, and the next pull is served as the original's", () => {
+  const reg = { ...demandRecipes, page: () => (ctx) => ctx.down([["DATA", `${ctx.pull.params}:${ctx.deps[0].waves.flat().join(",")}`]]) };
+  const b = recipes(createGraph(), reg);
+  b.state("a", 0);
+  const h = pullable(b, "h", "a", "page");
+  b.g.subscribe("s", "h");
+  b.g.set("a", 1); h.pull("p1");
+  b.g.set("a", 2); b.g.set("a", 3);
+  const cp = roundTrip(b.capture());
+  assert.deepEqual(cp.nodes.filter((n) => n.local), []);
+  const r = restore(cp, reg);
+  const rh = pullableOf(r, "h");
+  assert.deepEqual(during(r.g, () => r.g.subscribe("s", "h")), ['s <- h: [START, DATA("p1:0,1")]'], "no run, nothing old served");
+  const served = after(r.g, "s", () => rh.pull("p2"));
+  assert.deepEqual(served, after(b.g, "s", () => h.pull("p2")));
+  assert.deepEqual(served, ['s <- h: [DIRTY, DATA("p2:2,3")]']);
+  assert.deepEqual(r.g.get(rh.demandId).value, b.g.get(h.demandId).value, "the request numbers go on");
+});
+
+import { restartable, restartableOf, restartRecipes } from "./restart.mjs";
+import { retryPolicy } from "./resilience.mjs";
+
+// The inner forwards a's values and fails on "bad".
+const fwdRecipes = { fwd: () => (ctx) => {
+  for (const v of ctx.deps[0].waves.flat()) ctx.down([v === "bad" ? ["ERROR", "bad"] : ["DATA", v]]);
+} };
+
+test("F6: a restart owner is restored with its round, request number and live inner, and goes on as the original", () => {
+  const reg = { ...restartRecipes, ...fwdRecipes };
+  const b = recipes(createGraph(), reg);
+  b.state("a", 1);
+  const r0 = restartable(b, "r", { deps: ["a"], inner: { ref: "fwd" }, rounds: 2 });
+  b.g.subscribe("s", "r");
+  b.g.set("a", 2);
+  r0.restart(); // the inner was replaced with its own definition: still restorable
+  b.g.set("a", 3);
+  const cp = roundTrip(b.capture());
+  assert.deepEqual(cp.nodes.filter((n) => n.local), []);
+  const r = restore(cp, reg);
+  const r1 = restartableOf(r, "r");
+  r.g.subscribe("s", "r");
+  assert.deepEqual(r.g.get("r").value, 3);
+  assert.deepEqual(after(r.g, "s", () => r1.restart()), after(b.g, "s", () => r0.restart()));
+  assert.deepEqual(r.g.get("r.restart").value, 2, "the request numbers go on");
+  assert.deepEqual(after(r.g, "s", () => r.g.set("a", 4)), after(b.g, "s", () => b.g.set("a", 4)));
+});
+
+test("F6: an owner restored while a retry was waiting is not stuck: as at a deactivation, its inner is renewed", () => {
+  const reg = { ...restartRecipes, ...fwdRecipes };
+  const b = recipes(createGraph(), reg);
+  b.state("a", 1);
+  restartable(b, "r", { deps: ["a"], inner: { ref: "fwd" }, retry: retryPolicy({ maxAttempts: 3, initialMs: 60_000 }) });
+  b.g.subscribe("s", "r");
+  b.g.set("a", "bad"); // the inner fails; a retry waits for a minute
+  assert.equal(b.g.get("r/inner").ended?.[0], "ERROR");
+  const cp = roundTrip(b.capture());
+  b.g.unsubscribe("s", "r"); // drops the original's timer
+  const r = restore(cp, reg);
+  r.g.set("a", 5);
+  r.g.subscribe("s", "r");
+  assert.deepEqual(r.g.get("r").value, 5, "a fresh inner over a = 5, without waiting for the lost timer");
+  assert.equal(r.g.get("r").ended, null);
+  assert.deepEqual(r.g.privateState("r").failures, 1, "the failure counted before capture still counts");
+});
+
+import { higherOrderRecipes, mergeMap, switchMap } from "./higher-order.mjs";
+
+// The projector follows the node a source value names.
+const hoRecipes = { ...higherOrderRecipes, follow: () => (v) => ({ deps: [v], ref: "higher.relay" }) };
+
+test("F6: a switchMap is restored with its live inner and its rewired dependencies, and switches as the original", () => {
+  const b = recipes(createGraph(), hoRecipes);
+  b.state("x", 1); b.state("y", 10); b.state("s", "x");
+  switchMap(b, "sw", "s", "follow");
+  b.g.subscribe("k", "sw");
+  b.g.set("x", 2);
+  const cp = roundTrip(b.capture());
+  assert.deepEqual(cp.nodes.filter((n) => n.local), []);
+  assert.deepEqual(cp.nodes.find((n) => n.id === "sw").saved.deps, ["s", "sw/inner/0"]);
+  const r = restore(cp, hoRecipes);
+  r.g.subscribe("k", "sw");
+  assert.equal(r.g.get("sw").value, 2);
+  for (const step of [(g) => g.set("x", 3), (g) => g.set("s", "y"), (g) => g.set("x", 4), (g) => g.set("y", 11)]) {
+    assert.deepEqual(after(r.g, "k", () => step(r.g)), after(b.g, "k", () => step(b.g)));
+  }
+  assert.equal(r.g.get("sw").value, 11);
+  // The switch replaced sw/inner/0 with a recipe through the bundle, so it is restorable again.
+  const cp2 = roundTrip(r.capture());
+  assert.deepEqual(cp2.nodes.filter((n) => n.local), []);
+  assert.deepEqual(cp2.nodes.find((n) => n.id === "sw/inner/0").deps, ["y"]);
+  const r2 = restore(cp2, hoRecipes);
+  r2.g.subscribe("k", "sw");
+  assert.deepEqual(after(r2.g, "k", () => r2.g.set("y", 12)), after(r.g, "k", () => r.g.set("y", 12)));
+});
+
+test("F6: a mergeMap is restored with a value waiting for a free slot, and projects it when the live inner completes", () => {
+  const b = recipes(createGraph(), hoRecipes);
+  b.state("x", 1); b.state("y", 10); b.state("s", "x");
+  mergeMap(b, "mm", "s", "follow", { concurrent: 1 });
+  b.g.subscribe("k", "mm");
+  b.g.set("s", "y"); // waits: one inner is live
+  const cp = roundTrip(b.capture());
+  assert.deepEqual(cp.nodes.filter((n) => n.local), []);
+  assert.deepEqual(cp.nodes.find((n) => n.id === "mm").saved.state.queue, ["y"]);
+  const r = restore(cp, hoRecipes);
+  r.g.subscribe("k", "mm");
+  for (const step of [(g) => g.set("x", 2), (g) => g.complete("x"), (g) => g.set("y", 12)]) {
+    assert.deepEqual(after(r.g, "k", () => step(r.g)), after(b.g, "k", () => step(b.g)));
+  }
+  assert.equal(r.g.get("mm").value, 12, "y was projected once x's inner completed");
 });

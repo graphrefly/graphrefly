@@ -532,4 +532,10 @@ replace（请求，不是消息）给节点新实例，它的 sink 会再收到 
 mapOperator 不再在清理里把自己 rewire 回去；`definition(id)` 给声明的依赖，`describe()` 给当前的。经图发的其他请求（replace
 别的节点、写 state）仍然没有作用域，由函数自己用 signal 管；"声明写入目标"等有消费者再说，R-no-imperative 写明这一点。
 
-接下来做模块组合（F6：四种模块都要能恢复，用户 2026-11-10 定），最后讨论数组快照（F4）。
+**F6 已做（用户 2026-11-10：所有模块都要支持恢复）。** recipe 工厂收到 `(config, { g, id })`，g 是建图服务；服务多了记下新 recipe
+的 `replace` 和按引用取另一个 recipe 的 `make`；rewire 过的节点把 lifetime 的依赖存下来，内核的 seed 交还给第一个 lifetime。
+pause、demand、restart、higher-order 通过 `builder(g)` 建节点、导出各自的 recipes、提供恢复后的 handle。restart 用 inner 自己的
+定义 replace，恢复出来的 owner 若 inner 已结束则在首次激活时换新（和停用时一样），待定重试的计时器在 lifetime 关闭时清掉；
+higher-order 从图里读已有的 inner 槽位。R-checkpoint 写明 checkpoint 是建图服务，列出为它开的读接口。
+
+接下来讨论数组快照（F4），最后一条。

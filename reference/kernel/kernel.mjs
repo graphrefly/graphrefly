@@ -98,9 +98,10 @@ export function createGraph({ report: hostReport } = {}) {
   function makeNode(id, kind, deps, fn, opts, initial) {
     if (nodes.has(id)) throw new KernelError(`duplicate node ${id}`);
     for (const d of deps) nodeOf(d); // P1: dependencies are declared and must exist
-    // H4, optional (2026-11-08, for restore): { values?, ended?, state? } gives a computed node
-    // its last array's values, terminal and private state without running its fn.
-    const seed = opts?.seed;
+    // H4, optional (2026-11-08, for restore): { values?, ended?, state?, deps? } gives a computed
+    // node its last array's values, terminal and private state without running its fn, and the
+    // dependencies its first lifetime starts on when a ctx.rewire had changed them (2026-11-10, F6).
+    const seed = opts?.seed; // seed.deps may name nodes made later; activation checks them
     const values = seed ? [...(seed.values ?? [])] : initial !== undefined ? [initial] : [];
     const n = {
       id, kind, deps, fn,
@@ -108,6 +109,7 @@ export function createGraph({ report: hostReport } = {}) {
       // the current lifetime's, which ctx.rewire may change and which goes back to these when the
       // lifetime closes.
       declaredDeps: deps,
+      seedDeps: seed?.deps ? [...seed.deps] : null, // the first lifetime's, from a restore
       terminal: { complete: "auto", error: "auto", ...(opts?.terminal ?? {}) }, // O6
       // K6 (decided by the user 2026-11-09): auto, an input's INVALIDATE invalidates this node
       // without running its function; manual, it is the function's input (ctx.deps[i].invalidated).
@@ -220,6 +222,7 @@ export function createGraph({ report: hostReport } = {}) {
     // P5: an ended node is connected and gives its snapshot, but never runs again.
     if (n.kind === "state" || n.ended) return;
     openLifetime(n);
+    if (n.seedDeps) { n.deps = n.seedDeps; n.inputs = n.deps.map(freshInput); n.seedDeps = null; }
     acquireDeps(n);
     // Nothing subscribes to this node yet, so publishing its output only sets the retained
     // value that the new subscriber's START snapshot will carry.
@@ -576,7 +579,7 @@ export function createGraph({ report: hostReport } = {}) {
     exchange(n, deps);
     if (old?.cleanup) runCleanup(n, old.cleanup);
     Object.assign(n, {
-      fn, declaredDeps: deps, lifetime: null, values: [], has: false, cache: undefined, ended: null, privateState: undefined, pending: false,
+      fn, declaredDeps: deps, seedDeps: null, lifetime: null, values: [], has: false, cache: undefined, ended: null, privateState: undefined, pending: false,
     });
     n.pendingDeps.clear();
     if (!n.active) return; // the next subscription activates the new instance

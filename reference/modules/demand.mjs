@@ -28,6 +28,8 @@
 // since the kernel puts the retained value in every START; a TS pull node gives START
 // only.
 
+import { builder } from "./build.mjs";
+
 // The holder: holds the input's arrays since the last INVALIDATE; on a fresh request runs the
 // author's function once with ctx.deps[0] showing the held arrays and ctx.pull.params.
 const holder = (serve) => (ctx) => {
@@ -54,16 +56,34 @@ const holder = (serve) => (ctx) => {
   serve(view);
 };
 
-export function pullable(g, id, inputId, serve) {
+// `g` is a kernel graph or a checkpoint bundle (F6, 2026-11-10). Through a bundle the holder can
+// be restored: `serve` is then the name of a registered recipe that builds the serve function,
+// with `serveConfig` as its config, and demandRecipes must be in the restore's registry; on a
+// kernel graph `serve` is the function. After a restore, pullableOf(g, id) gives the handle.
+export function pullable(g, id, inputId, serve, serveConfig = null) {
+  const b = builder(g);
   const demandId = `${id}.pullDemand`;
-  g.state(demandId); // no value until the first pull
+  b.state(demandId); // no value until the first pull
+  const recipe = b.restorable
+    ? { ref: "demand.holder", config: { serve, serveConfig }, factory: demandRecipes["demand.holder"] }
+    : { factory: () => holder(serve) };
   // The demand state never completes; only the input ends the holder, hence manual complete.
-  g.node(id, [inputId, demandId], holder(serve), { quiet: true, terminal: { complete: "manual" }, invalidate: "manual" });
+  b.node(id, [inputId, demandId], recipe, { quiet: true, terminal: { complete: "manual" }, invalidate: "manual" });
+  return pullableOf(g, id);
+}
+
+export function pullableOf(g, id) {
+  const demandId = `${id}.pullDemand`;
+  const kernel = builder(g).kernel;
   return {
     id,
     demandId,
     // The request number is part of the state's value, not a counter in this closure, so it goes
     // on after a restore (a set with a function, 2026-11-10).
-    pull(params) { g.set(demandId, (prev) => Object.freeze({ seq: (prev?.seq ?? 0) + 1, params })); },
+    pull(params) { kernel.set(demandId, (prev) => Object.freeze({ seq: (prev?.seq ?? 0) + 1, params })); },
   };
 }
+
+export const demandRecipes = Object.freeze({
+  "demand.holder": ({ serve, serveConfig }, { g }) => holder(builder(g).use(serve, serveConfig)),
+});

@@ -53,6 +53,7 @@ export function recipes(g, registry) {
   // id -> { deps, ref, config, opts } and, until the node's first activation, `entry`: its
   // checkpoint entry, whose saved inputs that activation compares.
   const made = new Map();
+  let bundle; // what this function returns; a recipe's factory gets it to reach the graph
   const lookup = (ref) => {
     if (typeof registry[ref] !== "function") throw new Error(`restore: no recipe ${ref}`);
     return registry[ref];
@@ -84,9 +85,16 @@ export function recipes(g, registry) {
     return id;
   }
 
+  // A factory gets its JSON config and { g, id }: the bundle, through which a function that
+  // builds or replaces nodes keeps them restorable, and the node's id (2026-11-10, F6). It returns
+  // the function or { fn, setup }.
+  function build(id, rec) {
+    const built = lookup(rec.ref)(rec.config, { g: bundle, id });
+    return typeof built === "function" ? { fn: built } : built;
+  }
+
   function addNode(id, deps, rec, seed) {
-    const built = lookup(rec.ref)(rec.config);
-    const { fn, setup } = typeof built === "function" ? { fn: built } : built;
+    const { fn, setup } = build(id, rec);
     rec.fn = restorable(rec, fn); // the function the kernel runs while the recipe's definition stands
     g.node(id, deps, rec.fn, { ...rec.opts, ...(setup && { setup }), ...(seed && { seed }) });
     made.set(id, rec);
@@ -105,23 +113,39 @@ export function recipes(g, registry) {
     };
   }
 
-  return {
+  bundle = {
     g,
     state: addState,
     node(id, deps, ref, config, opts) {
       return addNode(id, deps, { deps: [...deps], ref, config: json(config ?? null, `${id} config`), opts: json(opts ?? {}, `${id} opts`) });
     },
+    // What a registered recipe builds, for a recipe that takes another one by reference, as
+    // demand's holder takes its serve function (2026-11-10, F6).
+    make(ref, config, id) { return build(id, { ref, config }); },
+    // A replace that keeps the node restorable: the new definition is a recipe too, recorded
+    // here when it is asked for (2026-11-10, F6). The node keeps its opts and setup (R-node).
+    // A replace made on the kernel directly makes the node local-only (C6).
+    replace(id, deps, ref, config) {
+      const rec = made.get(id);
+      if (!rec?.ref) throw new Error(`replace: ${id} was not built from a recipe`);
+      const next = { ...rec, deps: [...deps], ref, config: json(config ?? null, `${id} config`), entry: null };
+      next.fn = restorable(next, build(id, next).fn);
+      made.set(id, next);
+      g.replace(id, deps, next.fn);
+      return id;
+    },
     capture() {
       if (!g.idle()) throw new Error("capture: a wave or batch is running; capture at a wave boundary (O5)");
-      return { nodes: g.describe().map(({ id, kind, deps }) => {
+      return { nodes: g.describe().map(({ id, kind, deps: current }) => {
         const rec = made.get(id);
-        // `deps` (from describe) are the current lifetime's; a ctx.rewire changes them for the
-        // lifetime only (F7), and they are not saved, so a rewired node is local-only too.
-        const current = g.definition(id);
-        const same = rec && isDeepStrictEqual(rec.deps, deps) && isDeepStrictEqual(rec.deps, current.deps);
-        if (!same || (kind === "node" && current.fn !== rec.fn)) return { id, kind, deps, local: true };
+        // The definition is what the recipe built; `current` (from describe) is the lifetime's,
+        // which a ctx.rewire may have changed (F7). It is saved with the lifetime's state and
+        // given back as the first lifetime's dependencies (2026-11-10, F6).
+        const { deps, fn } = g.definition(id);
+        if (!rec || !isDeepStrictEqual(rec.deps, deps) || (kind === "node" && fn !== rec.fn)) return { id, kind, deps, local: true };
         if (rec.entry) return rec.entry; // restored, not activated since
-        const saved = live(id, kind, deps);
+        const saved = live(id, kind, current);
+        if (saved && kind === "node" && !isDeepStrictEqual(current, deps)) saved.deps = current;
         return json({ id, kind, deps, ...(kind === "node" && { ref: rec.ref, config: rec.config, opts: rec.opts }), ...(saved && { saved }) }, `node ${id}`);
       }) };
     },
@@ -137,9 +161,10 @@ export function recipes(g, registry) {
         return n.id;
       }
       const rec = { deps: [...n.deps], ref: n.ref, config: n.config, opts: n.opts, entry: saved ? n : null };
-      return addNode(n.id, n.deps, rec, saved && { values: saved.values, ended: saved.ended, state: saved.state });
+      return addNode(n.id, n.deps, rec, saved && { values: saved.values, ended: saved.ended, state: saved.state, ...(saved.deps && { deps: saved.deps }) });
     },
   };
+  return bundle;
 }
 
 // In checkpoint order, which is creation order: a restorable node's dependencies existed when it

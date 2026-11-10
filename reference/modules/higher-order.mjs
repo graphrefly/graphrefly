@@ -26,20 +26,30 @@
 // merge: every source value is projected, into the first node not live. `concurrent` bounds
 // the live inners; further values wait, unprojected, until one completes (MergeMapOptions).
 
+import { isDeepStrictEqual } from "node:util";
+import { builder } from "./build.mjs";
+
 export const relay = (ctx) => {
   for (const w of ctx.deps[0].waves) if (w.length) ctx.down(w.map((v) => ["DATA", v]));
 };
 
-const sameDef = (a, b) => a.fn === b.fn && a.deps.length === b.deps.length && a.deps.every((d, i) => d === b.deps[i]);
+// A definition is { deps, fn } on a kernel graph, or { deps, ref, config } through a checkpoint
+// bundle (F6, 2026-11-10), where `ref` names a registered recipe; relay is "higher.relay".
+const sameDef = (a, b) => a.deps.length === b.deps.length && a.deps.every((d, i) => d === b.deps[i])
+  && (a.fn || b.fn ? a.fn === b.fn : a.ref === b.ref && isDeepStrictEqual(a.config ?? null, b.config ?? null));
 
-function mapOperator(g, id, sourceId, project, mode, concurrent) {
+function operator({ sourceId, mode, concurrent, project, projectConfig }, { g, id }, given) {
+  const b = builder(g);
+  const projectFn = given ?? b.use(project, projectConfig);
+  const bound = concurrent ?? Infinity; // JSON has no Infinity
   const inner = (k) => `${id}/inner/${k}`;
-  let made = 0; // inner nodes created so far
-  const place = (k, def) => {
-    if (k === made) { g.node(inner(k), def.deps, def.fn); made += 1; } else g.replace(inner(k), def.deps, def.fn);
-  };
+  const recipeOf = (def) => (b.restorable ? { ref: def.ref, config: def.config ?? null } : { factory: () => def.fn });
+  // Inner nodes sit at id/inner/k; the kernel cannot delete a node, so a slot once made is
+  // replaced. Which slots exist is read from the graph, not counted here, so it holds after a
+  // restore too.
+  const place = (k, def) => (b.exists(inner(k)) ? b.replace(inner(k), def.deps, recipeOf(def)) : b.node(inner(k), def.deps, recipeOf(def)));
 
-  const fn = (ctx) => {
+  return (ctx) => {
     // inners: the live inners, as the last requested dependency list has them.
     const st = ctx.state.get() ?? { inners: [], queue: [], sourceDone: false };
     ctx.state.set(st);
@@ -57,9 +67,9 @@ function mapOperator(g, id, sourceId, project, mode, concurrent) {
 
     const values = source.waves.flat();
     st.queue.push(...(mode === "switch" ? values.slice(-1) : values));
-    while (st.queue.length && (mode === "switch" || st.inners.length < concurrent)) {
+    while (st.queue.length && (mode === "switch" || st.inners.length < bound)) {
       let next;
-      try { next = project(st.queue.shift()); } catch (e) { ctx.down([["ERROR", e instanceof Error ? e.message : e]]); return; }
+      try { next = projectFn(st.queue.shift()); } catch (e) { ctx.down([["ERROR", e instanceof Error ? e.message : e]]); return; }
       if (st.inners.some((x) => sameDef(x.def, next))) continue;
       let k = 0;
       if (mode === "merge") {
@@ -76,21 +86,34 @@ function mapOperator(g, id, sourceId, project, mode, concurrent) {
     if (changed) ctx.rewire([sourceId, ...st.inners.map((x) => x.node)]);
     if (st.sourceDone && !st.inners.length) ctx.down([["COMPLETE"]]); // a waiting value implies a live inner
   };
+}
 
+// `project` is a function on a kernel graph; through a bundle it is the name of a registered
+// recipe that builds the projector (with `projectConfig`), which returns { deps, ref, config }, and
+// higherOrderRecipes must be in the restore's registry.
+function mapOperator(g, id, sourceId, project, mode, concurrent, projectConfig = null) {
+  const b = builder(g);
+  const config = { sourceId, mode, concurrent: concurrent === Infinity ? null : concurrent, ...(b.restorable && { project, projectConfig }) };
+  const recipe = { ref: "higher.map", config, factory: (c, at) => operator(c, at, b.restorable ? undefined : project) };
   // A fresh activation starts with no inner, as TS's does: the rewire belongs to the lifetime
   // (F7, 2026-11-10), so the operator's dependencies go back to [sourceId] when it closes. Until
   // then a cleanup rewired the operator back.
-  g.node(id, [sourceId], fn, { terminal: { complete: "manual", error: "manual" } });
+  b.node(id, [sourceId], recipe, { terminal: { complete: "manual", error: "manual" } });
   return { id };
 }
 
-export function switchMap(g, id, sourceId, project) {
-  return mapOperator(g, id, sourceId, project, "switch", 1);
+export function switchMap(g, id, sourceId, project, { projectConfig } = {}) {
+  return mapOperator(g, id, sourceId, project, "switch", 1, projectConfig);
 }
 
-export function mergeMap(g, id, sourceId, project, { concurrent = Infinity } = {}) {
+export function mergeMap(g, id, sourceId, project, { concurrent = Infinity, projectConfig } = {}) {
   if (concurrent !== Infinity && (!Number.isInteger(concurrent) || concurrent < 1)) {
     throw new RangeError(`mergeMap ${id}: concurrent must be a positive integer or Infinity`);
   }
-  return mapOperator(g, id, sourceId, project, "merge", concurrent);
+  return mapOperator(g, id, sourceId, project, "merge", concurrent, projectConfig);
 }
+
+export const higherOrderRecipes = Object.freeze({
+  "higher.map": (config, at) => operator(config, at),
+  "higher.relay": () => relay,
+});

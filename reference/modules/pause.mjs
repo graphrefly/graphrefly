@@ -29,6 +29,8 @@
 //     (TS resumeAll).
 // It takes two nodes, see below.
 
+import { builder } from "./build.mjs";
+
 // The controller side of a declared control pair for node id: a plain state node
 // `${id}.pauseLocks` holding the lock list, and a handle to change it. The lock list is the
 // only copy: each call is a set with a function (K8), computed from the list when it takes its place in
@@ -36,9 +38,19 @@
 // kept its own lock set for that until 2026-11-10). A default lock gets a random id, so a lock
 // taken after a restore cannot coincide with one already held. A source that must stop
 // working declares a dependency on locksId and starts or stops in its own function (O8).
+//
+// `g` is a kernel graph or a checkpoint bundle; through a bundle the nodes can be restored, and
+// pauseRecipes must be in the restore's registry (F6, 2026-11-10). After a restore,
+// pauseControl(g, id) gives a handle over the lock state that came back.
 export function controlPair(g, id) {
   const locksId = `${id}.pauseLocks`;
-  g.state(locksId, Object.freeze([]));
+  builder(g).state(locksId, Object.freeze([]));
+  return pauseControl(g, id);
+}
+
+export function pauseControl(g, id) {
+  const locksId = `${id}.pauseLocks`;
+  g = builder(g).kernel;
   return {
     locksId,
     pause(lock = `${id}#${crypto.randomUUID()}`) {
@@ -59,9 +71,14 @@ export function pausable(g, id, inputId, { control = controlPair(g, id) } = {}) 
   // like [DATA, COMPLETE] or [DATA, ERROR] unchanged instead of dropping its DATA. Manual
   // INVALIDATE: the input's INVALIDATE reaches the function, which drops what it held.
   const opts = { terminal: { complete: "manual", error: "manual" }, invalidate: "manual" };
-  g.node(id, [inputId, control.locksId], pausableFn, opts);
+  builder(g).node(id, [inputId, control.locksId], { ref: "pause.pausable", factory: pauseRecipes["pause.pausable"] }, opts);
   return { id, ...control };
 }
+
+// After a restore: the pausable's handle over the nodes that came back.
+export const pausableOf = (g, id, { control = pauseControl(g, id) } = {}) => ({ id, ...control });
+
+export const pauseRecipes = Object.freeze({ "pause.pausable": () => pausableFn });
 
 export const isPaused = (control) => control.has && control.value.length > 0;
 
