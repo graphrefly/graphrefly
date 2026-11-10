@@ -89,6 +89,6 @@ export function restartable(g, id, { deps, fn, rounds = 1, retry = retryPolicy()
     setup: () => () => { if (!g.get(id).ended && g.get(innerId).ended) g.replace(innerId, deps, fn); },
   });
 
-  let seq = 0;
-  return { id, innerId, restart() { g.set(restartId, ++seq); } };
+  // The request number is the state's value, so it goes on after a restore (a set with a function, 2026-11-10).
+  return { id, innerId, restart() { g.set(restartId, (n) => (n ?? 0) + 1); } };
 }

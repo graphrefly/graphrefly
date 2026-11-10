@@ -624,6 +624,30 @@ export function createGraph({ report: hostReport } = {}) {
 
   // ---- Host input ---------------------------------------------------------
 
+  // set(id, fn) (decided by the user 2026-11-10): given a function, set computes the value from
+  // the state's value when the write takes its place in request order, so it sees every write
+  // made before it, in a batch body too, and two such writes in one wave do not lose each other.
+  // A fn that returns the very value it was given (Object.is) writes nothing, as React's
+  // setState(prev => prev) does; a plain value is always written. So a function cannot be
+  // written as a value as it is; wrap it (set(id, () => f)). In a batch the function is staged as
+  // a Deferred and resolved at the commit, in staging order.
+  class Deferred { constructor(fn) { this.fn = fn; } }
+  const currentOf = (n) => (n.has ? n.cache : undefined);
+  function resolveStaged(n, msgs) {
+    let cur = currentOf(n);
+    const out = [];
+    for (const m of msgs) {
+      if (m[0] === "INVALIDATE") cur = undefined;
+      if (m[0] !== "DATA") { out.push(m); continue; }
+      if (!(m[1] instanceof Deferred)) { cur = m[1]; out.push(m); continue; }
+      const v = m[1].fn(cur);
+      if (Object.is(v, cur)) continue;
+      cur = v;
+      out.push(["DATA", v]);
+    }
+    return out;
+  }
+
   function hostInput(id, msg) {
     const n = nodeOf(id);
     if (n.kind !== "state") throw new KernelError(`${id} is not a state node`);
@@ -636,7 +660,8 @@ export function createGraph({ report: hostReport } = {}) {
     request(() => {
       // Checked again: a queued input may find its node ended by an earlier request.
       if (n.ended) throw new KernelError(`${id} has ended`);
-      runWave([{ node: n, frames: [[msg]] }]);
+      const msgs = resolveStaged(n, [msg]);
+      if (msgs.length) runWave([{ node: n, frames: [msgs] }]);
     });
   }
 
@@ -685,7 +710,7 @@ export function createGraph({ report: hostReport } = {}) {
       if (!busy) check(); // a queued rewire reports this instead
       request(() => { check(); rewireNode(n, deps, fn); });
     },
-    set(id, value) { hostInput(id, ["DATA", value]); },
+    set(id, value) { hostInput(id, ["DATA", typeof value === "function" ? new Deferred(value) : value]); },
     invalidate(id) { hostInput(id, ["INVALIDATE"]); },
     complete(id) { hostInput(id, ["COMPLETE"]); },
     error(id, err) { hostInput(id, ["ERROR", err]); },
@@ -718,7 +743,10 @@ export function createGraph({ report: hostReport } = {}) {
       // committed topology, and before anything the commit wave itself requests.
       request(() => {
         queue.unshift(...requests);
-        runWave([...staged]
+        // A throw in an update's fn drops the whole commit, as a throwing body does.
+        const resolved = [...staged].map(([id, entry]) => [id, { ...entry, msgs: resolveStaged(nodeOf(id), entry.msgs) }]);
+        runWave(resolved
+          .filter(([, { msgs }]) => msgs.length)
           .map(([id, { msgs, lifetime }]) => ({ node: nodeOf(id), frames: prepare(msgs), lifetime }))
           // R-ctx-lifetime: a node's staged late output is dropped if its lifetime closed.
           .filter(({ node, lifetime }) => !lifetime || (lifetime.open && node.lifetime === lifetime)));

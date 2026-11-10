@@ -242,3 +242,16 @@ test("one ended dependency among open ones does not stop a retry; every one ende
   assert.equal(msgsOf(h, "o").filter((m) => m.includes("START")).length, 1, "and none is made: the inner is never replaced");
   assert.deepEqual(h.get("r").ended, ["ERROR", "down"]);
 });
+
+test("the request number lives in the restart state, so a request after a restored one is served", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  let starts = 0;
+  const r = restartable(g, "r", { deps: ["a"], fn: (ctx) => { if (!ctx.state.get()) { ctx.state.set(true); starts += 1; } } });
+  g.set("r.restart", 1); // as a restore would bring it back
+  g.subscribe("s", "r");
+  assert.equal(starts, 1);
+  r.restart();
+  assert.equal(starts, 2, "the owner started a fresh inner");
+  assert.equal(g.get("r.restart").value, 2);
+});

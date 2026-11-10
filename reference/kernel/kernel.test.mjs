@@ -1613,3 +1613,64 @@ test("K5/K6: an INVALIDATE before an auto ERROR in one wave still takes effect, 
     assert.deepEqual(during(g, () => g.subscribe("s2", "m")), ["s2 <- m: [START, ERROR(\"boom\")]"], `${invalidate}: no stale value in the snapshot`);
   }
 });
+
+// set(id, fn) (decided by the user 2026-11-10): given a function, the value is computed when the write
+// takes its place in request order, so a controller needs no copy of the state outside the graph.
+test("set with a function: two made during one wave both apply, each on the value before it", () => {
+  const g = createGraph();
+  g.state("locks", []);
+  g.state("a", 1);
+  g.subscribe("s", "a", (msgs) => {
+    if (msgs[0][0] === "START") return;
+    // During the wave: g.get("locks") is still [] here, so two plain sets would lose one lock.
+    g.set("locks", (ls) => [...ls, "x"]);
+    g.set("locks", (ls) => [...ls, "y"]);
+  });
+  g.set("a", 2);
+  assert.deepEqual(g.get("locks").value, ["x", "y"]);
+});
+
+test("set with a function in a batch body sees the writes staged before it; an INVALIDATE leaves it nothing", () => {
+  const g = createGraph();
+  g.state("n", 1);
+  g.subscribe("s", "n");
+  const seen = [];
+  const out = during(g, () => g.batch(() => {
+    g.set("n", (v) => { seen.push(v); return v + 1; });
+    g.set("n", 10);
+    g.set("n", (v) => { seen.push(v); return v + 1; });
+    g.invalidate("n");
+    g.set("n", (v) => { seen.push(v); return 0; });
+  }));
+  assert.deepEqual(seen, [1, 10, undefined], "resolved at the commit, in staging order");
+  assert.deepEqual(out, ["s <- n: [DIRTY, INVALIDATE]", "s <- n: [DIRTY, DATA(0)]"]);
+});
+
+test("set with a function: a throwing fn fails the write; in a batch it drops the whole commit", () => {
+  const reports = [];
+  const g = createGraph({ report: (r) => reports.push(r) });
+  g.state("a", 1);
+  g.state("b", 1);
+  g.node("c", ["a"], () => {});
+  assert.throws(() => g.set("a", () => { throw new Error("no"); }), /no/);
+  assert.throws(() => g.set("c", (v) => v), /not a state node/);
+  assert.throws(() => g.batch(() => { g.set("b", 2); g.set("a", () => { throw new Error("no"); }); }), /no/);
+  assert.deepEqual([g.get("a").value, g.get("b").value], [1, 1], "nothing committed");
+  g.complete("a");
+  assert.throws(() => g.set("a", (v) => v + 1), /has ended/);
+});
+
+test("set with a function that returns the value it was given writes nothing, also in a batch; a plain equal value is written", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  g.state("b", 1);
+  g.subscribe("s", "a");
+  g.subscribe("t", "b");
+  assert.deepEqual(during(g, () => g.set("a", (v) => v)), [], "no wave");
+  assert.deepEqual(during(g, () => g.batch(() => { g.set("a", (v) => v); g.set("b", 2); })), ["t <- b: [DIRTY, DATA(2)]"]);
+  assert.deepEqual(during(g, () => g.batch(() => { g.set("a", 5); g.set("a", (v) => v); })), ["s <- a: [DIRTY, DATA(5)]"]);
+  assert.deepEqual(during(g, () => g.set("a", 5)), ["s <- a: [DIRTY, DATA(5)]"], "a plain value is always written");
+  const f = () => 1;
+  g.set("a", () => f);
+  assert.equal(g.get("a").value, f, "a function is written as a value by wrapping it");
+});

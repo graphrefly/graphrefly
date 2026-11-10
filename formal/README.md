@@ -72,7 +72,9 @@ at once (AfterMaker). Late output and the LIFO queue need three requests,
 which is why the main configuration has three. Revised 2026-11-10, when a per-lifetime setup
 replaced per-run registration: the late registration through an old ctx and the four mutations of
 replaced registrations went, four setup mutations came in, and each new or changed invariant was
-checked alone again.
+checked alone again. Not modeled: `set(id, fn)` with a function (2026-11-10). Its value is computed when it
+runs, so its order is the request order this model checks (FIFO, AfterMaker); that it reads the
+writes before it, in a batch too, and writes nothing for an unchanged value is pinned by kernel tests.
 
 Writing this model found three things the reference kernel did that the D797 draft text did not
 say. The user settled all three on 2026-11-09 as the kernel does them, and R-lifetime, R-terminals,

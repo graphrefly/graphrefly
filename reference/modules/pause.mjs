@@ -30,24 +30,23 @@
 // It takes two nodes, see below.
 
 // The controller side of a declared control pair for node id: a plain state node
-// `${id}.pauseLocks` holding the lock list, and a handle to change it. The handle keeps the
-// authoritative lock set so that several calls inside one wave cannot lose each other's
-// locks, and writes the whole set each time. A source that must stop working declares a
-// dependency on locksId and starts or stops in its own function (O8).
+// `${id}.pauseLocks` holding the lock list, and a handle to change it. The lock list is the
+// only copy: each call is a set with a function (K8), computed from the list when it takes its place in
+// request order, so several calls inside one wave do not lose each other's locks (the handle
+// kept its own lock set for that until 2026-11-10). A default lock gets a random id, so a lock
+// taken after a restore cannot coincide with one already held. A source that must stop
+// working declares a dependency on locksId and starts or stops in its own function (O8).
 export function controlPair(g, id) {
   const locksId = `${id}.pauseLocks`;
   g.state(locksId, Object.freeze([]));
-  const locks = new Set();
-  let next = 0;
-  const write = () => g.set(locksId, Object.freeze([...locks]));
   return {
     locksId,
-    pause(lock = `${id}#${++next}`) {
-      if (!locks.has(lock)) { locks.add(lock); write(); }
+    pause(lock = `${id}#${crypto.randomUUID()}`) {
+      g.set(locksId, (ls = []) => (ls.includes(lock) ? ls : Object.freeze([...ls, lock])));
       return lock;
     },
     resume(lock) {
-      if (locks.delete(lock)) write();
+      g.set(locksId, (ls = []) => (ls.includes(lock) ? Object.freeze(ls.filter((l) => l !== lock)) : ls));
     },
   };
 }

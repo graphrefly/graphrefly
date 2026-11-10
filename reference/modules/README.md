@@ -61,8 +61,12 @@ An earlier version had a `"latest"` mode that sent only the input's current valu
 no such mode: what a default-paused node sends on resume is up to its function (value sugar such as
 `derived` uses the latest values, a per-occurrence function sees them all). Removed on 2026-11-06.
 
-Mutations checked: a handle that reads and rewrites graph state instead of keeping its own lock set
-(loses a lock when two pauses happen in one wave); never paused; auto complete; releasing an unknown
+Since 2026-11-10 the handle keeps nothing: `pause` and `resume` set the lock state with a function
+(`g.set(id, fn)`, K8), so the lock state is the only copy, a restored lock is released by any handle, and
+a default lock gets a random id. Mutation-checked then: the old closure handle (a lock held only in
+the state is never released), and in the kernel a function computed at call time (two pauses in one
+wave lose a lock). Earlier mutations: a handle that reads and rewrites graph state instead of keeping
+its own lock set (loses a lock when two pauses happen in one wave); never paused; auto complete; releasing an unknown
 lock still writing; the log without its invalidate hook; the log silent while paused (it then has
 no value and misses an INVALIDATE); the log keeping its queue after a resume; `id` releasing while
 paused; either node swallowing COMPLETE; `control` ignored; the release node merging the held
@@ -142,7 +146,7 @@ Not discussed before, kept, with the reason:
 | Kept | Why |
 |---|---|
 | `controlPair`, and the `${id}.pauseLocks` naming | One shape for pausables and self-stopping sources. The name says, in the topology, that the node is the pause lock set of `id` (first named `${id}.control`, renamed 2026-11-06 because a topology reader could not tell it was about pause). A real implementation may use node metadata instead |
-| The handle keeps the authoritative lock set | Two pauses in one wave would otherwise read the same old state and lose a lock (mutation-checked) |
+| The handle keeps no lock set; `pause` and `resume` set the lock state with a function, and a default lock gets a random id | Until 2026-11-10 the handle kept the authoritative set, since two `set`s in one wave read the same old state and lose a lock; a set with a function computes each write in request order, so the state is the only copy and a restore keeps the locks. A counter for default locks would repeat after a restore |
 | Default lock ids `${id}#n` | Readable in the control state; callers may pass their own |
 | Placement instead of modes | The pausable passes values through unchanged, so TS's default pause and resumeAll differ here only by which side of the node it sits on. Replaced the `"latest"`/`"all"` modes on 2026-11-06 |
 | The pausable nodes use manual complete | The lock state never completes, so auto complete would never end them |
@@ -203,7 +207,7 @@ node's arrays...").
 |---|---|
 | `pullable(g, id, inputId, serve)` returning `{ pull }` | The bundle holds the author's function, as a TS pull node holds its fn; `pull` is the controller side of the pair |
 | `${id}.pullDemand` | The declared control edge, as in pause; what arrived is the holder's private state |
-| The demand record `{ seq, params }` | A fresh value per pull, so every pull is DATA, and a sequence so the holder can tell an old request (there before activation) from a new one |
+| The demand record `{ seq, params }` | A fresh value per pull, so every pull is DATA, and a sequence so the holder can tell an old request (there before activation) from a new one. Since 2026-11-10 `pull` is a set with a function that takes the next number from the state's value, so no counter sits in a closure and the numbers go on after a restore |
 | `serve` gets a view of ctx: the holder's own ctx with `deps` replaced by the held input and `pull` added | Keeps the TS shape (`ctx.deps` input, `ctx.pull.params`); `down`, `state` and the hooks are the holder's own |
 
 ## Observation, H5 ([observe.mjs](observe.mjs), [observe.test.mjs](observe.test.mjs))
@@ -268,8 +272,10 @@ deps ──► id/inner ──► id          id.restart ──► id
 - **Policy is the owner's:** `rounds` is how many times the inner may complete (TS `repeat`'s count);
   `retry` is the library's retry policy (see Retry policy below): within a round, an ERROR from
   attempt n is retried after `retryDelayMs(retry, n)`, and each round gets the policy's attempts
-  again; `restart()` writes the
-  declared control state `${id}.restart` (P11) and starts a new attempt that counts as neither.
+  again; `restart()` sets the
+  declared control state `${id}.restart` (P11) to the next request number, taken from its value
+  (with a function since 2026-11-10, so no counter sits in a closure), and starts a new attempt that
+  counts as neither.
 - **The owner asks for the replace from its own function,** and the kernel runs it after the wave
   (K8), as TS applies `ctx.rewireNext` after the wave. A delayed retry is dropped once the owner's
   lifetime has closed, even if a new one has opened. When the owner deactivates without having

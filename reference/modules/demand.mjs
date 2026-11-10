@@ -57,12 +57,13 @@ const holder = (serve) => (ctx) => {
 export function pullable(g, id, inputId, serve) {
   const demandId = `${id}.pullDemand`;
   g.state(demandId); // no value until the first pull
-  let seq = 0;
   // The demand state never completes; only the input ends the holder, hence manual complete.
   g.node(id, [inputId, demandId], holder(serve), { quiet: true, terminal: { complete: "manual" }, invalidate: "manual" });
   return {
     id,
     demandId,
-    pull(params) { g.set(demandId, Object.freeze({ seq: ++seq, params })); },
+    // The request number is part of the state's value, not a counter in this closure, so it goes
+    // on after a restore (a set with a function, 2026-11-10).
+    pull(params) { g.set(demandId, (prev) => Object.freeze({ seq: (prev?.seq ?? 0) + 1, params })); },
   };
 }

@@ -511,5 +511,11 @@ wave（来源先 apply 再标记）。代价：demand 的 holder 是 quiet 节�
 latestAsync 原来在一次没有新值的运行之后丢掉 abort（复现过），现在跟着 lifetime 的 signal。和 TS 的不同：TS 的
 `source(factory, setup)` 已经是这个形状，但 `ctx.onDeactivation` 在 TS 里约有 15 处调用，搬过去是 TS 实现的工作，不是纯加法。
 
-接下来按顺序讨论根源 3（控制 state 的权威）、restart 的所有权（C5a）、4（身份，含 C6）、
+**根源 3 已定（用户，2026-11-10）：`set` 可以接一个函数。** 先提的是单独的 `update(id, fn)`，同一天用户改成并进 `set`（和 React 的 `setState` 一样）：给的是值就直接写，给的是函数，值由它 在这次写入按请求顺序执行时，用 state 当时的值算出，
+所以排在它前面的写入它都看得到；在 batch 里看得到之前暂存的写入，在 commit 时算。fn 原样返回拿到的值（Object.is）就不写，
+抛错则这次写入失败，在 batch 里整个 commit 不提交；函数本身要当值写时得包一层。pause 的 handle 不再留锁集合，demand、restart 不再有闭包里的计数器：
+pause、resume、pull、restart 都是带函数的 set，控制 state 是唯一的一份，恢复后接得上；默认锁名改成随机 id。没有采用"不保留值的
+state"：它能去掉 seen，却去不掉锁集合的影子。和 TS 的不同：TS 的 state set 不接函数，锁集合在节点内部。
+
+接下来按顺序讨论 restart 的所有权（C5a）、根源 4（身份，含 C6）、
 模块组合（F6）、函数经闭包发请求（F7），最后是数组快照（F4）。

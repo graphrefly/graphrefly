@@ -193,3 +193,15 @@ test("C-32: with a pausable before the holder, a resume without a pull neither r
   assert.deepEqual(seen, []);
   assert.deepEqual(during(g, () => h.pull("p")), ['s <- h: [DIRTY, DATA("p:0,1")]']);
 });
+
+test("the request number lives in the demand state, so a pull after a restored request is served", () => {
+  const g = createGraph();
+  g.state("a", 0);
+  const seen = [];
+  const h = pageHolder(g, seen);
+  g.set(h.demandId, Object.freeze({ seq: 5, params: "old" })); // as a restore would bring it back
+  g.subscribe("s", "h");
+  assert.deepEqual(seen, [], "the request already there counts as served");
+  assert.deepEqual(during(g, () => h.pull("p1")), ['s <- h: [DIRTY, DATA("p1:0")]']);
+  assert.deepEqual(g.get(h.demandId).value, { seq: 6, params: "p1" });
+});

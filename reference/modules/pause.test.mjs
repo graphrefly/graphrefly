@@ -342,3 +342,29 @@ test("placed before a node (TS default pause): no value reaches the node while p
   assert.deepEqual(during(g, () => p.resume(lock)), ["s <- n: [DIRTY, DATA(3)]"]);
   assert.deepEqual(seen, [[[1], [2, 3]]], "one invocation, every held array, boundaries kept");
 });
+
+// The lock state is the only copy of the lock set (update, 2026-11-10).
+test("the lock state is the authority: a handle over a lock state that already holds a lock releases it", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  const p = pausable(g, "p", "a");
+  g.subscribe("s", "p");
+  g.set(p.locksId, Object.freeze(["p#saved"])); // as a restore would bring it back
+  assert.equal(isPaused({ has: true, value: g.get(p.locksId).value }), true);
+  p.resume("p#saved");
+  assert.deepEqual(g.get(p.locksId).value, [], "the handle kept no copy that misses the lock");
+});
+
+test("two pauses made in one wave both hold, and a default lock never repeats", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  const p = pausable(g, "p", "a");
+  const locks = [];
+  g.subscribe("s", "a", (msgs) => { if (msgs[0][0] !== "START") locks.push(p.pause(), p.pause()); });
+  g.subscribe("t", "p");
+  g.set("a", 2);
+  assert.equal(new Set(locks).size, 2);
+  assert.deepEqual(g.get(p.locksId).value, locks);
+  p.resume(locks[0]);
+  assert.deepEqual(g.get(p.locksId).value, [locks[1]], "still paused by the other");
+});
