@@ -23,8 +23,8 @@ the user chose one per wave.
 
 Two things run side by side on every step:
   - the composition: H settles as a kernel node (auto ERROR without running;
-    an INVALIDATE input invalidates H and runs its onInvalidate hook, then the
-    function runs on what came after it; auto COMPLETE after the run), with its
+    an INVALIDATE input is the function's input under H's manual INVALIDATE
+    policy: it empties the list and sends INVALIDATE, then takes what came after it; auto COMPLETE after the run), with its
     function transcribed from history.mjs; activation runs it once on X's
     snapshot, deactivation drops its value and private state;
   - the rule: a history written straight from R-history's text, which walks
@@ -85,7 +85,9 @@ CompWave(h, fs) ==
   LET err  == HasTerm(fs, "ERR")                    \* auto ERROR: no run
       inv  == LastInvFrame(fs, Len(fs)) > 0
       lead == ~err /\ inv /\ h.has
-      l0   == IF lead THEN <<>> ELSE h.list         \* onInvalidate: list emptied
+      \* manual INVALIDATE (2026-11-09): the function empties the list itself and sends
+      \* INVALIDATE, which the kernel drops if H holds no value
+      l0   == IF ~err /\ inv THEN <<>> ELSE h.list
       added == SelectSeq(Waves(After(fs)), LAMBDA w : w # <<>>)
       list == LastN(Append(l0, added))
       sends == ~err /\ added # <<>>

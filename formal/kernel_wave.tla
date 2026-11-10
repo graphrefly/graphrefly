@@ -9,7 +9,7 @@ older wave_protocol models verify the currently active rules and are retired or
 rescoped at activation. Status: draft, like the rules it checks.
 
 Topology: a state S and a diamond S -> B, S -> C, B,C -> D. B and C have the
-default auto COMPLETE and auto ERROR policy; D's two policies are chosen at Init,
+default auto policies; D's three policies (COMPLETE, ERROR, INVALIDATE) are chosen at Init,
 so every combination of auto and manual is checked (added 2026-11-09 for the
 activation plan, taking over wave_deps_complete and wave_protocol_rescue_MC). Each wave starts from one host input
 to S. A computed node that runs chooses its output from a menu that includes
@@ -50,10 +50,15 @@ Invariants, each mutation-checked (see formal/README.md):
   ManualEndsByFunction  under a manual policy D ends with that kind only by its
                         function's output, or with ERROR by a rejected output
                         (R-terminals, R-failure)
-  ManualSeesTerminal    under a manual policy D's function runs in every wave in
-                        which a dependency's terminal of that kind reaches it
-                        while D is open, unless an auto ERROR ends D first
-                        (R-terminals)
+  ManualSeesInput       under a manual policy D's function runs in every wave in
+                        which a dependency's terminal of that kind, or an
+                        INVALIDATE, reaches it while D is open, unless an auto
+                        ERROR ends D first (R-terminals, R-invalidation)
+  ManualInvalidateKept  under the manual INVALIDATE policy the kernel never
+                        invalidates D; only D's own output does (R-invalidation)
+  InvalidatedNotKept    an INVALIDATE that reaches D under the auto policy, or
+                        before an auto ERROR ends D, leaves D without a value
+                        unless D sent DATA after it (R-invalidation, R-terminals)
 
 Out of scope here: lifetimes, request order, batch and topology requests
 (R-lifetime, R-request-order), quiet nodes and async output.
@@ -99,8 +104,8 @@ VARIABLE k
 vars == <<k>>
 
 \* Terminal policies (R-terminals): B and C auto, D as chosen at Init.
-Policies == [complete : {"auto", "manual"}, error : {"auto", "manual"}]
-Auto == [complete |-> "auto", error |-> "auto"]
+Policies == [complete : {"auto", "manual"}, error : {"auto", "manual"}, invalidate : {"auto", "manual"}]
+Auto == [complete |-> "auto", error |-> "auto", invalidate |-> "auto"]
 PolS(s, n) == IF n = "D" THEN s.pol ELSE Auto
 Kind(t) == IF t = "COM" THEN "complete" ELSE "error"
 
@@ -110,14 +115,16 @@ IsValue(x)  == IsData(x) \/ x = "RES"
 IsTerm(x)   == x \in {"COM", "ERR"}
 IsTermX(x)  == x \in {"COM", "ERR"}
 ManualTerm(s, n, x) == IsTermX(x) /\ PolS(s, n)[Kind(x)] = "manual"
+\* What a manual policy hands to the function: a terminal of a manual kind, or INVALIDATE.
+ManualIn(s, n, x) == ManualTerm(s, n, x) \/ (x = "INV" /\ PolS(s, n).invalidate = "manual")
 Settles(x)  == IsValue(x) \/ IsTerm(x) \/ x = "INV"
 Range(s)    == {s[i] : i \in DOMAIN s}
 Max(S)      == CHOOSE x \in S : \A y \in S : y <= x
 HasValueArr(a) == \E i \in DOMAIN a : IsValue(a[i])
 HasValueAny(fs) == \E i \in DOMAIN fs : HasValueArr(fs[i])
 \* An array that marks the sender's cone pending and gets PENDING: one carrying DATA,
-\* RESOLVED or a terminal (R-wave, decided by the user 2026-11-09).
-HasMarkArr(a) == \E i \in DOMAIN a : IsValue(a[i]) \/ IsTerm(a[i])
+\* RESOLVED, INVALIDATE or a terminal (R-wave, decided by the user 2026-11-09).
+HasMarkArr(a) == \E i \in DOMAIN a : IsValue(a[i]) \/ IsTerm(a[i]) \/ a[i] = "INV"
 HasMarkAny(fs) == \E i \in DOMAIN fs : HasMarkArr(fs[i])
 AnySettles(fs)  == \E i \in DOMAIN fs : \E j \in DOMAIN fs[i] : Settles(fs[i][j])
 HasTerminal(fs) == \E i \in DOMAIN fs : \E j \in DOMAIN fs[i] : IsTerm(fs[i][j])
@@ -185,7 +192,7 @@ Deliver(s, n, fr) ==
                                            THEN s1.pendDeps[m] \ {n} ELSE s1.pendDeps[m]],
              !.depEnded = [m \in Nodes |-> IF m \in subs /\ HasTerminal(f1)
                                            THEN s1.depEnded[m] \cup {n} ELSE s1.depEnded[m]],
-             !.dTermIn  = @ \/ ("D" \in subs /\ \E i \in DOMAIN f1 : \E j \in DOMAIN f1[i] : ManualTerm(s1, "D", f1[i][j]))]
+             !.dTermIn  = @ \/ ("D" \in subs /\ \E i \in DOMAIN f1 : \E j \in DOMAIN f1[i] : ManualIn(s1, "D", f1[i][j]))]
 
 \* ---- a node's output: checked (a rejection is its ERROR), applied, delivered ----
 Emit(s, n, raw) ==
@@ -211,7 +218,10 @@ Init == \E p \in Policies :
         errRan   |-> FALSE,
         pol      |-> p,
         dEnd     |-> "none",      \* how D ended: "fn", "rejected" or "kernel"
-        dTermIn  |-> FALSE,       \* this wave a terminal of a manual kind reached open D
+        dTermIn  |-> FALSE,       \* this wave a terminal of a manual kind, or INVALIDATE under
+                                  \* manual INVALIDATE, reached open D
+        kernelInvD |-> FALSE,     \* the kernel invalidated D under the manual INVALIDATE policy
+        keptInv  |-> FALSE,       \* D kept a value its input invalidated (see Check)
         missed   |-> FALSE ]
 
 \* A host input to S starts a wave; an input to an ended S is refused (no wave).
@@ -237,16 +247,26 @@ Finish(s, m, lead, runs, raw) ==
   LET fs  == IF ~runs THEN <<>> ELSE IF ValidOut(raw) THEN PrepAll(raw) ELSE << <<"ERR">> >>
       st0 == [has |-> s.has[m], vals |-> s.vals[m], ended |-> s.ended[m], out |-> <<>>]
       st1 == IF lead THEN ApplyFrame(st0, <<"INV">>) ELSE st0
+      \* Under manual INVALIDATE the kernel must leave D's value to its function.
+      sK  == IF lead /\ m = "D" /\ s.pol.invalidate = "manual" THEN [s EXCEPT !.kernelInvD = TRUE] ELSE s
       st0f == ApplyAll(st1, fs)
       \* Auto COMPLETE: the postlude goes out in the same delivery as the run's output.
       post == s.depEnded[m] = Deps[m] /\ ~HasTerminal(fs) /\ PolS(s, m).complete = "auto"
       st  == IF post THEN ApplyFrame(st0f, <<"COM">>) ELSE st0f
-      s1  == [s EXCEPT !.inbox[m] = [d \in Deps[m] |-> <<>>],
+      s1  == [sK EXCEPT !.inbox[m] = [d \in Deps[m] |-> <<>>],
                        !.runs[m]  = @ + (IF runs THEN 1 ELSE 0),
                        !.has[m]   = st.has, !.vals[m] = st.vals, !.ended[m] = st.ended]
       how  == IF post /\ st0f.ended = "no" THEN "kernel" ELSE IF ~ValidOut(raw) THEN "rejected" ELSE "fn"
       s1a == IF m = "D" /\ s.ended[m] = "no" /\ st.ended # "no" THEN [s1 EXCEPT !.dEnd = how] ELSE s1
   IN Deliver(s1a, m, st.out)
+
+\* An INVALIDATE reached D this settlement and D, under the auto INVALIDATE policy or ended by
+\* an auto ERROR, still holds a value it did not send afterwards: the kernel kept a value
+\* that its input invalidated (found by formal/module_demand.tla, 2026-11-09).
+NewData(ns) == \E i \in (Len(k.hist["D"]) + 1)..Len(ns.hist["D"]) : DataVals(ns.hist["D"][i]) # <<>>
+Check(m, invd, ae, ns) ==
+  IF m = "D" /\ invd /\ (PolS(k, m).invalidate = "auto" \/ ae) /\ ns.has["D"] /\ ~NewData(ns)
+  THEN [ns EXCEPT !.keptInv = TRUE] ELSE ns
 
 Settle(m) ==
   /\ k.phase = "wave"
@@ -254,19 +274,26 @@ Settle(m) ==
   /\ LET early  == \E d \in Deps[m] : k.pend[d]
          k0     == [k EXCEPT !.early = @ \/ early]
          depErr == \E d \in Deps[m] : \E i \in DOMAIN k.inbox[m][d] : "ERR" \in Range(k.inbox[m][d][i])
-     IN IF depErr /\ PolS(k, m).error = "auto"   \* auto ERROR: end with it, without running the function
-        THEN k' = Emit([k0 EXCEPT !.inbox[m] = [d \in Deps[m] |-> <<>>],
-                                  !.dEnd = IF m = "D" THEN "kernel" ELSE @], m, << <<"ERR">> >>)
+         trimmed == [d \in Deps[m] |-> AfterLastInv(k.inbox[m][d])]
+         invd    == \E d \in Deps[m] : trimmed[d] # k.inbox[m][d]
+     IN IF depErr /\ PolS(k, m).error = "auto"
+        \* auto ERROR: end with it, without running the function; an INVALIDATE before it in
+        \* the wave still takes effect first, whatever the INVALIDATE policy
+        THEN k' = Check(m, invd, TRUE,
+                    Emit([k0 EXCEPT !.inbox[m] = [d \in Deps[m] |-> <<>>],
+                                    !.dEnd = IF m = "D" THEN "kernel" ELSE @], m,
+                         IF invd THEN << <<"INV">>, <<"ERR">> >> ELSE << <<"ERR">> >>))
         ELSE
-          LET trimmed == [d \in Deps[m] |-> AfterLastInv(k.inbox[m][d])]
-              lead    == \E d \in Deps[m] : trimmed[d] # k.inbox[m][d]
-              runs    == \E d \in Deps[m] : \E i \in DOMAIN trimmed[d] :
-                           \E j \in DOMAIN trimmed[d][i] :
-                             IsValue(trimmed[d][i][j]) \/ ManualTerm(k, m, trimmed[d][i][j])
+          LET \* auto INVALIDATE: the kernel invalidates m; manual: it is the function's input
+              lead    == invd /\ PolS(k, m).invalidate = "auto"
+              runs    == \/ \E d \in Deps[m] : \E i \in DOMAIN trimmed[d] :
+                              \E j \in DOMAIN trimmed[d][i] :
+                                IsValue(trimmed[d][i][j]) \/ ManualTerm(k, m, trimmed[d][i][j])
+                         \/ (invd /\ PolS(k, m).invalidate = "manual")
               k1      == [k0 EXCEPT !.errRan = @ \/ (depErr /\ runs /\ PolS(k, m).error = "auto")]
           IN IF runs
-             THEN \E raw \in Menu(m) : k' = Finish(k1, m, lead, TRUE, raw)
-             ELSE k' = Finish(k1, m, lead, FALSE, <<>>)
+             THEN \E raw \in Menu(m) : k' = Check(m, invd, FALSE, Finish(k1, m, lead, TRUE, raw))
+             ELSE k' = Check(m, invd, FALSE, Finish(k1, m, lead, FALSE, <<>>))
 
 EndWave ==
   /\ k.phase = "wave"
@@ -288,6 +315,7 @@ NoWedge ==
     \A n \in Nodes : ~k.pend[n] /\ k.pendDeps[n] = {} /\ \A d \in Deps[n] : k.inbox[n][d] = <<>>
 
 Sent(n) == k.hist[n]
+InvArr == <<"PEN", "INV">>
 
 PendingPrefix ==
   \A n \in Nodes : \A i \in DOMAIN Sent(n) :
@@ -297,7 +325,7 @@ PendingPrefix ==
        /\ \A j \in DOMAIN a : j > 1 => a[j] # "PEN"
 
 InvalidateAlone ==
-  \A n \in Nodes : \A i \in DOMAIN Sent(n) : "INV" \in Range(Sent(n)[i]) => Sent(n)[i] = <<"INV">>
+  \A n \in Nodes : \A i \in DOMAIN Sent(n) : "INV" \in Range(Sent(n)[i]) => Sent(n)[i] = <<"PEN", "INV">>
 
 NoDataWithResolved ==
   \A n \in Nodes : \A i \in DOMAIN Sent(n) :
@@ -309,19 +337,19 @@ TerminalLastAndFinal ==
 
 \* The last array before i that changed what n holds (DATA or INVALIDATE); 0 if none.
 LastChange(n, i) ==
-  LET I == {j \in 1..(i - 1) : Sent(n)[j] = <<"INV">> \/ DataVals(Sent(n)[j]) # <<>>}
+  LET I == {j \in 1..(i - 1) : Sent(n)[j] = InvArr \/ DataVals(Sent(n)[j]) # <<>>}
   IN IF I = {} THEN 0 ELSE Max(I)
 
 InvalidateEffective ==
   \A n \in Nodes : \A i \in DOMAIN Sent(n) :
-    Sent(n)[i] = <<"INV">> =>
-      LET j == LastChange(n, i) IN j = 0 \/ Sent(n)[j] # <<"INV">>
+    Sent(n)[i] = InvArr =>
+      LET j == LastChange(n, i) IN j = 0 \/ Sent(n)[j] # InvArr
 
 RetainedMatchesSent ==
   \A n \in Nodes :
     LET j == LastChange(n, Len(Sent(n)) + 1)
     IN IF j = 0 THEN k.has[n] /\ k.vals[n] = <<1>>
-       ELSE IF Sent(n)[j] = <<"INV">> THEN ~k.has[n]
+       ELSE IF Sent(n)[j] = InvArr THEN ~k.has[n]
        ELSE k.has[n] /\ k.vals[n] = DataVals(Sent(n)[j])
 
 AutoTerminals ==
@@ -334,5 +362,7 @@ ManualEndsByFunction ==
   /\ (k.ended["D"] = "COM" /\ k.pol.complete = "manual") => k.dEnd = "fn"
   /\ (k.ended["D"] = "ERR" /\ k.pol.error = "manual") => k.dEnd \in {"fn", "rejected"}
 
-ManualSeesTerminal == ~k.missed
+ManualSeesInput == ~k.missed
+ManualInvalidateKept == ~k.kernelInvD
+InvalidatedNotKept == ~k.keptInv
 =============================================================================

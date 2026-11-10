@@ -137,7 +137,7 @@ test("an INVALIDATE while paused passes at once, and the resume then has nothing
   g.subscribe("s", "p");
   const lock = p.pause();
   g.set("a", 2);
-  assert.deepEqual(during(g, () => g.invalidate("a")), ["s <- p: [INVALIDATE]"]);
+  assert.deepEqual(during(g, () => g.invalidate("a")), ["s <- p: [DIRTY, INVALIDATE]"]);
   assert.deepEqual(during(g, () => p.resume(lock)), ["s <- p: [DIRTY, RESOLVED]"]);
   p.pause("again");
   g.set("a", 3);
@@ -171,7 +171,7 @@ test("an INVALIDATE that reaches downstream discards what was held before it", (
   // is older than it and is dropped, so downstream never gets a value older than an
   // INVALIDATE it already has.
   assert.deepEqual(out, [
-    "s <- p: [INVALIDATE]",
+    "s <- p: [DIRTY, INVALIDATE]",
     "s <- p: [DIRTY, RESOLVED]",
     "s <- p: [DIRTY, DATA(2)]",
   ]);
@@ -192,12 +192,13 @@ test("every INVALIDATE discards what was held before it, including one downstrea
     p.resume(lock);
   });
   assert.deepEqual(out, [
+    "s <- p: [DIRTY, RESOLVED]",          // the INVALIDATE wave: p's own INVALIDATE is dropped
     "s <- p: [DIRTY, RESOLVED]",          // the DATA(3) wave
     "s <- p: [DIRTY, DATA(3)]",
   ]);
 });
 
-test("the held values live in a node named after the pausable, readable while paused", () => {
+test("the held arrays are the pausable's private state, readable while paused", () => {
   const g = createGraph();
   g.state("a", 0);
   const p = pausable(g, "p", "a");
@@ -205,9 +206,9 @@ test("the held values live in a node named after the pausable, readable while pa
   const lock = p.pause();
   g.set("a", 1);
   g.set("a", 2);
-  assert.deepEqual(g.get("p.pauseLog").value, [[1], [2]]);
+  assert.deepEqual(g.privateState("p"), [[1], [2]]);
   g.invalidate("a");
-  assert.equal(g.get("p.pauseLog").has, false);
+  assert.deepEqual(g.privateState("p"), []);
   p.resume(lock);
   assert.equal(g.get("p").has, false, "downstream ends absent, like upstream");
 });
@@ -267,7 +268,7 @@ test("values held before an INVALIDATE that nothing followed are dropped on resu
     g.invalidate("a");
     p.resume(lock);
   });
-  assert.deepEqual(out, ["s <- p: [INVALIDATE]", "s <- p: [DIRTY, RESOLVED]"]);
+  assert.deepEqual(out, ["s <- p: [DIRTY, INVALIDATE]", "s <- p: [DIRTY, RESOLVED]"]);
   assert.equal(g.get("p").has, false, "downstream ends absent, like upstream");
 });
 
@@ -282,7 +283,7 @@ test("paused before p had a value, values held before an INVALIDATE are dropped 
     g.invalidate("a");
     p.resume(lock);
   });
-  assert.deepEqual(out, ["s <- p: [DIRTY, RESOLVED]"]);
+  assert.deepEqual(out, ["s <- p: [DIRTY, RESOLVED]", "s <- p: [DIRTY, RESOLVED]"], "the INVALIDATE wave, then the resume");
   assert.equal(g.get("p").has, false, "downstream ends absent, like upstream");
 });
 

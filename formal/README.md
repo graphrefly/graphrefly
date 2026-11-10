@@ -11,13 +11,13 @@ currently active rules and are retired or rescoped at activation, not edited now
 
 | Module | Covers | Conformance |
 |---|---|---|
-| `kernel_wave.tla` (`kernel_wave.cfg`, `kernel_wave_3.cfg`) | R-wave, R-messages, R-invalidation, R-terminals, R-subscription, R-failure: a state S and a diamond S->B,C->D, B and C under the default auto policies and D under each combination of auto and manual, chosen at Init; host inputs to S (set, a batch of two, invalidate, complete, error); computed nodes choose outputs from a menu that includes rejected arrays; nodes settle in every order the dependencies allow. Invariants: RunOnce, SettleOnce, FanInAfterSettle, NoWedge, PendingPrefix, InvalidateAlone, NoDataWithResolved, TerminalLastAndFinal, InvalidateEffective, RetainedMatchesSent, AutoErrorNoRun, AutoTerminals, ManualEndsByFunction, ManualSeesTerminal. TLC-green 2026-11-09 after terminals mark the cone (manual policies added): two waves 459,172 distinct states (depth 11, 8 s); three waves 49,954,364 distinct states (depth 16, 17 min). | C-28, C-34, C-36, C-40, C-41, C-42, C-44 |
-| `kernel_lifetime.tla` (`kernel_lifetime.cfg`, `kernel_lifetime_4.cfg`) | R-lifetime, R-request-order: a state S and a chain S->P->A->M, with N over A that a rewire or replace moves to {P}, {A} or {P, A}; host sinks on M and N; each request (subscribe, unsubscribe, set, complete, rewire, replace, late output) is one step, a wave is one step in which each open node of the cone runs once, and the requests made while one runs wait in a queue; runs may register a cleanup, start late work that keeps its ctx, set private state or complete; one batch body, opened at a boundary or from a callback during a request, stages writes and topology requests, then returns or throws; opened during a request, its commit waits in the queue. Invariants: ActiveIffDemand, EdgesMatchDeps, OpenIffLive, InactiveHoldsNothing, StateKeeps, PrivOfCurrentLifetime, RetainedFromCurrentLifetime, CleanupOnce, ClosedLiveRan, OpenNotRun, DroppedNotRun, LiveIsLatestRun, RunOncePerRequest, KeptUpstreamStays, RewireKeeps, FIFO, AfterMaker, IdleDrained, BodyAfterCommit, ThrownDropped, BatchThrowNothing. TLC-green 2026-11-09: three requests 130,683 distinct states (depth 14, 3 s); four requests 5,005,076 distinct states (depth 17, 2 min). | C-29, C-31, C-33, C-35, C-37, C-41 |
-| `module_pause.tla` (`module_pause.cfg`, `module_pause_6.cfg`) | R-pause: the two-node pausable of `reference/modules/pause.mjs` (pauseLog over the input and a lock state, release over pauseLog and the lock state, manual terminals) run over the kernel's settle semantics beside a pausable written from R-pause's text; each wave is one host batch to the input (writes, INVALIDATE, a terminal) and/or a new lock set. Invariants: Refines (wave-by-wave output equal, a trailing terminal compared in an array of its own), HeldMatches, NoValueWhilePaused, EndsWithInput. TLC-green 2026-11-09: four waves 2,543 distinct states (depth 5); six waves 23,306 distinct states (depth 7, 10 s). | C-30 |
-| `module_demand.tla` (`module_demand.cfg`, `module_demand_7.cfg`) | R-demand: the pullable of `reference/modules/demand.mjs` (pullLog over the input and a demand state, manual COMPLETE and auto ERROR, and the quiet holder over it) run over the kernel's settle semantics beside a holder written from R-demand's text; a step is a host batch writing the input and making zero, one or two pulls, or the sink subscribing or unsubscribing; the service sends one DATA or stays silent. Invariants: Serves, OutputMatches, HeldMatches, ServeOnlyOnPull, InactiveHoldsNothing, EndsWithInput. TLC-green 2026-11-09: five steps 12,103 distinct states (depth 6); seven steps 90,769 distinct states (depth 8, 24 s). | C-32 |
-| `module_history.tla` (`module_history.cfg`) | R-history: the history node of `reference/modules/history.mjs` (auto policies, the onInvalidate hook emptying its list) over a computed source X kept active by its own sink, run over the kernel's settle semantics beside a history written from R-history's text; a step is a wave of X (one entry of a menu: several arrays, an array with two values, RESOLVED alone or before values, INVALIDATE and values, values with a terminal) or H's sink subscribing or unsubscribing; N = 2, and the list's entries are waves of arrays. Invariants: Refines, ListMatches, ValueIsList, InactiveEmpty. TLC-green 2026-11-09: eight steps 651 distinct states (depth 9, 1 s). | C-38 |
-| `module_checkpoint.tla` (`module_checkpoint.cfg`, `module_checkpoint_9.cfg`) | R-checkpoint, R-invocation: states A and B and a recipe node P over them, whose run keeps the last N input values in private state and, when Hook (chosen at Init), registers an onInvalidate that empties it; the original graph takes host steps live, then one capture and restore, a window in which host steps reach only the states, and the restored P's first subscription through the module's seed and wrapper (A2), after which both graphs take the same steps. The reference is the original P given the window's net change as one live wave. Invariants: StateMatches, HookMatches, OutMatches, NoNeedlessRun. TLC-green 2026-11-09: seven steps 88,981 distinct states (depth 8, 2 s); nine steps 304,480 distinct states (depth 10, 4 s). | C-38 |
-| `module_restart.tla` (`module_restart.cfg`, `module_restart_10.cfg`) | R-restart: the owner of `reference/modules/restart.mjs` (manual terminals, private round, failures, last request served and attempt count, the lifetime's signal, the onDeactivation renewal, replace at the end of the wave) over an inner on an upstream U, beside an owner written from R-restart's text that numbers attempts and lifetimes; a step is the sink subscribing or unsubscribing, the inner sending a value, COMPLETE, ERROR or a value with COMPLETE, U ending, a restart request, or a pending retry's timer; retries wait for a timer or not (chosen at Init). Invariants: Refines, CountsMatch, PendingMatches, TerminalOnlyWhenFinal. TLC-green 2026-11-09: two rounds and two attempts, seven steps 4,638 distinct states (depth 8); three attempts, ten steps 25,974 distinct states (depth 11, 1 s). | C-43 |
+| `kernel_wave.tla` (`kernel_wave.cfg`, `kernel_wave_3.cfg`) | R-wave, R-messages, R-invalidation, R-terminals, R-subscription, R-failure: a state S and a diamond S->B,C->D, B and C under the default auto policies and D under each combination of auto and manual COMPLETE, ERROR and INVALIDATE, chosen at Init; host inputs to S (set, a batch of two, invalidate, complete, error); computed nodes choose outputs from a menu that includes rejected arrays; nodes settle in every order the dependencies allow. Invariants: RunOnce, SettleOnce, FanInAfterSettle, NoWedge, PendingPrefix, InvalidateAlone, NoDataWithResolved, TerminalLastAndFinal, InvalidateEffective, RetainedMatchesSent, AutoErrorNoRun, AutoTerminals, ManualEndsByFunction, ManualSeesInput, ManualInvalidateKept, InvalidatedNotKept. TLC-green 2026-11-09 with the INVALIDATE policy and INVALIDATE marking the cone: two waves 990,778 distinct states (depth 11); three waves 114,655,914 distinct states (depth 16). | C-28, C-34, C-36, C-40, C-41, C-42, C-44 |
+| `kernel_lifetime.tla` (`kernel_lifetime.cfg`, `kernel_lifetime_4.cfg`) | R-lifetime, R-request-order: a state S and a chain S->P->A->M, with N over A that a rewire or replace moves to {P}, {A} or {P, A}; host sinks on M and N; each request (subscribe, unsubscribe, set, complete, rewire, replace, late output) is one step, a wave is one step in which each open node of the cone runs once, and the requests made while one runs wait in a queue; A and N may have a setup (chosen at Init) that registers the lifetime's one cleanup before the first run; runs may start late work that keeps its ctx, set private state or complete; one batch body, opened at a boundary or from a callback during a request, stages writes and topology requests, then returns or throws; opened during a request, its commit waits in the queue. Invariants: ActiveIffDemand, EdgesMatchDeps, OpenIffLive, InactiveHoldsNothing, StateKeeps, PrivOfCurrentLifetime, RetainedFromCurrentLifetime, CleanupOnce, ClosedRan, OpenNotRun, OneCleanupPerLifetime, RunOncePerRequest, KeptUpstreamStays, RewireKeeps, FIFO, AfterMaker, IdleDrained, BodyAfterCommit, ThrownDropped, BatchThrowNothing. TLC-green 2026-11-10 with the per-lifetime setup: three requests 95,140 distinct states (depth 11, 7 s); four requests 2,086,384 distinct states (depth 13, 28 s). | C-29, C-31, C-33, C-35, C-37, C-41 |
+| `module_pause.tla` (`module_pause.cfg`, `module_pause_6.cfg`) | R-pause: the one-node pausable of `reference/modules/pause.mjs` (pausableFn over the input and a lock state, manual COMPLETE, ERROR and INVALIDATE) run over the kernel's settle semantics beside a pausable written from R-pause's text; each wave is one host batch to the input (writes, INVALIDATE, a terminal) and/or a new lock set. Every array the input sends marks the pausable pending, an INVALIDATE included; an INVALIDATE the pausable sends while it has no value is dropped, and the wave settles with RESOLVED. The two-node version (pauseLog, then release) was retired on 2026-11-09, when INVALIDATE got a manual policy. Invariants: Refines (wave-by-wave output equal, a trailing terminal compared in an array of its own), HeldMatches, NoValueWhilePaused, EndsWithInput. TLC-green 2026-11-09: four waves 1,542 distinct states (depth 5); six waves 12,823 distinct states (depth 7, 4 s). | C-30 |
+| `module_demand.tla` (`module_demand.cfg`, `module_demand_7.cfg`) | R-demand: the one-node pullable of `reference/modules/demand.mjs` (the quiet holder over the input and a demand state, manual COMPLETE and INVALIDATE, auto ERROR) run over the kernel's settle semantics beside a holder written from R-demand's text; a step is a host batch writing the input and making zero, one or two pulls, or the sink subscribing or unsubscribing; the service sends one DATA or stays silent. Nothing goes out in the wave; the holder's INVALIDATE, service output and terminal go out as a later wave, the INVALIDATE dropped while the holder has no value. The two-node version (pullLog, then the holder) was retired on 2026-11-09, when INVALIDATE got a manual policy. Invariants: Serves, OutputMatches, HeldMatches, ServeOnlyOnPull, InactiveHoldsNothing, EndsWithInput. TLC-green 2026-11-09: five steps 15,678 distinct states (depth 6); seven steps 140,323 distinct states (depth 8, 1 min). | C-32 |
+| `module_history.tla` (`module_history.cfg`) | R-history: the history node of `reference/modules/history.mjs` (auto policies, manual INVALIDATE policy, its function emptying its list) over a computed source X kept active by its own sink, run over the kernel's settle semantics beside a history written from R-history's text; a step is a wave of X (one entry of a menu: several arrays, an array with two values, RESOLVED alone or before values, INVALIDATE and values, values with a terminal) or H's sink subscribing or unsubscribing; N = 2, and the list's entries are waves of arrays. Invariants: Refines, ListMatches, ValueIsList, InactiveEmpty. TLC-green 2026-11-09: eight steps 651 distinct states (depth 9, 1 s). | C-38 |
+| `module_checkpoint.tla` (`module_checkpoint.cfg`, `module_checkpoint_9.cfg`) | R-checkpoint, R-invocation: states A and B and a recipe node P over them, whose run keeps the last N input values in private state; at Init, whether P has a setup that opens an outside resource (the kernel runs it at every activation, a restored one's included) and whether P has the manual INVALIDATE policy, under which an INVALIDATE empties the private state; the original graph takes host steps live, then one capture and restore, a window in which host steps reach only the states, and the restored P's first subscription through the module's seed, the setup and the wrapper, after which both graphs take the same steps. The reference is the original P given the window's net change as one live wave. Invariants: StateMatches, ResourceMatches, OutMatches, NoNeedlessRun. TLC-green 2026-11-10 with the setup choice: seven steps 177,962 distinct states (depth 8); nine steps 608,960 distinct states (depth 10). | C-38 |
+| `module_restart.tla` (`module_restart.cfg`, `module_restart_10.cfg`) | R-restart: the owner of `reference/modules/restart.mjs` (manual terminals, private round, failures, last request served and attempt count, the lifetime's signal, the renewal in the cleanup its setup returns, replace at the end of the wave) over an inner on an upstream U, beside an owner written from R-restart's text that numbers attempts and lifetimes; a step is the sink subscribing or unsubscribing, the inner sending a value, COMPLETE, ERROR or a value with COMPLETE, U ending, a restart request, or a pending retry's timer; retries wait for a timer or not (chosen at Init). Invariants: Refines, CountsMatch, PendingMatches, TerminalOnlyWhenFinal. TLC-green 2026-11-09: two rounds and two attempts, seven steps 4,638 distinct states (depth 8); three attempts, ten steps 25,974 distinct states (depth 11, 1 s). | C-43 |
 
 Mutations checked on `kernel_wave.cfg`, each tripping an invariant: settling while a dependency is
 pending (FanInAfterSettle); no kernel RESOLVED (NoWedge); no PENDING prefix (PendingPrefix); no split
@@ -42,26 +42,37 @@ postlude of an auto COMPLETE, delivered apart from the run's output, marked the 
 in all, each tripping an invariant: the 13 above, plus the old rules (PENDING only on value arrays:
 PendingPrefix; terminals not marking: RunOnce), the old separate postlude (SettleOnce), manual ERROR
 or manual COMPLETE treated as auto (ManualEndsByFunction), and a manual terminal not running the
-function (ManualSeesTerminal). Run: `java -cp <tla2tools.jar> tlc2.TLC -deadlock -config kernel_wave.cfg kernel_wave`.
+function (ManualSeesTerminal, now ManualSeesInput).
+
+Revised again the same day when INVALIDATE got a manual policy and marks the cone: D's INVALIDATE
+policy joins the Init choices, with ManualInvalidateKept (the kernel never invalidates a manual D)
+and InvalidatedNotKept (an INVALIDATE under auto, or before an auto ERROR, leaves D without a value
+unless D sent DATA after it). Mutations checked, 23 in all, each tripping an invariant: the 19 above
+(ManualSeesTerminal read as ManualSeesInput), plus INVALIDATE not marking (InvalidateAlone), manual
+INVALIDATE treated as auto (ManualInvalidateKept), manual INVALIDATE not running the function
+(ManualSeesInput), and an auto ERROR dropping an INVALIDATE before it, the kernel's behavior until
+module_demand.tla found it (InvalidatedNotKept). Run: `java -cp <tla2tools.jar> tlc2.TLC -deadlock -config kernel_wave.cfg kernel_wave`.
 
 Mutations checked on `kernel_lifetime.cfg`, 28 in all, each tripping an invariant; every invariant
 was also checked alone against the mutation aimed at it. Deactivation keeping a computed node's
 values (InactiveHoldsNothing) or private state (InactiveHoldsNothing); the state node clearing its
-value (StateKeeps); a close that does not release (EdgesMatchDeps) or run cleanups (ClosedLiveRan);
+value (StateKeeps); a close that does not release (EdgesMatchDeps) or run cleanups (ClosedRan);
 an unsubscribe that does not deactivate (ActiveIffDemand); a terminal that does not close the lifetime
 (OpenIffLive); an ended node that opens a lifetime on activation (OpenIffLive) or accepts a rewire
-(EdgesMatchDeps); a run that keeps (LiveIsLatestRun) or fires (OpenNotRun) the previous run's
-registrations; a close that runs replaced registrations (DroppedNotRun) or runs one twice
-(CleanupOnce); late output without the lifetime check (RetainedFromCurrentLifetime); a registration
-after close that does not run at once (ClosedLiveRan); rewire releasing before it acquires
+(EdgesMatchDeps); no setup, a setup on every run, or a replace whose new instance skips it
+(OneCleanupPerLifetime); a cleanup run while its lifetime is open (OpenNotRun); a close that runs
+one twice (CleanupOnce); late output without the lifetime check (RetainedFromCurrentLifetime); rewire releasing before it acquires
 (KeptUpstreamStays: P closes and opens again), opening a new lifetime or dropping private state
 (RewireKeeps); replace keeping private state (PrivOfCurrentLifetime) or not running the old cleanups
-(ClosedLiveRan); a LIFO queue (FIFO); a request run at once while another runs (AfterMaker); a
+(ClosedRan); a LIFO queue (FIFO); a request run at once while another runs (AfterMaker); a
 boundary with requests still queued (IdleDrained); a thrown body that commits (BatchThrowNothing) or
 keeps its requests (ThrownDropped); a commit split into one wave per write (RunOncePerRequest); body
 requests run before the commit (BodyAfterCommit); the commit of a batch opened during a request run
 at once (AfterMaker). Late output and the LIFO queue need three requests,
-which is why the main configuration has three.
+which is why the main configuration has three. Revised 2026-11-10, when a per-lifetime setup
+replaced per-run registration: the late registration through an old ctx and the four mutations of
+replaced registrations went, four setup mutations came in, and each new or changed invariant was
+checked alone again.
 
 Writing this model found three things the reference kernel did that the D797 draft text did not
 say. The user settled all three on 2026-11-09 as the kernel does them, and R-lifetime, R-terminals,
@@ -75,29 +86,41 @@ values, terminal and subscribers (from R-terminal@2; C-34).
 Not modeled yet: manual policies, quiet nodes, async output inside a wave, nested batches and late
 output inside a batch body.
 
-Mutations checked on `module_pause.cfg`, 12 in all, each tripping an invariant, every invariant also
-alone: the log answering a terminal without the arrays beside it, and auto ERROR (Refines; both were
-the module's behavior before the 2026-11-09 fix); no invalidate hook (Refines, HeldMatches); the
-release sending only the latest array (Refines); held arrays sent with a terminal while paused
-(Refines); the log silent while paused, so it misses an INVALIDATE (Refines); the queue reversed
-(Refines, HeldMatches); release while paused (NoValueWhilePaused); a terminal not ending the release
-(EndsWithInput); the lock value from before the wave (HeldMatches); no kernel RESOLVED (Refines);
-INVALIDATE after the released arrays (Refines). The model also settles the pause recheck of
-R-undirty-settle-timing: a pending pausable that holds still settles with RESOLVED in its wave, so no
-balancing RESOLVED is ever held. A function sees a dependency's terminal apart from its DATA arrays
-(R-invocation), so no node can tell whether a terminal shared an array with the last DATA; outputs are
-compared up to that boundary. Not modeled: lifetimes, a source reading the lock state, several
-pausables on one lock state, placement before a node.
+Mutations checked on `module_pause.cfg` for the one-node module, 16 in all, each tripping an
+invariant, every invariant also alone: an INVALIDATE that keeps what was held, and the auto
+INVALIDATE policy (Refines, HeldMatches); the INVALIDATE not sent on, sent after the released arrays,
+or sent although the pausable has no value (Refines); the held arrays kept after the resume
+(HeldMatches, and Refines alone); a terminal while paused sending the held arrays with it, and
+release while paused (Refines, NoValueWhilePaused); a terminal dropped, paused or not (Refines,
+EndsWithInput); the held arrays reversed (Refines, HeldMatches); the release sending only the latest
+array (Refines); no kernel RESOLVED, and an INVALIDATE array not marking the pausable pending, so a
+dropped INVALIDATE leaves the wave unsettled (Refines); auto ERROR, dropping the DATA beside the
+terminal (Refines); the lock value from before the wave (Refines, HeldMatches, NoValueWhilePaused).
+No module bug was found. The model also settles the pause recheck of R-undirty-settle-timing: a
+pending pausable that holds still settles with RESOLVED in its wave, so no balancing RESOLVED is ever
+held. A function sees a dependency's terminal apart from its DATA arrays (R-invocation), so no node
+can tell whether a terminal shared an array with the last DATA; outputs are compared up to that
+boundary. Not modeled: lifetimes, a source reading the lock state, several pausables on one lock
+state, placement before a node. (The two-node version's 12 mutations, checked earlier the same day,
+went with it.)
 
-Mutations checked on `module_demand.cfg`, 12 in all, each tripping an invariant, every invariant also
-alone: no invalidate hook, the queue kept after a service, the log silent between pulls (so it misses
-an INVALIDATE), the queue reversed, no snapshot at activation (HeldMatches, and Serves alone); the
-pull already in the demand state served at activation, the first params of a batch served instead
-of the latest, a service before the input's COMPLETE in the same wave (Serves); a service without a
-pull (Serves, and ServeOnlyOnPull alone); the holder not quiet, sending its service output in the
-wave (OutputMatches); deactivation keeping the queue (InactiveHoldsNothing); COMPLETE not ending the
-log (EndsWithInput). No module bug was found. Not modeled: a pull during a wave (kernel_lifetime),
-a pausable before the holder, a later subscriber's START, activation after the input ended.
+Mutations checked on `module_demand.cfg` for the one-node module, 16 in all, each tripping an
+invariant, every invariant also alone: an INVALIDATE that keeps the queue, the queue kept after a
+service, the queue reversed, no snapshot at activation (HeldMatches, and Serves alone); the auto
+INVALIDATE policy (HeldMatches, and Serves and OutputMatches alone); the pull already in the demand
+state served at activation, and a request served again on every later run (Serves, and
+OutputMatches, HeldMatches and ServeOnlyOnPull alone); the first params of a batch served instead of
+the latest, and a service in the wave of the input's COMPLETE (Serves); the INVALIDATE not sent on,
+or sent although the holder has no value (OutputMatches); the holder not quiet, sending in the wave
+(OutputMatches); deactivation keeping the queue (InactiveHoldsNothing); COMPLETE not ending the holder
+(OutputMatches, and EndsWithInput alone); the input's ERROR given to the function, which ignores it
+(OutputMatches, and Serves, HeldMatches and EndsWithInput alone); an auto ERROR dropping the
+INVALIDATE before it (OutputMatches alone; the full set stops on an evaluation error). The model
+found that last one in the kernel: an INVALIDATE followed by an ERROR in one array was lost under
+auto ERROR, so an ended node kept a value its input had invalidated, for any auto-ERROR node. The
+kernel now applies such an INVALIDATE first (sent with the ERROR by a quiet node), and kernel_wave
+checks it (InvalidatedNotKept). Not modeled: a pull during a wave (kernel_lifetime), a pausable
+before the holder, a later subscriber's START, activation after the input ended.
 
 `module_history.tla`'s first version, with a flat list, found that R-history's draft text sent one
 list per source array while `history.mjs` sends one per wave (the two differ only when a computed
@@ -109,7 +132,8 @@ arrays merged into one, RESOLVED arrays recorded as `[]`, arrays as entries inst
 list per array, no bound, newest first, a wave without values sending, no snapshot at activation
 (Refines); no invalidate hook, the list kept when an INVALIDATE leaves
 nothing (ListMatches); the value not the list (ValueIsList); deactivation keeping the list
-(InactiveEmpty). Not modeled: checkpoint and restore of the list (C-38), several sources.
+(InactiveEmpty). Not modeled: checkpoint and restore of the list (C-38), several sources. Revised 2026-11-09: H has the manual INVALIDATE policy, so its function empties the list; the
+`nohook` mutation became the function not emptying it (ListMatches).
 
 Before `module_checkpoint.tla` was written, probing the module against the original graph found that
 a restored node that had not run had no cleanups (a cleanup is a closure registered by a run, and no
@@ -122,10 +146,19 @@ see before its first subscription. Mutations checked on `module_checkpoint.cfg`,
 tripping an invariant, every invariant also alone: A2 off, the cleanup record not saved
 (HookMatches, StateMatches, OutMatches); every restored node always run (NoNeedlessRun); an end
 alone bringing its values again, unchanged inputs brought as new, the seed without private state
-(StateMatches). Equivalent in this model and pinned by the module tests instead: an end alone not
+(StateMatches). Since INVALIDATE got a manual policy (2026-11-09), clearing on INVALIDATE no longer
+depends on the A2 rerun, so A2 off is caught by HookMatches alone and no longer by OutMatches;
+OutMatches still kills the re-appended end and the unchanged inputs brought as new alone.
+Equivalent in this model and pinned by the module tests instead: an end alone not
 counted as a change (no recipe here sees an end under the auto policy), and the seed's terminal
 ignored (an ended P implies ended states). Not modeled: a manual terminal policy, chains of
-restored nodes, recapture before activation, local-only nodes and refusals.
+restored nodes, recapture before activation, local-only nodes and refusals. Revised 2026-11-10,
+when the node's setup replaced A2: Hook became Setup and HookMatches became ResourceMatches (the
+restored P holds an open resource exactly when the reference does). Mutations now, 7 in all, each
+tripping an invariant, the new ones also alone: no setup at the restored activation, a setup only
+when the function runs (A2's shape), a resource kept open by a P that ends at activation
+(ResourceMatches); every restored node always run (NoNeedlessRun); and the three StateMatches
+mutations above.
 
 Before `module_restart.tla` was written, probing the module against R-restart's text found three
 gaps: an old restart request restarted the fresh inner at the owner's next activation; a pending

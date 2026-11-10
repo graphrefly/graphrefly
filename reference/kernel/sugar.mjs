@@ -43,19 +43,21 @@ export const reduce = (f, seed) => (ctx) => {
 // latestAsync: starts f(value, signal) for the latest input occurrence; its result goes
 // out through ctx.down after the function returned, which makes it a new wave (P9).
 // Only the newest request may publish: the previous one is aborted when a newer input
-// arrives or when the node's lifetime closes. The kernel pairs nothing.
+// arrives, and every one when the node's lifetime closes, through the lifetime's signal (it
+// registered a cleanup per request before 2026-11-10, and a run without a new value dropped
+// the abort). The kernel pairs nothing.
 export const latestAsync = (f) => (ctx) => {
   const values = occurrences(ctx.deps[0]);
   if (!values.length) return;
   ctx.state.get()?.abort(); // a newer input makes the older request obsolete
   const ctrl = new AbortController();
   ctx.state.set(ctrl);
-  ctx.onDeactivation(() => ctrl.abort());
+  const signal = AbortSignal.any([ctx.signal, ctrl.signal]);
   Promise.resolve()
-    .then(() => f(values[values.length - 1], ctrl.signal))
+    .then(() => f(values[values.length - 1], signal))
     .then(
-      (v) => { if (!ctrl.signal.aborted) ctx.down([["DATA", v]]); },
-      (e) => { if (!ctrl.signal.aborted) ctx.down([["ERROR", e instanceof Error ? e.message : e]]); },
+      (v) => { if (!signal.aborted) ctx.down([["DATA", v]]); },
+      (e) => { if (!signal.aborted) ctx.down([["ERROR", e instanceof Error ? e.message : e]]); },
     );
 };
 

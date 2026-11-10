@@ -57,7 +57,7 @@ test("H5: what a node did not commit is not observed; what the kernel adds is", 
   r.clear();
   g.invalidate("a");
   g.invalidate("a");
-  assert.deepEqual(r.shown(), ["a: INVALIDATE", "odd: INVALIDATE"], "the repeat removed nothing and is not observed");
+  assert.deepEqual(r.shown(), ["a: DIRTY, INVALIDATE", "odd: DIRTY, INVALIDATE"], "the repeat removed nothing and is not observed");
 });
 
 test("H5: the observed order is enough to keep R-node-revision evidence", () => {

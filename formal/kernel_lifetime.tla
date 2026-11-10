@@ -23,11 +23,12 @@ queue and run after it, in the order they were made. A write to S from a node
 function is one of them, also when S is that node's own upstream: it reaches
 the node in a later wave and never reenters it (R-invocation, decided by the
 user 2026-11-09; RunOncePerRequest, FIFO, AfterMaker). A node's function, each
-time it runs, sends DATA and chooses one more effect: none, register one
-onDeactivation cleanup, start late work that keeps its ctx, set private
-state, or send COMPLETE. P and M choose none; A chooses none or a cleanup; N
-may choose any of them. Late work later either calls the old ctx.down, which
-is a request, or registers a cleanup through the old ctx.
+time it runs, sends DATA and chooses one more effect: none, start late work
+that keeps its ctx, set private state, or send COMPLETE. P and M choose none;
+N may choose any of them. Late work later calls the old ctx.down, which is a
+request. Whether A and N have a setup is chosen at Init (decided by the user
+2026-11-10): it runs once per lifetime, before the first run, and registers
+the lifetime's one cleanup; it stays with N across replace.
 A batch body, opened at a wave boundary or from a callback while a request
 runs, stages writes to S and topology requests; it returns or throws. Opened
 at a boundary, its commit runs when it returns; opened while a request runs,
@@ -38,8 +39,9 @@ dependencies in order, activating them, then runs the function once; the last
 release deactivates a node, which closes its lifetime (releases its
 dependencies, then runs its cleanups) and drops its private state and, for a
 computed node that has not ended, its values; an ended node closes its
-lifetime but keeps its subscribers; each run replaces the previous run's cleanup
-registrations without running them; late output is dropped unless its
+lifetime but keeps its subscribers; a later run registers nothing, so no
+cleanup is replaced or dropped (until 2026-11-10 each run replaced the
+previous run's registrations); late output is dropped unless its
 lifetime is still the node's open one; rewire acquires added dependencies
 before it releases removed ones; replace closes the instance and starts a new
 one under the same subscribers.
@@ -60,12 +62,10 @@ Invariants, each mutation-checked (see formal/README.md):
                          a computed node's values were sent through a ctx of
                          its current lifetime: old ctx output is dropped
   CleanupOnce            a cleanup runs at most once
-  ClosedLiveRan          every live cleanup of a closed lifetime has run, one
-                         registered after close included (it runs at once)
+  ClosedRan              every cleanup of a closed lifetime has run
   OpenNotRun             no cleanup of an open lifetime has run
-  DroppedNotRun          a registration replaced by a later run never runs
-  LiveIsLatestRun        the live registrations of an open lifetime are its
-                         latest run's
+  OneCleanupPerLifetime  an open lifetime has exactly one cleanup if its node
+                         has a setup, and none otherwise
   RunOncePerRequest      within one request a function runs at most once, so a
                          batch's writes commit as one wave (R-request-order)
   KeptUpstreamStays      no node's lifetime closes and opens again within one
@@ -99,10 +99,9 @@ InitDeps == [n \in Nodes |-> CASE n = "S" -> {} [] n = "P" -> {"S"} [] n = "A" -
 DepChoices == {{"P"}, {"A"}, {"P", "A"}}
 
 \* One choice per computed node for the runs of one request.
-\* P and M only send DATA; A may register a cleanup; N has every effect.
-ChoiceFns == {[P |-> "plain", A |-> a, M |-> "plain", N |-> x] :
-                a \in {"plain", "cleanup"},
-                x \in {"plain", "cleanup", "late", "priv", "end"}}
+\* P, A and M only send DATA; N has every effect.
+ChoiceFns == {[P |-> "plain", A |-> "plain", M |-> "plain", N |-> x] :
+                x \in {"plain", "late", "priv", "end"}}
 
 Rq(t, n, d) == [t |-> t, n |-> n, d |-> d, w |-> <<"", 0>>, s |-> 0, c |-> FALSE]
 TopoReq == {Rq("sub", x, {}) : x \in Sinks} \cup {Rq("unsub", x, {}) : x \in Sinks}
@@ -118,11 +117,11 @@ vars == <<k>>
 Min(S) == CHOOSE x \in S : \A y \in S : Rank[x] <= Rank[y]
 Demand(s, d) == (d \in Sinks /\ s.sink[d]) \/ (\E m \in Nodes : <<d, m>> \in s.edge)
 
-\* The live registrations of lifetime lid of n run once each, in registration order.
+\* The cleanup of lifetime lid of n runs once.
 RunCleanups(s, n, lid) ==
   LET cl == s.cl
   IN [s EXCEPT !.cl = [i \in DOMAIN cl |->
-        IF cl[i].n = n /\ cl[i].lid = lid /\ cl[i].st = "live" /\ cl[i].runs = 0
+        IF cl[i].n = n /\ cl[i].lid = lid /\ cl[i].runs = 0
         THEN [cl[i] EXCEPT !.runs = @ + 1] ELSE cl[i]]]
 
 OpenLife(s, n) ==
@@ -133,21 +132,14 @@ RECURSIVE Activate(_, _, _), AcquireAll(_, _, _, _), Acquire(_, _, _, _),
           FirstRun(_, _, _), Run(_, _, _), End(_, _), AutoComplete(_, _),
           CloseLife(_, _), ReleaseAll(_, _, _), Release(_, _, _), Deactivate(_, _)
 
-\* The function of n runs once in its open lifetime. This run's registrations
-\* replace the previous run's, which are dropped without running.
+\* A node's setup registers the lifetime's cleanup, before the first run.
+Setup(s, n) == IF s.setup[n] THEN [s EXCEPT !.cl = Append(@, [n |-> n, lid |-> s.life[n], runs |-> 0])] ELSE s
+
+\* The function of n runs once in its open lifetime; it registers no cleanup.
 Run(s, n, c) ==
   LET lid == s.life[n]
-      r   == s.runNo[n] + 1
       ch  == c[n]
-      cl  == s.cl
-      cl1 == [i \in DOMAIN cl |->
-                IF cl[i].n = n /\ cl[i].lid = lid /\ cl[i].st = "live" /\ cl[i].runs = 0
-                THEN [cl[i] EXCEPT !.st = "dropped"] ELSE cl[i]]
-      cl2 == IF ch = "cleanup"
-             THEN Append(cl1, [n |-> n, lid |-> lid, run |-> r, st |-> "live", runs |-> 0])
-             ELSE cl1
-      s1  == [s EXCEPT !.runNo[n] = r, !.runs[n] = @ + 1, !.has[n] = TRUE,
-                       !.valLife[n] = lid, !.cl = cl2,
+      s1  == [s EXCEPT !.runs[n] = @ + 1, !.has[n] = TRUE, !.valLife[n] = lid,
                        !.late = IF ch = "late" THEN @ \cup {<<n, lid>>} ELSE @,
                        !.priv[n] = IF ch = "priv" THEN lid ELSE @]
   IN IF ch = "end" THEN End(s1, n) ELSE s1
@@ -193,7 +185,7 @@ AcquireAll(s, m, D, c) ==
 Acquire(s, d, m, c) == LET s1 == Activate(s, d, c) IN [s1 EXCEPT !.edge = @ \cup {<<d, m>>}]
 
 \* The first run sees the snapshots; auto COMPLETE follows if every dependency has ended.
-FirstRun(s, n, c) == AutoComplete(Run(s, n, c), n)
+FirstRun(s, n, c) == AutoComplete(Run(Setup(s, n), n, c), n)
 
 \* ---- waves (one step each) ----
 RECURSIVE ReachFrom(_, _)
@@ -326,17 +318,6 @@ LateFire ==
           THEN \E c \in ChoiceFns : k' = Start(s1, e, c)
           ELSE k' = [s1 EXCEPT !.queue = Append(@, e)]
 
-\* Late work registers a cleanup through its old ctx: after close it runs once at once,
-\* otherwise it joins the current run's registrations.
-LateCleanup ==
-  /\ k.phase \in {"idle", "busy"}
-  /\ \E w \in k.late :
-       LET n == w[1]
-           current == k.open[n] /\ k.life[n] = w[2]
-           reg == [n |-> n, lid |-> w[2], run |-> IF current THEN k.runNo[n] ELSE 0,
-                 st |-> "live", runs |-> IF current THEN 0 ELSE 1]
-       IN k' = [k EXCEPT !.late = @ \ {w}, !.cl = Append(@, reg)]
-
 \* The running request ends; the queue drains in order before the boundary.
 EndRequest ==
   /\ k.phase = "busy"
@@ -390,10 +371,11 @@ BodyReturn ==
         ELSE k' = [s1 EXCEPT !.phase = "busy", !.queue = @ \o <<ce>> \o es]
 
 Init ==
-  k = [active |-> [n \in Nodes |-> FALSE], sink |-> [x \in Sinks |-> FALSE],
+  \E sa, sn \in BOOLEAN :
+  k = [setup |-> [n \in Nodes |-> (n = "A" /\ sa) \/ (n = "N" /\ sn)], active |-> [n \in Nodes |-> FALSE], sink |-> [x \in Sinks |-> FALSE],
        deps |-> InitDeps, edge |-> {},
        has |-> [n \in Nodes |-> n = "S"], valLife |-> Zero, ended |-> [n \in Nodes |-> FALSE],
-       life |-> Zero, open |-> [n \in Nodes |-> FALSE], priv |-> Zero, runNo |-> Zero,
+       life |-> Zero, open |-> [n \in Nodes |-> FALSE], priv |-> Zero,
        cl |-> <<>>, late |-> {}, sGen |-> 0,
        phase |-> "idle", queue |-> <<>>, nid |-> 0, cur |-> 0, lastDone |-> 0, finished |-> {},
        runs |-> Zero, closedNow |-> {}, reopened |-> {}, replTarget |-> "",
@@ -403,7 +385,7 @@ Init ==
        nbatch |-> 0, thrown |-> {}, committed |-> {}]
 
 Next ==
-  \/ HostRequest \/ CallbackRequest \/ LateFire \/ LateCleanup \/ EndRequest
+  \/ HostRequest \/ CallbackRequest \/ LateFire \/ EndRequest
   \/ BatchBegin \/ BodySet \/ BodyComplete \/ BodyRequest \/ BodyThrow \/ BodyReturn
 
 Spec == Init /\ [][Next]_vars
@@ -423,11 +405,11 @@ StateKeeps == k.has["S"]
 PrivOfCurrentLifetime == \A m \in Computed : k.priv[m] # 0 => k.priv[m] = k.life[m]
 RetainedFromCurrentLifetime == \A m \in Computed : k.has[m] => k.valLife[m] = k.life[m]
 CleanupOnce   == \A i \in DOMAIN k.cl : Cl(i).runs <= 1
-ClosedLiveRan == \A i \in DOMAIN k.cl : (Cl(i).st = "live" /\ ~CurrentOpen(Cl(i))) => Cl(i).runs = 1
+ClosedRan     == \A i \in DOMAIN k.cl : ~CurrentOpen(Cl(i)) => Cl(i).runs = 1
 OpenNotRun    == \A i \in DOMAIN k.cl : CurrentOpen(Cl(i)) => Cl(i).runs = 0
-DroppedNotRun == \A i \in DOMAIN k.cl : Cl(i).st = "dropped" => Cl(i).runs = 0
-LiveIsLatestRun ==
-  \A i \in DOMAIN k.cl : (Cl(i).st = "live" /\ CurrentOpen(Cl(i))) => Cl(i).run = k.runNo[Cl(i).n]
+OneCleanupPerLifetime ==
+  \A m \in Computed : k.open[m] =>
+    Cardinality({i \in DOMAIN k.cl : Cl(i).n = m /\ Cl(i).lid = k.life[m]}) = IF k.setup[m] THEN 1 ELSE 0
 RunOncePerRequest == k.runOK
 KeptUpstreamStays == k.reopenOK
 RewireKeeps == k.rwOK

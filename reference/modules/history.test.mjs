@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createGraph, format } from "../kernel/kernel.mjs";
-import { history, historyRecipe } from "./history.mjs";
+import { history, historyOpts, historyRecipe } from "./history.mjs";
 import { recipes, restore } from "./checkpoint.mjs";
 
 function during(g, body) {
@@ -109,7 +109,7 @@ test("history: built from its recipe, checkpoint saves the list and restore brin
   const reg = { history: historyRecipe };
   const b = recipes(createGraph(), reg);
   b.state("s");
-  b.node("h", ["s"], "history", { n: 3 });
+  b.node("h", ["s"], "history", { n: 3 }, historyOpts);
   b.g.subscribe("k", "h");
   for (const v of [1, 2, 3, 4]) b.g.set("s", v);
   const r = restore(JSON.parse(JSON.stringify(b.capture())), reg);

@@ -21,9 +21,13 @@ must stop working itself.
 Topology:
 
 ```text
-inputId ──► id.pauseLog ──► id
-id.pauseLocks ──┴──────────────┘
+inputId ──► id
+id.pauseLocks ──┘
 ```
+
+One node since 2026-11-09, when INVALIDATE got a manual policy (K6): the input's INVALIDATE is the
+pausable's input, so it drops what it held and sends INVALIDATE itself. Before, it took two nodes;
+see "Why two nodes" below, kept as the record of what the policy replaced.
 
 **The declared control pair is an ordinary dependency.** The pausable depends on a plain state node
 `${id}.pauseLocks` whose value is the list of held locks. That gives every O8 condition without kernel
@@ -91,9 +95,11 @@ The pause clauses of C-30, C-31 and C-36 are replayed in
    Decided by the user on 2026-11-06: the INVALIDATE goes out at once and the values held before it
    are discarded, so downstream never receives a value older than an INVALIDATE it already has.
    `[1]`, `[INV]`, `[2]`, `[INV]`, `[3]` while paused comes out as `[INVALIDATE]` at once and `[3]` on
-   resume. Rejected: giving INVALIDATE an auto/manual policy like terminals (O6), a
-   new kernel option.
-   **Why two nodes.** A node learns of an INVALIDATE only through its own `onInvalidate`, which runs
+   resume. Rejected then: giving INVALIDATE an auto/manual policy like terminals (O6), a
+   new kernel option. **Reversed on 2026-11-09** after two independent reviews (a Fable session and
+   Codex) showed that demand had copied the two nodes below, history needed the hook, and A2 had
+   grown from it: the policy replaces the `onInvalidate` hook, so the kernel loses a concept.
+   **Why two nodes (until 2026-11-09).** A node learns of an INVALIDATE only through its own `onInvalidate`, which runs
    only when its own value is invalidated. A single node that holds arrays while paused has no value
    after the first INVALIDATE and cannot get one without showing it downstream, so it misses the next
    INVALIDATE. A first version did exactly that and sent `[2]`, `[3]` above. So
@@ -142,7 +148,7 @@ Not discussed before, kept, with the reason:
 | The pausable nodes use manual complete | The lock state never completes, so auto complete would never end them |
 | While open, the pausable forwards every occurrence | P2: pause must not merge DATA when it is not paused |
 | The `control` option of `pausable` | Lets several pausables share one lock state, so one resume releases them in one wave (finding 8, C-36). Without it there is no way to pause a node at several inputs and get one invocation |
-| `${id}.pauseLog` and its value, the queue of arrays held since the last INVALIDATE | The only way to see every INVALIDATE without a kernel change (finding 3). Only `id` reads the queue; downstream never sees that shape |
+| The pausable's private state, the arrays held since the last INVALIDATE | With the manual INVALIDATE policy the node sees every INVALIDATE as input (K6, 2026-11-09). Until then a second node, `${id}.pauseLog`, published the queue as its value so that its `onInvalidate` hook would see every INVALIDATE |
 
 ## Demand ([demand.mjs](demand.mjs), [demand.test.mjs](demand.test.mjs))
 
@@ -156,30 +162,34 @@ INVALIDATE and `ctx.pull.params` the params, even when nothing changed; what it 
 later wave. `pull` only writes the bundle's state node; it creates nothing.
 
 ```text
-inputId ──► id.pullLog ──► id
+inputId ──► id
 id.pullDemand ──┘
 ```
+
+One quiet node since 2026-11-09 (manual INVALIDATE policy, K6); until then a log node sat before the
+holder, as in pause.
 
 | R-pull@2 / C-32 | Here |
 |---|---|
 | Quiet outside service | The holder is a quiet node (H6); between pulls its subscribers receive nothing |
-| A matching PULL at an inactive holder drops without activation or banking | `pull` writes the demand state, which keeps its value; on activation the log records that request as seen and serves only later ones |
-| Only the latest unserved params are kept | A batch of pulls is one wave; the log serves the newest request in it |
-| Invoke once even without changed dependencies | The demand state's DATA is input to the log |
+| A matching PULL at an inactive holder drops without activation or banking | `pull` writes the demand state, which keeps its value; on activation the holder records that request as seen and serves only later ones |
+| Only the latest unserved params are kept | A batch of pulls is one wave; the holder serves the newest request in it |
+| Invoke once even without changed dependencies | The demand state's DATA is input to the holder |
 | Backlog waits for the outer batch and publishes outside its fate | A pull in a batch is staged; the service is a later wave after commit; a throwing batch serves nothing |
-| RESUME alone creates no demand and flushes no backlog | A pausable in front of the holder releases into the log, which holds |
+| RESUME alone creates no demand and flushes no backlog | A pausable in front of the holder releases into the holder, which holds |
 | Routed diamond serves once per routed request | Decided away: no routing; one `pull` is one write and one service |
 | Subscription is START-only | **Not here.** A later subscriber gets the last served value in its START, because the kernel puts the retained value in every START. Making a node START-only is DS-17 H2, a kernel option; left out until a real case needs it |
 | Output carries no ACK or guaranteed DATA | Same: `serve` may stay silent, and then nothing goes out |
 
-An INVALIDATE discards what was held before it and reaches subscribers at once, as in TS: a quiet
-node passes an INVALIDATE on in the current wave, since it carries no DIRTY.
+An INVALIDATE discards what was held before it and reaches subscribers as the holder's own output.
+The holder has the manual INVALIDATE policy, so the INVALIDATE is its function's input and the
+function sends INVALIDATE itself; like all of a quiet node's output it goes out as a later wave.
+**Difference from before 2026-11-09 and from TS:** the INVALIDATE reached subscribers in the current
+wave, because the quiet holder passed an auto INVALIDATE on at once. Keeping that would need an
+exception in the kernel's quiet handling for a manual node's own INVALIDATE.
 
-The log works like `${id}.pauseLog`: it republishes its queue on every arrival so that it always has
-a value while holding anything, which is how its own `onInvalidate` sees every INVALIDATE.
-
-Mutations checked, each failing at least one of the 14 tests: an old request served on activation;
-the log without its invalidate hook; the holder not quiet; the log silent while holding; the oldest
+Mutations checked (two-node version, before 2026-11-09), each failing at least one of the 14 tests:
+an old request served on activation; the log without its invalidate hook; the holder not quiet; the log silent while holding; the oldest
 request served instead of the latest; the log keeping its queue after a service; the holder serving
 on a record that is not a service; the log swallowing COMPLETE.
 
@@ -192,8 +202,8 @@ node's arrays...").
 | Kept | Why |
 |---|---|
 | `pullable(g, id, inputId, serve)` returning `{ pull }` | The bundle holds the author's function, as a TS pull node holds its fn; `pull` is the controller side of the pair |
-| `${id}.pullDemand` and `${id}.pullLog` | The declared control edge, and the holder of what arrived, as in pause |
-| The demand record `{ seq, params }` | A fresh value per pull, so every pull is DATA, and a sequence so the log can tell an old request (there before activation) from a new one |
+| `${id}.pullDemand` | The declared control edge, as in pause; what arrived is the holder's private state |
+| The demand record `{ seq, params }` | A fresh value per pull, so every pull is DATA, and a sequence so the holder can tell an old request (there before activation) from a new one |
 | `serve` gets a view of ctx: the holder's own ctx with `deps` replaced by the held input and `pull` added | Keeps the TS shape (`ctx.deps` input, `ctx.pull.params`); `down`, `state` and the hooks are the holder's own |
 
 ## Observation, H5 ([observe.mjs](observe.mjs), [observe.test.mjs](observe.test.mjs))
@@ -337,7 +347,7 @@ served; the check on the retry's firing dropped, or the owner then not ended.
 | `${id}.restart` and `restart()` | O7: a restart request reaches the owner on a declared edge (P11) |
 | `rounds` and `retry` | O7's attempts and backoff; `rounds` is TS `repeat`'s count, `retry` the shared policy |
 | Renewing an ended inner when the owner deactivates | Without it the owner's next activation would start on the ended inner's snapshot |
-| No restart once an upstream of the inner has ended | Without it each round would end at once and resend the upstream's last value; with unlimited rounds, for good |
+| No restart when a fresh inner would end at once (every dependency ended, or one ended with ERROR) | Without it each round would end at once and resend the upstream's last value; with unlimited rounds, for good. Until a 2026-11-09 review it was "any dependency ended", which let a completed configuration block every retry |
 | `seen` and `attempt` in the owner's private state | A request is served once, and a delayed retry only replaces the attempt that failed; both are per lifetime, like the rest of the owner's state |
 
 ## Retry policy ([resilience.mjs](resilience.mjs), [resilience.test.mjs](resilience.test.mjs))
@@ -492,7 +502,10 @@ pending-FIFO or receipt capture in the kernel. The user's choices, in order:
    releases them (fixes the INVALIDATE before the first subscription, but adds a new concept and
    differs from TS). The user chose A2, with two more points: an end alone brings no repeated
    values, and an INVALIDATE before the first subscription is not seen, so a host subscribes before
-   writing upstream.
+   writing upstream. **Replaced on 2026-11-10** by the node's setup (K7), after the reviews traced
+   A2 to per-run cleanup registration: the setup runs at every activation, a restored one's
+   included, so what it opened outside the graph is opened again and the function does not run for
+   it. The checkpoint no longer saves a cleanup flag or wraps `ctx`.
 
 ```js
 const b = recipes(createGraph(), { sum: () => sumFn, plus: ({ k }) => plusFn(k) });
@@ -504,7 +517,8 @@ const r = restore(cp, registry);                            // a new graph, noth
 **Semantics**
 
 - A node is restorable when built through `recipes`: a state, or a computed node whose fn is
-  `registry[ref](config)`. Function bodies are never saved. A node built another way, or a recipe
+  `registry[ref](config)`, which returns the function or `{ fn, setup }`. Function bodies are never
+  saved. A node built another way, or a recipe
   node whose dependencies have changed since (by `rewire` or `replace`, as `mapOperator` does), is
   saved as local-only, and restoring it fails, as R-snapshot has it.
 - `capture()` saves what the kernel holds per node:
@@ -521,18 +535,17 @@ const r = restore(cp, registry);                            // a new graph, noth
   - Saved computed node: gets its values, terminal and private state as a kernel seed. An ended one
     stays ended, with its dependencies.
   - First activation of a seeded node: a wrapper around its fn compares each dependency with what
-    the node had received. The real fn runs once if any differs, or if the node's last run before
-    capture had registered a cleanup (`cleanups: true` in the checkpoint; the wrapper records it on
-    every run, each run's record replacing the last). Otherwise it does not run. The run gets only
+    the node had received. The real fn runs once if any differs; otherwise it does not run. The
+    node's setup runs either way, since the kernel runs it at every activation. The run gets only
     the changed dependencies as input:
     - a changed value comes with its snapshot arrays;
     - an end alone comes without them, since those values were already received;
-    - an unchanged dependency has no wave and no terminal, so with nothing changed the run brings
-      no new array, as an activation over unchanged inputs or a RESOLVED wave does live.
+    - an unchanged dependency has no wave and no terminal.
 
     That is what a live wave would have given it, so a running total adds only the change, a run
-    that sends nothing keeps the seeded value, history registers its INVALIDATE hook without
-    appending, and a timer source starts a new timer and counts on from its saved state.
+    that sends nothing keeps the seeded value, and a timer source, whose setup starts a new timer,
+    counts on from its saved state. History needs no run since 2026-11-09: with the manual
+    INVALIDATE policy an INVALIDATE is its function's input.
   - Until its first activation a restored node receives no waves, so only the values and ends then
     are compared: an INVALIDATE followed by a write is seen as the write. A host that must not lose
     it subscribes before writing upstream.
@@ -562,9 +575,9 @@ to be re-issued or recorded as unknown.
   - an input that ended after restore reaches the fn, while one that had ended before capture does
     not reach it again;
   - an input that only ended brings its end without its values again.
-- A2: a node whose last run registered a cleanup runs once with no new input, so a restored history
-  is cleared by a later INVALIDATE as the original is, and a restored timer source starts one timer
-  and counts on; only the last run's registrations count.
+- A restored timer source's setup starts one timer and its function does not run; it counts on from
+  its saved count. A restored history is not rerun, and a later INVALIDATE still clears it as in the
+  original (manual INVALIDATE policy).
 - Before the first subscription an INVALIDATE is not seen; subscribed first, the restore behaves as
   the original.
 - A chain of restored nodes runs no fn; an inactive node starts fresh.
@@ -579,7 +592,14 @@ to be re-issued or recorded as unknown.
   - values that are not JSON.
 - Recapture before activation.
 
-**Mutations checked on 2026-11-09** for A2 and the end-alone fix, with the history and revision
+**Mutations checked on 2026-11-10** for the setup that replaced A2, with the kernel, sugar, restart,
+higher-order and checkpoint tests, 8 in all, each failing at least one test: setup run on every run;
+no setup; no cleanup at close; cleanup before dependency release; replace not running the old
+cleanup; replace dropping the setup; setup after the first run; a throwing setup not ending the
+node. Plus `latestAsync` not following the lifetime's signal, caught by the test of a run without a
+new value.
+
+**Mutations checked on 2026-11-09** for A2 (since replaced) and the end-alone fix, with the history and revision
 tests, 8 in all, each failing at least one test: A2 off; every node always run; the record not
 reset per run; the record not saved; the first, unrestored run not observed; an end alone bringing
 its values again; an end alone dropped; an end alone not counted as a change.
@@ -619,7 +639,6 @@ Removed because they could not change anything:
 |---|---|
 | `recipes(g, registry)` with `node(id, deps, ref, config, opts)`, and `restore(checkpoint, registry)` | R-snapshot's factory reference; TS's `restoreGraph(checkpoint, { registry })` |
 | Per computed node, the inputs it received | Needed for the change check, and for capturing a restored graph again before activation, when a dependency may have changed after restore. Equal to the dependencies' values at a wave boundary, so the kernel need not expose its input records |
-| Per computed node, whether its last run registered a cleanup (`cleanups`) | A2: a cleanup cannot be saved, so the checkpoint saves that there was one and the node runs once to register it again. Observed by the wrapper, so the kernel need not expose its registrations; TS has no such field and does not run |
 | The first-activation wrapper, which only compares inputs | The refresh on a pre-attachment change is the user's choice (point 3 above), a policy rather than kernel behavior; without it the seed alone gives TS's behavior |
 
 The kernel side, `idle()`, `privateState(id)`, the optional seed and the P5 relaxation, is listed in the
@@ -647,7 +666,9 @@ source published DATA since the history node was activated, oldest first.
 - A new subscriber gets the list in its START snapshot, like any value. This holds for sinks and
   dependents alike.
 - The list lives in private state:
-  - an INVALIDATE from the source clears the value (K6) and the list (an `onInvalidate` hook), as
+  - the node has the manual INVALIDATE policy (`historyOpts`), so an INVALIDATE from the source is
+    its function's input: it clears the list and sends INVALIDATE itself (until 2026-11-09 an
+    `onInvalidate` hook cleared the list), as
     TS's BH6 does;
   - deactivation drops the list (K7), as TS drops its ring;
   - built from `historyRecipe` through the checkpoint module's `recipes`, the list is saved and

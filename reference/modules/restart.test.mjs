@@ -112,10 +112,7 @@ test("restart(): an outside request restarts a live inner; a shared upstream sta
   const g = createGraph();
   g.state("a", 1);
   const log = [];
-  g.node("up", ["a"], (ctx) => {
-    ctx.onDeactivation(() => log.push("up closed"));
-    ctx.down([["DATA", ctx.deps[0].value]]);
-  });
+  g.node("up", ["a"], (ctx) => ctx.down([["DATA", ctx.deps[0].value]]), { setup: () => () => log.push("up closed") });
   const lates = [];
   const r = restartable(g, "r", {
     deps: ["up"],
@@ -219,4 +216,29 @@ test("no restart once an upstream has ended, also when it ends while a retry wai
   assert.equal(attempts, 1, "no fresh inner over the ended upstream");
   assert.deepEqual(g.get("r").ended, ["ERROR", "boom"]);
   assert.deepEqual(values(g, "s"), []);
+});
+
+test("one ended dependency among open ones does not stop a retry; every one ended, or an ERROR, does", () => {
+  const g = createGraph();
+  g.state("cfg", 1); g.state("clock", 0);
+  g.complete("cfg"); // a fixed configuration that has completed
+  let attempts = 0;
+  restartable(g, "r", {
+    deps: ["cfg", "clock"],
+    fn: (ctx) => { attempts += 1; if (attempts === 1) throw new Error("boom"); ctx.down([["DATA", attempts]]); },
+    retry: retryPolicy({ maxAttempts: 3 }),
+  });
+  g.subscribe("s", "r");
+  assert.equal(attempts, 2, "the retry ran over the completed cfg and the open clock");
+  assert.deepEqual([g.get("r").ended, values(g, "s")], [null, [2]]);
+  const h = createGraph();
+  h.state("a", 1); h.state("b", 2);
+  h.error("b", "down");
+  let n = 0;
+  restartable(h, "r", { deps: ["a", "b"], fn: () => { n += 1; throw new Error("boom"); }, retry: retryPolicy({ maxAttempts: 3 }) });
+  h.subscribe("o", "r/inner");
+  h.subscribe("s", "r");
+  assert.equal(n, 0, "a fresh inner over an errored dependency would end at once: no attempt runs its function");
+  assert.equal(msgsOf(h, "o").filter((m) => m.includes("START")).length, 1, "and none is made: the inner is never replaced");
+  assert.deepEqual(h.get("r").ended, ["ERROR", "down"]);
 });

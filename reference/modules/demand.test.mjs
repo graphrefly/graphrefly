@@ -97,7 +97,7 @@ test("an INVALIDATE discards what was held before it; it reaches subscribers at 
   g.subscribe("s", "h");
   h.pull("first");
   g.set("a", 1);
-  assert.deepEqual(during(g, () => g.invalidate("a")), ["s <- h: [INVALIDATE]"]);
+  assert.deepEqual(during(g, () => g.invalidate("a")), ["s <- h: [DIRTY, INVALIDATE]"]);
   g.set("a", 2);
   assert.deepEqual(during(g, () => h.pull("second")), ['s <- h: [DIRTY, DATA("second:2")]']);
 });

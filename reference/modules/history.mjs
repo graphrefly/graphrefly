@@ -13,22 +13,34 @@
 // out, and a wave without DATA is not an entry and sends nothing. Each wave with DATA sends the new
 // list once. A new subscriber, sink or dependent, gets the list in its START snapshot like any
 // value. The list lives in private state, so:
-// - an INVALIDATE from the source clears the value (K6) and the list (an onInvalidate hook);
+// - an INVALIDATE from the source is the function's input (manual policy): it clears the list,
+//   and the node sends INVALIDATE itself;
 // - deactivation drops it (K7), as TS's ring is dropped (BH6);
 // - checkpoint saves it, when the node is built from `historyRecipe` through `recipes`.
 // On activation the list starts with one entry, a wave of one array: the source's last array, all
 // its START snapshot holds.
 
+// Built with the manual INVALIDATE policy (K6, 2026-11-09): the source's INVALIDATE is this
+// function's input, so it clears the list and sends INVALIDATE itself, then takes what came
+// after it. Without the policy the kernel would clear the value but keep a stale list.
+export const historyOpts = Object.freeze({ invalidate: "manual" });
+
 export const historyRecipe = ({ n }) => (ctx) => {
-  ctx.onInvalidate(() => ctx.state.set([]));
-  const wave = ctx.deps[0].waves.filter((w) => w.length);
+  const src = ctx.deps[0];
+  let list = ctx.state.get() ?? [];
+  if (src.invalidated) {
+    list = [];
+    ctx.state.set(list);
+    ctx.down([["INVALIDATE"]]);
+  }
+  const wave = src.waves.filter((w) => w.length);
   if (!wave.length) return;
-  const list = [...(ctx.state.get() ?? []), wave].slice(-n);
+  list = [...list, wave].slice(-n);
   ctx.state.set(list);
   ctx.down([["DATA", list]]);
 };
 
 export function history(g, id, sourceId, n) {
   if (!Number.isInteger(n) || n < 1) throw new RangeError(`history ${id}: n must be a positive integer`);
-  return g.node(id, [sourceId], historyRecipe({ n }));
+  return g.node(id, [sourceId], historyRecipe({ n }), historyOpts);
 }

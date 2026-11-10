@@ -21,7 +21,8 @@ Two things run side by side on every step:
   - the composition: the owner's function transcribed from restart.mjs, with
     its private state (round, failures, the last request served, a count of
     the attempts this lifetime asked for), its lifetime's signal (a deactivation
-    drops the timer), the onDeactivation that renews an ended inner, and the
+    drops the timer), the cleanup its setup returns, which renews an ended
+    inner (an onDeactivation registration until 2026-11-10), and the
     kernel's replace at the end of the wave;
   - the rule: an owner written from R-restart's text, which counts completions
     and errors per round, numbers every attempt and lifetime, and drops a

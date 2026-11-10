@@ -146,11 +146,11 @@ test("C-33: a close requested during an invocation waits until it returns; clean
   g.state("a", 1);
   g.node("q", ["a"], (ctx) => {
     const v = ctx.deps[0].value;
-    ctx.onDeactivation(() => log.push(`cleanup q${v}`));
+    ctx.state.set(v);
     if (v === 2) g.unsubscribe("s", "q"); // the node's only subscriber, mid-invocation
     log.push(`run q${v}`);
     ctx.down([["DATA", v]]);
-  });
+  }, { setup: (ctx) => () => log.push(`cleanup q${ctx.state.get()}`) });
   g.subscribe("s", "q", (msgs) => log.push(`deliver ${format({ to: "s", from: "q", msgs })}`));
   log.length = 0;
   g.set("a", 2);
@@ -229,8 +229,8 @@ test("C-36: a trailing INVALIDATE in the same array leaves the value absent for 
   runs.length = 0;
   // O13: DATA(7) comes before the INVALIDATE in its array, so it is removed (DS-17 O13).
   assert.deepEqual(during(g, () => A.ctx.down([["DATA", 7], ["INVALIDATE"]])), [
-    "sa <- A: [INVALIDATE]",
-    "sd <- d: [INVALIDATE]",
+    "sa <- A: [DIRTY, INVALIDATE]",
+    "sd <- d: [DIRTY, INVALIDATE]",
   ]);
   assert.deepEqual(runs, [], "the function does not run on an invalidated input");
   assert.equal(g.get("A").has, false);

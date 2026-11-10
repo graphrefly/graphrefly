@@ -11,7 +11,11 @@
 // and no upward routing are needed, so no kernel change either.
 //
 // Nodes, created once by pullable():
-//   inputId ──► id.pullLog ──► id          id.pullDemand ──► id.pullLog
+//   inputId ──► id          id.pullDemand ──► id
+// One quiet node with the manual INVALIDATE policy (K6, 2026-11-09): the input's INVALIDATE
+// is its function's input, so it drops what it held and sends INVALIDATE itself, which goes
+// out as a later wave, like all of a quiet node's output. Until then a second node, a log
+// that published its queue as a value to learn of every INVALIDATE, sat before the holder.
 //
 // Rules from R-pull@2 and how they hold here:
 //   - A pull while the holder is inactive does nothing: it neither activates the holder
@@ -24,50 +28,38 @@
 // since the kernel puts the retained value in every START; a TS pull node gives START
 // only.
 
-// `${id}.pullLog`: like `${id}.pauseLog`, its value is what it holds since the last
-// INVALIDATE, republished on every arrival so it always has a value while holding
-// anything, which is how its own onInvalidate sees every INVALIDATE. On a fresh request
-// it publishes a service record carrying the held arrays and the params, and empties.
-function pullLog(ctx) {
+// The holder: holds the input's arrays since the last INVALIDATE; on a fresh request runs the
+// author's function once with ctx.deps[0] showing the held arrays and ctx.pull.params.
+const holder = (serve) => (ctx) => {
   const [input, demand] = ctx.deps;
   // First run of this lifetime: a request already in the demand state is old.
-  const state = ctx.state.get() ?? { queue: [], seen: demand.has ? demand.value.seq : 0 };
-  ctx.state.set(state);
-  ctx.onInvalidate(() => ctx.state.set({ ...ctx.state.get(), queue: [] }));
-  if (input.terminal?.[0] === "COMPLETE") { ctx.down([["COMPLETE"]]); return; }
-  const arrived = input.waves.filter((w) => w.length);
-  const queue = [...state.queue, ...arrived];
-  const request = demand.waves.flat().filter((r) => r.seq > state.seen).at(-1);
-  if (request) {
-    ctx.state.set({ queue: [], seen: request.seq });
-    ctx.down([["DATA", { queue, has: input.has, value: input.value, params: request.params }]]);
+  const st = ctx.state.get() ?? { queue: [], seen: demand.has ? demand.value.seq : 0 };
+  let queue = st.queue;
+  if (input.invalidated) {
+    queue = [];
+    ctx.down([["INVALIDATE"]]);
+  }
+  if (input.terminal?.[0] === "COMPLETE") {
+    ctx.state.set({ queue: [], seen: st.seen });
+    ctx.down([["COMPLETE"]]);
     return;
   }
-  ctx.state.set({ ...state, queue });
-  if (arrived.length) ctx.down([["DATA", { queue }]]);
-}
-
-// `${id}`, quiet (H6): on a service record, runs the author's function once with
-// ctx.deps[0] showing the held arrays and ctx.pull.params; otherwise does nothing, and,
-// being quiet, shows nothing downstream.
-const holder = (serve) => (ctx) => {
-  const [log] = ctx.deps;
-  const service = log.waves.flat().filter((r) => "params" in r).at(-1);
-  if (!service) return;
+  queue = [...queue, ...input.waves.filter((w) => w.length)];
+  const request = demand.waves.flat().filter((r) => r.seq > st.seen).at(-1);
+  if (!request) { ctx.state.set({ queue, seen: st.seen }); return; }
+  ctx.state.set({ queue: [], seen: request.seq });
   const view = Object.create(ctx);
-  view.deps = [{ waves: service.queue, terminal: null, has: service.has, value: service.value }];
-  view.pull = { params: service.params };
+  view.deps = [{ id: input.id, waves: queue, terminal: null, has: input.has, value: input.value, invalidated: false }];
+  view.pull = { params: request.params };
   serve(view);
 };
 
 export function pullable(g, id, inputId, serve) {
   const demandId = `${id}.pullDemand`;
-  const logId = `${id}.pullLog`;
   g.state(demandId); // no value until the first pull
   let seq = 0;
-  // The demand state never completes; only the input ends the log, hence manual complete.
-  g.node(logId, [inputId, demandId], pullLog, { terminal: { complete: "manual" } });
-  g.node(id, [logId], holder(serve), { quiet: true }); // ends when the log ends (auto complete)
+  // The demand state never completes; only the input ends the holder, hence manual complete.
+  g.node(id, [inputId, demandId], holder(serve), { quiet: true, terminal: { complete: "manual" }, invalidate: "manual" });
   return {
     id,
     demandId,

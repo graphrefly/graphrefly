@@ -7,7 +7,8 @@
 // can be activated over an ended dependency.
 //
 // A node is restorable when it is built through `recipes(g, registry)`: a state, or a computed
-// node whose fn is `registry[ref](config)`. Function bodies are never saved (R-snapshot). Any
+// node whose fn is `registry[ref](config)`, which returns the function or { fn, setup }.
+// Function bodies are never saved (R-snapshot). Any
 // other node, or a recipe node whose dependencies were changed since (by rewire or replace), is
 // saved as local-only, and restoring a local-only node fails.
 //
@@ -17,16 +18,14 @@
 //
 // restore(checkpoint, registry) builds a new graph with no subscribers, as TS's restoreGraph,
 // and runs no fn: each saved computed node gets its value, terminal and private state as a
-// kernel seed. On its first activation the real fn runs once only when
-// - a dependency's value or terminal differs from what the node had received (an upstream
-//   change before the first subscription); a changed value comes with its snapshot arrays, an
-//   end alone without them (C-38, R-input-receipts; TS keeps the restored value instead); or
-// - the node's last run before capture had registered a cleanup (onInvalidate, onDeactivation).
-//   A cleanup is a closure and cannot be saved, so the checkpoint saves only that there was one,
-//   and the run registers it again; a timer source starts a new timer, history can be cleared by
-//   an INVALIDATE again (A2, the user's choice 2026-11-09; TS does not run and so loses them).
-// The run gets only the changed dependencies, so with none it brings no new array; a run that
-// sends nothing keeps the saved value. Otherwise the real fn does not run.
+// kernel seed. On its first activation its setup runs, as at every activation (K7), so a timer
+// source starts a new timer; the real fn runs once only when a dependency's value or terminal
+// differs from what the node had received (an upstream change before the first subscription):
+// a changed value comes with its snapshot arrays, an end alone without them (C-38,
+// R-input-receipts; TS keeps the restored value instead). The run gets only the changed
+// dependencies; a run that sends nothing keeps the saved value. Otherwise the real fn does not
+// run. (From 2026-11-09 to 2026-11-10, A2 ran the fn of a node whose last run had registered a
+// cleanup, so it would register it again; the per-lifetime setup replaced that.)
 // Before the first subscription a restored node is inactive and receives no waves, so only the
 // values and ends then are compared: an INVALIDATE followed by a write is seen as the write. A
 // host that must not lose such an INVALIDATE subscribes before writing upstream (R-checkpoint).
@@ -40,7 +39,11 @@ const json = (v, where) => {
   return v;
 };
 
-const sameValue = (d, saved) => d.has === saved.has && (!d.has || isDeepStrictEqual(d.value, saved.value));
+// A dependency's snapshot is the values of its last array (R-subscription), which reach the
+// first run as its one input array; the comparison is on all of them, not only the last value
+// (fixed 2026-11-09 after a review found [1, 2] -> [3, 2] taken for unchanged).
+const snapshotOf = (d) => (d.waves.length ? d.waves[d.waves.length - 1] : []);
+const sameValue = (d, saved) => d.has === saved.has && (!d.has || isDeepStrictEqual(snapshotOf(d), saved.values));
 const sameEnd = (d, saved) => isDeepStrictEqual(d.terminal, saved.ended);
 
 export function recipes(g, registry) {
@@ -52,24 +55,11 @@ export function recipes(g, registry) {
     return registry[ref];
   };
 
-  // Each run of the real fn records whether it registered a cleanup; as with the kernel's
-  // registrations, a run's record replaces the previous run's (R-lifetime). A cleanup is a
-  // closure and cannot be saved, so a checkpoint saves only that the last run had one.
-  function observed(rec, ctx, deps) {
-    rec.cleanups = false;
-    const register = (kind) => (f) => { rec.cleanups = true; ctx[kind](f); };
-    return Object.create(ctx, {
-      deps: { value: deps },
-      onInvalidate: { value: register("onInvalidate") },
-      onDeactivation: { value: register("onDeactivation") },
-    });
-  }
-
   function restorable(rec, real) {
     return (ctx) => {
       const saved = rec.entry?.saved;
       rec.entry = null;
-      if (!saved) { real(observed(rec, ctx, ctx.deps)); return; }
+      if (!saved) { real(ctx); return; }
       // Per dependency, what it brings: a changed value comes with its snapshot arrays; an end
       // alone comes without them, since those values were already received; an unchanged
       // dependency brings nothing.
@@ -80,10 +70,8 @@ export function recipes(g, registry) {
         if (value || end) changed = true;
         return value ? d : { ...d, waves: [], terminal: end ? d.terminal : null };
       });
-      // The seed holds the value and private state. The fn runs anyway when its last run had
-      // registered a cleanup, since running is the only way to register it again (C-38).
-      if (!changed && !saved.cleanups) { rec.cleanups = false; return; }
-      real(observed(rec, ctx, deps));
+      // The seed holds the value and private state.
+      if (changed) real(Object.create(ctx, { deps: { value: deps } }));
     };
   }
 
@@ -94,7 +82,9 @@ export function recipes(g, registry) {
   }
 
   function addNode(id, deps, rec, seed) {
-    g.node(id, deps, restorable(rec, lookup(rec.ref)(rec.config)), { ...rec.opts, ...(seed && { seed }) });
+    const built = lookup(rec.ref)(rec.config);
+    const { fn, setup } = typeof built === "function" ? { fn: built } : built;
+    g.node(id, deps, restorable(rec, fn), { ...rec.opts, ...(setup && { setup }), ...(seed && { seed }) });
     made.set(id, rec);
     return id;
   }
@@ -105,9 +95,9 @@ export function recipes(g, registry) {
     if (!active && !ended) return null; // no lifetime, nothing held
     const state = g.privateState(id);
     return {
-      values, ended, ...(state !== undefined && { state }), ...(made.get(id)?.cleanups && { cleanups: true }),
+      values, ended, ...(state !== undefined && { state }),
       // What it received from each dependency: at a wave boundary, the dependency's value.
-      inputs: deps.map((d) => { const x = g.get(d); return { has: x.has, ...(x.has && { value: x.value }), ended: x.ended }; }),
+      inputs: deps.map((d) => { const x = g.get(d); return { has: x.has, ...(x.has && { values: x.values }), ended: x.ended }; }),
     };
   }
 

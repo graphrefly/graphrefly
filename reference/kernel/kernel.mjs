@@ -30,12 +30,12 @@ const isTerminal = (m) => m[0] === "COMPLETE" || m[0] === "ERROR";
 // K2/K6: each of these releases a connection's dirty membership.
 const settles = (m) => isValue(m) || isTerminal(m) || m[0] === "INVALIDATE";
 const messageOf = (e) => (e instanceof Error ? e.message : e);
-const freshInput = () => ({ has: false, value: undefined, ended: null, frames: [] });
-// K2 (decided by the user 2026-11-09): an array that carries DATA, RESOLVED or a terminal
-// marks the sender's cone pending and gets the kernel's prefix, auto or manual policy alike,
-// so a fan-in waits for all of a wave's terminals too and runs once on them. INVALIDATE
-// does neither: it runs no function and is idempotent, so a fan-in needs no wait for it.
-const marks = (m) => isValue(m) || isTerminal(m);
+const freshInput = () => ({ has: false, value: undefined, ended: null, frames: [], invalidated: false });
+// K2 (decided by the user 2026-11-09): every array that carries DATA, RESOLVED, INVALIDATE
+// or a terminal marks the sender's cone pending and gets the kernel's prefix, whatever the
+// receivers' policies, so a fan-in waits for all of a wave's input and a manual node runs
+// once on it. (INVALIDATE joined the terminals the same day, once it got a manual policy.)
+const marks = (m) => isValue(m) || isTerminal(m) || m[0] === "INVALIDATE";
 const hasMark = (frames) => frames.some((f) => f.some(marks));
 
 // One submitted array, checked and split into the arrays that are published. Messages
@@ -100,7 +100,14 @@ export function createGraph({ report: hostReport } = {}) {
     const n = {
       id, kind, deps, fn,
       terminal: { complete: "auto", error: "auto", ...(opts?.terminal ?? {}) }, // O6
+      // K6 (decided by the user 2026-11-09): auto, an input's INVALIDATE invalidates this node
+      // without running its function; manual, it is the function's input (ctx.deps[i].invalidated).
+      invalidate: opts?.invalidate ?? "auto",
       quiet: Boolean(opts?.quiet), // H6: consumes input waves without forwarding DIRTY
+      // K7 (decided by the user 2026-11-10): setup(ctx) runs once per lifetime, before the
+      // function's first run in it; a function it returns is the lifetime's cleanup. It stays
+      // with the node across replace, as the policies do.
+      setup: opts?.setup ?? null,
       subs: [],            // ordered: { kind: "sink", id, cb } | { kind: "node", id, dep }
       active: false,
       lifetime: null,      // K7: the current lifetime of a computed node, see openLifetime; while it
@@ -163,11 +170,11 @@ export function createGraph({ report: hostReport } = {}) {
   // A computed node gets a new lifetime on each activation. Everything a function gets
   // through ctx belongs to the lifetime of the invocation that received it. Closing a
   // lifetime (last release or terminal) aborts its signal, releases dependencies in
-  // declaration order, then runs its deactivation cleanups in registration order.
+  // declaration order, then runs the cleanup its setup returned, if any.
   // Output sent through a closed lifetime's ctx is dropped.
 
   function openLifetime(n) {
-    n.lifetime = { open: true, controller: null, hooks: { deactivation: [], invalidate: [] } };
+    n.lifetime = { open: true, controller: null, setupDone: false, cleanup: null };
   }
 
   function runCleanup(n, f) {
@@ -182,9 +189,9 @@ export function createGraph({ report: hostReport } = {}) {
     lifetime.open = false;
     lifetime.controller?.abort();
     releaseDeps(n);
-    const hooks = lifetime.hooks.deactivation;
-    lifetime.hooks = { deactivation: [], invalidate: [] };
-    for (const f of hooks) runCleanup(n, f);
+    const { cleanup } = lifetime;
+    lifetime.cleanup = null;
+    if (cleanup) runCleanup(n, cleanup);
     n.lifetime = null;
   }
 
@@ -278,19 +285,8 @@ export function createGraph({ report: hostReport } = {}) {
 
   function invoke(n) {
     const lifetime = n.lifetime;
-    // R-cleanup-hooks: this run's registrations replace the previous run's, which are
-    // dropped without being called.
-    const hooks = { deactivation: [], invalidate: [] };
-    lifetime.hooks = hooks;
     const out = [];
     let invoking = true;
-    const register = (kind, f) => {
-      // A registration that comes back after its lifetime closed is attempted once, now
-      // (R-cleanup-hooks@2). Otherwise, during or after the run, it joins the current
-      // run's registrations, as in TS.
-      if (!lifetime.open) { runCleanup(n, f); return; }
-      lifetime.hooks[kind].push(f);
-    };
     const ctx = {
       // K4: per dependency, this wave's value arrays as TS waveData does it (each array
       // its DATA payloads in order; a RESOLVED array is []), its terminal this wave, and
@@ -300,6 +296,8 @@ export function createGraph({ report: hostReport } = {}) {
         waves: input.frames.filter((f) => f.some(isValue))
           .map((f) => f.filter((m) => m[0] === "DATA").map((m) => m[1])),
         terminal: input.frames.flat().find(isTerminal) ?? null,
+        // An INVALIDATE arrived on this input in this wave; shown under the manual policy only.
+        invalidated: n.invalidate === "manual" && input.invalidated,
         has: input.has,
         value: input.value,
       })),
@@ -323,11 +321,16 @@ export function createGraph({ report: hostReport } = {}) {
         }
         return lifetime.controller.signal;
       },
-      onDeactivation(f) { register("deactivation", f); },
-      onInvalidate(f) { register("invalidate", f); },
     };
     running = n;
     try {
+      // K7: the lifetime's setup runs first, once, in the same invocation: what it sends is
+      // part of this invocation's output, and a throw ends the node like a throw of the function.
+      if (!lifetime.setupDone) {
+        lifetime.setupDone = true;
+        const cleanup = n.setup?.(ctx);
+        if (typeof cleanup === "function") lifetime.cleanup = cleanup;
+      }
       n.fn(ctx);
     } catch (e) {
       return [[["ERROR", messageOf(e)]]]; // P10: what it sent before the throw is dropped
@@ -379,10 +382,6 @@ export function createGraph({ report: hostReport } = {}) {
     }
   }
 
-  // The current run's invalidate hooks. They stay registered after they run, as in TS:
-  // a later effective INVALIDATE without a rerun runs them again.
-  const invalidateHooks = (n) => [...(n.lifetime?.hooks.invalidate ?? [])];
-
   // A node's output for the wave is applied to what the node holds, then delivered
   // (TS _down).
   const down = (n, frames) => deliver(n, apply(n, frames));
@@ -405,8 +404,6 @@ export function createGraph({ report: hostReport } = {}) {
           n.has = false;
           n.cache = undefined;
           n.values = [];
-          // R-invalidate-idempotent: the value is already absent when these run.
-          for (const h of invalidateHooks(n)) runCleanup(n, h);
         }
         if (isTerminal(m)) n.ended = m;
         f.push(m);
@@ -457,33 +454,45 @@ export function createGraph({ report: hostReport } = {}) {
 
   function settle(m) {
     if (!m.inputs.some((input) => input.frames.length)) return;
-    const clear = () => m.inputs.forEach((input) => { input.frames = []; });
+    const clear = () => m.inputs.forEach((input) => { input.frames = []; input.invalidated = false; });
 
-    // K5, error=auto: a dependency ERROR ends this node without running its function.
+    // K5, error=auto: a dependency ERROR ends this node without running its function. An
+    // INVALIDATE that came before it in the wave still takes effect first, whatever the
+    // INVALIDATE policy, since the function will not run to handle it: the node does not end
+    // holding a value its input has invalidated (found by formal/module_demand.tla, 2026-11-09).
     const depError = m.inputs.flatMap((input) => input.frames.flat()).find((x) => x[0] === "ERROR");
     if (depError && m.terminal.error === "auto") {
+      const invalidatedFirst = m.inputs.some((input) => input.frames.some((f) => f[0]?.[0] === "INVALIDATE"));
       clear();
-      if (m.quiet) { m.pending = false; later(m, m.lifetime, [[depError]]); }
-      else down(m, [[depError]]);
+      const end = invalidatedFirst ? [[["INVALIDATE"]], [depError]] : [[depError]];
+      // A quiet node's output is a later wave: the INVALIDATE goes with the ERROR.
+      if (m.quiet) { m.pending = false; later(m, m.lifetime, end); }
+      else down(m, end);
       return;
     }
 
-    // K6: an invalidated input invalidates this node's value without running the
-    // function for it. What came before the INVALIDATE on that input is gone; what came
-    // after it is ordinary input, for which the function runs below. The invalidation
-    // is applied first, so its hooks (registered by the previous run) run before the
-    // new run replaces them. It carries no DIRTY, so a quiet node passes it on now too.
+    // K6: what came before an INVALIDATE on an input is gone; what came after it is ordinary
+    // input. Under the auto policy the INVALIDATE invalidates this node's value without running
+    // the function for it, and is forwarded if the node had a value. Under the manual policy
+    // it is the function's input (ctx.deps[i].invalidated), and the function decides what to
+    // clear and whether to send INVALIDATE itself (decided by the user 2026-11-09, replacing
+    // onInvalidate hooks). A quiet node passes an auto INVALIDATE on now too.
     const isInvalidate = (f) => f[0]?.[0] === "INVALIDATE";
     let lead = [];
-    if (m.inputs.some((input) => input.frames.some(isInvalidate))) {
-      for (const input of m.inputs) input.frames = input.frames.slice(input.frames.findLastIndex(isInvalidate) + 1);
-      lead = apply(m, [[["INVALIDATE"]]]); // [[INVALIDATE]] if m had a value, else []
+    let invalidated = false;
+    for (const input of m.inputs) {
+      const at = input.frames.findLastIndex(isInvalidate);
+      if (at < 0) continue;
+      input.frames = input.frames.slice(at + 1);
+      input.invalidated = true;
+      invalidated = true;
     }
+    if (invalidated && m.invalidate === "auto") lead = apply(m, [[["INVALIDATE"]]]); // [[INVALIDATE]] if m had a value, else []
 
     const rest = m.inputs.flatMap((input) => input.frames.flat());
     const manualTerminal = rest.some((x) =>
       isTerminal(x) && (x[0] === "COMPLETE" ? m.terminal.complete : m.terminal.error) === "manual");
-    const runs = rest.some(isValue) || manualTerminal;
+    const runs = rest.some(isValue) || manualTerminal || (invalidated && m.invalidate === "manual");
     const out = runs ? invoke(m) : [];
     clear();
 
@@ -513,13 +522,16 @@ export function createGraph({ report: hostReport } = {}) {
     // P3: mark every source of the wave pending before any settlement (batch, K2).
     // Every pending node settles in this wave and clears its own flag and memberships, so
     // nothing is reset afterwards.
-    for (const { node, frames } of entries) {
-      if (hasMark(frames) && !node.pending) {
+    // Each source's input is applied first, so the marking follows what it will send: an
+    // INVALIDATE at a source without a value is dropped and starts no wave (K6).
+    const applied = entries.map(({ node, frames }) => ({ node, out: apply(node, frames) }));
+    for (const { node, out } of applied) {
+      if (hasMark(out) && !node.pending) {
         node.pending = true;
         markPending(node);
       }
     }
-    for (const { node, frames } of entries) down(node, frames);
+    for (const { node, out } of applied) deliver(node, out);
   }
 
   // ---- Replace (DS-17 rewire row, O4, O7) ----------------------------------
@@ -541,7 +553,7 @@ export function createGraph({ report: hostReport } = {}) {
     if (old) { old.open = false; old.controller?.abort(); }
     if (!old) n.deps = []; // an ended instance has released its dependencies already
     exchange(n, deps);
-    if (old) for (const f of old.hooks.deactivation) runCleanup(n, f);
+    if (old?.cleanup) runCleanup(n, old.cleanup);
     Object.assign(n, {
       fn, lifetime: null, values: [], has: false, cache: undefined, ended: null, privateState: undefined, pending: false,
     });

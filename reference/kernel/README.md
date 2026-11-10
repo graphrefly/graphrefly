@@ -88,8 +88,17 @@ A node function has the TS baseline's shape, `(ctx) => void` (R-fn-contract, D8)
 | `deps[i].has`, `deps[i].value` | The latest value received from it |
 | `state.get()`/`state.set(v)` | Private state of this lifetime |
 | `down(msgs)` | During the run: one array of this invocation's output; each call is its own array (R-wave-boundary). After the run returned: a new wave from this node (P9). After the lifetime closed: dropped. DIRTY is not accepted: only the kernel sends it (O11) |
-| `signal` | Aborted when the lifetime closes |
-| `onDeactivation(f)`, `onInvalidate(f)` | Cleanup for this run (R-cleanup-hooks) |
+| `signal` | Aborted when the lifetime closes; async work that must stop with the lifetime follows it |
+| `deps[i].invalidated` | Under the manual INVALIDATE policy only: an INVALIDATE arrived on this input in this invocation |
+
+The function registers no cleanup. `onInvalidate(f)` was removed on 2026-11-09, replaced by the
+manual INVALIDATE policy; `onDeactivation(f)` on 2026-11-10, replaced by the node's setup (K7).
+
+`g.node(id, deps, fn, opts)` takes, besides the policies (`terminal`, `invalidate`) and `quiet`, an
+optional `setup(ctx)`: it runs once per lifetime, just before the function's first run, with that
+run's ctx; what it sends is part of that run's output, a throw in it ends the node as a throw of the
+function does, and a function it returns is the lifetime's cleanup. It stays with the node across
+`replace`, as the policies do. TS's `source(factory, setup)` helper has the same shape.
 
 An array keeps the order its author wrote (DS-17 O13): a terminal must be last, DATA and RESOLVED
 cannot share one, and an array is split at its last INVALIDATE, dropping what came before it:
@@ -101,7 +110,8 @@ Audited on 2026-11-06 against `packages/ts/src/node/node-context-runtime.ts` and
 two differences turned out to be unstated (a run's `ctx.down` calls were merged into one array, and
 `deps[i].data` flattened the array boundaries; both now follow TS and R-wave-boundary@2). Two more
 found in the audit were the interpreter's own and now follow TS on the user's decision: a late
-registration while the lifetime is open is accepted, and `onInvalidate` hooks are not consumed.
+registration while the lifetime is open is accepted, and `onInvalidate` hooks were not consumed
+(the hook itself is gone since 2026-11-09).
 
 | Here | TS | Source of the difference |
 |---|---|---|
@@ -171,18 +181,21 @@ Mutations checked on 2026-11-08, each failing at least one test:
   sets, cleared where the node settles; `closing` is a lifetime that exists and is no longer open.
 - K5 terminal policy as auto or manual per kind (DS-17 O6), also at the first run of a lifetime;
   nothing follows a terminal, and an ended node's snapshot carries it (P5, relaxed 2026-11-08).
-- K6: `invalidate` on a state, and an invalidated input, clear the retained value down the cone and
-  run `onInvalidate` hooks after the value is gone. No DIRTY, no function run for the INVALIDATE. A
-  repeat, or a node with no value, is a no-op; a pending node then settles with RESOLVED. What an
-  input sent before its INVALIDATE in the wave is dropped; what it or another input sent after is
-  ordinary input, and the function runs for it after the invalidation (and its hooks) took effect.
-- K7 lifetimes: each activation opens one. Closing it (last release or terminal) aborts `signal`,
-  releases dependencies in declaration order, then runs this lifetime's deactivation cleanups in
-  registration order; a failing cleanup goes to the host reporter and the rest still run. Each run's
-  registrations replace the previous run's without calling them. A registration after the run
-  returned joins the current run's registrations, as in TS; one after close runs once at once
-  (R-cleanup-hooks@2). `onInvalidate` hooks stay registered after they run, as in TS, so a later
-  effective INVALIDATE without a rerun runs them again. Computed nodes clear on last release; plain state keeps its value.
+- K6 as decided on 2026-11-09: each node has an INVALIDATE policy, auto or manual, default auto.
+  Auto: an invalidated input clears the node's retained value down the cone without running its
+  function. Manual: the INVALIDATE is the function's input (`ctx.deps[i].invalidated`), and the
+  function clears what it holds and sends INVALIDATE itself. An INVALIDATE array marks the cone and
+  carries the prefix like any settling array. A node with no value drops an INVALIDATE; a host
+  INVALIDATE to a state without a value starts no wave; a pending node that drops one settles with
+  RESOLVED. What an input sent before its INVALIDATE in the wave is dropped; what came after is
+  ordinary input. The `onInvalidate` hook is gone: pause, demand and history now use the policy.
+- K7 lifetimes: each activation opens one, and the node's setup, if any, runs once in it before the
+  first run. Closing it (last release or terminal) aborts `signal`, releases dependencies in
+  declaration order, then runs the cleanup the setup returned; a failing cleanup goes to the host
+  reporter and the close completes. Until 2026-11-10 every run registered its cleanups again and
+  replaced the previous run's (R-cleanup-hooks@1, @2), so a run that registered nothing dropped a
+  live cleanup: `latestAsync` lost its abort when a run brought no new value. Computed nodes clear on
+  last release; plain state keeps its value.
 - K8: a request that arrives while the kernel is busy waits and runs afterwards in arrival order: a
   late `ctx.down`, and `set`, `batch`, `subscribe`, `unsubscribe` reached through a captured graph
   reference. A function writing its own upstream makes an ordinary request too: it runs after the
@@ -212,12 +225,12 @@ Mutations checked on 2026-11-08, each failing at least one test:
   the work runs. Results arrive in arrival order and combine with whatever the other inputs hold then.
 - Replace (added 2026-11-08 for O7): `replace(id, deps, fn)` gives a computed node a new instance
   under the same id, keeping its subscribers. It is a request (K8). The old lifetime closes: its signal
-  aborts, its late output is dropped, its cleanups run; no value, private state or terminal survives,
+  aborts, its late output is dropped, its cleanup runs; no value, private state or terminal survives,
   so an ended node gets a new execution. The dependencies are exchanged as by `rewire` (one shared
   function since 2026-11-08): a dependency in both lists keeps its connection, and keeps its place
   among its dependency's subscribers; added ones are acquired before removed ones are released, so a
-  shared one stays active; then the old cleanups run, as when a lifetime closes (K7). The new instance
-  activates like a first subscription (K3): it gets every dependency's START snapshot, kept ones
+  shared one stays active; then the old cleanup runs, as when a lifetime closes (K7). The new instance
+  keeps the node's policies and setup, and activates like a first subscription (K3): it gets every dependency's START snapshot, kept ones
   included; its first run only sets the retained value; each sink gets a `[START, …]` snapshot and each
   dependent receives the snapshot as its input, in one wave, so a diamond below settles once. An
   inactive node only changes its definition. Refused for a state node, for a dependency on itself,
@@ -455,7 +468,7 @@ Decided away rather than left out:
 - INVALIDATE needs no DIRTY to stay glitch-free in a diamond, because the second arrival at the fan-in
   finds no value and is a no-op.
 - `latestAsync` shows that switch-style cancellation needs no kernel help: private state holds the
-  previous request's controller, and a cleanup hook covers close.
+  previous request's controller, and the lifetime's signal, combined with it, covers close.
 - A sink that writes its own source on every wave never drains. The kernel does not guard this (P8);
   a module or the host must.
 - Async batch bodies (user discussion 2026-11-06): committing only the part before the first await

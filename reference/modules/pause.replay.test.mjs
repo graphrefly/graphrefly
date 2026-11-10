@@ -80,11 +80,14 @@ test("C-30: resumeAll releases the held arrays in one wave; a re-pause from a de
   assert.deepEqual(values(during(g, () => g.set("a", 3))), [], "the re-pause holds what comes next");
 });
 
-test("C-30: resume does not rerun invalidation hooks", () => {
+test("C-30: resume does not hand an INVALIDATE to the node before the pausable again", () => {
   const g = createGraph();
   g.state("a", 1);
   let hooks = 0;
-  g.node("x", ["a"], (ctx) => { ctx.onInvalidate(() => hooks++); ctx.down(ctx.deps[0].waves.flat().map((v) => ["DATA", v])); });
+  g.node("x", ["a"], (ctx) => {
+    if (ctx.deps[0].invalidated) { hooks++; ctx.down([["INVALIDATE"]]); }
+    ctx.down(ctx.deps[0].waves.flat().map((v) => ["DATA", v]));
+  }, { invalidate: "manual" });
   const p = pausable(g, "p", "x");
   g.subscribe("s", "p");
   const lock = p.pause();
@@ -138,7 +141,7 @@ test("C-36: D paused at both inputs: INVALIDATE goes through at once; one resume
     g.set("A", 40);
     g.set("B", "b1");
   }));
-  assert.deepEqual(paused, ["s <- D: [INVALIDATE]"], "the INVALIDATE does not wait for resume");
+  assert.deepEqual(paused, ["s <- D: [DIRTY, INVALIDATE]"], "the INVALIDATE does not wait for resume");
   assert.deepEqual(runs, [], "no new invocation while paused");
   assert.deepEqual(values(during(g, () => control.resume(lock))), ['s <- D: [DIRTY, DATA("40b1")]']);
   assert.deepEqual(runs, [[40, "b1"]], "one invocation, superseded A values gone");

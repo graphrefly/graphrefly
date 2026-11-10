@@ -486,3 +486,30 @@ formal/README 有两处过时：提到的 `wave_protocol_custom_equals_MC`、`wa
 3. Evidence gaps（第 8b 件）。
 4. 激活（等用户批准 D798）：加 transition 和 `activated_by`；删退役的模型和场景；改写保留的 C-1 到 C-27 并重置为 todo；
    改 `spec/protocol.proto`；D797 补 wave_protocol 的接替说明。
+
+### 9.6 独立审查之后（2026-11-09）
+
+用户请一个 Fable 会话和 Codex 各自从头审查 D797（报告不在仓库里；Fable 的在会话 scratchpad，Codex 的贴在对话里）。
+两份独立地指向同几处根源：INVALIDATE 只在有值时生效、只靠 hook 通知（逼出 pause、demand 的双节点和 A2 的一部分）；
+每次运行替换清理登记加上没有新输入也运行（latestAsync 的 abort 丢失、A2 和"在途工作不重发"冲突）；控制 state 不是唯一权威
+（锁集合在闭包里，命令被存成会重放的 state）；replace 把实例层带了回来。Codex 的 7 个反例都已复现。
+
+已修，与设计无关：restart 不再因为几个依赖里有一个已结束就拒绝重试，只在新 inner 一启动就会结束时不重启（每个依赖都已结束，
+或有依赖以 ERROR 结束，R-restart 改了这句）；checkpoint 比较依赖的整个最后数组而不只是最后一个值（R-checkpoint 补了说明）。
+checkpoint 在函数被 replace 换掉后仍用旧 recipe（C6）要等身份那一条一起定。
+
+**根源 1 已定（用户）：INVALIDATE 也用 auto/manual 策略。** manual 下 INVALIDATE 是函数的输入（`ctx.deps[i].invalidated`），
+函数自己清掉持有的东西、自己发 INVALIDATE；`onInvalidate` hook 去掉；INVALIDATE 也标记 cone、带 PENDING，R-wave 不再有例外。
+pause、demand 各成一个节点，history 自己清列表，A2 只剩 onDeactivation。顺带：一个没有值的 state 被 INVALIDATE 时不再开
+wave（来源先 apply 再标记）。代价：demand 的 holder 是 quiet 节点，它自己发的 INVALIDATE 现在是下一个 wave，而不是当前 wave
+（R-demand 改了这句；要保持当前 wave 得给内核的 quiet 处理加例外）。和 TS 的不同：TS 有 onInvalidate、INVALIDATE 前没有 DIRTY。
+
+**根源 2 已定（用户，2026-11-10）：清理登记改成每个 lifetime 一次的 setup。** 节点可以有一个 setup（`g.node` 的选项），
+在每个 lifetime 里、函数第一次运行之前跑一次，用的是那次运行的 ctx；它发的东西算那次运行的输出，抛错和函数抛错一样结束节点，
+返回的函数就是这个 lifetime 的清理。setup 跟着节点走，replace 后保留，和策略一样。`ctx.onDeactivation` 去掉，函数不再登记
+任何东西，也就没有"按运行替换"、"每次都要登记"和 A2：恢复的节点在首次激活时照常跑 setup，函数只在输入变了时运行。
+latestAsync 原来在一次没有新值的运行之后丢掉 abort（复现过），现在跟着 lifetime 的 signal。和 TS 的不同：TS 的
+`source(factory, setup)` 已经是这个形状，但 `ctx.onDeactivation` 在 TS 里约有 15 处调用，搬过去是 TS 实现的工作，不是纯加法。
+
+接下来按顺序讨论根源 3（控制 state 的权威）、restart 的所有权（C5a）、4（身份，含 C6）、
+模块组合（F6）、函数经闭包发请求（F7），最后是数组快照（F4）。

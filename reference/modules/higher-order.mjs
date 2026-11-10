@@ -43,8 +43,6 @@ function mapOperator(g, id, sourceId, project, mode, concurrent) {
     // inners: the live inners, as the last requested dependency list has them.
     const st = ctx.state.get() ?? { inners: [], queue: [], sourceDone: false };
     ctx.state.set(st);
-    // A fresh activation starts with no inner, as TS's does. Not after the operator ended.
-    ctx.onDeactivation(() => { if (!g.get(id).ended) g.rewire(id, [sourceId], fn); });
     const source = ctx.deps.find((d) => d.id === sourceId);
     const live = ctx.deps.filter((d) => d.id !== sourceId);
 
@@ -79,7 +77,9 @@ function mapOperator(g, id, sourceId, project, mode, concurrent) {
     if (st.sourceDone && !st.inners.length) ctx.down([["COMPLETE"]]); // a waiting value implies a live inner
   };
 
-  g.node(id, [sourceId], fn, { terminal: { complete: "manual", error: "manual" } });
+  // A fresh activation starts with no inner, as TS's does. Not after the operator ended.
+  const setup = () => () => { if (!g.get(id).ended) g.rewire(id, [sourceId], fn); };
+  g.node(id, [sourceId], fn, { terminal: { complete: "manual", error: "manual" }, setup });
   return { id };
 }
 

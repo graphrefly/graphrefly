@@ -11,9 +11,16 @@ Topology: states A and B, and a computed node P over [A, B] built from a recipe,
 with a sink, under the default auto policies. The recipe keeps the last N input
 values it received, as <<dependency, value>> pairs, in private state and sends
 them as its value; a run that brings no new array sends nothing and changes
-nothing (R-invocation). When Hook is TRUE (chosen at Init) every run registers
-an onInvalidate cleanup that empties the private state; the kernel keeps the
-current run's registrations and runs them on each effective INVALIDATE.
+nothing (R-invocation). Two choices are made at Init. Setup: P has a setup
+that opens an outside resource and returns the cleanup that closes it; no
+checkpoint can hold a resource or a cleanup, and the setup runs at every
+activation, a restored one's included (K7, decided by the user 2026-11-10;
+from 2026-11-09 to 2026-11-10 A2 instead ran a restored P whose last run had
+registered a cleanup). Manual: P has the manual INVALIDATE policy
+(R-invalidation, 2026-11-09), so an INVALIDATE is its function's input, which
+empties the private state and sends INVALIDATE (dropped if P holds no value);
+under auto the kernel invalidates P and its private state stays. Until
+2026-11-09 Hook was an onInvalidate cleanup that emptied the private state.
 
 The host's steps are a write to A or B, a write to both in one batch, an
 INVALIDATE of A or B, and a COMPLETE of A or B. There are three phases:
@@ -30,17 +37,17 @@ node may see ("only the values and terminals then are compared"): an INVALIDATE
 in the window, a write repeated or written back there, are not seen, which is
 why the rule asks a host that must not lose them to subscribe before writing.
 The live original would see them; this model does not compare with it. The restored
-P goes through the module: a kernel seed, and a wrapper that runs the recipe
-once at the first activation if an input changed or the last run before
-capture had registered a cleanup (A2), with only the changed inputs.
+P goes through the module: a kernel seed, the setup the kernel runs at the
+activation, and a wrapper that runs the recipe once at the first activation if
+an input changed, with only the changed inputs.
 
 Invariants (see formal/README.md):
-  StateMatches  after the subscription, the restored P holds the reference's
-                value, private state and terminal
-  HookMatches   ... and the same cleanup registration
-  OutMatches    on each later step both send the same thing
-  NoNeedlessRun the restored recipe runs at activation only if an input
-                changed or a cleanup must be registered again
+  StateMatches    after the subscription, the restored P holds the reference's
+                  value, private state and terminal
+  ResourceMatches ... and holds an open resource exactly when the reference does
+  OutMatches      on each later step both send the same thing
+  NoNeedlessRun   the restored recipe runs at activation only if an input
+                  changed
  ***************************************************************************)
 EXTENDS Integers, Sequences, TLC
 
@@ -58,24 +65,26 @@ LastN(s) == IF Len(s) <= N THEN s ELSE SubSeq(s, Len(s) - N + 1, Len(s))
 AllEnded(ds) == ds["A"].e /\ ds["B"].e
 
 \* The recipe's run on the new input values (a sequence of <<dep, value>>).
-Run(n, new, hook) ==
-  IF new = <<>> THEN [n EXCEPT !.hook = hook]
+Run(n, new) ==
+  IF new = <<>> THEN n
   ELSE LET st == LastN(n.st \o new)
-       IN [n EXCEPT !.st = st, !.has = TRUE, !.val = st, !.hook = hook]
+       IN [n EXCEPT !.st = st, !.has = TRUE, !.val = st]
 
 \* One host step as a live wave to an active node n. ds2 is the states after it.
 Live(n, step, ds2) ==
   IF n.ended THEN [n |-> n, out |-> <<>>]
   ELSE IF step.kind = "inv"
-  THEN IF ~n.has THEN [n |-> [n EXCEPT !.inp = ds2], out |-> <<>>]
-       ELSE [n |-> [n EXCEPT !.has = FALSE, !.val = <<>>,
-                             !.st = IF n.hook THEN <<>> ELSE @, !.inp = ds2],
-             out |-> <<"INV">>]
+  THEN IF k.manual
+       THEN [n |-> [n EXCEPT !.has = FALSE, !.val = <<>>, !.st = <<>>, !.inp = ds2],
+             out |-> IF n.has THEN <<"INV">> ELSE <<>>]
+       ELSE IF ~n.has THEN [n |-> [n EXCEPT !.inp = ds2], out |-> <<>>]
+       ELSE [n |-> [n EXCEPT !.has = FALSE, !.val = <<>>, !.inp = ds2], out |-> <<"INV">>]
   ELSE IF step.kind = "com"
-  \* auto COMPLETE: the function does not run on an end alone; P ends with its last input.
-  THEN IF AllEnded(ds2) THEN [n |-> [n EXCEPT !.ended = TRUE, !.inp = ds2], out |-> <<"COM">>]
+  \* auto COMPLETE: the function does not run on an end alone; P ends with its last input,
+  \* and its lifetime closes, which runs the setup's cleanup.
+  THEN IF AllEnded(ds2) THEN [n |-> [n EXCEPT !.ended = TRUE, !.res = FALSE, !.inp = ds2], out |-> <<"COM">>]
        ELSE [n |-> [n EXCEPT !.inp = ds2], out |-> <<>>]
-  ELSE LET n1 == Run(n, step.new, n.hook) IN [n |-> [n1 EXCEPT !.inp = ds2], out |-> << <<"D", n1.val>> >>]
+  ELSE LET n1 == Run(n, step.new) IN [n |-> [n1 EXCEPT !.inp = ds2], out |-> << <<"D", n1.val>> >>]
 
 \* What changed since a node last received: values (with their arrays) and ends.
 ValChanged(ds, inp, d) == ds[d].v # inp[d].v
@@ -94,16 +103,20 @@ RefWrites(ds, inp) ==
 RefWave(o, ds) ==
   IF o.ended THEN o
   ELSE LET new == RefWrites(ds, o.inp)
-           o1  == IF new # <<>> THEN Run(o, new, o.hook) ELSE o
-       IN [o1 EXCEPT !.ended = AllEnded(ds), !.inp = ds]
+           o1  == IF new # <<>> THEN Run(o, new) ELSE o
+       IN [o1 EXCEPT !.ended = AllEnded(ds), !.res = @ /\ ~AllEnded(ds), !.inp = ds]
 
-\* The restored P's first activation through the module.
-Activate(cp, ds, hook) ==
-  LET seed == [st |-> cp.st, has |-> cp.has, val |-> cp.val, ended |-> cp.ended, hook |-> FALSE, inp |-> ds]
+\* The restored P's first activation through the module. An ended P has no lifetime, so no
+\* setup; otherwise the kernel runs the setup, then the wrapper, which runs the recipe only
+\* if an input changed; a P that ends at once closes its lifetime again.
+Activate(cp, ds, setup) ==
+  LET seed == [st |-> cp.st, has |-> cp.has, val |-> cp.val, ended |-> cp.ended, res |-> FALSE, inp |-> ds]
       new  == NewValues(ds, cp.inp)
-      run  == ~cp.ended /\ (Changed(ds, cp.inp) \/ cp.cleanups)
-      n1   == IF run THEN Run(seed, new, hook) ELSE seed
-  IN [n |-> [n1 EXCEPT !.ended = cp.ended \/ AllEnded(ds)], ran |-> run]
+      run  == ~cp.ended /\ Changed(ds, cp.inp)
+      n0   == IF ~cp.ended /\ setup THEN [seed EXCEPT !.res = TRUE] ELSE seed
+      n1   == IF run THEN Run(n0, new) ELSE n0
+      end  == cp.ended \/ AllEnded(ds)
+  IN [n |-> [n1 EXCEPT !.ended = end, !.res = @ /\ ~end], ran |-> run]
 
 Steps ==
   { [kind |-> "set", new |-> << <<d, v>> >>, d |-> d] : d \in {"A", "B"}, v \in Vals } \cup
@@ -125,13 +138,14 @@ Apply(step, ds) ==
     [] step.kind = "com" -> [ds EXCEPT ![step.d].e = TRUE]
 
 D0 == [d \in {"A", "B"} |-> [v |-> 1, e |-> FALSE]]
-Empty == [st |-> <<>>, has |-> FALSE, val |-> <<>>, ended |-> FALSE, hook |-> FALSE, inp |-> D0]
+Empty == [st |-> <<>>, has |-> FALSE, val |-> <<>>, ended |-> FALSE, res |-> FALSE, inp |-> D0]
 
 Init ==
-  \E hook \in BOOLEAN :
-    k = [hook |-> hook, phase |-> "orig", ds |-> D0,
-         o |-> Run(Empty, << <<"A", 1>>, <<"B", 1>> >>, hook),   \* the original's activation
-         cp |-> [st |-> <<>>, has |-> FALSE, val |-> <<>>, ended |-> FALSE, inp |-> D0, cleanups |-> FALSE],
+  \E setup \in BOOLEAN, manual \in BOOLEAN :
+    k = [setup |-> setup, manual |-> manual, phase |-> "orig", ds |-> D0,
+         \* the original's activation: its setup, then its first run
+         o |-> Run([Empty EXCEPT !.res = setup], << <<"A", 1>>, <<"B", 1>> >>),
+         cp |-> [st |-> <<>>, has |-> FALSE, val |-> <<>>, ended |-> FALSE, inp |-> D0],
          r |-> Empty, ran |-> FALSE, chg |-> FALSE, oOut |-> <<>>, rOut |-> <<>>, steps |-> 0]
 
 Step(s) == [s EXCEPT !.steps = @ + 1, !.oOut = <<>>, !.rOut = <<>>]
@@ -148,17 +162,16 @@ Host ==
                   !.r = IF k.phase = "post" THEN r.n ELSE @,
                   !.rOut = IF k.phase = "post" THEN r.out ELSE <<>>]
 
-\* Capture at a wave boundary: P's values, private state, terminal, received inputs,
-\* and whether its last run registered a cleanup.
+\* Capture at a wave boundary: P's values, private state, terminal and received inputs.
 Capture ==
   /\ k.phase = "orig"
   /\ k' = [Step(k) EXCEPT !.phase = "window",
              !.cp = [st |-> k.o.st, has |-> k.o.has, val |-> k.o.val, ended |-> k.o.ended,
-                     inp |-> k.o.inp, cleanups |-> k.o.hook]]
+                     inp |-> k.o.inp]]
 
 Subscribe ==
   /\ k.phase = "window"
-  /\ LET a == Activate(k.cp, k.ds, k.hook)
+  /\ LET a == Activate(k.cp, k.ds, k.setup)
      IN k' = [Step(k) EXCEPT !.phase = "post", !.r = a.n, !.ran = a.ran,
                !.chg = Changed(k.ds, k.cp.inp), !.o = RefWave(k.o, k.ds)]
 
@@ -169,7 +182,7 @@ Spec == Init /\ [][Next]_vars
 \* ---- invariants ----
 StateMatches == k.phase = "post" =>
   /\ k.r.st = k.o.st /\ k.r.has = k.o.has /\ k.r.val = k.o.val /\ k.r.ended = k.o.ended
-HookMatches == (k.phase = "post" /\ ~k.r.ended) => k.r.hook = k.o.hook
+ResourceMatches == k.phase = "post" => k.r.res = k.o.res
 OutMatches == k.phase = "post" => k.rOut = k.oOut
-NoNeedlessRun == k.phase = "post" /\ k.ran => (k.chg \/ k.hook)
+NoNeedlessRun == k.phase = "post" /\ k.ran => k.chg
 =============================================================================
