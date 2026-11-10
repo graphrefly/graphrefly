@@ -27,27 +27,30 @@
 // the live inners; further values wait, unprojected, until one completes (MergeMapOptions).
 
 import { isDeepStrictEqual } from "node:util";
-import { builder } from "./build.mjs";
 
 export const relay = (ctx) => {
   for (const w of ctx.deps[0].waves) if (w.length) ctx.down(w.map((v) => ["DATA", v]));
 };
 
-// A definition is { deps, fn } on a kernel graph, or { deps, ref, config } through a checkpoint
-// bundle (F6, 2026-11-10), where `ref` names a registered recipe; relay is "higher.relay".
+// A projected definition is { deps, fn, recipe? }; with a recipe { ref, config } the inner can be
+// restored (F6, 2026-11-10), relay's being { ref: "higher.relay" }. Two definitions are the same
+// when their deps are and their recipes are, or, without recipes, their functions are.
 const sameDef = (a, b) => a.deps.length === b.deps.length && a.deps.every((d, i) => d === b.deps[i])
-  && (a.fn || b.fn ? a.fn === b.fn : a.ref === b.ref && isDeepStrictEqual(a.config ?? null, b.config ?? null));
+  && (a.recipe || b.recipe ? isDeepStrictEqual(a.recipe, b.recipe) : a.fn === b.fn);
+// What the operator keeps of a definition in its private state: JSON when it has a recipe.
+const kept = (def) => (def.recipe ? { deps: def.deps, recipe: def.recipe } : def);
 
-function operator({ sourceId, mode, concurrent, project, projectConfig }, { g, id }, given) {
-  const b = builder(g);
-  const projectFn = given ?? b.use(project, projectConfig);
+function operator({ sourceId, mode, concurrent }, { g, id }, projectFn) {
   const bound = concurrent ?? Infinity; // JSON has no Infinity
   const inner = (k) => `${id}/inner/${k}`;
-  const recipeOf = (def) => (b.restorable ? { ref: def.ref, config: def.config ?? null } : { factory: () => def.fn });
+  const exists = (nodeId) => g.describe().some((n) => n.id === nodeId);
   // Inner nodes sit at id/inner/k; the kernel cannot delete a node, so a slot once made is
   // replaced. Which slots exist is read from the graph, not counted here, so it holds after a
   // restore too.
-  const place = (k, def) => (b.exists(inner(k)) ? b.replace(inner(k), def.deps, recipeOf(def)) : b.node(inner(k), def.deps, recipeOf(def)));
+  const place = (k, def) => {
+    const opts = def.recipe ? { recipe: def.recipe } : {};
+    if (exists(inner(k))) g.replace(inner(k), def.deps, def.fn, opts); else g.node(inner(k), def.deps, def.fn, opts);
+  };
 
   return (ctx) => {
     // inners: the live inners, as the last requested dependency list has them.
@@ -79,7 +82,7 @@ function operator({ sourceId, mode, concurrent, project, projectConfig }, { g, i
         while (taken.has(inner(k))) k += 1;
       }
       place(k, next);
-      const added = { node: inner(k), def: next };
+      const added = { node: inner(k), def: kept(next) };
       st.inners = mode === "switch" ? [added] : [...st.inners, added];
       changed = true;
     }
@@ -88,32 +91,33 @@ function operator({ sourceId, mode, concurrent, project, projectConfig }, { g, i
   };
 }
 
-// `project` is a function on a kernel graph; through a bundle it is the name of a registered
-// recipe that builds the projector (with `projectConfig`), which returns { deps, ref, config }, and
-// higherOrderRecipes must be in the restore's registry.
-function mapOperator(g, id, sourceId, project, mode, concurrent, projectConfig = null) {
-  const b = builder(g);
-  const config = { sourceId, mode, concurrent: concurrent === Infinity ? null : concurrent, ...(b.restorable && { project, projectConfig }) };
-  const recipe = { ref: "higher.map", config, factory: (c, at) => operator(c, at, b.restorable ? undefined : project) };
+// `project(value)` returns the inner's definition { deps, fn, recipe? }. With `recipe`, a recipe
+// { ref, config } that builds the projector, the operator carries its own recipe and a checkpoint
+// can restore it (F6, 2026-11-10); higherOrderRecipes goes in the restore's registry.
+function mapOperator(g, id, sourceId, project, mode, concurrent, recipe) {
+  const config = { sourceId, mode, concurrent: concurrent === Infinity ? null : concurrent };
   // A fresh activation starts with no inner, as TS's does: the rewire belongs to the lifetime
   // (F7, 2026-11-10), so the operator's dependencies go back to [sourceId] when it closes. Until
   // then a cleanup rewired the operator back.
-  b.node(id, [sourceId], recipe, { terminal: { complete: "manual", error: "manual" } });
+  g.node(id, [sourceId], operator(config, { g, id }, project), {
+    terminal: { complete: "manual", error: "manual" },
+    ...(recipe && { recipe: { ref: "higher.map", config: { ...config, project: recipe } } }),
+  });
   return { id };
 }
 
-export function switchMap(g, id, sourceId, project, { projectConfig } = {}) {
-  return mapOperator(g, id, sourceId, project, "switch", 1, projectConfig);
+export function switchMap(g, id, sourceId, project, { recipe } = {}) {
+  return mapOperator(g, id, sourceId, project, "switch", 1, recipe);
 }
 
-export function mergeMap(g, id, sourceId, project, { concurrent = Infinity, projectConfig } = {}) {
+export function mergeMap(g, id, sourceId, project, { concurrent = Infinity, recipe } = {}) {
   if (concurrent !== Infinity && (!Number.isInteger(concurrent) || concurrent < 1)) {
     throw new RangeError(`mergeMap ${id}: concurrent must be a positive integer or Infinity`);
   }
-  return mapOperator(g, id, sourceId, project, "merge", concurrent, projectConfig);
+  return mapOperator(g, id, sourceId, project, "merge", concurrent, recipe);
 }
 
 export const higherOrderRecipes = Object.freeze({
-  "higher.map": (config, at) => operator(config, at),
+  "higher.map": ({ project, ...config }, at) => operator(config, at, at.make(project.ref, project.config).fn),
   "higher.relay": () => relay,
 });

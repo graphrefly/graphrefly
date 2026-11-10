@@ -28,14 +28,12 @@
 // since the kernel puts the retained value in every START; a TS pull node gives START
 // only.
 
-import { builder } from "./build.mjs";
 
 // The holder: holds the input's arrays since the last INVALIDATE; on a fresh request runs the
 // author's function once with ctx.deps[0] showing the held arrays and ctx.pull.params.
 const holder = (serve) => (ctx) => {
   const [input, demand] = ctx.deps;
-  // First run of this lifetime: a request already in the demand state is old.
-  const st = ctx.state.get() ?? { queue: [], seen: demand.has ? demand.value.seq : 0 };
+  const st = ctx.state.get();
   let queue = st.queue;
   if (input.invalidated) {
     queue = [];
@@ -56,34 +54,41 @@ const holder = (serve) => (ctx) => {
   serve(view);
 };
 
-// `g` is a kernel graph or a checkpoint bundle (F6, 2026-11-10). Through a bundle the holder can
-// be restored: `serve` is then the name of a registered recipe that builds the serve function,
-// with `serveConfig` as its config, and demandRecipes must be in the restore's registry; on a
-// kernel graph `serve` is the function. After a restore, pullableOf(g, id) gives the handle.
-export function pullable(g, id, inputId, serve, serveConfig = null) {
-  const b = builder(g);
+// At each activation, restored ones included, a request already in the demand state is old: the
+// setup records it as seen before the first run (moved there on 2026-11-10, when the second
+// reviews found that a restored holder, whose private state came back, served a pull made while it
+// was inactive).
+const holderSetup = (ctx) => {
+  const demand = ctx.deps[1];
+  const st = ctx.state.get() ?? { queue: [], seen: 0 };
+  ctx.state.set({ ...st, seen: demand.has ? demand.value.seq : 0 });
+};
+
+// `serve` is the holder's service function. With `recipe`, a recipe { ref, config } that builds
+// it, the holder carries its own recipe and a checkpoint can restore it (F6, 2026-11-10);
+// demandRecipes goes in the restore's registry. After a restore, pullableOf(g, id) gives the handle.
+export function pullable(g, id, inputId, serve, { recipe } = {}) {
   const demandId = `${id}.pullDemand`;
-  b.state(demandId); // no value until the first pull
-  const recipe = b.restorable
-    ? { ref: "demand.holder", config: { serve, serveConfig }, factory: demandRecipes["demand.holder"] }
-    : { factory: () => holder(serve) };
+  g.state(demandId); // no value until the first pull
   // The demand state never completes; only the input ends the holder, hence manual complete.
-  b.node(id, [inputId, demandId], recipe, { quiet: true, terminal: { complete: "manual" }, invalidate: "manual" });
+  g.node(id, [inputId, demandId], holder(serve), {
+    quiet: true, terminal: { complete: "manual" }, invalidate: "manual", setup: holderSetup,
+    ...(recipe && { recipe: { ref: "demand.holder", config: { serve: recipe } } }),
+  });
   return pullableOf(g, id);
 }
 
 export function pullableOf(g, id) {
   const demandId = `${id}.pullDemand`;
-  const kernel = builder(g).kernel;
   return {
     id,
     demandId,
     // The request number is part of the state's value, not a counter in this closure, so it goes
     // on after a restore (a set with a function, 2026-11-10).
-    pull(params) { kernel.set(demandId, (prev) => Object.freeze({ seq: (prev?.seq ?? 0) + 1, params })); },
+    pull(params) { g.set(demandId, (prev) => Object.freeze({ seq: (prev?.seq ?? 0) + 1, params })); },
   };
 }
 
 export const demandRecipes = Object.freeze({
-  "demand.holder": ({ serve, serveConfig }, { g }) => holder(builder(g).use(serve, serveConfig)),
+  "demand.holder": ({ serve }, { make }) => ({ fn: holder(make(serve.ref, serve.config).fn), setup: holderSetup }),
 });

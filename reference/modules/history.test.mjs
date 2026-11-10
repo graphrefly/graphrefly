@@ -1,8 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createGraph, format } from "../kernel/kernel.mjs";
-import { history, historyOpts, historyRecipe } from "./history.mjs";
-import { recipes, restore } from "./checkpoint.mjs";
+import { history, historyRecipes } from "./history.mjs";
+import { capture, restore } from "./checkpoint.mjs";
 
 function during(g, body) {
   const start = g.trace.length;
@@ -105,15 +105,16 @@ test("history: n must be a positive integer", () => {
   assert.throws(() => history(g, "h", "s", 1.5), RangeError);
 });
 
-test("history: built from its recipe, checkpoint saves the list and restore brings it back", () => {
-  const reg = { history: historyRecipe };
-  const b = recipes(createGraph(), reg);
-  b.state("s");
-  b.node("h", ["s"], "history", { n: 3 }, historyOpts);
-  b.g.subscribe("k", "h");
-  for (const v of [1, 2, 3, 4]) b.g.set("s", v);
-  const r = restore(JSON.parse(JSON.stringify(b.capture())), reg);
-  assert.deepEqual(during(r.g, () => r.g.subscribe("k", "h")), ["k <- h: [START, DATA([[[2]],[[3]],[[4]]])]"]);
-  r.g.set("s", 5);
-  assert.deepEqual(r.g.get("h").value, [[[3]], [[4]], [[5]]], "the list went on from its saved private state");
+test("history: it carries its recipe, so checkpoint saves the list and restore brings it back", () => {
+  const g = createGraph();
+  g.state("s");
+  history(g, "h", "s", 3);
+  assert.deepEqual(g.definition("h").recipe, { ref: "history", config: { n: 3 } });
+  g.subscribe("k", "h");
+  for (const v of [1, 2, 3, 4]) g.set("s", v);
+  const r = restore(JSON.parse(JSON.stringify(capture(g))), historyRecipes);
+  assert.equal(r.definition("h").opts.invalidate, "manual", "its INVALIDATE policy comes back with it");
+  assert.deepEqual(during(r, () => r.subscribe("k", "h")), ["k <- h: [START, DATA([[[2]],[[3]],[[4]]])]"]);
+  r.set("s", 5);
+  assert.deepEqual(r.get("h").value, [[[3]], [[4]], [[5]]], "the list went on from its saved private state");
 });

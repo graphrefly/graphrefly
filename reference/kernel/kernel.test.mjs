@@ -166,12 +166,12 @@ test("K5/P10: a dependency ERROR propagates; a throw becomes this node's ERROR",
   assert.deepEqual(during(g, () => g.error("a", "boom")), ["sd <- d: [PENDING, ERROR(\"boom\")]"]);
 });
 
-test("K2: DATA and RESOLVED in one output array is rejected as a computation failure", () => {
+test("K2: RESOLVED in node output is rejected: only the kernel sends it", () => {
   const g = createGraph();
   g.state("a", 1);
   g.node("x", ["a"], (ctx) => { if (ctx.deps[0].value === 2) ctx.down([["DATA", 1], ["RESOLVED"]]); });
   g.subscribe("s", "x");
-  assert.deepEqual(during(g, () => g.set("a", 2)), ["s <- x: [PENDING, ERROR(\"DATA and RESOLVED in one array\")]"]);
+  assert.deepEqual(during(g, () => g.set("a", 2)), ["s <- x: [PENDING, ERROR(\"x: RESOLVED is sent by the kernel, not by node output\")]"]);
 });
 
 test("O11: PENDING in node output is rejected: during the run it becomes ERROR, after the run the caller gets it", () => {
@@ -661,33 +661,26 @@ test("O13: messages keep their written order; an array is split at its INVALIDAT
   assert.equal(g.get("src").value, 3);
 });
 
-// Evidence-gap review (decided by the user 2026-11-10): R-resolved-undirty@1 kept DATA and RESOLVED
-// apart for a whole wave; the D797 draft had narrowed it to one array.
-test("K2: one run cannot send DATA and RESOLVED even in separate arrays; after an INVALIDATE it starts over", () => {
-  const run = (out) => {
-    const g = createGraph();
-    g.state("a", 1);
-    g.node("x", ["a"], (ctx) => { if (ctx.deps[0].value === 2) out(ctx); else ctx.down([["DATA", 1]]); });
-    g.subscribe("s", "x");
-    return during(g, () => g.set("a", 2));
-  };
-  const refused = ["s <- x: [PENDING, ERROR(\"x: DATA and RESOLVED in one run\")]"];
-  assert.deepEqual(run((ctx) => { ctx.down([["RESOLVED"]]); ctx.down([["DATA", 2]]); }), refused);
-  assert.deepEqual(run((ctx) => { ctx.down([["DATA", 2]]); ctx.down([["RESOLVED"]]); }), refused);
-  assert.deepEqual(run((ctx) => { ctx.down([["DATA", 2]]); ctx.down([["INVALIDATE"]]); ctx.down([["RESOLVED"]]); }),
-    ["s <- x: [PENDING, DATA(2)]", "s <- x: [PENDING, INVALIDATE]", "s <- x: [PENDING, RESOLVED]"],
-    "the DATA before the INVALIDATE no longer counts");
+// The second reviews (decided by the user 2026-11-10): a function that has nothing to send sends
+// nothing, so RESOLVED is the kernel's alone, like PENDING, and DATA and RESOLVED cannot meet.
+test("K2: a silent run settles with the kernel's one RESOLVED; a function cannot send RESOLVED itself", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  let ctx;
+  g.node("x", ["a"], (c) => { ctx = c; if (c.deps[0].value === 1) c.down([["DATA", 1]]); });
+  g.subscribe("s", "x");
+  assert.deepEqual(during(g, () => g.set("a", 2)), ["s <- x: [PENDING, RESOLVED]"]);
+  assert.throws(() => ctx.down([["RESOLVED"]]), /RESOLVED is sent by the kernel/, "after the run too");
 });
 
-test("O13: a terminal must be last in its array; DATA and RESOLVED still cannot share one", () => {
+test("O13: a terminal must be last in its array; an array is split at its last INVALIDATE", () => {
   const g = createGraph();
   const src = {};
   g.node("src", [], (ctx) => { src.ctx = ctx; });
   g.subscribe("s", "src");
   assert.throws(() => src.ctx.down([["COMPLETE"], ["DATA", 1]]), KernelError);
-  assert.throws(() => src.ctx.down([["DATA", 1], ["RESOLVED"]]), KernelError);
-  assert.deepEqual(during(g, () => src.ctx.down([["DATA", 1], ["INVALIDATE"], ["RESOLVED"]])), ["s <- src: [PENDING, RESOLVED]"],
-    "the INVALIDATE finds no value and is dropped; the RESOLVED after it is its own array");
+  assert.deepEqual(during(g, () => src.ctx.down([["DATA", 1], ["INVALIDATE"], ["DATA", 2]])), ["s <- src: [PENDING, DATA(2)]"],
+    "the INVALIDATE finds no value and is dropped; what came before it is gone");
 });
 
 test("O13: in one wave an input that is invalidated and then gets a value: auto invalidates, then runs on the value", () => {
@@ -914,7 +907,7 @@ test("replace: an ended node gets a fresh instance; sinks get a START snapshot, 
     "the subscriber order is kept: d subscribed to x before t did");
 });
 
-test("replace: the old lifetime closes (signal, cleanup) and its late output is dropped; setup stays with the node", () => {
+test("replace: the old lifetime closes (signal, cleanup) and its late output is dropped; the new instance has its own setup", () => {
   const g = createGraph();
   g.state("a", 1);
   const log = [];
@@ -924,10 +917,14 @@ test("replace: the old lifetime closes (signal, cleanup) and its late output is 
     ctx.signal.addEventListener("abort", () => log.push("abort"));
   }, { setup: () => () => log.push("cleanup") });
   g.subscribe("s", "x");
-  g.replace("x", ["a"], () => {});
+  g.replace("x", ["a"], () => {}, { setup: () => () => log.push("cleanup 2") });
   assert.deepEqual(log, ["abort", "cleanup"]);
   g.unsubscribe("s", "x");
-  assert.deepEqual(log, ["abort", "cleanup", "cleanup"], "the new instance ran the same setup");
+  assert.deepEqual(log, ["abort", "cleanup", "cleanup 2"], "the new instance ran the setup it was given");
+  g.replace("x", ["a"], () => {});
+  g.subscribe("s", "x");
+  g.unsubscribe("s", "x");
+  assert.deepEqual(log, ["abort", "cleanup", "cleanup 2"], "a replace without one leaves the instance without setup");
   assert.deepEqual(during(g, () => late.down([["DATA", "old"]])), []);
 });
 
@@ -1784,16 +1781,19 @@ test("set with a function that returns the value it was given writes nothing, al
   assert.equal(g.get("a").value, f, "a function is written as a value by wrapping it");
 });
 
-test("definition(id) reads a node's dependencies and its current instance's function", () => {
+test("definition(id) reads a node's dependencies and its current instance's function, setup and recipe", () => {
   const g = createGraph();
   g.state("a", 1);
   const f = (ctx) => ctx.down([["DATA", 1]]);
   const h = (ctx) => ctx.down([["DATA", 2]]);
   g.node("p", ["a"], f);
-  assert.deepEqual(g.definition("a"), { deps: [], fn: null });
+  assert.deepEqual(g.definition("a"), { deps: [], fn: null, setup: null, recipe: null,
+    opts: { terminal: { complete: "auto", error: "auto" }, invalidate: "auto", quiet: false } });
   assert.equal(g.definition("p").fn, f);
-  g.replace("p", ["a"], h);
-  assert.deepEqual(g.definition("p"), { deps: ["a"], fn: h });
+  const setup = () => {};
+  g.replace("p", ["a"], h, { setup, recipe: { ref: "h" } });
+  const { opts, ...def } = g.definition("p");
+  assert.deepEqual(def, { deps: ["a"], fn: h, setup, recipe: { ref: "h" } });
   const d = g.definition("p");
   d.deps.push("x");
   assert.deepEqual(g.definition("p").deps, ["a"], "a copy: reading changes nothing");
@@ -1812,4 +1812,28 @@ test("rewire: refused onto a node that declares this one, even while that node i
   cy.rewire(["a"]); // y is off x for this lifetime only
   assert.throws(() => cx.rewire(["a", "y"]), /x would depend on itself through y/,
     "once y's lifetime closed, y would be back on x and x on y");
+});
+
+// H4 (2026-11-10): the seed's note follows the seeded instance, not the node.
+test("a seed's note reaches the seeded instance's first run only; a replace's new instance never sees it", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  const seen = [];
+  const fn = (ctx) => { seen.push(ctx.seed); ctx.down([["DATA", ctx.deps[0].value]]); };
+  g.node("x", ["a"], fn, { seed: { values: [1], note: { restored: true } } });
+  g.subscribe("s", "x");
+  g.set("a", 2);
+  g.replace("x", ["a"], fn);
+  assert.deepEqual(seen, [{ restored: true }, undefined, undefined]);
+});
+
+test("K7: a node that ends drops its private state with its lifetime", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  g.node("x", ["a"], (ctx) => { ctx.state.set({ seen: ctx.deps[0].value }); ctx.down([["DATA", 1]]); });
+  g.subscribe("s", "x");
+  assert.deepEqual(g.privateState("x"), { seen: 1 });
+  g.complete("a");
+  assert.equal(g.get("x").ended[0], "COMPLETE");
+  assert.equal(g.privateState("x"), undefined, "it will never run again, so nothing reads it");
 });

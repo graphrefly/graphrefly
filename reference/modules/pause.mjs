@@ -29,7 +29,6 @@
 //     (TS resumeAll).
 // It takes two nodes, see below.
 
-import { builder } from "./build.mjs";
 
 // The controller side of a declared control pair for node id: a plain state node
 // `${id}.pauseLocks` holding the lock list, and a handle to change it. The lock list is the
@@ -39,18 +38,17 @@ import { builder } from "./build.mjs";
 // taken after a restore cannot coincide with one already held. A source that must stop
 // working declares a dependency on locksId and starts or stops in its own function (O8).
 //
-// `g` is a kernel graph or a checkpoint bundle; through a bundle the nodes can be restored, and
-// pauseRecipes must be in the restore's registry (F6, 2026-11-10). After a restore,
-// pauseControl(g, id) gives a handle over the lock state that came back.
+// The pausable carries its recipe, so a checkpoint can restore it (F6, 2026-11-10); pauseRecipes
+// goes in the restore's registry. After a restore, pauseControl(g, id) gives a handle over the
+// lock state that came back.
 export function controlPair(g, id) {
   const locksId = `${id}.pauseLocks`;
-  builder(g).state(locksId, Object.freeze([]));
+  g.state(locksId, Object.freeze([]));
   return pauseControl(g, id);
 }
 
 export function pauseControl(g, id) {
   const locksId = `${id}.pauseLocks`;
-  g = builder(g).kernel;
   return {
     locksId,
     pause(lock = `${id}#${crypto.randomUUID()}`) {
@@ -71,7 +69,7 @@ export function pausable(g, id, inputId, { control = controlPair(g, id) } = {}) 
   // like [DATA, COMPLETE] or [DATA, ERROR] unchanged instead of dropping its DATA. Manual
   // INVALIDATE: the input's INVALIDATE reaches the function, which drops what it held.
   const opts = { terminal: { complete: "manual", error: "manual" }, invalidate: "manual" };
-  builder(g).node(id, [inputId, control.locksId], { ref: "pause.pausable", factory: pauseRecipes["pause.pausable"] }, opts);
+  g.node(id, [inputId, control.locksId], pausableFn, { ...opts, recipe: { ref: "pause.pausable", config: null } });
   return { id, ...control };
 }
 

@@ -5,11 +5,11 @@
 // what is covered and what is not. Comments cite the DS-17 principles (P1-P10).
 //
 // The interpreter is deterministic and has no dependencies. A node function has the
-// TS baseline's shape, (ctx) => void (R-fn-contract): it reads ctx.deps and ctx.state
+// TS baseline's shape, (ctx) => void (R-invocation): it reads ctx.deps and ctx.state
 // and emits only through ctx.down. Every array delivered to a sink is appended to
 // graph.trace, which is the observable behavior under test.
 //
-// Arrays keep their boundaries (R-wave-boundary): each ctx.down call is its own array,
+// Arrays keep their boundaries (R-wave): each ctx.down call is its own array,
 // and a node may send several arrays in one wave. Subscribers receive each array;
 // a dependent function sees them per dependency as ctx.deps[i].waves, like TS waveData.
 
@@ -43,7 +43,8 @@ const hasMark = (frames) => frames.some((f) => f.some(marks));
 // must come last. An INVALIDATE removes everything before it in the same array, and
 // goes out as an array of its own, so INVALIDATE never shares an array with a value:
 // [1, INV, 2, 3] is published as [INV] then [2, 3]. Rejections throw, before anything
-// is accepted (K2: DATA and RESOLVED cannot share one array).
+// is accepted. RESOLVED never reaches here from a node or the host: only the kernel sends it
+// (decided by the user 2026-11-10, after the second reviews), so DATA and RESOLVED cannot meet.
 function prepare(msgs) {
   for (const m of msgs) {
     if (!(m[0] in TIER)) throw new KernelError(`unknown message type ${m[0]}`);
@@ -52,9 +53,6 @@ function prepare(msgs) {
   if (end >= 0 && end < msgs.length - 1) throw new KernelError("a terminal must be the last message of its array");
   const cut = msgs.map((m) => m[0]).lastIndexOf("INVALIDATE");
   const rest = msgs.slice(cut + 1);
-  if (rest.some((m) => m[0] === "DATA") && rest.some((m) => m[0] === "RESOLVED")) {
-    throw new KernelError("DATA and RESOLVED in one array");
-  }
   const frames = cut >= 0 ? [[["INVALIDATE"]]] : [];
   if (rest.length) frames.push(rest);
   return frames;
@@ -116,9 +114,16 @@ export function createGraph({ report: hostReport } = {}) {
       invalidate: opts?.invalidate ?? "auto",
       quiet: Boolean(opts?.quiet), // H6: consumes input waves without forwarding PENDING
       // K7 (decided by the user 2026-11-10): setup(ctx) runs once per lifetime, before the
-      // function's first run in it; a function it returns is the lifetime's cleanup. It stays
-      // with the node across replace, as the policies do.
+      // function's first run in it; a function it returns is the lifetime's cleanup. Like the
+      // function it belongs to the instance, and a replace gives the new one its own (the user's
+      // choice after the second reviews, 2026-11-10; until then it stayed with the node).
       setup: opts?.setup ?? null,
+      // K10: an opaque description of how the instance was built, such as a checkpoint recipe
+      // { ref, config }. The kernel stores it with the definition and never reads it (2026-11-10).
+      recipe: opts?.recipe ?? null,
+      // H4: an opaque note in the seed, handed to the seeded instance's first run as ctx.seed and
+      // to no other run (2026-11-10, so a restore's first-activation check follows the instance).
+      seedNote: seed?.note,
       subs: [],            // ordered: { kind: "sink", id, cb } | { kind: "node", id, dep }
       active: false,
       lifetime: null,      // K7: the current lifetime of a computed node, see openLifetime; while it
@@ -206,7 +211,10 @@ export function createGraph({ report: hostReport } = {}) {
     n.inputs = n.deps.map(freshInput);
     const { cleanup } = lifetime;
     lifetime.cleanup = null;
-    if (cleanup) runCleanup(n, cleanup);
+    if (cleanup) runCleanup(n, cleanup); // it may still read the retiring private state
+    // Private state belongs to the lifetime, so it goes when the lifetime closes, also when the
+    // node ends (decided by the user 2026-11-10; an ended node kept it until it deactivated).
+    n.privateState = undefined;
     n.lifetime = null;
   }
 
@@ -319,25 +327,14 @@ export function createGraph({ report: hostReport } = {}) {
       })),
       state: { get: () => n.privateState, set: (v) => { n.privateState = v; } },
       down(msgs) {
-        // DS-17 O11: PENDING is sent by the kernel only, as the prefix of a value array.
+        // DS-17 O11: PENDING is sent by the kernel only, as the prefix of a value array. So is
+        // RESOLVED (decided by the user 2026-11-10): a function that has nothing to send sends
+        // nothing, and a node marked pending that sent nothing gets the kernel's RESOLVED.
         // A node cannot open a notification and settle it later, so none spans time.
-        if (msgs.some((m) => m[0] === "PENDING")) {
-          throw new KernelError(`${n.id}: PENDING is sent by the kernel, not by node output`);
-        }
+        const kernelOnly = msgs.find((m) => m[0] === "PENDING" || m[0] === "RESOLVED");
+        if (kernelOnly) throw new KernelError(`${n.id}: ${kernelOnly[0]} is sent by the kernel, not by node output`);
         const frames = prepare(msgs);
-        if (invoking) {
-          // K2 (decided by the user 2026-11-10, restoring R-resolved-undirty@1's intent): one run's
-          // output carries DATA or RESOLVED, not both, also across arrays; what came before an
-          // INVALIDATE no longer counts, as within an array.
-          const all = [...out, ...frames];
-          const cut = all.findLastIndex((f) => f.length === 1 && f[0][0] === "INVALIDATE");
-          const rest = all.slice(cut + 1).flat();
-          if (rest.some((m) => m[0] === "DATA") && rest.some((m) => m[0] === "RESOLVED")) {
-            throw new KernelError(`${n.id}: DATA and RESOLVED in one run`);
-          }
-          out.push(...frames);
-          return;
-        }
+        if (invoking) { out.push(...frames); return; }
         later(n, lifetime, frames);
       },
       // Aborted when this lifetime closes; not by INVALIDATE or by a rerun. Created on
@@ -358,6 +355,7 @@ export function createGraph({ report: hostReport } = {}) {
         request(() => { if (lifetime.open && n.lifetime === lifetime) rewireNode(n, [...deps]); });
       },
     };
+    if (n.seedNote !== undefined) { ctx.seed = n.seedNote; n.seedNote = undefined; }
     running = n;
     try {
       // K7: the lifetime's setup runs first, once, in the same invocation: what it sends is
@@ -584,14 +582,15 @@ export function createGraph({ report: hostReport } = {}) {
   // snapshot as its input, in one wave. Only the kernel can do this, because it rebinds the
   // dependents' input records.
 
-  function replaceNode(n, deps, fn) {
+  function replaceNode(n, deps, fn, opts) {
     const old = n.lifetime; // null when inactive or when the old instance has ended
     if (old) { old.open = false; old.controller?.abort(); }
     if (!old) n.deps = []; // an ended instance has released its dependencies already
     exchange(n, deps);
     if (old?.cleanup) runCleanup(n, old.cleanup);
     Object.assign(n, {
-      fn, declaredDeps: deps, seedDeps: null, lifetime: null, values: [], has: false, cache: undefined, ended: null, privateState: undefined, pending: false,
+      fn, setup: opts?.setup ?? null, recipe: opts?.recipe ?? null, seedNote: undefined,
+      declaredDeps: deps, seedDeps: null, lifetime: null, values: [], has: false, cache: undefined, ended: null, privateState: undefined, pending: false,
     });
     n.pendingDeps.clear();
     if (!n.active) return; // the next subscription activates the new instance
@@ -728,14 +727,16 @@ export function createGraph({ report: hostReport } = {}) {
       });
     },
     // A request like any other (K8): during a wave it waits until the wave is over.
-    replace(id, deps, fn) {
+    // A new instance with this definition: deps, fn and, in opts, its setup and recipe; the
+    // node keeps its id, subscribers and policies.
+    replace(id, deps, fn, opts) {
       const n = nodeOf(id);
       if (n.kind !== "node") throw new KernelError(`${id} is not a computed node`);
       assertDistinct("replace", n, deps);
       for (const d of deps) {
         if (d === id || dependsOn(nodeOf(d), id)) throw new KernelError(`replace: ${id} would depend on itself through ${d}`);
       }
-      request(() => replaceNode(n, deps, fn));
+      request(() => replaceNode(n, deps, fn, opts));
     },
     set(id, value) { hostInput(id, ["DATA", typeof value === "function" ? new Deferred(value) : value]); },
     invalidate(id) { hostInput(id, ["INVALIDATE"]); },
@@ -785,7 +786,8 @@ export function createGraph({ report: hostReport } = {}) {
     // The retained value as of now. Reading never computes or activates.
     get(id) {
       const n = nodeOf(id);
-      return { active: n.active, has: n.has, value: n.cache, values: [...n.values], ended: n.ended };
+      // `seed`: the note of a seed its instance has not run with yet (H4), else undefined.
+      return { active: n.active, has: n.has, value: n.cache, values: [...n.values], ended: n.ended, ...(n.seedNote !== undefined && { seed: n.seedNote }) };
     },
     // True at a wave boundary: no request running or queued and no batch body open (O5).
     idle() { return !busy && !staging; }, // the queue drains before busy clears
@@ -794,7 +796,10 @@ export function createGraph({ report: hostReport } = {}) {
     // definition its recipe built (C6, decided by the user 2026-11-10); reading changes nothing.
     definition(id) {
       const n = nodeOf(id);
-      return { deps: [...n.declaredDeps], fn: n.fn };
+      return {
+        deps: [...n.declaredDeps], fn: n.fn, setup: n.setup, recipe: n.recipe,
+        opts: { terminal: { ...n.terminal }, invalidate: n.invalidate, quiet: n.quiet }, // the node's policies
+      };
     },
     // The private state of the node's current lifetime, as of now (undefined without one).
     // Read for a checkpoint (R-snapshot); the kernel keeps no copy and never reads it.

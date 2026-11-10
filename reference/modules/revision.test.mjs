@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createGraph } from "../kernel/kernel.mjs";
-import { recipes, restore } from "./checkpoint.mjs";
+import { capture, restore } from "./checkpoint.mjs";
 import { revisionObserver } from "./revision.mjs";
 
 const at = (o, id) => {
@@ -81,16 +81,16 @@ test("two observers count apart, and stop ends counting", () => {
 
 test("positions saved beside a checkpoint come back unchanged, and go on from there", () => {
   const registry = { plus: ({ k }) => (ctx) => ctx.down([["DATA", ctx.deps[0].value + k]]) };
-  const b = recipes(createGraph(), registry);
-  b.state("a", 1);
-  b.node("p", ["a"], "plus", { k: 10 });
-  const o = revisionObserver(b.g, ["a", "p"]);
-  b.g.set("a", 2);
-  b.g.set("a", 3);
-  const saved = JSON.parse(JSON.stringify({ checkpoint: b.capture(), revisions: o.capture() }));
+  const original = createGraph();
+  original.state("a", 1);
+  original.node("p", ["a"], registry.plus({ k: 10 }), { recipe: { ref: "plus", config: { k: 10 } } });
+  const o = revisionObserver(original, ["a", "p"]);
+  original.set("a", 2);
+  original.set("a", 3);
+  const saved = JSON.parse(JSON.stringify({ checkpoint: capture(original), revisions: o.capture() }));
   assert.deepEqual(saved.revisions, { a: { revision: 2, valueRevision: 2 }, p: { revision: 2, valueRevision: 2 } });
 
-  const { g } = restore(saved.checkpoint, registry);
+  const g = restore(saved.checkpoint, registry);
   const r = revisionObserver(g, ["a", "p"], { from: saved.revisions });
   assert.deepEqual(r.capture(), saved.revisions, "restore and the new subscription advance nothing");
   g.set("a", 4);

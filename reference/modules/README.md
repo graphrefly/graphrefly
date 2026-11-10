@@ -8,13 +8,15 @@ finding about the DS-17 classification, not something to patch in quietly.
 npm run test:reference
 ```
 
-Every module builds its nodes through [build.mjs](build.mjs)'s `builder(g)`, where `g` is a kernel
-graph or a checkpoint bundle (`recipes(g, registry)`), so a graph with any module can be captured and
-restored (F6, the user's choice, 2026-11-10). Each module exports its recipes (`pauseRecipes`,
-`demandRecipes`, `restartRecipes`, `higherOrderRecipes`), which a restore's registry must include, and
-a handle over a restored graph (`pauseControl`, `pausableOf`, `pullableOf`, `restartableOf`). Through a
-bundle, a function a module takes from its user is a registered recipe named by reference: demand's
-`serve`, restart's `inner: { ref, config }`, a higher-order `project` returning `{ deps, ref, config }`.
+Every module builds its nodes on an ordinary graph, each with its recipe in its definition (the
+kernel's node option `recipe`), so a graph with any module can be captured and restored (F6, the
+user's choice, 2026-11-10; one build path since D799 the same day). Each module exports its recipes
+(`pauseRecipes`, `demandRecipes`, `restartRecipes`, `higherOrderRecipes`, `historyRecipes`), which a
+restore's registry must include, and a handle over a restored graph (`pauseControl`, `pausableOf`,
+`pullableOf`, `restartableOf`). A function a module takes from its user is always given as a function;
+to make the module's nodes restorable the user adds a recipe that builds it: demand's
+`pullable(g, id, input, serve, { recipe })`, restart's `{ fn, recipe }`, and a higher-order
+`project` whose definitions carry `recipe` plus the operator's `{ recipe }` for the projector.
 
 ## Pause ([pause.mjs](pause.mjs), [pause.test.mjs](pause.test.mjs))
 
@@ -494,34 +496,28 @@ The kernel side, `rewire` and `ctx.deps[i].id`, is listed in the kernel README.
 
 ## Checkpoint and restore, O5 ([checkpoint.mjs](checkpoint.mjs), [checkpoint.test.mjs](checkpoint.test.mjs))
 
-**Module graphs (F6, 2026-11-10).** Fable's review found that no graph with a module could be
-restored: the modules built their nodes on the kernel directly, and a node that rewired itself or
-had an inner replaced was local-only. With the user's choice that every module be supported:
+**Reshaped on 2026-11-10 (D799), after the second reviews.** F6 had first made every module restorable
+through a building service, `recipes(g, registry)`, that kept its own record of how each node was
+built, beside the kernel: the bundle's `replace` and `make`, a `builder` in every module with two build
+paths, factories given `{ g, id }`, and a comparison of functions with `definition(id)`. Both reviews
+traced these to that record, and each reproduced a defect of it: a replace inside a throwing batch
+lost the recipe (Codex); after a replace the restored graph ran the new recipe's setup while the
+original kept the old one (Codex); a restart's renewal of a restored ended inner skipped its run,
+because the first-activation check sat on the node rather than the instance (Fable). The user chose
+the TS shape: the recipe is part of the instance's definition (`recipe` node option, given to
+`replace` with the setup), so checkpoint is two functions, `capture(g)` and `restore(cp, registry)`,
+with no record of its own. Restore builds each node after its declared dependencies (a replace may
+point a node at one made later, which broke restore; Codex), and the first-activation check reads the
+seed's note, which the kernel hands only to the seeded instance's first run (`ctx.seed`). Demand and
+restart record the activation's request as seen in their setup, so a restored holder or owner no
+longer serves a request made while it was inactive (Fable), and the restore wrapper's `deps` view is
+writable (a restored holder had ended with ERROR; Fable). A restored node's definition function is
+the restore wrapper, which runs the real function unchanged once its note is used.
 
-- A recipe factory is called as `factory(config, { g, id })`, where `g` is the bundle, so a function
-  that builds or replaces nodes keeps them restorable. The bundle has `replace(id, deps, ref, config)`,
-  which records the new recipe (the node keeps its opts and setup), and `make(ref, config)`, for a
-  recipe that takes another one by reference.
-- A node that a `ctx.rewire` moved for its lifetime (F7) is saved with those dependencies
-  (`saved.deps`), and the kernel's seed gives them to its first lifetime; closing it puts back the
-  declared ones.
-- restart replaces its inner with the inner's own definition (`definition(id).fn`), so only the
-  instance changes and the inner stays restorable. A restored owner whose inner had ended was
-  waiting for a retry no checkpoint holds; its setup renews the inner at its first activation, as a
-  deactivation does (only a restored owner has private state then). A pending retry's timer is now
-  cleared when the lifetime closes; before, it fired into nothing and kept the process alive.
-- The higher-order operator reads which inner slots exist from the graph instead of a counter in
-  its closure; `concurrent: Infinity` is saved as `null`, since JSON has no Infinity.
-- Restart's private state no longer holds `seen: undefined` before the first request (it is 0), so
-  it is JSON.
-
-Tests: a paused pausable, a demand holder after a pull, a restart owner after a request, a restart
-owner waiting for a retry, a switchMap with a live inner (captured again after it switched) and a
-mergeMap with a waiting value, each restored and given the same steps as the original. Mutations,
-8, each failing at least one test: the lifetime dependencies not saved; the seed's dependencies
-ignored; no renewal after a restore; renewal at every activation; a restart replacing its inner with
-a new function; the slot count kept in a closure; a bundle replace not recorded; demand's request
-number kept in a closure.
+Tests (39 in this file): the earlier ones on the new API, round trips of every module, and one per
+defect above, each failing on the old behaviour. Mutations, 5 more, each failing at least one test:
+RESOLVED accepted from a node; replace keeping the old recipe; the seed note reaching every run;
+restore in checkpoint order; a holder keeping the saved `seen`.
 
 Built 2026-11-08. O5 had been decided the same day with its default: capture at a wave boundary, no
 pending-FIFO or receipt capture in the kernel. The user's choices, in order:
@@ -560,17 +556,18 @@ pending-FIFO or receipt capture in the kernel. The user's choices, in order:
    it. The checkpoint no longer saves a cleanup flag or wraps `ctx`.
 
 ```js
-const b = recipes(createGraph(), { sum: () => sumFn, plus: ({ k }) => plusFn(k) });
-b.state("a", 1); b.node("p", ["a"], "plus", { k: 10 });   // a recipe: ref and JSON config
-const cp = b.capture();                                     // JSON; at a wave boundary only
-const r = restore(cp, registry);                            // a new graph, nothing subscribed
+const registry = { sum: () => sumFn, plus: ({ k }) => plusFn(k) };
+g.state("a", 1);
+g.node("p", ["a"], plusFn(10), { recipe: { ref: "plus", config: { k: 10 } } }); // ref and JSON config
+const cp = capture(g);                 // JSON; at a wave boundary only
+const r = restore(cp, registry);       // a new graph, nothing subscribed
 ```
 
 **Semantics**
 
-- A node is restorable when built through `recipes`: a state, or a computed node whose fn is
-  `registry[ref](config)`, which returns the function or `{ fn, setup }`. Function bodies are never
-  saved. A node built another way, or a recipe
+- A node is restorable when it is a state, or a computed node whose current instance carries a
+  recipe `{ ref, config }`; at restore `registry[ref](config, { g, id, make })` returns the function
+  or `{ fn, setup }`. Function bodies are never saved. (Superseded wording kept for history:) A node built another way, or a recipe
   node whose definition has changed since (its dependencies or its function, by `replace`), or
   that is rewired for its current lifetime (`ctx.rewire`, as `mapOperator` does), is saved as
   local-only, and restoring it fails, as R-snapshot
@@ -693,7 +690,7 @@ Removed because they could not change anything:
 
 | New | Why it stays |
 |---|---|
-| `recipes(g, registry)` with `node(id, deps, ref, config, opts)`, and `restore(checkpoint, registry)` | R-snapshot's factory reference; TS's `restoreGraph(checkpoint, { registry })` |
+| `capture(g)` and `restore(checkpoint, registry)`, over a graph whose instances carry recipes | R-snapshot's factory reference; TS's node option `restore` and `restoreGraph(checkpoint, { registry })` |
 | Per computed node, the inputs it received | Needed for the change check, and for capturing a restored graph again before activation, when a dependency may have changed after restore. Equal to the dependencies' values at a wave boundary, so the kernel need not expose its input records |
 | The first-activation wrapper, which only compares inputs | The refresh on a pre-attachment change is the user's choice (point 3 above), a policy rather than kernel behavior; without it the seed alone gives TS's behavior |
 

@@ -34,10 +34,10 @@ Invariants, each mutation-checked (see formal/README.md):
   PendingPrefix         PENDING is exactly the first message of each array
                         carrying DATA, RESOLVED or a terminal (R-wave, R-messages)
   InvalidateAlone       INVALIDATE travels as an array of its own (R-wave)
-  NoDataWithResolved    DATA and RESOLVED never share an array (R-wave)
-  NoDataWithResolvedInRun  nor one node's delivery in a wave, across its arrays,
-                        after its last INVALIDATE (K2, decided by the user
-                        2026-11-10, restoring R-resolved-undirty@1's intent)
+  NoDataWithResolved    DATA and RESOLVED never share an array (R-wave): only
+                        the kernel sends RESOLVED, to a pending node that sent
+                        nothing (decided by the user 2026-11-10; a node's output
+                        with RESOLVED is rejected like one with PENDING)
   TerminalLastAndFinal  a terminal is last and nothing follows it (R-terminals)
   InvalidateEffective   INVALIDATE is sent only by a node that held a value
                         (R-invalidation)
@@ -91,8 +91,6 @@ Menu(n) ==
                     << <<"ERR">> >>,
                     << <<"PEN", "D1">> >>,
                     << <<"D1", "RES">> >>,
-                    << <<"RES">>, <<"D1">> >>,
-                    << <<"D1">>, <<"INV">>, <<"RES">> >>,
                     << <<"COM", "D1">> >>,
                     << <<"COM">>, <<"D1">> >> }
     [] n = "C" -> { <<>>, << <<"D2">> >>, << <<"ERR">> >> }
@@ -138,17 +136,11 @@ DataVals(a) == LET d == SelectSeq(a, IsData)
 LastInv(a)  == LET I == {i \in DOMAIN a : a[i] = "INV"} IN IF I = {} THEN 0 ELSE Max(I)
 
 \* ---- one submitted array: checked, then split at its last INVALIDATE ----
+\* PENDING and RESOLVED are the kernel's alone (R-wave), and a terminal is last.
 ValidArr(a) ==
   /\ "PEN" \notin Range(a)
+  /\ "RES" \notin Range(a)
   /\ \A i \in DOMAIN a : IsTerm(a[i]) => i = Len(a)
-  /\ LET c == LastInv(a)
-     IN ~((\E i \in (c + 1)..Len(a) : IsData(a[i])) /\ (\E i \in (c + 1)..Len(a) : a[i] = "RES"))
-\* One delivery, across its arrays: after its last INVALIDATE, not both DATA and RESOLVED.
-RunExclusive(fs) ==
-  LET I == {i \in DOMAIN fs : fs[i] = <<"INV">>}
-      c == IF I = {} THEN 0 ELSE Max(I)
-      rest == UNION {Range(fs[i]) : i \in (c + 1)..Len(fs)}
-  IN ~((\E m \in rest : IsData(m)) /\ "RES" \in rest)
 
 Prepare(a) ==
   LET c == LastInv(a)
@@ -156,7 +148,7 @@ Prepare(a) ==
      \o (IF c < Len(a) THEN << SubSeq(a, c + 1, Len(a)) >> ELSE <<>>)
 RECURSIVE PrepAll(_)
 PrepAll(raw) == IF raw = <<>> THEN <<>> ELSE Prepare(Head(raw)) \o PrepAll(Tail(raw))
-ValidOut(raw) == (\A i \in DOMAIN raw : ValidArr(raw[i])) /\ RunExclusive(PrepAll(raw))
+ValidOut(raw) == \A i \in DOMAIN raw : ValidArr(raw[i])
 
 \* ---- apply: what the node holds; an ineffective INVALIDATE is dropped ----
 ApplyFrame(st, f) ==
@@ -196,7 +188,6 @@ Deliver(s, n, fr) ==
              !.pend[n]    = FALSE,
              !.settles[n] = @ + (IF s1.pend[n] THEN 1 ELSE 0),
              !.hist[n]    = @ \o out,
-             !.excl       = @ /\ RunExclusive(f1),
              !.inbox    = [m \in Nodes |-> IF m \in subs
                                            THEN [s1.inbox[m] EXCEPT ![n] = @ \o f1]
                                            ELSE s1.inbox[m]],
@@ -226,7 +217,6 @@ Init == \E p \in Policies :
         runs     |-> [n \in Nodes |-> 0],
         settles  |-> [n \in Nodes |-> 0],
         hist     |-> [n \in Nodes |-> <<>>],
-        excl     |-> TRUE,
         early    |-> FALSE,
         errRan   |-> FALSE,
         pol      |-> p,
@@ -339,8 +329,6 @@ PendingPrefix ==
 
 InvalidateAlone ==
   \A n \in Nodes : \A i \in DOMAIN Sent(n) : "INV" \in Range(Sent(n)[i]) => Sent(n)[i] = <<"PEN", "INV">>
-
-NoDataWithResolvedInRun == k.excl
 
 NoDataWithResolved ==
   \A n \in Nodes : \A i \in DOMAIN Sent(n) :

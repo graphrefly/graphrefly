@@ -31,7 +31,9 @@ that keeps its ctx, set private state, or send COMPLETE. P and M choose none;
 N may choose any of them. Late work later calls the old ctx.down, which is a
 request. Whether A and N have a setup is chosen at Init (decided by the user
 2026-11-10): it runs once per lifetime, before the first run, and registers
-the lifetime's one cleanup; it stays with N across replace.
+the lifetime's one cleanup. It belongs to the instance: a replace gives N's new
+instance a setup or none (the user's choice after the second reviews,
+2026-11-10). A node that ends drops its private state with its lifetime.
 A batch body, opened at a wave boundary or from a callback while a request
 runs, stages writes to S and topology requests; it returns or throws. Opened
 at a boundary, its commit runs when it returns; opened while a request runs,
@@ -78,6 +80,7 @@ Invariants, each mutation-checked (see formal/README.md):
                          declared dependencies: a rewire lasts for its lifetime
   RewireOfThisLifetime   a node off its declared dependencies was rewired in its
                          current lifetime, never by a request from an older one
+  EndedHoldsNoPriv       a node that has ended holds no private state
   RewireKeeps            rewire keeps the instance: its lifetime, private
                          state, values and sinks (R-request-order)
   FIFO                   requests run in the order they were made
@@ -112,7 +115,7 @@ ChoiceFns == {[P |-> "plain", A |-> "plain", M |-> "plain", N |-> x] :
 
 Rq(t, n, d) == [t |-> t, n |-> n, d |-> d, w |-> <<"", 0>>, s |-> 0, c |-> FALSE]
 TopoReq == {Rq("sub", x, {}) : x \in Sinks} \cup {Rq("unsub", x, {}) : x \in Sinks}
-           \cup {Rq("replace", "N", D) : D \in DepChoices}
+           \cup {[Rq("replace", "N", D) EXCEPT !.c = sb] : D \in DepChoices, sb \in BOOLEAN}
 Req == TopoReq \cup {Rq("set", "S", {}), Rq("complete", "S", {})}
 \* A rewire through N's ctx of its latest lifetime, open or already closed.
 RwReq(s) == {[Rq("rewire", "N", D) EXCEPT !.w = <<"N", s.life["N"]>>] : D \in DepChoices}
@@ -155,7 +158,7 @@ Run(s, n, c) ==
   IN IF ch = "end" THEN End(s1, n) ELSE s1
 
 \* A terminal ends n for good and closes its lifetime; n stays subscribed.
-End(s, n) == CloseLife([s EXCEPT !.ended[n] = TRUE], n)
+End(s, n) == LET s1 == CloseLife([s EXCEPT !.ended[n] = TRUE], n) IN [s1 EXCEPT !.priv[n] = 0]
 
 AutoComplete(s, n) ==
   IF ~s.ended[n] /\ s.deps[n] # {} /\ \A d \in s.deps[n] : s.ended[d] THEN End(s, n) ELSE s
@@ -258,14 +261,15 @@ Rewire(s, D, c, lid) ==
                     ELSE s1
            keeps == ~(s.active["N"] /\ ~s.ended["N"])
                     \/ /\ s2.life["N"] = s.life["N"]
-                       /\ (s.priv["N"] # 0 => s2.priv["N"] = s.priv["N"])
+                       \* unless the rewire's own settlement ends N, which drops it with its lifetime
+                       /\ (s.priv["N"] # 0 /\ ~s2.ended["N"] => s2.priv["N"] = s.priv["N"])
                        /\ (s.has["N"] => s2.has["N"])
                        /\ s2.sink = s.sink
        IN [s2 EXCEPT !.rwOK = @ /\ keeps, !.rwLife = lid]
 
 \* Replace closes the instance (its late output is dropped, its cleanups run after the
 \* exchange) and starts a new one under the same subscribers, as on a first activation.
-Replace(s, D, c) ==
+Replace(s, D, sb, c) ==
   LET n   == "N"
       old == s.open[n]
       s0  == [s EXCEPT !.replTarget = n]
@@ -273,7 +277,7 @@ Replace(s, D, c) ==
              ELSE [s0 EXCEPT !.deps[n] = {}]   \* an ended instance has released its dependencies
       s2  == Exchange(s1, n, D, c)
       s3  == IF old THEN RunCleanups(s2, n, s.life[n]) ELSE s2
-      s4  == [s3 EXCEPT !.has[n] = FALSE, !.ended[n] = FALSE, !.priv[n] = 0, !.decl[n] = D]
+      s4  == [s3 EXCEPT !.has[n] = FALSE, !.ended[n] = FALSE, !.priv[n] = 0, !.decl[n] = D, !.setup[n] = sb]
   IN IF ~s4.active[n] THEN s4 ELSE FirstRun(OpenLife(s4, n), n, c)
 
 Exec(s, r, c) ==
@@ -282,7 +286,7 @@ Exec(s, r, c) ==
     [] r.t = "set"      -> SourceWave(s, c, 1, FALSE)
     [] r.t = "complete" -> SourceWave(s, c, 0, TRUE)
     [] r.t = "rewire"   -> Rewire(s, r.d, c, r.w[2])
-    [] r.t = "replace"  -> Replace(s, r.d, c)
+    [] r.t = "replace"  -> Replace(s, r.d, r.c, c)
     [] r.t = "late"     -> LateOut(s, r.w, c)
     [] r.t = "commit"   -> SourceWave(s, c, r.s, r.c)
 
@@ -425,6 +429,7 @@ RunOncePerRequest == k.runOK
 KeptUpstreamStays == k.reopenOK
 RewireKeeps == k.rwOK
 DeclaredWhenClosed == \A m \in Computed : ~k.open[m] => k.deps[m] = k.decl[m]
+EndedHoldsNoPriv == \A m \in Computed : k.ended[m] => k.priv[m] = 0
 RewireOfThisLifetime == k.deps["N"] # k.decl["N"] => k.rwLife = k.life["N"]
 \* Ids are given in the order requests are made (a batch's requests right after its
 \* commit), so FIFO is: each request that starts is the next id.

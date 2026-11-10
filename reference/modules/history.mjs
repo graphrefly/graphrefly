@@ -16,7 +16,8 @@
 // - an INVALIDATE from the source is the function's input (manual policy): it clears the list,
 //   and the node sends INVALIDATE itself;
 // - deactivation drops it (K7), as TS's ring is dropped (BH6);
-// - checkpoint saves it, when the node is built from `historyRecipe` through `recipes`.
+// - checkpoint saves it: the node carries its recipe { ref: "history", config: { n } }, and
+//   historyRecipes goes in the restore's registry (2026-11-10).
 // On activation the list starts with one entry, a wave of one array: the source's last array, all
 // its START snapshot holds.
 
@@ -42,5 +43,7 @@ export const historyRecipe = ({ n }) => (ctx) => {
 
 export function history(g, id, sourceId, n) {
   if (!Number.isInteger(n) || n < 1) throw new RangeError(`history ${id}: n must be a positive integer`);
-  return g.node(id, [sourceId], historyRecipe({ n }), historyOpts);
+  return g.node(id, [sourceId], historyRecipe({ n }), { ...historyOpts, recipe: { ref: "history", config: { n } } });
 }
+
+export const historyRecipes = Object.freeze({ history: historyRecipe });

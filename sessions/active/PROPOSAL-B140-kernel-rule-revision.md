@@ -605,3 +605,25 @@ Evidence gaps 到此都有了结论：两项范围外（job pool 由用户暂缓
   改名 PENDING。参考内核和测试都改说 PENDING。
 
 B140 剩下的：owner routing（各 runtime 各自接纳自己的那部分、记录 source-bound 证据）和各模块规则的激活。
+
+### 9.9 第二轮审查之后（2026-11-10，D799）
+
+激活之后，用户请 Fable（一个新会话）和 Codex 从整体看精简程度。两份报告的关键发现都复现了。用户定了四件事，记为 graphrefly:D799：
+1. **RESOLVED 只由内核发**，和 PENDING 一样：函数自己发 RESOLVED 和什么都不发是一回事。一次运行内互斥、数组内互斥、batch 里的拒绝都删了
+   （Fable；Codex 量过那个检查是平方级的）。上一轮 F2 的第 1 步就是这一条，当时没有定。
+2. **checkpoint 重做**：recipe 成为实例定义的一部分（内核存着、从不读，和 TS 的 `restore` 选项一样），setup 和函数一样属于实例，
+   replace 时一起给；checkpoint 只剩 `capture(g)` 和 `restore(cp, registry)`，按依赖顺序重建，首次激活的比较通过 seed 的 note 跟着实例走。
+   建图服务、它的 replace 和 make、builder、按 id 的 recipe 记录、函数比较都去掉了，每个模块只剩一条路径。随之消失的缺陷：
+   batch 回滚丢 recipe、replace 后 setup 和 recipe 对不上（Codex）、restart 换新的 inner 不运行（Fable），以及 replace 到后建的依赖后恢复失败（Codex）。
+3. **结束的节点在 lifetime 关闭时丢掉私有状态。**
+4. **batch commit 因 set 的函数抛错而失败时，body 里的拓扑请求照常执行**（规则文字改成这样）。
+
+另外修了：恢复出来的 demand holder 和 restart owner 会服务不活跃时发的请求（两个模块改在 setup 里把激活时的请求记为已服务）、
+恢复出来的 holder 以 ERROR 结束（只读的 deps 视图）（Fable 2a、2c）。7 条已激活的规则出了第 2 版（R-wave、R-failure、R-node、R-lifetime、
+R-request-order、R-subscription、R-invocation），由 D799 激活；R-checkpoint 草案原处重写；C-12、C-28、C-38 改了。参考测试 435 个全过；
+kernel_wave 两个 wave 回到 990,778 个状态、三个 wave 114,655,914 个状态，24 个变异全抓到；kernel_lifetime 加了 EndedHoldsNoPriv，149,216 和 4,227,370 个状态，32 个变异全抓到；
+五个模块模型照旧通过。
+
+两份审查都认为该保留的：每个 lifetime 一次的 setup、带函数的 set、只在 lifetime 内有效的 ctx.rewire 和两份依赖、seed.deps、数组快照。
+Fable 另有一点事实：两个真实消费者用不到 11-10 新加的任何一项，这些接口的证据都来自模块测试；某个模块以后若被搁置，它独占的内核接口要一起重新看。
+还没改的小处：`ctx.deps[i].waves` 没有改名（9.6 已记）。

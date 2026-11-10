@@ -26,8 +26,8 @@ then still says DIRTY for the same message.
 
 ## Surface
 
-The graph: `createGraph({ report })` takes an optional host reporter. Then `state(id, initial)`, `node(id, deps, fn, { terminal, quiet, seed })`,
-`subscribe(sinkId, id, callback?)`, `unsubscribe`, `replace(id, deps, fn)`, `set`, `invalidate`, `complete`, `error`, `batch`,
+The graph: `createGraph({ report })` takes an optional host reporter. Then `state(id, initial)`, `node(id, deps, fn, { terminal, invalidate, quiet, setup, recipe, seed })`,
+`subscribe(sinkId, id, callback?)`, `unsubscribe`, `replace(id, deps, fn, { setup, recipe })`, `set`, `invalidate`, `complete`, `error`, `batch`,
 `get(id)` (`active`, `has`, `value`, `ended`), `status(id)`, `describe()`, `idle()`, `privateState(id)`, `definition(id)` and `trace`.
 
 `idle()` and `privateState(id)` were added 2026-11-08 for the checkpoint module, as reads only:
@@ -49,8 +49,11 @@ ends the instance, and a `replace` of an ended node gives its sinks START again.
 the node's first lifetime starts on them, and closing it puts back the declared ones (F6). Before that,
 the checkpoint module built without a seed found two cases it could not restore (see the
 [modules README](../modules/README.md)).
-- What it holds: `{ values?, ended?, state? }`. It gives a computed node its last array's values
-  (K3; `[null]` is a value, `[]` none), a terminal and private state, without running its fn.
+- What it holds: `{ values?, ended?, state?, deps?, note? }`. It gives a computed node its last
+  array's values (K3; `[null]` is a value, `[]` none), a terminal and private state, without running
+  its fn; `deps` (2026-11-10) are its first lifetime's dependencies, and `note` (2026-11-10, D799) is
+  handed as `ctx.seed` to the seeded instance's first run only, and shown by `get(id).seed` until
+  then.
   Without a seed nothing changes.
 - A seeded ended node is ended like any ended node after its last release: it keeps its declared
   dependencies and never runs (P5).
@@ -112,12 +115,19 @@ manual INVALIDATE policy; `onDeactivation(f)` on 2026-11-10, replaced by the nod
 `g.node(id, deps, fn, opts)` takes, besides the policies (`terminal`, `invalidate`) and `quiet`, an
 optional `setup(ctx)`: it runs once per lifetime, just before the function's first run, with that
 run's ctx; what it sends is part of that run's output, a throw in it ends the node as a throw of the
-function does, and a function it returns is the lifetime's cleanup. It stays with the node across
-`replace`, as the policies do. TS's `source(factory, setup)` helper has the same shape.
+function does, and a function it returns is the lifetime's cleanup. Like the function it belongs to
+the instance: `replace(id, deps, fn, { setup, recipe })` gives the new instance its own, or none
+(D799, 2026-11-10; it stayed with the node before). `recipe` is an opaque description of how the
+instance was built, such as checkpoint's `{ ref, config }`; the kernel stores it and never reads it.
+`definition(id)` gives `{ deps, fn, setup, recipe, opts }`, `opts` being the node's policies. TS's
+`source(factory, setup)` helper has the setup's shape.
 
-An array keeps the order its author wrote (DS-17 O13): a terminal must be last, DATA and RESOLVED
-cannot share one, and an array is split at its last INVALIDATE, dropping what came before it:
-`[1, INV, 2, 3]` is published as `[INV]` then `[2, 3]`.
+An array keeps the order its author wrote (DS-17 O13): a terminal must be last, and an array is split
+at its last INVALIDATE, dropping what came before it: `[1, INV, 2, 3]` is published as `[INV]` then
+`[2, 3]`. RESOLVED, like PENDING, is sent by the kernel only (D799, 2026-11-10): node output that
+carries it is rejected, so DATA and RESOLVED never meet. Until then a function could send RESOLVED,
+which was the same as sending nothing, and the kernel checked that DATA and RESOLVED did not share an
+array, and for a few hours of 2026-11-10 a run.
 
 ### Differences from the TS baseline (`dafc5ae`)
 
@@ -138,8 +148,7 @@ registration while the lifetime is open is accepted, and `onInvalidate` hooks we
 | A dependent runs once on all arrays a dependency sent in the wave; they reach each subscriber after the function returned, all arrays to one subscriber, then the next | Each `_down` call is delivered to all subscribers at once, while the function runs | Delivering after the run comes from P9; one delivery per subscriber keeps a dependent from settling between two arrays of the same dependency |
 | A sink receives one array per call, `cb(msgs)` | A sink receives one message per call plus delivery metadata, `sink(msg, { wave, last })` | R-wave-boundary@2: the array is the unit. Same information; found 2026-11-07 while writing the H5 module, not listed before |
 | `signal` | No signal on ctx | R-fn-contract@2 and R-ctx-lifetime (draft) |
-| A registration after close runs once at once | Ignored | R-cleanup-hooks@2 (draft) |
-| `replace(id, deps, fn)`: graph-level replace of one computed node, at a wave boundary | No counterpart: TS restarts through `resubscribable` | Added 2026-11-08 for the restart module (O7): a fresh instance under the same id |
+| `replace(id, deps, fn, { setup, recipe })`: graph-level replace of one computed node, at a wave boundary | No counterpart: TS restarts through `resubscribable` | Added 2026-11-08 for the restart module (O7): a fresh instance under the same id |
 | `set(id, fn)`: given a function, the value is computed from the state's value when the write runs in request order (in a batch, from the writes staged before it, at the commit); a function that returns the value it was given writes nothing; a throw fails the write, in a batch the whole commit; a plain value is always written, and a function is written as a value only wrapped (`set(id, () => f)`) | TS's state `set` takes a value only (only TS's adapter store has `update(fn)`); TS's pause lock set lives inside the paused node | Added 2026-11-10 at the user's choice (root cause 3 of the D797 review), first as a separate `update(id, fn)` and folded into `set` the same day, as React's `setState`: `set` replaces the whole value and cannot read a write still queued, so the pause handle kept its own lock set and demand and restart kept request counters in closures, outside the graph and lost on restore. The identity bail-out follows React's `setState(prev => prev)`, so a resume of a lock nobody holds starts no wave |
 | `ctx.rewire(deps)` (on ctx since 2026-11-10, F7; a graph `rewire(id, deps, fn)` before): one request with the node's whole new dependency list, for its current lifetime; queued from inside the function (K8), dropped once the lifetime has closed, and undone when it closes | `ctx.rewireNext.subscribeDep`/`unsubscribeDep`/`replaceDeps` (D47), and the immediate `subscribeDep`/`unsubscribeDep`/`replaceDeps` on a node | Added 2026-11-08 at the user's request, after mergeMap on `replace` showed what replace costs it. One form: the kernel compares the lists, so add, remove and reorder are the same request |
 | A `subscribe`, `unsubscribe`, `replace` or `rewire` made in a batch body runs after the commit, in request order; a throwing body drops it with the inputs | A rewire waits for the batch only when its node has uncommitted batch output, and is dropped on rollback; any other topology change runs at once | O3 and K8 (2026-11-08): nothing is delivered before commit, and a topology change delivers (a START snapshot, a settlement, cleanups), so it waits like any request made during a wave |
@@ -226,8 +235,8 @@ Mutations checked on 2026-11-08, each failing at least one test:
   COMPLETE goes out in the same delivery as the run's output, so it does not mark the cone again.
   Both were found by `formal/kernel_wave.tla` once it had manual policies.
 - O3 as decided on 2026-11-06: batch delivers no DIRTY before commit. Inside a batch body a node's
-  late `ctx.down` is staged with host inputs; a submission that would mix DATA and RESOLVED for one
-  node is rejected and earlier staging kept; staged output of a lifetime that closed is dropped. A body declared `async` is
+  late `ctx.down` is staged with host inputs; a submission that would make the accumulated array
+  invalid (a value after a terminal) is rejected and earlier staging kept; staged output of a lifetime that closed is dropped. A body declared `async` is
   refused before any of it runs; a plain body that returns a promise commits its synchronous part,
   and a report says that writes after its first await are separate waves. A topology request in a
   body (`subscribe`, `unsubscribe`, `replace`, `rewire`, from 2026-11-08) waits with the batch: it
@@ -246,7 +255,8 @@ Mutations checked on 2026-11-08, each failing at least one test:
   function since 2026-11-08): a dependency in both lists keeps its connection, and keeps its place
   among its dependency's subscribers; added ones are acquired before removed ones are released, so a
   shared one stays active; then the old cleanup runs, as when a lifetime closes (K7). The new instance
-  keeps the node's policies and setup, and activates like a first subscription (K3): it gets every dependency's START snapshot, kept ones
+  keeps the node's policies, has the setup and recipe the replace gives it, and activates like a
+  first subscription (K3): it gets every dependency's START snapshot, kept ones
   included; its first run only sets the retained value; each sink gets a `[START, …]` snapshot and each
   dependent receives the snapshot as its input, in one wave, so a diamond below settles once. An
   inactive node only changes its definition. Refused for a state node, for a dependency on itself,
