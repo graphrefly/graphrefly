@@ -255,3 +255,17 @@ test("the request number lives in the restart state, so a request after a restor
   assert.equal(starts, 2, "the owner started a fresh inner");
   assert.equal(g.get("r.restart").value, 2);
 });
+
+// C5a (Codex review, 2026-11-10): an ended inner releases its dependencies at once (R-lifetime), so
+// without another hold an upstream closed and opened again at every attempt.
+test("upstream stays active across attempts: the owner holds the inner's dependencies", () => {
+  const g = createGraph();
+  const log = [];
+  g.state("a", 1);
+  g.node("U", ["a"], (ctx) => ctx.down([["DATA", ctx.deps[0].value]]), { setup: () => { log.push("open"); return () => log.push("close"); } });
+  restartable(g, "r", { deps: ["U"], rounds: 3, fn: (ctx) => { if (ctx.deps[0].waves.length) ctx.down([["DATA", ctx.deps[0].value], ["COMPLETE"]]); } });
+  g.subscribe("s", "r");
+  assert.deepEqual(values(g, "s"), [1, 1, 1]);
+  assert.deepEqual(g.get("r").ended, ["COMPLETE"]);
+  assert.deepEqual(log, ["open", "close"], "one lifetime of U for the three attempts, closed when the owner ended");
+});

@@ -5,9 +5,13 @@
 // node (kernel `replace`): same id, same subscribers, a fresh instance. So describe and
 // observe(`${id}/inner`) go on across attempts, and nothing upstream needs to be
 // resubscribable: the inner subscribes to long-lived nodes outside the owner with
-// ordinary dependencies.
+// ordinary dependencies. The owner holds those dependencies too, ahead of the inner, since
+// an inner that ends releases its dependencies at once (R-lifetime): without the owner's
+// hold an upstream that nothing else held closed and opened again at every attempt (C5a,
+// decided by the user 2026-11-10).
 //
 //   deps ──► id/inner ──► id          id.restart ──► id
+//   deps ──────────────► id           (the owner's hold; it reads only the inner and id.restart)
 //
 // The owner forwards the inner's values. When the inner ends, the owner's policy decides:
 // restart it, or end the owner with that same terminal, which is then final. While a
@@ -49,8 +53,12 @@ export function restartable(g, id, { deps, fn, rounds = 1, retry = retryPolicy()
   const restartId = `${id}.restart`;
   g.state(restartId); // no value until the first request, so activation sees none
   g.node(innerId, deps, fn);
-  g.node(id, [innerId, restartId], (ctx) => {
-    const [inner, request] = ctx.deps;
+  // The owner holds the inner's dependencies too, ahead of the inner, so an inner that ends does
+  // not release the last hold on them: upstream stays active across attempts (C5a, 2026-11-10).
+  // The owner reads only the inner and the restart state.
+  g.node(id, [...deps, innerId, restartId], (ctx) => {
+    const inner = ctx.deps.find((d) => d.id === innerId);
+    const request = ctx.deps.find((d) => d.id === restartId);
     // `seen` is the last request served; `attempt` counts the replaces this lifetime asked for.
     const st = ctx.state.get() ?? { round: 1, failures: 0, seen: request.value, attempt: 0 };
     ctx.state.set(st);

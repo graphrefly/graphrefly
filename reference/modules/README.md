@@ -268,7 +268,11 @@ deps ──► id/inner ──► id          id.restart ──► id
   same id and subscribers, a fresh instance. So `describe()` is the same before and after, and a sink
   on the inner sees each attempt begin with START. The inner depends on long-lived nodes outside the
   owner with ordinary dependencies, so nothing upstream needs to be resubscribable, and a shared
-  upstream stays active across a restart.
+  upstream stays active across a restart. The owner holds those dependencies too, listed ahead of
+  the inner, and reads only the inner and the restart state: an inner that ends releases its
+  dependencies at once (R-lifetime), so until 2026-11-10 an upstream that nothing else held closed
+  and opened again at every attempt (C5a, from the Codex review). Listed after the inner, the hold
+  came too late at activation, when an inner that ends in its first run had already released it.
 - **Policy is the owner's:** `rounds` is how many times the inner may complete (TS `repeat`'s count);
   `retry` is the library's retry policy (see Retry policy below): within a round, an ERROR from
   attempt n is retried after `retryDelayMs(retry, n)`, and each round gets the policy's attempts
@@ -331,7 +335,9 @@ with no retry left; retries under the policy, and exhaustion; a fresh count per 
 attempt on the inner's sink; an outside restart of a live inner, with a shared upstream never
 released and the old instance's late output dropped; a closed lifetime's delayed retry dropped; a
 request served once, also across a reactivation and while inactive; a pending retry dropped once a
-request has started another attempt; no retry over an upstream that ended while it waited.
+request has started another attempt; no retry over an upstream that ended while it waited; one
+lifetime of an upstream across three attempts (C5a, failing without the owner's hold and with the
+hold listed after the inner).
 
 Mutations, each failing at least one test: no outside restart; no signal check on a delayed retry
 (this needed the timing test); no renewal on deactivation; renewal even after the owner ended; no
@@ -352,6 +358,7 @@ served; the check on the retry's firing dropped, or the owner then not ended.
 | START at the start of each attempt on the inner's sinks | It is what a fresh subscription sends, and it tells an observer that an attempt began |
 | `${id}.restart` and `restart()` | O7: a restart request reaches the owner on a declared edge (P11) |
 | `rounds` and `retry` | O7's attempts and backoff; `rounds` is TS `repeat`'s count, `retry` the shared policy |
+| The owner holding the inner's dependencies, ahead of the inner | An ended inner releases them at once (R-lifetime), so without the hold an upstream closed and opened again at every attempt (C5a) |
 | Renewing an ended inner when the owner deactivates | Without it the owner's next activation would start on the ended inner's snapshot |
 | No restart when a fresh inner would end at once (every dependency ended, or one ended with ERROR) | Without it each round would end at once and resend the upstream's last value; with unlimited rounds, for good. Until a 2026-11-09 review it was "any dependency ended", which let a completed configuration block every retry |
 | `seen` and `attempt` in the owner's private state | A request is served once, and a delayed retry only replaces the attempt that failed; both are per lifetime, like the rest of the owner's state |

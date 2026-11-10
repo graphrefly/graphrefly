@@ -174,7 +174,9 @@ an ended inner, unlimited rounds, a restart over an ended upstream, requests nev
 unlimited retries, the first COMPLETE always final (Refines; the last also TerminalOnlyWhenFinal
 alone); no fresh retry count per round (CountsMatch); the retry kept across a deactivation
 (PendingMatches). Not modeled: several upstreams, the inner's own values and late output, C-34's
-fanout timing, a request and an inner terminal in one wave.
+fanout timing, a request and an inner terminal in one wave, and U's lifetime: that the owner's hold
+on the inner's dependencies (C5a, 2026-11-10) keeps U active across attempts is pinned by the
+restart tests; this model's U has no lifetime, only whether it has ended.
 
 ## Clean-slate module map (CSP-0)
 
