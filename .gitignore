@@ -3,3 +3,6 @@ node_modules/
 graphrefly.code-workspace
 website/.generated/
 dashboard/.generated/
+
+# Review reports written by reviewer sessions; kept local, never committed
+sessions/active/REVIEW-*.md
