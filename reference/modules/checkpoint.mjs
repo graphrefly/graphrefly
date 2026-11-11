@@ -8,7 +8,7 @@
 // record of its own. A node is restorable when its definition carries a recipe, `{ ref, config }`
 // with a JSON config, given as the node option `recipe` (and to replace, for a new instance); the
 // kernel stores it and never reads it, as TS's node option `restore` is. Function bodies are never
-// saved (R-snapshot). A node whose definition has no recipe is local-only, and restoring it fails:
+// saved (R-checkpoint). A node whose definition has no recipe is local-only, and restoring it fails:
 // a node built without one, or replaced without one (C6). A node rewired for its lifetime (F7) is
 // restorable: its lifetime's dependencies are saved with the rest of its lifetime.
 //
@@ -138,6 +138,15 @@ export function restore(checkpoint, registry, graphOptions) {
     return typeof built === "function" ? { fn: built } : built;
   };
   for (const n of checkpoint.nodes) if (n.local) throw new Error(`restore: ${n.id} is local-only (built or replaced without a recipe)`);
+  // A checkpoint that lacks what R-checkpoint saves, such as one written to an earlier format
+  // without what each node had received, is refused rather than completed from its dependencies'
+  // saved values, which a replace of a dependency would make wrong (D802, 2026-11-10).
+  for (const n of checkpoint.nodes) {
+    const s = n.saved;
+    if (n.kind === "state" || !s || s.ended) continue;
+    const deps = s.deps ?? n.deps;
+    if (!Array.isArray(s.inputs) || s.inputs.length !== deps.length) throw new Error(`restore: ${n.id} has no record of what it received; the checkpoint is not in this format`);
+  }
   for (const n of buildOrder(checkpoint.nodes)) {
     const { saved } = n;
     if (n.kind === "state") {

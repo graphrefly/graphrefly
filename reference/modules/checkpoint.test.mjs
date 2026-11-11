@@ -356,6 +356,17 @@ test("a missing recipe fails the restore", () => {
   assert.throws(() => restore(cp, withoutScan), /no recipe scan/);
 });
 
+test("D802: a checkpoint without what each node received, as an earlier format, is refused", () => {
+  const cp = roundTrip(capture(original()));
+  const older = { nodes: cp.nodes.map((n) => {
+    if (!n.saved || n.kind === "state") return n;
+    const { inputs, ...rest } = n.saved;
+    return { ...n, saved: rest };
+  }) };
+  assert.throws(() => restore(older, registry()), /s has no record of what it received/);
+  assert.doesNotThrow(() => restore(cp, registry()), "the same checkpoint with the record restores");
+});
+
 test("O5: capture is refused inside a wave and inside a batch body", () => {
   const g = original();
   let seen;
@@ -366,7 +377,7 @@ test("O5: capture is refused inside a wave and inside a batch body", () => {
   assert.deepEqual(capture(g).nodes.find((n) => n.id === "a").saved.values, [4], "between waves it is allowed");
 });
 
-test("a value, private state or recipe config that is not JSON is refused at capture", () => {
+test("a value, private state, recipe config or ERROR payload that is not JSON is refused at capture", () => {
   const reg = { ...registry(), keep: () => (ctx) => { ctx.state.set({ f: () => {} }); ctx.down([["DATA", 1]]); } };
   const g = createGraph();
   g.state("a", 1);
@@ -377,6 +388,11 @@ test("a value, private state or recipe config that is not JSON is refused at cap
   h.state("a", 1);
   node(h, reg, "x", ["a"], "plus", { k: () => 1 });
   assert.throws(() => capture(h), /node x is not JSON/);
+  // An ERROR's payload is saved with its terminal, so it must be JSON too (D802).
+  const e = createGraph();
+  e.state("a", 1);
+  e.error("a", new Error("boom"));
+  assert.throws(() => capture(e), /node a is not JSON/);
 });
 
 test("a restored graph captured again before anything subscribes keeps the saved lifetimes", () => {

@@ -514,10 +514,13 @@ longer serves a request made while it was inactive (Fable), and the restore wrap
 writable (a restored holder had ended with ERROR; Fable). A restored node's definition function is
 the restore wrapper, which runs the real function unchanged once its note is used.
 
-Tests (39 in this file): the earlier ones on the new API, round trips of every module, and one per
+Tests (40 in this file): the earlier ones on the new API, round trips of every module, and one per
 defect above, each failing on the old behaviour. Mutations, 5 more, each failing at least one test:
 RESOLVED accepted from a node; replace keeping the old recipe; the seed note reaching every run;
-restore in checkpoint order; a holder keeping the saved `seen`.
+restore in checkpoint order; a holder keeping the saved `seen`. At R-checkpoint's activation (D802,
+2026-11-10) restore refuses a checkpoint without what each node received, as one written to an
+earlier format, instead of completing it from the dependencies' saved values (one test; mutation:
+the check removed), and capture refuses an ERROR payload that is not JSON (added to the JSON test).
 
 Built 2026-11-08. O5 had been decided the same day with its default: capture at a wave boundary, no
 pending-FIFO or receipt capture in the kernel. The user's choices, in order:

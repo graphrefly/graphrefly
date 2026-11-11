@@ -29,9 +29,11 @@ graphrefly:D799 and graphrefly:D801 (START is the kernel's alone). Read the rule
 | R-no-imperative | 2 | control is data on a declared edge |
 | R-node-thin | 2 | (no behavioral scenario: not observable) |
 | R-sentinel | 1 | unchanged |
+| R-checkpoint | 1 | module: capture and restore (D802; see "Checkpoint after D802") |
 
-Module rules (R-pause, R-demand, R-history, R-checkpoint, R-restart, R-revision) are drafts. Each
-activates later as separately admitted work; R-revision is held until a real consumer exists.
+R-checkpoint, a module rule, is active since graphrefly:D802 (2026-11-10). The other module rules
+(R-pause, R-demand, R-history, R-restart, R-revision) are drafts. Each activates later as separately
+admitted work; R-revision is held until a real consumer exists.
 
 Background and every choice's reason: [D797](../../decisions/decisions.jsonl) and its later sentences,
 [D798](../../decisions/decisions.jsonl), D799, and
@@ -104,6 +106,35 @@ graphrefly-rs `cf02fc9`. The Rust migration need not keep `graphrefly-bindings-p
 crate is removed once Python no longer imports `graphrefly._native`. Background and measurement:
 [PROPOSAL-python-kernel-separation.md](PROPOSAL-python-kernel-separation.md).
 
+## Checkpoint after D802
+
+Added 2026-11-10. graphrefly:D802 activates R-checkpoint@1 and replaces R-snapshot, R-restore,
+R-input-receipts and R-resource-reattach with it; the user's item-by-item choices and a per-runtime
+comparison are in [PROPOSAL-B140-checkpoint-module-admission.md](PROPOSAL-B140-checkpoint-module-admission.md)
+(section 3). It builds on stage 4 (setup) and stage 5 (replace, ctx.rewire, definition), so it comes
+after them. What every runtime changes:
+
+1. Capture only at a wave boundary: refuse it inside a wave and inside an open batch body, not only
+   when a node is pending.
+2. A restored graph has no subscribers, and a restored node receives no waves before its first
+   activation (Rust today resubscribes nodes saved as active).
+3. Save what each node received from each dependency; at the first activation, run the function once,
+   with only the changed dependencies, if one changed, and keep the saved value otherwise (TS today
+   never sees the change).
+4. The setup runs at the restored first activation, so what it opened outside the graph opens again.
+5. The recipe and setup belong to the instance; a replace without a recipe makes the node local-only.
+6. Build each node after its declared dependencies; save a ctx.rewire's lifetime dependencies.
+7. An ended node comes back ended, with its dependencies, without private state; an ERROR payload is
+   saved and must be JSON (Rust today refuses ERROR).
+8. No revision or version evidence in a checkpoint: the D109 version field and its restore checks
+   leave TS's and Rust's checkpoints (the user's choice). The layout beyond JSON, its version tag and
+   what to do with checkpoints already written are each package's; a checkpoint lacking what the rule
+   saves is refused at restore. D160's separate `backendState` has no root rule any more: a collection
+   is a node whose backend is its private state.
+
+Python writes checkpoint on its own kernel (D800). The checkpoint delta in a runtime's slice is the
+owner's to admit, like the kernel stages.
+
 ## What each runtime must show (acceptance)
 
 Every kernel scenario starts `todo` in every runtime. An owner qualifies a scenario by running a
@@ -116,10 +147,13 @@ Kernel scenarios on the public rules: C-1, C-3, C-4, C-6, C-11, C-12, C-15, C-16
 C-28, C-29, C-33, C-34, C-35, C-36, C-37, C-40, C-41, C-42, C-44, and the wire scenario C-1b (its
 frames now say PENDING). C-1a and C-1c are unaffected.
 
+Checkpoint scenario on the public rules: C-38, which succeeds C-24 (removed by D802).
+
 Scenarios that also check a draft module rule, and so wait for that module's activation: C-30 and
-C-31 (pause), C-32 (demand), C-38 (checkpoint and history), C-39 (revision, held), C-43 (restart),
-and the older C-2, C-5, C-9, C-10, C-13, C-24 and C-27, which still cover replaced rules and are
-rewritten when their module activates.
+C-31 (pause), C-32 (demand), C-39 (revision, held), C-43 (restart), C-45 (checkpoint with history),
+C-46 (checkpoint with pause, demand and restart; each clause waits for its module), and the older
+C-2, C-5, C-9, C-10, C-13 and C-27, which still cover replaced rules and are rewritten when their
+module activates.
 
 ## What the root does next
 
