@@ -4,7 +4,7 @@
 >
 > Patterns for composing domain-level primitives: promptNode, dynamicNode, multi-agent handoffs, guardrails, process managers, and reactive memory. Assumes familiarity with [Protocol](./COMPOSITION-GUIDE-PROTOCOL.md) and [Graph](./COMPOSITION-GUIDE-GRAPH.md) levels.
 >
-> See also: [GRAPHREFLY-SPEC.md](./GRAPHREFLY-SPEC.md) for the behavioral spec.
+> See also: [GRAPHREFLY-SPEC.md](./archive/GRAPHREFLY-SPEC.md), the archived v0.4 spec (current rules: [spec/rules.jsonl](./spec/rules.jsonl)).
 
 ---
 

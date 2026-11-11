@@ -4,7 +4,7 @@
 >
 > Patterns and insights at the protocol layer — message flow, activation semantics, cache lifecycle, wave mechanics. These are the foundation that higher-level APIs build on.
 >
-> See also: [GRAPHREFLY-SPEC.md](./GRAPHREFLY-SPEC.md) for the behavioral spec. [Debugging & Testing](#debugging-composition) appendix at the end.
+> See also: [GRAPHREFLY-SPEC.md](./archive/GRAPHREFLY-SPEC.md), the archived v0.4 spec (current rules: [spec/rules.jsonl](./spec/rules.jsonl)). [Debugging & Testing](#debugging-composition) appendix at the end.
 
 ---
 

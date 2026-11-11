@@ -4,7 +4,7 @@
 >
 > Guard patterns, feedback cycle avoidance, storage composition, compat bridges, and other Graph-level concerns. Assumes familiarity with [Protocol-level concepts](./COMPOSITION-GUIDE-PROTOCOL.md).
 >
-> See also: [GRAPHREFLY-SPEC.md](./GRAPHREFLY-SPEC.md) for the behavioral spec.
+> See also: [GRAPHREFLY-SPEC.md](./archive/GRAPHREFLY-SPEC.md), the archived v0.4 spec (current rules: [spec/rules.jsonl](./spec/rules.jsonl)).
 
 ---
 

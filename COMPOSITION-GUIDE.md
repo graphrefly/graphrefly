@@ -2,7 +2,7 @@
 
 > **Accumulated patterns for building factories and domain APIs on top of GraphReFly primitives.**
 >
-> This is NOT the spec. The spec (`GRAPHREFLY-SPEC.md`) defines **protocol behavior** — what MUST happen. This guide captures **"good to know before you fail"** — patterns, insights and recipes that composition authors (human or LLM) encounter when wiring primitives into higher-level APIs.
+> This is NOT the spec. The spec ([spec/rules.jsonl](spec/rules.jsonl); the v0.4 prose is archived as [archive/GRAPHREFLY-SPEC.md](archive/GRAPHREFLY-SPEC.md)) defines **protocol behavior** — what MUST happen. This guide captures **"good to know before you fail"** — patterns, insights and recipes that composition authors (human or LLM) encounter when wiring primitives into higher-level APIs.
 >
 > Both `graphrefly-ts` and `graphrefly-py` CLAUDE.md files reference this guide.
 

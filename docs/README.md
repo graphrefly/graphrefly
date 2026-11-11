@@ -12,7 +12,7 @@ records or uniquely owned guides. Start with [the project overview](../README.md
 | Evidence | What was actually checked? | Owning work's evidence references; [indexed sessions](../sessions/sessions.jsonl), [conformance](../spec/conformance.jsonl), [formal artifacts](../formal/) | Dated results and source-bound receipts establish only their checked scope; they grant no approval |
 | Design / guides | How do I understand or maintain it? | [Guide registry](../guide/guide.jsonl), [contributor records](../guide/contribute.jsonl), [session index](../sessions/sessions.jsonl) | Root shared guidance is JSONL; design drafts and teaching material do not define hidden rules |
 | Archive | What did earlier records say? | [Archived sessions](../sessions/archive/), [older archive](../archive/), indexed by [sessions](../sessions/sessions.jsonl) | Historical bodies move intact apart from paths; archive is not a success or renewed authorization |
-| Reference | What can inform further work? | Research in the [session index](../sessions/sessions.jsonl); [legacy spec](../GRAPHREFLY-SPEC.md) and [composition guide](../COMPOSITION-GUIDE.md), pending B7 in [backlog](../plan/backlog.jsonl) | Legacy/external material is not current protocol authority |
+| Reference | What can inform further work? | Research in the [session index](../sessions/sessions.jsonl); [legacy spec](../archive/GRAPHREFLY-SPEC.md) and [composition guide](../COMPOSITION-GUIDE.md), pending B7 in [backlog](../plan/backlog.jsonl) | Legacy/external material is not current protocol authority |
 
 ## Owners and updates
 

@@ -1,5 +1,11 @@
 # GraphReFly Spec v0.4
 
+> **Archived on 2026-11-11.** This v0.4 spec teaches the protocol the D797 kernel set replaced
+> (graphrefly:D798): DIRTY two-phase waves, TEARDOWN, PAUSE and RESUME messages, upward `up`
+> routing. It is kept as history and B7 migration material, not authority. The current rules are
+> [spec/rules.jsonl](../spec/rules.jsonl), read through [authority/README.md](../authority/README.md).
+
+
 > Reactive graph protocol for human + LLM co-operation.
 >
 > **graph** — the universal container. **re** — reactive, review, reusable. **fly** — lightweight, fast.
