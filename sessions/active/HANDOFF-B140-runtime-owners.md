@@ -25,13 +25,14 @@ graphrefly:D799 and graphrefly:D801 (START is the kernel's alone). Read the rule
 | R-request-order | 2 | requests, batch, set, replace, ctx.rewire |
 | R-node | 2 | node, instance and lifetime scopes; definition |
 | R-failure | 3 | throws and invalid output |
-| R-graph-domain | 2 | one graph, one domain; the bridge's grouped release |
+| R-graph-domain | 3 | one graph, one domain: graphs share no wave, queue or batch (D803) |
 | R-no-imperative | 2 | control is data on a declared edge |
 | R-node-thin | 2 | (no behavioral scenario: not observable) |
 | R-sentinel | 1 | unchanged |
 | R-checkpoint | 1 | module: capture and restore (D802; see "Checkpoint after D802") |
+| R-bridge | 1 | module: the wire edge group, one frame per sender wave (D803; see "Bridge after D803") |
 
-R-checkpoint, a module rule, is active since graphrefly:D802 (2026-11-10). The other module rules
+R-checkpoint, a module rule, is active since graphrefly:D802 (2026-11-10), and R-bridge since graphrefly:D803 (2026-11-11). The other module rules
 (R-pause, R-demand, R-history, R-restart, R-revision) are drafts. Each activates later as separately
 admitted work; R-revision is held until a real consumer exists.
 
@@ -51,8 +52,9 @@ them is each owner's.
 1. **Messages and wire.** Seven types: START, PENDING, DATA, RESOLVED, INVALIDATE, COMPLETE, ERROR.
    DIRTY is renamed PENDING. TEARDOWN, PAUSE, RESUME and PULL are gone, and so are ctx.up and
    ctx.upNext: nothing travels up the graph. [spec/protocol.proto](../../spec/protocol.proto) reserves
-   the retired numbers, drops Tier and Direction and renames `WIRE_EDGE_KIND_DIRTY` to `PENDING`,
-   so old and new bridge peers do not interoperate.
+   the retired numbers and drops Tier and Direction. Its per-edge wire-edge frame, renamed PENDING
+   by D798, was replaced by one `WireEdgeCause` per cause in D803 (see "Bridge after D803"), so old
+   and new bridge peers do not interoperate.
 2. **START, PENDING and RESOLVED are the kernel's alone.** Node output with any of them is rejected
    (START since D801: it is sent only at subscribe and at a replace). PENDING
    prefixes every array that carries DATA, RESOLVED, INVALIDATE, COMPLETE or ERROR and marks the
@@ -135,6 +137,47 @@ after them. What every runtime changes:
 Python writes checkpoint on its own kernel (D800). The checkpoint delta in a runtime's slice is the
 owner's to admit, like the kernel stages.
 
+## Bridge after D803
+
+Added 2026-11-11. graphrefly:D803 activates R-bridge@1 and revises R-graph-domain to @3; the user's
+item-by-item choices are in [PROPOSAL-B140-bridge-module.md](PROPOSAL-B140-bridge-module.md). It
+ends the hold on each runtime's stage 6 (the cross-graph bridge). What every runtime changes:
+
+1. **Graphs on one thread share nothing of a wave.** Each graph has its own wave, request queue and
+   batch. A request to graph B made during graph A's wave runs at once if B is idle, and a write to B
+   inside A's batch body is B's own request, not part of A's commit (C-47). TS moves its batch and
+   boundary queue from module variables to the graph; Rust moves its wave scope, request queue and
+   batch frame from `thread_local!` to the graph, retiring graphrefly-rs:D8's recorded deviation.
+   Python already does this. A dispatcher's function table and worker pools may stay shared.
+2. **A cause is one sender wave, sent as one frame.** The group's outbound node is a fan-in over the
+   group's edges with manual COMPLETE, ERROR and INVALIDATE policies; each run in which an edge
+   brought input sends one `WireEdgeCause` carrying only those edges, each with an INVALIDATE, its DATA
+   arrays and its terminal as the ctx gives them. Its setup names the session, causes count from 1, and
+   the first run carries every snapshot and an INVALIDATE for an edge without one. A value or ERROR
+   payload that is not bytes is a throw of the outbound node.
+3. **Wire.** `WireEdgeCause { group, session, cause, edges: [{ edge_id, arrays: [Wave] }] }` replaces
+   `WireEdgeFrame` and `WireEdgeKind`; `WireBridgeDataPayload.edge_cause` is field 3 and field 2 is
+   reserved. The fixtures are `wire_edge_cause.v1.jsonl` and the rewritten envelope vectors (C-1a).
+   They were written by hand, so a disagreement with a runtime's decoder is reported to the root.
+4. **Receiving.** Frames come from a node with no dependencies whose setup opens the receiving end,
+   one wave per frame. The gate takes its group's frames, releases a session's causes in order and
+   each at most once, drops a cause at or below the last one taken, releases one past a gap and
+   reports the gap, starts again for a new session, and refuses whole a frame with an undeclared edge
+   or arrays its inbound node could not send. Inbound nodes depend on the gate; an inbound node's
+   snapshot is what its edge last brought. Issues are values of the issues node, never terminals.
+5. **Removed, with no shim:** per-edge PENDING and DATA frames, one cause in flight, the fresh-cohort
+   rules (D560, D561), tombstones (D506), the release drain (D562) and the status node; TS's `_rewire`
+   of the bridge's command and inbound nodes and `_down` into the release cohort; Rust's
+   `FanInSources` for the bridge's command and inbound. The envelope layer's remote-call and
+   ack-timeout lanes take the same shape: received envelopes from a source node, facts as state
+   writes, outbound nodes with a transport sink.
+6. **Names.** The reference module's `wireEdgeGroupOut`, `wireEdgeGroupIn`, `frameSource` and
+   `frameSink` (in [reference/modules/bridge.mjs](../../reference/modules/bridge.mjs)) are the public
+   shape, in each language's casing.
+
+Python also brings back the wire facades graphrefly-py:D5 withdrew, in this shape, and requalifies
+C-1a and C-1c. Each owner admits the stage-6 delta in its own slice.
+
 ## What each runtime must show (acceptance)
 
 Every kernel scenario starts `todo` in every runtime. An owner qualifies a scenario by running a
@@ -143,9 +186,12 @@ result and the source commit. Under graphrefly:D784 a changed `runtimes` flag al
 until its evidence-receipt ledger exists, report the evidence with the work item and leave the
 flag to the root integration step. Reference-kernel tests are candidate traces, not runtime evidence.
 
-Kernel scenarios on the public rules: C-1, C-3, C-4, C-6, C-11, C-12, C-15, C-16, C-17, C-23, C-26,
-C-28, C-29, C-33, C-34, C-35, C-36, C-37, C-40, C-41, C-42, C-44, and the wire scenario C-1b (its
-frames now say PENDING). C-1a and C-1c are unaffected.
+Kernel scenarios on the public rules: C-3, C-4, C-6, C-11, C-12, C-15, C-16, C-17, C-23, C-26,
+C-28, C-29, C-33, C-34, C-35, C-36, C-37, C-40, C-41, C-42, C-44, and C-47 (graphs on one thread,
+since D803).
+
+Bridge scenarios on the public rules (since D803): C-1 and C-1b (R-bridge), C-1a (new fixtures).
+C-1c is unaffected.
 
 Checkpoint scenario on the public rules: C-38, which succeeds C-24 (removed by D802).
 

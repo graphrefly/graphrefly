@@ -10,6 +10,7 @@
 // the schema is locked now so all three runtimes codegen against one source.
 //
 // status: draft (flips to active when B2 lands + conformance C-1 cross-graph passes).
+// The wire edge group's frame follows R-bridge@1 (graphrefly:D803, 2026-11-11).
 
 syntax = "proto3";
 
@@ -90,10 +91,13 @@ message WireBridgeDataPayload {
     // raw Node/Ctx handles, live topology, functions, and mutable graph-owned state
     // do not cross this boundary (D141 / D496).
     bytes value = 1;
-    // C-1 wire-edge facts are DATA-envelope payloads, not a new protocol
-    // message, remote ordinary dep, or distributed same-wave handle.
-    WireEdgeFrame wire_edge = 2;
+    // A wire edge group's cause (R-bridge) is a DATA-envelope payload, not a new
+    // protocol message, remote ordinary dep, or distributed same-wave handle.
+    WireEdgeCause edge_cause = 3;
   }
+  // Field 2 carried the per-edge WireEdgeFrame until D803 (2026-11-11).
+  reserved 2;
+  reserved "wire_edge";
 }
 
 message WireBridgeErrorPayload {
@@ -133,23 +137,24 @@ message WireBridgeEnvelope {
   }
 }
 
-// ── Wire-edge adapter payload (D496 / C-1) ──
-// WireEdgeFrame is the minimal cross-graph reactive edge fact carried over the
-// bridge envelope. It has no graph wave id: cause_id is bridge-local.
-// PENDING announces a cause's edge to the bridge's grouped release (R-graph-domain): it is a
-// frame of the bridge protocol, not a graph message. Renamed from DIRTY by D798 (2026-11-10),
-// which makes old and new wire peers incompatible; each runtime's bridge follows.
-enum WireEdgeKind {
-  WIRE_EDGE_KIND_UNSPECIFIED = 0;
-  WIRE_EDGE_KIND_PENDING = 1;
-  WIRE_EDGE_KIND_DATA = 2;
-  reserved "WIRE_EDGE_KIND_DIRTY";
+// ── Wire edge group cause (R-bridge; graphrefly:D803) ──
+// One frame per cause. A cause is one wave of the sender graph: the group's outbound
+// node ran once on its edges, and the frame carries, for each edge that brought input,
+// what it brought: an INVALIDATE, then the arrays that carried DATA, in order, then its
+// terminal. Each Wave here holds only DATA, INVALIDATE, COMPLETE and ERROR; PENDING,
+// RESOLVED and START are each graph's kernel's own and never cross. DATA values and ERROR
+// payloads are the application's bytes. `session` names one lifetime of the outbound
+// node; `cause` counts from 1 within it, and the receiver's gate releases a session's
+// causes in order and each at most once. Until D803 an edge travelled as its own
+// WireEdgeFrame of kind PENDING (ex-DIRTY) or DATA; that message and WireEdgeKind are gone.
+message WireEdgeCause {
+  string group = 1;
+  string session = 2;
+  uint64 cause = 3;
+  repeated WireEdgeArrays edges = 4;
 }
 
-message WireEdgeFrame {
-  WireEdgeKind kind = 1;
-  string edge_id = 2;
-  string cause_id = 3;
-  // Present only when kind == WIRE_EDGE_KIND_DATA.
-  optional bytes value = 4;
+message WireEdgeArrays {
+  string edge_id = 1;
+  repeated Wave arrays = 2;
 }

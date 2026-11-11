@@ -740,3 +740,21 @@ test("F6: a mergeMap is restored with a value waiting for a free slot, and proje
   }
   assert.equal(r.get("mm").value, 12, "y was projected once x's inner completed");
 });
+
+// C-47: capture is refused only for the graph whose wave is running (R-graph-domain@3).
+test("C-47: inside g1's wave, g1 cannot be captured and an idle g2 can", () => {
+  const g1 = createGraph();
+  const g2 = createGraph();
+  g1.state("a", 0);
+  g2.state("b", 0);
+  const seen = [];
+  g1.subscribe("s1", "a", (msgs) => {
+    if (!msgs.some((m) => m[0] === "DATA" && m[1] === 1)) return;
+    g2.set("b", 1);
+    assert.throws(() => capture(g1), /wave boundary/);
+    assert.equal(capture(g2).nodes.find((n) => n.id === "b").saved.values[0], 1);
+    seen.push("checked");
+  });
+  g1.set("a", 1);
+  assert.equal(seen.at(-1), "checked");
+});

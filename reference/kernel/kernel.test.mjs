@@ -1855,3 +1855,45 @@ test("K7: a node that ends drops its private state with its lifetime", () => {
   assert.equal(g.get("x").ended[0], "COMPLETE");
   assert.equal(g.privateState("x"), undefined, "it will never run again, so nothing reads it");
 });
+
+// C-47 (R-graph-domain@3, the user's choice 2026-11-11): two graphs on one thread share no wave,
+// request queue or batch.
+test("C-47: graphs on one thread: one graph's wave or batch never holds another's requests", () => {
+  const g1 = createGraph();
+  const g2 = createGraph();
+  g1.state("a", 0);
+  g1.state("c", 0);
+  g2.state("b", 0);
+  const log = [];
+  g1.subscribe("s1", "a", (msgs) => {
+    if (!msgs.some((m) => m[0] === "DATA" && m[1] === 1)) return;
+    log.push("s1 writes b");
+    g2.set("b", 1);
+    log.push(`after b's write: g1 idle ${g1.idle()}, g2 idle ${g2.idle()}`);
+  });
+  g2.subscribe("s2", "b", (msgs) => {
+    if (!msgs.some((m) => m[0] === "DATA" && m[1] === 1)) return;
+    log.push(`s2 sees b=1, a's wave ended: ${g1.idle()}`);
+    g1.set("c", 1);
+    log.push(`c after its write: ${g1.get("c").value}`);
+  });
+  g1.subscribe("sc", "c", (msgs) => { if (msgs.some((m) => m[0] === "DATA" && m[1] === 1)) log.push("c's wave"); });
+  g1.set("a", 1);
+  assert.deepEqual(log, [
+    "s1 writes b",
+    "s2 sees b=1, a's wave ended: false",
+    "c after its write: 0",
+    "after b's write: g1 idle false, g2 idle true",
+    "c's wave",
+  ]);
+
+  let read;
+  g1.batch(() => {
+    g1.set("a", 2);
+    g2.set("b", 2);
+    read = g2.get("b").value;
+    assert.equal(g1.get("a").value, 1, "a commits only when the body returns");
+  });
+  assert.equal(read, 2, "the write to g2 is g2's own request and ran at once");
+  assert.equal(g1.get("a").value, 2);
+});

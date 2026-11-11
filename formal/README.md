@@ -18,6 +18,7 @@ currently active rules and are retired or rescoped at activation, not edited now
 | `module_history.tla` (`module_history.cfg`) | R-history: the history node of `reference/modules/history.mjs` (auto policies, manual INVALIDATE policy, its function emptying its list) over a computed source X kept active by its own sink, run over the kernel's settle semantics beside a history written from R-history's text; a step is a wave of X (one entry of a menu: several arrays, an array with two values, RESOLVED alone or before values, INVALIDATE and values, values with a terminal) or H's sink subscribing or unsubscribing; N = 2, and the list's entries are waves of arrays. Invariants: Refines, ListMatches, ValueIsList, InactiveEmpty. TLC-green 2026-11-09: eight steps 651 distinct states (depth 9, 1 s). | C-38 |
 | `module_checkpoint.tla` (`module_checkpoint.cfg`, `module_checkpoint_9.cfg`) | R-checkpoint, R-invocation: states A and B and a recipe node P over them, whose run keeps the last N input values in private state; at Init, whether P has a setup that opens an outside resource (the kernel runs it at every activation, a restored one's included) and whether P has the manual INVALIDATE policy, under which an INVALIDATE empties the private state; the original graph takes host steps live, then one capture and restore, a window in which host steps reach only the states, and the restored P's first subscription through the module's seed, the setup and the wrapper, after which both graphs take the same steps. The reference is the original P given the window's net change as one live wave. Invariants: StateMatches, ResourceMatches, OutMatches, NoNeedlessRun, RestoreBuilds, LocalOnlyRefused, RestoredAsInstance. TLC-green 2026-11-10 with the setup choice: seven steps 177,962 distinct states (depth 8); nine steps 608,960 distinct states (depth 10). Extended the same day for D802 (Q5 of the checkpoint admission): a replace of the original P before capture (recipe r1, r2 or none, with or without a setup) and, at Init, P made before its dependency B; invariants RestoreBuilds, LocalOnlyRefused and RestoredAsInstance. Seven steps 858,172 distinct states (depth 8, 8 s); nine steps 3,285,136 distinct states (depth 10, 32 s). | C-38 |
 | `module_restart.tla` (`module_restart.cfg`, `module_restart_10.cfg`) | R-restart: the owner of `reference/modules/restart.mjs` (manual terminals, private round, failures, last request served and attempt count, the lifetime's signal, the renewal in the cleanup its setup returns, replace at the end of the wave) over an inner on an upstream U, beside an owner written from R-restart's text that numbers attempts and lifetimes; a step is the sink subscribing or unsubscribing, the inner sending a value, COMPLETE, ERROR or a value with COMPLETE, U ending, a restart request, or a pending retry's timer; retries wait for a timer or not (chosen at Init). Invariants: Refines, CountsMatch, PendingMatches, TerminalOnlyWhenFinal. TLC-green 2026-11-09: two rounds and two attempts, seven steps 4,638 distinct states (depth 8); three attempts, ten steps 25,974 distinct states (depth 11, 1 s). | C-43 |
+| `module_bridge.tla` (`module_bridge.cfg`, `module_bridge_3.cfg`, `module_bridge_diamond.cfg`) | R-bridge (and R-graph-domain's cross-graph clause): one wire edge group of `reference/modules/bridge.mjs` over edges x and y, a sender whose wave changes a non-empty set of edges (a value, or an INVALIDATE of one) and whose outbound node forms one cause per wave, a transport that under Faults delivers a late copy of a frame (a duplicate, or an older cause after newer ones) or loses one, a restart that opens a new session on a new connection, and the receiver's gate (session, last cause taken, drop at or below it, release past a gap and report it, count again for a new session); RoundTrip makes every sender wave set both edges to one version of A, C-1's return leg (the first hop carries one edge, so its grouping is trivial). Terminals, malformed frames and refusals are pinned by the reference tests. Invariants: TypeOK, ViewIsSenderState, OneWavePerCause, AtMostOnce, InOrder, EventsMatch, QuiescentAgreement, GapReported, SameVersion. TLC-green 2026-11-11: two waves 629,151 distinct states (depth 20, 12 s); three waves 32,173,731 distinct states (depth 26, 3 min 40 s); RoundTrip, three waves, 105,405 distinct states (depth 26, 1 s). | C-1, C-1b |
 
 Mutations checked on `kernel_wave.cfg`, each tripping an invariant: settling while a dependency is
 pending (FanInAfterSettle); no kernel RESOLVED (NoWedge); no PENDING prefix (PendingPrefix); no split
@@ -191,6 +192,20 @@ fanout timing, a request and an inner terminal in one wave, and U's lifetime: th
 on the inner's dependencies (C5a, 2026-11-10) keeps U active across attempts is pinned by the
 restart tests; this model's U has no lifetime, only whether it has ended.
 
+`module_bridge.tla` was written on 2026-11-11 for D803, after the user decided the bridge model.
+Writing the proposal had found that an inbound node activated after a frame that did not carry its
+edge would have no snapshot, so the gate keeps a view of what each edge last brought (approved by the
+user with the proposal's section 9; pinned by the reference tests, not this model). Mutations,
+selected by the `Mutant` constant, 9 in all, each tripping the invariant named also alone (on
+`module_bridge.cfg`, the diamond one on `module_bridge_diamond.cfg`): each edge of a cause released
+as its own wave (OneWavePerCause, ViewIsSenderState); a cause per edge instead of per wave
+(ViewIsSenderState, SameVersion); no check of the cause number (AtMostOnce, EventsMatch); any number
+other than the last accepted (InOrder); unchanged edges resent (EventsMatch); a new session keeping
+the old count (QuiescentAgreement); no first cause at a session's start (QuiescentAgreement); no
+INVALIDATE in it for an edge without a value (QuiescentAgreement); a gap not reported
+(GapReported). R-graph-domain@3's per-graph wave, queue and batch are not modeled: C-47 and the
+reference kernel's tests pin them.
+
 ## Retired models (deleted at the D797 kernel activation, graphrefly:D798, 2026-11-10)
 
 These models checked the rules the D797 kernel set replaced. They were deleted when that set was
@@ -218,7 +233,7 @@ checks). Git history keeps them, with the README sections that described them. E
 | `wave_undirty_settle_timing.tla` | Retired: no notification outlives its wave |
 | `wave_rewire_deferred.tla`, `wave_rewire_deferred_committed.tla`, `wave_rewire_async_ctx.tla`, `wave_rewire_emit.tla` | Retired: a rewire is the node's own request, run between waves and scoped to its lifetime (`kernel_lifetime.tla`) |
 | `wave_async.tla`, `wave_async_paused.tla` (with its ignore, leaf and resumeAll configs) | Retired: an async result is a later wave from the node (`kernel_lifetime.tla`'s late output); a pausable holds it like any array (`module_pause.tla`) |
-| `wave_xgraph.tla` | Retired: its two-phase wire gate does not hold under D797 (PENDING only prefixes a settling array). R-graph-domain@2 puts cross-graph consistency in the bridge's release of one cause as one batch (C-1); the bridge module gets a new model when it is written, so R-graph-domain@2 has no model until then |
+| `wave_xgraph.tla` | Retired: its two-phase wire gate does not hold under D797 (PENDING only prefixes a settling array). Succeeded on 2026-11-11 by `module_bridge.tla` (D803: a cause is a sender wave, one frame, one receiver wave) |
 
 Kept: `wave_ctx_wave_data.tla` (`wave_ctx_wave_data.cfg`), the raw ctx encoding of the replaced
 R-ctx-wave-data@1, as a porting reference: no D797 model checks the shape of `ctx.deps` yet (C-23
@@ -226,7 +241,8 @@ and the kernel tests do).
 
 Active rules without a model after the activation: R-sentinel@1 (the absence value is each
 language's own, with no cross-language behavior to model), R-node@1, R-node-thin@2,
-R-no-imperative@2 and R-graph-domain@2.
+R-no-imperative@2 and R-graph-domain@2. Since D803 (2026-11-11), `module_bridge.tla` checks R-bridge@1
+and R-graph-domain@3's cross-graph clause; its per-graph clause is pinned by C-47.
 
 `formal/states/` holds TLC state directories from earlier runs; it is not tracked by git.
 

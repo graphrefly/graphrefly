@@ -700,6 +700,46 @@ Removed because they could not change anything:
 The kernel side, `idle()`, `privateState(id)`, the optional seed and the P5 relaxation, is listed in the
 kernel README.
 
+## Bridge, R-bridge ([bridge.mjs](bridge.mjs), [bridge.test.mjs](bridge.test.mjs))
+
+Written 2026-11-11 for graphrefly:D803 (R-bridge@1; the user's choices are in
+[PROPOSAL-B140-bridge-module.md](../../sessions/active/PROPOSAL-B140-bridge-module.md)). A wire edge
+group carries a fixed set of edges from a sender graph to a receiver graph.
+
+```text
+sender:    edge nodes ──► wireEdgeGroupOut ──► sink (frameSink) ──► transport
+receiver:  transport ──► frameSource ──► gate ──► gate/x, gate/y (inbound) ──► app
+                                           └────► gate.issues
+```
+
+- `wireEdgeGroupOut(g, id, { group, edges })`, `edges` mapping edge ids to sender nodes: a fan-in
+  under manual COMPLETE, ERROR and INVALIDATE policies. Each run in which an edge brought input is
+  one cause, sent as one DATA frame `{ group, session, cause, edges: [{ edge, arrays }] }` carrying
+  only the edges that brought input, each as the ctx gives it (an INVALIDATE, the DATA arrays, a
+  terminal). Its setup names the session; causes count from 1; the first run, the session's first
+  cause, carries every snapshot and an INVALIDATE for an edge without one. A value or ERROR payload
+  that is not a `Uint8Array` throws, so the node ends with ERROR.
+- `frameSink(send)`: a sink callback handing every frame delivered, the START snapshot's included,
+  to the transport.
+- `frameSource(g, id, open)`: a node with no dependencies whose setup calls `open(deliver)` and keeps
+  the close it returns; each `deliver(frame)` is late output, so one wave.
+- `wireEdgeGroupIn(g, id, { group, frames, edges })`: the gate `id`, inbound nodes `${id}/${edge}`
+  and `${id}.issues`. The gate's private state holds the session, the last cause taken and a view of
+  what each edge last brought; each run with a frame of its group sends one value `{ released,
+  issues, view }`. An inbound node sends its edge's arrays from the released causes, and on the
+  first run of a lifetime its snapshot from the view. Issues are `stale`, `gap`, `refused` and
+  `malformed` values.
+
+Not restorable: the nodes carry no recipe, since R-bridge does not cover checkpoints of bridge nodes
+(their values are bytes, not JSON), so the modules' F6 convention does not apply here. A wave in
+which the gate reports only an issue still marks the inbound nodes pending; they send nothing and
+get the kernel's RESOLVED, and a fan-in over them may run with no new input (R-invocation).
+
+The tests follow C-1 (a diamond split across two graphs, D running once per cause on legs of the
+same A) and C-1b. Mutations checked against them on 2026-11-11, each failing a test: no stale check,
+a gap not reported, no INVALIDATE in the first cause, a new session keeping the count, no snapshot
+from the view, an array accepted after the edge's terminal, a refused frame's number not taken.
+
 ## History, R-replay-buffer ([history.mjs](history.mjs), [history.test.mjs](history.test.mjs))
 
 Built 2026-11-08. The user made two decisions before it was built:
