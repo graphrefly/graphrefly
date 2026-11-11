@@ -627,3 +627,11 @@ kernel_wave 两个 wave 回到 990,778 个状态、三个 wave 114,655,914 个�
 两份审查都认为该保留的：每个 lifetime 一次的 setup、带函数的 set、只在 lifetime 内有效的 ctx.rewire 和两份依赖、seed.deps、数组快照。
 Fable 另有一点事实：两个真实消费者用不到 11-10 新加的任何一项，这些接口的证据都来自模块测试；某个模块以后若被搁置，它独占的内核接口要一起重新看。
 还没改的小处：`ctx.deps[i].waves` 没有改名（9.6 已记）。
+
+### 9.10 Owner routing（2026-11-10）
+
+用户选定：根仓库只写交接，三个 runtime 仓库都不动，各自什么时候接纳由用户定。交接在
+[HANDOFF-B140-runtime-owners.md](HANDOFF-B140-runtime-owners.md)：当前公开的 14 条规则、每个 runtime 在合约层面要改的、
+TS 特有的几项、要通过的内核场景（22 条加 C-1b）和要等模块激活的场景，以及证据的报法（runtime、命令、结果、源码 commit；
+D784 下不能只改 `runtimes` 标记）。
+
