@@ -1,0 +1,15 @@
+Python 3.14.2 arm64
+
+== node function: inc ==
+scenario                                 pure-python       pure-python tuned           tuned + mypyc           rust (facade)      rust (raw _native)  mypyc/facade
+chain 100 (per set)                485us (4.85/node)       234us (2.34/node)       190us (1.90/node)        88us (0.88/node)        54us (0.54/node)         2.17x
+fan 100 -> 1 (per set)             527us (5.21/node)       245us (2.43/node)       250us (2.48/node)        99us (0.98/node)        66us (0.65/node)         2.54x
+batch 100 states (per batch)       850us (8.42/node)       445us (4.40/node)       426us (4.22/node)       177us (1.75/node)       105us (1.04/node)         2.41x
+build+subscribe 200 nodes        1,231us (6.16/node)       940us (4.70/node)       674us (3.37/node)     1,426us (7.13/node)       515us (2.57/node)         0.47x
+
+== node function: heavy ==
+scenario                                 pure-python       pure-python tuned           tuned + mypyc           rust (facade)      rust (raw _native)  mypyc/facade
+chain 100 (per set)                580us (5.80/node)       328us (3.28/node)       282us (2.82/node)       180us (1.80/node)       147us (1.47/node)         1.57x
+fan 100 -> 1 (per set)             630us (6.24/node)       339us (3.36/node)       343us (3.40/node)       192us (1.90/node)       157us (1.56/node)         1.79x
+batch 100 states (per batch)       931us (9.22/node)       548us (5.42/node)       516us (5.11/node)       270us (2.68/node)       197us (1.95/node)         1.91x
+build+subscribe 200 nodes        1,356us (6.78/node)     1,060us (5.30/node)       798us (3.99/node)     1,514us (7.57/node)       634us (3.17/node)         0.53x

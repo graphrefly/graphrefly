@@ -94,6 +94,15 @@ them is each owner's.
 - `graph/worker.ts` sends `[RESOLVED]` where it has nothing to send; under R-wave@2 it returns.
 - State `set` gains the function form.
 
+## Python and Rust after D800
+
+Added 2026-11-10. [graphrefly:D800](../../decisions/decisions.jsonl) supersedes D415: graphrefly-py
+writes its own Python kernel against these rules instead of waiting for Rust, and needs no
+graphrefly-rs build or runtime dependency once it lands. Until then it builds and releases against
+graphrefly-rs `cf02fc9`. The Rust migration need not keep `graphrefly-bindings-py` compiling; that
+crate is removed once Python no longer imports `graphrefly._native`. Background and measurement:
+[PROPOSAL-python-kernel-separation.md](PROPOSAL-python-kernel-separation.md).
+
 ## What each runtime must show (acceptance)
 
 Every kernel scenario starts `todo` in every runtime. An owner qualifies a scenario by running a
