@@ -30,7 +30,7 @@ graphrefly:D799 and graphrefly:D801 (START is the kernel's alone). Read the rule
 | R-node-thin | 2 | (no behavioral scenario: not observable) |
 | R-sentinel | 1 | unchanged |
 | R-checkpoint | 1 | module: capture and restore (D802; see "Checkpoint after D802") |
-| R-bridge | 1 | module: the wire edge group, one frame per sender wave (D803; see "Bridge after D803") |
+| R-bridge | 2 | module: the wire edge group, one frame per sender wave (D803, D804; see "Bridge after D803") |
 
 R-checkpoint, a module rule, is active since graphrefly:D802 (2026-11-10), and R-bridge since graphrefly:D803 (2026-11-11). The other module rules
 (R-pause, R-demand, R-history, R-restart, R-revision) are drafts. Each activates later as separately
@@ -174,6 +174,13 @@ ends the hold on each runtime's stage 6 (the cross-graph bridge). What every run
 6. **Names.** The reference module's `wireEdgeGroupOut`, `wireEdgeGroupIn`, `frameSource` and
    `frameSink` (in [reference/modules/bridge.mjs](../../reference/modules/bridge.mjs)) are the public
    shape, in each language's casing.
+
+7. **Ended inbound edges (D804, R-bridge@2, same day).** An inbound node that has ended takes nothing
+   more: in any frame its edge's arrays are skipped and the rest of the frame is released, and the
+   skip is an `ended` issue only when those arrays do not end with a terminal. Refusal whole stays for
+   an undeclared edge, a kernel-only message, a terminal not last or an array after a terminal in the
+   same frame. The first cause's INVALIDATE goes ahead of the snapshot of every edge without a value,
+   also one whose snapshot is its terminal alone. Found by graphrefly-py's stage 6.
 
 Python also brings back the wire facades graphrefly-py:D5 withdrew, in this shape, and requalifies
 C-1a and C-1c. Each owner admits the stage-6 delta in its own slice.

@@ -717,7 +717,7 @@ receiver:  transport ──► frameSource ──► gate ──► gate/x, gate
   one cause, sent as one DATA frame `{ group, session, cause, edges: [{ edge, arrays }] }` carrying
   only the edges that brought input, each as the ctx gives it (an INVALIDATE, the DATA arrays, a
   terminal). Its setup names the session; causes count from 1; the first run, the session's first
-  cause, carries every snapshot and an INVALIDATE for an edge without one. A value or ERROR payload
+  cause, carries every snapshot, with an INVALIDATE ahead of it for an edge without a value (D804). A value or ERROR payload
   that is not a `Uint8Array` throws, so the node ends with ERROR.
 - `frameSink(send)`: a sink callback handing every frame delivered, the START snapshot's included,
   to the transport.
@@ -727,8 +727,10 @@ receiver:  transport ──► frameSource ──► gate ──► gate/x, gate
   and `${id}.issues`. The gate's private state holds the session, the last cause taken and a view of
   what each edge last brought; each run with a frame of its group sends one value `{ released,
   issues, view }`. An inbound node sends its edge's arrays from the released causes, and on the
-  first run of a lifetime its snapshot from the view. Issues are `stale`, `gap`, `refused` and
-  `malformed` values.
+  first run of a lifetime its snapshot from the view. An inbound edge that has ended takes nothing
+  more: its arrays in a later frame are skipped and the rest released, and an `ended` issue is
+  reported when the skipped arrays do not end with a terminal (R-bridge@2, D804). Issues are
+  `stale`, `gap`, `refused`, `ended` and `malformed` values.
 
 Not restorable: the nodes carry no recipe, since R-bridge does not cover checkpoints of bridge nodes
 (their values are bytes, not JSON), so the modules' F6 convention does not apply here. A wave in
@@ -739,6 +741,9 @@ The tests follow C-1 (a diamond split across two graphs, D running once per caus
 same A) and C-1b. Mutations checked against them on 2026-11-11, each failing a test: no stale check,
 a gap not reported, no INVALIDATE in the first cause, a new session keeping the count, no snapshot
 from the view, an array accepted after the edge's terminal, a refused frame's number not taken.
+Added with D804, each failing a test: refusing a frame whole for an ended edge (R-bridge@1), the
+divergence not reported, every skip reported, an array after a terminal in the same frame accepted,
+the INVALIDATE only for an edge without any snapshot.
 
 ## History, R-replay-buffer ([history.mjs](history.mjs), [history.test.mjs](history.test.mjs))
 

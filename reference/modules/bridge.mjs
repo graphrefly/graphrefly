@@ -32,8 +32,8 @@ function brought(dep) {
 
 // The sender side. `edges` maps each edge id to a node of this graph. A session is one lifetime of
 // this node: its setup names the session, and its causes are numbered from 1. The first run brings
-// every edge's snapshot; an edge without one gets an INVALIDATE, so a receiver that kept a value
-// from an earlier session drops it.
+// every edge's snapshot; an edge without a value gets an INVALIDATE ahead of it, so a receiver that
+// kept a value from an earlier session drops it.
 export function wireEdgeGroupOut(g, id, { group, edges }) {
   const edgeIds = Object.keys(edges);
   g.node(id, edgeIds.map((e) => edges[e]), (ctx) => {
@@ -42,8 +42,10 @@ export function wireEdgeGroupOut(g, id, { group, edges }) {
     const carried = [];
     ctx.deps.forEach((dep, i) => {
       const arrays = brought(dep);
+      // The first cause clears, on the receiver, a value an earlier session left for an edge that
+      // has none now, also one whose snapshot is its terminal alone.
+      if (first && !arrays.some((a) => a[0][0] === "DATA")) arrays.unshift([["INVALIDATE"]]);
       if (arrays.length) carried.push({ edge: edgeIds[i], arrays });
-      else if (first) carried.push({ edge: edgeIds[i], arrays: [[["INVALIDATE"]]] });
     });
     if (!carried.length) return; // a run with no new input forms no cause
     for (const { edge, arrays } of carried) {
@@ -110,11 +112,12 @@ function gateFn(group, declared) {
       if (cause <= st.last) { issues.push({ kind: "stale", session, cause, last: st.last }); continue; }
       const gap = cause > st.last + 1 ? { kind: "gap", session, from: st.last + 1, to: cause - 1 } : null;
       st = { ...st, last: cause };
-      const view = refuse(frame, known, st.view);
-      if (typeof view === "string") { issues.push({ kind: "refused", session, cause, reason: view }); continue; }
+      const checked = refuse(frame, known, st.view);
+      if (typeof checked === "string") { issues.push({ kind: "refused", session, cause, reason: checked }); continue; }
       if (gap) issues.push(gap);
-      st = { ...st, view };
-      released.push(frame);
+      for (const edge of checked.diverged) issues.push({ kind: "ended", session, cause, edge });
+      st = { ...st, view: checked.view };
+      released.push(checked.frame);
     }
     ctx.state.set(st);
     if (released.length || issues.length) {
@@ -123,8 +126,12 @@ function gateFn(group, declared) {
   };
 }
 
-// Checks a frame against what its inbound nodes could send as their own output and returns the
-// view after it, or the reason it is refused whole.
+// Checks a frame against what its inbound nodes could send as their own output. Returns the reason
+// it is refused whole, or the view after it with the frame to release. An edge whose inbound node
+// has ended takes nothing more (R-bridge@2): its arrays are skipped and the rest of the frame is
+// released; when the skipped arrays do not end with a terminal, the sender's edge goes on while
+// the receiver's has ended, and the edge is reported (diverged). A new session's first cause
+// repeats an ended edge's snapshot with its terminal, which is not reported.
 function refuse(frame, known, view) {
   try { return viewAfter(frame, known, view); } catch (e) {
     if (e instanceof BadFrame) return e.message;
@@ -136,21 +143,32 @@ class BadFrame extends Error {}
 function viewAfter(frame, known, view) {
   const next = { ...view };
   const seen = new Set();
+  const kept = [];
+  const diverged = [];
   for (const entry of frame.edges) {
     const { edge, arrays } = entry ?? {};
     if (!known.has(edge)) throw new BadFrame(`undeclared edge ${edge}`);
     if (seen.has(edge)) throw new BadFrame(`edge ${edge} twice`);
     seen.add(edge);
     if (!Array.isArray(arrays) || !arrays.length) throw new BadFrame(`edge ${edge} carries no array`);
-    let { values = null, terminal = null } = next[edge] ?? {};
+    let ended = false; // within this frame
     for (const a of arrays) {
       if (!Array.isArray(a) || !a.length) throw new BadFrame(`edge ${edge}: an empty array`);
-      if (terminal) throw new BadFrame(`edge ${edge}: an array after its terminal`);
+      if (ended) throw new BadFrame(`edge ${edge}: an array after its terminal`);
       a.forEach((m, i) => {
         if (!Array.isArray(m) || !CROSSING.has(m[0])) throw new BadFrame(`edge ${edge}: ${m?.[0]} does not cross`);
         if ((m[0] === "DATA" || m[0] === "ERROR") && !isBytes(m[1])) throw new BadFrame(`edge ${edge}: ${m[0]} without bytes`);
         if (isTerminal(m) && i !== a.length - 1) throw new BadFrame(`edge ${edge}: a terminal not last`);
       });
+      ended = isTerminal(a.at(-1));
+    }
+    if (next[edge]?.terminal) {
+      if (!ended) diverged.push(edge);
+      continue;
+    }
+    let { values = null } = next[edge] ?? {};
+    let terminal = null;
+    for (const a of arrays) {
       // As the kernel applies it (R-wave, R-invalidation): what came before the last INVALIDATE is
       // gone and the value with it, the DATA after it is the value, and a terminal ends the edge.
       const k = a.findLastIndex((m) => m[0] === "INVALIDATE");
@@ -160,8 +178,10 @@ function viewAfter(frame, known, view) {
       terminal = a.find(isTerminal) ?? null;
     }
     next[edge] = Object.freeze({ values, terminal });
+    kept.push(entry);
   }
-  return Object.freeze(next);
+  const released = kept.length === frame.edges.length ? frame : Object.freeze({ ...frame, edges: kept });
+  return { view: Object.freeze(next), frame: released, diverged };
 }
 
 // An inbound node sends, in each wave, the arrays of its edge in the causes released, as its own

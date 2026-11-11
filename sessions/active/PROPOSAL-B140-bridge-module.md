@@ -339,3 +339,20 @@ Each item below survived a check for whether it could be dropped.
 7. **The group's status node is removed;** issues remain. Status held the active cause and its
    PENDING and DATA counts, none of which exists any more.
 8. **A frame bearing another group's name is ignored silently.** It is not this group's issue.
+
+## 10. After activation: ended inbound edges (D804)
+
+Added 2026-11-11. graphrefly-py's stage 6 found that R-bridge@1 refused a new session's first cause
+whole when an edge had ended on the receiver: the cause repeats that edge's snapshot and terminal,
+which @1 called an array after the edge's terminal, so the INVALIDATE the same cause carried for an
+edge without a value (item 3 of section 9) was lost. The user chose:
+
+- **Skip, in any frame, the arrays of an inbound edge that has ended, and release the rest.** The skip
+  is an issue only when those arrays do not end with a terminal (the sender's edge goes on while the
+  receiver's has ended). Refusal whole stays for frames no node could send. Alternatives offered:
+  refuse whole as @1 did; skip only in a new session and report every skip.
+- **Model terminals.** `module_bridge.tla` gains COMPLETE. Writing it found that @1 gave the
+  INVALIDATE only to an edge without any snapshot, against item 3's wording (an edge without a
+  value): an edge that had lost its value and ended came back ended with the old value. R-bridge@2
+  fixes that too.
+

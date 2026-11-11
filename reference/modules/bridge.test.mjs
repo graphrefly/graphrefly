@@ -167,6 +167,34 @@ test("C-1b: a new session starts the count again and invalidates an edge it has 
   assert.deepEqual(got.issues, [], "a new session is not a gap or a stale cause");
 });
 
+test("C-1b: an ended inbound edge takes nothing more, and a new session's INVALIDATE still lands", () => {
+  const { s, ch, got } = oneHop();
+  ch.flush();
+  s.complete("y");
+  ch.flush();
+  assert.deepEqual(body(got.y.at(-1)), [["COMPLETE"]]);
+  s.unsubscribe("t", "out");
+  s.invalidate("x");
+  s.subscribe("t", "out", frameSink(ch.send));
+  assert.deepEqual(ch.queue[0].edges.map((e) => [e.edge, e.arrays.map((a) => a.map((m) => m[0]))]),
+    [["x", [["INVALIDATE"]]], ["y", [["DATA"], ["COMPLETE"]]]], "the first cause repeats y's snapshot and its COMPLETE");
+  ch.flush();
+  assert.deepEqual(body(got.x.at(-1)), [["INVALIDATE"]], "x's stale value is dropped");
+  assert.deepEqual(got.issues, [], "an ended edge's repeated snapshot ending in its terminal is not an issue");
+});
+
+test("C-1b: an edge that has no value but has ended gets an INVALIDATE ahead of its COMPLETE", () => {
+  const { s, ch, got } = oneHop();
+  ch.flush();
+  s.unsubscribe("t", "out");
+  s.invalidate("x");
+  s.complete("x");
+  s.subscribe("t", "out", frameSink(ch.send));
+  assert.deepEqual(ch.queue[0].edges[0].arrays.map((a) => a.map((m) => m[0])), [["INVALIDATE"], ["COMPLETE"]]);
+  ch.flush();
+  assert.deepEqual(got.x.slice(-2).map(body), [[["INVALIDATE"]], [["COMPLETE"]]], "x ends without the old value");
+});
+
 test("C-1b: stale causes are dropped, a gap is released and reported, bad frames are refused whole", () => {
   const { s, ch, got, fFn } = oneHop();
   ch.flush();
@@ -187,11 +215,13 @@ test("C-1b: stale causes are dropped, a gap is released and reported, bad frames
   ch.hand(frame(6, [{ edge: "x", arrays: [[["PENDING"]]] }]));
   ch.hand(frame(7, [{ edge: "y", arrays: [[["COMPLETE"]]] }, { edge: "x", arrays: data("x7") }]));
   ch.hand(frame(8, [{ edge: "y", arrays: data("after end") }, { edge: "x", arrays: data("x8") }]));
-  ch.hand({ ...frame(9, [{ edge: "x", arrays: data("other") }]), group: "other" });
-  ch.hand(frame(9, [{ edge: "x", arrays: data("x9") }]));
-  assert.deepEqual(fFn.runs.at(-1), ["x9", "y0"], "refused frames released nothing, and 9 is no gap");
-  assert.deepEqual(got.issues.map((i) => [i.kind, i.cause ?? i.from]), [
-    ["stale", 2], ["stale", 1], ["gap", 3], ["refused", 5], ["refused", 6], ["refused", 8],
+  ch.hand(frame(9, [{ edge: "x", arrays: [[["COMPLETE"]], ...data("x9")] }]));
+  ch.hand({ ...frame(10, [{ edge: "x", arrays: data("other") }]), group: "other" });
+  ch.hand(frame(10, [{ edge: "x", arrays: data("x10") }]));
+  assert.deepEqual(fFn.runs.at(-1), ["x10", "y0"], "refused frames released nothing, and 10 is no gap");
+  assert.ok(xData().includes("x8"), "frame 8 is released without y's arrays, y having ended");
+  assert.deepEqual(got.issues.map((i) => [i.kind, i.cause ?? i.from, ...(i.edge ? [i.edge] : [])]), [
+    ["stale", 2], ["stale", 1], ["gap", 3], ["refused", 5], ["refused", 6], ["ended", 8, "y"], ["refused", 9],
   ]);
   assert.equal(got.y.flat().some((m) => m[0] === "COMPLETE"), true, "frame 7 was valid: y completed");
   assert.equal(got.x.flat().some((m) => m[0] === "ERROR"), false, "no inbound node fails from an issue");
