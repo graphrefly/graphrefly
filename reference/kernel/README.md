@@ -127,7 +127,9 @@ at its last INVALIDATE, dropping what came before it: `[1, INV, 2, 3]` is publis
 `[2, 3]`. RESOLVED, like PENDING, is sent by the kernel only (D799, 2026-11-10): node output that
 carries it is rejected, so DATA and RESOLVED never meet. Until then a function could send RESOLVED,
 which was the same as sending nothing, and the kernel checked that DATA and RESOLVED did not share an
-array, and for a few hours of 2026-11-10 a run.
+array, and for a few hours of 2026-11-10 a run. START is the kernel's as well (D801, 2026-11-10): only subscribe and a
+replace send it, with the snapshot. Until then `ctx.down` accepted it and passed it on without a
+PENDING prefix, so a dependent saw an empty input array; graphrefly-py's migration found it.
 
 ### Differences from the TS baseline (`dafc5ae`)
 

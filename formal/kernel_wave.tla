@@ -38,6 +38,8 @@ Invariants, each mutation-checked (see formal/README.md):
                         the kernel sends RESOLVED, to a pending node that sent
                         nothing (decided by the user 2026-11-10; a node's output
                         with RESOLVED is rejected like one with PENDING)
+  NoStartSent           no node sends START: node output with START is rejected
+                        (R-subscription, R-failure; D801, 2026-11-10)
   TerminalLastAndFinal  a terminal is last and nothing follows it (R-terminals)
   InvalidateEffective   INVALIDATE is sent only by a node that held a value
                         (R-invalidation)
@@ -66,7 +68,8 @@ Invariants, each mutation-checked (see formal/README.md):
 Out of scope here: lifetimes, request order, batch and topology requests
 (R-lifetime, R-request-order), quiet nodes and async output.
 Message encoding: "D1","D2" are DATA 1 and 2, "RES" RESOLVED, "INV" INVALIDATE,
-"COM" COMPLETE, "ERR" ERROR, "PEN" PENDING.
+"COM" COMPLETE, "ERR" ERROR, "PEN" PENDING, "STA" START (only in node output: the model
+has no subscribe).
  ***************************************************************************)
 EXTENDS Integers, Sequences, FiniteSets, TLC
 
@@ -92,7 +95,8 @@ Menu(n) ==
                     << <<"PEN", "D1">> >>,
                     << <<"D1", "RES">> >>,
                     << <<"COM", "D1">> >>,
-                    << <<"COM">>, <<"D1">> >> }
+                    << <<"COM">>, <<"D1">> >>,
+                    << <<"STA", "D1">> >> }
     [] n = "C" -> { <<>>, << <<"D2">> >>, << <<"ERR">> >> }
     [] n = "D" -> { <<>>, << <<"D1">> >>, << <<"D1", "D2">> >>, << <<"INV">> >>,
                     << <<"D2", "COM">> >>, << <<"ERR">> >> }
@@ -136,8 +140,10 @@ DataVals(a) == LET d == SelectSeq(a, IsData)
 LastInv(a)  == LET I == {i \in DOMAIN a : a[i] = "INV"} IN IF I = {} THEN 0 ELSE Max(I)
 
 \* ---- one submitted array: checked, then split at its last INVALIDATE ----
-\* PENDING and RESOLVED are the kernel's alone (R-wave), and a terminal is last.
+\* START, PENDING and RESOLVED are the kernel's alone (R-wave, R-subscription), and a
+\* terminal is last.
 ValidArr(a) ==
+  /\ "STA" \notin Range(a)
   /\ "PEN" \notin Range(a)
   /\ "RES" \notin Range(a)
   /\ \A i \in DOMAIN a : IsTerm(a[i]) => i = Len(a)
@@ -329,6 +335,10 @@ PendingPrefix ==
 
 InvalidateAlone ==
   \A n \in Nodes : \A i \in DOMAIN Sent(n) : "INV" \in Range(Sent(n)[i]) => Sent(n)[i] = <<"PEN", "INV">>
+
+\* START is the kernel's (R-subscription, D801): no node ever sends it.
+NoStartSent ==
+  \A n \in Nodes : \A i \in DOMAIN Sent(n) : "STA" \notin Range(Sent(n)[i])
 
 NoDataWithResolved ==
   \A n \in Nodes : \A i \in DOMAIN Sent(n) :

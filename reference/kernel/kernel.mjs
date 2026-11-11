@@ -330,8 +330,10 @@ export function createGraph({ report: hostReport } = {}) {
         // DS-17 O11: PENDING is sent by the kernel only, as the prefix of a value array. So is
         // RESOLVED (decided by the user 2026-11-10): a function that has nothing to send sends
         // nothing, and a node marked pending that sent nothing gets the kernel's RESOLVED.
-        // A node cannot open a notification and settle it later, so none spans time.
-        const kernelOnly = msgs.find((m) => m[0] === "PENDING" || m[0] === "RESOLVED");
+        // A node cannot open a notification and settle it later, so none spans time. START is
+        // the kernel's too (decided by the user 2026-11-10, after graphrefly-py's migration found
+        // it accepted): only subscribe and a replace send it, with the snapshot.
+        const kernelOnly = msgs.find((m) => m[0] === "START" || m[0] === "PENDING" || m[0] === "RESOLVED");
         if (kernelOnly) throw new KernelError(`${n.id}: ${kernelOnly[0]} is sent by the kernel, not by node output`);
         const frames = prepare(msgs);
         if (invoking) { out.push(...frames); return; }

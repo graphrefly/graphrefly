@@ -9,22 +9,22 @@ its own work body there. Nothing here dispatches implementation. Records are in 
 ## What is current
 
 The public protocol is the D797 kernel set, activated by
-[graphrefly:D798](../../decisions/decisions.jsonl) and revised by graphrefly:D799 the same day
-(2026-11-10). Read the rules themselves in [spec/rules.jsonl](../../spec/rules.jsonl); this list only
-names them:
+[graphrefly:D798](../../decisions/decisions.jsonl) and revised the same day (2026-11-10) by
+graphrefly:D799 and graphrefly:D801 (START is the kernel's alone). Read the rules themselves in
+[spec/rules.jsonl](../../spec/rules.jsonl); this list only names them:
 
 | Rule | Revision | Concept |
 |---|---|---|
 | R-messages | 1 | the closed message set and array shape |
 | R-wave | 2 | waves, PENDING, settlement, written order |
-| R-subscription | 2 | START and the last-array snapshot, the seed |
+| R-subscription | 3 | START (the kernel's alone) and the last-array snapshot, the seed |
 | R-invocation | 2 | the function and its ctx |
 | R-terminals | 1 | COMPLETE and ERROR, their auto and manual policies |
 | R-invalidation | 1 | INVALIDATE and its auto and manual policy |
 | R-lifetime | 2 | activation, lifetime, setup and cleanup |
 | R-request-order | 2 | requests, batch, set, replace, ctx.rewire |
 | R-node | 2 | node, instance and lifetime scopes; definition |
-| R-failure | 2 | throws and invalid output |
+| R-failure | 3 | throws and invalid output |
 | R-graph-domain | 2 | one graph, one domain; the bridge's grouped release |
 | R-no-imperative | 2 | control is data on a declared edge |
 | R-node-thin | 2 | (no behavioral scenario: not observable) |
@@ -51,7 +51,8 @@ them is each owner's.
    ctx.upNext: nothing travels up the graph. [spec/protocol.proto](../../spec/protocol.proto) reserves
    the retired numbers, drops Tier and Direction and renames `WIRE_EDGE_KIND_DIRTY` to `PENDING`,
    so old and new bridge peers do not interoperate.
-2. **PENDING and RESOLVED are the kernel's alone.** Node output with either is rejected. PENDING
+2. **START, PENDING and RESOLVED are the kernel's alone.** Node output with any of them is rejected
+   (START since D801: it is sent only at subscribe and at a replace). PENDING
    prefixes every array that carries DATA, RESOLVED, INVALIDATE, COMPLETE or ERROR and marks the
    sender's dependents pending; a pending node that sent nothing gets exactly one RESOLVED.
 3. **Arrays.** Each `ctx.down` call is one array, kept in written order: a terminal is last, and an

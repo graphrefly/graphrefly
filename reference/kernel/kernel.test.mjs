@@ -174,6 +174,24 @@ test("K2: RESOLVED in node output is rejected: only the kernel sends it", () => 
   assert.deepEqual(during(g, () => g.set("a", 2)), ["s <- x: [PENDING, ERROR(\"x: RESOLVED is sent by the kernel, not by node output\")]"]);
 });
 
+test("START in node output is rejected: only subscribe and a replace send it", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  let kept;
+  g.node("x", ["a"], (ctx) => {
+    kept = ctx;
+    if (ctx.deps[0].value === 2) ctx.down([["START"], ["DATA", 1]]);
+  });
+  g.node("y", ["x"], (ctx) => { for (const w of ctx.deps[0].waves) if (w.length) ctx.down([["DATA", w.at(-1)]]); });
+  g.subscribe("s", "x");
+  g.subscribe("t", "y");
+  assert.throws(() => kept.down([["START"]]), /START is sent by the kernel/, "after the run, the caller gets it");
+  assert.deepEqual(during(g, () => g.set("a", 2)), [
+    "s <- x: [PENDING, ERROR(\"x: START is sent by the kernel, not by node output\")]",
+    "t <- y: [PENDING, ERROR(\"x: START is sent by the kernel, not by node output\")]",
+  ]);
+});
+
 test("O11: PENDING in node output is rejected: during the run it becomes ERROR, after the run the caller gets it", () => {
   const g = createGraph();
   g.state("a", 1);
