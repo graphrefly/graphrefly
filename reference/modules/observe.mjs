@@ -23,3 +23,19 @@ export function observe(g, ids, sink) {
   for (const id of ids) g.subscribe(sinkId, id, (msgs) => sink({ id, msgs }));
   return () => { for (const id of ids) g.unsubscribe(sinkId, id); };
 }
+
+// R-graph-surface@1 (D805, 2026-11-11): find and retain, the two graph-layer reads and holds the
+// reference kernel does not have itself. The kernel's ids are its handles, so find gives the id of
+// a node that exists, and null otherwise; it activates nothing.
+export function find(g, id) {
+  return g.describe().some((n) => n.id === id) ? id : null;
+}
+
+// A subscriber that ignores what it receives: it activates the node and keeps it active until the
+// release is called. Each retain is its own subscription.
+let nextRetain = 0;
+export function retain(g, id) {
+  const sinkId = `retain#${++nextRetain}`;
+  g.subscribe(sinkId, id);
+  return () => g.unsubscribe(sinkId, id);
+}

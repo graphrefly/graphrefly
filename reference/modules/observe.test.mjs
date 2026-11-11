@@ -146,3 +146,54 @@ test("H5: two observers of one node are two subscribers; stopping one leaves the
   assert.deepEqual(r1.shown(), ["a: START, DATA(1)"]);
   assert.deepEqual(r2.shown(), ["a: START, DATA(1)", "a: PENDING, DATA(2)"]);
 });
+
+// C-48 (R-graph-surface@1, D805): find, describe, observe and retain.
+test("C-48: find, describe, observe and retain", async () => {
+  const { find, retain } = await import("./observe.mjs");
+  const g = createGraph();
+  g.state("a", 1);
+  g.node("b", ["a"], (ctx) => ctx.down([["DATA", ctx.deps[0].value * 10]]));
+  g.node("c", ["a"], (ctx) => ctx.down([["DATA", ctx.deps[0].value]]));
+  let dctx;
+  g.node("d", ["a"], (ctx) => { dctx = ctx; });
+
+  assert.equal(find(g, "b"), "b");
+  assert.equal(find(g, "nope"), null);
+  assert.deepEqual(g.describe(), [
+    { id: "a", kind: "state", deps: [], quiet: false },
+    { id: "b", kind: "node", deps: ["a"], quiet: false },
+    { id: "c", kind: "node", deps: ["a"], quiet: false },
+    { id: "d", kind: "node", deps: ["a"], quiet: false },
+  ], "creation order, exactly { id, kind, deps, quiet }");
+  assert.equal(g.get("b").active, false, "find and describe activate nothing");
+
+  const events = [];
+  const stop = observe(g, ["b"], (e) => events.push(e));
+  assert.equal(g.get("b").active, true, "observe is a subscriber: it activates b");
+  g.set("a", 2);
+  assert.deepEqual(events, [
+    { id: "b", msgs: [["START"], ["DATA", 10]] },
+    { id: "b", msgs: [["PENDING"], ["DATA", 20]] },
+  ], "one event per array, START first, PENDING included, no tier or sequence");
+  const other = [];
+  const stop2 = observe(g, ["b"], (e) => other.push(e));
+  stop();
+  g.set("a", 3);
+  assert.equal(events.length, 2, "nothing after stop");
+  assert.deepEqual(other.at(-1), { id: "b", msgs: [["PENDING"], ["DATA", 30]] }, "another observer goes on");
+  stop2();
+  assert.equal(g.get("b").active, false);
+
+  const r1 = retain(g, "c");
+  const r2 = retain(g, "c");
+  assert.equal(g.get("c").active, true, "retain activates");
+  r1();
+  assert.equal(g.get("c").active, true, "each retain is its own subscription");
+  r2();
+  assert.equal(g.get("c").active, false);
+
+  retain(g, "d");
+  dctx.rewire(["a", "c"]);
+  assert.deepEqual(g.describe().find((n) => n.id === "d").deps, ["a", "c"], "describe gives the current dependencies");
+  assert.deepEqual(g.definition("d").deps, ["a"], "definition gives the declared ones");
+});

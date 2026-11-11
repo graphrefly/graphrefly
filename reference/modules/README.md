@@ -254,6 +254,12 @@ Mutations, each failing at least one test:
 - only the last message handed on;
 - consecutive arrays from one node merged.
 
+Since 2026-11-11 (graphrefly:D805) this shape is the rule R-graph-surface@1, and the module also
+has `find(g, id)` (the id of a node that exists, or null; the kernel's ids are its handles) and
+`retain(g, id)` (a subscriber that ignores what it receives; returns the release). C-48's test is
+here; mutations, each failing it: find giving any id, one sink id for every retain, a release that
+does nothing.
+
 ### New things this module introduces
 
 | New | Why it stays |

@@ -30,6 +30,8 @@ graphrefly:D799 and graphrefly:D801 (START is the kernel's alone). Read the rule
 | R-node-thin | 2 | (no behavioral scenario: not observable) |
 | R-sentinel | 1 | unchanged |
 | R-checkpoint | 1 | module: capture and restore (D802; see "Checkpoint after D802") |
+| R-graph-surface | 1 | the graph layer: find, describe, observe, retain (D805; see "Review corrections after D806") |
+| R-primary-api-clean | 2 | value-level sugar sees values only (D805) |
 | R-bridge | 2 | module: the wire edge group, one frame per sender wave (D803, D804; see "Bridge after D803") |
 
 R-checkpoint, a module rule, is active since graphrefly:D802 (2026-11-10), and R-bridge since graphrefly:D803 (2026-11-11). The other module rules
@@ -188,15 +190,24 @@ C-1a and C-1c. Each owner admits the stage-6 delta in its own slice.
 ## Review corrections after D806
 
 Added 2026-11-11, from the two D797 migration reviews (sessions/active/REVIEW-D797-migration-*.md,
-not tracked) and the user's answers to their merged questions. graphrefly:D806 is the kernel
-corrections (Q12, F 2.9, F 2.10). What every runtime changes:
+not tracked) and the user's answers to their merged questions. graphrefly:D805 is the graph layer
+(Q6), graphrefly:D806 the kernel corrections (Q12, F 2.9, F 2.10). What every runtime changes:
 
-1. **Auto COMPLETE runs the last terminal (Q12).** Under auto COMPLETE the run that sees the
+1. **Graph layer (R-graph-surface@1).** `find(id)` gives the node or nothing (a state as its state
+   handle) and activates nothing. `describe()` gives exactly `{ id, kind, deps, quiet }` per node in
+   creation order, deps current: no name, factory, status, value, version, meta, edges or subgraphs
+   (values and status are read from the node; mount and topology groups have their own package
+   APIs). `observe(ids, sink)` is an ordinary subscriber to those ids, one event `{ id, msgs }` per
+   delivered array, START first, no tier, no sequence; it returns the stop. Python removes its
+   passive kernel observe hook; TS and Rust move from one event per message to one per array.
+   `retain(id)` is a subscriber that ignores what it receives and returns the release. C-48.
+2. **Value-level sugar (R-primary-api-clean@2)** sees values only; TS's public tier exports go.
+3. **Auto COMPLETE runs the last terminal (D806, Q12).** Under auto COMPLETE the run that sees the
    last dependency's terminal calls the function, also when the terminal is its only input, and the
    node completes after it (R-terminals@1, C-17, unchanged). All three runtimes skipped that run.
-2. **Cycle check when a queued replace or rewire runs (F 2.9).** Refused then, the request
+4. **Cycle check when a queued replace or rewire runs (D806, F 2.9).** Refused then, the request
    changes nothing and goes to the host reporter as a queued request's failure. C-35.
-3. **A quiet node's forwarded INVALIDATE marks its cone (F 2.10).** Clear the quiet node's
+5. **A quiet node's forwarded INVALIDATE marks its cone (D806, F 2.10).** Clear the quiet node's
    pending mark before delivering the INVALIDATE, so a diamond below settles once. C-16.
 
 ## What each runtime must show (acceptance)

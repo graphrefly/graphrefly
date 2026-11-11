@@ -261,7 +261,10 @@ and the kernel tests do).
 Active rules without a model after the activation: R-sentinel@1 (the absence value is each
 language's own, with no cross-language behavior to model), R-node@1, R-node-thin@2,
 R-no-imperative@2 and R-graph-domain@2. Since D803 (2026-11-11), `module_bridge.tla` checks R-bridge@1
-and R-graph-domain@3's cross-graph clause; its per-graph clause is pinned by C-47.
+and R-graph-domain@3's cross-graph clause; its per-graph clause is pinned by C-47. Since D805
+(2026-11-11), R-graph-surface@1 and R-primary-api-clean@2 have no model either: they fix shapes
+(describe's fields, observe's event), which C-48 and the reference tests pin, and observe's order
+is the kernel's delivery order.
 
 `formal/states/` holds TLC state directories from earlier runs; it is not tracked by git.
 
