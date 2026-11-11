@@ -187,6 +187,19 @@ Mutations checked on 2026-11-08, each failing at least one test:
 - `zip` with one array per tuple, completing at once, or never completing;
 - `combineLatest` not giving a tuple by default.
 
+## Corrections from the D797 migration reviews (2026-11-11, graphrefly:D806)
+
+- Under auto COMPLETE the run that sees the last terminal calls the function, also when that
+  terminal is its only input (R-terminals@1, C-17); `settle` had skipped it (C F9). An earlier
+  terminal alone still does not run it.
+- The cycle check of `replace` and `ctx.rewire` runs again when the queued request runs (F 2.9): two
+  replaces in one batch, or two rewires asked for in one wave, could each pass when asked for and
+  close a cycle together. Refused when it runs, the request goes to the host reporter.
+- A quiet node clears its pending mark before forwarding an auto INVALIDATE (F 2.10), so the
+  INVALIDATE marks its cone pending and a diamond below settles once.
+
+Each has a test in `kernel.test.mjs`; undoing each fix fails its test.
+
 ## Covered so far
 
 - K1 the closed message set, in written order with the O13 split at INVALIDATE; K2 waves, DIRTY

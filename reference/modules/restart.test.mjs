@@ -153,8 +153,9 @@ test("a delayed retry is dropped once the owner's lifetime has closed, even if a
 test("no restart once an upstream of the inner has ended: the owner ends with the inner instead of waiting", () => {
   const g = createGraph();
   g.state("a", 1);
-  // The inner passes a on and ends with it (complete=auto).
-  restartable(g, "r", { deps: ["a"], fn: (ctx) => ctx.down([["DATA", ctx.deps[0].value]]), rounds: 5 });
+  // The inner passes a's new values on and ends with it (complete=auto). It sends only on new
+  // input: the run that sees a's COMPLETE brings no value (R-invocation, R-terminals).
+  restartable(g, "r", { deps: ["a"], fn: (ctx) => { if (ctx.deps[0].waves.some((w) => w.length)) ctx.down([["DATA", ctx.deps[0].value]]); }, rounds: 5 });
   g.subscribe("s", "r");
   g.complete("a");
   assert.deepEqual(g.get("r").ended, ["COMPLETE"]);

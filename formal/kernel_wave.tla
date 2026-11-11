@@ -8,7 +8,11 @@ the node's ERROR). Written 2026-11-09 for graphrefly:B140; the rules it checks
 are active since 2026-11-10 (graphrefly:D798), when it succeeded wave_protocol
 and its MCs (deleted then; see formal/README.md).
 
-Topology: a state S and a diamond S -> B, S -> C, B,C -> D. B and C have the
+Topology: a state S, a node Q over S, and a diamond Q -> B, Q -> C, B,C -> D. Q
+forwards the values it receives; whether it is quiet is chosen at Init (added
+2026-11-11 for F 2.10 of the D797 migration review): a quiet Q is never marked
+pending, holds its output for a later wave of its own (QuietLater), and passes
+an auto INVALIDATE on at once. Q, B and C have the
 default auto policies; D's three policies (COMPLETE, ERROR, INVALIDATE) are chosen at Init,
 so every combination of auto and manual is checked (added 2026-11-09 for the
 activation plan, taking over wave_deps_complete and wave_protocol_rescue_MC). Each wave starts from one host input
@@ -64,9 +68,13 @@ Invariants, each mutation-checked (see formal/README.md):
   InvalidatedNotKept    an INVALIDATE that reaches D under the auto policy, or
                         before an auto ERROR ends D, leaves D without a value
                         unless D sent DATA after it (R-invalidation, R-terminals)
+  AutoCompleteAfterRun  under auto COMPLETE a node completes only after the run
+                        that sees its last dependency's terminal, also when that
+                        terminal is the run's only input (R-terminals, C-17;
+                        added 2026-11-11 for C F9 of the D797 migration review)
 
 Out of scope here: lifetimes, request order, batch and topology requests
-(R-lifetime, R-request-order), quiet nodes and async output.
+(R-lifetime, R-request-order), and async output other than a quiet Q's later wave.
 Message encoding: "D1","D2" are DATA 1 and 2, "RES" RESOLVED, "INV" INVALIDATE,
 "COM" COMPLETE, "ERR" ERROR, "PEN" PENDING, "STA" START (only in node output: the model
 has no subscribe).
@@ -75,12 +83,13 @@ EXTENDS Integers, Sequences, FiniteSets, TLC
 
 CONSTANTS MaxWaves
 
-Nodes    == {"S", "B", "C", "D"}
-Computed == {"B", "C", "D"}
+Nodes    == {"S", "Q", "B", "C", "D"}
+Computed == {"Q", "B", "C", "D"}
 Deps == [n \in Nodes |->
           CASE n = "S" -> {}
-            [] n = "B" -> {"S"}
-            [] n = "C" -> {"S"}
+            [] n = "Q" -> {"S"}
+            [] n = "B" -> {"Q"}
+            [] n = "C" -> {"Q"}
             [] n = "D" -> {"B", "C"}]
 
 \* What a running node may send. Each element is a sequence of ctx.down arrays.
@@ -179,7 +188,8 @@ MarkSet(s, n, ms) ==
   ELSE LET m  == CHOOSE x \in ms : TRUE
            s1 == [s EXCEPT !.pendDeps[m] = @ \cup {n}]
            s2 == IF ~s.pend[m] THEN MarkPending([s1 EXCEPT !.pend[m] = TRUE], m) ELSE s1
-       IN MarkSet(s2, n, ms \ {m})
+       \* A quiet node consumes its input waves without being marked pending (R-wave).
+       IN IF m = "Q" /\ s.quiet THEN MarkSet(s, n, ms \ {m}) ELSE MarkSet(s2, n, ms \ {m})
 
 \* ---- deliver arrays already applied to n ----
 Deliver(s, n, fr) ==
@@ -210,8 +220,10 @@ Emit(s, n, raw) ==
   IN Deliver([s EXCEPT !.has[n] = st.has, !.vals[n] = st.vals, !.ended[n] = st.ended], n, st.out)
 
 \* ---- state ----
-Init == \E p \in Policies :
+Init == \E p \in Policies, q \in BOOLEAN :
   k = [ phase    |-> "idle",
+        quiet    |-> q,           \* Q is quiet (chosen at Init)
+        qHeld    |-> <<>>,        \* a quiet Q's output, held for its later wave
         waves    |-> 0,
         has      |-> [n \in Nodes |-> TRUE],
         vals     |-> [n \in Nodes |-> <<1>>],
@@ -231,7 +243,9 @@ Init == \E p \in Policies :
                                   \* manual INVALIDATE, reached open D
         kernelInvD |-> FALSE,     \* the kernel invalidated D under the manual INVALIDATE policy
         keptInv  |-> FALSE,       \* D kept a value its input invalidated (see Check)
-        missed   |-> FALSE ]
+        missed   |-> FALSE,
+        lastSkipped |-> FALSE ]   \* a node completed under auto COMPLETE without the run
+                                  \* that sees the last terminal (see Finish)
 
 \* A host input to S starts a wave; an input to an ended S is refused (no wave).
 HostInput ==
@@ -264,6 +278,7 @@ Finish(s, m, lead, runs, raw) ==
       st  == IF post THEN ApplyFrame(st0f, <<"COM">>) ELSE st0f
       s1  == [sK EXCEPT !.inbox[m] = [d \in Deps[m] |-> <<>>],
                        !.runs[m]  = @ + (IF runs THEN 1 ELSE 0),
+                       !.lastSkipped = @ \/ (post /\ st0f.ended = "no" /\ ~runs),
                        !.has[m]   = st.has, !.vals[m] = st.vals, !.ended[m] = st.ended]
       how  == IF post /\ st0f.ended = "no" THEN "kernel" ELSE IF ~ValidOut(raw) THEN "rejected" ELSE "fn"
       s1a == IF m = "D" /\ s.ended[m] = "no" /\ st.ended # "no" THEN [s1 EXCEPT !.dEnd = how] ELSE s1
@@ -277,10 +292,36 @@ Check(m, invd, ae, ns) ==
   IF m = "D" /\ invd /\ (PolS(k, m).invalidate = "auto" \/ ae) /\ ns.has["D"] /\ ~NewData(ns)
   THEN [ns EXCEPT !.keptInv = TRUE] ELSE ns
 
+\* Q forwards the values it received, one array per array that carried DATA.
+QOut(tr) == LET fs == tr["S"] IN
+  SelectSeq([i \in DOMAIN fs |-> SelectSeq(fs[i], IsData)], LAMBDA a : a # <<>>)
+
+\* A quiet Q (chosen at Init): its output is a later wave, held until QuietLater publishes it;
+\* an auto INVALIDATE goes on at once, and, delivered while Q is not pending, marks its cone
+\* pending like any array a node sends unmarked, so the diamond below settles once (F 2.10 of
+\* the D797 migration review, 2026-11-11: the reference kernel delivered it while still pending).
+QLead(s) == Emit(s, "Q", << <<"INV">> >>)
+QuietSettle ==
+  LET early  == k.pend["S"]
+      fs     == k.inbox["Q"]["S"]
+      depErr == \E i \in DOMAIN fs : "ERR" \in Range(fs[i])
+      tr     == [d \in {"S"} |-> AfterLastInv(fs)]
+      invd   == tr["S"] # fs
+      ended  == k.depEnded["Q"] = {"S"}
+      vals   == QOut(tr)
+      k0     == [k EXCEPT !.early = @ \/ early, !.inbox["Q"] = [d \in {"S"} |-> <<>>]]
+  IN IF depErr
+     THEN k' = [k0 EXCEPT !.qHeld = @ \o (IF invd THEN << <<"INV">>, <<"ERR">> >> ELSE << <<"ERR">> >>)]
+     ELSE LET k1 == IF invd THEN QLead(k0) ELSE k0
+              runs == vals # <<>> \/ (ended /\ \E i \in DOMAIN tr["S"] : "COM" \in Range(tr["S"][i]))
+          IN k' = [k1 EXCEPT !.runs["Q"] = @ + (IF runs THEN 1 ELSE 0),
+                             !.qHeld = @ \o vals \o (IF ended THEN << <<"COM">> >> ELSE <<>>)]
+
 Settle(m) ==
   /\ k.phase = "wave"
   /\ Ready(m)
-  /\ LET early  == \E d \in Deps[m] : k.pend[d]
+  /\ IF m = "Q" /\ k.quiet THEN QuietSettle ELSE
+     LET early  == \E d \in Deps[m] : k.pend[d]
          k0     == [k EXCEPT !.early = @ \/ early]
          depErr == \E d \in Deps[m] : \E i \in DOMAIN k.inbox[m][d] : "ERR" \in Range(k.inbox[m][d][i])
          trimmed == [d \in Deps[m] |-> AfterLastInv(k.inbox[m][d])]
@@ -295,12 +336,21 @@ Settle(m) ==
         ELSE
           LET \* auto INVALIDATE: the kernel invalidates m; manual: it is the function's input
               lead    == invd /\ PolS(k, m).invalidate = "auto"
+              \* Auto COMPLETE: the node completes after the run that sees the last terminal,
+              \* also when that terminal is the run's only input (R-terminals, C-17; C F9 of the
+              \* D797 migration review, 2026-11-11: this disjunct was missing).
+              lastTerm == /\ PolS(k, m).complete = "auto" /\ k.depEnded[m] = Deps[m]
+                          /\ \E d \in Deps[m] : \E i \in DOMAIN trimmed[d] :
+                               \E j \in DOMAIN trimmed[d][i] : IsTerm(trimmed[d][i][j])
               runs    == \/ \E d \in Deps[m] : \E i \in DOMAIN trimmed[d] :
                               \E j \in DOMAIN trimmed[d][i] :
                                 IsValue(trimmed[d][i][j]) \/ ManualTerm(k, m, trimmed[d][i][j])
                          \/ (invd /\ PolS(k, m).invalidate = "manual")
+                         \/ lastTerm
               k1      == [k0 EXCEPT !.errRan = @ \/ (depErr /\ runs /\ PolS(k, m).error = "auto")]
-          IN IF runs
+          IN IF runs /\ m = "Q"
+             THEN k' = Check(m, invd, FALSE, Finish(k1, m, lead, TRUE, QOut(trimmed)))
+             ELSE IF runs
              THEN \E raw \in Menu(m) : k' = Check(m, invd, FALSE, Finish(k1, m, lead, TRUE, raw))
              ELSE k' = Check(m, invd, FALSE, Finish(k1, m, lead, FALSE, <<>>))
 
@@ -310,7 +360,12 @@ EndWave ==
   /\ k' = [k EXCEPT !.phase = "idle", !.runs = [n \in Nodes |-> 0], !.settles = [n \in Nodes |-> 0],
              !.missed = @ \/ (k.dTermIn /\ k.runs["D"] = 0 /\ k.dEnd # "kernel"), !.dTermIn = FALSE]
 
-Next == HostInput \/ (\E m \in Computed : Settle(m)) \/ EndWave
+\* A quiet Q publishes what it held as a later wave of its own, from a boundary.
+QuietLater ==
+  /\ k.phase = "idle" /\ k.qHeld # <<>>
+  /\ k' = Emit([k EXCEPT !.phase = "wave", !.qHeld = <<>>], "Q", k.qHeld)
+
+Next == HostInput \/ QuietLater \/ (\E m \in Computed : Settle(m)) \/ EndWave
 Spec == Init /\ [][Next]_vars
 
 \* ---- invariants ----
@@ -367,7 +422,7 @@ RetainedMatchesSent ==
 
 AutoTerminals ==
   k.phase = "idle" =>
-    \A m \in Computed :
+    \A m \in Computed \ (IF k.qHeld # <<>> THEN {"Q"} ELSE {}) :
       /\ ((\A d \in Deps[m] : k.ended[d] # "no") /\ PolS(k, m).complete = "auto") => k.ended[m] # "no"
       /\ ((\E d \in Deps[m] : k.ended[d] = "ERR") /\ PolS(k, m).error = "auto") => k.ended[m] # "no"
 
@@ -378,4 +433,6 @@ ManualEndsByFunction ==
 ManualSeesInput == ~k.missed
 ManualInvalidateKept == ~k.kernelInvD
 InvalidatedNotKept == ~k.keptInv
+
+AutoCompleteAfterRun == ~k.lastSkipped
 =============================================================================

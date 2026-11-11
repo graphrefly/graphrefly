@@ -218,6 +218,17 @@ export function createGraph({ report: hostReport } = {}) {
     n.lifetime = null;
   }
 
+  // A replace or rewire must not make n depend on itself, through current or declared
+  // dependencies (R-request-order). Checked when it is asked for and again when it runs: requests
+  // queued together, such as two replaces in one batch, can each be acyclic alone and form a
+  // cycle together (F 2.9 of the D797 migration review, 2026-11-11). A queued request refused when
+  // it runs goes to the host reporter as a queued request's failure.
+  function assertAcyclic(op, n, deps) {
+    for (const d of deps) {
+      if (d === n.id || dependsOn(nodeOf(d), n.id)) throw new KernelError(`${op}: ${n.id} would depend on itself through ${d}`);
+    }
+  }
+
   // exchange matches dependencies by id, so both lists must be free of repeats.
   function assertDistinct(op, n, deps) {
     if (new Set(deps).size !== deps.length || new Set(n.deps).size !== n.deps.length) {
@@ -351,10 +362,12 @@ export function createGraph({ report: hostReport } = {}) {
       rewire(deps) {
         if (!lifetime.open) return; // as ctx.down after close, before any check
         assertDistinct("rewire", n, deps);
-        for (const d of deps) {
-          if (d === n.id || dependsOn(nodeOf(d), n.id)) throw new KernelError(`rewire: ${n.id} would depend on itself through ${d}`);
-        }
-        request(() => { if (lifetime.open && n.lifetime === lifetime) rewireNode(n, [...deps]); });
+        assertAcyclic("rewire", n, deps);
+        request(() => {
+          if (!lifetime.open || n.lifetime !== lifetime) return;
+          assertAcyclic("rewire", n, deps);
+          rewireNode(n, [...deps]);
+        });
       },
     };
     if (n.seedNote !== undefined) { ctx.seed = n.seedNote; n.seedNote = undefined; }
@@ -528,20 +541,27 @@ export function createGraph({ report: hostReport } = {}) {
     const rest = m.inputs.flatMap((input) => input.frames.flat());
     const manualTerminal = rest.some((x) =>
       isTerminal(x) && (x[0] === "COMPLETE" ? m.terminal.complete : m.terminal.error) === "manual");
-    const runs = rest.some(isValue) || manualTerminal || (invalidated && m.invalidate === "manual");
+    // K5, complete=auto: the node completes after the run that sees the last terminal, so that
+    // run happens even when the terminal is its only input (R-terminals, C-17; C F9 of the D797
+    // migration review, 2026-11-11: until then a terminal-only last input was not run).
+    const allEnded = m.inputs.every((input) => input.ended);
+    const lastAutoComplete = m.terminal.complete === "auto" && allEnded && rest.some(isTerminal);
+    const runs = rest.some(isValue) || manualTerminal || lastAutoComplete || (invalidated && m.invalidate === "manual");
     const out = runs ? invoke(m) : [];
     clear();
 
     // K5, complete=auto: a separate postlude once every dependency has ended.
-    const allEnded = m.inputs.every((input) => input.ended);
     const postlude = m.terminal.complete === "auto" && allEnded && !out.flat().some(isTerminal) ? [["COMPLETE"]] : [];
 
     if (m.quiet) {
       // H6: what a quiet node outputs is a later wave, its arrays of one settlement
       // together; nothing downstream waits on it, so silence needs no RESOLVED. Only an
       // auto INVALIDATE goes on now (R-wave), with its PENDING prefix.
-      if (lead.length) deliver(m, lead);
+      // Its pending mark is cleared first, so the forwarded INVALIDATE marks its cone pending
+      // like any array a node sends unmarked, and a diamond below settles once (F 2.10 of the
+      // D797 migration review, 2026-11-11: delivered while still pending, it marked nothing).
       m.pending = false;
+      if (lead.length) deliver(m, lead);
       later(m, m.lifetime, out);
       if (postlude.length) later(m, m.lifetime, [postlude]);
       return;
@@ -735,10 +755,8 @@ export function createGraph({ report: hostReport } = {}) {
       const n = nodeOf(id);
       if (n.kind !== "node") throw new KernelError(`${id} is not a computed node`);
       assertDistinct("replace", n, deps);
-      for (const d of deps) {
-        if (d === id || dependsOn(nodeOf(d), id)) throw new KernelError(`replace: ${id} would depend on itself through ${d}`);
-      }
-      request(() => replaceNode(n, deps, fn, opts));
+      assertAcyclic("replace", n, deps);
+      request(() => { assertAcyclic("replace", n, deps); replaceNode(n, deps, fn, opts); });
     },
     set(id, value) { hostInput(id, ["DATA", typeof value === "function" ? new Deferred(value) : value]); },
     invalidate(id) { hostInput(id, ["INVALIDATE"]); },

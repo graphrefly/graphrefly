@@ -185,6 +185,20 @@ ends the hold on each runtime's stage 6 (the cross-graph bridge). What every run
 Python also brings back the wire facades graphrefly-py:D5 withdrew, in this shape, and requalifies
 C-1a and C-1c. Each owner admits the stage-6 delta in its own slice.
 
+## Review corrections after D806
+
+Added 2026-11-11, from the two D797 migration reviews (sessions/active/REVIEW-D797-migration-*.md,
+not tracked) and the user's answers to their merged questions. graphrefly:D806 is the kernel
+corrections (Q12, F 2.9, F 2.10). What every runtime changes:
+
+1. **Auto COMPLETE runs the last terminal (Q12).** Under auto COMPLETE the run that sees the
+   last dependency's terminal calls the function, also when the terminal is its only input, and the
+   node completes after it (R-terminals@1, C-17, unchanged). All three runtimes skipped that run.
+2. **Cycle check when a queued replace or rewire runs (F 2.9).** Refused then, the request
+   changes nothing and goes to the host reporter as a queued request's failure. C-35.
+3. **A quiet node's forwarded INVALIDATE marks its cone (F 2.10).** Clear the quiet node's
+   pending mark before delivering the INVALIDATE, so a diamond below settles once. C-16.
+
 ## What each runtime must show (acceptance)
 
 Every kernel scenario starts `todo` in every runtime. An owner qualifies a scenario by running a

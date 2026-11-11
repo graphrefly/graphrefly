@@ -116,11 +116,23 @@ ChoiceFns == {[P |-> "plain", A |-> "plain", M |-> "plain", N |-> x] :
 Rq(t, n, d) == [t |-> t, n |-> n, d |-> d, w |-> <<"", 0>>, s |-> 0, c |-> FALSE]
 TopoReq == {Rq("sub", x, {}) : x \in Sinks} \cup {Rq("unsub", x, {}) : x \in Sinks}
            \cup {[Rq("replace", "N", D) EXCEPT !.c = sb] : D \in DepChoices, sb \in BOOLEAN}
+           \* Replaces that can close a cycle together but not alone (F 2.9 of the D797 migration
+           \* review, 2026-11-11): M onto N, N onto M, and M back onto A.
+           \cup {Rq("replace", "M", {"N"}), Rq("replace", "M", {"A"}), Rq("replace", "N", {"M"})}
 Req == TopoReq \cup {Rq("set", "S", {}), Rq("complete", "S", {})}
 \* A rewire through N's ctx of its latest lifetime, open or already closed.
 RwReq(s) == {[Rq("rewire", "N", D) EXCEPT !.w = <<"N", s.life["N"]>>] : D \in DepChoices}
-TopoReqNow(s) == TopoReq \cup RwReq(s)
-ReqNow(s) == Req \cup RwReq(s)
+\* A replace onto the node itself or onto a node that depends on it, through current or declared
+\* dependencies, is refused when it is asked for (R-request-order): it is never made.
+RECURSIVE Reach(_, _)
+Reach(s, X) ==
+  LET nxt == X \cup UNION {s.deps[x] \cup s.decl[x] : x \in X}
+  IN IF nxt = X THEN X ELSE Reach(s, nxt)
+DependsOn(s, x, n) == n \in Reach(s, {x})
+Acyclic0(s, n, D) == \A d \in D : d # n /\ ~DependsOn(s, d, n)
+AskOK(s, r) == r.t # "replace" \/ Acyclic0(s, r.n, r.d)
+TopoReqNow(s) == {r \in TopoReq \cup RwReq(s) : AskOK(s, r)}
+ReqNow(s) == {r \in Req \cup RwReq(s) : AskOK(s, r)}
 LateReq(w) == [Rq("late", w[1], {}) EXCEPT !.w = w]
 CommitReq(s, c) == [Rq("commit", "S", {}) EXCEPT !.s = s, !.c = c]
 
@@ -128,6 +140,10 @@ VARIABLE k
 vars == <<k>>
 
 Min(S) == CHOOSE x \in S : \A y \in S : Rank[x] <= Rank[y]
+\* A wave settles a node after its dependencies in the wave; with M over N, Rank is no longer
+\* topological, so the order follows the current dependencies.
+TopoMin(s, S) == IF \E x \in S : s.deps[x] \cap S = {}
+                 THEN Min({x \in S : s.deps[x] \cap S = {}}) ELSE Min(S)
 Demand(s, d) == (d \in Sinks /\ s.sink[d]) \/ (\E m \in Nodes : <<d, m>> \in s.edge)
 
 \* The cleanup of lifetime lid of n runs once.
@@ -217,7 +233,7 @@ Settle(s, m, c, vals) ==
 RECURSIVE Propagate(_, _, _, _)
 Propagate(s, todo, c, vals) ==
   IF todo = {} THEN s
-  ELSE LET m == Min(todo) IN Propagate(Settle(s, m, c, vals), todo \ {m}, c, vals)
+  ELSE LET m == TopoMin(s, todo) IN Propagate(Settle(s, m, c, vals), todo \ {m}, c, vals)
 
 \* A wave from S: sets values written, then COMPLETE if term. An ended S refuses input.
 SourceWave(s, c, sets, term) ==
@@ -269,9 +285,12 @@ Rewire(s, D, c, lid) ==
 
 \* Replace closes the instance (its late output is dropped, its cleanups run after the
 \* exchange) and starts a new one under the same subscribers, as on a first activation.
-Replace(s, D, sb, c) ==
-  LET n   == "N"
-      old == s.open[n]
+\* The cycle check runs again when the replace runs: two replaces queued together can each
+\* be acyclic when asked for and close a cycle together (F 2.9); refused, it changes nothing.
+Replace(s, n, D, sb, c) ==
+  IF ~Acyclic0(s, n, D) THEN [s EXCEPT !.refused = @ + 1]
+  ELSE
+  LET old == s.open[n]
       s0  == [s EXCEPT !.replTarget = n]
       s1  == IF old THEN [s0 EXCEPT !.open[n] = FALSE, !.closedNow = @ \cup {n}]
              ELSE [s0 EXCEPT !.deps[n] = {}]   \* an ended instance has released its dependencies
@@ -286,7 +305,7 @@ Exec(s, r, c) ==
     [] r.t = "set"      -> SourceWave(s, c, 1, FALSE)
     [] r.t = "complete" -> SourceWave(s, c, 0, TRUE)
     [] r.t = "rewire"   -> Rewire(s, r.d, c, r.w[2])
-    [] r.t = "replace"  -> Replace(s, r.d, r.c, c)
+    [] r.t = "replace"  -> Replace(s, r.n, r.d, r.c, c)
     [] r.t = "late"     -> LateOut(s, r.w, c)
     [] r.t = "commit"   -> SourceWave(s, c, r.s, r.c)
 
@@ -397,7 +416,7 @@ Init ==
        runOK |-> TRUE, reopenOK |-> TRUE, rwOK |-> TRUE, btOK |-> TRUE,
        fifoOK |-> TRUE, afterOK |-> TRUE, bodyOK |-> TRUE, thrownOK |-> TRUE,
        batch |-> NoBatch,
-       nbatch |-> 0, thrown |-> {}, committed |-> {}]
+       nbatch |-> 0, thrown |-> {}, committed |-> {}, refused |-> 0]
 
 Next ==
   \/ HostRequest \/ CallbackRequest \/ LateFire \/ EndRequest
@@ -439,4 +458,7 @@ IdleDrained == k.phase = "idle" => k.queue = <<>>
 BodyAfterCommit == k.bodyOK
 ThrownDropped == k.thrownOK /\ \A i \in DOMAIN k.queue : k.queue[i].tag \notin k.thrown
 BatchThrowNothing == k.btOK
+\* No node depends on itself through current or declared dependencies (R-request-order;
+\* added 2026-11-11 for F 2.9 of the D797 migration review).
+Acyclic == \A n \in Computed : \A d \in k.deps[n] \cup k.decl[n] : d # n /\ ~DependsOn(k, d, n)
 =============================================================================

@@ -1897,3 +1897,79 @@ test("C-47: graphs on one thread: one graph's wave or batch never holds another'
   assert.equal(read, 2, "the write to g2 is g2's own request and ran at once");
   assert.equal(g1.get("a").value, 2);
 });
+
+// F 2.9 of the D797 migration review (2026-11-11): the cycle check runs again when a queued
+// replace or rewire runs, so two requests that are each acyclic alone cannot form a cycle.
+test("two replaces in one batch that would form a cycle: the second is refused when it runs", () => {
+  const reports = [];
+  const g = createGraph({ report: (e) => reports.push(e) });
+  g.state("S", 1);
+  g.node("A", ["S"], () => {});
+  g.node("B", ["S"], () => {});
+  g.batch(() => { g.replace("A", ["B"], () => {}); g.replace("B", ["A"], () => {}); });
+  assert.deepEqual(g.definition("A").deps, ["B"]);
+  assert.deepEqual(g.definition("B").deps, ["S"], "B keeps its dependencies");
+  assert.deepEqual(reports.map((r) => r.source), ["queued request"]);
+  assert.match(reports[0].error, /would depend on itself/);
+});
+
+test("two rewires asked for in one wave that would form a cycle: the second is refused when it runs", () => {
+  const reports = [];
+  const g = createGraph({ report: (e) => reports.push(e) });
+  g.state("S", 1);
+  const ctxs = {};
+  g.node("A", ["S"], (ctx) => { ctxs.A = ctx; });
+  g.node("B", ["S"], (ctx) => { ctxs.B = ctx; });
+  g.subscribe("sa", "A");
+  g.subscribe("sb", "B");
+  g.subscribe("ss", "S", () => {
+    if (!ctxs.asked) { ctxs.asked = true; ctxs.A.rewire(["S", "B"]); ctxs.B.rewire(["S", "A"]); }
+  });
+  g.set("S", 2);
+  assert.deepEqual(g.describe().find((n) => n.id === "A").deps, ["S", "B"]);
+  assert.deepEqual(g.describe().find((n) => n.id === "B").deps, ["S"]);
+  assert.deepEqual(reports.map((r) => r.source), ["queued request"]);
+});
+
+// F 2.10 of the D797 migration review (2026-11-11): a quiet node forwarding an auto INVALIDATE
+// marks its cone pending, so a diamond below it settles once.
+test("a quiet node's forwarded INVALIDATE settles a diamond below it once", () => {
+  for (const invalidate of ["auto", "manual"]) {
+    const g = createGraph();
+    g.state("A", 1);
+    g.node("Q", ["A"], (ctx) => { if (ctx.deps[0].waves.length) ctx.down([["DATA", ctx.deps[0].value]]); }, { quiet: true });
+    g.node("B", ["Q"], derived((q) => q));
+    g.node("C", ["Q"], derived((q) => q));
+    const runs = [];
+    g.node("D", ["B", "C"], (ctx) => { runs.push(ctx.deps.map((d) => d.invalidated)); }, { invalidate });
+    g.subscribe("s", "D");
+    runs.length = 0;
+    const out = during(g, () => g.invalidate("A")).filter((e) => e.startsWith("s <-"));
+    assert.equal(out.length, 1, `${invalidate}: D settles once`);
+    if (invalidate === "manual") assert.deepEqual(runs, [[true, true]], "one run, both legs invalidated");
+  }
+});
+
+// C F9 of the D797 migration review (2026-11-11), Q12: under auto COMPLETE the node completes
+// after the run that sees the last terminal (R-terminals, C-17), also when that terminal is the
+// run's only input.
+test("auto COMPLETE: the last terminal alone runs the function once, then the node completes", () => {
+  const g = createGraph();
+  g.state("s", 1);
+  const seen = [];
+  g.node("n", ["s"], (ctx) => { seen.push(ctx.deps[0].terminal?.[0] ?? null); });
+  g.subscribe("k", "n");
+  g.complete("s");
+  assert.deepEqual(seen, [null, "COMPLETE"], "the activation run, then one run on the COMPLETE");
+  assert.deepEqual(g.get("n").ended, ["COMPLETE"]);
+  g.state("t", 1);
+  g.state("u", 1);
+  const twoSeen = [];
+  g.node("m", ["t", "u"], (ctx) => { twoSeen.push(ctx.deps.map((d) => d.terminal?.[0] ?? null)); });
+  g.subscribe("k2", "m");
+  g.complete("t");
+  assert.equal(twoSeen.length, 1, "an earlier terminal alone, under auto COMPLETE, does not run it");
+  g.complete("u");
+  assert.deepEqual(twoSeen.at(-1), [null, "COMPLETE"], "the run that sees the last terminal (t's was an earlier invocation's)");
+  assert.deepEqual(g.get("m").ended, ["COMPLETE"]);
+});
