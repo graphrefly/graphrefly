@@ -190,9 +190,10 @@ function prepareCheckpoint(checkpoint, registry) {
     }
     validateSaved(n.id, saved);
   }
-  // Validate both topologies before a factory can have a side effect.
+  // Closing a lifetime restores declared dependencies. The union must be acyclic
+  // (R-request-order), not just each topology considered independently.
   const ordered = buildOrder(checkpoint.nodes);
-  buildOrder(checkpoint.nodes, (n) => n.saved?.deps ?? n.deps);
+  buildOrder(checkpoint.nodes, (n) => [...new Set([...n.deps, ...(n.saved?.deps ?? [])])]);
   // Detach the entire admitted snapshot, including recipe configuration.
   json(checkpoint, "checkpoint", "its contents are not JSON");
   return JSON.parse(JSON.stringify(ordered));

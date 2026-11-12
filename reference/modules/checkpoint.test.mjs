@@ -909,3 +909,18 @@ test("QA2: restore admits the whole checkpoint before any factory side effect", 
     assert.equal(calls, 0, `${name} must fail before even the first valid factory runs`);
   }
 });
+
+test("QA2: restore refuses cycles mixing declared and lifetime dependencies before factories", () => {
+  const cp = capture(original());
+  const s = cp.nodes.find((n) => n.id === "s");
+  const t = cp.nodes.find((n) => n.id === "t");
+  s.deps = ["t"];
+  s.saved.deps = ["a", "b"];
+  t.saved.deps = ["s"];
+  t.saved.inputs = [{ has: true, values: [5], ended: null }];
+  // Each DAG alone is acyclic. Closing s's lifetime would restore s -> t -> s.
+  let calls = 0;
+  const build = () => { calls++; return () => {}; };
+  assert.throws(() => restore(cp, { sum: build, scan: build }), /depends on itself/);
+  assert.equal(calls, 0);
+});
