@@ -148,7 +148,7 @@ function buildOrder(nodes, dependencies = (n) => n.deps) {
 
 const record = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
 const policy = (v) => v === "auto" || v === "manual";
-const ids = (v) => Array.isArray(v) && v.every((id) => typeof id === "string") && new Set(v).size === v.length;
+const ids = (v) => Array.isArray(v) && v.every((id) => typeof id === "string");
 const terminal = (v) => v === null || (Array.isArray(v) && (
   (v.length === 1 && v[0] === "COMPLETE") ||
   (v.length === 2 && v[0] === "ERROR" && v[1] !== undefined && typeof v[1] !== "boolean")
@@ -180,7 +180,7 @@ function prepareCheckpoint(checkpoint, registry) {
     if (!record(saved)) fail(n.kind === "node" ? "missing received records" : "missing saved state");
     if (!Array.isArray(saved.values)) fail("its retained values are not JSON");
     if (!terminal(saved.ended)) fail("invalid or missing terminal");
-    if (Object.hasOwn(saved, "deps") && !ids(saved.deps)) fail("invalid lifetime dependencies");
+    if (Object.hasOwn(saved, "deps") && (!ids(saved.deps) || new Set(saved.deps).size !== saved.deps.length)) fail("invalid lifetime dependencies");
     if (n.kind === "node") {
       const deps = saved.deps ?? n.deps;
       if (!Array.isArray(saved.inputs) || saved.inputs.length !== deps.length || saved.inputs.some((input) =>

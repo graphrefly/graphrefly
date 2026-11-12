@@ -880,7 +880,11 @@ test("QA2: restore admits the whole checkpoint before any factory side effect", 
     ["duplicate id", (cp) => { cp.nodes.push(structuredClone(cp.nodes[1])); }],
     ["missing node kind", (cp) => { delete cp.nodes[2].kind; }],
     ["missing deps", (cp) => { delete cp.nodes[2].deps; }],
-    ["duplicate deps", (cp) => { cp.nodes[2].deps.push("s"); }],
+    ["received count differs from declared deps", (cp) => { cp.nodes[2].deps.push("s"); }],
+    ["duplicate lifetime deps", (cp) => {
+      cp.nodes[2].saved.deps = ["s", "s"];
+      cp.nodes[2].saved.inputs.push(structuredClone(cp.nodes[2].saved.inputs[0]));
+    }],
     ["unknown dependency", (cp) => { cp.nodes[2].deps[0] = "absent"; }],
     ["unknown lifetime dependency", (cp) => { cp.nodes[2].saved.deps = ["absent"]; }],
     ["declared cycle", (cp) => { cp.nodes[2].deps = ["last"]; }],
@@ -923,4 +927,17 @@ test("QA2: restore refuses cycles mixing declared and lifetime dependencies befo
   const build = () => { calls++; return () => {}; };
   assert.throws(() => restore(cp, { sum: build, scan: build }), /depends on itself/);
   assert.equal(calls, 0);
+});
+
+test("QA2: restore preserves valid repeated declared inputs without inventing rewire restrictions", () => {
+  const g = createGraph();
+  g.state("a", 2);
+  node(g, registry(), "n", ["a", "a"], "sum");
+  g.subscribe("keep", "n");
+  const r = restore(capture(g), registry());
+  r.subscribe("keep", "n");
+  assert.equal(r.get("n").value, 4);
+  r.set("a", 3);
+  assert.equal(r.get("n").value, 6);
+  assert.deepEqual(r.definition("n").deps, ["a", "a"]);
 });
