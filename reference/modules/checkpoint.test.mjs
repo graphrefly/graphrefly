@@ -117,7 +117,7 @@ test("a computed node without a lifetime saves nothing and starts fresh", () => 
   node(g, reg, "p", ["a"], "plus", { k: 10 });
   const cp = roundTrip(capture(g));
   assert.deepEqual(cp.nodes[1], {
-    id: "p", kind: "node", deps: ["a"], recipe: { ref: "plus", config: { k: 10 } },
+    id: "p", kind: "node", deps: ["a"], recipe: { ref: "plus", config: { k: 10 } }, saved: null,
     opts: { terminal: { complete: "auto", error: "auto" }, invalidate: "auto", quiet: false },
   });
   const r = restore(cp, reg);
@@ -229,7 +229,7 @@ test("a node without a recipe is local-only and cannot be restored", () => {
   g.node("raw", ["a"], (ctx) => ctx.down([["DATA", 0]]));
   const cp = capture(g);
   assert.deepEqual(cp.nodes.filter((n) => n.local).map((n) => n.id), ["raw"]);
-  assert.throws(() => restore(cp, reg), /raw is local-only/);
+  assert.throws(() => restore(cp, reg), /not restorable: raw: local-only, built or replaced without a recipe/);
 });
 
 // F6 (the user's choice, 2026-11-10): a rewire belongs to the lifetime (F7), so it is saved with the
@@ -267,7 +267,7 @@ test("a replace without a recipe makes the node local-only, even when it keeps t
   assert.equal(g.definition("p").recipe, null);
   const cp = roundTrip(capture(g));
   assert.deepEqual(cp.nodes.filter((n) => n.local).map((n) => n.id), ["p"], "q keeps its recipe's definition");
-  assert.throws(() => restore(cp, reg), /p is local-only/, "restoring it as the old recipe would give 4 where the original gives 6");
+  assert.throws(() => restore(cp, reg), /not restorable: p: local-only, built or replaced without a recipe/, "restoring it as the old recipe would give 4 where the original gives 6");
 });
 
 test("a host replace with a recipe keeps the node restorable, as the new recipe", () => {
@@ -353,7 +353,7 @@ test("a node replaced onto a dependency made after it is restored, and works", (
 test("a missing recipe fails the restore", () => {
   const cp = capture(original());
   const { scan, ...withoutScan } = registry();
-  assert.throws(() => restore(cp, withoutScan), /no recipe scan/);
+  assert.throws(() => restore(cp, withoutScan), /not restorable: t: missing recipe/);
 });
 
 test("D802: a checkpoint without what each node received, as an earlier format, is refused", () => {
@@ -363,7 +363,7 @@ test("D802: a checkpoint without what each node received, as an earlier format, 
     const { inputs, ...rest } = n.saved;
     return { ...n, saved: rest };
   }) };
-  assert.throws(() => restore(older, registry()), /s has no record of what it received/);
+  assert.throws(() => restore(older, registry()), /not restorable: s: missing received records/);
   assert.doesNotThrow(() => restore(cp, registry()), "the same checkpoint with the record restores");
 });
 
@@ -383,16 +383,16 @@ test("a value, private state, recipe config or ERROR payload that is not JSON is
   g.state("a", 1);
   node(g, reg, "k", ["a"], "keep");
   g.subscribe("s", "k");
-  assert.throws(() => capture(g), /node k is not JSON/);
+  assert.throws(() => capture(g), /not restorable: k: its private state is not JSON/);
   const h = createGraph();
   h.state("a", 1);
   node(h, reg, "x", ["a"], "plus", { k: () => 1 });
-  assert.throws(() => capture(h), /node x is not JSON/);
+  assert.throws(() => capture(h), /not restorable: x: its recipe config is not JSON/);
   // An ERROR's payload is saved with its terminal, so it must be JSON too (D802).
   const e = createGraph();
   e.state("a", 1);
   e.error("a", new Error("boom"));
-  assert.throws(() => capture(e), /node a is not JSON/);
+  assert.throws(() => capture(e), /not restorable: a: its ERROR payload is not JSON/);
 });
 
 test("a restored graph captured again before anything subscribes keeps the saved lifetimes", () => {
@@ -584,12 +584,11 @@ test("F6: a restored holder whose demand changed before its first subscription d
   assert.deepEqual(after(r, "s", () => rh.pull("p3")), ['s <- h: [PENDING, DATA("p3:2,3,4")]']);
 });
 
-// The same review: a function that builds a view over its ctx, as the holder does (view.deps = ...),
+// The same review: a function that builds a view over its ctx, as the holder does,
 // must be able to on a restored node's first run, which sees the wrapper's ctx.
 test("a restored node's first run can give a view of its ctx other deps", () => {
   const reg = { view: () => (ctx) => {
-    const v = Object.create(ctx);
-    v.deps = [{ ...ctx.deps[0], value: ctx.deps[0].value * 2 }];
+    const v = Object.create(ctx, { deps: { value: [{ ...ctx.deps[0], value: ctx.deps[0].value * 2 }] } });
     v.down([["DATA", v.deps[0].value]]);
   } };
   const g = createGraph();
@@ -757,4 +756,83 @@ test("C-47: inside g1's wave, g1 cannot be captured and an idle g2 can", () => {
   });
   g1.set("a", 1);
   assert.equal(seen.at(-1), "checked");
+});
+
+test("D808: omitted whole lifetime fails; cold lifetime is explicitly null", () => {
+  const cp = roundTrip(capture(original()));
+  delete cp.nodes.find((n) => n.id === "s").saved;
+  assert.throws(() => restore(cp, registry()), { message: "not restorable: s: missing received records" });
+  const g = createGraph();
+  g.state("a", 1);
+  node(g, registry(), "cold", ["a"], "sum");
+  const cold = capture(g);
+  assert.equal(cold.nodes.find((n) => n.id === "cold").saved, null);
+  const r = restore(cold, registry());
+  assert.equal(r.get("cold").active, false);
+});
+
+test("D808: local-only nodes still validate retained data and private state", () => {
+  for (const field of ["value", "state"]) {
+    const g = createGraph();
+    g.node("n", [], (ctx) => {
+      if (field === "value") ctx.down([["DATA", () => 1]]);
+      else ctx.state.set({ bad: () => 1 });
+    });
+    g.subscribe("keep", "n");
+    assert.throws(() => capture(g), { message: `not restorable: n: its ${field === "value" ? "retained values are" : "private state is"} not JSON` });
+  }
+});
+
+test("D808: projected dependency views retain their invocation read guard", async () => {
+  const { withDependencies } = await import("./context.mjs");
+  const g = createGraph();
+  g.state("s", 1);
+  let adapted, dep;
+  g.node("n", ["s"], (ctx) => {
+    adapted = withDependencies(ctx, [{ ...ctx.deps[0], waves: [[2]] }]);
+    dep = adapted.deps[0];
+    assert.deepEqual(dep.waves, [[2]]);
+  });
+  g.subscribe("keep", "n");
+  const error = { message: "ctx.deps is only available during setup or function invocation" };
+  assert.throws(() => adapted.deps, error);
+  assert.throws(() => dep.waves, error);
+});
+
+test("checkpoint private state and values are detached in both directions", () => {
+  const g = createGraph();
+  const reg = { counter: () => (ctx) => {
+    const state = ctx.state.get() ?? { count: 0 };
+    state.count++;
+    ctx.state.set(state);
+    ctx.down([["DATA", { count: state.count }]]);
+  } };
+  g.state("s", 0);
+  node(g, reg, "n", ["s"], "counter");
+  g.subscribe("keep", "n");
+  const cp = capture(g);
+  const saved = cp.nodes.find((n) => n.id === "n").saved;
+  g.set("s", 1);
+  assert.equal(saved.state.count, 1);
+  assert.equal(saved.values[0].count, 1);
+  const restored = restore(cp, reg);
+  restored.subscribe("keep", "n");
+  restored.set("s", 2);
+  assert.equal(saved.state.count, 1);
+  saved.state.count = 55; saved.values[0].count = 55;
+  assert.equal(g.privateState("n").count, 2);
+  assert.equal(restored.privateState("n").count, 2);
+  assert.equal(restored.get("n").value.count, 2);
+});
+
+test("checkpoint refuses incomplete received records before any recipe runs", () => {
+  for (const input of [{}, { has: true, values: [1] }, { has: true, ended: null }, { has: true, values: [], ended: null }, { has: false, ended: ["DATA", 1] }]) {
+    const cp = capture(original());
+    cp.nodes.find((n) => n.id === "s").saved.inputs = [input];
+    let factories = 0;
+    const reg = Object.fromEntries(Object.entries(registry()).map(([name, factory]) =>
+      [name, (...args) => { factories++; return factory(...args); }]));
+    assert.throws(() => restore(cp, reg), { message: "not restorable: s: missing received records" });
+    assert.equal(factories, 0);
+  }
 });

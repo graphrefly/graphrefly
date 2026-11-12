@@ -502,6 +502,15 @@ The kernel side, `rewire` and `ctx.deps[i].id`, is listed in the kernel README.
 
 ## Checkpoint and restore, O5 ([checkpoint.mjs](checkpoint.mjs), [checkpoint.test.mjs](checkpoint.test.mjs))
 
+D808 rereview update (2026-11-12): computed checkpoint entries explicitly carry `saved: null`
+for a cold node or a saved record; omitting the enclosing field is rejected as `missing received
+records`. Capture validates retained values, received values, private state, recipe config and
+ERROR payloads even for local-only nodes. Failures use `not restorable: <id>: <reason>` and the
+shared [reason fixture](../../spec/fixtures/d797-rereview.v1.json). Restore stays cold; the host
+explicitly retains/subscribes the desired root. Projected contexts preserve invocation read guards.
+The dated exploration below records earlier schema/implementation shapes.
+
+
 **Reshaped on 2026-11-10 (D799), after the second reviews.** F6 had first made every module restorable
 through a building service, `recipes(g, registry)`, that kept its own record of how each node was
 built, beside the kernel: the bundle's `replace` and `make`, a `builder` in every module with two build

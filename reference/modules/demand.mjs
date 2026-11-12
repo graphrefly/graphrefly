@@ -1,3 +1,5 @@
+import { withDependencies } from "./context.mjs";
+
 // Demand (PULL) as a module over the reference kernel (DS-17 O2, R-pull). Non-normative.
 //
 // A pullable holder `id` sits after an input and stays quiet until it is pulled: input
@@ -48,8 +50,7 @@ const holder = (serve) => (ctx) => {
   const request = demand.waves.flat().filter((r) => r.seq > st.seen).at(-1);
   if (!request) { ctx.state.set({ queue, seen: st.seen }); return; }
   ctx.state.set({ queue: [], seen: request.seq });
-  const view = Object.create(ctx);
-  view.deps = [{ id: input.id, waves: queue, terminal: null, has: input.has, value: input.value, invalidated: false }];
+  const view = withDependencies(ctx, [{ id: input.id, waves: queue, terminal: null, has: input.has, value: input.value, invalidated: false }]);
   view.pull = { params: request.params };
   serve(view);
 };

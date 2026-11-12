@@ -13,7 +13,9 @@ npm run test:reference
 
 Since 2026-11-10, when the D797 kernel set was activated (graphrefly:D798), the kernel sends
 PENDING, the rules' name, where it sent DIRTY; the tests say PENDING too. Text below written before
-then still says DIRTY for the same message.
+then still says DIRTY for the same message. D808 (2026-11-12) supersedes historical late-output
+staging descriptions: late output is an ordinary queued request even inside a batch. Its failure
+semantics and invocation-read guards are exercised by the current tests.
 
 ## Files
 
@@ -96,7 +98,9 @@ example in a sink callback. TS stores one of seven values instead (`sentinel`, `
 `settled`, `resolved`, `completed`, `errored`); `settled` and `resolved` (last settlement DATA or
 RESOLVED) have no counterpart here, and `pending` is never set in TS.
 
-A node function has the TS baseline's shape, `(ctx) => void` (R-fn-contract, D8):
+A node function has the shape `(ctx) => void` (current R-invocation). `ctx.deps` and
+each saved dependency view are readable only during that supplying setup/function invocation;
+a later invocation cannot revive them. Plain data read during the invocation remains usable:
 
 | ctx member | Meaning |
 |---|---|
@@ -105,7 +109,7 @@ A node function has the TS baseline's shape, `(ctx) => void` (R-fn-contract, D8)
 | `deps[i].terminal` | Its COMPLETE/ERROR this invocation, or `null` |
 | `deps[i].has`, `deps[i].value` | The latest value received from it |
 | `state.get()`/`state.set(v)` | Private state of this lifetime |
-| `down(msgs)` | During the run: one array of this invocation's output; each call is its own array (R-wave-boundary). After the run returned: a new wave from this node (P9). After the lifetime closed: dropped. DIRTY is not accepted: only the kernel sends it (O11) |
+| `down(msgs)` | During the run: one array of this invocation's output; each call is its own array (R-wave-boundary). After the run returned: a new wave from this node (P9). After the lifetime closed: dropped. START/PENDING/RESOLVED are kernel-only |
 | `signal` | Aborted when the lifetime closes; async work that must stop with the lifetime follows it |
 | `deps[i].invalidated` | Under the manual INVALIDATE policy only: an INVALIDATE arrived on this input in this invocation |
 
@@ -249,9 +253,10 @@ Each has a test in `kernel.test.mjs`; undoing each fix fails its test.
   a wave's terminals and a manual one runs once on all of them; INVALIDATE does neither. An auto
   COMPLETE goes out in the same delivery as the run's output, so it does not mark the cone again.
   Both were found by `formal/kernel_wave.tla` once it had manual policies.
-- O3 as decided on 2026-11-06: batch delivers no DIRTY before commit. Inside a batch body a node's
-  late `ctx.down` is staged with host inputs; a submission that would make the accumulated array
-  invalid (a value after a terminal) is rejected and earlier staging kept; staged output of a lifetime that closed is dropped. A body declared `async` is
+- O3 as decided on 2026-11-06: batch delivers no DIRTY before commit. Inside a batch body late `ctx.down` queues an ordinary request after commit and survives a
+  commit/updater failure; a throwing body discards it. Host staging rejects a value after its
+  terminal while keeping earlier staging. Every staged host target is validated before any updater.
+  Output of a lifetime that closed is dropped at execution. A body declared `async` is
   refused before any of it runs; a plain body that returns a promise commits its synchronous part,
   and a report says that writes after its first await are separate waves. A topology request in a
   body (`subscribe`, `unsubscribe`, `replace`, `rewire`, from 2026-11-08) waits with the batch: it
@@ -304,8 +309,9 @@ Each has a test in `kernel.test.mjs`; undoing each fix fails its test.
   between waves.
 - H6: `{ quiet: true }` records its own dirty inputs but does not pass DIRTY on, so its dependents do
   not wait for it. What it outputs, including an inherited ERROR, is a later wave from it; the arrays
-  of one settlement go out together in that wave. Silence needs no RESOLVED. An INVALIDATE carries no
-  DIRTY, so a quiet node passes it on at once, as TS does (since the second simplification pass).
+  of one settlement, including a separate automatic final COMPLETE, go out together in that wave.
+  Silence needs no RESOLVED. A forwarded auto INVALIDATE goes out immediately with its PENDING
+  prefix and marks downstream before settlement.
 
 Mutations checked on 2026-11-06 for O13 and array boundaries, each failing at least one test: no
 split at INVALIDATE; tier sort restored; a run's `ctx.down` calls merged; `waves` flattened; a

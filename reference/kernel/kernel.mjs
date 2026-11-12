@@ -144,8 +144,8 @@ export function createGraph({ report: hostReport } = {}) {
     return n;
   }
 
-  // O3: inside a batch body every input is staged, whether it comes from the host or
-  // from a node's late ctx.down, and the whole batch commits as one wave, one
+  // D808: host input and quiet synchronous output are staged. Late ctx.down is
+  // an ordinary request after commit, independent of commit success. Staging is one
   // accumulated array per node (R-wave-boundary). A submission that would make that
   // array invalid (DATA and RESOLVED together, K2) is rejected and leaves the earlier
   // staging as it was.
@@ -322,21 +322,29 @@ export function createGraph({ report: hostReport } = {}) {
     const lifetime = n.lifetime;
     const out = [];
     let invoking = true;
-    const ctx = {
-      // K4: per dependency, this wave's value arrays as TS waveData does it (each array
-      // its DATA payloads in order; a RESOLVED array is []), its terminal this wave, and
-      // the latest value received.
-      deps: n.inputs.map((input, i) => ({
+    const assertInvocation = () => {
+      if (!invoking) throw new KernelError("ctx.deps is only available during setup or function invocation");
+    };
+    const deps = n.inputs.map((input, i) => {
+      const snapshot = {
         id: n.deps[i],
         waves: input.frames.filter((f) => f.some(isValue))
           .map((f) => f.filter((m) => m[0] === "DATA").map((m) => m[1])),
         terminal: input.frames.flat().find(isTerminal) ?? null,
-        // An INVALIDATE arrived on this input in this wave; shown under the manual policy only.
         invalidated: n.invalidate === "manual" && input.invalidated,
         has: input.has,
         value: input.value,
-      })),
-      state: { get: () => n.privateState, set: (v) => { n.privateState = v; } },
+      };
+      return Object.defineProperties({}, Object.fromEntries(Object.entries(snapshot).map(([key, value]) =>
+        [key, { enumerable: true, get() { assertInvocation(); return value; } }])));
+    });
+    const ctx = {
+      get deps() { assertInvocation(); return deps; },
+      state: {
+        // Cleanup can still read the retiring state; an old ctx never reaches a new lifetime.
+        get: () => n.lifetime === lifetime ? n.privateState : undefined,
+        set: (v) => { if (n.lifetime === lifetime && lifetime.open) n.privateState = v; },
+      },
       down(msgs) {
         // DS-17 O11: PENDING is sent by the kernel only, as the prefix of a value array. So is
         // RESOLVED (decided by the user 2026-11-10): a function that has nothing to send sends
@@ -392,10 +400,10 @@ export function createGraph({ report: hostReport } = {}) {
 
   // Output that is not part of the current wave: sent after an invocation returned
   // (P9), or what a quiet node emits (H6). It becomes its own wave from n, its arrays
-  // together; inside a batch body it is staged instead (O3).
-  function later(n, lifetime, frames) {
+  // together. Only synchronous quiet output belongs to batch staging (D808).
+  function later(n, lifetime, frames, stageWithBatch = false) {
     if (!frames.length) return;
-    if (staging && lifetime.open) { stage(n, lifetime, frames.flat()); return; }
+    if (stageWithBatch && staging && lifetime.open) { stage(n, lifetime, frames.flat()); return; }
     request(() => {
       if (!lifetime.open || n.lifetime !== lifetime) return; // R-ctx-lifetime: old output is dropped
       runWave([{ node: n, frames }]);
@@ -515,7 +523,7 @@ export function createGraph({ report: hostReport } = {}) {
       clear();
       const end = invalidatedFirst ? [[["INVALIDATE"]], [depError]] : [[depError]];
       // A quiet node's output is a later wave: the INVALIDATE goes with the ERROR.
-      if (m.quiet) { m.pending = false; later(m, m.lifetime, end); }
+      if (m.quiet) { m.pending = false; later(m, m.lifetime, end, true); }
       else down(m, end);
       return;
     }
@@ -562,8 +570,7 @@ export function createGraph({ report: hostReport } = {}) {
       // D797 migration review, 2026-11-11: delivered while still pending, it marked nothing).
       m.pending = false;
       if (lead.length) deliver(m, lead);
-      later(m, m.lifetime, out);
-      if (postlude.length) later(m, m.lifetime, [postlude]);
+      later(m, m.lifetime, postlude.length ? [...out, postlude] : out, true);
       return;
     }
     // The postlude goes out in the same delivery as the run's output, so dependents settle
@@ -791,12 +798,18 @@ export function createGraph({ report: hostReport } = {}) {
       // committed topology, and before anything the commit wave itself requests.
       request(() => {
         queue.unshift(...requests);
-        // A throw in an update's fn drops the whole commit, as a throwing body does.
-        const resolved = [...staged].map(([id, entry]) => [id, { ...entry, msgs: resolveStaged(nodeOf(id), entry.msgs) }]);
+        // Validate every host target before evaluating any updater. Body requests
+        // already queued above survive a failed commit (D808).
+        for (const [id, { lifetime }] of staged) {
+          if (!lifetime && nodeOf(id).ended) throw new KernelError(`${id} has ended`);
+        }
+        const live = [...staged].filter(([id, { lifetime }]) =>
+          !lifetime || (lifetime.open && nodeOf(id).lifetime === lifetime));
+        const resolved = live.map(([id, entry]) => [id, { ...entry, msgs: resolveStaged(nodeOf(id), entry.msgs) }]);
         runWave(resolved
           .filter(([, { msgs }]) => msgs.length)
           .map(([id, { msgs, lifetime }]) => ({ node: nodeOf(id), frames: prepare(msgs), lifetime }))
-          // R-ctx-lifetime: a node's staged late output is dropped if its lifetime closed.
+          // R-lifetime: staged quiet output is dropped if its lifetime closed.
           .filter(({ node, lifetime }) => !lifetime || (lifetime.open && node.lifetime === lifetime)));
       });
       // The body ran at once, also during a wave, so its result goes back to the caller as in

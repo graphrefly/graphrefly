@@ -1973,3 +1973,93 @@ test("auto COMPLETE: the last terminal alone runs the function once, then the no
   assert.deepEqual(twoSeen.at(-1), [null, "COMPLETE"], "the run that sees the last terminal (t's was an earlier invocation's)");
   assert.deepEqual(g.get("m").ended, ["COMPLETE"]);
 });
+
+test("D808: saved ctx and DepViews expire per invocation, including during a later run", () => {
+  const g = createGraph();
+  g.state("s", 1);
+  let first, view, values;
+  const message = "ctx.deps is only available during setup or function invocation";
+  g.node("n", ["s"], (ctx) => {
+    if (!first) { first = ctx; view = ctx.deps[0]; values = view.waves; }
+    else {
+      assert.throws(() => first.deps, { message });
+      assert.throws(() => view.value, { message });
+    }
+    assert.equal(ctx.deps[0].id, "s");
+    ctx.down([["DATA", ctx.deps[0].value]]);
+  }, { setup: (ctx) => { assert.equal(ctx.deps[0].value, 1); } });
+  g.subscribe("sink", "n");
+  assert.throws(() => first.deps, { message });
+  for (const key of ["id", "waves", "terminal", "invalidated", "has", "value"]) {
+    assert.throws(() => view[key], { message });
+  }
+  assert.deepEqual(values, [[1]], "copied ordinary data stays readable");
+  g.set("s", 2);
+  assert.equal(g.get("n").value, 2, "the new invocation has its own live read capability");
+});
+
+test("D808: quiet final output and auto COMPLETE are separate arrays in one later wave", () => {
+  const g = createGraph();
+  g.state("s", 0);
+  g.node("q", ["s"], (ctx) => { if (ctx.deps[0].terminal) ctx.down([["DATA", 99]]); }, { quiet: true });
+  const seen = [];
+  const arrays = [];
+  g.node("d", ["q"], (ctx) => seen.push({ waves: ctx.deps[0].waves, terminal: ctx.deps[0].terminal }), { terminal: { complete: "manual" } });
+  g.subscribe("sink", "d");
+  g.subscribe("arrays", "q", (msgs) => arrays.push(msgs));
+  seen.length = 0; arrays.length = 0;
+  g.complete("s");
+  assert.deepEqual(seen, [{ waves: [[99]], terminal: ["COMPLETE"] }]);
+  assert.deepEqual(arrays, [[["PENDING"], ["DATA", 99]], [["PENDING"], ["COMPLETE"]]]);
+});
+
+test("D808: late output survives updater failure, but not a throwing batch body", () => {
+  const g = createGraph();
+  g.state("s", 0);
+  let ctx;
+  g.node("n", [], (c) => { ctx = c; });
+  const values = [];
+  g.subscribe("sink", "n", (msgs) => values.push(...msgs.filter((m) => m[0] === "DATA").map((m) => m[1])));
+  assert.throws(() => g.batch(() => {
+    g.set("s", () => { throw new Error("updater failed"); });
+    ctx.down([["DATA", 42]]);
+  }), /updater failed/);
+  assert.deepEqual(values, [42]);
+  assert.throws(() => g.batch(() => { ctx.down([["DATA", 43]]); throw new Error("body failed"); }), /body failed/);
+  assert.deepEqual(values, [42]);
+});
+
+test("D808: queued batch validates all ended targets before any updater or write", () => {
+  const reports = [];
+  const g = createGraph({ report: (r) => reports.push(r) });
+  g.state("trigger", 0); g.state("a", 0); g.state("b", 0);
+  let calls = 0;
+  g.subscribe("requester", "trigger", (msgs) => {
+    if (!msgs.some((m) => m[0] === "DATA" && m[1] === 1)) return;
+    g.complete("a");
+    g.batch(() => {
+      g.set("b", () => { calls++; return 1; });
+      g.set("a", () => { calls++; return 1; });
+    });
+  });
+  g.set("trigger", 1);
+  assert.equal(calls, 0);
+  assert.equal(g.get("b").value, 0);
+  assert.equal(reports.length, 1);
+  assert.match(reports[0].error, /a has ended/);
+});
+
+test("R-lifetime: an old private-state handle cannot read or overwrite a new lifetime", () => {
+  const g = createGraph();
+  const contexts = [], cleaned = [];
+  g.node("n", [], (ctx) => { contexts.push(ctx); ctx.state.set({ value: contexts.length }); }, {
+    setup: (ctx) => () => cleaned.push(ctx.state.get().value),
+  });
+  g.subscribe("hold", "n");
+  g.unsubscribe("hold", "n");
+  assert.deepEqual(cleaned, [1], "cleanup can read the retiring state");
+  g.subscribe("hold", "n");
+  assert.equal(contexts[0].state.get(), undefined);
+  contexts[0].state.set({ value: 99 });
+  assert.deepEqual(contexts[1].state.get(), { value: 2 });
+});

@@ -48,7 +48,7 @@ test("C-28: one array of three occurrences stays intact, and the diamond fan-in 
   assert.deepEqual(seen, [[[[23, 23, 30]], [[23, 23, 30]]]], "one invocation, every occurrence, one array per dependency");
 });
 
-test("C-28: separate explicit calls stay separate waves; a batch is its declared accumulation", () => {
+test("C-28 / D808: late output calls stay separate requests even inside a batch", () => {
   const g = createGraph();
   const A = producer(g, "A");
   g.subscribe("o", "A");
@@ -57,7 +57,8 @@ test("C-28: separate explicit calls stay separate waves; a batch is its declared
     "o <- A: [PENDING, DATA(30)]",
   ]);
   assert.deepEqual(during(g, () => g.batch(() => { A.ctx.down([["DATA", 23]]); A.ctx.down([["DATA", 30]]); })), [
-    "o <- A: [PENDING, DATA(23), DATA(30)]",
+    "o <- A: [PENDING, DATA(23)]",
+    "o <- A: [PENDING, DATA(30)]",
   ]);
 });
 
@@ -86,14 +87,19 @@ test("C-28: a rejected submission leaves earlier batch staging unchanged", () =>
   const g = createGraph();
   const A = producer(g, "A");
   g.subscribe("o", "A");
-  // Staged arrays accumulate into one; a submission that would put a value after the terminal,
-  // or that carries RESOLVED, is rejected and the staging stays as it was.
+  // Host staging still rejects a value after a terminal before commit.
+  g.state("s", 0);
+  g.subscribe("state", "s");
   assert.deepEqual(during(g, () => g.batch(() => {
+    g.set("s", 1);
+    g.complete("s");
+    assert.throws(() => g.set("s", 2), KernelError);
+    // Late output is validated per request, then dropped after its lifetime closes.
     A.ctx.down([["DATA", 1]]);
     assert.throws(() => A.ctx.down([["RESOLVED"]]), KernelError);
     A.ctx.down([["COMPLETE"]]);
-    assert.throws(() => A.ctx.down([["DATA", 2]]), KernelError);
-  })), ["o <- A: [PENDING, DATA(1), COMPLETE]"]);
+    A.ctx.down([["DATA", 2]]);
+  })), ["state <- s: [PENDING, DATA(1), COMPLETE]", "o <- A: [PENDING, DATA(1)]", "o <- A: [PENDING, COMPLETE]"]);
 });
 
 test("C-28: an observer failure after commit does not roll back the committed output", () => {

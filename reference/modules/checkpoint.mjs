@@ -37,11 +37,25 @@
 
 import { isDeepStrictEqual } from "node:util";
 import { createGraph } from "../kernel/kernel.mjs";
+import { withDependencies } from "./context.mjs";
 
-const json = (v, where) => {
-  const text = JSON.stringify(v);
-  if (text === undefined || !isDeepStrictEqual(JSON.parse(text), v)) throw new TypeError(`checkpoint: ${where} is not JSON`);
-  return v;
+const notRestorable = (id, reason) => new Error(`not restorable: ${id}: ${reason}`);
+const json = (v, id, reason) => {
+  try {
+    const text = JSON.stringify(v);
+    if (text !== undefined && isDeepStrictEqual(JSON.parse(text), v)) return v;
+  } catch { /* cyclic values and throwing codecs are not JSON values */ }
+  throw notRestorable(id, reason);
+};
+const validateSaved = (id, saved) => {
+  if (!saved) return;
+  json(saved.values, id, "its retained values are not JSON");
+  if (saved.state !== undefined) json(saved.state, id, "its private state is not JSON");
+  if (saved.ended?.[0] === "ERROR") json(saved.ended[1], id, "its ERROR payload is not JSON");
+  for (const input of saved.inputs ?? []) {
+    if (input.has) json(input.values, id, "its received values are not JSON");
+    if (input.ended?.[0] === "ERROR") json(input.ended[1], id, "its ERROR payload is not JSON");
+  }
 };
 
 // A dependency's snapshot is the values of its last array (R-subscription), which reach the
@@ -59,11 +73,12 @@ const receivedFrom = (g, deps) => deps.map((d) => {
 
 export function capture(g) {
   if (!g.idle()) throw new Error("capture: a wave or batch is running; capture at a wave boundary (O5)");
-  return { nodes: g.describe().map(({ id, kind, deps: current }) => {
+  const checkpoint = { nodes: g.describe().map(({ id, kind, deps: current }) => {
     const def = g.definition(id);
     const x = g.get(id);
-    if (kind === "state") return json({ id, kind, deps: [], saved: { values: x.values, ended: x.ended } }, `node ${id}`);
-    if (!def.recipe) return { id, kind, deps: def.deps, local: true };
+    validateSaved(id, { values: x.values, ended: x.ended, state: g.privateState(id) });
+    if (kind === "state") return { id, kind, deps: [], saved: { values: x.values, ended: x.ended } };
+    if (def.recipe) json(def.recipe.config ?? null, id, "its recipe config is not JSON");
     const entry = { id, kind, deps: def.deps, recipe: def.recipe, opts: def.opts };
     let saved = null;
     if (x.seed) {
@@ -80,8 +95,12 @@ export function capture(g) {
         ...(!isDeepStrictEqual(current, def.deps) && { deps: current }),
       };
     }
-    return json({ ...entry, ...(saved && { saved }) }, `node ${id}`);
+    validateSaved(id, saved);
+    if (!def.recipe) return { id, kind, deps: def.deps, local: true };
+    // Explicit null distinguishes a cold node from a truncated lifetime record.
+    return { ...entry, saved };
   }) };
+  return JSON.parse(JSON.stringify(checkpoint));
 }
 
 // The function a restored node runs: on the seeded instance's first run (ctx.seed), it compares
@@ -102,7 +121,7 @@ function restorable(real) {
       return value ? d : { ...d, waves: [], terminal: end ? d.terminal : null };
     });
     // The seed holds the value and private state.
-    if (changed) real(Object.create(ctx, { deps: { value: deps, writable: true } }));
+    if (changed) real(withDependencies(ctx, deps));
   };
 }
 
@@ -129,24 +148,38 @@ function buildOrder(nodes) {
 
 export function restore(checkpoint, registry, graphOptions) {
   const g = createGraph(graphOptions);
-  const lookup = (ref) => {
-    if (typeof registry[ref] !== "function") throw new Error(`restore: no recipe ${ref}`);
+  const lookup = (ref, id) => {
+    if (typeof registry[ref] !== "function") throw notRestorable(id, "missing recipe");
     return registry[ref];
   };
   const make = (ref, config, id) => {
-    const built = lookup(ref)(config ?? null, { g, id, make });
+    const built = lookup(ref, id)(config ?? null, { g, id, make: (ref, config) => make(ref, config, id) });
     return typeof built === "function" ? { fn: built } : built;
   };
-  for (const n of checkpoint.nodes) if (n.local) throw new Error(`restore: ${n.id} is local-only (built or replaced without a recipe)`);
+  for (const n of checkpoint.nodes) if (n.local) throw notRestorable(n.id, "local-only, built or replaced without a recipe");
   // A checkpoint that lacks what R-checkpoint saves, such as one written to an earlier format
   // without what each node had received, is refused rather than completed from its dependencies'
   // saved values, which a replace of a dependency would make wrong (D802, 2026-11-10).
   for (const n of checkpoint.nodes) {
     const s = n.saved;
-    if (n.kind === "state" || !s || s.ended) continue;
+    if (n.kind === "state") { validateSaved(n.id, s); continue; }
+    if (!Object.hasOwn(n, "saved")) throw notRestorable(n.id, "missing received records");
+    if (!n.recipe) throw notRestorable(n.id, "missing recipe");
+    json(n.recipe.config ?? null, n.id, "its recipe config is not JSON");
+    if (!s || s.ended) { validateSaved(n.id, s); continue; }
     const deps = s.deps ?? n.deps;
-    if (!Array.isArray(s.inputs) || s.inputs.length !== deps.length) throw new Error(`restore: ${n.id} has no record of what it received; the checkpoint is not in this format`);
+    if (!Array.isArray(s.inputs) || s.inputs.length !== deps.length || s.inputs.some((input) =>
+      !input || typeof input.has !== "boolean" || !Object.hasOwn(input, "ended") ||
+      (input.ended !== null && (!Array.isArray(input.ended) ||
+        !["COMPLETE", "ERROR"].includes(input.ended[0]) ||
+        input.ended.length !== (input.ended[0] === "ERROR" ? 2 : 1))) ||
+      (input.has && (!Array.isArray(input.values) || !input.values.length)))) {
+      throw notRestorable(n.id, "missing received records");
+    }
+    validateSaved(n.id, s);
   }
+  // Neither the source graph nor the restored graph may mutate this checkpoint.
+  checkpoint = JSON.parse(JSON.stringify(checkpoint));
   for (const n of buildOrder(checkpoint.nodes)) {
     const { saved } = n;
     if (n.kind === "state") {
