@@ -197,3 +197,23 @@ test("C-48: find, describe, observe and retain", async () => {
   assert.deepEqual(g.describe().find((n) => n.id === "d").deps, ["a", "c"], "describe gives the current dependencies");
   assert.deepEqual(g.definition("d").deps, ["a"], "definition gives the declared ones");
 });
+
+test("D808: observe stop suppresses later arrays immediately; subscribe release remains queued", () => {
+  const g = createGraph();
+  g.state("s", 0);
+  g.node("n", ["s"], (ctx) => {
+    if (ctx.deps[0].value === 1) { ctx.down([["DATA", 1]]); ctx.down([["DATA", 2]]); }
+  });
+  const observed = [], subscribed = [];
+  const stop = observe(g, ["n"], ({ msgs }) => {
+    for (const [type, value] of msgs) if (type === "DATA") { observed.push(value); stop(); }
+  });
+  g.subscribe("plain", "n", (msgs) => {
+    for (const [type, value] of msgs) if (type === "DATA") { subscribed.push(value); g.unsubscribe("plain", "n"); }
+  });
+  g.set("s", 1);
+  assert.deepEqual(observed, [1]);
+  assert.deepEqual(subscribed, [1, 2]);
+  stop();
+  assert.equal(g.get("n").active, false);
+});

@@ -8,20 +8,21 @@
 // node activates it, and the node stays active while observed. A write from inside the
 // sink is a later wave (K8), and a sink that throws goes to the host reporter (P10).
 //
-// Differences from TS Graph.observe:
-//   - an event carries one array (msgs), not one message, because every kernel sink
-//     receives arrays (R-wave-boundary); TS sinks get one message plus delivery metadata;
-//   - no tier field: TIER[msg[0]] gives it;
-//   - no seq field: events arrive in order, and a log that appends keeps that order;
-//   - the caller passes the ids: whoever builds the graph knows them (O14), and the kernel
-//     has no subtree paths.
+// The event is an array envelope, as in R-graph-surface. The caller supplies ids;
+// this reference has no mount/path selector. Stop closes forwarding immediately,
+// while the ordinary unsubscribe request releases the connection after this wave.
 
 let next = 0;
 
 export function observe(g, ids, sink) {
   const sinkId = `observe#${++next}`;
-  for (const id of ids) g.subscribe(sinkId, id, (msgs) => sink({ id, msgs }));
-  return () => { for (const id of ids) g.unsubscribe(sinkId, id); };
+  let stopped = false;
+  for (const id of ids) g.subscribe(sinkId, id, (msgs) => { if (!stopped) sink({ id, msgs }); });
+  return () => {
+    if (stopped) return;
+    stopped = true;
+    for (const id of ids) g.unsubscribe(sinkId, id);
+  };
 }
 
 // R-graph-surface@1 (D805, 2026-11-11): find and retain, the two graph-layer reads and holds the
