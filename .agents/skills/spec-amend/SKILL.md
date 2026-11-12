@@ -1,6 +1,6 @@
 ---
 name: spec-amend
-description: "Spec-first protocol amendment flow for the clean-slate GraphReFly redesign. Use BEFORE changing any wave-protocol behavior (tiers, wave semantics, diamond/equals/SENTINEL, batch, push-on-subscribe, ctx.up/down contract). Enforces F-NO-IMPL-DEFINED: amend spec/rules.jsonl + formal/*.tla + spec/conformance.jsonl FIRST, then implement in each language package. Triggers: 'amend the spec', 'change the protocol', 'add a tier', 'spec change', 'new wave rule', 'this changes protocol behavior'. Not for purely package-local sugar/operator/inspection changes that preserve protocol behavior."
+description: "Spec-first protocol amendment flow for the clean-slate GraphReFly redesign. Use BEFORE changing any wave-protocol behavior (message arrays, wave settlement, batch requests, subscription snapshots, invocation and lifetime contracts). Enforces F-NO-IMPL-DEFINED: amend spec/rules.jsonl + formal/*.tla + spec/conformance.jsonl FIRST, then implement in each language package. Triggers: 'amend the spec', 'change the protocol', 'change the message set', 'spec change', 'new wave rule', 'this changes protocol behavior'. Not for purely package-local sugar/operator/inspection changes that preserve protocol behavior."
 ---
 
 ## Rules / decisions / work
@@ -43,11 +43,14 @@ Protocol behavior is **spec-first**. No "implementation defines what happens." O
 
 ## Closed-set guardrails (do not bypass)
 
-- Resolve the current tier and message sets from R-tier/R-msg-closed-set. Adding a tier or message
-  requires an explicit constitutional decision; do not preserve obsolete counts in this skill.
-- onMessage/onSubscribe are substrate-fixed under D19; no user-replaceable protocol hooks.
-- Resolve R-resolved-undirty/D49 before touching dedup: D15 substrate equals was superseded.
-  Resolve R-ctx-up for control/demand directionality and R-restore for restore semantics.
+- Resolve the closed message set from the activated R-messages revision. Adding a message
+  or changing its legal arrays requires an explicit root semantic decision and this flow.
+- Kernel notification, settlement and subscription behavior are fixed by current rules; ordinary
+  node functions cannot inject START, PENDING or RESOLVED, or replace protocol delivery hooks.
+- Resolve R-wave/R-invalidation before touching silence, equality, or invalidation. Resolve
+  R-invocation/R-lifetime/R-request-order for ctx reads, late output and body/commit failures.
+- Control/demand is explicit module data and dependencies. Resolve R-checkpoint for cold restore;
+  the host decides what to retain after restoration.
 - A field or option living in sugar does not exempt an actual protocol behavior change from this flow.
 
 ## Code-intelligence routing

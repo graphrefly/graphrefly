@@ -25,10 +25,8 @@ against the user's locked positions and prevent silent drift — especially when
 a scope expansion mid-implementation, presents A/B/C as a fork, uses "completeness" to justify
 expanding a locked slice, or builds on a premise that may be stale.
 
-> **Clean-slate retired the old port model.** Do NOT reach for `rust-port-decisions.md`,
-> `cross-track-ledger.md`, the `Impl` parity contract, `BindingBoundary`, the actor model, or
-> 3-digit D### port decisions — those are old-`main` history. The clean-slate decision
-> authority is below.
+> Resolve authority by owner and current activation, not by a decision number's length.
+> Old port narratives and retired contracts are history unless current rules explicitly retain them.
 
 ## Sources (resolve current rules first, then relevant rationale)
 
@@ -45,9 +43,9 @@ expanding a locked slice, or builds on a premise that may be stale.
 ## Locked values (durable — cite by name)
 
 1. **No backward compat** (pre-1.0): structurally cleaner option, no legacy shims. `feedback_no_backward_compat`.
-2. **No imperative triggers** in public API: reactive `ctx.up`/signals, not emitters/callbacks/timers+set; remove imperative paths when no caller depends. `feedback_no_imperative`.
+2. **Explicit reactive dependencies**: shared module state is an explicit node and dependency. Host state writes and lifetime `ctx.down` remain legal under current R-request-order/R-invocation; historical `ctx.up` guidance is not a current API contract.
 3. **Single source of truth**: one canonical per concern; index points, never duplicates. `feedback_single_source_of_truth`.
-4. **No autonomous decisions** (hard rule): surface spec↔code conflicts; don't silently pick; file-by-file review for multi-file rewrites. `feedback_no_autonomous_decisions`.
+4. **No autonomous decisions** (hard rule): surface unresolved semantic choices; do not silently redefine them. Carry out already-authorized repairs without a new approval per file. `feedback_no_autonomous_decisions`.
 5. **No implement without approval**: decisions locked ≠ implementation approved. `feedback_no_implement_without_approval`.
 6. **Verify premise before greenfield**: design tables lag code — inspect symbols + check landed markers before a 9Q; stale premise = HALT. `feedback_verify_premise_before_greenfield`.
 7. **Latest versions + context7** for current API docs. `feedback_latest_versions_context7`.
@@ -55,18 +53,19 @@ expanding a locked slice, or builds on a premise that may be stale.
 
 ## Clean-slate floor (never violate)
 
-**Sacred (L0.7):** topology declarative/serializable/inspectable · wave protocol is a public spec ·
-wave protocol impl is **sync** · all fn go through dispatcher.
+Read the activated kernel rules, currently the D797–D808 revisions, rather than applying
+retired dispatcher, pool, tier or control-message designs as requirements:
 
-**Forced (F-*):** F-PERF (budget every abstraction) · F-PROTO-SPEC (spec+TLA++property) ·
-F-SYNC-CORE (dispatcher.invoke sync void) · F-DISPATCH-ALL (no inline-fn bypass) ·
-F-GRAPH-FIRST-API · F-NO-WEDGE-CUT (every primitive ≥2 segments) ·
-F-NO-IMPL-DEFINED (spec-locked or explicitly undefined-by-design) · F-NO-LLM-ONLY.
+- Declared acyclic dependencies; structural reachability does not establish runtime occurrence.
+- Synchronous wave settlement; async work uses ordinary lifetime-bound late output.
+- Message arrays preserve boundaries; kernel notification/settlement is distinct from author output.
+- Dependencies are read only during the supplying invocation's setup/function execution.
+- Graph reads/observation/holds use find, describe, observe, retain; diagnostics are module functions.
+- Shared module state is a declared node/dependency; no hidden graph-global mutable owner.
+- Protocol behavior is specified before implementation, with executable conformance and bounded models.
 
-**Red flags (HALT if proposed):** async in the sync wave core (async lives only in pools/wire-bridge) ·
-inline-fn bypassing dispatcher · a primitive serving only LLM workflows · a protocol behavior left
-"implementation-defined" · user-replaceable onMessage/onSubscribe · adding a tier or message type casually ·
-graph-level shared mutable state accessed implicitly (must be explicit node + dep).
+Flag a proposed protocol change without its owner decision and activated rule revision. Do not
+resurrect dispatcher-only invocation, async-pool exclusivity, `ctx.up`, or retired control messages.
 
 ## Decision-process patterns (apply in order)
 
@@ -77,7 +76,7 @@ graph-level shared mutable state accessed implicitly (must be explicit node + de
    export boundary, and blast radius. Treat its source as already read and query again only for uncovered
    paths. Use direct `rg`/Read for authority jsonl, docs, configs, git diff, untracked files, and
    stale/unindexed files; never initialize an index autonomously.
-4. **Apply values + floor.** Especially: no autonomous decisions, no imperative, single source of truth, sync-core/async-at-boundary, F-* constraints.
+4. **Apply values + floor.** Especially: explicitly approved semantics, explicit dependencies, single source of truth, and the current synchronous kernel contract.
 5. **Verdict:** cite current rule/revision and relevant qualified D#; distinguish `consistent`, `report misreading`, `stale history/work metadata`, `rule gap/conflict`, `implementation deviation`, `out-of-scope`, and `needs new decision`. Keep unverified claims explicit.
 6. **Routing:**
    - New fork, no governing D# → present options + recommend, **do NOT lock** → that's `/design-review` → user approval → append `decisions.jsonl`.
@@ -107,9 +106,8 @@ owner ledger; use qualified cross-repo refs and never copy the record body upstr
 Update a root session lock only for a root-owned decision. Run
 `npm --prefix ~/src/graphrefly run authority:check:workspace` and
 `node ~/src/graphrefly/dashboard/build.mjs --check`.
-When a new anti-pattern recurs: append to `~/src/graphrefly/plan/antipatterns.jsonl` (+ a `feedback_*`
-memory if generalizable). When a new durable value surfaces: add a `feedback_<name>.md` memory + a
-pointer line here.
+Record recurring anti-patterns through the owning authorized work. Update personal memory only when
+the user explicitly requests it; this skill does not authorize memory writes.
 
 Admission reminder: an approved new record uses the normal owner ledger and must satisfy
 ~/src/graphrefly/authority/README.md; historical-only ledgers are relocation destinations.
