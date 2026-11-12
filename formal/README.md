@@ -284,3 +284,19 @@ run needs tens of gigabytes.
 
 Add the operator to the model it belongs to, list it in each of that model's configs, check that a
 mutation aimed at it trips it alone, and record the run and the mutation in that model's row above.
+
+## D808 rereview models (2026-11-12)
+
+`kernel_invocation.tla` checks R-invocation@3 over two invocations: dependency reads belong to the supplying invocation, never the whole lifetime. Both a saved ctx and a saved view carry that capability; post-return reads and old-view reads during a later call are rejected. `kernel_invocation.cfg` checks InvocationOnly and CurrentReadable. Mutation switches AllowExpired and ReviveOld must each fail InvocationOnly.
+
+`kernel_batch_output.tla` isolates R-request-order@3/R-wave@3's body-throw, commit-failure and closed-lifetime combinations. Quiet staged output shares commit outcome; late requests survive failed commits but not failed bodies; quiet final DATA and COMPLETE are separate arrays in one wave. `kernel_batch_output.cfg` checks BodyThrowNothing, FailedCommitNothing, LateIndependent, ClosedOutputDropped and QuietTerminalTogether; BindLateToCommit and SplitQuiet must fail their respective invariants. This bounded model does not claim full topology coverage.
+
+`kernel_wave.tla` now lets Q emit one final DATA when its terminal-only invocation runs, making the quiet final DATA/COMPLETE combination reachable. It already groups the arrays into one QuietLater delivery; the old reference split was not justified by this model. The existing two-wave config is rerun; the large three-wave config is not required for this added discriminating trace. Execution results follow in the repair evidence.
+
+D808 execution (2026-11-12, TLC 2.19, two workers): `kernel_invocation.cfg` completed
+7 distinct / 16 generated states; `kernel_batch_output.cfg` completed 20 / 20;
+`kernel_wave.cfg` (MaxWaves=2, now including quiet final DATA) completed 2,580,844 /
+4,013,410 in 4m51s, with all listed invariants satisfied. In separate temporary configs,
+AllowExpired and ReviveOld each violated InvocationOnly, BindLateToCommit violated
+LateIndependent, and SplitQuiet violated QuietTerminalTogether. These mutations
+establish discrimination for those axes; the finite bounds remain the coverage limit.

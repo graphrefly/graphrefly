@@ -1,0 +1,47 @@
+{
+  "format": "graphrefly/d797-rereview@1",
+  "ctxDepsError": "ctx.deps is only available during setup or function invocation",
+  "checkpointReasons": {
+    "missingRecipe": "missing recipe",
+    "retainedValues": "its retained values are not JSON",
+    "receivedValues": "its received values are not JSON",
+    "privateState": "its private state is not JSON",
+    "recipeConfig": "its recipe config is not JSON",
+    "errorPayload": "its ERROR payload is not JSON",
+    "localOnly": "local-only, built or replaced without a recipe",
+    "missingReceived": "missing received records"
+  },
+  "probeExpected": {
+    "quietTerminal": {
+      "runs": 1,
+      "waves": [
+        [
+          99
+        ]
+      ],
+      "terminal": "COMPLETE"
+    },
+    "observeStop": [
+      1
+    ],
+    "subscribeStop": [
+      1,
+      2
+    ],
+    "emptyDown": {
+      "arrays": 0
+    },
+    "lateAfterCommitFailure": [
+      42
+    ],
+    "replaceCleanup": [
+      42
+    ],
+    "endedBatch": {
+      "updaterRuns": 0,
+      "otherValue": 0,
+      "reports": 1
+    },
+    "checkpointMissingRecipe": "not restorable: n: missing recipe"
+  }
+}

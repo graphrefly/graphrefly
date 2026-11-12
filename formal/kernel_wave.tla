@@ -292,9 +292,12 @@ Check(m, invd, ae, ns) ==
   IF m = "D" /\ invd /\ (PolS(k, m).invalidate = "auto" \/ ae) /\ ns.has["D"] /\ ~NewData(ns)
   THEN [ns EXCEPT !.keptInv = TRUE] ELSE ns
 
-\* Q forwards the values it received, one array per array that carried DATA.
-QOut(tr) == LET fs == tr["S"] IN
-  SelectSeq([i \in DOMAIN fs |-> SelectSeq(fs[i], IsData)], LAMBDA a : a # <<>>)
+\* Q forwards the DATA arrays and emits one final DATA on its last terminal (D808).
+\* This makes the quiet DATA + automatic COMPLETE combination reachable.
+QOut(tr) == LET fs == tr["S"]
+                data == SelectSeq([i \in DOMAIN fs |-> SelectSeq(fs[i], IsData)], LAMBDA a : a # <<>>)
+             IN data \o (IF \E i \in DOMAIN fs : "COM" \in Range(fs[i])
+                         THEN << <<"D2">> >> ELSE <<>>)
 
 \* A quiet Q (chosen at Init): its output is a later wave, held until QuietLater publishes it;
 \* an auto INVALIDATE goes on at once, and, delivered while Q is not pending, marks its cone

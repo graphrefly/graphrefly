@@ -16,13 +16,13 @@ graphrefly:D799 and graphrefly:D801 (START is the kernel's alone). Read the rule
 | Rule | Revision | Concept |
 |---|---|---|
 | R-messages | 1 | the closed message set and array shape |
-| R-wave | 2 | waves, PENDING, settlement, written order |
+| R-wave | 3 | waves, PENDING, settlement, written order |
 | R-subscription | 3 | START (the kernel's alone) and the last-array snapshot, the seed |
-| R-invocation | 2 | the function and its ctx |
+| R-invocation | 3 | the function and its ctx |
 | R-terminals | 1 | COMPLETE and ERROR, their auto and manual policies |
 | R-invalidation | 1 | INVALIDATE and its auto and manual policy |
 | R-lifetime | 2 | activation, lifetime, setup and cleanup |
-| R-request-order | 2 | requests, batch, set, replace, ctx.rewire |
+| R-request-order | 3 | requests, batch, set, replace, ctx.rewire |
 | R-node | 2 | node, instance and lifetime scopes; definition |
 | R-failure | 3 | throws and invalid output |
 | R-graph-domain | 3 | one graph, one domain: graphs share no wave, queue or batch (D803) |
@@ -30,7 +30,7 @@ graphrefly:D799 and graphrefly:D801 (START is the kernel's alone). Read the rule
 | R-node-thin | 2 | (no behavioral scenario: not observable) |
 | R-sentinel | 1 | unchanged |
 | R-checkpoint | 1 | module: capture and restore (D802; see "Checkpoint after D802") |
-| R-graph-surface | 1 | the graph layer: find, describe, observe, retain (D805; see "Review corrections after D806") |
+| R-graph-surface | 2 | the graph layer: find, describe, observe, retain (D805; see "Review corrections after D806") |
 | R-primary-api-clean | 2 | value-level sugar sees values only (D805) |
 | R-bridge | 2 | module: the wire edge group, one frame per sender wave (D803, D804; see "Bridge after D803") |
 
@@ -239,3 +239,9 @@ When an owner reports evidence, the root records it against the scenario and the
 closes B140's owner routing once each owner has admitted its slice. Module activations are separate
 work. Ask the user before admitting anything in a runtime repository; the TS repository is not to be
 changed from root sessions without the user's word.
+
+## D808 rereview repair slice (2026-11-12)
+
+The user authorized root and all runtime repairs after the Codex rereview and alignment reply. Root owns the revised rules and models; packages own their existing migration work. Implement invocation-scoped dependency views (old views never revive), one quiet final-output/COMPLETE wave, independent late-output requests across failed commits, graph diagnostics as package functions, and the N1-N11 repairs. Shared diagnostic reasons and normalized probe outputs are in `spec/fixtures/d797-rereview.v1.json`; this fixture is acceptance evidence, not a second rule ledger. Restore stays cold; the host explicitly retains before commands. Runtime branches may be committed and pushed after verification, not merged; root main may be committed locally but its push awaits the user. D687 stays at the true pre-merge head.
+
+Acceptance matrix: expired ctx/view -> shared refusal; replace cleanup -> old state visible, then revoked; ended batch target -> no updater/partial writes plus report; quiet final DATA/COMPLETE -> one dependent run, two arrays; failed commit -> late output survives, quiet staged output does not; throwing body -> all body requests discarded; missing received or non-JSON -> precise refusal; bridge without external subscribers -> no lost commands or reused indices; same normalized probe -> equal outputs in TS/Rust/Python. Keep evidence and commit mapping under the existing migration work and final repair handoff.
