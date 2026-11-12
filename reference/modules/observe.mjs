@@ -16,12 +16,14 @@ let next = 0;
 
 export function observe(g, ids, sink) {
   const sinkId = `observe#${++next}`;
+  const targets = [...ids];
+  for (const id of targets) g.get(id); // Validate before any activation or subscription.
   let stopped = false;
-  for (const id of ids) g.subscribe(sinkId, id, (msgs) => { if (!stopped) sink({ id, msgs }); });
+  for (const id of targets) g.subscribe(sinkId, id, (msgs) => { if (!stopped) sink({ id, msgs }); });
   return () => {
     if (stopped) return;
     stopped = true;
-    for (const id of ids) g.unsubscribe(sinkId, id);
+    for (const id of targets) g.unsubscribe(sinkId, id);
   };
 }
 

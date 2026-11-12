@@ -217,3 +217,16 @@ test("D808: observe stop suppresses later arrays immediately; subscribe release 
   stop();
   assert.equal(g.get("n").active, false);
 });
+
+test("observe validates all targets before acquiring any lifetime", () => {
+  const g = createGraph();
+  let setups = 0, cleanups = 0;
+  g.node("n", [], () => {}, { setup: () => { setups++; return () => { cleanups++; }; } });
+  assert.throws(() => observe(g, ["n", "missing"], () => {}), /unknown node missing/);
+  assert.deepEqual([setups, cleanups, g.get("n").active], [0, 0, false]);
+  const targets = ["n"];
+  const stop = observe(g, targets, () => {});
+  targets.length = 0;
+  stop();
+  assert.deepEqual([setups, cleanups, g.get("n").active], [1, 1, false]);
+});
