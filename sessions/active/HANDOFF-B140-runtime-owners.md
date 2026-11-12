@@ -495,3 +495,67 @@ Whole-slice baseline-to-delivery totals (receipt included for root; line counts 
 | graphrefly-ts | 170 | 2169 | 1326 | +843 |
 | graphrefly-rs | 38 | 2174 | 966 | +1208 |
 | graphrefly-py | 40 | 1030 | 117 | +913 |
+
+
+## 2026-11-12 QA2 root repair receipt (publication pending)
+
+Authorization: Claude's user-supplied `reply-to-codex-qa2.md` approves Q1–Q7 and shared
+runtime CI probes. Root local main commits are authorized; each new origin/main push
+requires explicit user approval. Runtime work stays on `d797-kernel-migration`, with no
+PR/main merge. This receipt records local root verification; remote CI is not yet evidence.
+
+Baseline `52f413baa58ad2bb13b2dd55a3cfe9e796d32f6e`; verified source `2accac6`.
+Source slice: 13 files, +310/-47 (excludes this receipt).
+
+| Concern | Root commits | Behavioral evidence |
+|---|---|---|
+| Q1 immediate INVALIDATE, deferred lifetime-bound ERROR | `4771691`, test layout `5e209f7` | `QA2: quiet auto ERROR forwards INVALIDATE now` covers auto/manual × retained/empty; `QA2: quiet auto ERROR remains scoped to the lifetime after immediate invalidation`; no stale DATA(3) |
+| Q3 complete restore admission | `cfdc1e9`, `cc58d0e`, `2accac6` | `QA2: restore admits the whole checkpoint before any factory side effect` (32 corruptions); mixed declared/lifetime cycle rejection with zero factory calls; valid repeated declared inputs restore 4 then update to 6 |
+| Q7 instance ownership documentation | `838c3a2` | Current scope table places setup/recipe under instance; dated history unchanged |
+
+All runtime CIs consume the same immutable fixture commit
+`4771691460538cd387197571d930128abdac90a2`, with nine behavior keys including four quiet-error
+cases, plus eight checkpoint reasons. Missing fixtures must fail. This is not D687 qualification.
+
+### Root checks and independent review
+
+- Final complete reference suite: **475 passed, 0 failed/skipped**, 43.09 seconds; log
+  `/private/tmp/qa2-root-final2-reference.log`. Host load (1/5/15 min) before
+  12.298/10.443/10.792, after 14.664/11.338/11.103. Not a performance benchmark.
+- Authority suite: **40 passed**, `/private/tmp/qa2-root-full-authority.log`.
+  Workspace authority/work, dashboard and public docs checks pass; logs
+  `/private/tmp/qa2-root-{workspace-authority,workspace-work,dashboard,public-docs}.log`.
+  Existing legacy/coverage diagnostics are not claimed eliminated.
+- Shared public probe: nine keys, `/private/tmp/qa2-root-final-probe.json`.
+- TLC quiet-error finite model: 24 distinct states, three invariants pass;
+  delayed-invalidation and manual-invalidation mutants both violate NoStaleData (exit 12).
+  Logs `/private/tmp/qa2-kernel_quiet_error{,_mutant_delay,_mutant_manual}.log`.
+  This small discriminating model is not full-topology qualification.
+- Runtime regression mutants killed: delayed invalidation, bypassed admission, and separate
+  DAG checks instead of their union; `/private/tmp/qa2-root-{q1,admission,union}-mutant.log`.
+- Independent blind review found the mixed-topology admission gap; repaired and independently
+  reproduced refusal before any factory. Final 51 checkpoint tests pass independently:
+  `/private/tmp/d808-qa2-root-checkpoint-final.log`.
+- Independent edge review confirms malformed terminals/topology refuse before factories,
+  and ordinary/nested factory failures retain node attribution. Runtime verification-gap
+  review additionally required Python's eight canonical reasons to be exercised in CI.
+
+### Concern-based build handoff
+
+Orientation → Walkthrough → Detail Pass → Testing. The review focus is observable wave
+ordering and complete admission before side effects; no new protocol semantics are activated.
+
+1. **Wave ordering.** [Shared delivery path](/Users/davidchenallio/src/graphrefly/reference/kernel/kernel.mjs:565)
+   forwards INVALIDATE immediately and defers only output. [Four-case regression](/Users/davidchenallio/src/graphrefly/reference/kernel/kernel.test.mjs:2068)
+   proves the sibling branch never observes DATA(3).
+2. **Recovery ownership and topology.** [Whole-input admission](/Users/davidchenallio/src/graphrefly/reference/modules/checkpoint.mjs:159)
+   checks required records and the union DAG before construction, then detaches JSON.
+   [Mutation table](/Users/davidchenallio/src/graphrefly/reference/modules/checkpoint.test.mjs:861)
+   checks zero factory effects. Initial repeated inputs remain legal; explicit rewires must be distinct.
+3. **Observe.** Run `node reference/kernel/probe-rereview.mjs`: quietError has four empty
+   value arrays; retained cases emit INVALIDATE then ERROR, empty cases RESOLVED then ERROR.
+   An invalid checkpoint refuses before factory invocation; explicit cold null remains valid.
+
+Runtime final gates and actual branch CI results are still being collected. Rust checkpoint
+policies and TS topology API removals are intentional owner changes documented in their repos.
+No root push, runtime CI success, D687 qualification, PR, merge or release is claimed here.
