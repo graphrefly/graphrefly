@@ -1,3 +1,4 @@
+import { internalSurfaceText } from "./public-copy.mjs";
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -93,20 +94,7 @@ const packageDocsHrefById = new Map([
   ["rust", "https://rs.graphrefly.dev/"],
 ]);
 const internalRouteNames = new Set(["decisions", "guide", "maintainers", "spec", "status"]);
-const internalSurfaceText = [
-  /\bdashboard(?:\.html)?\b/i,
-  /\bproject[- ]control\b/i,
-  /\bbacklog\b/i,
-  /\bsessions?\b/i,
-  /\bgaps?\b/i,
-  /\braw decisions?\b/i,
-  /\braw rules?\b/i,
-  /\bconformance coverage\b/i,
-  /\blocalhost\b/i,
-  /\b127\.0\.0\.1\b/,
-  /\bdecisions\.jsonl\b/i,
-  /\brules\.jsonl\b/i,
-];
+
 const textSourceExtensions = new Set([".html", ".css", ".js", ".json", ".jsonl", ".md", ".svg", ".txt", ".yml", ".yaml"]);
 
 const banned = [

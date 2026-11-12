@@ -3,6 +3,8 @@ import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, isAbsolute, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
+execFileSync(process.execPath, ["--test", fileURLToPath(new URL("./public-copy.test.mjs", import.meta.url))], { stdio: "inherit" });
+
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const repoRoot = dirname(root);
 const distDir = join(root, "dist");
