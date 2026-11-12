@@ -41,8 +41,8 @@ its current instance's function (null for a state), so checkpoint can tell that 
 changed the function even with the dependencies unchanged (C6).
 
 Three scopes nest (R-node, stated 2026-11-10 after the reviews found "no execution layer" untrue):
-the node under its id keeps its subscribers, policies and setup; an instance, from creation or a
-`replace` to the next `replace`, has the dependencies and function, the retained values and the
+the node under its id keeps its subscribers and policies; an instance, from creation or a
+`replace` to the next `replace`, has the dependencies, function, setup and recipe, the retained values and the
 terminal; a lifetime, one activation, has the ctx, private state, signal and cleanup. A terminal
 ends the instance, and a `replace` of an ended node gives its sinks START again.
 
