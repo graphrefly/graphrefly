@@ -43,5 +43,15 @@
       "reports": 1
     },
     "checkpointMissingRecipe": "not restorable: n: missing recipe"
+  },
+  "probeInputs": {
+    "quietTerminal": "state s=0 -> quiet q emits DATA99 only when its input terminal arrives -> manual-COMPLETE dependent d. Activate d, clear observations, complete s. Count d invocations and its waves/terminal.",
+    "observeStop": "state s=0 -> n emits separate DATA1 and DATA2 arrays only when s=1. Install observe first and ordinary subscribe second on the same n. Each stops itself on DATA1. Set s=1; record observer DATA values.",
+    "subscribeStop": "Same graph and source write as observeStop; record the ordinary subscriber DATA values after it requests its own unsubscribe on DATA1.",
+    "emptyDown": "Activate a silent zero-dependency node and keep its ctx (Rust DeferredCtx). Clear initial subscriber arrays, call down([]) after invocation return, count delivered arrays.",
+    "lateAfterCommitFailure": "Activate a silent node and keep its ctx. In a batch body stage an updater on state s=0 that throws, then request late DATA42 from the kept ctx. Catch commit failure and record node DATA values.",
+    "replaceCleanup": "State ledger=0; zero-dependency n setup stores private state42 and returns cleanup that writes the retiring ctx state to ledger. Activate n, subscribe ledger and clear initial snapshot, replace n with a silent instance; record ledger DATA values.",
+    "endedBatch": "States trigger=0, a=0, b=0. In trigger subscriber for DATA1, queue a.complete(), then batch: stage b updater first, a updater second; both increment a shared counter and return1. Set trigger=1. Report updaterRuns, b retained value and host report count.",
+    "checkpointMissingRecipe": "Create cold silent zero-dependency node n with recipe ref absent; do not retain/subscribe. Capture and restore with an empty registry. Record the exact refusal."
   }
 }
