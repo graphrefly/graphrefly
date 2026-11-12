@@ -127,15 +127,15 @@ function restorable(real) {
 
 // Each node after its declared dependencies, otherwise in checkpoint order: a replace may have
 // given a node a dependency made after it (found by the second reviews, 2026-11-10).
-function buildOrder(nodes) {
+function buildOrder(nodes, dependencies = (n) => n.deps) {
   const byId = new Map(nodes.map((n) => [n.id, n]));
   const done = new Set(), order = [];
   const visit = (n, path) => {
     if (done.has(n.id)) return;
-    if (path.has(n.id)) throw new Error(`restore: ${n.id} depends on itself`);
+    if (path.has(n.id)) throw notRestorable(n.id, "depends on itself");
     path.add(n.id);
-    for (const d of n.deps) {
-      if (!byId.has(d)) throw new Error(`restore: ${n.id} depends on ${d}, which is not in the checkpoint`);
+    for (const d of dependencies(n)) {
+      if (!byId.has(d)) throw notRestorable(n.id, `depends on ${d}, which is not in the checkpoint`);
       visit(byId.get(d), path);
     }
     path.delete(n.id);
@@ -146,7 +146,60 @@ function buildOrder(nodes) {
   return order;
 }
 
+const record = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
+const policy = (v) => v === "auto" || v === "manual";
+const ids = (v) => Array.isArray(v) && v.every((id) => typeof id === "string") && new Set(v).size === v.length;
+const terminal = (v) => v === null || (Array.isArray(v) && (
+  (v.length === 1 && v[0] === "COMPLETE") ||
+  (v.length === 2 && v[0] === "ERROR" && v[1] !== undefined && typeof v[1] !== "boolean")
+));
+
+// Admit the whole input before creating a graph or calling any recipe. Construction
+// consumes these fields directly; absence cannot silently become a different graph.
+function prepareCheckpoint(checkpoint, registry) {
+  if (!record(checkpoint) || !Array.isArray(checkpoint.nodes)) throw new Error("restore: missing nodes");
+  const seen = new Set();
+  for (const n of checkpoint.nodes) {
+    if (!record(n) || typeof n.id !== "string") throw new Error("restore: invalid node id");
+    const fail = (reason) => { throw notRestorable(n.id, reason); };
+    if (seen.has(n.id)) fail("duplicate id");
+    seen.add(n.id);
+    if (!["state", "node"].includes(n.kind)) fail("invalid node kind");
+    if (!ids(n.deps) || (n.kind === "state" && n.deps.length)) fail("invalid dependencies");
+    if (n.local) fail("local-only, built or replaced without a recipe");
+
+    const saved = n.saved;
+    if (n.kind === "node") {
+      if (!record(n.recipe) || typeof n.recipe.ref !== "string" || typeof registry[n.recipe.ref] !== "function") fail("missing recipe");
+      json(n.recipe.config ?? null, n.id, "its recipe config is not JSON");
+      const opts = n.opts;
+      if (!record(opts) || !record(opts.terminal) || !policy(opts.terminal.complete) ||
+          !policy(opts.terminal.error) || !policy(opts.invalidate) || typeof opts.quiet !== "boolean") fail("invalid or missing policies");
+      if (saved === null) continue; // The only cold-node marker.
+    }
+    if (!record(saved)) fail(n.kind === "node" ? "missing received records" : "missing saved state");
+    if (!Array.isArray(saved.values)) fail("its retained values are not JSON");
+    if (!terminal(saved.ended)) fail("invalid or missing terminal");
+    if (Object.hasOwn(saved, "deps") && !ids(saved.deps)) fail("invalid lifetime dependencies");
+    if (n.kind === "node") {
+      const deps = saved.deps ?? n.deps;
+      if (!Array.isArray(saved.inputs) || saved.inputs.length !== deps.length || saved.inputs.some((input) =>
+        !record(input) || typeof input.has !== "boolean" || !terminal(input.ended) ||
+        (input.has ? !Array.isArray(input.values) || !input.values.length :
+          Object.hasOwn(input, "values") && (!Array.isArray(input.values) || input.values.length)))) fail("missing received records");
+    }
+    validateSaved(n.id, saved);
+  }
+  // Validate both topologies before a factory can have a side effect.
+  const ordered = buildOrder(checkpoint.nodes);
+  buildOrder(checkpoint.nodes, (n) => n.saved?.deps ?? n.deps);
+  // Detach the entire admitted snapshot, including recipe configuration.
+  json(checkpoint, "checkpoint", "its contents are not JSON");
+  return JSON.parse(JSON.stringify(ordered));
+}
+
 export function restore(checkpoint, registry, graphOptions) {
+  const nodes = prepareCheckpoint(checkpoint, registry);
   const g = createGraph(graphOptions);
   const lookup = (ref, id) => {
     if (typeof registry[ref] !== "function") throw notRestorable(id, "missing recipe");
@@ -166,41 +219,13 @@ export function restore(checkpoint, registry, graphOptions) {
       throw new Error(`not restorable: ${id}: ${reason}`, { cause: error });
     }
   };
-  for (const n of checkpoint.nodes) if (n.local) throw notRestorable(n.id, "local-only, built or replaced without a recipe");
-  // A checkpoint that lacks what R-checkpoint saves, such as one written to an earlier format
-  // without what each node had received, is refused rather than completed from its dependencies'
-  // saved values, which a replace of a dependency would make wrong (D802, 2026-11-10).
-  for (const n of checkpoint.nodes) {
-    const s = n.saved;
-    if (n.kind === "state") { validateSaved(n.id, s); continue; }
-    if (!Object.hasOwn(n, "saved")) throw notRestorable(n.id, "missing received records");
-    if (!n.recipe) throw notRestorable(n.id, "missing recipe");
-    json(n.recipe.config ?? null, n.id, "its recipe config is not JSON");
-    if (s === null) continue;
-    if (typeof s !== "object" || Array.isArray(s) || s === undefined) {
-      throw notRestorable(n.id, "missing received records");
-    }
-    if (s.ended) { validateSaved(n.id, s); continue; }
-    const deps = s.deps ?? n.deps;
-    if (!Array.isArray(s.inputs) || s.inputs.length !== deps.length || s.inputs.some((input) =>
-      !input || typeof input.has !== "boolean" || !Object.hasOwn(input, "ended") ||
-      (input.ended !== null && (!Array.isArray(input.ended) ||
-        !["COMPLETE", "ERROR"].includes(input.ended[0]) ||
-        input.ended.length !== (input.ended[0] === "ERROR" ? 2 : 1))) ||
-      (input.has && (!Array.isArray(input.values) || !input.values.length)))) {
-      throw notRestorable(n.id, "missing received records");
-    }
-    validateSaved(n.id, s);
-  }
-  // Neither the source graph nor the restored graph may mutate this checkpoint.
-  checkpoint = JSON.parse(JSON.stringify(checkpoint));
-  for (const n of buildOrder(checkpoint.nodes)) {
+  for (const n of nodes) {
     const { saved } = n;
     if (n.kind === "state") {
       g.state(n.id);
       // Its last array's values come back as one array (a batch), with no subscriber to see it.
-      if (saved?.values.length) g.batch(() => saved.values.forEach((v) => g.set(n.id, v)));
-      if (saved?.ended) g[saved.ended[0] === "COMPLETE" ? "complete" : "error"](n.id, saved.ended[1]);
+      if (saved.values.length) g.batch(() => saved.values.forEach((v) => g.set(n.id, v)));
+      if (saved.ended) g[saved.ended[0] === "COMPLETE" ? "complete" : "error"](n.id, saved.ended[1]);
       continue;
     }
     const { fn, setup } = make(n.recipe.ref, n.recipe.config, n.id);

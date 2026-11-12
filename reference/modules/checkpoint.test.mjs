@@ -857,3 +857,55 @@ test("known-node recipe failures keep the node prefix without double wrapping", 
   assert.throws(() => restore(cp, { bad: () => { throw new Error("factory failed"); } }), { message: "not restorable: n: factory failed" });
   assert.throws(() => restore(cp, { bad: (_, { make }) => make("absent") }), { message: "not restorable: n: missing recipe" });
 });
+
+test("QA2: restore admits the whole checkpoint before any factory side effect", () => {
+  const g = createGraph();
+  g.node("first", [], () => {}, { recipe: { ref: "counted" } });
+  g.state("s", 17); g.complete("s");
+  g.node("last", ["s"], (ctx) => ctx.down([["DATA", ctx.deps[0].value]]), {
+    recipe: { ref: "counted" }, quiet: true,
+    terminal: { complete: "manual", error: "manual" }, invalidate: "manual",
+  });
+  g.subscribe("hold", "last");
+  const captured = capture(g);
+  const corruptions = [
+    ["missing state saved", (cp) => { delete cp.nodes[1].saved; }],
+    ["null state saved", (cp) => { cp.nodes[1].saved = null; }],
+    ["missing state values", (cp) => { delete cp.nodes[1].saved.values; }],
+    ["missing state terminal", (cp) => { delete cp.nodes[1].saved.ended; }],
+    ["invalid terminal tag", (cp) => { cp.nodes[1].saved.ended = ["DATA", 23]; }],
+    ["extra COMPLETE payload", (cp) => { cp.nodes[1].saved.ended = ["COMPLETE", 23]; }],
+    ["extra ERROR payload", (cp) => { cp.nodes[1].saved.ended = ["ERROR", "bad", 23]; }],
+    ["boolean ERROR payload", (cp) => { cp.nodes[1].saved.ended = ["ERROR", true]; }],
+    ["duplicate id", (cp) => { cp.nodes.push(structuredClone(cp.nodes[1])); }],
+    ["missing node kind", (cp) => { delete cp.nodes[2].kind; }],
+    ["missing deps", (cp) => { delete cp.nodes[2].deps; }],
+    ["duplicate deps", (cp) => { cp.nodes[2].deps.push("s"); }],
+    ["unknown dependency", (cp) => { cp.nodes[2].deps[0] = "absent"; }],
+    ["unknown lifetime dependency", (cp) => { cp.nodes[2].saved.deps = ["absent"]; }],
+    ["declared cycle", (cp) => { cp.nodes[2].deps = ["last"]; }],
+    ["lifetime cycle", (cp) => { cp.nodes[2].saved.deps = ["last"]; }],
+    ["missing node saved", (cp) => { delete cp.nodes[2].saved; }],
+    ["missing node values", (cp) => { delete cp.nodes[2].saved.values; }],
+    ["missing node terminal", (cp) => { delete cp.nodes[2].saved.ended; }],
+    ["missing received", (cp) => { delete cp.nodes[2].saved.inputs; }],
+    ["truncated received", (cp) => { cp.nodes[2].saved.inputs[0] = {}; }],
+    ["missing received values", (cp) => { delete cp.nodes[2].saved.inputs[0].values; }],
+    ["missing received terminal", (cp) => { delete cp.nodes[2].saved.inputs[0].ended; }],
+    ["inconsistent received absence", (cp) => { cp.nodes[2].saved.inputs[0].has = false; }],
+    ["missing policies", (cp) => { delete cp.nodes[2].opts; }],
+    ["missing quiet", (cp) => { delete cp.nodes[2].opts.quiet; }],
+    ["invalid quiet", (cp) => { cp.nodes[2].opts.quiet = 1; }],
+    ["missing complete", (cp) => { delete cp.nodes[2].opts.terminal.complete; }],
+    ["invalid error policy", (cp) => { cp.nodes[2].opts.terminal.error = "maybe"; }],
+    ["missing invalidate", (cp) => { delete cp.nodes[2].opts.invalidate; }],
+    ["missing recipe", (cp) => { delete cp.nodes[2].recipe; }],
+  ];
+  for (const [name, corrupt] of corruptions) {
+    const cp = structuredClone(captured);
+    corrupt(cp);
+    let calls = 0;
+    assert.throws(() => restore(cp, { counted: () => { calls++; return () => {}; } }), /not restorable:/, name);
+    assert.equal(calls, 0, `${name} must fail before even the first valid factory runs`);
+  }
+});
