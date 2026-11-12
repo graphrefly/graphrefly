@@ -2068,20 +2068,20 @@ for (const invalidate of ["auto", "manual"]) for (const retained of [true, false
   test(`QA2: quiet auto ERROR forwards INVALIDATE now (${invalidate}, retained=${retained})`, () => {
     const values = (msgs) => msgs.filter(([type]) => type === "DATA").map(([, value]) => value);
 
-  const g = createGraph();
-  g.state("a", 1); g.state("b", 1);
-  g.node("q", ["a"], (ctx) => {
-    if (retained && ctx.deps[0].waves.length) ctx.down([["DATA", ctx.deps[0].value]]);
-  }, { quiet: true, invalidate });
-  g.node("d", ["q", "b"], (ctx) => {
-    if (ctx.deps.every((d) => d.has)) ctx.down([["DATA", ctx.deps[0].value + ctx.deps[1].value]]);
-  });
-  const seen = [];
-  g.subscribe("hold", "d", (msgs) => seen.push(...msgs.filter(([type]) => type !== "PENDING")));
-  seen.length = 0;
-  g.batch(() => { g.invalidate("a"); g.error("a", "boom"); g.set("b", 2); });
-  assert.deepEqual(values(seen), [], "no stale DATA3");
-  assert.deepEqual(seen.map(([type]) => type), retained ? ["INVALIDATE", "ERROR"] : ["RESOLVED", "ERROR"]);
+    const g = createGraph();
+    g.state("a", 1); g.state("b", 1);
+    g.node("q", ["a"], (ctx) => {
+      if (retained && ctx.deps[0].waves.length) ctx.down([["DATA", ctx.deps[0].value]]);
+    }, { quiet: true, invalidate });
+    g.node("d", ["q", "b"], (ctx) => {
+      if (ctx.deps.every((d) => d.has)) ctx.down([["DATA", ctx.deps[0].value + ctx.deps[1].value]]);
+    });
+    const seen = [];
+    g.subscribe("hold", "d", (msgs) => seen.push(...msgs.filter(([type]) => type !== "PENDING")));
+    seen.length = 0;
+    g.batch(() => { g.invalidate("a"); g.error("a", "boom"); g.set("b", 2); });
+    assert.deepEqual(values(seen), [], "no stale DATA3");
+    assert.deepEqual(seen.map(([type]) => type), retained ? ["INVALIDATE", "ERROR"] : ["RESOLVED", "ERROR"]);
   });
 }
 
