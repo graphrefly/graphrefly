@@ -153,8 +153,18 @@ export function restore(checkpoint, registry, graphOptions) {
     return registry[ref];
   };
   const make = (ref, config, id) => {
-    const built = lookup(ref, id)(config ?? null, { g, id, make: (ref, config) => make(ref, config, id) });
-    return typeof built === "function" ? { fn: built } : built;
+    try {
+      const built = lookup(ref, id)(config ?? null, { g, id, make: (ref, config) => make(ref, config, id) });
+      if (typeof built === "function") return { fn: built };
+      if (!built || typeof built.fn !== "function" || (built.setup != null && typeof built.setup !== "function")) {
+        throw new TypeError("recipe must return a function or an object with a function and optional setup");
+      }
+      return built;
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error);
+      if (reason.startsWith(`not restorable: ${id}: `)) throw error;
+      throw new Error(`not restorable: ${id}: ${reason}`, { cause: error });
+    }
   };
   for (const n of checkpoint.nodes) if (n.local) throw notRestorable(n.id, "local-only, built or replaced without a recipe");
   // A checkpoint that lacks what R-checkpoint saves, such as one written to an earlier format
@@ -166,7 +176,11 @@ export function restore(checkpoint, registry, graphOptions) {
     if (!Object.hasOwn(n, "saved")) throw notRestorable(n.id, "missing received records");
     if (!n.recipe) throw notRestorable(n.id, "missing recipe");
     json(n.recipe.config ?? null, n.id, "its recipe config is not JSON");
-    if (!s || s.ended) { validateSaved(n.id, s); continue; }
+    if (s === null) continue;
+    if (typeof s !== "object" || Array.isArray(s) || s === undefined) {
+      throw notRestorable(n.id, "missing received records");
+    }
+    if (s.ended) { validateSaved(n.id, s); continue; }
     const deps = s.deps ?? n.deps;
     if (!Array.isArray(s.inputs) || s.inputs.length !== deps.length || s.inputs.some((input) =>
       !input || typeof input.has !== "boolean" || !Object.hasOwn(input, "ended") ||

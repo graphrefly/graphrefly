@@ -836,3 +836,24 @@ test("checkpoint refuses incomplete received records before any recipe runs", ()
     assert.equal(factories, 0);
   }
 });
+
+test("checkpoint cold lifetime is exactly null, never a falsey or array value", () => {
+  for (const saved of [false, 0, "", [], undefined]) {
+    const g = createGraph();
+    g.node("n", [], () => {}, { recipe: { ref: "n" } });
+    const cp = capture(g);
+    cp.nodes[0].saved = saved;
+    assert.throws(() => restore(cp, { n: () => () => {} }), { message: "not restorable: n: missing received records" });
+  }
+});
+
+test("known-node recipe failures keep the node prefix without double wrapping", () => {
+  const g = createGraph();
+  g.node("n", [], () => {}, { recipe: { ref: "bad" } });
+  const cp = capture(g);
+  for (const factory of [() => null, () => ({ fn: 7 }), () => ({ fn: () => {}, setup: 7 })]) {
+    assert.throws(() => restore(cp, { bad: factory }), /not restorable: n: recipe must return/);
+  }
+  assert.throws(() => restore(cp, { bad: () => { throw new Error("factory failed"); } }), { message: "not restorable: n: factory failed" });
+  assert.throws(() => restore(cp, { bad: (_, { make }) => make("absent") }), { message: "not restorable: n: missing recipe" });
+});
