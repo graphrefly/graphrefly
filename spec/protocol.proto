@@ -61,12 +61,9 @@ message Wave {
   reserved "direction";
 }
 
-// Dispatcher handle — pure data, no methods (R-handle / D7). A serializable index
-// into a pool's dispatch table; snapshottable and wire-transferable. node != handle.
-message Handle {
-  uint64 pool_id = 1;
-  uint64 handle_id = 2;
-}
+// The dispatcher Handle message (pool_id, handle_id) was removed by D807 (2026-11-11):
+// R-handle was retired by D805, no message here or fixture used it, and each runtime keeps
+// one function table, so a handle is no longer a protocol or wire value.
 
 // ── Wire bridge envelope (D134 / D140 / D141) ──
 // A bridge envelope is graph/application adapter data, not a protocol message and
