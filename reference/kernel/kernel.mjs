@@ -521,10 +521,8 @@ export function createGraph({ report: hostReport } = {}) {
     if (depError && m.terminal.error === "auto") {
       const invalidatedFirst = m.inputs.some((input) => input.frames.some((f) => f[0]?.[0] === "INVALIDATE"));
       clear();
-      const end = invalidatedFirst ? [[["INVALIDATE"]], [depError]] : [[depError]];
-      // A quiet node's output is a later wave: the INVALIDATE goes with the ERROR.
-      if (m.quiet) { m.pending = false; later(m, m.lifetime, end, true); }
-      else down(m, end);
+      const lead = invalidatedFirst ? apply(m, [[["INVALIDATE"]]]) : [];
+      settleOutput(m, lead, [[depError]]);
       return;
     }
 
@@ -560,7 +558,11 @@ export function createGraph({ report: hostReport } = {}) {
 
     // K5, complete=auto: a separate postlude once every dependency has ended.
     const postlude = m.terminal.complete === "auto" && allEnded && !out.flat().some(isTerminal) ? [["COMPLETE"]] : [];
+    settleOutput(m, lead, postlude.length ? [...out, postlude] : out);
+  }
 
+  // Every settlement shares the immediate-invalidation and deferred-output boundary.
+  function settleOutput(m, lead, out) {
     if (m.quiet) {
       // H6: what a quiet node outputs is a later wave, its arrays of one settlement
       // together; nothing downstream waits on it, so silence needs no RESOLVED. Only an
@@ -570,13 +572,13 @@ export function createGraph({ report: hostReport } = {}) {
       // D797 migration review, 2026-11-11: delivered while still pending, it marked nothing).
       m.pending = false;
       if (lead.length) deliver(m, lead);
-      later(m, m.lifetime, postlude.length ? [...out, postlude] : out, true);
+      later(m, m.lifetime, out, true);
       return;
     }
     // The postlude goes out in the same delivery as the run's output, so dependents settle
     // once on both: delivered on its own, a terminal would mark the cone pending a second
     // time in this wave (K2), and a manual dependent would run twice (formal/kernel_wave.tla).
-    deliver(m, [...lead, ...apply(m, postlude.length ? [...out, postlude] : out)]); // P4: adds RESOLVED if silent
+    deliver(m, [...lead, ...apply(m, out)]); // P4: adds RESOLVED if silent
   }
 
   function runWave(entries) {

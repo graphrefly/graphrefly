@@ -89,5 +89,21 @@ const result = {};
   g.node("n", [], () => {}, { recipe: { ref: "absent" } });
   try { restore(capture(g), {}); } catch (e) { result.checkpointMissingRecipe = e.message; }
 }
+result.quietError = [];
+for (const invalidate of ["auto", "manual"]) for (const retained of [true, false]) {
+  const g = createGraph();
+  g.state("a", 1); g.state("b", 1);
+  g.node("q", ["a"], (ctx) => {
+    if (retained && ctx.deps[0].waves.length) ctx.down([["DATA", ctx.deps[0].value]]);
+  }, { quiet: true, invalidate });
+  g.node("d", ["q", "b"], (ctx) => {
+    if (ctx.deps.every((d) => d.has)) ctx.down([["DATA", ctx.deps[0].value + ctx.deps[1].value]]);
+  });
+  const seen = [];
+  g.subscribe("hold", "d", (msgs) => seen.push(...msgs.filter(([type]) => type !== "PENDING")));
+  seen.length = 0;
+  g.batch(() => { g.invalidate("a"); g.error("a", "boom"); g.set("b", 2); });
+  result.quietError.push({ invalidate, retained, values: values(seen), events: seen.map(([type]) => type) });
+}
 assert.deepEqual(result, fixture.probeExpected);
 console.log(JSON.stringify(result, null, 2));

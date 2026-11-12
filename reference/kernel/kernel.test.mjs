@@ -2063,3 +2063,38 @@ test("R-lifetime: an old private-state handle cannot read or overwrite a new lif
   contexts[0].state.set({ value: 99 });
   assert.deepEqual(contexts[1].state.get(), { value: 2 });
 });
+
+for (const invalidate of ["auto", "manual"]) for (const retained of [true, false]) {
+  test(`QA2: quiet auto ERROR forwards INVALIDATE now (${invalidate}, retained=${retained})`, () => {
+    const values = (msgs) => msgs.filter(([type]) => type === "DATA").map(([, value]) => value);
+
+  const g = createGraph();
+  g.state("a", 1); g.state("b", 1);
+  g.node("q", ["a"], (ctx) => {
+    if (retained && ctx.deps[0].waves.length) ctx.down([["DATA", ctx.deps[0].value]]);
+  }, { quiet: true, invalidate });
+  g.node("d", ["q", "b"], (ctx) => {
+    if (ctx.deps.every((d) => d.has)) ctx.down([["DATA", ctx.deps[0].value + ctx.deps[1].value]]);
+  });
+  const seen = [];
+  g.subscribe("hold", "d", (msgs) => seen.push(...msgs.filter(([type]) => type !== "PENDING")));
+  seen.length = 0;
+  g.batch(() => { g.invalidate("a"); g.error("a", "boom"); g.set("b", 2); });
+  assert.deepEqual(values(seen), [], "no stale DATA3");
+  assert.deepEqual(seen.map(([type]) => type), retained ? ["INVALIDATE", "ERROR"] : ["RESOLVED", "ERROR"]);
+  });
+}
+
+test("QA2: quiet auto ERROR remains scoped to the lifetime after immediate invalidation", () => {
+  const g = createGraph(); g.state("a", 1);
+  g.node("q", ["a"], (ctx) => ctx.down([["DATA", ctx.deps[0].value]]), { quiet: true });
+  const seen = [];
+  g.subscribe("hold", "q", (msgs) => {
+    seen.push(...msgs.filter(([type]) => type !== "PENDING"));
+    if (msgs.some(([type]) => type === "INVALIDATE")) g.unsubscribe("hold", "q");
+  });
+  seen.length = 0;
+  g.batch(() => { g.invalidate("a"); g.error("a", "boom"); });
+  assert.deepEqual(seen, [["INVALIDATE"]]);
+  assert.equal(g.get("q").ended, null, "retired lifetime cannot publish its queued ERROR");
+});

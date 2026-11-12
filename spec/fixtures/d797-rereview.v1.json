@@ -42,7 +42,45 @@
       "otherValue": 0,
       "reports": 1
     },
-    "checkpointMissingRecipe": "not restorable: n: missing recipe"
+    "checkpointMissingRecipe": "not restorable: n: missing recipe",
+    "quietError": [
+      {
+        "invalidate": "auto",
+        "retained": true,
+        "values": [],
+        "events": [
+          "INVALIDATE",
+          "ERROR"
+        ]
+      },
+      {
+        "invalidate": "auto",
+        "retained": false,
+        "values": [],
+        "events": [
+          "RESOLVED",
+          "ERROR"
+        ]
+      },
+      {
+        "invalidate": "manual",
+        "retained": true,
+        "values": [],
+        "events": [
+          "INVALIDATE",
+          "ERROR"
+        ]
+      },
+      {
+        "invalidate": "manual",
+        "retained": false,
+        "values": [],
+        "events": [
+          "RESOLVED",
+          "ERROR"
+        ]
+      }
+    ]
   },
   "probeInputs": {
     "quietTerminal": "state s=0 -> quiet q emits DATA99 only when its input terminal arrives -> manual-COMPLETE dependent d. Activate d, clear observations, complete s. Count d invocations and its waves/terminal.",
@@ -52,6 +90,7 @@
     "lateAfterCommitFailure": "Activate a silent node and keep its ctx. In a batch body stage an updater on state s=0 that throws, then request late DATA42 from the kept ctx. Catch commit failure and record node DATA values.",
     "replaceCleanup": "State ledger=0; zero-dependency n setup stores private state42 and returns cleanup that writes the retiring ctx state to ledger. Activate n, subscribe ledger and clear initial snapshot, replace n with a silent instance; record ledger DATA values.",
     "endedBatch": "States trigger=0, a=0, b=0. In trigger subscriber for DATA1, queue a.complete(), then batch: stage b updater first, a updater second; both increment a shared counter and return1. Set trigger=1. Report updaterRuns, b retained value and host report count.",
-    "checkpointMissingRecipe": "Create cold silent zero-dependency node n with recipe ref absent; do not retain/subscribe. Capture and restore with an empty registry. Record the exact refusal."
+    "checkpointMissingRecipe": "Create cold silent zero-dependency node n with recipe ref absent; do not retain/subscribe. Capture and restore with an empty registry. Record the exact refusal.",
+    "quietError": "For each INVALIDATE policy auto/manual and retained true/false: states a=1,b=1; quiet q(a) emits its input DATA only when retained=true; ordinary d(q,b) emits sum only when both have values. Subscribe d, clear observations; batch invalidate(a), error(a, boom), set(b,2). Record downstream DATA values and non-PENDING event tags. No DATA3; retained case INVALIDATE then ERROR, empty case RESOLVED (d settles the b wave without DATA) then ERROR. ERROR remains lifetime-bound."
   }
 }

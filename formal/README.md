@@ -300,3 +300,14 @@ D808 execution (2026-11-12, TLC 2.19, two workers): `kernel_invocation.cfg` comp
 AllowExpired and ReviveOld each violated InvocationOnly, BindLateToCommit violated
 LateIndependent, and SplitQuiet violated QuietTerminalTogether. These mutations
 establish discrimination for those axes; the finite bounds remain the coverage limit.
+
+## QA2 quiet auto-ERROR combination (2026-11-12)
+
+`kernel_quiet_error.tla` checks C-16's four combinations (auto/manual INVALIDATE,
+retained/empty quiet output) with another branch updating in the same batch.
+The immediate invalidation prevents a stale fan-in DATA3; the later ERROR is
+dropped when its lifetime closes. TLC 2.19 checked 24 distinct states at depth 5,
+with NoStaleData, ImmediateInvalidation and ClosedErrorDropped passing.
+Both delayed-invalidation and manual-policy-bypass mutations violated NoStaleData.
+This focused finite model does not cover arbitrary graphs or replace the kernel wave model.
+Logs: `/private/tmp/qa2-kernel_quiet_error*.log`; observed host load is in each log.
