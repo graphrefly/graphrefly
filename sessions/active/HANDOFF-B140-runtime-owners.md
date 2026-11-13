@@ -607,6 +607,7 @@ state-ownership equality. Source paths refer to the current migration checkouts.
 | wireBridge | TS/Rust create 11 command/inbound/event/projection nodes. Python creates 9: a core, ackTimeouts, events, statusLedger, outboundBytes, frames, values, status, issues. Python encodes/decodes inside its bridge while TS/Rust outbound is an envelope object; outboundBytes and outbound are not the same data role. | Keep package-specific internals and compare behavior; align selected public roles; or redesign the internal command/envelope pipeline. First identify which consumers need identical topology. | Medium/high for public-role changes; high for a shared internal pipeline. Requalify terminal/lifetime ordering, retry state, codec boundaries and persistence. Sources: TS packages/ts/src/adapters/bridge.ts and bridge-projections.ts; Rust crates/graphrefly/src/adapters/bridge.rs; Python src/graphrefly/_wire/envelope.py and _wire_facade.py. |
 | ack driver | TS creates events/commands/issues/status and a topology group under s1/ackDriver. Python creates a core/timeouts/issues/status without the group. Rust has no corresponding public helper. | Decide whether only explicit timeout-ingress behavior must agree, whether a shared event shape is useful, or whether Rust should gain a helper. | Adding/removing nodes or a Rust helper is implementation work, not a rename. Preserve external-clock ownership, cancellation and no hidden timer behavior. Sources: TS adapters/bridge.ts; Python _wire/envelope.py and _wire_facade.py. |
 | cascading cache state | TS has events/status/value and holds DriverState in events' private ctx.state. Rust adds a graph-visible ledger node, declares it as an event dependency, and writes state back there. Python has no module. | Compare private lifetime state with a persistent ledger: intended state after last unsubscribe/reactivation, checkpoint support, and inspectability. Decide on shared behavior before choosing a storage shape. | High if state ownership changes: lifetime reset and checkpoint semantics can change. Sources: TS graph/cascading-cache.ts; Rust src/cascading_cache.rs (Ledger creation/event deps/write-back). Do not delete ledger merely to equalize counts. |
+| Causal quiescence representation | TS has a retained domain fact projected from authority (`/quiescence`) and a separate branded graph/binding-owned lifecycle capability (`/capability`). Their previous similar names did not make them the same role. | Inspect whether one node could carry both representations without weakening graph/binding ownership or lifecycle helpers; retain both until that boundary is demonstrated. | A merge changes representation and ownership branding, not just spelling. Sources: TS solutions/causal-occurrence/construction.ts and capabilities.ts. |
 | Collection helper registration | Rust log tail/slice/scan/merge helpers are registered nodes; some TS equivalents are bare helpers, appearing as synthetic core ids only when used as dependencies. | Decide whether graph ownership, lifetime and inspection should align before changing registration. | Registration changes can change lifecycle/describe/checkpoint behavior. Anonymous core allocation remains excluded from this module-name cleanup. Sources: Rust data_structures.rs; TS graph/data-structures/reactive-log.ts and related helpers. |
 | work-item availability | TS owns workItemSeeds and broader work-item execution/solution composition. Rust work_queue is a different module; Python has neither counterpart. | Establish an actual consumer and minimum common module contract before proposing ports. Otherwise keep absence explicit in shared probes. | A port is new module scope with its own state/lifecycle evidence, not a missing naming patch. Source: TS solutions/work-item/execution.ts; package public export inventories. |
 
@@ -650,3 +651,57 @@ Independent root blind/edge/verification lenses are in
 `/private/tmp/node-naming-root-{blind,edges,verification}.md`. The edge finding
 expanded the admission contract with user approval; the blind prefix finding was
 repaired. Final owner reviews and exact commits are recorded at delivery.
+
+
+### Publication hold and local handoff
+
+The user declined publication of root `f2e23490bafe94745f720da3ced5f0fff6fccd65`
+with “暂不推送，继续本地验证”. No repository is pushed in this naming round.
+Runtime CI/release checkout pins are prepared for that exact root commit, which
+remains local; hosted CI has not run and must not be described as green. The
+runtime migration branches remain local while their pinned root fixture is unpublished;
+the earlier checked-runtime-branch push scope is not silently expanded or revoked.
+This hold does not close or cancel B140 or the runtime migration work.
+
+Canonical package naming maps remain owner-local:
+[TypeScript](../../../graphrefly-ts/docs/node-naming-d809.md),
+[Rust](../../../graphrefly-rs/docs/node-naming.md), and
+[Python](../../../graphrefly-py/docs/development.md#local-and-generated-names).
+The integrated delivery report is `/private/tmp/node-naming-delivery.md`; it also
+links full before/after observations, source-bound owner receipts, failures,
+mutation results, and the concern-based review order. Its local-success claim
+excludes hosted CI, publication, merge, release and D687 qualification.
+
+
+### Final local owner receipts (D809)
+
+All local naming work is verified; publication-dependent completion remains open.
+No hosted CI result, D687 qualification, PR, merge or release is claimed.
+
+| Owner | Local commits in this naming round | Final local verification |
+|---|---|---|
+| Root | f2e2349 contract/reference/fixture/model; subsequent handoff-only receipt | Reference 490, authority 40; TLC 512 distinct states; 7 source/fixture mutants and 2 model mutants detected. |
+| TS | 6fc1b1d6 admission; e0fdc876 module names/evidence; e7061bed receipt classification | 2,915 passed, 4 skipped; lint/build/docs freshness/probes passed; 9 source mutants detected. |
+| Rust | c6165d3 separator admission; 04b7ae8 boundary admission; 5ccc239 module names; bf9971a receipt; 48f1a59 evidence schema repair | 557 runtime + 14 doctests; nextest 541 passed, 0 skipped; lint/check/build/docs/deny/probes passed; 7 source mutants detected. |
+| Python | 87c9795 admission; 8c4ac36 module names; c99035b receipt | 559 passed, 2 optional skipped; lint/types/API/build/docs freshness and installed-wheel probes passed; 8 source mutants detected. |
+
+Parent read final test/gate logs, checked TS's 291-file source manifest against
+current files, and reran the actual three-owner fixture comparison successfully.
+The last TS repair moves invalid inbound-edge admission before default scope
+reservation; its retry regression confirms the original default remains available.
+The TS before/after catalogue contains 147 construction cases, 949 observed nodes,
+20 groups and 254 renamed IDs; counts, kind, quiet, factory, full recipes and
+normalized dependency vectors remain equal in those observations.
+
+Final parent workspace authority/work/dashboard checks and exact diff statistics
+are recorded in `/private/tmp/node-naming-delivery.md`. Independent QA dispositions
+are in `/private/tmp/node-naming-runtime-parent-qa.md`; owner maps and raw gate/load
+receipts are linked from the integrated report. The temporary report includes all
+three full grouped naming maps; durable owner documents remain the canonical maps.
+The broader B140 and owner migration work remain in progress.
+
+Final integration caught three Rust evidence_refs stored as strings rather than
+schema objects. Metadata-only commit 48f1a59 retains the same paths and binds them
+to bf9971a. The first failing workspace logs are preserved as
+`/private/tmp/node-naming-final-first-{authority,work,dashboard}.log`; subsequent
+workspace checks passed. Runtime source and its test qualification are unchanged.
