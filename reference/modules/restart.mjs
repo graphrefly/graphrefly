@@ -1,3 +1,5 @@
+import { assertLocalName } from "../kernel/kernel.mjs";
+
 // Restart as a module over the reference kernel (DS-17 O7). Non-normative.
 //
 // One owner node `id` faces downstream for good. What may end and be restarted lives
@@ -10,8 +12,8 @@
 // hold an upstream that nothing else held closed and opened again at every attempt (C5a,
 // decided by the user 2026-11-10).
 //
-//   deps ──► id/inner ──► id          id.restart ──► id
-//   deps ──────────────► id           (the owner's hold; it reads only the inner and id.restart)
+//   deps ──► id/inner ──► id          id/request ──► id
+//   deps ──────────────► id           (the owner's hold; it reads only the inner and id/request)
 //
 // The owner forwards the inner's values. When the inner ends, the owner's policy decides:
 // restart it, or end the owner with that same terminal, which is then final. While a
@@ -23,7 +25,7 @@
 //   retry     the library's retry policy (resilience.mjs): within a round, an ERROR from
 //             attempt n is retried after retryDelayMs(retry, n), unless that is undefined.
 //             Default retryPolicy(): one attempt, no retry;
-//   restart() a request from outside, through the declared control state `${id}.restart`
+//   restart() a request from outside, through the declared control state `${id}/request`
 //             (P11). It starts a new attempt and counts toward neither. A request is served
 //             once: at activation the owner takes the state's current value as served, as
 //             the demand log does with its pulls, so a request made before, or while the
@@ -49,8 +51,9 @@ import { retryDelayMs, retryPolicy } from "./resilience.mjs";
 // current definition, recipe and setup included, so only its instance changes. After a restore,
 // restartableOf(g, id) gives the handle.
 export function restartable(g, id, { deps, fn, recipe, rounds = 1, retry = retryPolicy() }) {
+  assertLocalName(id);
   const innerId = `${id}/inner`;
-  const restartId = `${id}.restart`;
+  const restartId = `${id}/request`;
   g.state(restartId); // no value until the first request, so activation sees none
   g.node(innerId, deps, fn, recipe ? { recipe } : {});
   // The owner holds the inner's dependencies too, ahead of the inner, so an inner that ends does
@@ -66,7 +69,7 @@ export function restartable(g, id, { deps, fn, recipe, rounds = 1, retry = retry
 }
 
 export function restartableOf(g, id) {
-  const restartId = `${id}.restart`;
+  const restartId = `${id}/request`;
   // The request number is the state's value, so it goes on after a restore (a set with a function, 2026-11-10).
   return { id, innerId: `${id}/inner`, restart() { g.set(restartId, (n) => (n ?? 0) + 1); } };
 }
@@ -74,7 +77,7 @@ export function restartableOf(g, id) {
 function owner({ deps, rounds, retry }, { g, id }) {
   const kernel = g;
   const innerId = `${id}/inner`;
-  const restartId = `${id}.restart`;
+  const restartId = `${id}/request`;
   const ends = () => deps.map((d) => kernel.get(d).ended);
   const wouldEndAtOnce = () => {
     const e = ends();

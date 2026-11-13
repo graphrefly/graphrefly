@@ -106,7 +106,7 @@ test("C-31: under resumeAll the lock survives close, and a new subscription is h
   g.set("s", 30);
   g.unsubscribe("o", "p");
   assert.equal(g.get("s").value, 30, "the state keeps its intrinsic value across close");
-  assert.deepEqual(g.get("p.pauseLocks").value, [lock], "the lock survives");
+  assert.deepEqual(g.get("p/locks").value, [lock], "the lock survives");
   assert.deepEqual(during(g, () => g.subscribe("o", "p")), ["o <- p: [START]"], "new admission respects the lock");
   assert.deepEqual(values(during(g, () => p.resume(lock))), ["o <- p: [PENDING, DATA(30)]"]);
 });

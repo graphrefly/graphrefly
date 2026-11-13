@@ -4,7 +4,7 @@
 // first as an owner with a replaced inner, mergeMap first on replace (git 75ee4c8), then
 // mergeMap on rewire (79026f7); merged here once both fitted the same shape.
 //
-//   sourceId ──► id ◄── id/inner/0, id/inner/1, ... ◄── (each projected inner's dependencies)
+//   sourceId ──► id ◄── id/inner0, id/inner1, ... ◄── (each projected inner's dependencies)
 //
 // `id` depends on the source and on every live inner and forwards the inners' values. It
 // completes once the source has completed and no inner is live, and ends with ERROR on a
@@ -14,13 +14,13 @@
 // ordinary input wave. Dependencies are read by id (ctx.deps[i].id).
 //
 // project(value) returns the inner's definition { deps, fn }; to follow a node X that already
-// exists, project to { deps: [X], fn: relay }. Inner nodes sit at id/inner/k, because the
+// exists, project to { deps: [X], fn: relay }. Inner nodes sit at id/innerN, because the
 // kernel cannot delete a node: a definition goes into a node with replace (a new node the
 // first time). A projection with the same definition as a live inner keeps that inner (TS
 // keeps an already live inner). A projection onto an ended node gives an inner that starts on
 // its snapshot (P5): its last value, if any, then its end (TS's rewire refuses it instead).
 //
-// switch: the last source value of a wave is projected into id/inner/0. Replacing that node
+// switch: the last source value of a wave is projected into id/inner0. Replacing that node
 // closes the live inner's lifetime, so its late output is dropped and a dependency only it
 // had is released: that is the cancellation.
 // merge: every source value is projected, into the first node not live. `concurrent` bounds
@@ -42,9 +42,9 @@ const kept = (def) => (def.recipe ? { deps: def.deps, recipe: def.recipe } : def
 
 function operator({ sourceId, mode, concurrent }, { g, id }, projectFn) {
   const bound = concurrent ?? Infinity; // JSON has no Infinity
-  const inner = (k) => `${id}/inner/${k}`;
+  const inner = (k) => `${id}/inner${k}`;
   const exists = (nodeId) => g.describe().some((n) => n.id === nodeId);
-  // Inner nodes sit at id/inner/k; the kernel cannot delete a node, so a slot once made is
+  // Inner nodes sit at id/innerN; the kernel cannot delete a node, so a slot once made is
   // replaced. Which slots exist is read from the graph, not counted here, so it holds after a
   // restore too.
   const place = (k, def) => {

@@ -32,6 +32,9 @@ jobs:
       - name: Check authority resolver
         run: npm run authority:check && npm run test:authority
 
+      - name: Check naming contract and shared fixture
+        run: node --test reference/kernel/naming.test.mjs && node reference/kernel/probe-naming.mjs
+
       - name: Build and check public docs
         run: npm run docs:public:check
 

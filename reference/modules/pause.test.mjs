@@ -47,7 +47,7 @@ test("locks compose: only the last release opens; acquiring and releasing are id
   p.pause("ui");
   p.pause("ui");
   p.pause("sync");
-  assert.deepEqual(g.get("p.pauseLocks").value, ["ui", "sync"], "pause state is readable as plain state");
+  assert.deepEqual(g.get("p/locks").value, ["ui", "sync"], "pause state is readable as plain state");
   g.set("a", 1);
   assert.deepEqual(during(g, () => p.resume("nobody")), [], "releasing a lock nobody holds is no wave at all");
   p.resume("ui");
@@ -252,7 +252,7 @@ test("several pauses issued inside one wave keep every lock", () => {
     p.pause("y");
   });
   g.set("t", 1);
-  assert.deepEqual(g.get("p.pauseLocks").value, ["x", "y"]);
+  assert.deepEqual(g.get("p/locks").value, ["x", "y"]);
   p.resume("x");
   assert.deepEqual(during(g, () => g.set("a", 1)), ["s <- p: [PENDING, RESOLVED]"], "y still holds");
 });

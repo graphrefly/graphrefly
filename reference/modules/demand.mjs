@@ -1,3 +1,5 @@
+import { assertLocalName } from "../kernel/kernel.mjs";
+
 import { withDependencies } from "./context.mjs";
 
 // Demand (PULL) as a module over the reference kernel (DS-17 O2, R-pull). Non-normative.
@@ -9,11 +11,11 @@ import { withDependencies } from "./context.mjs";
 // params, and what it sends goes out as a later wave. It runs even when nothing changed.
 //
 // The request travels through a declared control pair, as pause does (O8): `pull` writes
-// the state node `${id}.pullDemand`, a real edge into the bundle. No class-1 message
+// the state node `${id}/demand`, a real edge into the bundle. No class-1 message
 // and no upward routing are needed, so no kernel change either.
 //
 // Nodes, created once by pullable():
-//   inputId ──► id          id.pullDemand ──► id
+//   inputId ──► id          id/demand ──► id
 // One quiet node with the manual INVALIDATE policy (K6, 2026-11-09): the input's INVALIDATE
 // is its function's input, so it drops what it held and sends INVALIDATE itself, which goes
 // out as a later wave, like all of a quiet node's output. Until then a second node, a log
@@ -69,7 +71,8 @@ const holderSetup = (ctx) => {
 // it, the holder carries its own recipe and a checkpoint can restore it (F6, 2026-11-10);
 // demandRecipes goes in the restore's registry. After a restore, pullableOf(g, id) gives the handle.
 export function pullable(g, id, inputId, serve, { recipe } = {}) {
-  const demandId = `${id}.pullDemand`;
+  assertLocalName(id);
+  const demandId = `${id}/demand`;
   g.state(demandId); // no value until the first pull
   // The demand state never completes; only the input ends the holder, hence manual complete.
   g.node(id, [inputId, demandId], holder(serve), {
@@ -80,7 +83,7 @@ export function pullable(g, id, inputId, serve, { recipe } = {}) {
 }
 
 export function pullableOf(g, id) {
-  const demandId = `${id}.pullDemand`;
+  const demandId = `${id}/demand`;
   return {
     id,
     demandId,

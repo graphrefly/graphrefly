@@ -15,6 +15,8 @@
 // Bridge nodes carry no recipe: a checkpoint of them is not covered by R-bridge (their values are
 // bytes, not JSON), so they are local-only.
 
+import { assertLocalName } from "../kernel/kernel.mjs";
+
 const CROSSING = new Set(["DATA", "INVALIDATE", "COMPLETE", "ERROR"]);
 const isTerminal = (m) => m[0] === "COMPLETE" || m[0] === "ERROR";
 const isBytes = (v) => v instanceof Uint8Array;
@@ -81,15 +83,17 @@ export function frameSource(g, id, open) {
   return id;
 }
 
-// The receiver side: the gate `id` over `frames`, an inbound node `${id}/${edge}` per declared
-// edge and the issues node `${id}.issues`.
+// The receiver side: the gate `id` over `frames`, an inbound node `${id}/edges/${edge}` per declared
+// edge and the issues node `${id}/issues`.
 export function wireEdgeGroupIn(g, id, { group, frames, edges }) {
+  assertLocalName(id);
+  for (const edge of edges) assertLocalName(edge);
   const manual = { terminal: { complete: "manual", error: "manual" } };
   g.node(id, [frames], gateFn(group, edges), manual);
-  const inbound = Object.fromEntries(edges.map((e) => [e, `${id}/${e}`]));
+  const inbound = Object.fromEntries(edges.map((e) => [e, `${id}/edges/${e}`]));
   for (const e of edges) g.node(inbound[e], [id], inboundFn(e), manual);
-  g.node(`${id}.issues`, [id], issuesFn, manual);
-  return { gate: id, inbound, issues: `${id}.issues` };
+  g.node(`${id}/issues`, [id], issuesFn, manual);
+  return { gate: id, inbound, issues: `${id}/issues` };
 }
 
 // Private state: the current session, the last cause number taken in it, and the view, what each

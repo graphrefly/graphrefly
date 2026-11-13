@@ -559,3 +559,94 @@ ordering and complete admission before side effects; no new protocol semantics a
 Runtime final gates and actual branch CI results are still being collected. Rust checkpoint
 policies and TS topology API removals are intentional owner changes documented in their repos.
 No root push, runtime CI success, D687 qualification, PR, merge or release is claimed here.
+
+
+## D809 node and group naming — authorized delivery, 2026-11-12
+
+Source: the user's `reply-to-codex-node-naming.md` handoff and explicit choice in the
+Codex chat to unify corresponding names while preserving existing node structures.
+The canonical contract is R-naming@1; rationale is graphrefly:D809; behavioral
+acceptance is C-49. This is a B140 delivery slice, not a new sequencer or B140 completion.
+
+Baseline: root d223f977526f25c1beac6eabfbd6cab49f7dd796;
+TS bb4fb462dc952941450f4347788db1228dce00ca;
+Rust a979f1508c280f9640622be7fc336756125a3261;
+Python e7a2f32a5fecd3c23a6ff02152a455b1835704e2. All were clean.
+
+Order: admit rule/scenario/address model; correct root reference admission and
+module paths; freeze shared naming fixture; migrate each package in rejection and
+renaming commits; run full gates with load receipts and discriminating mutations;
+independent blind/edge/verification review; request root publication approval for
+the concrete verified commit; only then publish runtime fixture pins and observe CI.
+Runtime migration branch pushes are authorized after checks. Root main requires
+separate approval. No PR/main merge/release is included.
+
+Acceptance matrix: invalid local `a::b` rejects with the shared message before
+mutation and restore factories; ordinary mounted addresses still resolve; default
+module instances have distinct names; inbound edge `issues` uses `edges/issues`;
+module scans cover defaults and lazy children; fixed segments use slash and camelCase
+and omit redundant role words; exact shared inventories expose unavailable and
+extra roles. User labels are preserved except the reserved delimiter. Core anonymous
+allocation and function/recipe names remain outside this naming cleanup.
+
+Verification: root reference/authority/work/dashboard/public docs and graph_names
+TLC with a negative mutant; each owner's full required tests, lint/type/build/docs,
+shared behavior/refusal and naming probes; mutations for separator, refusal, case,
+repeated role and cross-owner drift. Evidence and full per-module before/after maps
+will be added here or linked from the final delivery receipt.
+
+### Structure differences reserved for later analysis
+
+Recorded at the user's explicit request on 2026-11-12. These are investigation
+inputs, not approved redesigns, deferred rule violations, or new dispatch. D809
+preserves the existing structures. Name equality below does not claim payload or
+state-ownership equality. Source paths refer to the current migration checkouts.
+
+| Concern | Current structure and why renaming is insufficient | Questions/options for later analysis | Cost and evidence to preserve |
+|---|---|---|---|
+| wireBridge | TS/Rust create 11 command/inbound/event/projection nodes. Python creates 9: a core, ackTimeouts, events, statusLedger, outboundBytes, frames, values, status, issues. Python encodes/decodes inside its bridge while TS/Rust outbound is an envelope object; outboundBytes and outbound are not the same data role. | Keep package-specific internals and compare behavior; align selected public roles; or redesign the internal command/envelope pipeline. First identify which consumers need identical topology. | Medium/high for public-role changes; high for a shared internal pipeline. Requalify terminal/lifetime ordering, retry state, codec boundaries and persistence. Sources: TS packages/ts/src/adapters/bridge.ts and bridge-projections.ts; Rust crates/graphrefly/src/adapters/bridge.rs; Python src/graphrefly/_wire/envelope.py and _wire_facade.py. |
+| ack driver | TS creates events/commands/issues/status and a topology group under s1/ackDriver. Python creates a core/timeouts/issues/status without the group. Rust has no corresponding public helper. | Decide whether only explicit timeout-ingress behavior must agree, whether a shared event shape is useful, or whether Rust should gain a helper. | Adding/removing nodes or a Rust helper is implementation work, not a rename. Preserve external-clock ownership, cancellation and no hidden timer behavior. Sources: TS adapters/bridge.ts; Python _wire/envelope.py and _wire_facade.py. |
+| cascading cache state | TS has events/status/value and holds DriverState in events' private ctx.state. Rust adds a graph-visible ledger node, declares it as an event dependency, and writes state back there. Python has no module. | Compare private lifetime state with a persistent ledger: intended state after last unsubscribe/reactivation, checkpoint support, and inspectability. Decide on shared behavior before choosing a storage shape. | High if state ownership changes: lifetime reset and checkpoint semantics can change. Sources: TS graph/cascading-cache.ts; Rust src/cascading_cache.rs (Ledger creation/event deps/write-back). Do not delete ledger merely to equalize counts. |
+| Collection helper registration | Rust log tail/slice/scan/merge helpers are registered nodes; some TS equivalents are bare helpers, appearing as synthetic core ids only when used as dependencies. | Decide whether graph ownership, lifetime and inspection should align before changing registration. | Registration changes can change lifecycle/describe/checkpoint behavior. Anonymous core allocation remains excluded from this module-name cleanup. Sources: Rust data_structures.rs; TS graph/data-structures/reactive-log.ts and related helpers. |
+| work-item availability | TS owns workItemSeeds and broader work-item execution/solution composition. Rust work_queue is a different module; Python has neither counterpart. | Establish an actual consumer and minimum common module contract before proposing ports. Otherwise keep absence explicit in shared probes. | A port is new module scope with its own state/lifecycle evidence, not a missing naming patch. Source: TS solutions/work-item/execution.ts; package public export inventories. |
+
+The shared naming fixture records the complete current inventories, including extra
+roles and null/unavailable modules. It provides a concrete comparison input for the
+later discussion, not a target topology to manufacture.
+
+
+D809 QA refinement: independent edge review found that `a:` mounted over `b`
+and `a` mounted over `:b` produce the same address `a:::b`. The user explicitly
+approved rejecting leading/trailing colons while retaining internal single colons.
+Root rule, C-49, reference preflight and all owners follow the two exact messages
+in R-naming, with the `::` check first. The expanded model has 512 states and both
+admission mutants fail its round-trip invariant. This is an approved admission
+repair, not one of the unapproved future structure changes above.
+
+
+### Root execution evidence (D809)
+
+The final delimiter/boundary contract passed `npm run test:reference` (490 tests),
+`npm run test:authority` (40), dashboard, workspace authority/work, public docs,
+and the existing shared behavior probe. Command, duration and
+start/end load receipts: `/private/tmp/node-naming-root-gates.json`. Root reference
+final full run after prefix repair was 44.33 seconds (load 17.78/22.18/16.69 to
+20.35/22.51/17.07); this is a
+correctness receipt, not a performance comparison. The module-prefix repair also
+passed 130 affected tests; it adds prefix checks before suffix concatenation, so
+`a:` cannot hide inside `a:/locks` or leave a half-constructed module.
+
+Seven isolated reference/fixture mutations fail assertions: missing prefix check,
+missing boundary-colon check, missing reserved-delimiter check, restored dot,
+repeated module word, non-camel role and cross-owner drift. Baseline and restored
+controls pass. Receipts: `/private/tmp/node-naming-root-mutations.json`; model
+receipts/bounds are in formal/README.md. Actual TS, Rust and Python module outputs all pass
+`reference/kernel/probe-naming.mjs --ts /private/tmp/node-naming-ts-actual.json
+--rust /private/tmp/node-naming-rust-actual.json --py /private/tmp/node-naming-py-actual.json`;
+publication and complete owner-suite receipts follow after owner verification. No fixture-data self-comparison is claimed as
+runtime evidence.
+
+Independent root blind/edge/verification lenses are in
+`/private/tmp/node-naming-root-{blind,edges,verification}.md`. The edge finding
+expanded the admission contract with user approval; the blind prefix finding was
+repaired. Final owner reviews and exact commits are recorded at delivery.

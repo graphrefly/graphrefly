@@ -25,6 +25,16 @@ export const TIER = Object.freeze({
 
 export class KernelError extends Error {}
 
+// R-naming: only mount traversal may assemble a qualified address.
+export function assertLocalName(name) {
+  if (typeof name === "string" && name.includes("::")) {
+    throw new KernelError("name must not contain '::'");
+  }
+  if (typeof name === "string" && (name.startsWith(":") || name.endsWith(":"))) {
+    throw new KernelError("name must not start or end with ':'");
+  }
+}
+
 const isValue = (m) => m[0] === "DATA" || m[0] === "RESOLVED";
 const isTerminal = (m) => m[0] === "COMPLETE" || m[0] === "ERROR";
 // K2/K6: each of these releases a connection's dirty membership.
@@ -94,6 +104,7 @@ export function createGraph({ report: hostReport } = {}) {
   const dependsOn = (n, targetId) => edgesOf(n).some((d) => d === targetId || dependsOn(nodeOf(d), targetId));
 
   function makeNode(id, kind, deps, fn, opts, initial) {
+    assertLocalName(id);
     if (nodes.has(id)) throw new KernelError(`duplicate node ${id}`);
     for (const d of deps) nodeOf(d); // P1: dependencies are declared and must exist
     // H4, optional (2026-11-08, for restore): { values?, ended?, state?, deps? } gives a computed

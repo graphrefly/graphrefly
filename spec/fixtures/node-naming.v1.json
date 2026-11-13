@@ -1,0 +1,237 @@
+{
+  "schema": "graphrefly/node-naming@1",
+  "error": "name must not contain '::'",
+  "modules": {
+    "wireBridge": {
+      "inputs": {
+        "sessionId": "s1"
+      },
+      "runtimes": {
+        "ts": {
+          "ids": [
+            "wireBridge/acks",
+            "wireBridge/attempts",
+            "wireBridge/command",
+            "wireBridge/cursor",
+            "wireBridge/errors",
+            "wireBridge/events",
+            "wireBridge/inbound",
+            "wireBridge/nacks",
+            "wireBridge/outbound",
+            "wireBridge/status",
+            "wireBridge/statusLedger"
+          ],
+          "roles": {
+            "acks": "wireBridge/acks",
+            "attempts": "wireBridge/attempts",
+            "command": "wireBridge/command",
+            "cursor": "wireBridge/cursor",
+            "errors": "wireBridge/errors",
+            "events": "wireBridge/events",
+            "inbound": "wireBridge/inbound",
+            "nacks": "wireBridge/nacks",
+            "outbound": "wireBridge/outbound",
+            "status": "wireBridge/status",
+            "statusLedger": "wireBridge/statusLedger"
+          }
+        },
+        "rust": {
+          "ids": [
+            "wireBridge/acks",
+            "wireBridge/attempts",
+            "wireBridge/command",
+            "wireBridge/cursor",
+            "wireBridge/errors",
+            "wireBridge/events",
+            "wireBridge/inbound",
+            "wireBridge/nacks",
+            "wireBridge/outbound",
+            "wireBridge/status",
+            "wireBridge/statusLedger"
+          ],
+          "roles": {
+            "acks": "wireBridge/acks",
+            "attempts": "wireBridge/attempts",
+            "command": "wireBridge/command",
+            "cursor": "wireBridge/cursor",
+            "errors": "wireBridge/errors",
+            "events": "wireBridge/events",
+            "inbound": "wireBridge/inbound",
+            "nacks": "wireBridge/nacks",
+            "outbound": "wireBridge/outbound",
+            "status": "wireBridge/status",
+            "statusLedger": "wireBridge/statusLedger"
+          }
+        },
+        "py": {
+          "ids": [
+            "wireBridge",
+            "wireBridge/ackTimeouts",
+            "wireBridge/events",
+            "wireBridge/frames",
+            "wireBridge/issues",
+            "wireBridge/outboundBytes",
+            "wireBridge/status",
+            "wireBridge/statusLedger",
+            "wireBridge/values"
+          ],
+          "roles": {
+            "core": "wireBridge",
+            "ackTimeouts": "wireBridge/ackTimeouts",
+            "events": "wireBridge/events",
+            "frames": "wireBridge/frames",
+            "issues": "wireBridge/issues",
+            "outboundBytes": "wireBridge/outboundBytes",
+            "status": "wireBridge/status",
+            "statusLedger": "wireBridge/statusLedger",
+            "values": "wireBridge/values"
+          }
+        }
+      }
+    },
+    "edgeGroupIn": {
+      "inputs": {
+        "name": "bridge",
+        "group": "g",
+        "edges": [
+          "x",
+          "issues"
+        ]
+      },
+      "runtimes": {
+        "ts": {
+          "ids": [
+            "bridge",
+            "bridge/edges/issues",
+            "bridge/edges/x",
+            "bridge/issues"
+          ],
+          "roles": {
+            "gate": "bridge",
+            "edgeX": "bridge/edges/x",
+            "edgeIssues": "bridge/edges/issues",
+            "issues": "bridge/issues"
+          }
+        },
+        "rust": {
+          "ids": [
+            "bridge",
+            "bridge/edges/issues",
+            "bridge/edges/x",
+            "bridge/issues"
+          ],
+          "roles": {
+            "gate": "bridge",
+            "edgeX": "bridge/edges/x",
+            "edgeIssues": "bridge/edges/issues",
+            "issues": "bridge/issues"
+          }
+        },
+        "py": {
+          "ids": [
+            "bridge",
+            "bridge/edges/issues",
+            "bridge/edges/x",
+            "bridge/issues"
+          ],
+          "roles": {
+            "gate": "bridge",
+            "edgeX": "bridge/edges/x",
+            "edgeIssues": "bridge/edges/issues",
+            "issues": "bridge/issues"
+          }
+        }
+      }
+    },
+    "ackDriver": {
+      "inputs": {
+        "sessionId": "s1"
+      },
+      "runtimes": {
+        "ts": {
+          "ids": [
+            "s1/ackDriver/commands",
+            "s1/ackDriver/events",
+            "s1/ackDriver/issues",
+            "s1/ackDriver/status"
+          ],
+          "roles": {
+            "events": "s1/ackDriver/events",
+            "commands": "s1/ackDriver/commands",
+            "issues": "s1/ackDriver/issues",
+            "status": "s1/ackDriver/status"
+          }
+        },
+        "rust": null,
+        "py": {
+          "ids": [
+            "s1/ackDriver",
+            "s1/ackDriver/issues",
+            "s1/ackDriver/status",
+            "s1/ackDriver/timeouts"
+          ],
+          "roles": {
+            "core": "s1/ackDriver",
+            "timeouts": "s1/ackDriver/timeouts",
+            "issues": "s1/ackDriver/issues",
+            "status": "s1/ackDriver/status"
+          }
+        }
+      }
+    },
+    "workItemSeeds": {
+      "inputs": {},
+      "runtimes": {
+        "ts": {
+          "ids": [
+            "workItemSeeds"
+          ],
+          "roles": {
+            "seeds": "workItemSeeds"
+          }
+        },
+        "rust": null,
+        "py": null
+      }
+    },
+    "cascadingCache": {
+      "inputs": {},
+      "runtimes": {
+        "ts": {
+          "ids": [
+            "reactiveCascadingCache/events",
+            "reactiveCascadingCache/status",
+            "reactiveCascadingCache/value"
+          ],
+          "roles": {
+            "events": "reactiveCascadingCache/events",
+            "status": "reactiveCascadingCache/status",
+            "value": "reactiveCascadingCache/value"
+          }
+        },
+        "rust": {
+          "ids": [
+            "reactiveCascadingCache/events",
+            "reactiveCascadingCache/ledger",
+            "reactiveCascadingCache/status",
+            "reactiveCascadingCache/value"
+          ],
+          "roles": {
+            "events": "reactiveCascadingCache/events",
+            "ledger": "reactiveCascadingCache/ledger",
+            "status": "reactiveCascadingCache/status",
+            "value": "reactiveCascadingCache/value"
+          }
+        },
+        "py": null
+      }
+    }
+  },
+  "notes": [
+    "IDs are sorted full module-created describe deltas, excluding explicitly named prerequisite nodes. Actual runtime output must match the complete owner entry, not only a common subset.",
+    "Equal role keys require identical names across available owners. Additional roles preserve existing structures; null means module unavailable, never a pass for that module.",
+    "Group names are verified by owner construction scans where public inspection does not expose them. TS ackDriver group is s1/ackDriver; Python and Rust have no corresponding group.",
+    "Python outboundBytes is encoded bytes, unlike TS/Rust outbound envelopes. Python issues and TS/Rust errors are distinct outputs; neither is relabeled as the other."
+  ],
+  "boundaryError": "name must not start or end with ':'"
+}

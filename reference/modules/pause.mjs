@@ -1,8 +1,10 @@
+import { assertLocalName } from "../kernel/kernel.mjs";
+
 // Pause as a module over the reference kernel (DS-17 O8). Non-normative.
 //
 // A pausable node is placed in the graph in advance, between an input and whatever
 // should stop. Its declared control pair is an ordinary dependency: a plain state node
-// `${id}.pauseLocks` whose value is the list of locks currently held. So
+// `${id}/locks` whose value is the list of locks currently held. So
 //   - the control edge is a real edge that any observer can draw;
 //   - pause is directed: each pausable has its own control state, and pausing p2 does
 //     not touch p1 or p3;
@@ -31,7 +33,7 @@
 
 
 // The controller side of a declared control pair for node id: a plain state node
-// `${id}.pauseLocks` holding the lock list, and a handle to change it. The lock list is the
+// `${id}/locks` holding the lock list, and a handle to change it. The lock list is the
 // only copy: each call is a set with a function (K8), computed from the list when it takes its place in
 // request order, so several calls inside one wave do not lose each other's locks (the handle
 // kept its own lock set for that until 2026-11-10). A default lock gets a random id, so a lock
@@ -42,13 +44,14 @@
 // goes in the restore's registry. After a restore, pauseControl(g, id) gives a handle over the
 // lock state that came back.
 export function controlPair(g, id) {
-  const locksId = `${id}.pauseLocks`;
+  assertLocalName(id);
+  const locksId = `${id}/locks`;
   g.state(locksId, Object.freeze([]));
   return pauseControl(g, id);
 }
 
 export function pauseControl(g, id) {
-  const locksId = `${id}.pauseLocks`;
+  const locksId = `${id}/locks`;
   return {
     locksId,
     pause(lock = `${id}#${crypto.randomUUID()}`) {

@@ -36,7 +36,7 @@
 // subscribes before writing upstream (R-checkpoint).
 
 import { isDeepStrictEqual } from "node:util";
-import { createGraph } from "../kernel/kernel.mjs";
+import { assertLocalName, createGraph } from "../kernel/kernel.mjs";
 import { withDependencies } from "./context.mjs";
 
 const notRestorable = (id, reason) => new Error(`not restorable: ${id}: ${reason}`);
@@ -161,6 +161,7 @@ function prepareCheckpoint(checkpoint, registry) {
   const seen = new Set();
   for (const n of checkpoint.nodes) {
     if (!record(n) || typeof n.id !== "string") throw new Error("restore: invalid node id");
+    assertLocalName(n.id);
     const fail = (reason) => { throw notRestorable(n.id, reason); };
     if (seen.has(n.id)) fail("duplicate id");
     seen.add(n.id);
