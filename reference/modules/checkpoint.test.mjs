@@ -626,7 +626,7 @@ test("F6: a restart owner is restored with its round, request number and live in
   r.subscribe("s", "r");
   assert.deepEqual(r.get("r").value, 3);
   assert.deepEqual(after(r, "s", () => r1.restart()), after(g, "s", () => r0.restart()));
-  assert.deepEqual(r.get("r/request").value, 2, "the request numbers go on");
+  assert.deepEqual(r.get("r/restart").value, 2, "the request numbers go on");
   assert.deepEqual(after(r, "s", () => r.set("a", 4)), after(g, "s", () => g.set("a", 4)));
 });
 
@@ -706,7 +706,7 @@ test("F6: a switchMap is restored with its live inner and its rewired dependenci
   g.set("x", 2);
   const cp = roundTrip(capture(g));
   assert.deepEqual(cp.nodes.filter((n) => n.local), []);
-  assert.deepEqual(cp.nodes.find((n) => n.id === "sw").saved.deps, ["s", "sw/inner0"]);
+  assert.deepEqual(cp.nodes.find((n) => n.id === "sw").saved.deps, ["s", "sw/inner"]);
   const r = restore(cp, hoRecipes);
   r.subscribe("k", "sw");
   assert.equal(r.get("sw").value, 2);
@@ -714,10 +714,10 @@ test("F6: a switchMap is restored with its live inner and its rewired dependenci
     assert.deepEqual(after(r, "k", () => step(r)), after(g, "k", () => step(g)));
   }
   assert.equal(r.get("sw").value, 11);
-  // The switch replaced sw/inner0 with the projection's recipe, so it is restorable again.
+  // The switch replaced sw/inner with the projection's recipe, so it is restorable again.
   const cp2 = roundTrip(capture(r));
   assert.deepEqual(cp2.nodes.filter((n) => n.local), []);
-  assert.deepEqual(cp2.nodes.find((n) => n.id === "sw/inner0").deps, ["y"]);
+  assert.deepEqual(cp2.nodes.find((n) => n.id === "sw/inner").deps, ["y"]);
   const r2 = restore(cp2, hoRecipes);
   r2.subscribe("k", "sw");
   assert.deepEqual(after(r2, "k", () => r2.set("y", 12)), after(r, "k", () => r.set("y", 12)));
@@ -738,6 +738,23 @@ test("F6: a mergeMap is restored with a value waiting for a free slot, and proje
     assert.deepEqual(after(r, "k", () => step(r)), after(g, "k", () => step(g)));
   }
   assert.equal(r.get("mm").value, 12, "y was projected once x's inner completed");
+});
+
+test("C-49: mergeMap continues bare/1/2 inner numbering after restore", () => {
+  const g = createGraph();
+  g.state("x", 1); g.state("y", 2); g.state("z", 3); g.state("s", "x");
+  mergeMap(g, "mm", "s", follow(), { recipe: { ref: "follow" } });
+  g.subscribe("k", "mm");
+  g.set("s", "y");
+  const r = restore(roundTrip(capture(g)), hoRecipes);
+  r.subscribe("k", "mm");
+  for (const graph of [g, r]) {
+    graph.set("s", "z");
+    assert.deepEqual(graph.describe().find((n) => n.id === "mm").deps,
+      ["s", "mm/inner", "mm/inner1", "mm/inner2"]);
+    assert.deepEqual(["mm/inner", "mm/inner1", "mm/inner2"].map((id) => graph.get(id).value), [1, 2, 3]);
+    assert.equal(graph.get("mm").value, 3);
+  }
 });
 
 // C-47: capture is refused only for the graph whose wave is running (R-graph-domain@3).

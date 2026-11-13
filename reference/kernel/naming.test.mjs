@@ -44,7 +44,7 @@ const factories = [
   ["pausable", (g) => pausable(g, "pause", "source"), ["pause/locks", "pause"]],
   ["pullable", (g) => pullable(g, "pull", "source", () => {}), ["pull/demand", "pull"]],
   ["restartable", (g) => restartable(g, "restart", { deps: ["source"], fn: relay }),
-    ["restart/request", "restart/inner", "restart"]],
+    ["restart/restart", "restart/inner", "restart"]],
   ["history", (g) => history(g, "history", "source", 2), ["history"]],
   ["frameSource", (g) => frameSource(g, "frames", () => () => {}), ["frames"]],
   ["wireEdgeGroupOut", (g) => wireEdgeGroupOut(g, "bridge", { group: "g", edges: { x: "source" } }), ["bridge"]],
@@ -53,7 +53,7 @@ const factories = [
   ...[["switchMap", switchMap], ["mergeMap", mergeMap]].map(([name, build]) => [name, (g) => {
     build(g, "project", "source", () => ({ deps: ["source"], fn: relay }));
     g.subscribe("hold", "project"); // Include the lazy inner.
-  }, ["project", "project/inner0"]]),
+  }, ["project", "project/inner"]]),
 ];
 
 for (const [name, build, expected] of factories) test(`C-49: ${name} generated paths`, () => {

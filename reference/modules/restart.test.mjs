@@ -249,12 +249,12 @@ test("the request number lives in the restart state, so a request after a restor
   g.state("a", 1);
   let starts = 0;
   const r = restartable(g, "r", { deps: ["a"], fn: (ctx) => { if (!ctx.state.get()) { ctx.state.set(true); starts += 1; } } });
-  g.set("r/request", 1); // as a restore would bring it back
+  g.set("r/restart", 1); // as a restore would bring it back
   g.subscribe("s", "r");
   assert.equal(starts, 1);
   r.restart();
   assert.equal(starts, 2, "the owner started a fresh inner");
-  assert.equal(g.get("r/request").value, 2);
+  assert.equal(g.get("r/restart").value, 2);
 });
 
 // C5a (Codex review, 2026-11-10): an ended inner releases its dependencies at once (R-lifetime), so

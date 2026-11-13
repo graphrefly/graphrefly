@@ -43,7 +43,7 @@ test("switchMap: re-projecting the same live inner does not cancel or duplicate 
   switchMap(g, "op", "s", () => follow("inner"));
   g.subscribe("out", "op");
   g.set("s", 1);
-  g.subscribe("watch", "op/inner0", (msgs) => log.push(msgs.map((m) => m[0]).join()));
+  g.subscribe("watch", "op/inner", (msgs) => log.push(msgs.map((m) => m[0]).join()));
   g.set("s", 2);
   assert.deepEqual(log, ["START"], "the inner was not restarted for s = 2");
   g.set("inner", 10);
@@ -59,7 +59,7 @@ test("switchMap: the owner keeps its value across a switch with no seed: only th
   assert.equal(g.get("op").value, 10);
   g.set("s", 2); // b has no value yet
   assert.deepEqual(g.get("op"), { active: true, has: true, value: 10, values: [10], ended: null });
-  assert.equal(g.describe().find((d) => d.id === "op/inner0").deps[0], "b", "describe shows the live inner");
+  assert.equal(g.describe().find((d) => d.id === "op/inner").deps[0], "b", "describe shows the live inner");
 });
 
 test("switchMap: a fresh computation per value: the old one's late output is dropped", async () => {
@@ -131,7 +131,7 @@ test("switchMap: a fresh activation starts with no inner, even after the inner e
   g.state("s", 1); g.state("a", 5);
   switchMap(g, "op", "s", () => ({ deps: ["a"], fn: (ctx) => ctx.down([["DATA", ctx.deps[0].value], ["COMPLETE"]]) }));
   g.subscribe("out", "op");
-  assert.deepEqual(g.get("op/inner0").ended, ["COMPLETE"]);
+  assert.deepEqual(g.get("op/inner").ended, ["COMPLETE"]);
   g.unsubscribe("out", "op");
   g.subscribe("again", "op");
   assert.deepEqual(values(g, "again"), [5]);
@@ -306,7 +306,7 @@ test("mergeMap: the operator keeps its value and its one START while inners are 
   g.set("s", "b"); // b has no value yet
   assert.deepEqual(g.get("op"), { active: true, has: true, value: 10, values: [10], ended: null });
   assert.equal(starts(g, "out"), 1);
-  assert.deepEqual(g.describe().find((d) => d.id === "op").deps, ["s", "op/inner0", "op/inner1"]);
+  assert.deepEqual(g.describe().find((d) => d.id === "op").deps, ["s", "op/inner", "op/inner1"]);
 });
 
 test("mergeMap: adding an inner does not resend the live inners' values or reproject the source's", () => {
@@ -374,7 +374,7 @@ test("mergeMap: a completed inner is removed, and its node reused", () => {
   }
   assert.deepEqual(values(g, "out"), [1, 2, 3, 4]);
   const inners = g.describe().filter((d) => d.id.startsWith("op/inner")).map((d) => d.id);
-  assert.deepEqual(inners, ["op/inner0"]);
+  assert.deepEqual(inners, ["op/inner"]);
 });
 
 test("mergeMap: a fresh activation starts with no inner", () => {
@@ -411,7 +411,7 @@ test("mergeMap: an inner that completes in the wave of a new source value hands 
   g.set("s", 1);
   g.batch(() => { g.set("t", 0); g.set("s", 2); });
   assert.deepEqual(values(g, "out"), [1, 2]);
-  assert.deepEqual(g.describe().find((d) => d.id === "op").deps, ["s", "op/inner0"]);
+  assert.deepEqual(g.describe().find((d) => d.id === "op").deps, ["s", "op/inner"]);
   g.complete("s");
   g.set("t", 1);
   assert.deepEqual(g.get("op").ended, ["COMPLETE"]);

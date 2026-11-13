@@ -311,32 +311,3 @@ with NoStaleData, ImmediateInvalidation and ClosedErrorDropped passing.
 Both delayed-invalidation and manual-policy-bypass mutations violated NoStaleData.
 This focused finite model does not cover arbitrary graphs or replace the kernel wave model.
 Logs: `/private/tmp/qa2-kernel_quiet_error*.log`; observed host load is in each log.
-
-
-## D809 local names and mounted addresses (2026-11-12)
-
-`graph_names.tla` models R-naming@1 with root/child graphs and six candidate
-strings (`a`, `b`, `a::b`, `a:`, `:b`, `a:b`) for node names and mount paths.
-`graph_names.cfg` checks LocalAdmission, RoundTrip and UniqueAddresses: 4,609
-states generated / 512 distinct states, all passed. It covers one mount boundary,
-not recursive runtime topology or module internals. Internal single colons remain
-legal; leading/trailing colons and `::` are refused.
-
-The initial three-name model passed 64 states but missed a real boundary overlap:
-independent QA added `a:` and found the first-`::` parser could not resolve a legal
-mount. The user approved the boundary refusal, and the six-name model now includes
-both sides of that witness. The initial pass is not treated as final evidence.
-
-Two independently enabled mutations fail RoundTrip: AllowReserved=TRUE gives a
-root local `a::b` (10 generated / 6 distinct states); AllowBoundary=TRUE gives a
-child/mount boundary-overlap trace (70 generated / 41 distinct states). Both exit
-12 for invariant counterexamples, not parsing/compilation errors. Configurations
-set the other mutation to FALSE. Full logs are
-`/private/tmp/node-naming-tlc-final-{control,reserved,boundary}.log`; commands use
-the installed tla2tools.jar, the checked-in normal config and named mutation
-configs under `/private/tmp`.
-
-Module spelling, role overlap and owner inventories are checked by executable
-C-49 probes instead of abstract atoms. Root mutations separately restore a dot,
-a repeated prefix, non-camel casing, cross-owner role drift and each admission
-failure, and their restored controls pass.

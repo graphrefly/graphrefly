@@ -4,7 +4,7 @@
 // first as an owner with a replaced inner, mergeMap first on replace (git 75ee4c8), then
 // mergeMap on rewire (79026f7); merged here once both fitted the same shape.
 //
-//   sourceId ──► id ◄── id/inner0, id/inner1, ... ◄── (each projected inner's dependencies)
+//   sourceId ──► id ◄── id/inner, id/inner1, ... ◄── (each projected inner's dependencies)
 //
 // `id` depends on the source and on every live inner and forwards the inners' values. It
 // completes once the source has completed and no inner is live, and ends with ERROR on a
@@ -20,7 +20,7 @@
 // keeps an already live inner). A projection onto an ended node gives an inner that starts on
 // its snapshot (P5): its last value, if any, then its end (TS's rewire refuses it instead).
 //
-// switch: the last source value of a wave is projected into id/inner0. Replacing that node
+// switch: the last source value of a wave is projected into id/inner. Replacing that node
 // closes the live inner's lifetime, so its late output is dropped and a dependency only it
 // had is released: that is the cancellation.
 // merge: every source value is projected, into the first node not live. `concurrent` bounds
@@ -42,7 +42,7 @@ const kept = (def) => (def.recipe ? { deps: def.deps, recipe: def.recipe } : def
 
 function operator({ sourceId, mode, concurrent }, { g, id }, projectFn) {
   const bound = concurrent ?? Infinity; // JSON has no Infinity
-  const inner = (k) => `${id}/inner${k}`;
+  const inner = (k) => `${id}/inner${k || ""}`;
   const exists = (nodeId) => g.describe().some((n) => n.id === nodeId);
   // Inner nodes sit at id/innerN; the kernel cannot delete a node, so a slot once made is
   // replaced. Which slots exist is read from the graph, not counted here, so it holds after a

@@ -273,7 +273,7 @@ Added 2026-11-08, after the user chose the module option for O7 and graph-level 
 `restartable(g, id, { deps, fn, rounds, retry })` returns `{ id, innerId, restart() }`.
 
 ```text
-deps ──► id/inner ──► id          id/request ──► id
+deps ──► id/inner ──► id          id/restart ──► id
 ```
 
 - **One owner faces downstream for good.** `id` forwards the inner's values. When the inner ends,
@@ -293,7 +293,7 @@ deps ──► id/inner ──► id          id/request ──► id
   `retry` is the library's retry policy (see Retry policy below): within a round, an ERROR from
   attempt n is retried after `retryDelayMs(retry, n)`, and each round gets the policy's attempts
   again; `restart()` sets the
-  declared control state `${id}/request` (P11) to the next request number, taken from its value
+  declared control state `${id}/restart` (P11) to the next request number, taken from its value
   (with a function since 2026-11-10, so no counter sits in a closure), and starts a new attempt that
   counts as neither.
 - **The owner asks for the replace from its own function,** and the kernel runs it after the wave
@@ -372,7 +372,7 @@ served; the check on the retry's firing dropped, or the owner then not ended.
 |---|---|
 | Kernel `replace(id, deps, fn)` | The only way to give a node a new instance; the finding above |
 | START at the start of each attempt on the inner's sinks | It is what a fresh subscription sends, and it tells an observer that an attempt began |
-| `${id}/request` and `restart()` | O7: a restart request reaches the owner on a declared edge (P11) |
+| `${id}/restart` and `restart()` | O7: a restart request reaches the owner on a declared edge (P11) |
 | `rounds` and `retry` | O7's attempts and backoff; `rounds` is TS `repeat`'s count, `retry` the shared policy |
 | The owner holding the inner's dependencies, ahead of the inner | An ended inner releases them at once (R-lifetime), so without the hold an upstream closed and opened again at every attempt (C5a) |
 | Renewing an ended inner when the owner deactivates | Without it the owner's next activation would start on the ended inner's snapshot |
@@ -433,7 +433,7 @@ One operator for both, as TS's `mapOperator` (D47/D81). How it got here, all on 
    became this one (57), and `switchMap` lost its owner and its own inner reset.
 
 ```text
-sourceId ──► id ◄── id/inner0, id/inner1, ... ◄── (each projected inner's dependencies)
+sourceId ──► id ◄── id/inner, id/inner1, ... ◄── (each projected inner's dependencies)
 ```
 
 `switchMap(g, id, sourceId, project)` and `mergeMap(g, id, sourceId, project, { concurrent })` return
@@ -448,7 +448,7 @@ the operator back).
 
 `project(value)` returns the inner's definition `{ deps, fn }`; to follow a node X that already
 exists, project to `{ deps: [X], fn: relay }`. The definition goes into an inner node with `replace` (a
-new node the first time). switch projects the last source value of a wave into `${id}/inner0`;
+new node the first time). switch projects the last source value of a wave into `${id}/inner`;
 replacing that node closes the live inner's lifetime, so its late output is dropped and a dependency
 only it had is released: that is the cancellation. merge projects every value into the first node
 that is not live, and `concurrent` bounds the live inners; further values wait unprojected until one
@@ -457,7 +457,7 @@ completes.
 | Here | TS (`dafc5ae`) | Why |
 |---|---|---|
 | `project` returns a definition `{ deps, fn }` | `project` returns a node (or something `fromAny` turns into one) | The kernel cannot delete a node, so a fresh node per value would pile up |
-| Inner nodes at `${id}/innerN`, reused once not live; switch always uses `${id}/inner0` | A fresh node per inner, under a synthetic id in `describe()` (D51) | Bounded by the peak number live; O7: observation goes on across switches |
+| Inner nodes at `${id}/innerN`, reused once not live; switch always uses `${id}/inner` | A fresh node per inner, under a synthetic id in `describe()` (D51) | Bounded by the peak number live; O7: observation goes on across switches |
 | One `rewire` with the whole new list per change | `rewireNext.unsubscribeDep` and `subscribeDep` per inner, removes before adds so the list stays aligned with positions | The kernel compares the lists, and dependencies are read by id |
 | A projection with the same `fn` and `deps` as a live inner keeps it | A re-projected node that is already live is kept (switch) or skipped (merge) | The same rule, by definition instead of node identity |
 | A projection onto an ended node gives an inner that starts on its snapshot: its last value, then its end | merge skips a node that completed in the same wave ("does not re-add a just-completed inner"); rewire rejects a non-resubscribable terminal dependency (C-8), an ERROR | P5 relaxed (2026-11-08); until then this was an ERROR here too |
