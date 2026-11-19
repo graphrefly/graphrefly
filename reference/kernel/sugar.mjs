@@ -46,20 +46,43 @@ export const reduce = (f, seed) => (ctx) => {
 // arrives, and every one when the node's lifetime closes, through the lifetime's signal (it
 // registered a cleanup per request before 2026-11-10, and a run without a new value dropped
 // the abort). The kernel pairs nothing.
-export const latestAsync = (f) => (ctx) => {
-  const values = occurrences(ctx.deps[0]);
-  if (!values.length) return;
-  ctx.state.get()?.abort(); // a newer input makes the older request obsolete
+//
+// Pending work is state (D812, decided by the user 2026-11-18): the input a job was started for is
+// recorded in private state as { pending: [value] }, which is JSON when the value is, and
+// { pending: [] } once its result is published. latestAsyncNode's setup starts a job again for a
+// pending input at every activation, so a node restored while its job was in flight starts a
+// fresh one for its unchanged input; f may treat the value as the identity to look a job up by.
+// Until D812 the private state held the AbortController and a capture was refused. The
+// controller now lives beside the lifetime, keyed by its signal, and is never saved.
+const controllers = new WeakMap(); // lifetime signal -> the AbortController of its job in flight
+
+const startJob = (f, ctx, value) => {
+  controllers.get(ctx.signal)?.abort(); // a newer input makes the older request obsolete
   const ctrl = new AbortController();
-  ctx.state.set(ctrl);
+  controllers.set(ctx.signal, ctrl);
+  ctx.state.set({ pending: [value] });
   const signal = AbortSignal.any([ctx.signal, ctrl.signal]);
   Promise.resolve()
-    .then(() => f(values[values.length - 1], signal))
+    .then(() => f(value, signal))
     .then(
-      (v) => { if (!signal.aborted) ctx.down([["DATA", v]]); },
+      (v) => { if (!signal.aborted) { ctx.state.set({ pending: [] }); ctx.down([["DATA", v]]); } },
       (e) => { if (!signal.aborted) ctx.down([["ERROR", e instanceof Error ? e.message : e]]); },
     );
 };
+
+export const latestAsyncNode = (f) => ({
+  fn: (ctx) => {
+    const values = occurrences(ctx.deps[0]);
+    if (values.length) startJob(f, ctx, values[values.length - 1]);
+  },
+  setup: (ctx) => {
+    const pending = ctx.state.get()?.pending;
+    if (pending?.length) startJob(f, ctx, pending[0]);
+  },
+});
+
+// The function alone, for a node that is not restored.
+export const latestAsync = (f) => latestAsyncNode(f).fn;
 
 // ---- Combining several dependencies (2026-11-08) ------------------------------------
 //

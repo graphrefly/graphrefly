@@ -1021,3 +1021,78 @@ test("QA2: restore preserves valid repeated declared inputs without inventing re
   assert.equal(r.get("n").value, 6);
   assert.deepEqual(r.definition("n").deps, ["a", "a"]);
 });
+
+// ---- D812 (1), decided by the user 2026-11-18: pending work is state ----
+// Checkpoint neither resumes nor re-issues late output in flight at capture. A node that must not
+// lose its pending work records it in its private state, as JSON, and its setup opens it again.
+import { latestAsyncNode } from "../kernel/sugar.mjs";
+
+const turn = () => new Promise((resolve) => setImmediate(resolve));
+
+// A graph with one latestAsync node q over a, built from a recipe; `jobs` records every job started.
+function reportGraph(jobs) {
+  const job = (v, signal) => new Promise((resolve) => { jobs.push({ v, signal, resolve }); });
+  const reg = { report: () => latestAsyncNode(job) };
+  const g = createGraph();
+  g.state("a", "q1");
+  const built = reg.report();
+  g.node("q", ["a"], built.fn, { setup: built.setup, recipe: { ref: "report", config: null } });
+  g.subscribe("s", "q");
+  return { g, reg };
+}
+
+test("D812: latestAsync records its pending input as JSON, so a graph with a job in flight can be captured", async () => {
+  const jobs = [];
+  const { g } = reportGraph(jobs);
+  await turn();
+  assert.deepEqual(jobs.map((j) => j.v), ["q1"]);
+  assert.deepEqual(g.privateState("q"), { pending: ["q1"] });
+  const cp = roundTrip(capture(g)); // until D812 this was refused: "its private state is not JSON"
+  assert.deepEqual(cp.nodes.find((n) => n.id === "q").saved.state, { pending: ["q1"] });
+  jobs[0].resolve("r1");
+  await turn();
+  assert.deepEqual([g.get("q").value, g.privateState("q")], ["r1", { pending: [] }], "published: nothing is pending");
+  g.unsubscribe("s", "q");
+});
+
+test("D812: restored while its job was pending, latestAsync starts a fresh job for the unchanged input; its function does not run", async () => {
+  const jobs = [];
+  const { g, reg } = reportGraph(jobs);
+  await turn();
+  const cp = roundTrip(capture(g));
+  g.unsubscribe("s", "q");
+  assert.equal(jobs[0].signal.aborted, true, "the original's job is aborted with its lifetime, and checkpoint does not resume it");
+  jobs.length = 0;
+  const r = restore(cp, reg);
+  const seen = during(r, () => r.subscribe("s", "q"));
+  assert.deepEqual(seen, ["s <- q: [START]"], "nothing is published at activation");
+  await turn();
+  assert.deepEqual(jobs.map((j) => [j.v, j.signal.aborted]), [["q1", false]], "one fresh job, for the same input, with the same identity to look a job up by");
+  jobs[0].resolve("r1");
+  await turn();
+  assert.deepEqual([r.get("q").value, r.privateState("q")], ["r1", { pending: [] }]);
+  // A newer input still makes the pending job obsolete.
+  const again = restore(cp, reg);
+  jobs.length = 0;
+  again.subscribe("s", "q");
+  again.set("a", "q2");
+  await turn();
+  assert.deepEqual(jobs.map((j) => [j.v, j.signal.aborted]), [["q1", true], ["q2", false]]);
+  r.unsubscribe("s", "q"); again.unsubscribe("s", "q");
+});
+
+test("D812: restored after its result was published, latestAsync starts no job", async () => {
+  const jobs = [];
+  const { g, reg } = reportGraph(jobs);
+  await turn();
+  jobs[0].resolve("r1");
+  await turn();
+  const cp = roundTrip(capture(g));
+  g.unsubscribe("s", "q");
+  jobs.length = 0;
+  const r = restore(cp, reg);
+  assert.deepEqual(during(r, () => r.subscribe("s", "q")), ['s <- q: [START, DATA("r1")]']);
+  await turn();
+  assert.deepEqual(jobs, [], "the unchanged-input rule already gives this");
+  r.unsubscribe("s", "q");
+});
