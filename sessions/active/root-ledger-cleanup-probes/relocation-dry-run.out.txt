@@ -1,0 +1,5 @@
+moved 322 of 486 records; decisions.jsonl is now 380905 bytes, archive/decisions/root-history.jsonl is 865140 bytes
+authority exit=0
+3:  unresolvedRefs: 0,
+7:  unclassifiedDecisions: 103,
+dashboard exit=0

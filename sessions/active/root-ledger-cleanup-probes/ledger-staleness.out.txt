@@ -1,0 +1,22 @@
+decisions: 1245648 bytes, 486 records, 25 with admission metadata, 461 legacy without concerns (54 of them superseded)
+legacy by session [('DS-1', 459), ('DS-2', 1), ('DS-9', 1)]
+legacy by layer [('L6', 321), ('L3', 33), ('L1.5', 23), ('L4', 10), ('design-review', 8), ('L2', 5), ('L1.11', 3), ('L2-Q22', 3)]
+legacy by month [('2026-05', 75), ('2026-06', 333), ('2026-07', 40), ('2026-08', 13)]
+  legacy decisions cited by rule row with a transition: 57
+  legacy decisions cited by public or draft rule: 15
+  legacy decisions cited by current admitted decision: 52
+  legacy decisions cited by live backlog row: 82
+  legacy decisions cited by skills, guide, formal: 26
+legacy decisions cited by none of these: 322 (870275 bytes)
+backlog: 432255 bytes, 22 live (80609 bytes), 118 closed (355222 bytes), 31 closed rows named by live rows; 17 rows on the strict work contract
+open draft rule rows: [('R-replay-buffer', 1, ['D9']), ('R-edges-derived', 1, ['D3', 'D51']), ('R-inspection-set', 1, ['D5']), ('R-meta-presentation', 1, ['D36', 'D620']), ('R-clock', 1, ['D26']), ('R-no-polling', 1, ['D1']), ('R-no-raw-async', 1, ['D20']), ('R-data-not-peek', 1, ['D3']), ('R-pull', 1, ['D55', 'D59', 'D269', 'D272', 'D278']), ('R-replay-buffer', 2, ['D796']), ('R-pull', 2, ['D796']), ('R-node-revision', 1, ['D796']), ('R-pause', 1, ['D797']), ('R-demand', 1, ['D797']), ('R-history', 1, ['D797']), ('R-restart', 1, ['D797']), ('R-revision', 1, ['D797'])]
+scenario C-1a covers no public or draft rule: [] runtimes {'ts': 'todo', 'rust': 'todo', 'py': 'todo'}
+scenario C-1c covers no public or draft rule: [] runtimes {'ts': 'pass', 'rust': 'pass', 'py': 'todo'}
+scenario C-2 covers no public or draft rule: ['R-async-paused', 'R-pause-lockset', 'R-pause-modes'] runtimes {'ts': 'pass', 'rust': 'pass', 'py': 'pass'}
+scenario C-5 covers no public or draft rule: ['R-pause-lockset', 'R-pause-modes'] runtimes {'ts': 'pass', 'rust': 'pass', 'py': 'pass'}
+scenario C-9 covers no public or draft rule: ['R-pause-modes', 'R-async-paused'] runtimes {'ts': 'pass', 'rust': 'pass', 'py': 'pass'}
+scenario C-10 covers no public or draft rule: ['R-pause-modes', 'R-async-paused'] runtimes {'ts': 'pass', 'rust': 'pass', 'py': 'pass'}
+scenario C-13 covers no public or draft rule: ['R-paused-invalidate'] runtimes {'ts': 'pass', 'rust': 'pass', 'py': 'pass'}
+scenarios with any pass flag: ['C-1c', 'C-2', 'C-5', 'C-9', 'C-10', 'C-13', 'C-27']
+conformance note bytes 23631 of 88712
+active sessions: [('DS-1', '2026-05-27'), ('DS-2', '2026-06-06'), ('DS-3', '2026-06-24'), ('DS-4', '2026-06-24'), ('DS-9', '2026-08-11'), ('DS-10', '2026-08-11'), ('DS-11', '2026-08-11'), ('DS-12', '2026-08-14'), ('DS-13', '2026-08-16'), ('DS-15', '2026-09-17'), ('DS-16', '2026-09-17'), ('DS-17', '2026-11-05'), ('DS-19', '2026-11-10'), ('DS-20', '2026-11-13')]
