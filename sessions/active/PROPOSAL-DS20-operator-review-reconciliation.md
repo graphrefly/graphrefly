@@ -1,7 +1,7 @@
 # DS-20 operator walkthrough：独立复审与规则对齐提案
 
-2026-11-18，Fable。状态：**用户 2026-11-18 在对话中逐题同意了第 7 节的建议（Q1–Q9）；Q1 里延伸到 delay 以外的时间类
-operator 的那张表还没有逐行确认。** 这是非规范性文档：它不改规则、场景、模型或参考实现，没有写入任何 D#，也不授权任何
+2026-11-18，Fable。状态：**用户 2026-11-18 在对话中逐题同意了第 7 节的建议（Q1–Q9），包括 Q1 里延伸到 delay 以外的时间类
+operator 的那张表。** 这是非规范性文档：它不改规则、场景、模型或参考实现，没有写入任何 D#，也不授权任何
 runtime 仓库的实现工作。下一步是根仓库把这些选择写成决定，再经 `/spec-amend` 改 `spec/rules.jsonl`、
 `spec/conformance.jsonl` 和 `formal/`。
 
@@ -251,7 +251,7 @@ R-restart@1 草案的对应一句，草案措辞：
 空闲是最常见的 capture 时机。按 (B)，空闲 capture 再恢复不改变任何值。
 
 用户："都同意"（对"值得重新考虑的"两项）。我在对话里只对 delay 给了具体做法。把它延伸到其它时间类 operator 是我的
-推断，用户还没有逐行确认，写决定之前需要确认：
+推断，所以单独问了一次：
 
 | operator | 恢复后保留 | 恢复后重置 |
 |---|---|---|
@@ -261,6 +261,8 @@ R-restart@1 草案的对应一句，草案措辞：
 | bufferTime | 已收集的载荷 | 窗口，从激活重新开始 |
 | throttle | 无待办 | 抑制期丢弃；不把快照当作新出现重新放行 |
 | timeout | 无待办 | 期限，从激活重新开始 |
+
+用户："按建议定"（对这张表）。
 
 ### Q2. switchMap 在切换 wave 里旧 inner 的 DATA
 
@@ -375,7 +377,7 @@ D799 把 checkpoint 改成"不保留自己的记录"，是因为那份独立记�
 
 | 候选 | owner | 依赖 | 验收 |
 |---|---|---|---|
-| 根决定：记录 Q1–Q9 的选择，写明对 D802 限制的部分取代 | 根 | Q1 的表逐行确认 | 决定进 `decisions/decisions.jsonl`，`authority:check` 通过 |
+| 根决定：记录 Q1–Q9 的选择，写明对 D802 限制的部分取代 | 根 | 用户批准记录的写法 | 决定进 `decisions/decisions.jsonl`，`authority:check` 通过 |
 | R-checkpoint@2：在途工作一句（Q4）、local-only 在 capture 被拒（Q7）、严格模式（Q7、Q8、Q9） | 根，`/spec-amend` | 根决定 | 规则修订、C-38 更新、`module_checkpoint.tla` 覆盖 capture 拒绝和 setup 重开 |
 | R-history@1 草案改写（Q6） | 根 | 根决定 | 草案、`reference/modules/history.mjs`、`module_history.tla`、C-45 一致 |
 | R-restart@1 草案改写（Q5） | 根 | 根决定 | 草案、`reference/modules/restart.mjs`、`module_restart.tla`、C-43 和 C-46 一致 |
