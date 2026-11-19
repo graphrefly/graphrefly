@@ -666,46 +666,93 @@ test("F6: a restart requested at a restored owner before its first subscription 
   assert.deepEqual([runs, r.get("r").value], [1, 3], "the restored inner goes on");
 });
 
-test("F6: an owner restored while a retry was waiting is not stuck: as at a deactivation, its inner is renewed", () => {
+// D812 (2), decided by the user 2026-11-18: a pending retry is state. The failure count and the
+// attempt number are in the owner's private state, so its setup starts that retry's delay again in
+// full, for the same attempt. Until then a restored owner renewed its inner at once, which kept the
+// failure count and skipped the backoff a process that crashes and restarts repeatedly needs most.
+const waitingOwner = (reg, recipe, bad) => {
   const g = createGraph();
   g.state("a", 1);
-  restartable(g, "r", { deps: ["a"], fn: fwd(), recipe: { ref: "fwd" }, retry: retryPolicy({ maxAttempts: 3, initialMs: 60_000 }) });
+  restartable(g, "r", { deps: ["a"], fn: reg[recipe](), recipe: { ref: recipe }, retry: retryPolicy({ maxAttempts: 3, initialMs: 60_000 }) });
   g.subscribe("s", "r");
-  g.set("a", "bad"); // the inner fails; a retry waits for a minute
+  g.set("a", bad); // the inner fails; a retry waits for a minute
   assert.equal(g.get("r/inner").ended?.[0], "ERROR");
   const cp = roundTrip(capture(g));
   g.unsubscribe("s", "r"); // drops the original's timer
-  const r = restore(cp, fwdRecipes);
+  return cp;
+};
+
+test("F6, D812: an owner restored while a retry was waiting waits that retry's delay again in full, then starts a fresh inner", (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const r = restore(waitingOwner(fwdRecipes, "fwd", "bad"), fwdRecipes);
   r.set("a", 5);
   r.subscribe("s", "r");
-  assert.deepEqual(r.get("r").value, 5, "a fresh inner over a = 5, without waiting for the lost timer");
-  assert.equal(r.get("r").ended, null);
-  assert.deepEqual(r.privateState("r").failures, 1, "the failure counted before capture still counts");
+  assert.deepEqual([r.get("r").value, r.get("r").ended, r.get("r/inner").ended], [1, null, ["ERROR", "bad"]], "no inner is started at its activation");
+  t.mock.timers.tick(59_999);
+  assert.deepEqual(r.get("r/inner").ended, ["ERROR", "bad"], "nor before the full delay has passed since then");
+  t.mock.timers.tick(1);
+  assert.deepEqual([r.get("r").value, r.get("r").ended, r.get("r/inner").ended], [5, null, null], "a fresh inner over a = 5");
+  assert.deepEqual([r.privateState("r").failures, r.privateState("r").attempt], [1, 1], "the same attempt, and no further failure counted");
   r.unsubscribe("s", "r");
 });
 
 // Fable review 2b (2026-11-10): the seed's note reaches only the seeded instance's first run, so the
-// renewed inner runs its function on a's snapshot even when nothing changed since the capture.
-test("F6: an owner restored while a retry was waiting, with no input changed, runs its renewed inner", () => {
+// inner the retry starts runs its function on a's snapshot even when nothing changed since the capture.
+test("F6, D812: an owner restored while a retry was waiting, with no input changed, runs the inner its retry starts", (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
   const flaky = { fail: true };
   const reg = { ...restartRecipes, flaky: () => (ctx) => {
     for (const v of ctx.deps[0].waves.flat()) ctx.down([flaky.fail && v === 2 ? ["ERROR", "flaky"] : ["DATA", v]]);
   } };
-  const g = createGraph();
-  g.state("a", 1);
-  restartable(g, "r", { deps: ["a"], fn: reg.flaky(), recipe: { ref: "flaky" }, retry: retryPolicy({ maxAttempts: 3, initialMs: 60_000 }) });
-  g.subscribe("s", "r");
-  g.set("a", 2); // the inner fails; a retry waits for a minute
-  assert.deepEqual([g.get("r").value, g.get("r/inner").ended], [1, ["ERROR", "flaky"]]);
-  const cp = roundTrip(capture(g));
-  g.unsubscribe("s", "r"); // drops the original's timer
+  const cp = waitingOwner(reg, "flaky", 2);
   flaky.fail = false;
   const r = restore(cp, reg);
   r.subscribe("s", "r");
-  assert.deepEqual([r.get("r").value, r.get("r").ended, r.get("r/inner").ended], [2, null, null], "the renewed inner ran on a = 2");
+  assert.deepEqual([r.get("r").value, r.get("r").ended, r.get("r/inner").ended], [1, null, ["ERROR", "flaky"]]);
+  t.mock.timers.tick(60_000);
+  assert.deepEqual([r.get("r").value, r.get("r").ended, r.get("r/inner").ended], [2, null, null], "the inner ran on a = 2");
   r.set("a", 3);
   assert.equal(r.get("r").value, 3);
   r.unsubscribe("s", "r");
+});
+
+test("F6, D812: the restored retry makes no hopeless attempt, is dropped by another attempt, and is cleared when the lifetime closes", (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const cp = waitingOwner(fwdRecipes, "fwd", "bad");
+  // Counts the instances of r/inner a sink sees: one START at its subscription, one more per replace.
+  const instances = (g) => { const seen = { n: 0 }; g.subscribe("t", "r/inner", (msgs) => { if (msgs[0][0] === "START") seen.n += 1; }); return seen; };
+  // An upstream that ended meanwhile: no inner is started over it, and the owner ends with the inner's ERROR.
+  const ended = restore(cp, fwdRecipes);
+  ended.complete("a");
+  ended.subscribe("s", "r");
+  const hopeless = instances(ended);
+  t.mock.timers.tick(60_000);
+  assert.deepEqual([ended.get("r").ended, ended.get("r/inner").ended, hopeless.n], [["ERROR", "bad"], ["ERROR", "bad"], 1], "no instance was started over the ended upstream");
+  // A request from outside starts another attempt, which fails in turn; the retry that was waiting
+  // belongs to the earlier attempt and is dropped when its delay ends, and the new attempt's retry is made.
+  const other = restore(cp, fwdRecipes);
+  other.set("a", 5);
+  other.subscribe("s", "r");
+  const seen = instances(other);
+  t.mock.timers.tick(10_000);
+  restartableOf(other, "r").restart();
+  assert.deepEqual([other.get("r").value, seen.n], [5, 2], "the request's fresh inner");
+  other.set("a", "bad"); // it fails: a second failure, whose retry waits a minute from now
+  t.mock.timers.tick(50_000); // the restored retry's delay ends here
+  assert.deepEqual([seen.n, other.get("r/inner").ended], [2, ["ERROR", "bad"]], "the earlier attempt's retry starts nothing");
+  other.set("a", 6);
+  t.mock.timers.tick(10_000);
+  assert.deepEqual([seen.n, other.get("r").value, other.privateState("r").failures], [3, 6, 2], "the new attempt's own retry is made");
+  other.unsubscribe("s", "r"); other.unsubscribe("t", "r/inner");
+  // Closing the lifetime clears the timer; the next activation starts a fresh inner, as at any deactivation.
+  const closed = restore(cp, fwdRecipes);
+  closed.set("a", 7);
+  closed.subscribe("s", "r");
+  closed.unsubscribe("s", "r");
+  t.mock.timers.tick(60_000);
+  closed.subscribe("s", "r");
+  assert.deepEqual([closed.get("r").value, closed.get("r/inner").ended], [7, null]);
+  closed.unsubscribe("s", "r");
 });
 
 import { higherOrderRecipes, mergeMap, relay, switchMap } from "./higher-order.mjs";
