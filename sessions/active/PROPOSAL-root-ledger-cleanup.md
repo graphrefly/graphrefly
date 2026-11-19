@@ -12,7 +12,7 @@
 `guide/docs.jsonl` 和 `guide/contribute.jsonl` 里关于 archive 的条目、
 [PROPOSAL-B140-kernel-rule-revision.md](PROPOSAL-B140-kernel-rule-revision.md) 第 9.2 节。
 
-**没读什么。** 没有逐条读 461 条旧决定的正文，只按字段统计。没有读各会话文件的正文，会话的判断只来自索引里的 `note`。
+**没读什么。** 没有逐条读 461 条旧决定的正文，只按字段统计。写第一版时没有读各会话文件的正文；2026-11-18 定 Q5 时补读了一部分，见 Q5。
 没有看各 package 仓库的账本。
 
 **标注约定。** *已验证* = 我跑过脚本或试跑，脚本和输出在 [root-ledger-cleanup-probes](root-ledger-cleanup-probes/)；
@@ -193,16 +193,51 @@ C-1a、C-1c：对照 R-bridge@2 看一遍，给它们补上 `covers`，或者退
 
 ### Q5. 会话
 
-14 个 active 会话的初步判断，只根据索引里的 `note`：
+2026-11-18 用户选择先定这一题。下面的判断换掉了原来只根据索引 `note` 写的那一版：这次读了 DS-12、DS-15 的正文、DS-16 的
+开头和目录、五个研究会话的章节标题、B140 的验收条目和 B140 提案 9.7 节，并在副本里试跑了一次归档。
 
-| 会话 | 初步判断 |
-|---|---|
-| DS-15、DS-16 | 候选归档。它们是 D796 那一轮的协议对齐，D797 已取代 D796 |
-| DS-12 | 候选归档。它定义的迁移已获批准，是否做完要看 B 系列的状态 |
-| DS-3、DS-4、DS-10、DS-11、DS-13 | 不锁定任何决定的研究会话。现有规则说的是"已解决或被取代"才归档，它们算不算，需要用户定 |
-| DS-1 | 保留。459 条旧决定挂在它上面，decision-guard 把它列为来源 |
-| DS-2、DS-9 | 保留，各锁着一条产品方向的决定 |
-| DS-17、DS-19、DS-20 | 保留，正在进行 |
+**原来漏看的一条现行政策。** `docs/README.md` 写着："Mixed research/design sessions stay in place until their open
+questions are reviewed." 五个研究会话各有一节 Open Questions，都没有复查过。所以它们"算不算已结束"不需要用户另外定：按现行
+政策它们留在原处，除非用户想现在复查那些问题，或者改这条政策。它们合计 67KB，没有任何 skill 默认读它们。
+
+| 会话 | 建议 | 依据 |
+|---|---|---|
+| DS-15 | 归档 | 不锁定任何决定。它的每一条都已在 B140 提案 9.7 节对到现在的规则、测试和场景上（2026-11-10）。只有索引按路径引用它 |
+| DS-16 | 归档，旧路径留一个指针文件 | 它锁的 D796 已被 D797 部分取代；D796 引入的 50 行规则草案里 47 行已有转换。正文开头的状态说明（2026-11-10）写的是"this session's state as it closed"。D796 的 `spec_amend` 字段写着它的旧路径，锁定的决定不改写，所以旧路径留指针 |
+| DS-12 | 归档 | 它批准的迁移范围都在 2026-08-14 和 08-15，正文此后没有改过，没有未决问题一节。D787 仍是现行决定，归档不改变它；DS-14 就是在 D793 仍然现行时归档的 |
+| DS-3、DS-4、DS-10、DS-11、DS-13 | 留在原处 | 上面那条政策 |
+| DS-1 | 留在原处 | `docs/README.md` 写明它留在现有路径；decision-guard 按路径读它 |
+| DS-2、DS-9 | 留在原处 | 各锁着产品方向的决定，各有未复查的 Open Questions |
+| DS-17 | 留在原处 | `docs/README.md` 把它列为草案规则的设计输入；模块规则还没有激活 |
+| DS-19、DS-20 | 留在原处 | 正在进行 |
+
+**DS-15、DS-16 还连着的两处。** 归档不切断它们，但用户应当知道：
+
+- B140 仍是 in-progress，它的 note 写着"DS-15/DS-16 remain its input"。它按编号引用，编号经索引解析，搬动之后仍然能找到。
+- D796 的 50 行草案里还有 3 行没有转换：R-replay-buffer@2、R-pull@2、R-node-revision@1。它们在等 demand 和 revision
+  模块（Q3）。到时候要读的讨论在 DS-16 里，归档后路径变了，内容不变。
+
+如果用户认为这两处意味着它们还没结束，另一个选择是等 B140 关闭再归档 DS-15 和 DS-16，现在只归档 DS-12。
+
+**试跑。** [session-archive-dry-run.py](root-ledger-cleanup-probes/session-archive-dry-run.py) 在不含 `.git` 的副本里搬了
+DS-12、DS-15、DS-16 的正文和 `protocol-reconciliation-probes/`（36 个文件，只有 DS-16 用它），改了索引的 `status` 和
+`path`，在 DS-16 的旧路径留了指针。[结果](root-ledger-cleanup-probes/session-archive-dry-run.out.txt)：
+
+- `authority/check.mjs`、`dashboard/build.mjs --check`、`authority/work-check.mjs` 都以 0 退出。
+- 这三个检查都不解析会话的 `path`，也不解析 Markdown 链接，所以它们通过不说明链接没断。脚本自己查了两者：新增 4 处不能
+  解析的引用，全部是写成文字的 `sessions/active/protocol-reconciliation-probes/...`，3 处在 DS-16 正文里的命令行，1 处在
+  B142 的任务简报里。
+
+**做法，照 B142 在 2026-11-05 的先例。** 正文逐字节搬动；索引行改 `status` 和 `path`，`note` 里加归档日期和用户的批准；
+只有不改写的记录还指着的旧路径才留指针。对那 4 处：`docs/README.md` 允许搬动时改路径（"move intact apart from paths"），
+建议改 DS-16 正文里的 3 处路径，B142 的任务简报不动，它描述的是 2026-11-05 的目录。
+
+这一步不用搬迁登记机制，不需要 `relocation_decision`，所以不依赖 Q1 的根决定。它不改变任何决定、规则或工作项的状态。
+B142 那次另写了一份带 sha256 的搬动清单；这次只有四项，建议由 Git 的重命名记录和索引的 `note` 承担，不另建文件。
+
+**顺带看到的，不属于这一题。** `sessions/active/` 里 B142 留下的指针文件（`SESSION-docs-reorganization.md`、
+`docs-reorganization-evidence/` 下的十几个）是当时有意留的，`docs/README.md` 还链接着它们，不动。
+DS-17 正文有一个链接指向已经不存在的 `formal/wave_protocol.tla`。
 
 ### Q6. 规则账本的历史行
 
@@ -213,7 +248,7 @@ C-1a、C-1c：对照 R-bridge@2 看一遍，给它们补上 `covers`，或者退
 
 ## 6. 顺序和依赖
 
-1. **Q5 的会话归档。** 最小，只改索引和文件位置。
+1. **Q5 的会话归档。** 最小，只改索引和文件位置；已在副本里试跑过。
 2. **Q3 里不依赖模块的 7 行草案规则。** 一条决定，加转换。
 3. **Q4 (B)。** 先试跑。
 4. **模块激活。** 它解决 Q2 的 6 个场景和 Q3 的 5 行草案。这里依赖 DS-20 提案：R-history 和 R-restart 两条草案要先按那里
@@ -226,8 +261,11 @@ C-1a、C-1c：对照 R-bridge@2 看一遍，给它们补上 `covers`，或者退
   `docs/README.md`、backlog 和 dashboard 都在引用它们，最近一次修改是 2026-11-11，它们是在用的材料。
 - **`conformance.jsonl` 的 `note` 字段和各 runtime 的状态标记。** `note` 里是历史叙述，占文件的四分之一多；状态标记按文档
   策略是"遗留声明，等证据回执迁移"。它们的处理属于那项迁移，不在这里重复；我没有核对那项迁移现在记在哪个工作项下。
-- **不在 Git 里的大目录。** `formal/states` 4.7GB、`sessions/active/b121-comparison-design-v1` 902MB，都被 `.gitignore`
-  排除，只占本地磁盘。
+- **`formal/states`。** 4.7GB，被 `formal/.gitignore` 排除，只占本地磁盘。
+- **`sessions/active/b121-comparison-design-v1`。** 我原来写它被 `.gitignore` 排除，这是错的（2026-11-18 改正）：它在 Git
+  里，2,155 个文件，工作区 897MB，几乎全部在 `agent-api/` 下。整个仓库的 pack 是 49MB，所以它压缩后不大，
+  占的是检出后的磁盘和文件数。它属于 B121（状态 proposed），`scripts/b121-comparison/` 下 11 个文件和 backlog 按路径引用
+  它。它是在办工作的证据，不是清理对象；要不要换存放位置是 B121 的事。
 
 ## 8. 工作：候选项
 
@@ -235,7 +273,7 @@ C-1a、C-1c：对照 R-bridge@2 看一遍，给它们补上 `covers`，或者退
 
 | 候选 | 依赖 | 验收 |
 |---|---|---|
-| 一条根决定：清理的范围、三类标准、archive 下的布局、搬迁用它作 `relocation_decision` | 用户对 Q1–Q5 的答复 | 决定入账，`authority:check` 通过 |
+| 一条根决定：清理的范围、三类标准、archive 下的布局、搬迁用它作 `relocation_decision` | 用户对 Q1–Q4 的答复（Q5 不用搬迁登记，不依赖它） | 决定入账，`authority:check` 通过 |
 | 会话归档（Q5） | 用户逐个确认 | 文件在 `sessions/archive/`，索引的路径和状态一致，文档检查通过 |
 | 7 行旧草案规则加转换（Q3） | 根决定 | 开放草案只剩模块规则和等模块的 5 行 |
 | backlog 已结行搬迁（Q4） | 副本试跑通过 | `work:check` 通过，在办的行的引用都能解析 |

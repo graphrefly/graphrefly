@@ -1,0 +1,11 @@
+before the move: 45 references already do not resolve
+after the move: 4 references newly do not resolve
+  sessions/active/HANDOFF-codex-docs-reorganization.md [path] x1
+      sessions/active/protocol-reconciliation-probes
+  sessions/archive/SESSION-protocol-reconciliation-propagation-demand.md [path] x3
+      sessions/active/protocol-reconciliation-probes/initial-duplicate-off.ts
+      sessions/active/protocol-reconciliation-probes/nested-initial-subscription.ts
+      sessions/active/protocol-reconciliation-probes/subscribe-abort-before-return.ts
+authority/check.mjs exit 0
+dashboard/build.mjs --check exit 0
+authority/work-check.mjs exit 0
