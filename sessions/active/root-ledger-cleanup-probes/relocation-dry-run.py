@@ -5,6 +5,7 @@
 #   rsync -a --exclude .git --exclude node_modules --exclude website \
 #     --exclude sessions/active/b121-comparison-design-v1 --exclude formal/states ./ /tmp/copy/
 #   python3 sessions/active/root-ledger-cleanup-probes/relocation-dry-run.py /tmp/copy
+#   python3 sessions/active/root-ledger-cleanup-probes/relocation-dry-run.py /tmp/copy D194,D195   (an explicit list)
 #   (cd /tmp/copy && node authority/check.mjs && node dashboard/build.mjs --check)
 #
 # "Cited by nothing" is a mechanical upper bound, not a judgment that a decision no longer
@@ -34,6 +35,13 @@ for r in J("plan/backlog.jsonl"):
 for p in glob.glob(".agents/skills/*/SKILL.md") + ["AGENTS.md", "README.md", "formal/README.md"] + glob.glob("guide/*.jsonl") + glob.glob("formal/*.tla"):
     cited |= set(ref.findall(open(p).read()))
 move = [i for i, r in enumerate(D) if not r.get("concerns") and r["id"] not in cited]
+if len(sys.argv) > 2:  # an explicit list instead of the mechanical bound: D194,D195,...
+    wanted = set(sys.argv[2].split(","))
+    pinned = sorted(wanted & cited & {r["id"] for r in D if any(r["id"] in (x.get("introduced_by", []) + (x.get("activated_by") or []) + ([x["transition"]["by"]] if x.get("transition") else [])) for x in J("spec/rules.jsonl"))})
+    if pinned:
+        sys.exit(f"cited by a rule row, so they must stay: {pinned}")
+    move = [i for i, r in enumerate(D) if r["id"] in wanted]
+    assert len(move) == len(wanted), "unknown id in the list"
 moving = set(move)
 
 path, cls = "archive/decisions/root-history.jsonl", "durable-root-history"
