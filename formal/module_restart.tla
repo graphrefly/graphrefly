@@ -5,7 +5,9 @@ GraphReFly D797 restart module — the restartable owner meets R-restart.
 A candidate model for the D797 draft module rule R-restart, written 2026-11-09
 for graphrefly:B140, the fifth module model. It checks that the owner built by
 reference/modules/restart.mjs behaves as R-restart says. Status: draft, like
-the rule it checks.
+the rule it checks. Revised 2026-11-18 for graphrefly:D812: a checkpoint
+round trip is a step, and a restored owner that was waiting for a retry starts
+that retry's delay again instead of renewing its inner.
 
 Topology: an upstream U, the inner I at the owner's fixed path over U, the
 restart state, and the owner O over [I, restart state] with manual terminals
@@ -14,8 +16,10 @@ retry policy of MaxAttempts attempts per round; Delay (chosen at Init) says
 whether a retry waits for a timer or is made at the end of the wave. A step is
 one of: the sink subscribing or unsubscribing; the inner sending a value,
 COMPLETE, ERROR, or a value and COMPLETE in one array; U ending (the inner, over
-U alone, ends with it); a restart request (a write to the restart state); and a
-pending retry's timer firing.
+U alone, ends with it); a restart request (a write to the restart state); a
+pending retry's timer firing; and a capture and restore of the active graph,
+which keeps the private state and the inner as they are, holds no timer and
+has no subscriber, followed by the restored owner's first activation.
 
 Two things run side by side on every step:
   - the composition: the owner's function transcribed from restart.mjs, with
@@ -91,7 +95,7 @@ SpecRun(p, s, vals, end) ==
 Init ==
   \E delay \in BOOLEAN :
     k = [delay |-> delay, up |-> FALSE, inner |-> "fresh", active |-> FALSE, oend |-> "",
-         req |-> 0, st |-> NoSt, timer |-> NoTimer, out |-> <<>>, starts |-> 0,
+         req |-> 0, st |-> NoSt, timer |-> NoTimer, out |-> <<>>, starts |-> 0, seed |-> FALSE,
          sp |-> [life |-> 0, att |-> 0, comps |-> 0, errs |-> 0, served |-> 0, pend |-> NoPend, ended |-> ""],
          sout |-> <<>>, sstarts |-> 0, steps |-> 0]
 
@@ -106,7 +110,7 @@ Both(s, vals, end) ==
 Live(s) == s.active /\ s.oend = ""
 
 Subscribe ==
-  /\ ~k.active
+  /\ ~k.active /\ ~k.seed
   /\ LET s0 == [Step(k) EXCEPT !.active = TRUE]
      IN IF k.oend # "" THEN k' = s0               \* an ended owner: its snapshot only
         ELSE LET s1 == [s0 EXCEPT !.sp.life = @ + 1, !.sp.att = @ + 1, !.sp.comps = 0, !.sp.errs = 0,
@@ -128,6 +132,36 @@ Unsubscribe ==
   /\ k' = IF k.oend # "" THEN [Step(k) EXCEPT !.active = FALSE]
           ELSE [Step(k) EXCEPT !.active = FALSE, !.st = NoSt, !.timer = NoTimer, !.inner = "fresh",
                                !.sp.pend = NoPend]
+
+\* A checkpoint round trip (R-checkpoint): capture at a wave boundary and restore. The
+\* restored graph has no subscriber; the owner's private state and the inner's state come
+\* back, and no checkpoint holds a timer. Until its first activation nothing runs.
+Restore ==
+  /\ k.active /\ ~k.seed
+  /\ k' = [Step(k) EXCEPT !.active = FALSE, !.seed = TRUE, !.timer = NoTimer, !.sp.pend = NoPend]
+
+\* The restored owner's first activation. Its private state is the saved one, so the round,
+\* the failures and the attempt go on; a request already in the restart state counts as served.
+\* D812 (2026-11-18): an owner that has not ended and whose inner has was waiting for a retry,
+\* and its setup starts that retry's delay again in full, for the same attempt and without
+\* counting another failure. A live inner goes on as it was; over a U that ended meanwhile it
+\* ends with it. No fresh inner is started here.
+SubscribeRestored ==
+  /\ ~k.active /\ k.seed
+  /\ LET s0 == [Step(k) EXCEPT !.active = TRUE, !.seed = FALSE]
+         waiting == k.inner \in {"COM", "ERR"}
+     IN IF k.oend # "" THEN k' = s0               \* an ended owner: its snapshot only
+        ELSE LET s1 == [s0 EXCEPT !.st.seen = k.req, !.sp.life = @ + 1, !.sp.served = k.req]
+                 \* The rule: the retry's delay starts again for the same attempt, in the new lifetime.
+                 r == IF waiting
+                      THEN [p |-> [s1.sp EXCEPT !.pend = [att |-> s1.sp.att, life |-> s1.sp.life, end |-> k.inner]], out |-> <<>>]
+                      ELSE IF k.up THEN SpecRun(s1.sp, s1, FALSE, "COM")
+                      ELSE [p |-> s1.sp, out |-> <<>>]
+                 \* The composition: the setup re-arms the timer with the saved attempt number.
+                 c == IF waiting THEN [s1 EXCEPT !.timer = [tok |-> s1.st.attempt, end |-> k.inner]]
+                      ELSE IF k.up THEN OwnerRun([s1 EXCEPT !.inner = "COM"], FALSE, "COM")
+                      ELSE s1
+             IN k' = [c EXCEPT !.sp = r.p, !.sout = r.out, !.sstarts = 0]
 
 InnerSends ==
   /\ Live(k) /\ k.inner = "live"
@@ -161,7 +195,8 @@ TimerFires ==
              ELSE IF k.up THEN [s2 EXCEPT !.sp.ended = p.end, !.sout = <<p.end>>]
              ELSE [s2 EXCEPT !.sp.att = @ + 1, !.sstarts = 1]
 
-Next == k.steps < MaxSteps /\ (Subscribe \/ Unsubscribe \/ InnerSends \/ UpEnds \/ Request \/ TimerFires)
+Next == k.steps < MaxSteps /\ (Subscribe \/ Unsubscribe \/ InnerSends \/ UpEnds \/ Request \/ TimerFires
+                                \/ Restore \/ SubscribeRestored)
 
 Spec == Init /\ [][Next]_vars
 
