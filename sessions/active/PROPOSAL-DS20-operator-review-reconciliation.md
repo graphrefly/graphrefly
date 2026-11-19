@@ -2,7 +2,7 @@
 
 2026-11-18，Fable。状态：**用户 2026-11-18 在对话中逐题同意了第 7 节的建议（Q1–Q9），包括 Q1 里延伸到 delay 以外的时间类
 operator 的那张表。第 9 节是根决定记录的草稿，第 10 节是 DS-20 的改写草稿，两者都还没有写入或应用。
-第 11 节的 Q10、Q11（规则和场景按部分分家）是后来加的，用户还没有表态。** 这是非规范性文档：它不改规则、场景、模型或参考实现，没有写入任何 D#，也不授权任何
+第 11 节是后来加的：Q10（operator 契约归属）用户已选 (A)，它的决定记录草稿在第 12 节，未写入；Q11 用户还没有表态。** 这是非规范性文档：它不改规则、场景、模型或参考实现，没有写入任何 D#，也不授权任何
 runtime 仓库的实现工作。下一步是根仓库把这些选择写成决定，再经 `/spec-amend` 改 `spec/rules.jsonl`、
 `spec/conformance.jsonl` 和 `formal/`。
 
@@ -480,10 +480,11 @@ setup 重开）已经在上面那条根决定的 (1) 里。
 
 ---
 
-## 11. 规则和场景按部分分家（Q10、Q11 待定）
+## 11. 规则和场景按部分分家（Q10 已选，Q11 待定）
 
 用户 2026-11-18 问：`spec/rules.jsonl` 和 `spec/conformance.jsonl` 按不同部分分家，有什么建议。我把"部分"理解成内核、图、
-模块、operator。这一节记下测量和两道题，**用户还没有对 Q10、Q11 表态**。它和 Q1–Q3 的关系：Q1–Q3 的归属取决于 Q10。
+模块、operator。这一节记下测量和两道题。用户对 Q10 选了 (A)，**对 Q11 还没有表态**。它和 Q1–Q3 的关系：Q1–Q3 的归属取决于
+Q10。
 
 ### 现状
 
@@ -521,11 +522,13 @@ operator 的选择（DS-20 的几十项，加上本提案的 Q1–Q3）现在只
 - (C) 违反单一来源。DS-20 定的是本该三边相同的行为，各记一份迟早不一致；让某一个 package 当基准又等于由实现定义行为。
 - (D) 让这些选择停在"约定"，各 runtime 没有可以对照的东西。Q1–Q3 也就没有地方入账。
 
-选 (A) 需要一并定的事，下面是草案建议，不是既定做法：
+用户："按 (A) 定"。
+
+选 (A) 需要一并定的事。下面是草案建议，用户同意的是 (A) 本身，这张表没有逐行确认：
 
 | 事项 | 草案建议 |
 |---|---|
-| 与 D797 (9) 的关系 | D797 (9) 把 combinator 的数组规则列为各语言的 sugar，DS-20 的表已经在规定这些。选 (A) 是对 D797 (9) 的部分取代或澄清，要在决定里写明是哪一种 |
+| 与 D797 (9) 的关系 | D797 (9) 把 combinator 的数组规则列为各语言的 sugar，DS-20 的表已经在规定这些。起草第 12 节时我的判断是"延伸"而不是取代，理由见那里的第 1 点 |
 | 决定的类别 | 根账本的一条持久决定，`protocol_impact: "none"`：它不改任何协议规则 |
 | 记录的形状 | 沿用规则的修订契约（id、revision、statement、introduced_by、activated_by、transition），这样同一个解析器可以给出"现行 operator 契约"，但文件和编号空间独立，不进入协议的公开投影 |
 | 一条契约的内容 | DS-20 约定的文档方向：先写常规用法，再按主题写可观察的例外（失效、正常完成、恢复、同 wave），每个主题链接到一条规范轨迹 |
@@ -558,6 +561,52 @@ operator 的选择（DS-20 的几十项，加上本提案的 Q1–Q3）现在只
 ### 顺序
 
 先定 Q10，因为它挡着 DS-20 整套 operator 选择入账。Q11 的视图和检查可以随后做，与 Q10 互不依赖。
+
+---
+
+## 12. operator 契约归属的决定记录草稿（未写入账本）
+
+Q10 选 (A) 之后起草。**没有写入 `decisions/decisions.jsonl`**，`D-next-2` 是占位。
+
+**分类。** 持久决定；归属和权限边界的决定，不改任何协议规则，所以 `protocol_impact` 是 `none`，不需要 `/spec-amend`；唯一
+owner 是根账本。
+
+**试跑。** 把第 9 节和这一节的两条记录以 `D810`、`D811` 追加到仓库的一份临时副本，并把 DS-20 的 `locks` 设成两者，
+`node authority/check.mjs` 和 `node dashboard/build.mjs --check` 都以 0 退出，`ambiguousCurrentGovernors` 仍是 4。
+
+```json
+{
+ "id": "D-next-2",
+ "layer": "Authority / shared operator contracts",
+ "date": "2026-11-18",
+ "question": "Who owns the observable behavior of the shared operators, and where is it recorded, given that operators are sugar outside the protocol rules?",
+ "decision": "The root repository owns one set of operator contracts and their canonical traces, kept apart from the protocol rules: its own files and its own ids, never R-*, and outside the public protocol projection. A contract may cite kernel and module rules; no rule cites a contract. Each contract gives the ordinary use first and then the observable exceptions by topic (invalidation, normal completion, recovery, same-wave input), each linked to one canonical input and expected trace that exists once, at the root. A language package owns its API spelling, which operators it ships, its implementation-specific guarantees and tests, and its own results against the traces. The first content is the operator set the maintainer selected in DS-20, as revised by Q1-Q3 of sessions/active/PROPOSAL-DS20-operator-review-reconciliation.md, written as contracts that start as drafts and are activated family by family; none is numbered as a decision of its own. The protocol rules are unchanged, and operators stay outside them.",
+ "rationale": "The user's choice of 2026-11-18 (the proposal's Q10, option A). DS-20 selected several dozen operator behaviors that should be the same in every runtime, and they existed only in a walkthrough record: no runtime had anything to check against, and the three revisions the independent review led to had nowhere to be recorded. Putting them in spec/rules.jsonl would make sugar a protocol obligation, which D797 (9) decided against and which the governance reference warns against. Recording them in each package's ledger would keep three copies of one choice, and taking one package as the baseline would let an implementation define the behavior. D797 (9) already states a shared combinator array rule in a root decision while leaving sugar to each language, so a root record of agreed operator behavior that is not a protocol rule extends that position rather than reversing it: what stays per language is the implementation and its API. The file layout, record shape and resolver change are work under this decision, not part of it.",
+ "supersedes": [],
+ "status": "locked",
+ "session": "DS-20",
+ "concerns": [
+  "operators.contract-ownership"
+ ],
+ "decision_kind": "durable-architecture",
+ "change_kind": "extension",
+ "protocol_impact": "none",
+ "completion": {
+  "complete_when": "The operator contract set exists at the root with its resolver view and link checks, DS-20's selected operators and the Q1-Q3 revisions are written as contracts with their canonical traces, each package's operator documentation links to them, and B140's acceptance text on package-local operator checks is rewritten to match.",
+  "historical_when": "A later root decision moves operator contracts into the protocol rules or to the packages."
+ }
+}
+```
+
+**写入前需要你看的三点。**
+
+1. **`change_kind: "extension"`，不取代 D797。** D797 (9) 自己就在一条根决定里写了 combinator 的数组规则，同时说 sugar 留给
+   各语言。所以"根仓库记下约定的 operator 行为，但它不是协议规则"是在延伸这个立场：留给各语言的是实现和 API。另一种写法
+   是部分取代 D797，那会让 D797 这条内核的基础决定不再算现行，我认为不值得。如果你读 D797 (9) 的意思是"operator 的行为
+   本身也由各语言定"，那就应该写成部分取代。
+2. **记录只定边界，不定文件布局。** 文件名、记录形状、解析器怎样改，草稿里写的是"属于这条决定之下的工作"。第 11 节那张
+   草案建议表里的"沿用规则的修订契约"等几行因此没有进入决定。
+3. **新的 concern 名** `operators.contract-ownership` 是我起的，账本里没有。
 
 ---
 
