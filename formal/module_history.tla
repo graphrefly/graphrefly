@@ -9,7 +9,9 @@ reference/modules/history.mjs behaves as R-history says. Status: draft, like
 the rule it checks. Revised 2026-11-18 for graphrefly:D812: H has the auto
 INVALIDATE policy, so an INVALIDATE removes its value and keeps its list.
 Revised 2026-11-19 after the independent QA of that work: the rule's side reads
-the wave with its own operators.
+the wave with its own operators. Revised again that day after the second QA:
+the rule's side also has its own bound, payloads, terminals and activation, and
+X's menu gains DATA with an ERROR and two INVALIDATEs in one wave.
 
 Topology: a computed source X, kept active by a sink of its own, and the
 history node H over X with N = 2 and a sink that subscribes and unsubscribes.
@@ -55,11 +57,14 @@ IsTerm(x) == x \in {"COM", "ERR"}
 Menu == { << <<"a">> >>, << <<"a">>, <<"b">> >>, << <<"a", "b">> >>, << <<"b">>, <<"a", "b">> >>,
           << <<"RES">> >>, << <<"RES">>, <<"b">> >>, << <<"INV">> >>, << <<"INV">>, <<"b">> >>,
           << <<"a">>, <<"INV">> >>, << <<"a">>, <<"INV">>, <<"b">> >>,
-          << <<"a">>, <<"COM">> >>, << <<"a", "COM">> >>, << <<"ERR">> >> }
+          << <<"a">>, <<"COM">> >>, << <<"a", "COM">> >>, << <<"ERR">> >>,
+          << <<"a">>, <<"ERR">> >>, << <<"b", "ERR">> >>,
+          << <<"a">>, <<"INV">>, <<"b">>, <<"INV">> >>, << <<"INV">>, <<"b">>, <<"INV">>, <<"a">> >> }
 
 VARIABLE k
 vars == <<k>>
 
+\* These read arrays for X and for the composition; the rule's side has its own below.
 DataOf(f) == SelectSeq(f, IsData)
 HasTerm(fs, t) == \E i \in DOMAIN fs : \E j \in DOMAIN fs[i] : fs[i][j] = t
 \* The kernel under the auto INVALIDATE policy (R-invalidation), used only by the
@@ -110,33 +115,48 @@ CompWave(h, fs) ==
       out |-> out, lists |-> lists]
 
 \* ---- the rule: R-history, from its text ----
+\* The rule's side shares no operator with the composition: not its reading of the wave
+\* (2026-11-19, after the QA of the D812 work found both sides using one, so that dropping it
+\* from both stayed green), and not the bound, the payloads, the terminals or the activation
+\* (the second QA the same day: with one LastN for both, no bound at all stayed green).
+RECURSIVE SpecPayloads(_)
+SpecPayloads(f) ==
+  IF f = <<>> THEN <<>>
+  ELSE (IF Head(f) \in {"a", "b"} THEN <<Head(f)>> ELSE <<>>) \o SpecPayloads(Tail(f))
+SpecSends(fs, t) == t \in UNION { { fs[i][j] : j \in 1..Len(fs[i]) } : i \in 1..Len(fs) }
+\* "the node holds the last n": the oldest waves go while there are more than n.
+RECURSIVE SpecKeep(_)
+SpecKeep(l) == IF Len(l) > N THEN SpecKeep(Tail(l)) ELSE l
 \* The wave's entry, taking the source's arrays one at a time: each array carrying DATA, in
 \* order, as its DATA payloads; an array without DATA is left out; and at an INVALIDATE the
-\* arrays that came before it in the wave leave the entry. The rule's side shares no
-\* operator with the composition's reading of the wave (revised 2026-11-19 after the QA of
-\* the D812 work found both sides using one, so that dropping it from both stayed green).
+\* arrays that came before it in the wave leave the entry.
 RECURSIVE SpecArrays(_, _)
 SpecArrays(e, fs) ==
   IF fs = <<>> THEN e
   ELSE IF Head(fs) = <<"INV">> THEN SpecArrays(<<>>, Tail(fs))
-  ELSE LET d == DataOf(Head(fs))
+  ELSE LET d == SpecPayloads(Head(fs))
        IN SpecArrays(IF d = <<>> THEN e ELSE Append(e, d), Tail(fs))
 SpecInvalidated(fs) == \E i \in DOMAIN fs : fs[i] = <<"INV">>
 SpecWave(sp, fs) ==
-  LET err  == HasTerm(fs, "ERR")       \* the source's terminal ends the node (auto ERROR: no run)
+  LET err  == SpecSends(fs, "ERR")     \* the source's ERROR ends the node, which sends no list for that wave
       lead == ~err /\ SpecInvalidated(fs) /\ sp.has   \* an INVALIDATE removes the node's value and keeps the list
       l0   == sp.list
       e    == IF err THEN <<>> ELSE SpecArrays(<<>>, fs)
       \* A wave without DATA is not an entry; one with DATA sends the new list once,
       \* and the list keeps the last N waves.
       r    == IF e = <<>> THEN [list |-> l0, lists |-> <<>>]
-              ELSE [list |-> LastN(Append(l0, e)), lists |-> <<LastN(Append(l0, e))>>]
-      done == err \/ HasTerm(fs, "COM")
+              ELSE [list |-> SpecKeep(l0 \o <<e>>), lists |-> <<SpecKeep(l0 \o <<e>>)>>]
+      done == err \/ SpecSends(fs, "COM")
       out  == (IF lead THEN << <<"INV">> >> ELSE <<>>)
               \o [i \in DOMAIN r.lists |-> <<"L">>]
               \o (IF done THEN << <<IF err THEN "ERR" ELSE "COM">> >> ELSE <<>>)
   IN [sp |-> [sp EXCEPT !.list = r.list, !.has = (@ /\ ~lead) \/ r.lists # <<>>, !.ended = done],
       out |-> out, lists |-> r.lists]
+\* "At activation the list starts with the source's snapshot": one wave of one array, the
+\* source's retained values, and none when the source holds no value.
+SpecStart(vals) ==
+  IF vals = <<>> THEN [sp |-> [list |-> <<>>, has |-> FALSE, ended |-> FALSE], lists |-> <<>>]
+  ELSE [sp |-> [list |-> << <<vals>> >>, has |-> TRUE, ended |-> FALSE], lists |-> << << <<vals>> >> >>]
 
 Init ==
   k = [x |-> [vals |-> << "a" >>, ended |-> FALSE], active |-> FALSE,
@@ -166,7 +186,7 @@ Subscribe ==
   /\ LET snap == IF k.x.vals # <<>> THEN << k.x.vals >> ELSE <<>>
          h0 == [list |-> <<>>, has |-> FALSE, val |-> <<>>, ended |-> FALSE]
          c == CompWave(h0, snap)
-         w == SpecWave([list |-> <<>>, has |-> FALSE, ended |-> FALSE], snap)
+         w == SpecStart(k.x.vals)
      IN k' = [Step(k) EXCEPT !.active = TRUE, !.h = c.h, !.sp = w.sp, !.lists = c.lists, !.spLists = w.lists]
 
 \* Deactivation drops H's value and private state.

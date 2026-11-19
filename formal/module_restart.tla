@@ -177,8 +177,13 @@ SubscribeRestored ==
   /\ ~k.active /\ k.seed
   /\ LET s0 == [Step(k) EXCEPT !.active = TRUE, !.seed = FALSE]
      IN IF k.oend # "" THEN k' = s0               \* an ended owner: its snapshot only
-        ELSE \E m \in RestoredInnerSends(k) :
-          LET ran == m # <<FALSE, "">>
+        \* `other`: the function also runs when another input of the owner changed since the
+        \* capture (an upstream, or the restart state), with nothing from the inner. That run
+        \* changes nothing on either side, and the re-arm must not depend on it (second QA,
+        \* 2026-11-19: without it a waiting owner's function never ran here, so a re-arm made
+        \* only when the function does not run stayed green).
+        ELSE \E m \in RestoredInnerSends(k), other \in BOOLEAN :
+          LET ran == m # <<FALSE, "">> \/ other
               s1 == [s0 EXCEPT !.st.seen = k.req, !.sp.life = @ + 1, !.sp.served = k.req,
                                !.inner = IF m[2] = "" THEN k.inner ELSE m[2]]
               held == k.sp.saved # NoPend

@@ -841,6 +841,23 @@ test("D812: the restored delay follows the failure count, not the attempt number
   r.unsubscribe("s", "r");
 });
 
+// A restored owner that is captured again before anyone subscribes has not run its setup yet: the
+// record is still in its saved private state, and the second restore waits the delay in full too.
+test("D812: a waiting owner captured again before its first activation still waits its delay in full", (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const first = restore(waitingOwner(fwdRecipes, "fwd", "bad"), fwdRecipes);
+  const again = roundTrip(capture(first));
+  assert.equal(again.nodes.find((n) => n.id === "r").saved.state.waiting, true);
+  const r = restore(again, fwdRecipes);
+  r.set("a", 5);
+  r.subscribe("s", "r");
+  t.mock.timers.tick(59_999);
+  assert.deepEqual([r.get("r").value, r.get("r/inner").ended, r.privateState("r").failures], [1, ["ERROR", "bad"], 1]);
+  t.mock.timers.tick(1);
+  assert.deepEqual([r.get("r").value, r.get("r/inner").ended, r.privateState("r").failures], [5, null, 1]);
+  r.unsubscribe("s", "r");
+});
+
 // R-restart: "a pending retry's timer is cleared". The graph behaves the same when the timer is
 // left to fire into a closed lifetime, so the timers themselves are counted here, for the original
 // and for the one a restored owner starts again.
