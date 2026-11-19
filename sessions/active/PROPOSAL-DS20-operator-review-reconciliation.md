@@ -1,7 +1,7 @@
 # DS-20 operator walkthrough：独立复审与规则对齐提案
 
 2026-11-18，Fable。状态：**用户 2026-11-18 在对话中逐题同意了第 7 节的建议（Q1–Q9），包括 Q1 里延伸到 delay 以外的时间类
-operator 的那张表。** 这是非规范性文档：它不改规则、场景、模型或参考实现，没有写入任何 D#，也不授权任何
+operator 的那张表。第 9 节是根决定记录的草稿，第 10 节是 DS-20 的改写草稿，两者都还没有写入或应用。** 这是非规范性文档：它不改规则、场景、模型或参考实现，没有写入任何 D#，也不授权任何
 runtime 仓库的实现工作。下一步是根仓库把这些选择写成决定，再经 `/spec-amend` 改 `spec/rules.jsonl`、
 `spec/conformance.jsonl` 和 `formal/`。
 
@@ -387,6 +387,95 @@ D799 把 checkpoint 改成"不保留自己的记录"，是因为那份独立记�
 | 各 runtime 的行为核对 | 各 package | 上面各项 | `/conformance`，带源码绑定的证据 |
 
 缺的证据：没有任何 package runtime 的结果；参考实现里没有的 operator 没有运行证据；第 6 题只是推断。
+
+---
+
+## 9. 根决定记录草稿（未写入账本）
+
+用户 2026-11-18 要求起草。下面是 Q4–Q9 的一条根协议决定的草稿，**没有写入 `decisions/decisions.jsonl`**，`D-next` 是
+占位。写入、给 DS-20 的 `locks` 加上它、再走 `/spec-amend`，都要等用户看过草稿之后。
+
+**分类。** 持久决定；语义性的协议决定；唯一 owner 是根账本（`graphrefly` / `durable-root`）。一条记录，不是六条：它们是
+同一次复审对同一组模块规则的对齐，D799 和 D802 也各自把几项选择合在一条里。
+
+**试跑。** 把这条记录以 `D810` 追加到仓库的一份临时副本，并把 DS-20 的 `locks` 设成 `["D810"]`，`node authority/check.mjs`
+和 `node dashboard/build.mjs --check` 都以 0 退出。`ambiguousCurrentGovernors` 仍是 4，和现在一样：`protocol.snapshot-recovery`
+原本由 D797、D799、D802 并列，D802 被取代后换成这条记录，仍是三条并列。试跑只检查了记录的形状和取代关系，没有检查规则
+修订本身。
+
+```json
+{
+ "id": "D-next",
+ "layer": "L4 / module recovery and invalidation after the DS-20 review",
+ "date": "2026-11-18",
+ "question": "Where the operator walkthrough's agreed recovery and invalidation choices differ from R-checkpoint@1 and the draft history and restart rules, which side changes?",
+ "decision": "Six choices, each the user's, made on 2026-11-18 on the independent review of DS-20 (sessions/active/PROPOSAL-DS20-operator-review-reconciliation.md, Q4-Q9). (1) Pending work is state. A node that must not lose pending work across a checkpoint records it in its private state, as JSON, and its setup opens it again at the restored node's first activation, as at every activation; elapsed time is not kept, so a reopened timer runs its full duration. Checkpoint itself still neither resumes nor re-issues late output in flight at capture, and a node that recorded nothing still loses it. So an ordinary latestAsync whose job was pending at capture starts a fresh job for its unchanged input, a resumable factory looks its job up by the saved identity, and a result already published is not run again, which the unchanged-input rule already gives. (2) A restored restart owner whose inner had ended starts that retry's delay again in full, for the same attempt and without counting another failure, instead of renewing the inner at its first activation. Deactivation is unchanged: it drops the private state and the next activation starts a fresh inner. (3) History has the auto INVALIDATE policy: a source INVALIDATE removes its value and keeps the list, and the next wave with DATA sends the list with its earlier entries. (4) Capture refuses a graph that holds a local-only computed node and names the node. A recipe whose factory the restoring registry lacks still fails at restore, which names the node and the reference before any graph is returned. (5) A graph may be created to require a recipe on every computed instance. Node and replace then refuse an instance without one when the request is made, and the current instance and its subscribers stay as they are; the kernel checks only that a recipe is present and still never reads it. This is the whole checkpoint option, off by default: every graph can be captured, and no record is kept or dropped by it. (6) Under that option a refusal raised while a function is running is that function's throw (R-failure), so a projected inner without a recipe ends its operator's branch with ERROR. The check is made when the request is made, not when a queued replace runs.",
+ "rationale": "The review compared DS-20's agreed choices with the rules and ran probes on the reference kernel (sessions/active/ds20-review-probes/). Three of the differences fall under one sentence R-checkpoint@1 already has, that a restored node's setup runs and opens again what it opened outside the graph: a probe showed a restored node with an unchanged input not running its function while its setup read the saved private state. Under it a delay, a pending job and a pending retry are the same case, keep what is pending and restart how long, and a restore at idle changes no value; DS-20's earlier choice for time operators, to present the saved dependency snapshot again, added the last value once per restore. This narrows the limit D802 accepted, work in flight at capture is lost, to work a node did not record. Renewing a restored inner at once keeps the failure count and skips the backoff, which a process that crashes and restarts repeatedly needs most. History kept or cleared its list by a manual policy; under the auto policy it is a scan over waves and needs none, and a restored history, which cannot see an INVALIDATE before its first subscription, behaves as a live one. D802's rationale called a restored history keeping entries after an INVALIDATE a defect; keeping them is now intended, as buffer, pairwise and scan keep what they have seen. Capture already refuses values that are not JSON, yet wrote a checkpoint for a node it knew could not be restored. The walkthrough's switch also refused capture on a graph without it and allotted recovery records by it; its savings were unmeasured, pending work is ordinary private state under (1), and D799 removed checkpoint's own record after three defects, so the option only decides when a missing recipe is found. Stated risk: none of this has runtime evidence, and the reference has no delay or valve and a latestAsync that holds an AbortController in private state.",
+ "supersedes": [
+  "D802"
+ ],
+ "status": "locked",
+ "session": "DS-20",
+ "concerns": [
+  "protocol.snapshot-recovery",
+  "protocol.history-invalidation",
+  "protocol.restart-recovery"
+ ],
+ "decision_kind": "protocol-decision",
+ "change_kind": "partial-supersession",
+ "protocol_impact": "semantic",
+ "spec_amend": "spec/rules.jsonl: R-checkpoint@1 gets a revise transition to R-checkpoint@2, introduced and activated by this decision: the in-flight sentence becomes (1), and a local-only node is refused at capture (4). R-node@2 gets a revise transition to R-node@3 for the optional recipe requirement (5), and R-request-order@3 and R-failure@3 are checked for the refusal at request time (6) and revised only if their text does not already give it. R-history@1 and R-restart@1, still drafts, are rewritten in place for (3) and (2) and stay drafts. D802's other choices stand.",
+ "conformance_obligations": [
+  "C-38: a node that recorded pending work in private state has it opened again by its setup after restore with its function not run on an unchanged input; a node that recorded nothing loses it; capture refuses a local-only node and names it.",
+  "C-45: history keeps its list across a source INVALIDATE, live and after a checkpoint round trip, and sends it whole on the next DATA.",
+  "C-43 and C-46: a restored restart owner with an ended inner waits the retry delay in full, counts no further failure, and still makes no hopeless attempt.",
+  "A new scenario for the recipe requirement: node and replace refuse an instance without a recipe and leave the current one; a refusal inside a running function ends that node with ERROR; a graph without the option accepts the same requests and can be captured when every node has a recipe.",
+  "Every runtime's result for these scenarios starts todo."
+ ],
+ "formal_obligations": [
+  "module_checkpoint.tla: capture is refused while a local-only node exists, and a restored node's setup reopens recorded pending work without a function run; invariants and mutations for both; rerun its configs.",
+  "module_history.tla: a source INVALIDATE keeps the list; module_restart.tla: a restored pending retry is re-armed, not renewed; rerun their configs with a mutation each.",
+  "The recipe requirement is a deterministic check at request time; state why kernel_lifetime needs no new step, or add the refused replace."
+ ],
+ "completion": {
+  "complete_when": "R-checkpoint@2 and R-node@3 are active, the history and restart drafts and the reference modules match (1)-(6), the listed scenarios and models are updated and pass, and DS-20 is rewritten to match.",
+  "historical_when": "A later root protocol decision supersedes the pending-work, history-invalidation, restart-recovery or recipe-requirement contract."
+ }
+}
+```
+
+**写入前需要你看的四点。**
+
+1. **`supersedes: ["D802"]`。** 账本的准入规则要求部分取代写明前任。写上之后 D802 不再算现行决定，尽管它的大部分选择
+   仍然有效；记录的 `spec_amend` 里写了 "D802's other choices stand"。D803、D804、D808 用的是同样的做法。另一种写法是
+   `change_kind: "extension"` 且不写 `supersedes`，但那样就没有记下"在途丢失"这条限制被收窄了。
+2. **两个新的 concern 名。** `protocol.history-invalidation` 和 `protocol.restart-recovery` 是我起的，账本里没有。history
+   和 restart 两条草案规则现在挂在 D797 的宽泛 concern 下。不想加新名的话，可以只留 `protocol.snapshot-recovery`。
+3. **草案规则原地改写。** `spec_amend` 写的是 R-history@1 和 R-restart@1 原地改写并保持草案。先例是 D802 在激活前原地
+   改写了 R-checkpoint@1。如果你要它们各出一个 @2，这句要改。
+4. **没有写进记录的一个细节。** DS-20 约定"恢复出的图默认开启 checkpoint"。开关收窄之后，这句对应的是"恢复出的图是否
+   默认要求 recipe"。提案的 Q7、Q8 没有问过这一点，所以记录里没写，`restore` 的图选项仍由 host 传入。
+
+## 10. DS-20 的改写草稿（未应用）
+
+Q1–Q3 是 operator 语义，这里不为它们起草 D#。理由：DS-20 里其余几十项 operator 选择都处在同一状态（约定，没有 D#），
+D797 (9) 把 sugar 留给各语言，DS-20 自己写了共享场景记录的归属是另一个决定。只给其中三项编号会让它们和其余选择的地位
+不一致。它们作为 DS-20 约定的修订记在 DS-20 里，等 operator 契约的归属定了再一起入账。Q1 依赖的机制（待办是私有状态，
+setup 重开）已经在上面那条根决定的 (1) 里。
+
+下面是 DS-20 各处的替换文字草稿，**没有应用到 DS-20**。DS-20 是 walkthrough 的记录，由它的作者或用户决定怎样改。
+
+| DS-20 位置 | 现在 | 草稿 |
+|---|---|---|
+| Agreed recovery direction，第 2 条 | Restore time operators as newly created on activation, with fresh windows/deadlines and current dependency snapshots. Pending timer candidates, old delay queues and elapsed time are discarded. | Time operators keep what is pending and restart how long. A delay queue (with its queued INVALIDATE and normal COMPLETE), a debounce or auditTime candidate and bufferTime's collected payloads are private state; setup starts each timer, quiet interval or window again in full on activation. Elapsed time, throttle's suppression deadline and timeout's deadline are not kept. A saved dependency snapshot is not a new occurrence, so a restore at idle changes no value. |
+| Restore prediction exercise: delay feeding a sum scan | Predicted sums after that wave are 12 and 14 respectively. | Predicted sums are 12 and 12: in trace A the saved queue delivers 2 once after a full delay, in trace B nothing is pending and nothing is delivered. The "Application choices" paragraph on event identity then applies to genuine duplicate occurrences, not to restore. |
+| Keep switchMap, mergeMap, concatMap, exhaustMap | First forward existing inner DATA and free slots from ended inners. | mergeMap, concatMap and exhaustMap first forward existing inner DATA and free slots from ended inners. switchMap applies the new selection first: DATA and ERROR that the superseded inner delivers in the switching wave are not forwarded. An outer value that projects to the definition already attached supersedes nothing. |
+| Applying the method to same-wave ordering | forward it before applying the new selection, agreed | the new selection wins, as takeUntil's notifier wins over same-wave source DATA and latestAsync suppresses stale results; revised 2026-11-18 after the independent review |
+| Keep merge and withLatestFrom | Merge preserves arrays with dependency order as the same-wave tie-breaker. | 加一句：Its snapshot is the last array it sent, not the latest value among its inputs. |
+| Agreed invalidation behavior，表 | 没有 merge、race、concat | merge: any input's effective INVALIDATE retracts the output, also when another input supplied it (R-invalidation). race: after selection only the winner is a dependency, so only its INVALIDATE retracts the output, and the selection stands. concat: the current source's INVALIDATE retracts the output; only its COMPLETE subscribes the next source. |
+| Agreed invalidation behavior，history 行 | Preserve the grouped history and its readable list. … This changes the existing R-history@1 draft and reference module. | Retract the output and keep the list (auto policy); the next DATA sends the list with its earlier entries. Express a new segment with switchMap. No resetOnInvalidate flag. |
+| Agreed checkpoint option | 默认关的建图开关；关闭的图拒绝 capture；按开关分配恢复专用记录 | The option only requires a recipe on every computed instance, off by default. Every graph can be captured; no record is kept or dropped by the option, so two equivalent graphs behave alike with it on or off. |
+| Agreed recipe contract | 开启 checkpoint 的图在创建或替换时校验 | Capture refuses a local-only node and names it, on any graph. With the recipe requirement, node and replace refuse an instance without a recipe at request time; inside a running function the refusal is that function's throw. Capture still validates configuration and saved values; restore still reports a missing factory. |
 
 ---
 
