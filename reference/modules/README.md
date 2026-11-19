@@ -11,7 +11,8 @@ npm run test:reference
 Every module but the bridge builds its nodes on an ordinary graph, each with its recipe in its
 definition (the kernel's node option `recipe`), so a graph with any of them can be captured and
 restored (F6, the user's choice, 2026-11-10; one build path since D799 the same day). The bridge's
-nodes carry no recipes, so a graph that holds a bridge group cannot be captured (R-checkpoint@2). Each module exports its recipes
+nodes carry no recipes (R-bridge@3), so a graph that holds a bridge group cannot be captured
+(R-checkpoint@2). Each module exports its recipes
 (`pauseRecipes`, `demandRecipes`, `restartRecipes`, `higherOrderRecipes`, `historyRecipes`), which a
 restore's registry must include, and a handle over a restored graph (`pauseControl`, `pausableOf`,
 `pullableOf`, `restartableOf`). A function a module takes from its user is always given as a function;
@@ -544,9 +545,16 @@ setup, a failure retried in the wave that ends every upstream, and `latestAsync`
 first occurrence. Also added: a waiting owner captured again before its first activation; a history
 wave left with no array; and the two cases in which a restored history is not as the original, an
 unseen INVALIDATE followed by a write of the value it had already received, or alone (R-checkpoint
-compares only what the input holds at the first activation). Known and not changed: on a requiring
+compares only what the input holds at the first activation). Known and not changed then: on a requiring
 graph, `restartable` or `pullable` called without a recipe throws after its control state was
 created and leaves that state behind.
+
+With the wording the user confirmed for that QA's open points (2026-11-19): the restart, demand,
+pause and bridge builders create their nodes in one `g.build`, so a build refused for any of its
+nodes, for a missing recipe, an unknown dependency or a taken id, leaves none of them and can be
+asked for again (R-node@3). A recipe's reference is a non-empty string: `{ ref: "" }` is refused
+at capture, and in a checkpoint at restore, with the bare `missing recipe` reason. Tests added for
+both, for a restored node after an INVALIDATE alone, and for a history wave with DATA and an ERROR.
 The dated exploration below records earlier schema/implementation shapes.
 
 
