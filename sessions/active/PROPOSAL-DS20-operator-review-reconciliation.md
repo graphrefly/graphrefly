@@ -1,7 +1,8 @@
 # DS-20 operator walkthrough：独立复审与规则对齐提案
 
 2026-11-18，Fable。状态：**用户 2026-11-18 在对话中逐题同意了第 7 节的建议（Q1–Q9），包括 Q1 里延伸到 delay 以外的时间类
-operator 的那张表。第 9 节是根决定记录的草稿，第 10 节是 DS-20 的改写草稿，两者都还没有写入或应用。** 这是非规范性文档：它不改规则、场景、模型或参考实现，没有写入任何 D#，也不授权任何
+operator 的那张表。第 9 节是根决定记录的草稿，第 10 节是 DS-20 的改写草稿，两者都还没有写入或应用。
+第 11 节的 Q10、Q11（规则和场景按部分分家）是后来加的，用户还没有表态。** 这是非规范性文档：它不改规则、场景、模型或参考实现，没有写入任何 D#，也不授权任何
 runtime 仓库的实现工作。下一步是根仓库把这些选择写成决定，再经 `/spec-amend` 改 `spec/rules.jsonl`、
 `spec/conformance.jsonl` 和 `formal/`。
 
@@ -476,6 +477,87 @@ setup 重开）已经在上面那条根决定的 (1) 里。
 | Agreed invalidation behavior，history 行 | Preserve the grouped history and its readable list. … This changes the existing R-history@1 draft and reference module. | Retract the output and keep the list (auto policy); the next DATA sends the list with its earlier entries. Express a new segment with switchMap. No resetOnInvalidate flag. |
 | Agreed checkpoint option | 默认关的建图开关；关闭的图拒绝 capture；按开关分配恢复专用记录 | The option only requires a recipe on every computed instance, off by default. Every graph can be captured; no record is kept or dropped by the option, so two equivalent graphs behave alike with it on or off. |
 | Agreed recipe contract | 开启 checkpoint 的图在创建或替换时校验 | Capture refuses a local-only node and names it, on any graph. With the recipe requirement, node and replace refuse an instance without a recipe at request time; inside a running function the refusal is that function's throw. Capture still validates configuration and saved values; restore still reports a missing factory. |
+
+---
+
+## 11. 规则和场景按部分分家（Q10、Q11 待定）
+
+用户 2026-11-18 问：`spec/rules.jsonl` 和 `spec/conformance.jsonl` 按不同部分分家，有什么建议。我把"部分"理解成内核、图、
+模块、operator。这一节记下测量和两道题，**用户还没有对 Q10、Q11 表态**。它和 Q1–Q3 的关系：Q1–Q3 的归属取决于 Q10。
+
+### 现状
+
+用 [ledger-parts.py](ds20-review-probes/ledger-parts.py) 在根仓库 e0b4383 的两个账本上量的，输出在
+[ledger-parts.out.txt](ds20-review-probes/ledger-parts.out.txt)。"部分"取自规则的 `area`：`module`、`graph`、`principle`
+各成一部分，其余（message、wave、node、lifecycle、runtime、control、protocol）算内核。
+
+| 事实 | 数字 |
+|---|---|
+| 规则账本的构成 | 157 行：现行公开 19 条（约 41KB），开放草案 17 行、15 个 id（约 20KB），已被取代或退役 121 行（约 148KB，占 72%） |
+| 现行规则按部分 | 内核 13，图 2，模块 2，原则 2 |
+| 修订链是否跨部分 | 121 行里 28 行退役，75 行的后继在同一部分，18 行的后继在另一部分 |
+| 向上引用 | 一处：R-graph-domain（`area` 是 runtime）引用模块规则 R-bridge。五条草案模块规则只引用内核规则 |
+| 场景按覆盖的最高部分 | 42 个：内核 22，图 1，模块 12，不覆盖任何现行或草案规则 7 |
+| 不覆盖任何现行或草案规则的场景 | C-2、C-5、C-9、C-10、C-13 只指向已被取代的旧 pause 规则；C-1a、C-1c 的 `covers` 为空。七个都标 `required` |
+| 读这两个文件的工具 | `authority/check.mjs` 和 `dashboard/build.mjs`，各一处 |
+
+关于那七个场景：D798 写了被替换规则上的旧场景"退役、被接替或重写，跟随模块激活的除外"，R-pause@1 还是草案，所以五个旧
+pause 场景可能是有意留着的。我没有核对每一个的去向。现在没有任何检查会把它们列出来。
+
+### Q10. operator 契约归谁、放在哪里
+
+operator 的选择（DS-20 的几十项，加上本提案的 Q1–Q3）现在只在 walkthrough 记录里，没有 D#，没有规则，也没有共享场景。
+
+- (A) 根仓库拥有一份独立的 operator 契约和它的规范轨迹，物理上与协议规则分开，用自己的编号，不是 R-*。它可以引用内核和
+  模块规则，规则不引用它。package 拥有 API 拼写、提供哪些 operator、实现相关的测试和证据。**建议。**
+- (B) 放进 `spec/rules.jsonl`，作为一个新的 `area`。
+- (C) 三个 package 各在自己的账本里记。
+- (D) 维持现状，只留在 DS-20。
+
+理由：
+
+- (B) 把 sugar 升格成协议。D797 (9) 写了 sugar 留给各语言；治理参考也写了不要因为影响易用性就把 sugar 策略提成跨 runtime
+  的规则。
+- (C) 违反单一来源。DS-20 定的是本该三边相同的行为，各记一份迟早不一致；让某一个 package 当基准又等于由实现定义行为。
+- (D) 让这些选择停在"约定"，各 runtime 没有可以对照的东西。Q1–Q3 也就没有地方入账。
+
+选 (A) 需要一并定的事，下面是草案建议，不是既定做法：
+
+| 事项 | 草案建议 |
+|---|---|
+| 与 D797 (9) 的关系 | D797 (9) 把 combinator 的数组规则列为各语言的 sugar，DS-20 的表已经在规定这些。选 (A) 是对 D797 (9) 的部分取代或澄清，要在决定里写明是哪一种 |
+| 决定的类别 | 根账本的一条持久决定，`protocol_impact: "none"`：它不改任何协议规则 |
+| 记录的形状 | 沿用规则的修订契约（id、revision、statement、introduced_by、activated_by、transition），这样同一个解析器可以给出"现行 operator 契约"，但文件和编号空间独立，不进入协议的公开投影 |
+| 一条契约的内容 | DS-20 约定的文档方向：先写常规用法，再按主题写可观察的例外（失效、正常完成、恢复、同 wave），每个主题链接到一条规范轨迹 |
+| 证据 | 规范轨迹在根仓库只有一份；各 runtime 的结果和实现相关的保证留在 package |
+| B140 的验收文字 | 其中"operator/sugar/inspection checks stay package-local"要随决定改写 |
+| 入账范围 | DS-20 的整套 operator 选择连同 Q1–Q3 一次入账，不逐项编号 |
+
+### Q11. 内核、图、模块怎样分
+
+- (A) 账本不拆，分家做在派生上：按 `area` 生成各部分的现行规则视图，场景的级别由它覆盖的规则派生，加两个检查。**建议。**
+- (B) 物理拆成每部分一个文件。
+
+理由：
+
+- 规则账本只追加，生命周期靠派生。拆文件要先决定 121 行历史各归哪边，18 条修订链会跨文件。
+- 读的人的实际困难是 72% 的行是历史，不是各部分混在一起。按部分生成现行规则的视图直接解决它；`authority/model.mjs`
+  已经在派生现行协议投影。
+- 场景的级别可以由 `covers` 派生：只覆盖内核规则的是内核场景。这样"通过内核场景"有确定的清单，D800 让 Python 以此为
+  门槛。
+- 场景没有修订链，以后真要拆成每层一个文件，只改两处读取。建议等派生级别用过一轮、确实有不便再拆。
+
+(A) 要加的两个检查：
+
+1. 引用方向：模块规则只引用内核和图的规则，内核规则不引用模块规则。它现在会报出 R-graph-domain 引用 R-bridge 这一处，由
+   用户判断是例外还是要改。
+2. 场景覆盖：列出不覆盖任何现行或草案规则的场景。它现在会列出上面那七个。
+
+两个检查都是工具改动，不改任何规则。
+
+### 顺序
+
+先定 Q10，因为它挡着 DS-20 整套 operator 选择入账。Q11 的视图和检查可以随后做，与 Q10 互不依赖。
 
 ---
 

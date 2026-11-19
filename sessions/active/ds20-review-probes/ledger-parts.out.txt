@@ -1,0 +1,19 @@
+rule rows 157: public 19 (41280 bytes), open draft rows 17 over 15 ids (19505 bytes), transitioned 121 (147774 bytes)
+public by part {'kernel': 13, 'principle': 2, 'module': 2, 'graph': 2}
+open draft ids by part {'kernel': 4, 'graph': 3, 'principle': 3, 'module': 5}
+transitioned rows: retired 28, successor in the same part 75, successor in another part 18
+upward citation: R-graph-domain (kernel) cites ['R-bridge']
+draft module rule R-pause cites ['R-invalidation', 'R-request-order']
+draft module rule R-demand cites ['R-wave']
+draft module rule R-history cites ['R-subscription']
+draft module rule R-restart cites ['R-lifetime', 'R-request-order', 'R-terminals']
+draft module rule R-revision cites []
+C-1a (required) covers no public or draft rule: []
+C-1c (required) covers no public or draft rule: []
+C-2 (required) covers no public or draft rule: ['R-async-paused', 'R-pause-lockset', 'R-pause-modes']
+C-5 (required) covers no public or draft rule: ['R-pause-lockset', 'R-pause-modes']
+C-9 (required) covers no public or draft rule: ['R-pause-modes', 'R-async-paused']
+C-10 (required) covers no public or draft rule: ['R-pause-modes', 'R-async-paused']
+C-13 (required) covers no public or draft rule: ['R-paused-invalidate']
+C-27 also names rules that are neither public nor draft: ['R-fn-contract', 'R-ctx-up']
+scenarios 42 by highest part covered {'module': 12, 'none': 7, 'kernel': 22, 'graph': 1}
