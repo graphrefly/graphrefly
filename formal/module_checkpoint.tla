@@ -6,6 +6,9 @@ A candidate model for the D797 draft module rule R-checkpoint, written
 2026-11-09 for graphrefly:B140, the fourth module model. It checks that a node
 restored by reference/modules/checkpoint.mjs, once subscribed, behaves as the
 original node would. Status: R-checkpoint is active since D802 (2026-11-10).
+Revised 2026-11-18 for graphrefly:D812, the draft R-checkpoint@2: capture is
+refused while P is local-only, and pending work that P recorded in its private
+state is opened again by its setup, without a run of its function.
 
 Topology: states A and B, and a computed node P over [A, B] built from a recipe,
 with a sink, under the default auto policies. The recipe keeps the last N input
@@ -41,11 +44,20 @@ P goes through the module: a kernel seed, the setup the kernel runs at the
 activation, and a wrapper that runs the recipe once at the first activation if
 an input changed, with only the changed inputs.
 
+Pending work (D812). Each run of the recipe starts a job outside the graph, and
+a later step lets it finish, which sends a late output. A third choice at Init,
+Records, says whether P records its pending job in its private state. No
+checkpoint holds a job. The rule: a job that was recorded is opened again at the
+restored P's first activation, a job that was not is lost, and a run at that
+activation starts one as any run does. The module: the setup reopens the job
+when the saved private state has one pending.
+
 Extended for D802 (2026-11-10): before capture the original P may be replaced once, by
 an instance with another recipe ("r2", which keeps only its last value), another setup or no
 recipe at all; and at Init P was made either after both dependencies or before B, as when a
 replace pointed it at a node made later. Capture takes the current instance's recipe and
-setup; restore refuses a P without a recipe and builds each node after its dependencies.
+setup; capture refuses a P without a recipe (D812; until then restore did), and restore
+builds each node after its dependencies.
 
 Invariants (see formal/README.md):
   StateMatches    after the subscription, the restored P holds the reference's
@@ -55,7 +67,8 @@ Invariants (see formal/README.md):
   NoNeedlessRun   the restored recipe runs at activation only if an input
                   changed
   RestoreBuilds   restore never builds a node before one of its dependencies
-  LocalOnlyRefused  a P whose instance has no recipe is never restored
+  LocalOnlyRefused  a P whose instance has no recipe is never captured: no checkpoint is written
+  PendingMatches  the restored P has a job in flight, and one recorded, exactly when the reference does
   RestoredAsInstance  the restored P has the captured instance's recipe and setup
  ***************************************************************************)
 EXTENDS Integers, Sequences, TLC
@@ -80,7 +93,7 @@ Keep(n) == IF n.rec = "r2" THEN 1 ELSE N
 Run(n, new) ==
   IF new = <<>> THEN n
   ELSE LET st == LastN(n.st \o new, Keep(n))
-       IN [n EXCEPT !.st = st, !.has = TRUE, !.val = st]
+       IN [n EXCEPT !.st = st, !.has = TRUE, !.val = st, !.job = TRUE, !.pend = n.records]
 
 \* One host step as a live wave to an active node n. ds2 is the states after it.
 Live(n, step, ds2) ==
@@ -94,7 +107,7 @@ Live(n, step, ds2) ==
   ELSE IF step.kind = "com"
   \* auto COMPLETE: the function does not run on an end alone; P ends with its last input,
   \* and its lifetime closes, which runs the setup's cleanup.
-  THEN IF AllEnded(ds2) THEN [n |-> [n EXCEPT !.ended = TRUE, !.res = FALSE, !.inp = ds2], out |-> <<"COM">>]
+  THEN IF AllEnded(ds2) THEN [n |-> [n EXCEPT !.ended = TRUE, !.res = FALSE, !.job = FALSE, !.pend = FALSE, !.inp = ds2], out |-> <<"COM">>]
        ELSE [n |-> [n EXCEPT !.inp = ds2], out |-> <<>>]
   ELSE LET n1 == Run(n, step.new) IN [n |-> [n1 EXCEPT !.inp = ds2], out |-> << <<"D", n1.val>> >>]
 
@@ -116,7 +129,11 @@ RefWave(o, ds) ==
   IF o.ended THEN o
   ELSE LET new == RefWrites(ds, o.inp)
            o1  == IF new # <<>> THEN Run(o, new) ELSE o
-       IN [o1 EXCEPT !.ended = AllEnded(ds), !.res = @ /\ ~AllEnded(ds), !.inp = ds]
+           \* D812: without a run, the job in flight after the restore is the one P recorded;
+           \* one it did not record is lost. A run starts a job as any run does.
+           o2  == IF new # <<>> THEN o1 ELSE [o1 EXCEPT !.job = o1.pend]
+       IN [o2 EXCEPT !.ended = AllEnded(ds), !.res = @ /\ ~AllEnded(ds), !.inp = ds,
+                     !.job = @ /\ ~AllEnded(ds), !.pend = @ /\ ~AllEnded(ds)]
 
 \* The restored P's first activation through the module. An ended P has no lifetime, so no
 \* setup; otherwise the kernel runs the setup, then the wrapper, which runs the recipe only
@@ -124,13 +141,16 @@ RefWave(o, ds) ==
 \* setup are the captured instance's (cp.rec, cp.setup).
 Activate(cp, ds) ==
   LET setup == cp.setup
-      seed == [st |-> cp.st, has |-> cp.has, val |-> cp.val, ended |-> cp.ended, res |-> FALSE, inp |-> ds, rec |-> cp.rec]
+      seed == [st |-> cp.st, has |-> cp.has, val |-> cp.val, ended |-> cp.ended, res |-> FALSE, inp |-> ds, rec |-> cp.rec,
+               records |-> cp.records, pend |-> cp.pend, job |-> FALSE]
       new  == NewValues(ds, cp.inp)
       run  == ~cp.ended /\ Changed(ds, cp.inp)
       n0   == IF ~cp.ended /\ setup THEN [seed EXCEPT !.res = TRUE] ELSE seed
-      n1   == IF run THEN Run(n0, new) ELSE n0
+      \* D812: the setup opens again the job the saved private state has pending.
+      n0p  == IF ~cp.ended THEN [n0 EXCEPT !.job = cp.pend] ELSE n0
+      n1   == IF run THEN Run(n0p, new) ELSE n0p
       end  == cp.ended \/ AllEnded(ds)
-  IN [n |-> [n1 EXCEPT !.ended = end, !.res = @ /\ ~end], ran |-> run]
+  IN [n |-> [n1 EXCEPT !.ended = end, !.res = @ /\ ~end, !.job = @ /\ ~end, !.pend = @ /\ ~end], ran |-> run]
 
 Steps ==
   { [kind |-> "set", new |-> << <<d, v>> >>, d |-> d] : d \in {"A", "B"}, v \in Vals } \cup
@@ -152,7 +172,10 @@ Apply(step, ds) ==
     [] step.kind = "com" -> [ds EXCEPT ![step.d].e = TRUE]
 
 D0 == [d \in {"A", "B"} |-> [v |-> 1, e |-> FALSE]]
-Empty == [st |-> <<>>, has |-> FALSE, val |-> <<>>, ended |-> FALSE, res |-> FALSE, inp |-> D0, rec |-> "r1"]
+Empty == [st |-> <<>>, has |-> FALSE, val |-> <<>>, ended |-> FALSE, res |-> FALSE, inp |-> D0, rec |-> "r1",
+          records |-> FALSE, pend |-> FALSE, job |-> FALSE]
+NoCp == [st |-> <<>>, has |-> FALSE, val |-> <<>>, ended |-> FALSE, inp |-> D0, rec |-> "r1", setup |-> FALSE,
+         records |-> FALSE, pend |-> FALSE, job |-> FALSE, written |-> FALSE]
 
 \* Creation order (D802). P depends on A and B. Either both were made before P, or P was
 \* replaced onto B, which was made after it; restore builds each node after its declared
@@ -174,12 +197,12 @@ Builds(seq) == \A i \in DOMAIN seq : NodeDeps(seq[i]) \subseteq {seq[j] : j \in 
 SnapVals(ds) == SelectSeq(<< <<"A", ds["A"].v>>, <<"B", ds["B"].v>> >>, LAMBDA p : p[2] # NoVal)
 
 Init ==
-  \E setup \in BOOLEAN, manual \in BOOLEAN, order \in {"deps-first", "dep-later"} :
+  \E setup \in BOOLEAN, manual \in BOOLEAN, order \in {"deps-first", "dep-later"}, records \in BOOLEAN :
     k = [setup |-> setup, manual |-> manual, phase |-> "orig", ds |-> D0,
          order |-> order, replaced |-> FALSE, first |-> [rec |-> "r1", setup |-> setup],
          \* the original's activation: its setup, then its first run
-         o |-> Run([Empty EXCEPT !.res = setup], << <<"A", 1>>, <<"B", 1>> >>),
-         cp |-> [st |-> <<>>, has |-> FALSE, val |-> <<>>, ended |-> FALSE, inp |-> D0, rec |-> "r1", setup |-> FALSE],
+         o |-> Run([Empty EXCEPT !.res = setup, !.records = records], << <<"A", 1>>, <<"B", 1>> >>),
+         cp |-> NoCp,
          r |-> Empty, ran |-> FALSE, chg |-> FALSE, oOut |-> <<>>, rOut |-> <<>>, steps |-> 0]
 
 Step(s) == [s EXCEPT !.steps = @ + 1, !.oOut = <<>>, !.rOut = <<>>]
@@ -204,23 +227,37 @@ Replace ==
   /\ k.phase = "orig" /\ ~k.replaced /\ ~k.o.ended
   /\ \E rec \in {"r1", "r2", "none"}, setup \in BOOLEAN :
        LET fresh == [st |-> <<>>, has |-> FALSE, val |-> <<>>, ended |-> FALSE, res |-> setup,
-                     inp |-> k.ds, rec |-> rec]
+                     inp |-> k.ds, rec |-> rec, records |-> k.o.records, pend |-> FALSE, job |-> FALSE]
            n1    == Run(fresh, SnapVals(k.ds))
            end   == AllEnded(k.ds)
-       IN k' = [Step(k) EXCEPT !.o = [n1 EXCEPT !.ended = end, !.res = @ /\ ~end],
+       IN k' = [Step(k) EXCEPT !.o = [n1 EXCEPT !.ended = end, !.res = @ /\ ~end, !.job = @ /\ ~end, !.pend = @ /\ ~end],
                   !.setup = setup, !.replaced = TRUE]
 
-\* Capture at a wave boundary: P's values, private state, terminal and received inputs, with
-\* the recipe and setup of its current instance. Restore then builds the new graph: a P whose
-\* instance has no recipe is local-only and the restore fails ("local"); a build order that
-\* puts P before a dependency cannot build it ("broken").
+\* Capture at a wave boundary: P's values, private state (with the pending job, if P records
+\* it), terminal and received inputs, with the recipe and setup of its current instance. A P
+\* whose instance has no recipe is local-only: capture is refused and no checkpoint is written
+\* ("refused"; D812, until then the checkpoint was written and the restore failed). Restore then
+\* builds the new graph; a build order that puts P before a dependency cannot build it ("broken").
+\* cp.job is not saved: it is in the model only to say what was in flight.
 Capture ==
   /\ k.phase = "orig"
-  /\ k' = [Step(k) EXCEPT
-             !.phase = IF k.o.rec = "none" THEN "local"
-                       ELSE IF ~Builds(BuildOrder(k.order)) THEN "broken" ELSE "window",
+  /\ k' = IF k.o.rec = "none" THEN [Step(k) EXCEPT !.phase = "refused"]
+          ELSE [Step(k) EXCEPT
+             !.phase = IF ~Builds(BuildOrder(k.order)) THEN "broken" ELSE "window",
              !.cp = [st |-> k.o.st, has |-> k.o.has, val |-> k.o.val, ended |-> k.o.ended,
-                     inp |-> k.o.inp, rec |-> k.o.rec, setup |-> k.setup]]
+                     inp |-> k.o.inp, rec |-> k.o.rec, setup |-> k.setup,
+                     records |-> k.o.records, pend |-> k.o.pend, job |-> k.o.job, written |-> TRUE]]
+
+\* A job in flight finishes: its late output goes out and nothing is pending any more. In the
+\* window the original is not stepped, and the restored P has no lifetime yet.
+Finish(n) == IF n.job /\ ~n.ended THEN [n |-> [n EXCEPT !.job = FALSE, !.pend = FALSE], out |-> <<"J">>]
+             ELSE [n |-> n, out |-> <<>>]
+JobDone ==
+  /\ k.phase \in {"orig", "post"}
+  /\ k.o.job \/ (k.phase = "post" /\ k.r.job)
+  /\ k' = [Step(k) EXCEPT !.o = Finish(k.o).n, !.oOut = Finish(k.o).out,
+             !.r = IF k.phase = "post" THEN Finish(k.r).n ELSE @,
+             !.rOut = IF k.phase = "post" THEN Finish(k.r).out ELSE <<>>]
 
 Subscribe ==
   /\ k.phase = "window"
@@ -228,7 +265,7 @@ Subscribe ==
      IN k' = [Step(k) EXCEPT !.phase = "post", !.r = a.n, !.ran = a.ran,
                !.chg = Changed(k.ds, k.cp.inp), !.o = RefWave(k.o, k.ds)]
 
-Next == k.steps < MaxSteps /\ (Host \/ Replace \/ Capture \/ Subscribe)
+Next == k.steps < MaxSteps /\ (Host \/ Replace \/ Capture \/ Subscribe \/ JobDone)
 
 Spec == Init /\ [][Next]_vars
 
@@ -238,9 +275,13 @@ StateMatches == k.phase = "post" =>
 ResourceMatches == k.phase = "post" => k.r.res = k.o.res
 OutMatches == k.phase = "post" => k.rOut = k.oOut
 NoNeedlessRun == k.phase = "post" /\ k.ran => k.chg
-\* D802: restore builds each node after its dependencies, refuses a local-only P, and gives
-\* the restored P the captured instance's recipe and setup.
+\* D802: restore builds each node after its dependencies and gives the restored P the captured
+\* instance's recipe and setup. D812: a local-only P is refused at capture, so no checkpoint of
+\* one exists.
 RestoreBuilds      == k.phase # "broken"
-LocalOnlyRefused   == k.phase \in {"window", "post"} => k.o.rec # "none"
+LocalOnlyRefused   == /\ k.cp.written => k.cp.rec # "none"
+                      /\ k.phase = "refused" => ~k.cp.written
+\* D812: pending work is state. Recorded, it is in flight again after the restore; not recorded, it is lost.
+PendingMatches     == k.phase = "post" => k.r.job = k.o.job /\ k.r.pend = k.o.pend
 RestoredAsInstance == k.phase \in {"window", "post"} => k.cp.rec = k.o.rec /\ k.cp.setup = k.setup
 =============================================================================
