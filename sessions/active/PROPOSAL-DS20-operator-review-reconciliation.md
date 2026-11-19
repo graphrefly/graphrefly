@@ -686,6 +686,8 @@ owner 是根账本。
 
 ## 13. D812 的规则文字（用户已确认，已写入并激活）
 
+（2026-11-19 注：本节的“新文”是 11-18 写入时的文字。之后两轮独立 QA 原地更正过，现行文字以 `spec/rules.jsonl` 为准，更正见本节末尾。下面“`spec/rules.jsonl` 没有动”说的是写这一节当时的状态。）
+
 2026-11-18，按修订计划的第 2 步写。下面只是文字，`spec/rules.jsonl` 没有动。用户确认之后，R-checkpoint@2 和 R-node@3 先以
 草案写入（`introduced_by: ["D812"]`，不激活），R-history@1 和 R-restart@1 原地改写；模型和参考实现通过之后再激活。
 
@@ -761,6 +763,8 @@ D812 要求核对 R-request-order@3 和 R-failure@3，文字已经覆盖就不�
 - R-failure@3 已写："A throw from a node's function becomes that node's ERROR"，以及其他失败"goes to its caller"。
 - 参考内核的 `replace` 在调用时就同步检查并抛出（不是计算节点、依赖重复、成环），排队执行时只再查一次成环。所以
   R-request-order@3 里的"replace is refused for ..."本来就是请求时的拒绝，新加的 recipe 要求和它们同一时刻。
+  （2026-11-19 第二次 QA：这条推理不成立。R-request-order@3 没有写 replace 的拒绝在什么时刻，参考实现在排队的
+  replace 执行时还会再查一次成环。“请求时拒绝”和“被拒的 replace 留下什么”只由 R-node@3 规定。）
 
 ### 写这些文字时核对过的事实
 
@@ -799,6 +803,8 @@ D812 要求核对 R-request-order@3 和 R-failure@3，文字已经覆盖就不�
 参考实现和模型的修复见 `reference/modules/README.md` 和 `formal/README.md` 里 2026-11-19 的段落。
 
 ### 参考实现现在和新文字不符的地方（第 5 步要改的）
+
+（2026-11-19 注：以下各项是写这一节时的状态，现在都已在参考实现里改完。）
 
 - capture 遇到无 recipe 的节点时写出 `local: true`，不拒绝。
 - restore 遇到注册表里没有的 recipe 时只点名节点，不点名引用。

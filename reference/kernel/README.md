@@ -28,7 +28,7 @@ semantics and invocation-read guards are exercised by the current tests.
 
 ## Surface
 
-The graph: `createGraph({ report })` takes an optional host reporter. Then `state(id, initial)`, `node(id, deps, fn, { terminal, invalidate, quiet, setup, recipe, seed })`,
+The graph: `createGraph({ report, requireRecipe })` takes an optional host reporter and, with `requireRecipe: true`, refuses a computed instance without a recipe when it is asked for (R-node@3; any recipe but null or undefined passes, and the kernel never reads it). Then `state(id, initial)`, `node(id, deps, fn, { terminal, invalidate, quiet, setup, recipe, seed })`,
 `subscribe(sinkId, id, callback?)`, `unsubscribe`, `replace(id, deps, fn, { setup, recipe })`, `set`, `invalidate`, `complete`, `error`, `batch`,
 `get(id)` (`active`, `has`, `value`, `ended`), `status(id)`, `describe()`, `idle()`, `privateState(id)`, `definition(id)` and `trace`.
 

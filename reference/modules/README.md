@@ -8,9 +8,10 @@ finding about the DS-17 classification, not something to patch in quietly.
 npm run test:reference
 ```
 
-Every module builds its nodes on an ordinary graph, each with its recipe in its definition (the
-kernel's node option `recipe`), so a graph with any module can be captured and restored (F6, the
-user's choice, 2026-11-10; one build path since D799 the same day). Each module exports its recipes
+Every module but the bridge builds its nodes on an ordinary graph, each with its recipe in its
+definition (the kernel's node option `recipe`), so a graph with any of them can be captured and
+restored (F6, the user's choice, 2026-11-10; one build path since D799 the same day). The bridge's
+nodes carry no recipes, so a graph that holds a bridge group cannot be captured (R-checkpoint@2). Each module exports its recipes
 (`pauseRecipes`, `demandRecipes`, `restartRecipes`, `higherOrderRecipes`, `historyRecipes`), which a
 restore's registry must include, and a handle over a restored graph (`pauseControl`, `pausableOf`,
 `pullableOf`, `restartableOf`). A function a module takes from its user is always given as a function;
@@ -533,6 +534,19 @@ here, none given (`== null`): capture read any falsy recipe as none, so `recipe:
 requiring graph's creation and was then called local-only. A graph that holds a wire bridge group
 cannot be captured, since the bridge's nodes carry no recipes, and a requiring graph refuses the
 group.
+
+Second QA, of those fixes (2026-11-19). No reference code changed. A mutation run found six
+changes the tests above let through, each now caught: the restored delay computed from the attempt
+number (the backoff test captured with both counts at 2); `replace` storing a falsy recipe as none
+(the fix was pinned for `node` only); the retry timer left armed after the lifetime closed (the
+graph behaves the same, so the timers are counted); and three older ones, a fresh inner without its
+setup, a failure retried in the wave that ends every upstream, and `latestAsync` taking a wave's
+first occurrence. Also added: a waiting owner captured again before its first activation; a history
+wave left with no array; and the two cases in which a restored history is not as the original, an
+unseen INVALIDATE followed by a write of the value it had already received, or alone (R-checkpoint
+compares only what the input holds at the first activation). Known and not changed: on a requiring
+graph, `restartable` or `pullable` called without a recipe throws after its control state was
+created and leaves that state behind.
 The dated exploration below records earlier schema/implementation shapes.
 
 

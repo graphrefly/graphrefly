@@ -7,6 +7,7 @@ decides, and writes its own work body there. Nothing here dispatches implementat
 
 Revised 2026-11-19 after an independent QA of the root work, before this brief reached anyone: the
 rule rows, D812 and the scenarios were corrected in place, and items 1, 3 and 6 below changed with them.
+Revised again that day after a second QA: items 4, 5 and 6 and one table row said what the rules do not.
 
 ## What changed at the root
 
@@ -20,7 +21,7 @@ review of DS-20. Read the rules themselves with `npm run rules:current -- module
 | R-node@3 | active (was @2) | a graph may be created to require a recipe on every computed instance |
 | R-history@1 | draft, rewritten in place | the auto INVALIDATE policy: an INVALIDATE removes the value and keeps the list |
 | R-restart@1 | draft, rewritten in place | a restored pending retry waits its delay in full, for the same attempt |
-| R-request-order@3, R-failure@3 | unchanged | R-node@3 alone says the refusal is made when the request is made; R-request-order says what a refused replace leaves, and R-failure what an unhandled failure in a function is |
+| R-request-order@3, R-failure@3 | unchanged | R-node@3 alone says that the refusal is made when the request is made and what a refused replace leaves; R-failure says what an unhandled failure in a function is, and R-request-order does not say when replace's refusals are made |
 
 ## What a runtime now does differently
 
@@ -53,16 +54,25 @@ review of DS-20. Read the rules themselves with `npm run rules:current -- module
 4. **Pending work is state.** Checkpoint still neither resumes nor re-issues late output in flight.
    A node that must not lose its pending work records it in private state, as JSON, and its setup
    opens it again at the restored node's first activation, without its function running on an
-   unchanged input; a reopened timer runs its full duration. In the reference, `latestAsync` records
-   `{ pending: [value] }` and keeps its AbortController beside the lifetime, so a graph with a job in
-   flight can be captured (it was refused before, as not JSON).
+   unchanged input; a reopened timer runs its full duration. In the reference, `latestAsyncNode` (the
+   function together with its setup) records `{ pending: [value] }` and keeps its AbortController
+   beside the lifetime, so a graph with a job in flight can be captured (it was refused before, as
+   not JSON). `latestAsync(f)` alone, the function without that setup, records nothing: its job in
+   flight at a capture is lost, as the rule says of work a node did not record.
 5. **History, where a runtime ships it.** The auto INVALIDATE policy: the kernel removes the node's
    value without running its function, and the list in private state stays. Arrays before an
-   INVALIDATE in the same wave are not part of that wave's entry.
+   INVALIDATE in the same wave are not part of that wave's entry, and a wave left with no array is
+   not an entry and sends no list. A restored history is not always as the original: it cannot see
+   an INVALIDATE made before its first subscription, so after one followed by a write of the value
+   it had already received it does not run, where the original has a new entry, and after one alone
+   it still holds its saved list, where the original holds no value (R-checkpoint; C-45).
 6. **Restart, where a runtime ships it.** While a retry waits, the owner's private state says so.
    A restored owner whose state says so starts that retry's delay again at its first activation,
    with the saved attempt number and failure count, instead of renewing the inner at once. When the
-   delay ends the retry is made, or dropped if another attempt started or an upstream ended. Do not
+   delay ends the retry is made, or dropped if the owner's lifetime closed or another attempt
+   started; if by then a fresh inner would end at once on its upstreams (every one ended, or one
+   ended with ERROR), no attempt is made and the owner ends with the inner's ERROR. One ended
+   upstream among open ones does not stop the retry. Do not
    infer a waiting retry from the inner being ended: the inner is activated before the owner's
    setup, so one that fails only at that activation is ended there too, and its failure is counted
    once, by the owner's function. The reference made that mistake first.
@@ -73,11 +83,11 @@ review of DS-20. Read the rules themselves with `npm run rules:current -- module
 |---|---|
 | C-38 | capture-time local-only refusal and its order after every JSON refusal; a recipe without a reference; pending work reopened by a setup; restore failures |
 | C-43, C-46 | the restored pending retry, and a restored live inner that fails at the first activation |
-| C-45 | history across an INVALIDATE, live and after a round trip |
+| C-45 | history across an INVALIDATE, live and after a round trip, with the two cases where the restored node differs; a wave left with no array |
 | C-50 (new) | the recipe requirement, a handled refusal, a bridge group, and the requirement at a restore |
 
 Every runtime result for these is `todo`. The reference is in `reference/kernel` and
-`reference/modules` (`npm run test:reference`, 511 tests); the models are `module_checkpoint`,
+`reference/modules` (`npm run test:reference`, 519 tests); the models are `module_checkpoint`,
 `module_history` and `module_restart` in `formal/`, with their runs in `formal/README.md`.
 
 ## What is not here
