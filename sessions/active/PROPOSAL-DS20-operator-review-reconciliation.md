@@ -678,6 +678,110 @@ owner 是根账本。
 
 ---
 
+## 13. D812 的规则文字（待用户确认，未写入规则账本）
+
+2026-11-18，按修订计划的第 2 步写。下面只是文字，`spec/rules.jsonl` 没有动。用户确认之后，R-checkpoint@2 和 R-node@3 先以
+草案写入（`introduced_by: ["D812"]`，不激活），R-history@1 和 R-restart@1 原地改写；模型和参考实现通过之后再激活。
+
+每条只列改动的句子，其余句子不变。
+
+### R-checkpoint@1 → @2，改四句
+
+**1. 没有 recipe 的节点，在 capture 被拒绝。**
+
+- 原文：A computed node whose instance carries no recipe, because it was built or replaced without one, is local-only, and
+  restoring it fails, as does a missing recipe.
+- 新文：A computed node whose instance carries no recipe, because it was built or replaced without one, is local-only:
+  capture is refused and names the node. A graph created to require recipes (R-node) refuses such an instance when it is
+  made, so its capture never meets one.
+
+**2. 两种拒绝同时成立时报哪一个。**
+
+- 原文：Values, terminal payloads, private state and recipe configurations must be JSON; otherwise capture is refused.
+- 新文：Values, terminal payloads, private state and recipe configurations must be JSON; otherwise capture is refused, and
+  a local-only node that also holds one that is not JSON is refused for that.
+
+**3. 在途的工作。**
+
+- 原文：Work in flight at capture is lost: it is neither resumed nor re-issued.
+- 新文：Late output in flight at capture is lost, and checkpoint neither resumes nor re-issues it. Work a node must not
+  lose is part of its private state: the node records what is pending there, as JSON, and its setup opens it again at
+  the restored node's first activation, as at every activation. Elapsed time is not kept, so a reopened timer runs its
+  full duration.
+
+**4. restore 时仍然失败的情况。**
+
+- 原文：A checkpoint that lacks what this rule saves, such as one written to an earlier format, is refused at restore
+  rather than completed from its dependencies' saved values.
+- 新文：A checkpoint that lacks what this rule saves, such as one written to an earlier format, is refused at restore
+  rather than completed from its dependencies' saved values, as is one that holds a local-only node or names a recipe the
+  registry lacks; restore names the node, and for a missing recipe its reference, and returns no graph.
+
+### R-node@2 → @3，在一句后面加四句
+
+- 原文：A recipe is an opaque description of how the instance was built, such as a checkpoint's { ref, config }; the
+  kernel stores it and never reads it.
+- 新文：原句不变，后面接：A graph may be created to require a recipe on every computed instance. Creating a computed
+  node or replacing one without a recipe is then refused when it is asked for, and a refused replace leaves the current
+  instance and its subscribers as they are (R-request-order); asked for by a running function, the refusal is that
+  function's throw (R-failure). The kernel checks only that a recipe is present. The requirement is off unless the graph
+  was created with it.
+
+R-node 是内核规则，所以新文字不引用 R-checkpoint；Q11 的引用方向检查不会多报一处。
+
+### R-history@1，原地改一句、加一句
+
+- 原文：The list is the node's private state: the node has the manual INVALIDATE policy, so an INVALIDATE from the source
+  clears the node's value and the list, deactivation drops it, and a checkpoint saves it.
+- 新文：The list is the node's private state, and the node has the auto INVALIDATE policy (R-invalidation): an INVALIDATE
+  from the source removes the node's value and keeps the list, so the next wave with DATA sends the list with its
+  earlier entries; deactivation drops the list, and a checkpoint saves it. Arrays that came before an INVALIDATE in the
+  same wave are not part of that wave's entry.
+
+### R-restart@1，原地改一句
+
+- 原文：When the owner deactivates without having ended, an ended inner is renewed, and a pending retry's timer is cleared;
+  a restored owner whose inner had ended, which was waiting for a retry no checkpoint holds, renews it at its first
+  activation in the same way.
+- 新文：When the owner deactivates without having ended, an ended inner is renewed, and a pending retry's timer is
+  cleared. A restored owner whose inner had ended was waiting for a retry (R-checkpoint): at its first activation its
+  setup starts that retry's delay again in full, for the same attempt and without counting another failure, and when
+  the delay ends the retry is made or dropped as any delayed retry is.
+
+### 不改的两条
+
+D812 要求核对 R-request-order@3 和 R-failure@3，文字已经覆盖就不改。核对结果是不改：
+
+- R-failure@3 已写："A throw from a node's function becomes that node's ERROR"，以及其他失败"goes to its caller"。
+- 参考内核的 `replace` 在调用时就同步检查并抛出（不是计算节点、依赖重复、成环），排队执行时只再查一次成环。所以
+  R-request-order@3 里的"replace is refused for ..."本来就是请求时的拒绝，新加的 recipe 要求和它们同一时刻。
+
+### 写这些文字时核对过的事实
+
+- **capture 的检查顺序。** 参考实现按创建顺序逐个节点处理，每个节点先查 JSON、再看有没有 recipe
+  （`reference/modules/checkpoint.mjs` 的 `capture`）。第 2 句只规定同一个节点上两种拒绝的先后，这是 D808 已经定的；
+  不同节点之间先报哪个，现行规则没有规定，这里也没有加。
+- **history 同一个 wave 里的失效。** [history-auto-same-wave.mjs](ds20-review-probes/history-auto-same-wave.mjs)
+  （[输出](ds20-review-probes/history-auto-same-wave.out.txt)）：源在一个 wave 里发 `[a]`、INVALIDATE、`[b]`，auto 策略下
+  history 先发 INVALIDATE，再发带 `[["b"]]` 这一条的列表，`[a]` 不在里面。这是 R-invalidation 的"what came before the
+  INVALIDATE on that input is gone"的直接结果，所以加的那一句只是把它写明。失效之后晚到的订阅者只收到 START，下一次 DATA
+  带着此前的条目一起发。
+- **restore 已经接受图选项。** `restore(checkpoint, registry, graphOptions)`，所以"恢复出的图由 host 传入选项"不需要改
+  签名。
+- **待重试的状态能从私有状态推出。** 在 wave 边界上，owner 没结束而 inner 已结束，只可能是在等一次有延时的重试：零延时
+  的 replace 在 wave 结束前已经执行。失败次数和尝试编号都在私有状态里，所以 setup 能为同一次尝试重新计时。
+
+### 参考实现现在和新文字不符的地方（第 5 步要改的）
+
+- capture 遇到无 recipe 的节点时写出 `local: true`，不拒绝。
+- restore 遇到注册表里没有的 recipe 时只点名节点，不点名引用。
+- history 用 manual 策略并清空列表。
+- restart 的 setup 对恢复出的、inner 已结束的 owner 直接 renew，不重新计时。
+- 内核没有"要求 recipe"的图选项。
+- latestAsync 把 AbortController 放在私有状态里，capture 会因为不是 JSON 而拒绝。
+
+---
+
 ## 附录：探针
 
 脚本和输出在 [ds20-review-probes](ds20-review-probes/)，在根仓库 e0b4383 上运行，命令是

@@ -1,0 +1,8 @@
+s <- h: [PENDING, DATA([[["v1"]]])]
+-- one wave: [a], INVALIDATE, [b]
+s <- h: [PENDING, INVALIDATE]
+s <- h: [PENDING, DATA([[["v1"]],[["b"]]])]
+-- then a wave ending in INVALIDATE only, and a late subscriber
+late <- h: [START]
+s <- h: [PENDING, DATA([[[1]],[[2]],[[3]]])]
+late <- h: [PENDING, DATA([[[1]],[[2]],[[3]]])]
