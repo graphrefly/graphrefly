@@ -6,7 +6,8 @@ A candidate model for the D797 draft module rule R-history, written 2026-11-09
 (revised the same day for the array shape)
 for graphrefly:B140, the third module model. It checks that the node built by
 reference/modules/history.mjs behaves as R-history says. Status: draft, like
-the rule it checks.
+the rule it checks. Revised 2026-11-18 for graphrefly:D812: H has the auto
+INVALIDATE policy, so an INVALIDATE removes its value and keeps its list.
 
 Topology: a computed source X, kept active by a sink of its own, and the
 history node H over X with N = 2 and a sink that subscribes and unsubscribes.
@@ -23,8 +24,9 @@ the user chose one per wave.
 
 Two things run side by side on every step:
   - the composition: H settles as a kernel node (auto ERROR without running;
-    an INVALIDATE input is the function's input under H's manual INVALIDATE
-    policy: it empties the list and sends INVALIDATE, then takes what came after it; auto COMPLETE after the run), with its
+    under the auto INVALIDATE policy an INVALIDATE input removes H's value
+    without running its function and leaves its private state, and the function
+    then takes what came after it; auto COMPLETE after the run), with its
     function transcribed from history.mjs; activation runs it once on X's
     snapshot, deactivation drops its value and private state;
   - the rule: a history written straight from R-history's text, which walks
@@ -50,6 +52,7 @@ IsTerm(x) == x \in {"COM", "ERR"}
 \* What X may send in one wave: a sequence of arrays, already valid.
 Menu == { << <<"a">> >>, << <<"a">>, <<"b">> >>, << <<"a", "b">> >>, << <<"b">>, <<"a", "b">> >>,
           << <<"RES">> >>, << <<"RES">>, <<"b">> >>, << <<"INV">> >>, << <<"INV">>, <<"b">> >>,
+          << <<"a">>, <<"INV">> >>, << <<"a">>, <<"INV">>, <<"b">> >>,
           << <<"a">>, <<"COM">> >>, << <<"a", "COM">> >>, << <<"ERR">> >> }
 
 VARIABLE k
@@ -85,9 +88,10 @@ CompWave(h, fs) ==
   LET err  == HasTerm(fs, "ERR")                    \* auto ERROR: no run
       inv  == LastInvFrame(fs, Len(fs)) > 0
       lead == ~err /\ inv /\ h.has
-      \* manual INVALIDATE (2026-11-09): the function empties the list itself and sends
-      \* INVALIDATE, which the kernel drops if H holds no value
-      l0   == IF ~err /\ inv THEN <<>> ELSE h.list
+      \* auto INVALIDATE (D812, 2026-11-18): the kernel removes H's value and forwards the
+      \* INVALIDATE, dropping it if H holds no value; the function does not run for it, so
+      \* the list in private state stays
+      l0   == h.list
       added == SelectSeq(Waves(After(fs)), LAMBDA w : w # <<>>)
       list == LastN(Append(l0, added))
       sends == ~err /\ added # <<>>
@@ -111,8 +115,9 @@ SpecArrays(e, fs) ==
 SpecWave(sp, fs) ==
   LET err  == HasTerm(fs, "ERR")       \* the source's terminal ends the node (auto ERROR: no run)
       inv  == LastInvFrame(fs, Len(fs)) > 0
-      lead == ~err /\ inv /\ sp.has     \* an INVALIDATE clears the node's value and the list
-      l0   == IF inv THEN <<>> ELSE sp.list
+      lead == ~err /\ inv /\ sp.has     \* an INVALIDATE removes the node's value and keeps the list
+      l0   == sp.list
+      \* arrays that came before an INVALIDATE in the same wave are not part of its entry
       e    == IF err THEN <<>> ELSE SpecArrays(<<>>, After(fs))
       \* A wave without DATA is not an entry; one with DATA sends the new list once,
       \* and the list keeps the last N waves.
