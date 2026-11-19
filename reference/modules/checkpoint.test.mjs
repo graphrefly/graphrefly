@@ -756,6 +756,66 @@ test("F6, D812: the restored retry makes no hopeless attempt, is dropped by anot
   closed.unsubscribe("s", "r");
 });
 
+// QA of D812 (2026-11-19). The inner is activated before the owner's setup runs, so an inner that
+// fails only at the restored owner's first activation is ended there too. The owner had recorded no
+// waiting retry, so that failure is the function's to count, once, and its retry waits, as in a
+// graph that was never captured. The first D812 setup took "the inner is ended" for "a retry was
+// waiting": it renewed the inner at once and the function counted the failure as well.
+test("D812: an owner restored with a live inner, whose input fails before its first subscription, goes on as the original", (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  for (const maxAttempts of [2, 3]) {
+    const g = createGraph();
+    g.state("a", 1);
+    restartable(g, "r", { deps: ["a"], fn: fwd(), recipe: { ref: "fwd" }, retry: retryPolicy({ maxAttempts, initialMs: 60_000 }) });
+    g.subscribe("s", "r");
+    assert.equal(g.privateState("r").waiting, false, "no retry is waiting at the capture");
+    const r = restore(roundTrip(capture(g)), fwdRecipes);
+    r.set("a", "bad");
+    r.subscribe("s", "r");
+    g.set("a", "bad");
+    const facts = (x) => [x.get("r").value, x.get("r").ended, x.get("r/inner").ended, x.privateState("r").failures, x.privateState("r").attempt, x.privateState("r").waiting];
+    assert.deepEqual(facts(r), [1, null, ["ERROR", "bad"], 1, 1, true], `maxAttempts ${maxAttempts}: one failure, and its retry waits`);
+    assert.deepEqual(facts(r), facts(g));
+    r.set("a", 5); g.set("a", 5);
+    t.mock.timers.tick(59_999);
+    assert.deepEqual(facts(r), [1, null, ["ERROR", "bad"], 1, 1, true]);
+    t.mock.timers.tick(1);
+    assert.deepEqual(facts(r), [5, null, null, 1, 1, false], "the retry is made after the full delay");
+    assert.deepEqual(facts(r), facts(g));
+    r.unsubscribe("s", "r"); g.unsubscribe("s", "r");
+  }
+});
+
+// The delay that starts again is the waiting retry's own: under a backoff, the one that follows the
+// failure count the owner saved, not the first delay and not the next one.
+test("D812: a restored waiting retry starts the delay of the failure it follows, under a backoff", (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const g = createGraph();
+  g.state("a", 1);
+  restartable(g, "r", { deps: ["a"], fn: fwd(), recipe: { ref: "fwd" }, retry: retryPolicy({ maxAttempts: 4, initialMs: 1_000, factor: 3 }) });
+  g.subscribe("s", "r");
+  g.set("a", "bad"); // the first failure: its retry waits 1 s
+  t.mock.timers.tick(1_000); // the retry's fresh inner fails on "bad" again: the second failure, 3 s
+  assert.deepEqual([g.privateState("r").failures, g.privateState("r").attempt, g.privateState("r").waiting], [2, 2, true]);
+  const cp = roundTrip(capture(g));
+  g.unsubscribe("s", "r");
+  const r = restore(cp, fwdRecipes);
+  r.set("a", 5);
+  r.subscribe("s", "r");
+  t.mock.timers.tick(2_999);
+  assert.deepEqual([r.get("r").value, r.get("r/inner").ended], [1, ["ERROR", "bad"]], "past the first delay, short of the second");
+  t.mock.timers.tick(1);
+  assert.deepEqual([r.get("r").value, r.get("r/inner").ended], [5, null]);
+  assert.deepEqual([r.privateState("r").failures, r.privateState("r").attempt, r.privateState("r").waiting], [2, 2, false]);
+  // Captured now, nothing is waiting, and a restore arms no timer: an inner that fails later is retried once.
+  const again = restore(roundTrip(capture(r)), fwdRecipes);
+  r.unsubscribe("s", "r");
+  again.subscribe("s", "r");
+  again.set("a", "bad");
+  assert.deepEqual([again.privateState("r").failures, again.privateState("r").attempt, again.privateState("r").waiting], [3, 3, true]);
+  again.unsubscribe("s", "r");
+});
+
 import { higherOrderRecipes, mergeMap, relay, switchMap } from "./higher-order.mjs";
 
 // The projector follows the node a source value names.
@@ -862,6 +922,39 @@ test("D808: a local-only node that holds what is not JSON is refused for that, n
     g.subscribe("keep", "n");
     assert.throws(() => capture(g), { message: `not restorable: n: its ${field === "value" ? "retained values are" : "private state is"} not JSON` });
   }
+});
+
+// QA of D812 (2026-11-19): what a node received is checked with what it holds, so D808's order
+// covers it too. n was made before b and replaced onto it, so capture meets n first.
+test("D808, D812: a local-only node that received what is not JSON is refused for that, not as local-only", () => {
+  const g = createGraph();
+  g.node("n", [], () => {});
+  g.state("b", () => 1);
+  g.replace("n", ["b"], () => {});
+  g.subscribe("keep", "n");
+  assert.throws(() => capture(g), { message: "not restorable: n: its received values are not JSON" });
+});
+
+// D812 (5): the recipe requirement belongs to the graph a host creates, and a checkpoint does not
+// hold it. A host that restores passes it again, as the third argument, and the restored graph then
+// refuses what the original refused; without it the restored graph is an ordinary one.
+test("D812: a graph that requires recipes is captured and restored; the host gives the requirement to the restore", () => {
+  const reg = { sum: () => (ctx) => ctx.down([["DATA", ctx.deps[0].value + 1]]) };
+  const g = createGraph({ requireRecipe: true });
+  g.state("a", 1);
+  g.node("p", ["a"], reg.sum(), { recipe: { ref: "sum", config: null } });
+  g.subscribe("s", "p");
+  const cp = roundTrip(capture(g));
+  const refusal = { message: "raw: this graph requires a recipe on every computed node" };
+  const required = restore(cp, reg, { requireRecipe: true });
+  required.subscribe("s", "p");
+  assert.equal(required.get("p").value, 2);
+  assert.throws(() => required.node("raw", ["a"], () => {}), refusal);
+  assert.throws(() => required.replace("p", ["a"], () => {}), { message: "replace: p: this graph requires a recipe on every computed node" });
+  assert.deepEqual(capture(required).nodes.map((n) => n.id), ["a", "p"], "and it is captured again");
+  const ordinary = restore(cp, reg);
+  ordinary.node("raw", ["a"], () => {});
+  assert.throws(() => capture(ordinary), { message: "not restorable: raw: local-only, built or replaced without a recipe" });
 });
 
 test("D808: projected dependency views retain their invocation read guard", async () => {
@@ -1026,7 +1119,7 @@ test("QA2: restore preserves valid repeated declared inputs without inventing re
 // ---- D812 (1), decided by the user 2026-11-18: pending work is state ----
 // Checkpoint neither resumes nor re-issues late output in flight at capture. A node that must not
 // lose its pending work records it in its private state, as JSON, and its setup opens it again.
-import { latestAsyncNode } from "../kernel/sugar.mjs";
+import { latestAsync, latestAsyncNode } from "../kernel/sugar.mjs";
 
 const turn = () => new Promise((resolve) => setImmediate(resolve));
 
@@ -1096,4 +1189,51 @@ test("D812: restored after its result was published, latestAsync starts no job",
   await turn();
   assert.deepEqual(jobs, [], "the unchanged-input rule already gives this");
   r.unsubscribe("s", "q");
+});
+
+// QA of D812 (2026-11-19). latestAsync(f) is the function alone, without the setup that reads the
+// record. It recorded the pending input all the same, so a node built with it came back from a
+// checkpoint saying a job was pending, with none started and nothing to start one. It now records
+// nothing, and its job in flight at a capture is lost, as the rule says of work a node did not record.
+test("D812: latestAsync alone records nothing; its job in flight at a capture is lost, and the next input starts one", async () => {
+  const jobs = [];
+  const job = (v) => new Promise((resolve) => { jobs.push({ v, resolve }); });
+  const reg = { alone: () => latestAsync(job) };
+  const g = createGraph();
+  g.state("a", "q1");
+  g.node("q", ["a"], reg.alone(), { recipe: { ref: "alone", config: null } });
+  g.subscribe("s", "q");
+  await turn();
+  assert.deepEqual([jobs.map((j) => j.v), g.privateState("q")], [["q1"], undefined]);
+  const cp = roundTrip(capture(g));
+  g.unsubscribe("s", "q");
+  const r = restore(cp, reg);
+  r.subscribe("s", "q");
+  await turn();
+  assert.deepEqual([jobs.length, r.get("q").has, r.privateState("q")], [1, false, undefined], "no job, and no record that says there is one");
+  r.set("a", "q2");
+  await turn();
+  jobs[1].resolve("r2");
+  await turn();
+  assert.deepEqual([jobs.map((j) => j.v), r.get("q").value], [["q1", "q2"], "r2"]);
+  r.unsubscribe("s", "q");
+});
+
+test("latestAsync: a job that fails ends the node with ERROR, its message as the payload; an obsolete job's failure is dropped", async () => {
+  const jobs = [];
+  const built = latestAsyncNode((v) => new Promise((resolve, reject) => { jobs.push({ v, resolve, reject }); }));
+  const g = createGraph();
+  g.state("a", "q1");
+  g.node("q", ["a"], built.fn, { setup: built.setup });
+  g.subscribe("s", "q");
+  await turn();
+  g.set("a", "q2"); // q1's job is obsolete
+  await turn();
+  jobs[0].reject(new Error("late"));
+  await turn();
+  assert.deepEqual([g.get("q").ended, g.privateState("q")], [null, { pending: ["q2"] }], "the obsolete failure ends nothing");
+  jobs[1].reject(new Error("no report"));
+  await turn();
+  assert.deepEqual(g.get("q").ended, ["ERROR", "no report"]);
+  g.unsubscribe("s", "q");
 });

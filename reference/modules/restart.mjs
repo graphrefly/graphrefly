@@ -35,8 +35,10 @@ import { assertLocalName } from "../kernel/kernel.mjs";
 // The owner asks for the replace from its own function. The kernel queues it until the
 // wave is over (K8), like TS's ctx.rewireNext. A delayed retry belongs to the attempt that
 // failed: it is dropped if the owner's lifetime has closed by then, or if another attempt has
-// started meanwhile, as an outside request does (decided by the user 2026-11-09). A restored owner
-// that was waiting for a retry starts that retry's delay again in full (D812, 2026-11-18). When the owner deactivates without having ended, an inner
+// started meanwhile, as an outside request does (decided by the user 2026-11-09). While a retry
+// waits, the owner's private state says so (`waiting`), and a restored owner whose state says so
+// starts that retry's delay again in full (D812, 2026-11-18; the record since the QA of
+// 2026-11-19). When the owner deactivates without having ended, an inner
 // that has ended is replaced too, so the owner's next activation starts a fresh inner, as a
 // new subscription does in TS, rather than on the ended inner's snapshot; with no other
 // subscriber it is inactive, so only its definition is renewed. No restart is attempted when a
@@ -89,6 +91,29 @@ function owner({ deps, rounds, retry }, { g, id }) {
     const d = kernel.definition(innerId);
     kernel.replace(innerId, deps, d.fn, { setup: d.setup, recipe: d.recipe });
   };
+  // Starts the attempt st.attempt after `delay`: at once without one, else when a timer ends,
+  // unless the owner's lifetime has closed or another attempt has started by then. `end` is the
+  // terminal the owner ends with when no attempt can be made. While the timer runs, st.waiting
+  // records the retry, so a checkpoint saves it (R-checkpoint: pending work is state).
+  const schedule = (ctx, st, delay, end) => {
+    const { signal } = ctx;
+    const { attempt } = st;
+    const replace = () => {
+      if (signal.aborted || st.attempt !== attempt) return;
+      st.waiting = false;
+      // An upstream may have ended while a retry waited; the ended inner no longer hears it, so
+      // the check is made again here. Then no attempt is made and the owner ends with the inner.
+      if (wouldEndAtOnce()) { if (end) ctx.down([end]); return; }
+      renew();
+    };
+    if (delay > 0) {
+      st.waiting = true;
+      // The timer goes with the lifetime: a pending retry is dropped at close, and its timer
+      // cleared then rather than left to fire into nothing (2026-11-10).
+      const timer = setTimeout(replace, delay);
+      signal.addEventListener("abort", () => clearTimeout(timer), { once: true });
+    } else replace();
+  };
   const fn = (ctx) => {
     const inner = ctx.deps.find((d) => d.id === innerId);
     const request = ctx.deps.find((d) => d.id === restartId);
@@ -114,48 +139,24 @@ function owner({ deps, rounds, retry }, { g, id }) {
     }
     if (!again) { if (end) ctx.down([end]); return; }
 
-    const { signal } = ctx;
-    const attempt = ++st.attempt;
-    const replace = () => {
-      if (signal.aborted || st.attempt !== attempt) return;
-      // An upstream may have ended while a retry waited; the ended inner no longer hears it, so
-      // the check is made again here. Then no attempt is made and the owner ends with the inner.
-      if (wouldEndAtOnce()) { if (end) ctx.down([end]); return; }
-      renew();
-    };
-    if (delay > 0) {
-      // The timer goes with the lifetime: a pending retry is dropped at close, and its timer
-      // cleared then rather than left to fire into nothing (2026-11-10).
-      const timer = setTimeout(replace, delay);
-      signal.addEventListener("abort", () => clearTimeout(timer), { once: true });
-    } else replace();
+    st.attempt += 1;
+    schedule(ctx, st, delay, end);
   };
   const setup = (ctx) => {
     const restored = ctx.state.get() !== undefined; // a fresh activation has no private state
     // At each activation, restored ones included, a request already in the restart state is old
     // (moved here on 2026-11-10: a restored owner, whose private state came back, served one).
     const request = ctx.deps.find((d) => d.id === restartId);
-    ctx.state.set({ ...(ctx.state.get() ?? { round: 1, failures: 0, attempt: 0 }), seen: request.value ?? 0 });
-    // A restored owner whose inner had ended was waiting for a delayed retry: at a wave boundary an
-    // undelayed replace has already run. D812 (2), decided by the user 2026-11-18: the pending retry is
-    // state, so its delay starts again in full, for the same attempt and without counting another
-    // failure; both numbers came back with the private state. When it ends, the retry is made or
-    // dropped as in the function below. Until D812 the inner was renewed here at once (F6), which
-    // kept the failure count and skipped the backoff.
-    if (restored && !kernel.get(id).ended && kernel.get(innerId).ended) {
-      const { attempt, failures } = ctx.state.get();
-      const wait = retryDelayMs(retry, failures);
-      const retryNow = () => {
-        const ended = kernel.get(innerId).ended;
-        if (ctx.signal.aborted || ctx.state.get().attempt !== attempt || !ended) return;
-        if (wouldEndAtOnce()) { ctx.down([ended]); return; }
-        renew();
-      };
-      if (wait > 0) {
-        const timer = setTimeout(retryNow, wait);
-        ctx.signal.addEventListener("abort", () => clearTimeout(timer), { once: true });
-      } else renew(); // no delay to wait: not a state capture leaves, kept so the owner cannot stay stuck
-    }
+    ctx.state.set({ ...(ctx.state.get() ?? { round: 1, failures: 0, attempt: 0, waiting: false }), seen: request.value ?? 0 });
+    // A restored owner that recorded a waiting retry (D812 (2), decided by the user 2026-11-18): the
+    // pending retry is state, so its delay starts again in full, for the same attempt and without
+    // counting another failure; both numbers came back with the private state. When it ends, the
+    // retry is made or dropped as any delayed retry is. Until D812 the inner was renewed here at once
+    // (F6), which kept the failure count and skipped the backoff. The record, not the inner's being
+    // ended, says a retry was waiting: the inner is activated before this setup runs, so one that
+    // fails only now is ended here too, and its failure is the function's to count (QA 2026-11-19).
+    const st = ctx.state.get();
+    if (restored && st.waiting) schedule(ctx, st, retryDelayMs(retry, st.failures), kernel.get(innerId).ended);
     // Unless the owner itself has ended for good, its next activation starts a fresh inner.
     return () => { if (!kernel.get(id).ended && kernel.get(innerId).ended) renew(); };
   };

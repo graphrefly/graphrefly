@@ -518,8 +518,9 @@ Decided away rather than left out:
   execution order. Queueing gives the same two waves in either order (see the K8/P7 test).
 - INVALIDATE needs no DIRTY to stay glitch-free in a diamond, because the second arrival at the fan-in
   finds no value and is a no-op.
-- `latestAsync` shows that switch-style cancellation needs no kernel help: private state holds the
-  previous request's controller, and the lifetime's signal, combined with it, covers close.
+- `latestAsync` shows that switch-style cancellation needs no kernel help: the function keeps the
+  previous request's controller beside the lifetime, keyed by its signal (in private state until
+  graphrefly:D812, which made a capture refuse it), and that signal, combined with it, covers close.
 - A sink that writes its own source on every wave never drains. The kernel does not guard this (P8);
   a module or the host must.
 - Async batch bodies (user discussion 2026-11-06): committing only the part before the first await

@@ -511,6 +511,17 @@ for restore to refuse; a checkpoint that already holds one still fails at restor
 restoring registry lacks is refused as `missing recipe <ref>`, naming the reference with the node. Failures use `not restorable: <id>: <reason>` and the
 shared [reason fixture](../../spec/fixtures/d797-rereview.v1.json). Restore stays cold; the host
 explicitly retains/subscribes the desired root. Projected contexts preserve invocation read guards.
+
+QA of the D812 work (2026-11-19). An independent review found that the restart owner's setup took
+"the inner is ended" for "a retry was waiting at the capture". The inner is activated before that
+setup runs, so an owner restored with a live inner whose input failed before its first subscription
+renewed the inner at once and counted the failure in its function as well: with two attempts it
+ended at once, where the original waits out the delay. The owner now records a waiting retry in its
+private state (`waiting`), and its setup reads only that record. `latestAsync(f)` alone, without the
+setup of `latestAsyncNode`, no longer records its pending input: nothing read the record, so a
+restored node said a job was pending when none was. Tests added for both, for a failed job, for a
+backoff's second delay, for a local-only node that received what is not JSON, and for a requiring
+graph captured and restored with the requirement given to `restore` as its third argument.
 The dated exploration below records earlier schema/implementation shapes.
 
 

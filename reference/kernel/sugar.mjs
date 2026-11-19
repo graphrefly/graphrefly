@@ -56,33 +56,38 @@ export const reduce = (f, seed) => (ctx) => {
 // controller now lives beside the lifetime, keyed by its signal, and is never saved.
 const controllers = new WeakMap(); // lifetime signal -> the AbortController of its job in flight
 
-const startJob = (f, ctx, value) => {
+// `record` says whether the job's input is kept in private state for a setup to start again.
+const startJob = (f, ctx, value, record) => {
   controllers.get(ctx.signal)?.abort(); // a newer input makes the older request obsolete
   const ctrl = new AbortController();
   controllers.set(ctx.signal, ctrl);
-  ctx.state.set({ pending: [value] });
+  if (record) ctx.state.set({ pending: [value] });
   const signal = AbortSignal.any([ctx.signal, ctrl.signal]);
   Promise.resolve()
     .then(() => f(value, signal))
     .then(
-      (v) => { if (!signal.aborted) { ctx.state.set({ pending: [] }); ctx.down([["DATA", v]]); } },
+      (v) => { if (!signal.aborted) { if (record) ctx.state.set({ pending: [] }); ctx.down([["DATA", v]]); } },
       (e) => { if (!signal.aborted) ctx.down([["ERROR", e instanceof Error ? e.message : e]]); },
     );
 };
 
+const latestAsyncFn = (f, record) => (ctx) => {
+  const values = occurrences(ctx.deps[0]);
+  if (values.length) startJob(f, ctx, values[values.length - 1], record);
+};
+
 export const latestAsyncNode = (f) => ({
-  fn: (ctx) => {
-    const values = occurrences(ctx.deps[0]);
-    if (values.length) startJob(f, ctx, values[values.length - 1]);
-  },
+  fn: latestAsyncFn(f, true),
   setup: (ctx) => {
     const pending = ctx.state.get()?.pending;
-    if (pending?.length) startJob(f, ctx, pending[0]);
+    if (pending?.length) startJob(f, ctx, pending[0], true);
   },
 });
 
-// The function alone, for a node that is not restored.
-export const latestAsync = (f) => latestAsyncNode(f).fn;
+// The function alone, for a node without that setup. It records nothing: a record no setup reads
+// would come back from a checkpoint saying a job is pending when none is (QA 2026-11-19). Its job
+// in flight at a capture is lost, as any late output a node did not record is (R-checkpoint).
+export const latestAsync = (f) => latestAsyncFn(f, false);
 
 // ---- Combining several dependencies (2026-11-08) ------------------------------------
 //
