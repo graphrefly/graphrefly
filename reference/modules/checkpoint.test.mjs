@@ -221,15 +221,25 @@ function grabbing(reg, as = "sum") {
   return { seen, reg: { ...reg, grab: (config) => { const fn = reg[as](config); return (ctx) => { seen.ctx = ctx; fn(ctx); }; } } };
 }
 
-test("a node without a recipe is local-only and cannot be restored", () => {
+// D812 (4), decided by the user 2026-11-18: capture already refused what is not JSON, yet wrote a
+// checkpoint for a node it knew could not be restored. The refusal is made at capture now.
+test("a node without a recipe is local-only, and capture refuses the graph and names it", () => {
   const reg = registry();
   const g = createGraph();
   g.state("a", 1);
   node(g, reg, "s", ["a"], "sum");
   g.node("raw", ["a"], (ctx) => ctx.down([["DATA", 0]]));
+  assert.throws(() => capture(g), { message: "not restorable: raw: local-only, built or replaced without a recipe" });
+});
+
+test("a checkpoint that already holds a local-only node, as one written before D812, fails at restore", () => {
+  const reg = registry();
+  const g = createGraph();
+  g.state("a", 1);
+  node(g, reg, "s", ["a"], "sum");
   const cp = capture(g);
-  assert.deepEqual(cp.nodes.filter((n) => n.local).map((n) => n.id), ["raw"]);
-  assert.throws(() => restore(cp, reg), /not restorable: raw: local-only, built or replaced without a recipe/);
+  cp.nodes.push({ id: "raw", kind: "node", deps: ["a"], local: true });
+  assert.throws(() => restore(cp, reg), { message: "not restorable: raw: local-only, built or replaced without a recipe" });
 });
 
 // F6 (the user's choice, 2026-11-10): a rewire belongs to the lifetime (F7), so it is saved with the
@@ -265,9 +275,9 @@ test("a replace without a recipe makes the node local-only, even when it keeps t
   g.subscribe("s", "p");
   g.replace("p", ["a"], times3);
   assert.equal(g.definition("p").recipe, null);
-  const cp = roundTrip(capture(g));
-  assert.deepEqual(cp.nodes.filter((n) => n.local).map((n) => n.id), ["p"], "q keeps its recipe's definition");
-  assert.throws(() => restore(cp, reg), /not restorable: p: local-only, built or replaced without a recipe/, "restoring it as the old recipe would give 4 where the original gives 6");
+  assert.throws(() => capture(g), { message: "not restorable: p: local-only, built or replaced without a recipe" }, "saving it as the old recipe would restore 4 where the original gives 6");
+  g.replace("p", ["a"], reg.times({ k: 3 }), { recipe: { ref: "times", config: { k: 3 } } });
+  assert.deepEqual(roundTrip(capture(g)).nodes.map((n) => n.local), [undefined, undefined, undefined], "a replace with a recipe is saved as that recipe");
 });
 
 test("a host replace with a recipe keeps the node restorable, as the new recipe", () => {
@@ -788,7 +798,7 @@ test("D808: omitted whole lifetime fails; cold lifetime is explicitly null", () 
   assert.equal(r.get("cold").active, false);
 });
 
-test("D808: local-only nodes still validate retained data and private state", () => {
+test("D808: a local-only node that holds what is not JSON is refused for that, not as local-only", () => {
   for (const field of ["value", "state"]) {
     const g = createGraph();
     g.node("n", [], (ctx) => {

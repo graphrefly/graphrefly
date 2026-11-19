@@ -8,7 +8,8 @@
 // record of its own. A node is restorable when its definition carries a recipe, `{ ref, config }`
 // with a JSON config, given as the node option `recipe` (and to replace, for a new instance); the
 // kernel stores it and never reads it, as TS's node option `restore` is. Function bodies are never
-// saved (R-checkpoint). A node whose definition has no recipe is local-only, and restoring it fails:
+// saved (R-checkpoint). A node whose definition has no recipe is local-only, and capture refuses a
+// graph that holds one, naming it (D812, 2026-11-18; until then capture wrote it and restore failed):
 // a node built without one, or replaced without one (C6). A node rewired for its lifetime (F7) is
 // restorable: its lifetime's dependencies are saved with the rest of its lifetime.
 //
@@ -96,7 +97,9 @@ export function capture(g) {
       };
     }
     validateSaved(id, saved);
-    if (!def.recipe) return { id, kind, deps: def.deps, local: true };
+    // D812 (4), 2026-11-18: a local-only node is refused here, after what it holds was checked for
+    // JSON (D808's order), instead of being written as { local: true } and failing at restore.
+    if (!def.recipe) throw notRestorable(id, "local-only, built or replaced without a recipe");
     // Explicit null distinguishes a cold node from a truncated lifetime record.
     return { ...entry, saved };
   }) };
