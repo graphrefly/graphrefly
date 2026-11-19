@@ -73,11 +73,14 @@ const holderSetup = (ctx) => {
 export function pullable(g, id, inputId, serve, { recipe } = {}) {
   assertLocalName(id);
   const demandId = `${id}/demand`;
-  g.state(demandId); // no value until the first pull
-  // The demand state never completes; only the input ends the holder, hence manual complete.
-  g.node(id, [inputId, demandId], holder(serve), {
-    quiet: true, terminal: { complete: "manual" }, invalidate: "manual", setup: holderSetup,
-    ...(recipe && { recipe: { ref: "demand.holder", config: { serve: recipe } } }),
+  // One build (R-node@3): refused for the holder, it leaves no demand state.
+  g.build(() => {
+    g.state(demandId); // no value until the first pull
+    // The demand state never completes; only the input ends the holder, hence manual complete.
+    g.node(id, [inputId, demandId], holder(serve), {
+      quiet: true, terminal: { complete: "manual" }, invalidate: "manual", setup: holderSetup,
+      ...(recipe && { recipe: { ref: "demand.holder", config: { serve: recipe } } }),
+    });
   });
   return pullableOf(g, id);
 }

@@ -458,6 +458,20 @@ test("a restored history needs no rerun and keeps its list across an INVALIDATE,
   assert.deepEqual(unseen.get("h").value, g.get("h").value);
 });
 
+// R-checkpoint@2 (the user, 2026-11-19): what a restored node makes of an INVALIDATE it could not see.
+test("an INVALIDATE before a restored node's first subscription: seen as the write after it, not seen, or as a dependency without a value", () => {
+  let runs = 0;
+  const reg = { plus: () => (ctx) => { runs += 1; const d = ctx.deps[0]; if (d.has) ctx.down([["DATA", d.value + 1]]); } };
+  const g = createGraph();
+  g.state("a", 1); node(g, reg, "p", ["a"], "plus");
+  g.subscribe("k", "p");
+  const cp = roundTrip(capture(g));
+  const after = (act) => { const r = restore(cp, reg); runs = 0; act(r); const first = during(r, () => r.subscribe("k", "p")); return [runs, first, r.get("p").has]; };
+  assert.deepEqual(after((r) => { r.invalidate("a"); r.set("a", 5); }), [1, ["k <- p: [START, DATA(6)]"], true], "another value: the write");
+  assert.deepEqual(after((r) => { r.invalidate("a"); r.set("a", 1); }), [0, ["k <- p: [START, DATA(2)]"], true], "the value it had received: not seen");
+  assert.deepEqual(after((r) => { r.invalidate("a"); }), [1, ["k <- p: [START, DATA(2)]"], true], "alone: a runs without a value, and p's own value stays");
+});
+
 // Second QA (2026-11-19; the user: "我们要be honest"). A restored history is not always as the
 // original. It is told only what its input holds at its first activation (R-checkpoint), so two
 // things done before its first subscription are not seen as the original saw them.
@@ -1047,7 +1061,7 @@ test("D812: every JSON refusal comes before a missing recipe, across nodes; then
 // one, so such a node passed creation and was then called local-only. A recipe that was given but
 // has no reference is refused at capture with the reason restore gives for the same record.
 test("D812: a recipe given without a reference passes the requirement and is refused at capture as a missing recipe", () => {
-  for (const recipe of [false, 0, "", {}, { config: 1 }, "name", []]) {
+  for (const recipe of [false, 0, "", {}, { config: 1 }, "name", [], { ref: "" }, { ref: 5 }]) {
     const g = createGraph({ requireRecipe: true });
     g.node("n", [], () => {}, { recipe });
     assert.throws(() => capture(g), { message: "not restorable: n: missing recipe" }, JSON.stringify(recipe));
@@ -1059,7 +1073,51 @@ test("D812: a recipe given without a reference passes the requirement and is ref
   }
 });
 
-// R-checkpoint@2, R-bridge@2: a bridge's nodes carry no recipes and their checkpoint is not covered.
+// R-checkpoint@2 (the user, 2026-11-19): a reference is a non-empty string. A checkpoint written by
+// hand with an empty one is refused at restore with the same reason, without a reference after it.
+test("D812: a checkpoint whose recipe has an empty reference is refused at restore as a missing recipe", () => {
+  const reg = { sum: () => (ctx) => ctx.down([["DATA", 1]]) };
+  const g = createGraph();
+  g.node("n", [], reg.sum(), { recipe: { ref: "sum", config: null } });
+  const cp = roundTrip(capture(g));
+  cp.nodes.find((n) => n.id === "n").recipe.ref = "";
+  assert.throws(() => restore(cp, { ...reg, "": reg.sum }), { message: "not restorable: n: missing recipe" });
+});
+
+// R-node@3 (the user, 2026-11-19): a request that builds several nodes, as a module's, and is
+// refused for one of them leaves none of them, so the same build can be asked for again. Until
+// then restartable and pullable left their control state behind and the second call failed on a
+// duplicate id.
+test("D812: a module's build that is refused leaves none of its nodes, whatever refuses it", () => {
+  const ids = (g) => g.describe().map((n) => n.id);
+  const noRecipe = (id) => ({ message: `${id}: this graph requires a recipe on every computed node` });
+  const required = createGraph({ requireRecipe: true });
+  required.state("a", 1);
+  assert.throws(() => restartable(required, "r", { deps: ["a"], fn: fwd() }), noRecipe("r/inner"));
+  assert.throws(() => pullable(required, "d", "a", () => {}), noRecipe("d"));
+  assert.throws(() => wireEdgeGroupIn(required, "in", { group: "ga", frames: "a", edges: ["x"] }), noRecipe("in"));
+  assert.deepEqual(ids(required), ["a"]);
+  restartable(required, "r", { deps: ["a"], fn: fwd(), recipe: { ref: "fwd" } });
+  pullable(required, "d", "a", () => {}, { recipe: { ref: "serve" } });
+  assert.deepEqual(ids(required), ["a", "r/restart", "r/inner", "r", "d/demand", "d"], "the same builds, given recipes");
+  // Refused for another reason, on an ordinary graph: a dependency that does not exist, and an
+  // id taken by the last node of the build.
+  const g = createGraph();
+  g.state("a", 1);
+  assert.throws(() => restartable(g, "r", { deps: ["nowhere"], fn: fwd() }), { message: /nowhere/ });
+  assert.throws(() => pullable(g, "d", "nowhere", () => {}), { message: /nowhere/ });
+  assert.throws(() => pausable(g, "p", "nowhere"), { message: /nowhere/ });
+  g.state("in/issues");
+  assert.throws(() => wireEdgeGroupIn(g, "in", { group: "ga", frames: "a", edges: ["x"] }), { message: "duplicate node in/issues" });
+  assert.deepEqual(ids(g), ["a", "in/issues"]);
+  // A pausable over a control pair made beforehand does not take that pair with it.
+  const control = pausableOf(g, "shared", { control: undefined });
+  g.state("shared/locks", []);
+  assert.throws(() => pausable(g, "q", "nowhere", { control }), { message: /nowhere/ });
+  assert.deepEqual(ids(g), ["a", "in/issues", "shared/locks"]);
+});
+
+// R-bridge@3: a bridge's nodes carry no recipes; R-checkpoint@2: such a graph cannot be captured.
 test("D812: a graph that holds a bridge group cannot be captured, and a graph that requires recipes cannot hold one", () => {
   const localOnly = (id) => ({ message: `not restorable: ${id}: local-only, built or replaced without a recipe` });
   const sender = createGraph();

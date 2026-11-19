@@ -110,7 +110,7 @@ export function capture(g) {
   for (const { id, kind, recipe } of checkpoint.nodes) {
     if (kind === "state") continue;
     if (recipe == null) throw notRestorable(id, "local-only, built or replaced without a recipe");
-    if (!record(recipe) || typeof recipe.ref !== "string") throw notRestorable(id, "missing recipe");
+    if (!hasReference(recipe)) throw notRestorable(id, "missing recipe");
   }
   return JSON.parse(JSON.stringify(checkpoint));
 }
@@ -159,6 +159,8 @@ function buildOrder(nodes, dependencies = (n) => n.deps) {
 }
 
 const record = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
+// R-checkpoint@2: a recipe's reference is a non-empty string; a recipe without one cannot be saved.
+const hasReference = (recipe) => record(recipe) && typeof recipe.ref === "string" && recipe.ref !== "";
 const policy = (v) => v === "auto" || v === "manual";
 const ids = (v) => Array.isArray(v) && v.every((id) => typeof id === "string");
 const terminal = (v) => v === null || (Array.isArray(v) && (
@@ -184,7 +186,7 @@ function prepareCheckpoint(checkpoint, registry) {
     const saved = n.saved;
     if (n.kind === "node") {
       // D812 (4), confirmed by the user 2026-11-18: a reference the registry lacks is named with the node.
-      if (!record(n.recipe) || typeof n.recipe.ref !== "string") fail("missing recipe");
+      if (!hasReference(n.recipe)) fail("missing recipe");
       if (typeof registry[n.recipe.ref] !== "function") fail(`missing recipe ${n.recipe.ref}`);
       json(n.recipe.config ?? null, n.id, "its recipe config is not JSON");
       const opts = n.opts;

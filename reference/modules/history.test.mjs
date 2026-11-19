@@ -98,6 +98,17 @@ test("history: a wave whose only value comes before an INVALIDATE is not an entr
     ["k <- h: [PENDING, DATA([[[1]],[[8]]])]"]);
 });
 
+// R-history@1 (the user, 2026-11-19): the auto ERROR policy ends the node without a run.
+test("history: a wave that carries DATA and the source's ERROR ends it with no list for that wave", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  history(g, "h", "a", 5);
+  g.subscribe("k", "h");
+  assert.deepEqual(during(g, () => g.batch(() => { g.set("a", 5); g.error("a", "E"); })).filter((l) => l.startsWith("k <-")),
+    ['k <- h: [PENDING, ERROR("E")]']);
+  assert.deepEqual([g.get("h").value, g.get("h").ended], [[[[1]]], ["ERROR", "E"]]);
+});
+
 test("history: the source's end ends it; a new subscriber gets the list and the terminal (P5)", () => {
   const g = createGraph();
   g.state("s");

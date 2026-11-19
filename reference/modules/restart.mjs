@@ -57,16 +57,19 @@ export function restartable(g, id, { deps, fn, recipe, rounds = 1, retry = retry
   assertLocalName(id);
   const innerId = `${id}/inner`;
   const restartId = `${id}/restart`;
-  g.state(restartId); // no value until the first request, so activation sees none
-  g.node(innerId, deps, fn, recipe ? { recipe } : {});
-  // The owner holds the inner's dependencies too, ahead of the inner, so an inner that ends does
-  // not release the last hold on them: upstream stays active across attempts (C5a, 2026-11-10).
-  // The owner reads only the inner and the restart state.
-  const config = { deps, rounds, retry };
-  const built = owner(config, { g, id });
-  g.node(id, [...deps, innerId, restartId], built.fn, {
-    terminal: { complete: "manual", error: "manual" }, setup: built.setup,
-    ...(recipe && { recipe: { ref: "restart.owner", config } }),
+  // One build (R-node@3): refused for any of its three nodes, it leaves none of them.
+  g.build(() => {
+    g.state(restartId); // no value until the first request, so activation sees none
+    g.node(innerId, deps, fn, recipe ? { recipe } : {});
+    // The owner holds the inner's dependencies too, ahead of the inner, so an inner that ends does
+    // not release the last hold on them: upstream stays active across attempts (C5a, 2026-11-10).
+    // The owner reads only the inner and the restart state.
+    const config = { deps, rounds, retry };
+    const built = owner(config, { g, id });
+    g.node(id, [...deps, innerId, restartId], built.fn, {
+      terminal: { complete: "manual", error: "manual" }, setup: built.setup,
+      ...(recipe && { recipe: { ref: "restart.owner", config } }),
+    });
   });
   return restartableOf(g, id);
 }

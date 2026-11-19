@@ -2182,6 +2182,19 @@ test("D812: a function that handles the refusal goes on, and the instance it ask
   assert.deepEqual(during(g, () => g.set("a", 2)), ["s <- o: [PENDING, DATA(\"refused\")]"], "and o runs again");
 });
 
+// R-node@3 (the user, 2026-11-19): a request that builds several nodes leaves none when one is refused.
+test("D812: a build that is refused for one node leaves none of its nodes; one that is not keeps them all", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  assert.throws(() => g.build(() => { g.state("x"); g.node("y", ["a", "x"], () => {}); g.node("z", ["missing"], () => {}); }), KernelError);
+  assert.deepEqual(g.describe().map((n) => n.id), ["a"]);
+  assert.equal(g.build(() => { g.state("x"); g.node("y", ["a", "x"], () => {}); return "built"; }), "built");
+  assert.deepEqual(g.describe().map((n) => n.id), ["a", "x", "y"]);
+  // What existed before the build stays, also when the build fails after replacing nothing.
+  assert.throws(() => g.build(() => { g.state("w"); g.state("x"); }), refusedWith("duplicate node x"));
+  assert.deepEqual(g.describe().map((n) => n.id), ["a", "x", "y"]);
+});
+
 test("D812: the requirement is off unless the graph was created with it", () => {
   const g = createGraph();
   g.state("a", 1);
