@@ -6,7 +6,7 @@ A candidate model for the D797 draft module rule R-checkpoint, written
 2026-11-09 for graphrefly:B140, the fourth module model. It checks that a node
 restored by reference/modules/checkpoint.mjs, once subscribed, behaves as the
 original node would. Status: R-checkpoint is active since D802 (2026-11-10).
-Revised 2026-11-18 for graphrefly:D812, the draft R-checkpoint@2: capture is
+Revised 2026-11-18 for graphrefly:D812 and R-checkpoint@2, active since then: capture is
 refused while P is local-only, and pending work that P recorded in its private
 state is opened again by its setup, without a run of its function.
 
