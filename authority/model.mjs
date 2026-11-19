@@ -121,20 +121,28 @@ function transitionTarget(record) {
 // successor says some of its choices stand, and those choices are then read through the successor's
 // `supersedes` edge. And a partial successor that lists none of its predecessor's concerns takes
 // nothing; partialSuccessorsTakingNothing lists such pairs so that this is seen.
+// A successor's concerns, as a list: a single string counts as one concern, as it always did
+// when read for what a successor takes (second QA, 2026-11-19: the listing read it as an array and threw).
+const concernsOf = (record) => [].concat(record?.concerns ?? []);
+
+// Whether the record itself names a successor. Read as federation.mjs reads the field for its
+// edges: null, or an empty list, names none.
+export const namesItsSuccessor = (record) => [].concat(record.superseded_by ?? []).length > 0;
+
 export function partialSuccessorsTakingNothing(record, superseders) {
   const concerns = new Set(Array.isArray(record.concerns) ? record.concerns : []);
   if (concerns.size === 0) return [];
   return superseders
-    .filter((superseder) => superseder.change_kind === "partial-supersession" && !(superseder.concerns ?? []).some((concern) => concerns.has(concern)))
+    .filter((superseder) => superseder.change_kind === "partial-supersession" && !concernsOf(superseder).some((concern) => concerns.has(concern)))
     .map((superseder) => superseder.id);
 }
 
 export function concernsStillGoverned(record, superseders) {
   const concerns = Array.isArray(record.concerns) ? record.concerns : [];
-  if (record.superseded_by !== undefined && record.superseded_by !== null) return [];
+  if (namesItsSuccessor(record)) return [];
   if (superseders.length === 0) return concerns;
   if (superseders.some((superseder) => superseder.change_kind !== "partial-supersession")) return [];
-  const taken = new Set(superseders.flatMap((superseder) => superseder.concerns ?? []));
+  const taken = new Set(superseders.flatMap(concernsOf));
   return concerns.filter((concern) => !taken.has(concern));
 }
 
@@ -175,7 +183,7 @@ function deriveDecisionGraph(decisions, decisionById, errors, knownExternalDecis
   const currentCandidates = decisions
     .filter((decision) => isProductConstitutionRecord(decision) && decision.status === "locked"
       && (governed.get(decision.id).length > 0
-        || ((incoming.get(decision.id)?.length ?? 0) === 0 && (decision.superseded_by === undefined || decision.superseded_by === null))))
+        || ((incoming.get(decision.id)?.length ?? 0) === 0 && !namesItsSuccessor(decision))))
     .map((decision) => decision.id);
   const currentSet = new Set(currentCandidates);
   const concernGovernors = new Map();

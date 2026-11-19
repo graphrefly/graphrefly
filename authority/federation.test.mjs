@@ -234,3 +234,39 @@ test("root-only checks resolve an external relocation locator without copying it
     rmSync(sibling, { recursive: true, force: true });
   }
 });
+
+// Second QA of the D812 work (2026-11-19): the federation's own reading of superseded_by, with no
+// successor's edge beside it, and the order of the list it prints.
+test("the cross-owner current set reads superseded_by on its own and lists successors that take nothing by predecessor", () => {
+  const root = mkdtempSync(join(tmpdir(), "graphrefly-authority-"));
+  try {
+    mkdirSync(join(root, "authority"));
+    mkdirSync(join(root, "decisions"));
+    writeJsonl(join(root, "authority/ledgers.jsonl"), [
+      { origin: "graphrefly", owner: "graphrefly", authority_class: "durable-root", path: "decisions/root.jsonl", availability: "required", include_in_root_dashboard: true },
+    ]);
+    writeJsonl(join(root, "decisions/root.jsonl"), [
+      { id: "D1", status: "locked", supersedes: [], concerns: ["a"], superseded_by: "D2" },
+      { id: "D2", status: "locked", supersedes: [], concerns: ["b"] },
+      { id: "D3", status: "locked", supersedes: [], concerns: ["c"], superseded_by: [] },
+      { id: "D4", status: "locked", supersedes: [], concerns: ["d"], superseded_by: null },
+      { id: "D8", status: "locked", supersedes: [], concerns: ["e"] },
+      { id: "D9", status: "locked", supersedes: ["D8"], concerns: ["x"], change_kind: "partial-supersession" },
+      { id: "D5", status: "locked", supersedes: [], concerns: ["f"] },
+      { id: "D6", status: "locked", supersedes: ["D5"], concerns: "y", change_kind: "partial-supersession" },
+      { id: "D7", status: "locked", supersedes: [] },
+      { id: "D10", status: "locked", supersedes: ["D7"], concerns: ["z"], change_kind: "partial-supersession" },
+    ]);
+    writeJsonl(join(root, "authority/relocations.jsonl"), []);
+
+    const federation = loadFederation(root);
+    const q = (...ids) => ids.map((id) => `graphrefly:${id}`).sort();
+    assert.deepEqual([...federation.currentProduct.historical_qualified_ids].sort(), q("D1", "D7"));
+    assert.deepEqual([...federation.currentProduct.current_qualified_ids].sort(), q("D2", "D3", "D4", "D5", "D6", "D8", "D9", "D10"));
+    assert.deepEqual(federation.currentProduct.partial_successors_taking_nothing, [
+      { by: "graphrefly:D6", of: "graphrefly:D5" }, { by: "graphrefly:D9", of: "graphrefly:D8" },
+    ]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});

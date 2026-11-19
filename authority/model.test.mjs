@@ -242,3 +242,26 @@ test("partial supersession: a full successor beside a partial one, superseded_by
   assert.deepEqual(constitution.partialSuccessorsTakingNothing, [{ by: "D7", of: "D6" }]);
   assert.equal(views.metrics.partialSuccessorsTakingNothing, 1);
 });
+
+// Second QA of the D812 work (2026-11-19): the readings no test held.
+test("partial supersession: a predecessor without concerns is taken whole, an empty superseded_by names no successor, and a successor's single concern may be a string", () => {
+  const root = { __authority: { owner: "graphrefly", authority_class: "durable-root" } };
+  const views = buildAuthorityViews({
+    decisions: [
+      decision("D1", { ...root }),
+      decision("D2", { ...root, concerns: ["a"], change_kind: "partial-supersession", supersedes: ["D1"] }),
+      decision("D3", { ...root, concerns: ["b"], superseded_by: null }),
+      decision("D4", { ...root, concerns: ["c"], superseded_by: [] }),
+      decision("D5", { ...root, concerns: ["d", "e"] }),
+      decision("D6", { ...root, concerns: "d", change_kind: "partial-supersession", supersedes: ["D5"] }),
+      decision("D7", { ...root, concerns: ["f"] }),
+      decision("D8", { ...root, concerns: "y", change_kind: "partial-supersession", supersedes: ["D7"] }),
+    ],
+    rules: [],
+    conformance: [],
+  });
+  const constitution = views.currentProductConstitution;
+  assert.deepEqual(constitution.current, ["D2", "D3", "D4", "D5", "D6", "D7", "D8"]);
+  assert.deepEqual(constitution.partiallySuperseded, [{ id: "D5", by: ["D6"], governs: ["e"] }, { id: "D7", by: ["D8"], governs: ["f"] }]);
+  assert.deepEqual(constitution.partialSuccessorsTakingNothing, [{ by: "D8", of: "D7" }], "not D2 of D1, which had nothing to keep");
+});

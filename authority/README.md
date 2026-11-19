@@ -79,8 +79,17 @@ concern, the predecessor is historical even if the successor says some of its ch
 (graphrefly:D812 and D802), and those choices are read through the successor's `supersedes` edge. And a
 partial successor that lists none of its predecessor's concerns takes nothing from it; the check
 prints such pairs as `partialSuccessorsTakingNothing`, for review, and whether the predecessor should
-have kept everything is its owner's call. A `superseded_by` field on a record, which only old records
-carry, counts as a whole supersession in both resolvers.
+have kept everything is its owner's call. A third limit is the reverse case: a predecessor that lists
+no concerns at all, as every record before admission metadata, has nothing to keep, so a partial
+successor retires it whole, and the printed list leaves these pairs out (53 at the root and 78 in the
+workspace on 2026-11-19, the legacy records D789, D796, D797 and D803 replaced). A `superseded_by`
+field that names a successor, which only old records carry, counts as a whole supersession in both
+resolvers; null or an empty list names none.
+
+The two resolvers still differ in one place, found by the second QA of the D812 work on 2026-11-19
+and not changed: `model.mjs` builds supersession from the root ledger's records only, so a root record
+superseded only from another owner's ledger (D237 and D238, by graphrefly:D647 in the TS ledger) is
+current in the model and historical in the federation.
 
 Ledgers marked `historical_only` accept no unlocated record: every body must match a relocation
 locator. This makes the history files immutable destinations rather than alternate authoring
