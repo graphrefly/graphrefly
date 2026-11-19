@@ -505,7 +505,9 @@ The kernel side, `rewire` and `ctx.deps[i].id`, is listed in the kernel README.
 D808 rereview update (2026-11-12): computed checkpoint entries explicitly carry `saved: null`
 for a cold node or a saved record; omitting the enclosing field is rejected as `missing received
 records`. Capture validates retained values, received values, private state, recipe config and
-ERROR payloads even for local-only nodes. Failures use `not restorable: <id>: <reason>` and the
+ERROR payloads even for local-only nodes. graphrefly:D812 update (2026-11-18): after those checks
+capture refuses a local-only node itself, with the shared `localOnly` reason, instead of writing it
+for restore to refuse; a checkpoint that already holds one still fails at restore. Failures use `not restorable: <id>: <reason>` and the
 shared [reason fixture](../../spec/fixtures/d797-rereview.v1.json). Restore stays cold; the host
 explicitly retains/subscribes the desired root. Projected contexts preserve invocation read guards.
 The dated exploration below records earlier schema/implementation shapes.

@@ -2098,3 +2098,50 @@ test("QA2: quiet auto ERROR remains scoped to the lifetime after immediate inval
   assert.deepEqual(seen, [["INVALIDATE"]]);
   assert.equal(g.get("q").ended, null, "retired lifetime cannot publish its queued ERROR");
 });
+
+// D812 (5) and (6), decided by the user 2026-11-18: a graph may be created to require a recipe on
+// every computed instance. The kernel checks only that one is present and never reads it.
+const refusedWith = (message) => (e) => e instanceof KernelError && e.message === message;
+
+test("D812: a graph created to require recipes refuses a computed node or a replace without one, when asked", () => {
+  const recipe = { ref: "x", config: null };
+  const g = createGraph({ requireRecipe: true });
+  g.state("a", 1);
+  assert.throws(() => g.node("raw", ["a"], () => {}), refusedWith("raw: this graph requires a recipe on every computed node"));
+  assert.deepEqual(g.describe().map((n) => n.id), ["a"], "no node was created");
+  g.node("p", ["a"], (ctx) => ctx.down([["DATA", ctx.deps[0].value]]), { recipe });
+  g.subscribe("s", "p");
+  const refused = during(g, () => {
+    assert.throws(() => g.replace("p", ["a"], () => {}), refusedWith("replace: p: this graph requires a recipe on every computed node"));
+  });
+  assert.deepEqual(refused, [], "the sink receives no START");
+  assert.equal(g.get("p").value, 1, "p keeps its instance and its value");
+  assert.deepEqual(during(g, () => g.set("a", 2)), ["s <- p: [PENDING, DATA(2)]"], "and its subscriber");
+  assert.deepEqual(during(g, () => g.replace("p", ["a"], (ctx) => ctx.down([["DATA", ctx.deps[0].value * 10]]), { recipe })),
+    ["s <- p: [START, DATA(20)]"], "a replace with a recipe starts a new instance");
+  g.node("unknown", ["a"], () => {}, { recipe: { ref: "no registry knows this", config: null } });
+  assert.equal(g.definition("unknown").recipe.ref, "no registry knows this", "the kernel never reads a recipe");
+});
+
+test("D812: a refusal met by a running function is that function's throw, so its node ends with ERROR", () => {
+  const recipe = { ref: "x", config: null };
+  const build = (opts) => {
+    const g = createGraph({ requireRecipe: true });
+    g.state("a");
+    g.node("inner", [], () => {}, { recipe });
+    // o replaces the inner with the definition its input names, as a higher-order operator does.
+    g.node("o", ["a"], (ctx) => { if (ctx.deps[0].has) g.replace("inner", [], () => {}, ctx.deps[0].value); }, { recipe });
+    g.subscribe("s", "o");
+    return during(g, () => g.set("a", opts));
+  };
+  assert.deepEqual(build({}), ["s <- o: [PENDING, ERROR(\"replace: inner: this graph requires a recipe on every computed node\")]"]);
+  assert.deepEqual(build({ recipe }), ["s <- o: [PENDING, RESOLVED]"], "given a recipe, the inner is replaced and o goes on");
+});
+
+test("D812: the requirement is off unless the graph was created with it", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  g.node("raw", ["a"], () => {});
+  g.replace("raw", ["a"], () => {});
+  assert.equal(g.definition("raw").recipe, null);
+});

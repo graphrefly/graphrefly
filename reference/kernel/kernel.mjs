@@ -73,9 +73,15 @@ export function format(entry) {
   return `${entry.to} <- ${entry.from}: [${body}]`;
 }
 
-export function createGraph({ report: hostReport } = {}) {
+export function createGraph({ report: hostReport, requireRecipe = false } = {}) {
   const nodes = new Map();
   const trace = [];
+  // K10, D812 (decided by the user 2026-11-18): a graph may be created to require a recipe on every
+  // computed instance, so a missing one is found when the instance is made and not at the next
+  // capture. The kernel checks only that a recipe is present; it still never reads one.
+  const assertRecipe = (where, opts) => {
+    if (requireRecipe && opts?.recipe == null) throw new KernelError(`${where}: this graph requires a recipe on every computed node`);
+  };
   // P10/R-operation-failure: a failure with no caller to return to goes to the host
   // reporter if the host configured one. Without one the kernel keeps no failure
   // history. A reporter that throws is ignored, so it cannot break the wave it reports.
@@ -106,6 +112,7 @@ export function createGraph({ report: hostReport } = {}) {
   function makeNode(id, kind, deps, fn, opts, initial) {
     assertLocalName(id);
     if (nodes.has(id)) throw new KernelError(`duplicate node ${id}`);
+    if (kind === "node") assertRecipe(id, opts);
     for (const d of deps) nodeOf(d); // P1: dependencies are declared and must exist
     // H4, optional (2026-11-08, for restore): { values?, ended?, state?, deps? } gives a computed
     // node its last array's values, terminal and private state without running its fn, and the
@@ -774,6 +781,7 @@ export function createGraph({ report: hostReport } = {}) {
     replace(id, deps, fn, opts) {
       const n = nodeOf(id);
       if (n.kind !== "node") throw new KernelError(`${id} is not a computed node`);
+      assertRecipe(`replace: ${id}`, opts); // when it is asked for, like the refusals below
       assertDistinct("replace", n, deps);
       assertAcyclic("replace", n, deps);
       request(() => { assertAcyclic("replace", n, deps); replaceNode(n, deps, fn, opts); });
