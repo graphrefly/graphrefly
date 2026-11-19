@@ -252,6 +252,15 @@ export function loadFederation(root, { includeExternal = false } = {}) {
     if (governs.length === 0) superseded.add(key);
     else if (target.record.status === "locked" && !superseded.has(key)) partiallySuperseded.push({ id: key, governs });
   }
+  // A dashboard record superseded from a ledger outside the dashboard, as a root record whose
+  // successor was relocated to its owner's ledger. model.mjs reads only the dashboard's records, so
+  // it is given these edges; without them it called such a record current where this resolver
+  // calls it historical (graphrefly:D237 and D238, by graphrefly:D647; second QA of D812, 2026-11-19).
+  const externalSuperseders = referenceEdges
+    .filter((edge) => edge.relation === "supersedes"
+      && qualified.get(edge.to)?.ledger.include_in_root_dashboard
+      && !qualified.get(edge.from).ledger.include_in_root_dashboard)
+    .map((edge) => ({ of: qualified.get(edge.to).record.id, by: { ...qualified.get(edge.from).record, id: edge.from } }));
   const productEntries = [...qualified].filter(([, source]) => !["evaluation-execution", "implementation-receipt"].includes(source.ledger.authority_class));
   const currentProductIds = productEntries
     .filter(([key, source]) => source.record.status === "locked" && !superseded.has(key))
@@ -286,6 +295,7 @@ export function loadFederation(root, { includeExternal = false } = {}) {
     relocations,
     ledgers: available,
     decisionRecords,
+    externalSuperseders,
     errors,
     warnings,
     qualifiedIds: [...qualified.keys()].sort(),

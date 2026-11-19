@@ -16,6 +16,7 @@ const views = buildAuthorityViews({
   formalArtifacts: loadFormalArtifacts(join(root, "formal")),
   federation: federation.ledgers,
   knownExternalDecisionIds: federation.relocations.map((relocation) => relocation.id),
+  externalSuperseders: federation.externalSuperseders,
 });
 console.log("=== GraphReFly authority gate ===");
 console.log("metrics:", views.metrics);

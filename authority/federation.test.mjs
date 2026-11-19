@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { loadFederation, qualifyDecisionRef, resolveDecisionRef } from "./federation.mjs";
+import { buildAuthorityViews } from "./model.mjs";
 
 function writeJsonl(path, records) {
   writeFileSync(path, `${records.map((record) => JSON.stringify(record)).join("\n")}\n`);
@@ -266,6 +267,52 @@ test("the cross-owner current set reads superseded_by on its own and lists succe
     assert.deepEqual(federation.currentProduct.partial_successors_taking_nothing, [
       { by: "graphrefly:D6", of: "graphrefly:D5" }, { by: "graphrefly:D9", of: "graphrefly:D8" },
     ]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+// Second QA of the D812 work (2026-11-19): a dashboard record superseded only from a ledger outside
+// the dashboard was current in model.mjs and historical here (graphrefly:D237 and D238). The
+// federation gives the model those edges, and the two then agree on the dashboard's records.
+test("a dashboard record superseded from another ledger is historical in both resolvers", () => {
+  const root = mkdtempSync(join(tmpdir(), "graphrefly-authority-"));
+  try {
+    mkdirSync(join(root, "authority"));
+    mkdirSync(join(root, "decisions"));
+    writeJsonl(join(root, "authority/ledgers.jsonl"), [
+      { origin: "graphrefly", owner: "graphrefly", authority_class: "durable-root", path: "decisions/root.jsonl", availability: "required", include_in_root_dashboard: true },
+      { origin: "graphrefly", owner: "graphrefly-ts", authority_class: "package-local-history", path: "decisions/ts.jsonl", availability: "required", include_in_root_dashboard: false },
+      { origin: "graphrefly-stack", owner: "graphrefly-stack", authority_class: "product-local", path: "decisions/stack.jsonl", availability: "required", include_in_root_dashboard: false },
+    ]);
+    // Another origin's D2 and its successor: the same local id as a dashboard record, and no edge of the dashboard's.
+    writeJsonl(join(root, "decisions/stack.jsonl"), [
+      { id: "D2", status: "locked", supersedes: [] },
+      { id: "D5", status: "locked", supersedes: ["D2"] },
+    ]);
+    writeJsonl(join(root, "decisions/root.jsonl"), [
+      { id: "D1", status: "locked", supersedes: [], concerns: ["a", "b"] },
+      { id: "D2", status: "locked", supersedes: [], concerns: ["c"] },
+      { id: "D3", status: "locked", supersedes: [], concerns: ["d", "e"] },
+      { id: "D4", status: "locked", supersedes: ["D2"], concerns: ["c"], change_kind: "partial-supersession" },
+    ]);
+    writeJsonl(join(root, "decisions/ts.jsonl"), [
+      { id: "D10", status: "locked", supersedes: ["D1"] },
+      { id: "D11", status: "locked", supersedes: ["D3"], concerns: ["d"], change_kind: "partial-supersession" },
+    ]);
+    writeJsonl(join(root, "authority/relocations.jsonl"), []);
+
+    const federation = loadFederation(root);
+    assert.deepEqual(federation.errors, []);
+    assert.deepEqual(federation.externalSuperseders.map((edge) => [edge.of, edge.by.id]), [["D1", "graphrefly:D10"], ["D3", "graphrefly:D11"]]);
+    const dashboard = new Set(federation.decisionRecords.map((record) => record.__authority.qualified_id));
+    const federated = federation.currentProduct.current_qualified_ids.filter((id) => dashboard.has(id)).map((id) => id.replace("graphrefly:", "")).sort();
+    assert.deepEqual(federated, ["D3", "D4"]);
+    const views = (externalSuperseders) => buildAuthorityViews({ decisions: federation.decisionRecords, rules: [], conformance: [], externalSuperseders }).currentProductConstitution;
+    const model = views(federation.externalSuperseders);
+    assert.deepEqual([...model.current].sort(), federated);
+    assert.deepEqual(model.partiallySuperseded, [{ id: "D3", by: ["graphrefly:D11"], governs: ["e"] }]);
+    assert.deepEqual([...views([]).current].sort(), ["D1", "D3", "D4"], "without the edges the model cannot see D1's successor");
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

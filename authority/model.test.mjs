@@ -265,3 +265,30 @@ test("partial supersession: a predecessor without concerns is taken whole, an em
   assert.deepEqual(constitution.partiallySuperseded, [{ id: "D5", by: ["D6"], governs: ["e"] }, { id: "D7", by: ["D8"], governs: ["f"] }]);
   assert.deepEqual(constitution.partialSuccessorsTakingNothing, [{ by: "D8", of: "D7" }], "not D2 of D1, which had nothing to keep");
 });
+
+test("successors in ledgers the model does not read: a full one retires, a partial one leaves the rest, an unknown target is ignored", () => {
+  const root = { __authority: { owner: "graphrefly", authority_class: "durable-root" } };
+  const views = buildAuthorityViews({
+    decisions: [
+      decision("D1", { ...root, concerns: ["a"] }),
+      decision("D2", { ...root, concerns: ["b", "c", "g"] }),
+      decision("D3", { ...root, concerns: ["d"] }),
+      decision("D4", { ...root, concerns: ["e", "f"] }),
+      decision("D5", { ...root, concerns: ["e"], change_kind: "partial-supersession", supersedes: ["D4"] }),
+    ],
+    rules: [],
+    conformance: [],
+    externalSuperseders: [
+      { of: "D1", by: { id: "graphrefly:D90", status: "locked", supersedes: ["D1"] } },
+      { of: "D2", by: { id: "graphrefly:D91", status: "locked", supersedes: ["D2"], concerns: ["b"], change_kind: "partial-supersession" } },
+      { of: "D2", by: { id: "graphrefly:D94", status: "locked", supersedes: ["D2"], concerns: ["g"], change_kind: "partial-supersession" } },
+      { of: "D4", by: { id: "graphrefly:D92", status: "locked", supersedes: ["D4"], concerns: ["f"], change_kind: "partial-supersession" } },
+      { of: "D404", by: { id: "graphrefly:D93", status: "locked", supersedes: ["D404"] } },
+    ],
+  });
+  const constitution = views.currentProductConstitution;
+  // D4 loses e to D5 here and f to D92 elsewhere, so nothing is left of it.
+  assert.deepEqual(constitution.current, ["D2", "D3", "D5"]);
+  assert.deepEqual(constitution.partiallySuperseded, [{ id: "D2", by: ["graphrefly:D91", "graphrefly:D94"], governs: ["c"] }]);
+  assert.equal(views.gateOk, true);
+});

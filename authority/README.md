@@ -86,10 +86,13 @@ workspace on 2026-11-19, the legacy records D789, D796, D797 and D803 replaced).
 field that names a successor, which only old records carry, counts as a whole supersession in both
 resolvers; null or an empty list names none.
 
-The two resolvers still differ in one place, found by the second QA of the D812 work on 2026-11-19
-and not changed: `model.mjs` builds supersession from the root ledger's records only, so a root record
-superseded only from another owner's ledger (D237 and D238, by graphrefly:D647 in the TS ledger) is
-current in the model and historical in the federation.
+`model.mjs` reads only the dashboard's records, so a successor in another ledger is outside it: a
+root record superseded only by a record relocated to its owner's ledger (D237 and D238, by
+graphrefly:D647 in the TS ledger) was current in the model and historical in the federation until
+the second QA of the D812 work found it on 2026-11-19. The federation now gives the model those
+edges (`externalSuperseders`), and the check and the dashboard pass them on. With `--workspace` both
+resolvers call such a record historical. Without it the other ledgers are not read, so both call it
+current: a root-only run cannot know of a successor whose body lives in a sibling checkout.
 
 Ledgers marked `historical_only` accept no unlocated record: every body must match a relocation
 locator. This makes the history files immutable destinations rather than alternate authoring

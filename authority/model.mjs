@@ -146,7 +146,7 @@ export function concernsStillGoverned(record, superseders) {
   return concerns.filter((concern) => !taken.has(concern));
 }
 
-function deriveDecisionGraph(decisions, decisionById, errors, knownExternalDecisionIds = new Set()) {
+function deriveDecisionGraph(decisions, decisionById, errors, knownExternalDecisionIds = new Set(), externalSuperseders = []) {
   const incoming = new Map([...decisionById.keys()].map((id) => [id, []]));
   const outgoing = new Map([...decisionById.keys()].map((id) => [id, []]));
   const legacyExternalRefs = [];
@@ -168,11 +168,20 @@ function deriveDecisionGraph(decisions, decisionById, errors, knownExternalDecis
     const ledgerClass = decision.__authority?.authority_class;
     return ledgerClass !== "evaluation-execution" && ledgerClass !== "implementation-receipt";
   };
+  // Successors in ledgers this model does not read, given by the federation (federation.mjs,
+  // externalSuperseders); each carries its qualified id.
+  const external = new Map();
+  for (const { of, by } of externalSuperseders) {
+    if (!external.has(of)) external.set(of, []);
+    external.get(of).push(by);
+  }
   const governed = new Map();
+  const superseded = new Set();
   const partiallySuperseded = [];
   const takingNothing = [];
   for (const decision of decisions) {
-    const superseders = (incoming.get(decision.id) ?? []).map((id) => decisionById.get(id));
+    const superseders = [...(incoming.get(decision.id) ?? []).map((id) => decisionById.get(id)), ...(external.get(decision.id) ?? [])];
+    if (superseders.length > 0) superseded.add(decision.id);
     const concerns = concernsStillGoverned(decision, superseders);
     governed.set(decision.id, concerns);
     for (const by of partialSuccessorsTakingNothing(decision, superseders)) takingNothing.push({ by, of: decision.id });
@@ -183,7 +192,7 @@ function deriveDecisionGraph(decisions, decisionById, errors, knownExternalDecis
   const currentCandidates = decisions
     .filter((decision) => isProductConstitutionRecord(decision) && decision.status === "locked"
       && (governed.get(decision.id).length > 0
-        || ((incoming.get(decision.id)?.length ?? 0) === 0 && !namesItsSuccessor(decision))))
+        || (!superseded.has(decision.id) && !namesItsSuccessor(decision))))
     .map((decision) => decision.id);
   const currentSet = new Set(currentCandidates);
   const concernGovernors = new Map();
@@ -407,7 +416,7 @@ export function buildAuthorityViews(model) {
   const decisionById = indexUnique(decisions, "decision", (record) => record.id, errors);
   for (const decision of decisions) if (!DECISION_ID.test(decision.id ?? "")) errors.push(`decision has invalid id ${decision.id}`);
   const knownExternalDecisionIds = new Set(model.knownExternalDecisionIds ?? []);
-  const supersessionGraph = deriveDecisionGraph(decisions, decisionById, errors, knownExternalDecisionIds);
+  const supersessionGraph = deriveDecisionGraph(decisions, decisionById, errors, knownExternalDecisionIds, model.externalSuperseders ?? []);
   const currentProtocol = deriveProtocol({
     rules: model.rules ?? [],
     conformance: model.conformance ?? [],

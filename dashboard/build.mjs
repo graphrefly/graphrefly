@@ -50,6 +50,7 @@ const authority = buildAuthorityViews({
   ...model,
   federation: federation.ledgers,
   knownExternalDecisionIds: federation.relocations.map((relocation) => relocation.id),
+  externalSuperseders: federation.externalSuperseders,
 });
 authority.federation = {
   ledgers: federation.ledgers,
