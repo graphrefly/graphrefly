@@ -42,11 +42,12 @@ uncited = [r for r in legacy if r["id"] not in any_cited]
 print(f"legacy decisions cited by none of these: {len(uncited)} ({size(uncited)} bytes)")
 
 live = [r for r in B if state(r) in LIVE]
-closed = [r for r in B if state(r) not in LIVE]
+deferred = [r for r in B if state(r) == "deferred"]  # waiting for a trigger, not closed (corrected 2026-11-18)
+closed = [r for r in B if state(r) not in LIVE and state(r) != "deferred"]
 bref = re.compile(r"\bB\d+\b")
 still = {b for r in live for b in bref.findall(json.dumps({k: v for k, v in r.items() if k != "id"}))} & {r["id"] for r in closed}
 print(f"backlog: {os.path.getsize('plan/backlog.jsonl')} bytes, {len(live)} live ({size(live)} bytes), "
-      f"{len(closed)} closed ({size(closed)} bytes), {len(still)} closed rows named by live rows; "
+      f"{len(deferred)} deferred, {len(closed)} closed ({size(closed)} bytes), {len(still)} closed rows named by live rows; "
       f"{len([r for r in B if r.get('work_contract')])} rows on the strict work contract")
 
 public = {r["id"] for r in R if r.get("activated_by") and not r.get("transition")}

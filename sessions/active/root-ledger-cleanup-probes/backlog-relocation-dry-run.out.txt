@@ -1,0 +1,12 @@
+mode all: 140 rows, 92 closed, 0 of them still named, 92 to move
+before: {'authority': 0, 'authority --workspace': 0, 'work': 0, 'work --workspace': 0, 'dashboard': 0, 'dashboard --workspace': 0, 'authority tests': 0}
+after:  {'authority': 0, 'authority --workspace': 0, 'work': 0, 'work --workspace': 0, 'dashboard': 0, 'dashboard --workspace': 0, 'authority tests': 0}
+plan/backlog.jsonl 113672 bytes, archive/plan/backlog-history.jsonl 318583 bytes
+
+mode unnamed: 140 rows, 92 closed, 43 of them still named, 49 to move
+before: {'authority': 0, 'authority --workspace': 0, 'work': 0, 'work --workspace': 0, 'dashboard': 0, 'dashboard --workspace': 0, 'authority tests': 0}
+after:  {'authority': 0, 'authority --workspace': 0, 'work': 0, 'work --workspace': 0, 'dashboard': 0, 'dashboard --workspace': 0, 'authority tests': 0}
+plan/backlog.jsonl 284086 bytes, archive/plan/backlog-history.jsonl 148169 bytes
+
+Derived work graph (generated views, dependency edges, records; source locations and order set aside): identical to the real checkout in both modes; 544 records, 187 edges.
+Negative tests in the 'all' copy: one changed byte in a moved row -> 'work relocation graphrefly:B1 integrity mismatch', exit 1; B120 removed from the history file -> four 'prerequisite references missing work graphrefly:B120' errors, exit 1; a new row appended to the history file -> not reported, exit 0.

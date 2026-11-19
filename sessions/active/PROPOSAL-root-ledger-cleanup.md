@@ -1,6 +1,6 @@
 # 根仓库账本清理提案
 
-2026-11-18，Fable。状态：**Q5、Q3 已定并执行；Q1、Q2、Q4、Q6 待用户决定**。索引里的会话编号是 DS-21。这是非规范性文档：除了用户批准的 Q5 会话归档和 Q3 的七个转换，没有搬动、删除或改写任何账本、
+2026-11-18，Fable。状态：**Q5、Q3 已定并执行；Q4 已有试跑、建议和决定草稿，待用户决定；Q1、Q2、Q6 待用户决定**。索引里的会话编号是 DS-21。这是非规范性文档：除了用户批准的 Q5 会话归档和 Q3 的七个转换，没有搬动、删除或改写任何账本、
 规则或场景。决定在决定账本里（Q3 是 graphrefly:D810），不在本文；本文不授权其余的清理动作。
 
 起因：用户在 DS-20 复审之后问，账本、rules 和 conformance 是不是太大、留了很多过时的东西；随后指出仓库已有 archive
@@ -45,7 +45,7 @@
 | 账本 | 大小 | 构成 |
 |---|---|---|
 | `decisions/decisions.jsonl` | 1.25MB，486 条 | 25 条带准入元数据；461 条是 5–8 月写的旧记录，没有 concern，其中 54 条已被取代 |
-| `plan/backlog.jsonl` | 432KB，140 行 | 22 行在办（81KB）；118 行已结（355KB），其中 31 行仍被在办的行按编号提到；17 行用严格工作契约 |
+| `plan/backlog.jsonl` | 432KB，140 行 | 22 行在办（81KB）；26 行 deferred；92 行已结（319KB），其中 43 行仍被现行的东西提到；17 行用严格工作契约。（原来写"118 行已结、31 行被提到"，把 deferred 算了进去，2026-11-18 改正，见 Q4） |
 | `spec/rules.jsonl` | 205KB，157 行 | 19 条公开规则（41KB）；121 行已被取代或退役（148KB）；17 行开放草案 |
 | `spec/conformance.jsonl` | 89KB，42 个场景 | 35 个覆盖现行或草案规则；7 个不覆盖；`note` 字段约 24KB |
 | `sessions/sessions.jsonl` | 20 个会话 | 14 个 active，6 个 archived |
@@ -265,10 +265,90 @@ R-node-revision@1 等 revision observer，用户 2026-11-09 已定暂缓。它�
 
 ### Q4. backlog 已结的行
 
-- (A) 118 行全部搬到 `archive/plan/`，用 `work-relocations.jsonl` 登记。
-- (B) 只搬没有被在办的行提到的 87 行，其余 31 行留着。**建议先做 (B)**，因为机制没用过，范围小的那批风险低。
+2026-11-18 用户选择接着定这一题。下面换掉了原来的两行选项：这次读了工作账本的搬迁代码，重新数了行，查了谁还提到已结的行，
+并在带着五个兄弟仓库的副本里试跑了两种范围。
 
-两种都要先在副本里试跑一次。140 行里只有 17 行用严格工作契约，其余 123 行是旧格式，搬迁工具是否接受旧格式我没有验证。
+**先改正数字。** 原来写的"118 行已结"把 26 行 deferred 也算了进去。deferred 的行在等触发条件，dashboard 单独列它们，不是
+已结。改正后：
+
+| | 行数 | 字节 |
+|---|---|---|
+| 全部 | 140 | 432KB |
+| 已结：resolved 63、done 20、superseded 5、complete 4 | 92 | 319KB |
+| 留下：open 14、proposed 6、in-progress 2、deferred 26 | 48 | 114KB |
+
+92 行已结的行里，43 行还被现行的东西提到（在办或 deferred 的 backlog 行、没做完的 phase、带入账元数据的决定、guide、
+skill、检查代码、active 会话的索引行、兄弟仓库），49 行没有被这些提到。原来写的 87 和 31 作废。
+
+**机制。** `authority/work-federation.mjs` 支持把工作记录搬到另一个登记过的账本：在 `work-ledgers.jsonl` 登记
+`archive/plan/backlog-history.jsonl`，标 `historical_only`；每行在 `work-relocations.jsonl` 留一条，带新旧两个 sha256 和
+一条决定的编号。和决定账本不同的一点：搬走的记录仍在联合索引里，所以别处按编号的引用照样能解析，包括兄弟仓库的
+prerequisite。这个机制在本仓库还没用过，`work-relocations.jsonl` 现在是空的。
+
+**试跑。** [backlog-relocation-dry-run.py](root-ledger-cleanup-probes/backlog-relocation-dry-run.py)，
+[结果](root-ledger-cleanup-probes/backlog-relocation-dry-run.out.txt)。副本旁边链接了 ts、rs、py、canvas、stack 五个仓库，
+所以 `--workspace` 的检查读到了它们的工作账本。
+
+| | (A) 搬全部 92 行 | (B) 只搬没被提到的 49 行 |
+|---|---|---|
+| `plan/backlog.jsonl` 之后 | 48 行，114KB | 91 行，284KB |
+| authority、work、dashboard 三个检查，各带和不带 `--workspace` | 都以 0 退出 | 都以 0 退出 |
+| authority 的 40 个测试 | 通过 | 通过 |
+| 派生的工作图（就绪、依赖边、关键路径等；544 条记录、187 条边） | 和搬之前相同 | 和搬之前相同 |
+
+在 (A) 的副本里做了三个反向测试：
+
+- 改掉搬走的一行里的一个字节：检查报 integrity mismatch，退出 1。
+- 从历史文件里删掉 B120：检查报四处 prerequisite 找不到 graphrefly:B120，退出 1，其中一处来自 graphrefly-ts。
+- **往历史文件里加一行新记录：检查没有报，退出 0。** 决定账本的 `historical_only` 会拒绝没有搬迁登记的记录
+  （`authority/README.md`），工作账本的 `historical_only` 目前只影响所有者检查。也就是说，历史文件现在不是靠检查保证
+  不可写的。
+
+**建议：(A)，并补上那个检查。** 原来建议 (B) 是因为机制没验证过。试跑说明两种范围在检查和派生结果上没有差别，而 (A) 之后
+`plan/backlog.jsonl` 只剩在办和等触发的 48 行，读它的人和 skill 看到的就是现在的工作。(B) 留下的 43 行只是因为还被提到，
+而提到它们的引用在 (A) 里同样能解析。
+
+**做 (A) 需要的三样东西，都要用户同意。**
+
+1. **一条根决定。** 搬迁登记的 `migration_ref` 必须是一条能解析的决定。草稿在下面。
+2. **检查代码的一处改动。** `work-federation.mjs`：`historical_only` 的工作账本里，每条记录都必须有搬迁登记；加一个测试。
+   这是实现改动，按"No implement without approval"单独列出。不做的话 (A) 也能过检查，只是历史文件没有保护。
+3. **文档里的指向。** `docs/README.md` 的 Archive 一行加上历史文件；`dashboard/README.md` 描述 backlog 的一节说明已结的行
+   在哪里。dashboard 上 backlog 的计数会从 140 变成 48，它只显示计数，联合工作视图不变。
+
+**决定记录草稿（未入账）。**
+
+```json
+{
+  "id": "D-next-4",
+  "layer": "planning / root backlog history",
+  "date": "入账时填",
+  "question": "Where do closed rows of the root backlog live, so that plan/backlog.jsonl shows the work that is open or waiting without losing any record?",
+  "decision": "Closed rows of plan/backlog.jsonl (state or status resolved, done, superseded or complete) move byte for byte to archive/plan/backlog-history.jsonl, a root-owned backlog ledger registered as historical_only in authority/work-ledgers.jsonl, as the user decided on <date>. Each moved row has one line in authority/work-relocations.jsonl that names this decision. A moved row keeps its identity, owner and body, stays in the federated work index, and still resolves as a prerequisite or a superseded target from any owner. Open, proposed, in-progress and deferred rows stay in plan/backlog.jsonl. A row that closes later may be moved in a later batch under this decision; a moved row is never edited, and reopening work is a new row. The history ledger accepts only relocated rows.",
+  "rationale": "On 2026-11-18 the root backlog held 140 rows and 432KB, of which 92 rows and 319KB were closed, so a reader looking for current work read mostly finished work. D787 already provides the relocation contract for work records; it had not been used. Dry run of 2026-11-18 in a copy beside the five sibling repositories: the authority, work and dashboard checks pass with and without --workspace, and the derived work graph (544 records, 187 dependency edges, readiness and critical path) is unchanged. The same dry run found that a historical_only work ledger accepted a new unrelocated row, which the check now refuses.",
+  "supersedes": [],
+  "status": "locked",
+  "session": "DS-21",
+  "concerns": ["planning.root-backlog-history"],
+  "decision_kind": "durable-architecture",
+  "change_kind": "extension",
+  "protocol_impact": "none",
+  "completion": {
+    "complete_when": "The closed rows are in the history ledger with their relocation lines, the check refuses an unrelocated row there, and the root's checks pass with and without --workspace.",
+    "historical_when": "A later root decision supersedes where closed root backlog rows live."
+  }
+}
+```
+
+草稿里等用户看的三点：
+
+1. **写成 extension，不取代 D787。** D787 定了工作记录可以带登记搬迁；这条只是第一次用它，并定了根 backlog 的历史文件
+   在哪里。
+2. **"以后结掉的行可以在后续批次里按这条决定搬"。** 这样以后不用每搬一批都入一条决定。如果用户希望每批都单独批准，
+   删掉这一句。
+3. **新的 concern 名** `planning.root-backlog-history`。
+
+**没有纳入的。** 26 行 deferred 里有没有其实已经不会再做的，这次没有看；那是逐行的判断，不是搬迁。
 
 ### Q5. 会话
 
@@ -334,7 +414,7 @@ DS-17 正文有一个链接指向已经不存在的 `formal/wave_protocol.tla`�
 
 1. **Q5 的会话归档。** 已做。
 2. **Q3 里不依赖模块的 7 行草案规则。** 已做（D810）。
-3. **Q4 (B)。** 先试跑。
+3. **Q4。** 已在副本里试跑过两种范围，建议改为 (A)。
 4. **模块激活。** 它解决 Q2 的 6 个场景和 Q3 的 5 行草案。这里依赖 DS-20 提案：R-history 和 R-restart 两条草案要先按那里
    的根决定改写，再激活。
 5. **Q1 的旧决定，分三批。** 工作量最大，放最后，每批由用户定。
@@ -361,6 +441,6 @@ DS-17 正文有一个链接指向已经不存在的 `formal/wave_protocol.tla`�
 | 会话归档（Q5） | 用户逐个确认 | 文件在 `sessions/archive/`，索引的路径和状态一致，文档检查通过 |
 | 7 行旧草案规则加转换（Q3） | 用户对 Q3 的答复；它自己的一条决定（草稿在 Q3），不依赖清理的根决定 | 开放草案只剩模块规则和等模块的 5 行 |
 | guide 记录的 `refs.rules` 对到现行规则，并让检查核对它（Q3 顺带发现） | 用户决定做不做；可能属于 B7 | 15 条记录的规则引用都能解析到现行规则，或写明是历史出处 |
-| backlog 已结行搬迁（Q4） | 副本试跑通过 | `work:check` 通过，在办的行的引用都能解析 |
+| backlog 已结行搬迁（Q4） | 用户对 Q4 的答复；它自己的一条决定（草稿在 Q4）；检查代码的一处改动 | 带和不带 `--workspace` 的检查都通过，派生的工作图不变，历史文件拒绝没有登记的行 |
 | 旧决定分三批归类和搬迁（Q1） | 根决定；每批用户确认 | 每批之后两个检查通过，`unclassifiedDecisions` 逐批下降 |
 | 是否让规则行的引用通过搬迁记录解析（Q1） | 用户决定 | 若做：被历史规则行引用的旧决定也可以搬 |
