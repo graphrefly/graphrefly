@@ -154,7 +154,7 @@ The scheduled operator walkthrough topics have been discussed. Begin the indepen
 
 Ask the independent reviewer to try merge/concat/race invalidation, conflicting same-wave signals and the other probes below from the short contracts. Bring back cases with two defensible observable outputs for a maintainer decision.
 
-Independent review returned 2026-11-18 (Fable): [review and rule reconciliation proposal](PROPOSAL-DS20-operator-review-reconciliation.md). The maintainer agreed to its recommendations for Q1–Q9 in conversation on 2026-11-18. No decision record or rule revision exists yet, and nothing above has been changed to match it.
+Independent review returned 2026-11-18 (Fable): [review and rule reconciliation proposal](PROPOSAL-DS20-operator-review-reconciliation.md). The maintainer agreed to its recommendations for Q1–Q9 in conversation on 2026-11-18. The choices that differ from the rules are recorded as graphrefly:D812, and the ownership of operator contracts as graphrefly:D813. No rule revision exists yet, and nothing above has been changed to match either.
 
 ## Questions for independent review
 
