@@ -185,3 +185,34 @@ test("a current rule that cites a rule of a higher part is listed, not refused",
   assert.equal(views.metrics.upwardRuleCitations, 2);
   assert.equal(views.gateOk, true);
 });
+
+test("a partially superseded decision still governs the concerns its successor does not list", () => {
+  const root = { __authority: { owner: "graphrefly", authority_class: "durable-root" } };
+  const views = buildAuthorityViews({
+    decisions: [
+      decision("D1", { ...root, concerns: ["a", "b"] }),
+      decision("D2", { ...root, concerns: ["a", "c"], change_kind: "partial-supersession", supersedes: ["D1"] }),
+      decision("D3", { ...root, concerns: ["d"] }),
+      decision("D4", { ...root, concerns: ["d"], change_kind: "partial-supersession", supersedes: ["D3"] }),
+      decision("D5", { ...root, concerns: ["e", "f"] }),
+      decision("D6", { ...root, concerns: ["e"], change_kind: "full-supersession", supersedes: ["D5"] }),
+      decision("D7", { ...root, concerns: ["g", "h"] }),
+      decision("D8", { ...root, concerns: ["g"], supersedes: ["D7"] }),
+      decision("D9", { ...root, concerns: ["i", "j", "k"] }),
+      decision("D10", { ...root, concerns: ["i"], change_kind: "partial-supersession", supersedes: ["D9"] }),
+      decision("D11", { ...root, concerns: ["j"], change_kind: "partial-supersession", supersedes: ["D9"] }),
+    ],
+    rules: [],
+    conformance: [],
+  });
+  const constitution = views.currentProductConstitution;
+  // D3 keeps nothing, D5 is replaced in full, and D7's successor does not say it is partial.
+  assert.deepEqual(constitution.current, ["D1", "D2", "D4", "D6", "D8", "D9", "D10", "D11"]);
+  assert.deepEqual(constitution.governors, { b: ["D1"], a: ["D2"], c: ["D2"], d: ["D4"], e: ["D6"], g: ["D8"], k: ["D9"], i: ["D10"], j: ["D11"] });
+  assert.deepEqual(constitution.partiallySuperseded, [
+    { id: "D1", by: ["D2"], governs: ["b"] },
+    { id: "D9", by: ["D10", "D11"], governs: ["k"] },
+  ]);
+  assert.deepEqual(constitution.ambiguous, []);
+  assert.equal(views.gateOk, true);
+});

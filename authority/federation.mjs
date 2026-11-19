@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { loadJsonl } from "./model.mjs";
+import { concernsStillGoverned, loadJsonl } from "./model.mjs";
 
 const DECISION_ID = /^(?:D\d+|DR-\d+)$/;
 const LEGACY_EXTERNAL_ID = /^R\d+$/;
@@ -232,10 +232,23 @@ export function loadFederation(root, { includeExternal = false } = {}) {
     }
   }
 
+  // A decision is historical once superseded, unless every successor is a partial supersession that
+  // leaves it some of its concerns (model.mjs, concernsStillGoverned). A `superseded_by` field on the
+  // record itself, which only old records carry, counts as whole.
+  const superseders = new Map();
   const superseded = new Set();
   for (const edge of referenceEdges) {
-    if (edge.relation === "supersedes") superseded.add(edge.to);
     if (edge.relation === "superseded_by") superseded.add(edge.from);
+    if (edge.relation !== "supersedes") continue;
+    if (!superseders.has(edge.to)) superseders.set(edge.to, []);
+    superseders.get(edge.to).push(qualified.get(edge.from)?.record ?? {}); // an unknown successor counts as whole
+  }
+  const partiallySuperseded = [];
+  for (const [key, records] of superseders) {
+    const target = qualified.get(key);
+    const governs = target ? concernsStillGoverned(target.record, records) : [];
+    if (governs.length === 0) superseded.add(key);
+    else if (target.record.status === "locked" && !superseded.has(key)) partiallySuperseded.push({ id: key, governs });
   }
   const productEntries = [...qualified].filter(([, source]) => !["evaluation-execution", "implementation-receipt"].includes(source.ledger.authority_class));
   const currentProductIds = productEntries
@@ -283,6 +296,8 @@ export function loadFederation(root, { includeExternal = false } = {}) {
       current_qualified_ids: currentProductIds,
       current_by_owner: currentByOwner,
       historical_qualified_ids: historicalProductIds,
+      // Listed so that a partial supersession stays visible instead of being read as whole or as none.
+      partially_superseded: partiallySuperseded.filter((item) => currentProductIds.includes(item.id)).sort((a, b) => a.id.localeCompare(b.id)),
     },
     ownerDecisionRecords,
   };

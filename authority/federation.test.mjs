@@ -99,6 +99,33 @@ test("future semantic protocol admission is root-only and obligation-complete", 
   }
 });
 
+test("the cross-owner current set keeps a partially superseded decision for its remaining concerns", () => {
+  const root = mkdtempSync(join(tmpdir(), "graphrefly-authority-"));
+  try {
+    mkdirSync(join(root, "authority"));
+    mkdirSync(join(root, "decisions"));
+    writeJsonl(join(root, "authority/ledgers.jsonl"), [
+      { origin: "graphrefly", owner: "graphrefly", authority_class: "durable-root", path: "decisions/root.jsonl", availability: "required", include_in_root_dashboard: true },
+    ]);
+    writeJsonl(join(root, "decisions/root.jsonl"), [
+      { id: "D1", status: "locked", supersedes: [], concerns: ["a", "b"] },
+      { id: "D2", status: "locked", supersedes: ["D1"], concerns: ["a"], change_kind: "partial-supersession" },
+      { id: "D3", status: "locked", supersedes: [], concerns: ["c"] },
+      { id: "D4", status: "locked", supersedes: ["D3"], concerns: ["c"], change_kind: "partial-supersession" },
+      { id: "D5", status: "locked", supersedes: [], concerns: ["d", "e"] },
+      { id: "D6", status: "locked", supersedes: ["D5"], concerns: ["d"] },
+    ]);
+    writeJsonl(join(root, "authority/relocations.jsonl"), []);
+
+    const federation = loadFederation(root);
+    assert.deepEqual(federation.currentProduct.current_qualified_ids, ["graphrefly:D1", "graphrefly:D2", "graphrefly:D4", "graphrefly:D6"]);
+    assert.deepEqual(federation.currentProduct.historical_qualified_ids, ["graphrefly:D3", "graphrefly:D5"]);
+    assert.deepEqual(federation.currentProduct.partially_superseded, [{ id: "graphrefly:D1", governs: ["b"] }]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("relocation locators fail when canonical bytes change", () => {
   const root = mkdtempSync(join(tmpdir(), "graphrefly-authority-"));
   try {

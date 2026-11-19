@@ -34,6 +34,7 @@ console.log("federation:", {
   unverifiedRelocations: federation.unverifiedRelocations.length,
   currentProductComplete: federation.currentProduct.complete,
   currentProductRecords: federation.currentProduct.current_qualified_ids.length,
+  partiallySuperseded: federation.currentProduct.partially_superseded.map((item) => item.id),
 });
 console.log("ledgers:", federation.ledgers);
 console.log("work federation:", {
