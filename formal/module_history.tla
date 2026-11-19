@@ -8,6 +8,8 @@ for graphrefly:B140, the third module model. It checks that the node built by
 reference/modules/history.mjs behaves as R-history says. Status: draft, like
 the rule it checks. Revised 2026-11-18 for graphrefly:D812: H has the auto
 INVALIDATE policy, so an INVALIDATE removes its value and keeps its list.
+Revised 2026-11-19 after the independent QA of that work: the rule's side reads
+the wave with its own operators.
 
 Topology: a computed source X, kept active by a sink of its own, and the
 history node H over X with N = 2 and a sink that subscribes and unsubscribes.
@@ -60,9 +62,12 @@ vars == <<k>>
 
 DataOf(f) == SelectSeq(f, IsData)
 HasTerm(fs, t) == \E i \in DOMAIN fs : \E j \in DOMAIN fs[i] : fs[i][j] = t
+\* The kernel under the auto INVALIDATE policy (R-invalidation), used only by the
+\* composition: an INVALIDATE input drops what the wave brought before it, so the function
+\* is given the arrays after the wave's last INVALIDATE.
 RECURSIVE LastInvFrame(_, _)
 LastInvFrame(fs, i) == IF i = 0 THEN 0 ELSE IF fs[i] = <<"INV">> THEN i ELSE LastInvFrame(fs, i - 1)
-After(fs) == SubSeq(fs, LastInvFrame(fs, Len(fs)) + 1, Len(fs))
+KernelInput(fs) == SubSeq(fs, LastInvFrame(fs, Len(fs)) + 1, Len(fs))
 LastN(s) == IF Len(s) <= N THEN s ELSE SubSeq(s, Len(s) - N + 1, Len(s))
 \* What a dependent reads as ctx.deps[0].waves: per array with a value, its DATA payloads.
 HasValue(f) == \E j \in DOMAIN f : IsData(f[j]) \/ f[j] = "RES"
@@ -92,7 +97,7 @@ CompWave(h, fs) ==
       \* INVALIDATE, dropping it if H holds no value; the function does not run for it, so
       \* the list in private state stays
       l0   == h.list
-      added == SelectSeq(Waves(After(fs)), LAMBDA w : w # <<>>)
+      added == SelectSeq(Waves(KernelInput(fs)), LAMBDA w : w # <<>>)
       list == LastN(Append(l0, added))
       sends == ~err /\ added # <<>>
       done == err \/ HasTerm(fs, "COM")             \* auto COMPLETE after the run
@@ -105,20 +110,23 @@ CompWave(h, fs) ==
       out |-> out, lists |-> lists]
 
 \* ---- the rule: R-history, from its text ----
-\* The wave's entry: each array carrying DATA, in order, as its DATA payloads;
-\* an array without DATA is left out.
+\* The wave's entry, taking the source's arrays one at a time: each array carrying DATA, in
+\* order, as its DATA payloads; an array without DATA is left out; and at an INVALIDATE the
+\* arrays that came before it in the wave leave the entry. The rule's side shares no
+\* operator with the composition's reading of the wave (revised 2026-11-19 after the QA of
+\* the D812 work found both sides using one, so that dropping it from both stayed green).
 RECURSIVE SpecArrays(_, _)
 SpecArrays(e, fs) ==
   IF fs = <<>> THEN e
+  ELSE IF Head(fs) = <<"INV">> THEN SpecArrays(<<>>, Tail(fs))
   ELSE LET d == DataOf(Head(fs))
        IN SpecArrays(IF d = <<>> THEN e ELSE Append(e, d), Tail(fs))
+SpecInvalidated(fs) == \E i \in DOMAIN fs : fs[i] = <<"INV">>
 SpecWave(sp, fs) ==
   LET err  == HasTerm(fs, "ERR")       \* the source's terminal ends the node (auto ERROR: no run)
-      inv  == LastInvFrame(fs, Len(fs)) > 0
-      lead == ~err /\ inv /\ sp.has     \* an INVALIDATE removes the node's value and keeps the list
+      lead == ~err /\ SpecInvalidated(fs) /\ sp.has   \* an INVALIDATE removes the node's value and keeps the list
       l0   == sp.list
-      \* arrays that came before an INVALIDATE in the same wave are not part of its entry
-      e    == IF err THEN <<>> ELSE SpecArrays(<<>>, After(fs))
+      e    == IF err THEN <<>> ELSE SpecArrays(<<>>, fs)
       \* A wave without DATA is not an entry; one with DATA sends the new list once,
       \* and the list keeps the last N waves.
       r    == IF e = <<>> THEN [list |-> l0, lists |-> <<>>]

@@ -8,7 +8,10 @@ restored by reference/modules/checkpoint.mjs, once subscribed, behaves as the
 original node would. Status: R-checkpoint is active since D802 (2026-11-10).
 Revised 2026-11-18 for graphrefly:D812 and R-checkpoint@2, active since then: capture is
 refused while P is local-only, and pending work that P recorded in its private
-state is opened again by its setup, without a run of its function.
+state is opened again by its setup, without a run of its function. Revised
+2026-11-19 after the independent QA of that work: the reference side of the
+pending job no longer reads the flag the module reads, the reason a capture is
+refused is compared on both sides, and the recipe requirement is a constant.
 
 Topology: states A and B, and a computed node P over [A, B] built from a recipe,
 with a sink, under the default auto policies. The recipe keeps the last N input
@@ -68,12 +71,14 @@ Invariants (see formal/README.md):
                   changed
   RestoreBuilds   restore never builds a node before one of its dependencies
   LocalOnlyRefused  a P whose instance has no recipe is never captured: no checkpoint is written
+  RefusalMatches    a capture is refused when the rule refuses it, for the rule's reason
+  RequiredNeverLocal  in a graph created to require recipes no capture is refused as local-only
   PendingMatches  the restored P has a job in flight, and one recorded, exactly when the reference does
   RestoredAsInstance  the restored P has the captured instance's recipe and setup
  ***************************************************************************)
 EXTENDS Integers, Sequences, TLC
 
-CONSTANTS MaxSteps
+CONSTANTS MaxSteps, Require
 
 Deps == <<"A", "B">>
 Vals == {1, 2}
@@ -129,9 +134,13 @@ RefWave(o, ds) ==
   IF o.ended THEN o
   ELSE LET new == RefWrites(ds, o.inp)
            o1  == IF new # <<>> THEN Run(o, new) ELSE o
-           \* D812: without a run, the job in flight after the restore is the one P recorded;
-           \* one it did not record is lost. A run starts a job as any run does.
-           o2  == IF new # <<>> THEN o1 ELSE [o1 EXCEPT !.job = o1.pend]
+           \* D812, the rule: without a run, a job that was in flight at the capture is in
+           \* flight again after the restore if P records its pending work, and is lost if it
+           \* does not. A run starts a job as any run does. This side reads what was in flight
+           \* (o.job; the original is not stepped in the window) and P's choice, not the flag
+           \* in the private state, which is the module's side (revised 2026-11-19: both sides
+           \* read the flag until the QA of the D812 work).
+           o2  == IF new # <<>> THEN o1 ELSE [o1 EXCEPT !.job = o1.job /\ o1.records, !.pend = o1.job /\ o1.records]
        IN [o2 EXCEPT !.ended = AllEnded(ds), !.res = @ /\ ~AllEnded(ds), !.inp = ds,
                      !.job = @ /\ ~AllEnded(ds), !.pend = @ /\ ~AllEnded(ds)]
 
@@ -142,7 +151,7 @@ RefWave(o, ds) ==
 Activate(cp, ds) ==
   LET setup == cp.setup
       seed == [st |-> cp.st, has |-> cp.has, val |-> cp.val, ended |-> cp.ended, res |-> FALSE, inp |-> ds, rec |-> cp.rec,
-               records |-> cp.records, pend |-> cp.pend, job |-> FALSE]
+               records |-> cp.records, pend |-> cp.pend, job |-> FALSE, bad |-> FALSE]
       new  == NewValues(ds, cp.inp)
       run  == ~cp.ended /\ Changed(ds, cp.inp)
       n0   == IF ~cp.ended /\ setup THEN [seed EXCEPT !.res = TRUE] ELSE seed
@@ -173,7 +182,7 @@ Apply(step, ds) ==
 
 D0 == [d \in {"A", "B"} |-> [v |-> 1, e |-> FALSE]]
 Empty == [st |-> <<>>, has |-> FALSE, val |-> <<>>, ended |-> FALSE, res |-> FALSE, inp |-> D0, rec |-> "r1",
-          records |-> FALSE, pend |-> FALSE, job |-> FALSE]
+          records |-> FALSE, pend |-> FALSE, job |-> FALSE, bad |-> FALSE]
 NoCp == [st |-> <<>>, has |-> FALSE, val |-> <<>>, ended |-> FALSE, inp |-> D0, rec |-> "r1", setup |-> FALSE,
          records |-> FALSE, pend |-> FALSE, job |-> FALSE, written |-> FALSE]
 
@@ -203,7 +212,7 @@ Init ==
          \* the original's activation: its setup, then its first run
          o |-> Run([Empty EXCEPT !.res = setup, !.records = records], << <<"A", 1>>, <<"B", 1>> >>),
          cp |-> NoCp,
-         r |-> Empty, ran |-> FALSE, chg |-> FALSE, oOut |-> <<>>, rOut |-> <<>>, steps |-> 0]
+         r |-> Empty, ran |-> FALSE, chg |-> FALSE, why |-> "", swhy |-> "", oOut |-> <<>>, rOut |-> <<>>, steps |-> 0]
 
 Step(s) == [s EXCEPT !.steps = @ + 1, !.oOut = <<>>, !.rOut = <<>>]
 
@@ -223,11 +232,14 @@ Host ==
 \* A replace of the original P, once, before capture (D802): a new instance under the same id
 \* with its own recipe (or none) and setup. The old lifetime closes, so its resource and private
 \* state go; the new instance's setup runs and its first run gets the dependencies' snapshots.
+\* The new instance may hold something that is not JSON (bad), which changes nothing until a
+\* capture. In a graph created to require recipes (Require; R-node, D812) a replace without a
+\* recipe is refused when it is asked for and changes nothing, so it is not a step here.
 Replace ==
   /\ k.phase = "orig" /\ ~k.replaced /\ ~k.o.ended
-  /\ \E rec \in {"r1", "r2", "none"}, setup \in BOOLEAN :
+  /\ \E rec \in IF Require THEN {"r1", "r2"} ELSE {"r1", "r2", "none"}, setup \in BOOLEAN, bad \in BOOLEAN :
        LET fresh == [st |-> <<>>, has |-> FALSE, val |-> <<>>, ended |-> FALSE, res |-> setup,
-                     inp |-> k.ds, rec |-> rec, records |-> k.o.records, pend |-> FALSE, job |-> FALSE]
+                     inp |-> k.ds, rec |-> rec, records |-> k.o.records, pend |-> FALSE, job |-> FALSE, bad |-> bad]
            n1    == Run(fresh, SnapVals(k.ds))
            end   == AllEnded(k.ds)
        IN k' = [Step(k) EXCEPT !.o = [n1 EXCEPT !.ended = end, !.res = @ /\ ~end, !.job = @ /\ ~end, !.pend = @ /\ ~end],
@@ -239,10 +251,25 @@ Replace ==
 \* ("refused"; D812, until then the checkpoint was written and the restore failed). Restore then
 \* builds the new graph; a build order that puts P before a dependency cannot build it ("broken").
 \* cp.job is not saved: it is in the model only to say what was in flight.
+\*
+\* Why a capture is refused, on each side. The module, as checkpoint.mjs goes through a node:
+\* its values, private state and recipe configuration are checked to be JSON first, then its
+\* recipe is asked for. The rule, from R-checkpoint@2's text: a node without a recipe is
+\* local-only and refused as that; what is not JSON is refused; a local-only node that also
+\* holds what is not JSON is refused for that.
+ModuleRefusal(o) == IF o.bad THEN "json" ELSE IF o.rec = "none" THEN "local" ELSE ""
+SpecRefusal(o) ==
+  LET localOnly == o.rec = "none"
+  IN CASE localOnly /\ o.bad -> "json"
+       [] localOnly          -> "local"
+       [] o.bad              -> "json"
+       [] OTHER              -> ""
 Capture ==
   /\ k.phase = "orig"
-  /\ k' = IF k.o.rec = "none" THEN [Step(k) EXCEPT !.phase = "refused"]
+  /\ k' = IF ModuleRefusal(k.o) # ""
+          THEN [Step(k) EXCEPT !.phase = "refused", !.why = ModuleRefusal(k.o), !.swhy = SpecRefusal(k.o)]
           ELSE [Step(k) EXCEPT
+             !.swhy = SpecRefusal(k.o),
              !.phase = IF ~Builds(BuildOrder(k.order)) THEN "broken" ELSE "window",
              !.cp = [st |-> k.o.st, has |-> k.o.has, val |-> k.o.val, ended |-> k.o.ended,
                      inp |-> k.o.inp, rec |-> k.o.rec, setup |-> k.setup,
@@ -263,7 +290,8 @@ Subscribe ==
   /\ k.phase = "window"
   /\ LET a == Activate(k.cp, k.ds)
      IN k' = [Step(k) EXCEPT !.phase = "post", !.r = a.n, !.ran = a.ran,
-               !.chg = Changed(k.ds, k.cp.inp), !.o = RefWave(k.o, k.ds)]
+               \* the rule's side: a dependency no longer holds what P had received
+               !.chg = k.ds # k.cp.inp, !.o = RefWave(k.o, k.ds)]
 
 Next == k.steps < MaxSteps /\ (Host \/ Replace \/ Capture \/ Subscribe \/ JobDone)
 
@@ -281,6 +309,12 @@ NoNeedlessRun == k.phase = "post" /\ k.ran => k.chg
 RestoreBuilds      == k.phase # "broken"
 LocalOnlyRefused   == /\ k.cp.written => k.cp.rec # "none"
                       /\ k.phase = "refused" => ~k.cp.written
+\* A capture is refused exactly when the rule refuses it, and for the rule's reason: what is
+\* not JSON first, also in a local-only node (D808's order, kept by D812).
+RefusalMatches     == k.why = k.swhy
+\* R-node@3 with R-checkpoint@2: a graph created to require recipes never has a capture
+\* refused for a local-only node.
+RequiredNeverLocal == Require => k.why # "local"
 \* D812: pending work is state. Recorded, it is in flight again after the restore; not recorded, it is lost.
 PendingMatches     == k.phase = "post" => k.r.job = k.o.job /\ k.r.pend = k.o.pend
 RestoredAsInstance == k.phase \in {"window", "post"} => k.cp.rec = k.o.rec /\ k.cp.setup = k.setup
