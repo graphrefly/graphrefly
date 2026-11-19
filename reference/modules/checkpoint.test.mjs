@@ -363,7 +363,8 @@ test("a node replaced onto a dependency made after it is restored, and works", (
 test("a missing recipe fails the restore", () => {
   const cp = capture(original());
   const { scan, ...withoutScan } = registry();
-  assert.throws(() => restore(cp, withoutScan), /not restorable: t: missing recipe/);
+  // D812 (4), confirmed by the user 2026-11-18: the refusal names the reference as well as the node.
+  assert.throws(() => restore(cp, withoutScan), { message: "not restorable: t: missing recipe scan" });
 });
 
 test("D802: a checkpoint without what each node received, as an earlier format, is refused", () => {
@@ -935,7 +936,7 @@ test("known-node recipe failures keep the node prefix without double wrapping", 
     assert.throws(() => restore(cp, { bad: factory }), /not restorable: n: recipe must return/);
   }
   assert.throws(() => restore(cp, { bad: () => { throw new Error("factory failed"); } }), { message: "not restorable: n: factory failed" });
-  assert.throws(() => restore(cp, { bad: (_, { make }) => make("absent") }), { message: "not restorable: n: missing recipe" });
+  assert.throws(() => restore(cp, { bad: (_, { make }) => make("absent") }), { message: "not restorable: n: missing recipe absent" });
 });
 
 test("QA2: restore admits the whole checkpoint before any factory side effect", () => {

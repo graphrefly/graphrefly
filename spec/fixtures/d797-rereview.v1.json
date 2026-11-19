@@ -42,7 +42,7 @@
       "otherValue": 0,
       "reports": 1
     },
-    "checkpointMissingRecipe": "not restorable: n: missing recipe",
+    "checkpointMissingRecipe": "not restorable: n: missing recipe absent",
     "quietError": [
       {
         "invalidate": "auto",

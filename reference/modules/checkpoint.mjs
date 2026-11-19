@@ -174,7 +174,9 @@ function prepareCheckpoint(checkpoint, registry) {
 
     const saved = n.saved;
     if (n.kind === "node") {
-      if (!record(n.recipe) || typeof n.recipe.ref !== "string" || typeof registry[n.recipe.ref] !== "function") fail("missing recipe");
+      // D812 (4), confirmed by the user 2026-11-18: a reference the registry lacks is named with the node.
+      if (!record(n.recipe) || typeof n.recipe.ref !== "string") fail("missing recipe");
+      if (typeof registry[n.recipe.ref] !== "function") fail(`missing recipe ${n.recipe.ref}`);
       json(n.recipe.config ?? null, n.id, "its recipe config is not JSON");
       const opts = n.opts;
       if (!record(opts) || !record(opts.terminal) || !policy(opts.terminal.complete) ||
@@ -207,7 +209,7 @@ export function restore(checkpoint, registry, graphOptions) {
   const nodes = prepareCheckpoint(checkpoint, registry);
   const g = createGraph(graphOptions);
   const lookup = (ref, id) => {
-    if (typeof registry[ref] !== "function") throw notRestorable(id, "missing recipe");
+    if (typeof registry[ref] !== "function") throw notRestorable(id, `missing recipe ${ref}`);
     return registry[ref];
   };
   const make = (ref, config, id) => {
