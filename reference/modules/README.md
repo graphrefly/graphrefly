@@ -522,6 +522,17 @@ setup of `latestAsyncNode`, no longer records its pending input: nothing read th
 restored node said a job was pending when none was. Tests added for both, for a failed job, for a
 backoff's second delay, for a local-only node that received what is not JSON, and for a requiring
 graph captured and restored with the requirement given to `restore` as its third argument.
+
+With the user's corrections to R-checkpoint@2 and R-node@3 of the same day: capture is two passes.
+The first checks every node for what is not JSON, as before; the second, in creation order, refuses
+a computed node with no recipe as local-only and one whose recipe has no reference as
+`missing recipe`. So the JSON refusals come first for the whole graph, and no capture that was
+refused before D812 changes its reason; until this correction a local-only node made before a node
+holding what is not JSON was named instead of it. "No recipe" is now one test in the kernel and
+here, none given (`== null`): capture read any falsy recipe as none, so `recipe: false` passed a
+requiring graph's creation and was then called local-only. A graph that holds a wire bridge group
+cannot be captured, since the bridge's nodes carry no recipes, and a requiring graph refuses the
+group.
 The dated exploration below records earlier schema/implementation shapes.
 
 

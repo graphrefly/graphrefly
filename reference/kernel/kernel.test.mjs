@@ -2138,6 +2138,33 @@ test("D812: a refusal met by a running function is that function's throw, so its
   assert.deepEqual(build({ recipe }), ["s <- o: [PENDING, RESOLVED]"], "given a recipe, the inner is replaced and o goes on");
 });
 
+// QA of D812 (2026-11-19): what "a recipe is present" means, and a refusal a function handles.
+test("D812: any recipe that was given satisfies the requirement, whatever it is; null and undefined are none", () => {
+  const g = createGraph({ requireRecipe: true });
+  [false, 0, "", {}, "name", []].forEach((recipe, i) => {
+    g.node(`n${i}`, [], () => {}, { recipe });
+    assert.deepEqual(g.definition(`n${i}`).recipe, recipe, "stored as given, never read");
+  });
+  for (const recipe of [null, undefined]) {
+    assert.throws(() => g.node("none", [], () => {}, { recipe }), refusedWith("none: this graph requires a recipe on every computed node"));
+  }
+});
+
+test("D812: a function that handles the refusal goes on, and the instance it asked to replace stays", () => {
+  const recipe = { ref: "x", config: null };
+  const g = createGraph({ requireRecipe: true });
+  g.state("a");
+  g.node("inner", [], () => {}, { recipe });
+  g.node("o", ["a"], (ctx) => {
+    if (!ctx.deps[0].has) return;
+    try { g.replace("inner", [], () => {}); } catch (e) { ctx.down([["DATA", e instanceof KernelError ? "refused" : "other"]]); }
+  }, { recipe });
+  g.subscribe("s", "o");
+  assert.deepEqual(during(g, () => g.set("a", 1)), ["s <- o: [PENDING, DATA(\"refused\")]"]);
+  assert.deepEqual([g.get("o").ended, g.definition("inner").recipe], [null, recipe]);
+  assert.deepEqual(during(g, () => g.set("a", 2)), ["s <- o: [PENDING, DATA(\"refused\")]"], "and o runs again");
+});
+
 test("D812: the requirement is off unless the graph was created with it", () => {
   const g = createGraph();
   g.state("a", 1);

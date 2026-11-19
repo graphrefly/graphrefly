@@ -10,7 +10,8 @@
 // kernel stores it and never reads it, as TS's node option `restore` is. Function bodies are never
 // saved (R-checkpoint). A node whose definition has no recipe is local-only, and capture refuses a
 // graph that holds one, naming it (D812, 2026-11-18; until then capture wrote it and restore failed):
-// a node built without one, or replaced without one (C6). A node rewired for its lifetime (F7) is
+// a node built without one, or replaced without one (C6). So a graph that holds a wire bridge
+// group, whose nodes carry no recipes, cannot be captured (R-checkpoint, R-bridge). A node rewired for its lifetime (F7) is
 // restorable: its lifetime's dependencies are saved with the rest of its lifetime.
 //
 // capture(g) runs at a wave boundary only and saves, per node in creation order, what the kernel
@@ -79,7 +80,7 @@ export function capture(g) {
     const x = g.get(id);
     validateSaved(id, { values: x.values, ended: x.ended, state: g.privateState(id) });
     if (kind === "state") return { id, kind, deps: [], saved: { values: x.values, ended: x.ended } };
-    if (def.recipe) json(def.recipe.config ?? null, id, "its recipe config is not JSON");
+    if (def.recipe != null) json(def.recipe.config ?? null, id, "its recipe config is not JSON");
     const entry = { id, kind, deps: def.deps, recipe: def.recipe, opts: def.opts };
     let saved = null;
     if (x.seed) {
@@ -97,12 +98,20 @@ export function capture(g) {
       };
     }
     validateSaved(id, saved);
-    // D812 (4), 2026-11-18: a local-only node is refused here, after what it holds was checked for
-    // JSON (D808's order), instead of being written as { local: true } and failing at restore.
-    if (!def.recipe) throw notRestorable(id, "local-only, built or replaced without a recipe");
     // Explicit null distinguishes a cold node from a truncated lifetime record.
     return { ...entry, saved };
   }) };
+  // D812 (4), 2026-11-18: a node that cannot be rebuilt is refused here instead of being written
+  // as { local: true } and failing at restore. The JSON refusals come first for the whole graph
+  // (corrected 2026-11-19, the user's choice: until then this was checked node by node, so a
+  // local-only node made before a node holding what is not JSON was named instead of it), so this
+  // is a second pass, in creation order. Local-only is no recipe given, the kernel's own test
+  // (R-node); a recipe that was given but has no reference is refused as restore refuses it.
+  for (const { id, kind, recipe } of checkpoint.nodes) {
+    if (kind === "state") continue;
+    if (recipe == null) throw notRestorable(id, "local-only, built or replaced without a recipe");
+    if (!record(recipe) || typeof recipe.ref !== "string") throw notRestorable(id, "missing recipe");
+  }
   return JSON.parse(JSON.stringify(checkpoint));
 }
 

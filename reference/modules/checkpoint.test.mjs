@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { createGraph, format } from "../kernel/kernel.mjs";
 import { capture, restore } from "./checkpoint.mjs";
 import { historyRecipe } from "./history.mjs";
+import { frameSource, wireEdgeGroupIn, wireEdgeGroupOut } from "./bridge.mjs";
 
 function during(g, body) {
   const start = g.trace.length;
@@ -933,6 +934,52 @@ test("D808, D812: a local-only node that received what is not JSON is refused fo
   g.replace("n", ["b"], () => {});
   g.subscribe("keep", "n");
   assert.throws(() => capture(g), { message: "not restorable: n: its received values are not JSON" });
+});
+
+// D812 (4), corrected 2026-11-19 (the user's choice): the JSON refusals come first for the whole
+// graph, so no capture that was refused before D812 changes its reason. Only when everything the
+// graph holds is JSON is a node without a usable recipe refused, the first in creation order.
+test("D812: every JSON refusal comes before a missing recipe, across nodes; then the first node without a usable recipe is named", () => {
+  const refused = (build, message) => { const g = createGraph(); build(g); assert.throws(() => capture(g), { message }); };
+  refused((g) => {
+    g.node("A", [], () => {}); // local-only, made first
+    g.node("B", [], (ctx) => ctx.down([["DATA", () => 1]]), { recipe: { ref: "b", config: null } });
+    g.subscribe("s", "B");
+  }, "not restorable: B: its retained values are not JSON");
+  refused((g) => { g.node("A", [], () => {}); g.state("z", () => 1); }, "not restorable: z: its retained values are not JSON");
+  refused((g) => { g.node("A", [], () => {}); g.node("B", [], () => {}, { recipe: { ref: "b", config: () => 1 } }); }, "not restorable: B: its recipe config is not JSON");
+  refused((g) => { g.node("X", [], () => {}, { recipe: {} }); g.node("A", [], () => {}); }, "not restorable: X: missing recipe");
+  refused((g) => { g.node("A", [], () => {}); g.node("X", [], () => {}, { recipe: {} }); }, "not restorable: A: local-only, built or replaced without a recipe");
+});
+
+// QA of D812 (2026-11-19). The kernel checks only that a recipe was given and never reads it
+// (R-node), so anything but none passes the requirement; capture read "no recipe" as any falsy
+// one, so such a node passed creation and was then called local-only. A recipe that was given but
+// has no reference is refused at capture with the reason restore gives for the same record.
+test("D812: a recipe given without a reference passes the requirement and is refused at capture as a missing recipe", () => {
+  for (const recipe of [false, 0, "", {}, { config: 1 }, "name", []]) {
+    const g = createGraph({ requireRecipe: true });
+    g.node("n", [], () => {}, { recipe });
+    assert.throws(() => capture(g), { message: "not restorable: n: missing recipe" }, JSON.stringify(recipe));
+  }
+});
+
+// R-checkpoint@2, R-bridge@2: a bridge's nodes carry no recipes and their checkpoint is not covered.
+test("D812: a graph that holds a bridge group cannot be captured, and a graph that requires recipes cannot hold one", () => {
+  const localOnly = (id) => ({ message: `not restorable: ${id}: local-only, built or replaced without a recipe` });
+  const sender = createGraph();
+  sender.state("A");
+  wireEdgeGroupOut(sender, "ga", { group: "ga", edges: { a: "A" } });
+  assert.throws(() => capture(sender), localOnly("ga"));
+  const receiver = createGraph();
+  frameSource(receiver, "frames", () => () => {});
+  wireEdgeGroupIn(receiver, "in", { group: "ga", frames: "frames", edges: ["a"] });
+  assert.throws(() => capture(receiver), localOnly("frames"));
+  const required = createGraph({ requireRecipe: true });
+  required.state("A");
+  assert.throws(() => wireEdgeGroupOut(required, "ga", { group: "ga", edges: { a: "A" } }), { message: "ga: this graph requires a recipe on every computed node" });
+  assert.throws(() => frameSource(required, "frames", () => () => {}), { message: "frames: this graph requires a recipe on every computed node" });
+  assert.deepEqual(required.describe().map((n) => n.id), ["A"]);
 });
 
 // D812 (5): the recipe requirement belongs to the graph a host creates, and a checkpoint does not

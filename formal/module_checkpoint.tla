@@ -255,8 +255,10 @@ Replace ==
 \* Why a capture is refused, on each side. The module, as checkpoint.mjs goes through a node:
 \* its values, private state and recipe configuration are checked to be JSON first, then its
 \* recipe is asked for. The rule, from R-checkpoint@2's text: a node without a recipe is
-\* local-only and refused as that; what is not JSON is refused; a local-only node that also
-\* holds what is not JSON is refused for that.
+\* local-only and refused as that; what is not JSON is refused; and the JSON refusals come
+\* first, so a local-only node that also holds what is not JSON is refused for that. With
+\* one computed node this model does not reach the order across nodes, which the reference
+\* tests pin.
 ModuleRefusal(o) == IF o.bad THEN "json" ELSE IF o.rec = "none" THEN "local" ELSE ""
 SpecRefusal(o) ==
   LET localOnly == o.rec = "none"
