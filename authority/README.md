@@ -40,6 +40,14 @@ transition. Draft, retired, predecessor, dangling, cyclic, duplicate and ambiguo
 do not enter the public projection. Any statement, rule-boundary or legal-trace change still
 requires `/spec-amend`.
 
+The protocol's parts are derived from a rule's `area`, not stored: `module`, `graph` and `principle`
+each name a part and every other area is the kernel. `npm run rules:current` (optionally one part,
+`--drafts`, `--scenarios`, `--json`) prints the current rules by part, so nobody has to pick them out
+of the revision history. A scenario's level is the highest part among the current and draft rules it
+covers, which makes the kernel scenarios a definite list. The gate also lists, without failing, the
+scenarios that cover no current rule and the current rules that cite a rule of a higher part (kernel
+and principle, then graph, then module); both lists are for review.
+
 `covers_by`, `superseded_by`, current flags and public flags are not canonical reverse truth.
 Existing runtime status fields remain legacy claims until commit-bound evidence receipts are
 designed; the resolver labels them unverified and never uses them to select public rules.

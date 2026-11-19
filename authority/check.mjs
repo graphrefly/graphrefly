@@ -19,6 +19,13 @@ const views = buildAuthorityViews({
 });
 console.log("=== GraphReFly authority gate ===");
 console.log("metrics:", views.metrics);
+console.log("protocol parts:", {
+  currentRules: Object.fromEntries(Object.entries(views.currentProtocol.parts).map(([part, ids]) => [part, ids.length])),
+  scenarioLevels: Object.fromEntries(Object.entries(views.currentProtocol.scenarioLevels).map(([level, ids]) => [level, ids.length])),
+  // Both lists are for review and never fail the gate; `node authority/current-rules.mjs` prints the detail.
+  scenariosWithoutCurrentRule: views.currentProtocol.scenariosWithoutCurrentRule.map((item) => item.id),
+  upwardRuleCitations: views.currentProtocol.upwardCitations.map((item) => `${item.from} cites ${item.cites}`),
+});
 console.log("federation:", {
   qualifiedDecisions: federation.qualifiedIds.length,
   referenceEdges: federation.referenceEdges.length,

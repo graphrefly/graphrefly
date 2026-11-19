@@ -105,3 +105,83 @@ test("relocated D refs require an explicit locator-derived known-external id", (
   assert.equal(withLocator.gateOk, true);
   assert.deepEqual(withLocator.supersessionGraph.relocatedExternalRefs, [{ from: "D1", to: "D9" }]);
 });
+
+test("current rules are grouped into parts by area", () => {
+  const views = buildAuthorityViews({
+    decisions: [decision("D1")],
+    rules: [
+      rule("R-wave", "wave", { area: "wave" }),
+      rule("R-surface", "surface", { area: "graph" }),
+      rule("R-bridge", "bridge", { area: "module" }),
+      rule("R-clean", "clean", { area: "principle" }),
+      rule("R-history", "history", { area: "module", activated_by: undefined }),
+    ],
+    conformance: [],
+  });
+  assert.deepEqual(views.currentProtocol.rules.map((item) => [item.id, item.part]), [
+    ["R-wave", "kernel"],
+    ["R-surface", "graph"],
+    ["R-bridge", "module"],
+    ["R-clean", "principle"],
+  ]);
+  assert.deepEqual(views.currentProtocol.parts, {
+    kernel: ["R-wave@1"],
+    graph: ["R-surface@1"],
+    module: ["R-bridge@1"],
+    principle: ["R-clean@1"],
+  });
+});
+
+test("a scenario's level is the highest part among the current and draft rules it covers", () => {
+  const views = buildAuthorityViews({
+    decisions: [decision("D1")],
+    rules: [
+      rule("R-wave", "wave", { area: "wave" }),
+      rule("R-clean", "clean", { area: "principle" }),
+      rule("R-surface", "surface", { area: "graph" }),
+      rule("R-bridge", "bridge", { area: "module" }),
+      rule("R-history", "history", { area: "module", activated_by: undefined }),
+      rule("R-old", "old", { area: "control", transition: { kind: "retire", by: "D1" } }),
+    ],
+    conformance: [
+      { id: "C-1", covers: ["R-wave", "R-clean"] },
+      { id: "C-2", covers: ["R-wave", "R-surface"] },
+      { id: "C-3", covers: ["R-wave", "R-history"] },
+      { id: "C-4", covers: ["R-history", "R-old"] },
+      { id: "C-5", covers: ["R-old"] },
+      { id: "C-6", covers: [] },
+    ],
+  });
+  assert.deepEqual(views.currentProtocol.scenarioLevels, {
+    kernel: ["C-1"],
+    graph: ["C-2"],
+    module: ["C-3", "C-4"],
+    none: ["C-5", "C-6"],
+  });
+  assert.deepEqual(views.currentProtocol.scenariosWithoutCurrentRule, [
+    { id: "C-4", draft: ["R-history"], notCurrent: ["R-old"] },
+    { id: "C-5", draft: [], notCurrent: ["R-old"] },
+    { id: "C-6", draft: [], notCurrent: [] },
+  ]);
+  assert.equal(views.metrics.scenariosWithoutCurrentRule, 3);
+  assert.equal(views.gateOk, true);
+});
+
+test("a current rule that cites a rule of a higher part is listed, not refused", () => {
+  const views = buildAuthorityViews({
+    decisions: [decision("D1")],
+    rules: [
+      rule("R-domain", "Consistency across graphs is the bridge module's (R-bridge).", { area: "runtime" }),
+      rule("R-surface", "observe subscribes as R-domain allows; rendering is R-render's.", { area: "graph" }),
+      rule("R-bridge", "A bridge carries edges between graphs (R-domain, R-surface).", { area: "module" }),
+      rule("R-render", "A renderer reads describe (R-surface).", { area: "module", activated_by: undefined }),
+    ],
+    conformance: [],
+  });
+  assert.deepEqual(views.currentProtocol.upwardCitations, [
+    { from: "R-domain@1", part: "kernel", cites: "R-bridge", citedPart: "module" },
+    { from: "R-surface@1", part: "graph", cites: "R-render", citedPart: "module" },
+  ]);
+  assert.equal(views.metrics.upwardRuleCitations, 2);
+  assert.equal(views.gateOk, true);
+});

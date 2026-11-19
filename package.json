@@ -5,6 +5,7 @@
   "scripts": {
     "authority:check": "node authority/check.mjs",
     "authority:check:workspace": "node authority/check.mjs --workspace",
+    "rules:current": "node authority/current-rules.mjs",
     "work:check": "node authority/work-check.mjs",
     "work:check:workspace": "node authority/work-check.mjs --workspace",
     "test:authority": "node --test authority/*.test.mjs",

@@ -7,7 +7,8 @@ Package and product bodies stay with their uniquely located owners.
 ## Read the owning source
 
 - Current protocol and draft separation: [revision contract](authority/README.md#protocol-revision-contract)
-  and [rule revisions](spec/rules.jsonl).
+  and [rule revisions](spec/rules.jsonl). `npm run rules:current` prints the current rules by part;
+  the ledger itself is mostly revision history.
 - Decisions and admission: [authority contract](authority/README.md),
   [ledger locator](authority/ledgers.jsonl).
 - Work and execution scope: [work locator](authority/work-ledgers.jsonl),

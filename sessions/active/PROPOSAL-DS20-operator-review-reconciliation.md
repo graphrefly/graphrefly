@@ -563,6 +563,16 @@ operator 的选择（DS-20 的几十项，加上本提案的 Q1–Q3）现在只
 用户："按 (A) 定"。这是维持账本现状加工具改动，没有语义、归属或权限边界的变化，所以不为它起草 D#；它作为候选工作记在
 第 8 节的表里。
 
+**已实现（2026-11-18，用户："实现 Q11 工具"）。** 都是派生，不改任何规则或场景：
+
+- `authority/model.mjs` 给每条现行规则派生 `part`，给每个场景派生级别，并列出两份清单；三个新测试。
+- `npm run rules:current`（`authority/current-rules.mjs`）按部分打印现行规则，可选一个部分、`--drafts`、`--scenarios`、
+  `--json`。`--scenarios kernel` 给出内核场景的确定清单，现在是 22 个。
+- `authority/check.mjs` 的输出多了 `protocol parts` 一段和两个指标。两份清单只供复查，不让检查失败。
+- 现在的结果：不覆盖任何现行规则的场景 8 个（上面的七个，加只覆盖草案 R-pull 的 C-27）；向上引用 1 处，
+  R-graph-domain@3 引用 R-bridge，是例外还是要改仍由用户判断。
+- 和上面写法的一处差别：principle 不单独成一级，覆盖 principle 规则的场景算内核级；引用方向上 principle 和内核同级。
+
 ### 顺序
 
 先定 Q10，因为它挡着 DS-20 整套 operator 选择入账。Q11 的视图和检查可以随后做，与 Q10 互不依赖。

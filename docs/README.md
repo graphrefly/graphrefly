@@ -5,7 +5,7 @@ records or uniquely owned guides. Start with [the project overview](../README.md
 
 | Category | Question | Current entrypoint | Maintenance boundary |
 |---|---|---|---|
-| Rules | What applies now? | [Revision contract](../authority/README.md#protocol-revision-contract), [rule revisions](../spec/rules.jsonl), generated [current protocol](https://graphrefly.dev/protocol/) | Only activated terminal revisions enter the current projection; project documentation policy lives in [guide/docs.jsonl](../guide/docs.jsonl) |
+| Rules | What applies now? | [Revision contract](../authority/README.md#protocol-revision-contract), [rule revisions](../spec/rules.jsonl), generated [current protocol](https://graphrefly.dev/protocol/); `npm run rules:current` prints it by part | Only activated terminal revisions enter the current projection; project documentation policy lives in [guide/docs.jsonl](../guide/docs.jsonl) |
 | Draft rules | What remains proposed? | Inactive revisions in [rules](../spec/rules.jsonl), exposed separately by the [resolver/dashboard](../dashboard/README.md); [kernel classification](../sessions/active/SESSION-kernel-module-classification.md) is design input | Discussion acceptance and checks do not activate a revision; follow the owning work for next steps |
 | Decisions | Why this choice? | [Owner/class locator](../authority/ledgers.jsonl), [admission contract](../authority/README.md#post-migration-decision-admission) | One origin-qualified body per owner; distinguish durable rationale from execution history |
 | Work | What is being done, in which order? | [Work locator](../authority/work-ledgers.jsonl), [phases](../plan/phases.jsonl), [backlog](../plan/backlog.jsonl) | Work state, prerequisites and execution authorization remain distinct |

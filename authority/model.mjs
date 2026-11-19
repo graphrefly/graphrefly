@@ -93,6 +93,17 @@ function isActivatedTerminal(record) {
   return Array.isArray(record.activated_by) && record.activated_by.length > 0 && record.transition == null;
 }
 
+// The protocol's parts, derived from a rule's area: module, graph and principle each name a part,
+// and every other area is the kernel. A rule may cite rules of its own rank or below: kernel and
+// principle rules come first, then the graph layer, then modules.
+export const RULE_PARTS = ["kernel", "graph", "module", "principle"];
+const PART_RANK = { kernel: 0, principle: 0, graph: 1, module: 2 };
+const RULE_REFERENCE = /(?<![A-Za-z0-9-])R-[a-z0-9]+(?:-[a-z0-9]+)*(?![A-Za-z0-9-])/g;
+
+export function rulePart(area) {
+  return area === "module" || area === "graph" || area === "principle" ? area : "kernel";
+}
+
 function transitionTarget(record) {
   const target = record.transition?.to;
   return target ? `${target.id}@${target.revision}` : null;
@@ -160,13 +171,12 @@ function deriveDecisionGraph(decisions, decisionById, errors, knownExternalDecis
 
 function deriveFormalCoverage(formalArtifacts, revisionsById, errors) {
   const coverage = new Map([...revisionsById.keys()].map((id) => [id, []]));
-  const ruleReference = /(?<![A-Za-z0-9-])R-[a-z0-9]+(?:-[a-z0-9]+)*(?![A-Za-z0-9-])/g;
   for (const artifact of formalArtifacts) {
     if (typeof artifact?.path !== "string" || typeof artifact?.source !== "string") {
       errors.push("formal artifact must declare string path and source");
       continue;
     }
-    const referenced = new Set(artifact.source.match(ruleReference) ?? []);
+    const referenced = new Set(artifact.source.match(RULE_REFERENCE) ?? []);
     for (const ruleId of referenced) {
       if (!revisionsById.has(ruleId)) {
         errors.push(`formal artifact ${artifact.path} references unresolved rule ${ruleId}`);
@@ -257,6 +267,7 @@ function deriveProtocol({ rules, conformance, formalArtifacts, decisionById, err
       revision: ruleRevision(rule),
       coordinate: ruleCoordinate(rule),
       area: rule.area,
+      part: rulePart(rule.area),
       tier: rule.tier,
       statement: rule.statement,
       rationale: rule.rationale,
@@ -277,9 +288,41 @@ function deriveProtocol({ rules, conformance, formalArtifacts, decisionById, err
   }
   const exactDuplicateStatements = [...statements.values()].filter((ids) => ids.length > 1);
   for (const ids of exactDuplicateStatements) errors.push(`current rules duplicate exact statement: ${ids.join(", ")}`);
-  const draftRules = rules
-    .filter((rule) => ruleRevision(rule) !== "legacy-v0" && rule.transition == null && !isActivatedTerminal(rule))
-    .map((rule) => ruleCoordinate(rule));
+  const draftRuleRows = rules.filter((rule) => ruleRevision(rule) !== "legacy-v0" && rule.transition == null && !isActivatedTerminal(rule));
+  const draftRules = draftRuleRows.map((rule) => ruleCoordinate(rule));
+
+  const parts = Object.fromEntries(RULE_PARTS.map((part) => [part, currentRules.filter((rule) => rule.part === part).map((rule) => rule.coordinate)]));
+  const currentPart = new Map(currentRules.map((rule) => [rule.id, rule.part]));
+  const draftPart = new Map(draftRuleRows.map((rule) => [rule.id, rulePart(rule.area)]));
+  const partOf = (ruleId) => currentPart.get(ruleId) ?? draftPart.get(ruleId);
+
+  // A scenario's level is the highest part among the current and draft rules it covers, so the
+  // kernel scenarios are a definite list. A scenario that covers no current rule is listed for
+  // review; it is not an error, since a scenario may wait for a module's rule to be activated.
+  const scenarioLevels = { kernel: [], graph: [], module: [], none: [] };
+  const scenariosWithoutCurrentRule = [];
+  for (const scenario of conformanceById.values()) {
+    const covers = scenario.covers ?? [];
+    const rank = Math.max(-1, ...covers.map((ruleId) => PART_RANK[partOf(ruleId)] ?? -1));
+    scenarioLevels[["none", "kernel", "graph", "module"][rank + 1]].push(scenario.id);
+    if (covers.some((ruleId) => currentPart.has(ruleId))) continue;
+    scenariosWithoutCurrentRule.push({
+      id: scenario.id,
+      draft: covers.filter((ruleId) => draftPart.has(ruleId)),
+      notCurrent: covers.filter((ruleId) => !draftPart.has(ruleId)),
+    });
+  }
+
+  // Listed for review rather than refused: whether such a citation is an exception is a
+  // maintainer's judgment.
+  const upwardCitations = [];
+  for (const rule of currentRules) {
+    for (const cited of new Set(String(rule.statement ?? "").match(RULE_REFERENCE) ?? [])) {
+      const citedPart = cited === rule.id ? undefined : partOf(cited);
+      if (citedPart && PART_RANK[citedPart] > PART_RANK[rule.part]) upwardCitations.push({ from: rule.coordinate, part: rule.part, cites: cited, citedPart });
+    }
+  }
+
   return {
     schemaVersion: 1,
     projection: "fail-closed-current-terminal-activated-revisions",
@@ -289,6 +332,10 @@ function deriveProtocol({ rules, conformance, formalArtifacts, decisionById, err
     cycles,
     exactDuplicateStatements,
     draftRules,
+    parts,
+    scenarioLevels,
+    scenariosWithoutCurrentRule,
+    upwardCitations,
     coverageByRule: Object.fromEntries(derivedCoverage),
     formalCoverageByRule: Object.fromEntries(formalCoverage),
     conformanceEvidence: [...conformanceById.values()].map((scenario) => ({
@@ -330,6 +377,8 @@ export function buildAuthorityViews(model) {
       unclassifiedDecisions: supersessionGraph.unclassified.length,
       currentProtocolRules: currentProtocol.rules.length,
       draftProtocolRules: currentProtocol.draftRules.length,
+      scenariosWithoutCurrentRule: currentProtocol.scenariosWithoutCurrentRule.length,
+      upwardRuleCitations: currentProtocol.upwardCitations.length,
       exactDuplicateCurrentRuleStatements: currentProtocol.exactDuplicateStatements.length,
       activeUncoveredRules: uncoveredCurrentRules.length,
       formalCoveragePending: currentProtocol.rules.filter((rule) => rule.formal.length === 0).length,
