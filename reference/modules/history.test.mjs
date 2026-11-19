@@ -52,20 +52,38 @@ test("history: a RESOLVED array is not recorded, and a wave without values sends
   assert.deepEqual(g.get("h").value, [[[2]]]);
 });
 
-test("history: an INVALIDATE clears the list (TS BH6), and deactivation drops it", () => {
+// D812 (3), decided by the user 2026-11-18: history has the auto INVALIDATE policy, like buffer,
+// pairwise and scan, which keep what they have seen. Until then an INVALIDATE cleared the list.
+test("history: an INVALIDATE removes its value and keeps the list; deactivation drops it", () => {
   const g = createGraph();
   g.state("s");
   history(g, "h", "s", 3);
   g.subscribe("k", "h");
   g.set("s", 1); g.set("s", 2);
   g.invalidate("s");
-  assert.deepEqual(during(g, () => g.subscribe("late", "h")), ["late <- h: [START]"], "no stale history");
-  g.set("s", 3);
-  assert.deepEqual(g.get("h").value, [[[3]]]);
+  assert.deepEqual(during(g, () => g.subscribe("late", "h")), ["late <- h: [START]"], "no value to read in the gap");
+  assert.deepEqual(during(g, () => g.set("s", 3)).filter((l) => l.startsWith("late <-")),
+    ["late <- h: [PENDING, DATA([[[1]],[[2]],[[3]]])]"], "the next DATA sends the list with its earlier entries");
   g.unsubscribe("k", "h"); g.unsubscribe("late", "h");
   g.set("s", 4);
   g.subscribe("k", "h");
   assert.deepEqual(g.get("h").value, [[[4]]], "a new activation starts from the source's last array");
+});
+
+test("history: arrays before an INVALIDATE in the same wave are not part of that wave's entry", () => {
+  const g = createGraph();
+  g.state("t");
+  // x sends, in one run, [a], INVALIDATE, [b].
+  g.node("x", ["t"], (ctx) => {
+    const v = ctx.deps[0].waves.flat().at(-1);
+    if (v === "go") { ctx.down([["DATA", "a"]]); ctx.down([["INVALIDATE"]]); ctx.down([["DATA", "b"]]); }
+    else if (v !== undefined) ctx.down([["DATA", v]]);
+  });
+  history(g, "h", "x", 5);
+  g.subscribe("k", "h");
+  g.set("t", "v1");
+  assert.deepEqual(during(g, () => g.set("t", "go")).filter((l) => l.startsWith("k <-")),
+    ["k <- h: [PENDING, INVALIDATE]", 'k <- h: [PENDING, DATA([[["v1"]],[["b"]]])]']);
 });
 
 test("history: the source's end ends it; a new subscriber gets the list and the terminal (P5)", () => {
@@ -113,7 +131,7 @@ test("history: it carries its recipe, so checkpoint saves the list and restore b
   g.subscribe("k", "h");
   for (const v of [1, 2, 3, 4]) g.set("s", v);
   const r = restore(JSON.parse(JSON.stringify(capture(g))), historyRecipes);
-  assert.equal(r.definition("h").opts.invalidate, "manual", "its INVALIDATE policy comes back with it");
+  assert.equal(r.definition("h").opts.invalidate, "auto", "it has the default INVALIDATE policy");
   assert.deepEqual(during(r, () => r.subscribe("k", "h")), ["k <- h: [START, DATA([[[2]],[[3]],[[4]]])]"]);
   r.set("s", 5);
   assert.deepEqual(r.get("h").value, [[[3]], [[4]], [[5]]], "the list went on from its saved private state");

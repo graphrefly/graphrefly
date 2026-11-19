@@ -647,8 +647,8 @@ to be re-issued or recorded as unknown.
     not reach it again;
   - an input that only ended brings its end without its values again.
 - A restored timer source's setup starts one timer and its function does not run; it counts on from
-  its saved count. A restored history is not rerun, and a later INVALIDATE still clears it as in the
-  original (manual INVALIDATE policy).
+  its saved count. A restored history is not rerun, and a later INVALIDATE removes its value and keeps
+  its list as in the original (auto INVALIDATE policy, graphrefly:D812).
 - Before the first subscription an INVALIDATE is not seen; subscribed first, the restore behaves as
   the original.
 - A chain of restored nodes runs no fn; an inactive node starts fresh.
@@ -782,10 +782,10 @@ source published DATA since the history node was activated, oldest first.
 - A new subscriber gets the list in its START snapshot, like any value. This holds for sinks and
   dependents alike.
 - The list lives in private state:
-  - the node has the manual INVALIDATE policy (`historyOpts`), so an INVALIDATE from the source is
-    its function's input: it clears the list and sends INVALIDATE itself (until 2026-11-09 an
-    `onInvalidate` hook cleared the list), as
-    TS's BH6 does;
+  - the node has the default, auto INVALIDATE policy (graphrefly:D812, 2026-11-18): an INVALIDATE
+    from the source removes its value and keeps the list, and the next wave with DATA sends the
+    list with its earlier entries. Until then it had the manual policy (`historyOpts`) and cleared
+    the list, as TS's BH6 does;
   - deactivation drops the list (K7), as TS drops its ring;
   - built from `historyRecipe` through the checkpoint module's `recipes`, the list is saved and
     restored, and goes on from there.

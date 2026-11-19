@@ -13,37 +13,31 @@
 // out, and a wave without DATA is not an entry and sends nothing. Each wave with DATA sends the new
 // list once. A new subscriber, sink or dependent, gets the list in its START snapshot like any
 // value. The list lives in private state, so:
-// - an INVALIDATE from the source is the function's input (manual policy): it clears the list,
-//   and the node sends INVALIDATE itself;
+// - an INVALIDATE from the source removes the node's value and keeps the list (the default, auto
+//   policy; D812, decided by the user 2026-11-18): the next wave with DATA sends the list with its
+//   earlier entries, and arrays that came before the INVALIDATE in the same wave are not in that
+//   wave's entry, since the kernel drops them (K6). Until D812 the node had the manual policy and
+//   cleared the list;
 // - deactivation drops it (K7), as TS's ring is dropped (BH6);
 // - checkpoint saves it: the node carries its recipe { ref: "history", config: { n } }, and
 //   historyRecipes goes in the restore's registry (2026-11-10).
 // On activation the list starts with one entry, a wave of one array: the source's last array, all
 // its START snapshot holds.
 
-// Built with the manual INVALIDATE policy (K6, 2026-11-09): the source's INVALIDATE is this
-// function's input, so it clears the list and sends INVALIDATE itself, then takes what came
-// after it. Without the policy the kernel would clear the value but keep a stale list.
-export const historyOpts = Object.freeze({ invalidate: "manual" });
-
+// It needs no policy of its own: it is a scan over waves. Under the auto INVALIDATE policy the
+// kernel removes the node's value without running this function, and the private state, where
+// the list is, stays (K6).
 export const historyRecipe = ({ n }) => (ctx) => {
-  const src = ctx.deps[0];
-  let list = ctx.state.get() ?? [];
-  if (src.invalidated) {
-    list = [];
-    ctx.state.set(list);
-    ctx.down([["INVALIDATE"]]);
-  }
-  const wave = src.waves.filter((w) => w.length);
+  const wave = ctx.deps[0].waves.filter((w) => w.length);
   if (!wave.length) return;
-  list = [...list, wave].slice(-n);
+  const list = [...(ctx.state.get() ?? []), wave].slice(-n);
   ctx.state.set(list);
   ctx.down([["DATA", list]]);
 };
 
 export function history(g, id, sourceId, n) {
   if (!Number.isInteger(n) || n < 1) throw new RangeError(`history ${id}: n must be a positive integer`);
-  return g.node(id, [sourceId], historyRecipe({ n }), { ...historyOpts, recipe: { ref: "history", config: { n } } });
+  return g.node(id, [sourceId], historyRecipe({ n }), { recipe: { ref: "history", config: { n } } });
 }
 
 export const historyRecipes = Object.freeze({ history: historyRecipe });

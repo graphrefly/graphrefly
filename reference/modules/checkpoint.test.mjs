@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createGraph, format } from "../kernel/kernel.mjs";
 import { capture, restore } from "./checkpoint.mjs";
-import { historyOpts, historyRecipe } from "./history.mjs";
+import { historyRecipe } from "./history.mjs";
 
 function during(g, body) {
   const start = g.trace.length;
@@ -434,19 +434,25 @@ test("K3: every value of a node's last array is saved and comes back in its snap
 function historyPair() {
   const reg = { history: historyRecipe };
   const g = createGraph();
-  g.state("s"); node(g, reg, "h", ["s"], "history", { n: 3 }, historyOpts);
+  g.state("s"); node(g, reg, "h", ["s"], "history", { n: 3 });
   g.subscribe("k", "h");
   for (const v of [1, 2, 3]) g.set("s", v);
   return { g, reg, cp: roundTrip(capture(g)) };
 }
 
-test("a restored history needs no rerun: under the manual INVALIDATE policy an INVALIDATE is its input", () => {
+test("a restored history needs no rerun and keeps its list across an INVALIDATE, as the original does (D812)", () => {
   const { g, reg, cp } = historyPair();
   const r = restore(cp, reg);
   assert.deepEqual(during(r, () => r.subscribe("k", "h")), ["k <- h: [START, DATA([[[1]],[[2]],[[3]]])]"]);
   for (const x of [g, r]) { x.invalidate("s"); x.set("s", 9); }
-  assert.deepEqual(r.get("h").value, [[[9]]]);
+  assert.deepEqual(r.get("h").value, [[[2]], [[3]], [[9]]]);
   assert.deepEqual(r.get("h").value, g.get("h").value);
+  // A restored node receives no waves before its first activation, so it cannot see an INVALIDATE
+  // made then; keeping the list makes it agree with one that saw it.
+  const unseen = restore(cp, reg);
+  unseen.invalidate("s"); unseen.set("s", 9);
+  unseen.subscribe("k", "h");
+  assert.deepEqual(unseen.get("h").value, g.get("h").value);
 });
 
 test("a restored source starts a new timer in its setup and goes on from its saved count; its function does not run", () => {
