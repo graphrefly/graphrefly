@@ -113,8 +113,25 @@ function transitionTarget(record) {
 // supersession takes over only the concerns its successor lists, so the rest stay with the
 // predecessor (D783: a partial supersession is not inferred to be whole). A full supersession, or a
 // successor that does not say it is partial, as every record before admission metadata, leaves none.
+// So does a `superseded_by` field on the record itself, which only old records carry: the
+// federation reads it as whole, and the two resolvers agree (QA 2026-11-19).
+//
+// Two limits, both left to the reader of the records. Inside one concern nothing is partial: a
+// predecessor whose every concern its partial successors list is historical, even where the
+// successor says some of its choices stand, and those choices are then read through the successor's
+// `supersedes` edge. And a partial successor that lists none of its predecessor's concerns takes
+// nothing; partialSuccessorsTakingNothing lists such pairs so that this is seen.
+export function partialSuccessorsTakingNothing(record, superseders) {
+  const concerns = new Set(Array.isArray(record.concerns) ? record.concerns : []);
+  if (concerns.size === 0) return [];
+  return superseders
+    .filter((superseder) => superseder.change_kind === "partial-supersession" && !(superseder.concerns ?? []).some((concern) => concerns.has(concern)))
+    .map((superseder) => superseder.id);
+}
+
 export function concernsStillGoverned(record, superseders) {
   const concerns = Array.isArray(record.concerns) ? record.concerns : [];
+  if (record.superseded_by !== undefined && record.superseded_by !== null) return [];
   if (superseders.length === 0) return concerns;
   if (superseders.some((superseder) => superseder.change_kind !== "partial-supersession")) return [];
   const taken = new Set(superseders.flatMap((superseder) => superseder.concerns ?? []));
@@ -145,17 +162,20 @@ function deriveDecisionGraph(decisions, decisionById, errors, knownExternalDecis
   };
   const governed = new Map();
   const partiallySuperseded = [];
+  const takingNothing = [];
   for (const decision of decisions) {
     const superseders = (incoming.get(decision.id) ?? []).map((id) => decisionById.get(id));
     const concerns = concernsStillGoverned(decision, superseders);
     governed.set(decision.id, concerns);
+    for (const by of partialSuccessorsTakingNothing(decision, superseders)) takingNothing.push({ by, of: decision.id });
     if (superseders.length > 0 && concerns.length > 0 && isProductConstitutionRecord(decision) && decision.status === "locked") {
       partiallySuperseded.push({ id: decision.id, by: superseders.map((superseder) => superseder.id), governs: concerns });
     }
   }
   const currentCandidates = decisions
     .filter((decision) => isProductConstitutionRecord(decision) && decision.status === "locked"
-      && ((incoming.get(decision.id)?.length ?? 0) === 0 || governed.get(decision.id).length > 0))
+      && (governed.get(decision.id).length > 0
+        || ((incoming.get(decision.id)?.length ?? 0) === 0 && (decision.superseded_by === undefined || decision.superseded_by === null))))
     .map((decision) => decision.id);
   const currentSet = new Set(currentCandidates);
   const concernGovernors = new Map();
@@ -187,6 +207,7 @@ function deriveDecisionGraph(decisions, decisionById, errors, knownExternalDecis
     relocatedExternalRefs,
     currentCandidates,
     partiallySuperseded,
+    partialSuccessorsTakingNothing: takingNothing,
     concernGovernors: Object.fromEntries(concernGovernors),
     ambiguousCurrentGovernors,
     unclassified,
@@ -400,6 +421,7 @@ export function buildAuthorityViews(model) {
       ambiguousCurrentGovernors: supersessionGraph.ambiguousCurrentGovernors.length,
       unclassifiedDecisions: supersessionGraph.unclassified.length,
       partiallySupersededDecisions: supersessionGraph.partiallySuperseded.length,
+      partialSuccessorsTakingNothing: supersessionGraph.partialSuccessorsTakingNothing.length,
       currentProtocolRules: currentProtocol.rules.length,
       draftProtocolRules: currentProtocol.draftRules.length,
       scenariosWithoutCurrentRule: currentProtocol.scenariosWithoutCurrentRule.length,
@@ -413,6 +435,7 @@ export function buildAuthorityViews(model) {
       current: supersessionGraph.currentCandidates,
       governors: supersessionGraph.concernGovernors,
       partiallySuperseded: supersessionGraph.partiallySuperseded,
+      partialSuccessorsTakingNothing: supersessionGraph.partialSuccessorsTakingNothing,
       ambiguous: supersessionGraph.ambiguousCurrentGovernors,
     },
     currentProtocol,

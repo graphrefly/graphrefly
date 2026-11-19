@@ -35,6 +35,8 @@ console.log("federation:", {
   currentProductComplete: federation.currentProduct.complete,
   currentProductRecords: federation.currentProduct.current_qualified_ids.length,
   partiallySuperseded: federation.currentProduct.partially_superseded.map((item) => item.id),
+  // For review, never a gate failure: a partial successor that lists none of its predecessor's concerns.
+  partialSuccessorsTakingNothing: federation.currentProduct.partial_successors_taking_nothing.map((item) => `${item.by} of ${item.of}`),
 });
 console.log("ledgers:", federation.ledgers);
 console.log("work federation:", {

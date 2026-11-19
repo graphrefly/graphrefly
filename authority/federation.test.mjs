@@ -114,13 +114,28 @@ test("the cross-owner current set keeps a partially superseded decision for its 
       { id: "D4", status: "locked", supersedes: ["D3"], concerns: ["c"], change_kind: "partial-supersession" },
       { id: "D5", status: "locked", supersedes: [], concerns: ["d", "e"] },
       { id: "D6", status: "locked", supersedes: ["D5"], concerns: ["d"] },
+      // QA 2026-11-19: several successors, a full one among them, superseded_by, and one that takes nothing.
+      { id: "D7", status: "locked", supersedes: [], concerns: ["f", "g", "h"] },
+      { id: "D8", status: "locked", supersedes: ["D7"], concerns: ["f"], change_kind: "partial-supersession" },
+      { id: "D9", status: "locked", supersedes: ["D7"], concerns: ["g"], change_kind: "partial-supersession" },
+      { id: "D10", status: "locked", supersedes: [], concerns: ["i", "j"] },
+      { id: "D11", status: "locked", supersedes: ["D10"], concerns: ["i"], change_kind: "partial-supersession" },
+      { id: "D12", status: "locked", supersedes: ["D10"], concerns: ["z"], change_kind: "full-supersession" },
+      { id: "D13", status: "locked", supersedes: [], concerns: ["k", "l"], superseded_by: "D14" },
+      { id: "D14", status: "locked", supersedes: ["D13"], concerns: ["k"], change_kind: "partial-supersession" },
+      { id: "D15", status: "locked", supersedes: [], concerns: ["m"] },
+      { id: "D16", status: "locked", supersedes: ["D15"], concerns: ["y"], change_kind: "partial-supersession" },
     ]);
     writeJsonl(join(root, "authority/relocations.jsonl"), []);
 
     const federation = loadFederation(root);
-    assert.deepEqual(federation.currentProduct.current_qualified_ids, ["graphrefly:D1", "graphrefly:D2", "graphrefly:D4", "graphrefly:D6"]);
-    assert.deepEqual(federation.currentProduct.historical_qualified_ids, ["graphrefly:D3", "graphrefly:D5"]);
-    assert.deepEqual(federation.currentProduct.partially_superseded, [{ id: "graphrefly:D1", governs: ["b"] }]);
+    const q = (...ids) => ids.map((id) => `graphrefly:${id}`).sort();
+    assert.deepEqual([...federation.currentProduct.current_qualified_ids].sort(), q("D1", "D2", "D4", "D6", "D7", "D8", "D9", "D11", "D12", "D14", "D15", "D16"));
+    assert.deepEqual([...federation.currentProduct.historical_qualified_ids].sort(), q("D3", "D5", "D10", "D13"));
+    assert.deepEqual(federation.currentProduct.partially_superseded, [
+      { id: "graphrefly:D1", governs: ["b"] }, { id: "graphrefly:D15", governs: ["m"] }, { id: "graphrefly:D7", governs: ["h"] },
+    ]);
+    assert.deepEqual(federation.currentProduct.partial_successors_taking_nothing, [{ by: "graphrefly:D16", of: "graphrefly:D15" }]);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

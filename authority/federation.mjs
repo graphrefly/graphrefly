@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { concernsStillGoverned, loadJsonl } from "./model.mjs";
+import { concernsStillGoverned, loadJsonl, partialSuccessorsTakingNothing } from "./model.mjs";
 
 const DECISION_ID = /^(?:D\d+|DR-\d+)$/;
 const LEGACY_EXTERNAL_ID = /^R\d+$/;
@@ -241,12 +241,14 @@ export function loadFederation(root, { includeExternal = false } = {}) {
     if (edge.relation === "superseded_by") superseded.add(edge.from);
     if (edge.relation !== "supersedes") continue;
     if (!superseders.has(edge.to)) superseders.set(edge.to, []);
-    superseders.get(edge.to).push(qualified.get(edge.from)?.record ?? {}); // an unknown successor counts as whole
+    superseders.get(edge.to).push({ ...qualified.get(edge.from)?.record, id: edge.from }); // an unknown successor counts as whole
   }
   const partiallySuperseded = [];
+  const takingNothing = [];
   for (const [key, records] of superseders) {
     const target = qualified.get(key);
     const governs = target ? concernsStillGoverned(target.record, records) : [];
+    if (target) for (const by of partialSuccessorsTakingNothing(target.record, records)) takingNothing.push({ by, of: key });
     if (governs.length === 0) superseded.add(key);
     else if (target.record.status === "locked" && !superseded.has(key)) partiallySuperseded.push({ id: key, governs });
   }
@@ -298,6 +300,8 @@ export function loadFederation(root, { includeExternal = false } = {}) {
       historical_qualified_ids: historicalProductIds,
       // Listed so that a partial supersession stays visible instead of being read as whole or as none.
       partially_superseded: partiallySuperseded.filter((item) => currentProductIds.includes(item.id)).sort((a, b) => a.id.localeCompare(b.id)),
+      // A partial successor that lists none of its predecessor's concerns takes nothing from it.
+      partial_successors_taking_nothing: takingNothing.sort((a, b) => a.of.localeCompare(b.of)),
     },
     ownerDecisionRecords,
   };

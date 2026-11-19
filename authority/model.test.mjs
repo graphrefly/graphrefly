@@ -214,5 +214,31 @@ test("a partially superseded decision still governs the concerns its successor d
     { id: "D9", by: ["D10", "D11"], governs: ["k"] },
   ]);
   assert.deepEqual(constitution.ambiguous, []);
+  assert.deepEqual(constitution.partialSuccessorsTakingNothing, []);
   assert.equal(views.gateOk, true);
+});
+
+// QA 2026-11-19: the edges the first test left out.
+test("partial supersession: a full successor beside a partial one, superseded_by, and a successor that shares no concern", () => {
+  const root = { __authority: { owner: "graphrefly", authority_class: "durable-root" } };
+  const views = buildAuthorityViews({
+    decisions: [
+      decision("D1", { ...root, concerns: ["a", "b"] }),
+      decision("D2", { ...root, concerns: ["a"], change_kind: "partial-supersession", supersedes: ["D1"] }),
+      decision("D3", { ...root, concerns: ["z"], change_kind: "full-supersession", supersedes: ["D1"] }),
+      decision("D4", { ...root, concerns: ["c", "d"], superseded_by: "D5" }),
+      decision("D5", { ...root, concerns: ["c"], change_kind: "partial-supersession", supersedes: ["D4"] }),
+      decision("D6", { ...root, concerns: ["e"] }),
+      decision("D7", { ...root, concerns: ["y"], change_kind: "partial-supersession", supersedes: ["D6"] }),
+      decision("D8", { ...root, concerns: ["f"], superseded_by: "D99" }),
+    ],
+    rules: [],
+    conformance: [],
+  });
+  const constitution = views.currentProductConstitution;
+  // D1 has a full successor, D4 and D8 carry superseded_by, and D7 takes nothing from D6.
+  assert.deepEqual(constitution.current, ["D2", "D3", "D5", "D6", "D7"]);
+  assert.deepEqual(constitution.partiallySuperseded, [{ id: "D6", by: ["D7"], governs: ["e"] }]);
+  assert.deepEqual(constitution.partialSuccessorsTakingNothing, [{ by: "D7", of: "D6" }]);
+  assert.equal(views.metrics.partialSuccessorsTakingNothing, 1);
 });

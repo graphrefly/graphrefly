@@ -72,8 +72,15 @@ change kinds may not smuggle in a supersession edge.
 A supersession edge does not always retire its target. A full supersession, and any edge from a record
 that does not say it is partial, as every record before admission metadata, leaves the predecessor
 historical. A `partial-supersession` takes over only the concerns its successor lists: the predecessor
-stays current for its other concerns and is listed as partially superseded, so the remainder is neither
-dropped nor guessed. A predecessor left with no concern is historical.
+stays current for its other concerns and is listed as partially superseded. A predecessor left with
+no concern is historical. Two limits follow from working by whole concerns, and the resolver does not
+judge either. Inside one concern nothing is partial: when the successor lists the predecessor's only
+concern, the predecessor is historical even if the successor says some of its choices stand
+(graphrefly:D812 and D802), and those choices are read through the successor's `supersedes` edge. And a
+partial successor that lists none of its predecessor's concerns takes nothing from it; the check
+prints such pairs as `partialSuccessorsTakingNothing`, for review, and whether the predecessor should
+have kept everything is its owner's call. A `superseded_by` field on a record, which only old records
+carry, counts as a whole supersession in both resolvers.
 
 Ledgers marked `historical_only` accept no unlocated record: every body must match a relocation
 locator. This makes the history files immutable destinations rather than alternate authoring
