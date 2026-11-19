@@ -1,0 +1,4 @@
+before: 0 0 metrics: { unresolvedRefs: 0, supersessionCycles: 0, ruleRevisionCycles: 0, ambiguousCurrentGovernors: 4, unclassifiedDecisions: 407, currentProtocolRules: 19, draftProtocolRules: 17, exactDuplicateCurrentRuleStatements: 0, activeUncoveredRules: 2, formalCoveragePending: 8 }
+after:  0 0 metrics: { unresolvedRefs: 0, supersessionCycles: 0, ruleRevisionCycles: 0, ambiguousCurrentGovernors: 4, unclassifiedDecisions: 407, currentProtocolRules: 19, draftProtocolRules: 10, exactDuplicateCurrentRuleStatements: 0, activeUncoveredRules: 2, formalCoveragePending: 8 }
+columns: authority/check.mjs exit, dashboard/build.mjs --check exit, metrics
+authority/work-check.mjs exit 0; node --test authority/*.test.mjs: 40 pass, 0 fail

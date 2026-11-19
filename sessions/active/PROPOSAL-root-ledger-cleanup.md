@@ -1,6 +1,6 @@
 # 根仓库账本清理提案
 
-2026-11-18，Fable。状态：**Q5 已定并执行；Q1–Q4、Q6 待用户决定**。这是非规范性文档：除了用户批准的 Q5 会话归档，没有搬动、删除或改写任何账本、规则或
+2026-11-18，Fable。状态：**Q5 已定并执行；Q3 已有逐条建议和决定草稿，待用户决定；Q1、Q2、Q4、Q6 待用户决定**。这是非规范性文档：除了用户批准的 Q5 会话归档，没有搬动、删除或改写任何账本、规则或
 场景；它不锁定任何决定，也不授权其余的清理动作。
 
 起因：用户在 DS-20 复审之后问，账本、rules 和 conformance 是不是太大、留了很多过时的东西；随后指出仓库已有 archive
@@ -169,20 +169,93 @@ C-1a、C-1c：对照 R-bridge@2 看一遍，给它们补上 `covers`，或者退
 
 ### Q3. 12 行 D797 之前的草案规则
 
-| 规则 | 初步判断 | 依据 |
-|---|---|---|
-| R-replay-buffer@1、@2 | 等 history 模块激活时加转换 | B140 提案：去向是 history 模块 |
-| R-pull@1、@2 | 等 demand 模块激活时加转换 | B140 提案：去向是 demand 模块和 K2 |
-| R-node-revision@1 | 等 revision observer；用户 2026-11-09 已决定暂缓 | B140 提案 |
-| R-edges-derived@1 | 加转换，指向 R-graph-surface@2 | 现行规则已写"Edges are derived from dependencies, never a separately maintained topology truth" |
-| R-inspection-set@1 | 退役 | 它规定 describe、observe、profile 三个方法；现行规则是 find、describe、observe、retain，profiling 归 package 模块 |
-| R-meta-presentation@1 | 退役或改写 | 它把静态标注放进 describe；现行规则写 describe 只给 `{ id, kind, deps, quiet }`，标注从节点读 |
-| R-no-raw-async@1 | 退役或改写 | 它禁止反应层里的 Promise，并提到 pool/runner 层；DS-20 约定 latestAsync 的回调可以返回 Promise，pool 设计已退役 |
-| R-clock@1 | 需要用户定 | 现行公开规则里没有任何一条提到时钟 |
-| R-no-polling@1 | 激活，或并入 R-no-imperative@2 | 与现行原则一致 |
-| R-data-not-peek@1 | 改写或退役 | 它说节点不读依赖的 `.cache`；现在函数通过 `ctx.deps` 读依赖，初值随 START 的快照到达 |
+2026-11-18 用户选择接着定这一题。下面换掉了原来只根据规则文字写的初步判断：这次对照了 19 条现行规则的全文、D805 和 D807
+的正文、B140 提案的去向表、参考实现，以及三个 runtime 仓库和根仓库 guide 里对这些规则编号的引用，并在副本里试跑。
 
-给从未激活的草案加退役或替换的转换，不改变公开协议，但转换要写 `by`，所以需要一条决定。
+**先例。** D798 激活内核集时没有给这七条去向；D805 和 D807 后来处理了它们的同类。D807 退役 R-sync-core@1 和
+R-dispatch-all@1 的理由正好适用："Neither draft was ever activated and neither was given a destination ... Their lasting
+content is already in active rules, so neither is revised." 它是一条 `protocol-decision`，`change_kind` 为 clarification，
+不改任何现行规则。
+
+**等模块的 5 行，不变。** R-replay-buffer@1、@2 等 history 模块；R-pull@1、@2 等 demand 模块（C-27 还覆盖着 R-pull）；
+R-node-revision@1 等 revision observer，用户 2026-11-09 已定暂缓。它们的后继 R-history@1、R-demand@1、R-revision@1 还是
+草案，R-history 还要按 DS-20 改写，所以现在不加转换。
+
+**现在可以处理的 7 行。** 没有一条被场景覆盖，没有一条有模型。
+
+| 规则 | 建议 | 留下来的内容在哪里 | 丢掉的内容 |
+|---|---|---|---|
+| R-edges-derived@1 | replace，指向 R-graph-surface@2 | "deps are the current dependencies, a ctx.rewire's included"；"Edges are derived from dependencies, never a separately maintained topology truth" | mount 层级（D805 退役了 R-mount）；自动发现未注册的依赖；"每条边背后都有真实订阅"，现在 describe 不激活任何节点，这句已不成立 |
+| R-inspection-set@1 | replace，指向 R-graph-surface@2 | 图层的方法是 find、describe、observe、retain | profile 方法和 explain 模式；D805 定为 package 模块 |
+| R-meta-presentation@1 | retire | D805 第 (5) 点：标注归 package；describe 只给 `{ id, kind, deps, quiet }` | "静态标注放进 describe"与现行规则相反。"owner/access 标注不是授权"这一句仍由决定 D620 记着，不在任何现行规则里 |
+| R-no-polling@1 | replace，指向 R-no-imperative@2 | "Coordination flows through messages along declared dependencies"；setTimeout 加 set 不是触发方式 | "周期行为是一个发消息的 timer source"，这是组合指导，不是可测的协议行为 |
+| R-data-not-peek@1 | retire | 初值随 START 之后的快照到达（R-subscription@3）；函数通过 `ctx.deps` 读输入（R-invocation@3） | "节点不读依赖的 `.cache`"。见下面的说明 |
+| R-no-raw-async@1 | retire。**需要用户明确点头** | 值层 sugar 不写消息（R-primary-api-clean@2）；函数返回后的 `ctx.down` 是后一个 wave（R-wave@3）并属于它的 lifetime（R-lifetime@2） | "异步只能出现在 source 和 pool/runner 层"。pool/runner 层已被 D807 退役。见下面的说明 |
+| R-clock@1 | retire。**需要用户明确点头** | 无 | "图内单调计数器"没有任何 runtime 或参考模块实现过。见下面的说明 |
+
+**三条要说明的。**
+
+- **R-no-raw-async 不是死草案。** graphrefly-ts 把它当现行纪律执行：`scripts/check-no-raw-async.ts` 接在 `pnpm lint` 里，
+  `setTimeout` 只允许出现在白名单文件；TS 仓库里有 10 个文件引用它，其中两个是 skill。根仓库的公开 guide 有两条记录引用它。另一边，参考
+  实现在节点函数里直接用 `setTimeout`（`reference/modules/restart.mjs`）和 Promise（`reference/kernel/sugar.mjs` 的
+  latestAsync），graphrefly-rs 的 `ctx.rs` 注释写的是"async lives in the fn body"。所以三边对它的理解已经不一样。
+  按现行规则，异步的边界已经由结构决定：值层函数拿不到 `ctx.down`，只有 ctx 层节点能在函数返回后输出，而且受 lifetime 约束。
+  草案在这之外多说的，是 package 的源码里哪些文件可以出现原始异步调用，这和 D807 判为"implementation, not protocol"的是
+  同一类。建议退役，TS 把这条 lint 留作自己的纪律。另一个选择是不动它，另开设计题决定根协议要不要限制异步出现的位置。
+- **R-clock。** TS 自己的注释写着"Graph-local clock = follow-up (D26)"，TTL 用的是可注入的 `Date.now`；参考实现里没有时钟。
+  D805 定了 observe 没有序号，D797 把 revision 计数放进了观察者，所以内核里没有因果计数器是已经定过的。DS-20 的时间类算子
+  （"保留待办，重置计时"）没有依赖任何时钟规则。建议退役；时间怎样进入图，等算子契约集（DS-20 提案 Q10）需要时再定。
+- **R-data-not-peek 退役后留下的一处空白。** 没有现行规则禁止函数通过图去读别的节点。参考的 restart 模块就这样做
+  （`kernel.get(d).ended`，因为延迟的重试触发时 `ctx.deps` 已经不可读）。这不是清理能定的；如果用户想要这条约束，它是一道
+  新的设计题。
+
+**试跑。** [draft-rule-transitions-dry-run.py](root-ledger-cleanup-probes/draft-rule-transitions-dry-run.py) 在副本里给七行
+加了转换，追加一条占位决定。[结果](root-ledger-cleanup-probes/draft-rule-transitions-dry-run.out.txt)：`authority/check.mjs`、
+`dashboard/build.mjs --check`、`authority/work-check.mjs` 都以 0 退出，authority 的 40 个测试通过；开放草案从 17 行降到
+10 行（5 行等模块，5 行是 D797 的模块规则）；现行规则仍是 19 条，`ambiguousCurrentGovernors` 仍是 4。
+
+**决定记录草稿（未入账）。** 编号、日期在入账时填。照 D807 的写法。
+
+```json
+{
+  "id": "D-next-3",
+  "layer": "L0-L4 / drafts written before D797",
+  "date": "入账时填",
+  "question": "What happens to the seven draft rules written before D797 that were never activated and were given no destination when D798, D805 and D807 settled their siblings: R-edges-derived@1, R-inspection-set@1, R-meta-presentation@1, R-no-polling@1, R-data-not-peek@1, R-no-raw-async@1 and R-clock@1?",
+  "decision": "Give each a transition, as the user decided on <date>; no active rule changes. (1) R-edges-derived@1 and R-inspection-set@1 are replaced by R-graph-surface@2, which already says that deps are the current dependencies, a rewire's included, that edges are derived from dependencies and never a separately maintained topology truth, and that the graph layer's methods are find, describe, observe and retain. What the drafts add (the mount hierarchy, discovery of unregistered dependencies, a profile method and an explain mode) is package-owned under D805. (2) R-meta-presentation@1 is retired: D805 made annotations package-owned and describe gives exactly { id, kind, deps, quiet }. That owner and access metadata is never authorization stays decided by D620. (3) R-no-polling@1 is replaced by R-no-imperative@2: coordination flows through messages along declared dependencies, and a timer plus a set is not a trigger. That periodic behavior is a timer source is composition guidance. (4) R-data-not-peek@1 is retired: an initial value arrives as the snapshot after START (R-subscription@3) and a function reads its inputs through ctx.deps (R-invocation@3). This decides nothing about a read a function makes through the graph. (5) R-no-raw-async@1 is retired: value-level sugar writes no message (R-primary-api-clean@2), and a ctx-level node's output after its function returned is a later wave (R-wave@3) that belongs to its lifetime (R-lifetime@2). In which source files a package lets raw async primitives appear is the package's; the pool and runner layer the draft names was retired by D807. (6) R-clock@1 is retired: no runtime and no reference module has a graph-local counter, observe carries no sequence number (D805) and revision counters are an observer's (D797). How time enters a graph has no root rule until a consumer needs one.",
+  "rationale": "None of the seven was ever activated and none is covered by a scenario or a model, yet each still reads as a rule: graphrefly-ts's agent skills and source comments cite six of them as current, graphrefly-rs cites R-no-raw-async with the opposite meaning, and the public guide cites R-no-raw-async. D807 retired R-sync-core@1 and R-dispatch-all@1 on the same ground: a draft whose lasting content is already in active rules is not revised, and what it adds beyond them is implementation. Dry run of 2026-11-18 in a copy: the authority, dashboard and work checks pass, open drafts go from 17 to 10, and the 19 current rules are unchanged.",
+  "supersedes": [],
+  "status": "locked",
+  "session": "见下面第 1 点",
+  "concerns": ["protocol.pre-kernel-draft-rules"],
+  "decision_kind": "protocol-decision",
+  "change_kind": "clarification",
+  "protocol_impact": "semantic",
+  "spec_amend": "spec/rules.jsonl: transitions by this decision. Replace: R-edges-derived@1 and R-inspection-set@1 to R-graph-surface@2; R-no-polling@1 to R-no-imperative@2. Retire: R-meta-presentation@1, R-data-not-peek@1, R-no-raw-async@1, R-clock@1. No active rule changes.",
+  "conformance_obligations": ["None: no scenario covers any of the seven."],
+  "formal_obligations": ["None: no model encodes any of the seven."],
+  "completion": {
+    "complete_when": "The seven drafts carry their transitions and the root's checks pass.",
+    "historical_when": "A later root protocol decision supersedes these choices."
+  }
+}
+```
+
+草稿里等用户看的三点：
+
+1. **`session` 字段。** D805 到 D809 都写 DS-17。这次的讨论发生在本提案里，它不是索引里的会话。建议把本提案登记为
+   DS-21（DS-19 就是指向一份 PROPOSAL 文件的会话），决定的 `session` 写 DS-21。
+2. **新的 concern 名** `protocol.pre-kernel-draft-rules`。用新名是为了不和 D808 现在管着的 `protocol.graph-surface` 争
+   同一个 concern。
+3. **`protocol_impact` 写 semantic。** 照 D807；它不改任何现行规则，但 D807 也是这样标的。
+
+**不在这一步里的后续。**
+
+- **runtime 仓库的引用归各自的 owner。** TS：`dev-dispatch` 和 `design-review` 两个 skill、`check-no-raw-async.ts` 的说明、
+  `graph/` 下几个文件的注释。Rust：`ctx.rs` 第 358 行的注释。根仓库只通知，不改。
+- **公开 guide 的规则引用整体过时，范围比这七条大。** 15 条 active 的 guide 记录引用了已经不是现行的规则，引用最多的是
+  R-dirty-before-data、R-two-phase、R-diamond（各 5 条记录），都是 D798 换掉的；R-no-raw-async 只占其中 2 条。两个检查都
+  不核对 guide 的 `refs.rules`。这是单独的一项工作，候选项见第 8 节。
 
 ### Q4. backlog 已结的行
 
@@ -254,7 +327,7 @@ DS-17 正文有一个链接指向已经不存在的 `formal/wave_protocol.tla`�
 ## 6. 顺序和依赖
 
 1. **Q5 的会话归档。** 最小，只改索引和文件位置；已在副本里试跑过。
-2. **Q3 里不依赖模块的 7 行草案规则。** 一条决定，加转换。
+2. **Q3 里不依赖模块的 7 行草案规则。** 一条决定，加转换；已在副本里试跑过。
 3. **Q4 (B)。** 先试跑。
 4. **模块激活。** 它解决 Q2 的 6 个场景和 Q3 的 5 行草案。这里依赖 DS-20 提案：R-history 和 R-restart 两条草案要先按那里
    的根决定改写，再激活。
@@ -280,7 +353,8 @@ DS-17 正文有一个链接指向已经不存在的 `formal/wave_protocol.tla`�
 |---|---|---|
 | 一条根决定：清理的范围、三类标准、archive 下的布局、搬迁用它作 `relocation_decision` | 用户对 Q1–Q4 的答复（Q5 不用搬迁登记，不依赖它） | 决定入账，`authority:check` 通过 |
 | 会话归档（Q5） | 用户逐个确认 | 文件在 `sessions/archive/`，索引的路径和状态一致，文档检查通过 |
-| 7 行旧草案规则加转换（Q3） | 根决定 | 开放草案只剩模块规则和等模块的 5 行 |
+| 7 行旧草案规则加转换（Q3） | 用户对 Q3 的答复；它自己的一条决定（草稿在 Q3），不依赖清理的根决定 | 开放草案只剩模块规则和等模块的 5 行 |
+| guide 记录的 `refs.rules` 对到现行规则，并让检查核对它（Q3 顺带发现） | 用户决定做不做；可能属于 B7 | 15 条记录的规则引用都能解析到现行规则，或写明是历史出处 |
 | backlog 已结行搬迁（Q4） | 副本试跑通过 | `work:check` 通过，在办的行的引用都能解析 |
 | 旧决定分三批归类和搬迁（Q1） | 根决定；每批用户确认 | 每批之后两个检查通过，`unclassifiedDecisions` 逐批下降 |
 | 是否让规则行的引用通过搬迁记录解析（Q1） | 用户决定 | 若做：被历史规则行引用的旧决定也可以搬 |
