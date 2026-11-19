@@ -776,6 +776,27 @@ D812 要求核对 R-request-order@3 和 R-failure@3，文字已经覆盖就不�
   签名。
 - **待重试的状态能从私有状态推出。** 在 wave 边界上，owner 没结束而 inner 已结束，只可能是在等一次有延时的重试：零延时
   的 replace 在 wave 结束前已经执行。失败次数和尝试编号都在私有状态里，所以 setup 能为同一次尝试重新计时。
+  **2026-11-19 更正：这条推理是错的。** 它只在 capture 的那一刻成立。恢复之后，inner 先于 owner 的 setup 被激活，
+  所以 inner 如果在首次激活时才失败，setup 看到的同样是"owner 没结束而 inner 已结束"，却没有任何重试在等。参考实现
+  按这条推理写，结果恢复后立刻失败或重复计数。现在 owner 把"有重试在等"明确记在私有状态里，setup 只读这个记录。
+
+### 2026-11-19 独立 QA 之后的更正（用户已确认，"都按建议"）
+
+两位独立审查者复查了 D812 的全部改动，找出 24 项问题。修复分两批：先修不涉及规则文字的缺陷，再把下列措辞给用户
+确认后写入。R-checkpoint@2、R-node@3 和 D812 都是原地更正（分支未推送，三边还没有人按它们实现），各自的 rationale
+里记了日期和原因。
+
+| 位置 | 更正 |
+|---|---|
+| R-node@3 | "有 recipe"定义为"给了 recipe，不管是什么"；函数里遇到拒绝是这次请求的失败，没有处理才是函数的抛出；"Its status"改成"A node's status" |
+| R-checkpoint@2 | 恢复出的图由 host 在 restore 时重新要求 recipe；给了 recipe 但没有引用名，capture 按 missing recipe 拒绝；带 bridge 的图不能 capture；全图的 JSON 拒绝都排在缺 recipe 的拒绝之前 |
+| R-history@1（草案） | 一个 wave 里 DATA 之后是 INVALIDATE、其后没有数组：不算一条，也不发列表 |
+| R-restart@1（草案） | 等待中的重试是 owner 私有状态里的记录；没有记录的恢复不重新计时 |
+| D812 | (2) 的条件、(4) 的顺序、(5) 里"每个图都能被 capture"、(6) 里"抛出"四处 |
+| C-38、C-43、C-46、C-50 | 跟随上面各条；C-50 加了处理拒绝的 operator、bridge 和 restore 时的要求 |
+| DS-20、交接说明 | 第 36 行和"每个图都能被 capture"；交接说明的第 1、3、6 项 |
+
+参考实现和模型的修复见 `reference/modules/README.md` 和 `formal/README.md` 里 2026-11-19 的段落。
 
 ### 参考实现现在和新文字不符的地方（第 5 步要改的）
 
