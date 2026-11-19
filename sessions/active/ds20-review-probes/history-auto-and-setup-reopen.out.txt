@@ -1,0 +1,12 @@
+
+## U history(auto): invalidate source
+s <- h: [PENDING, INVALIDATE]
+
+## U history(auto): late subscriber in the gap
+late <- h: [START]
+
+## U history(auto): next DATA
+s <- h: [PENDING, DATA([[["v"]],[["w"]]])]
+
+## restored node, unchanged input: what ran
+setup re-arms [3]

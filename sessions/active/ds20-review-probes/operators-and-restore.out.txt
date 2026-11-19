@@ -1,0 +1,54 @@
+
+## P1a merge active: invalidate A
+s <- m: [PENDING, INVALIDATE]
+
+## P1a merge active: late subscriber
+late <- m: [START]
+
+## P1b merge cold: first subscriber after the same history
+first <- m: [START, DATA("b1")]
+
+## P1c merge active: last value from A, B invalidates; late subscriber
+late <- m: [START]
+
+## P2 mergeMap: invalidate inner A's source
+s <- mm: [PENDING, INVALIDATE]
+
+## P2 mergeMap: late subscriber
+late <- mm: [START]
+
+## P3 switchMap: one wave with old inner DATA and outer successor
+s <- sw: [PENDING, DATA("x-late")]
+s <- sw: [PENDING, DATA("y0")]
+
+## P3b switchMap: outer first in batch order
+s <- sw: [PENDING, DATA("x-late")]
+s <- sw: [PENDING, DATA("y0")]
+
+## P4 pause: invalidate whole lock list (two locks, two held arrays)
+s <- p: [PENDING, DATA(1)]
+s <- p: [PENDING, DATA(2), DATA(3)]
+
+## P4 pause: locks state after
+{"active":true,"has":false,"values":[],"ended":null}
+
+## P5 history: invalidate source
+s <- h: [PENDING, INVALIDATE]
+
+## P5 history: late subscriber
+late <- h: [START]
+
+## P6 restore: subscribe with unchanged source
+s <- d: [START, DATA(3)]
+
+## P6 restore: function runs after restore
+0
+
+## P7 capture while reference latestAsync is waiting
+THROWS: not restorable: job: its private state is not JSON
+
+## P8 capture with a local-only callback
+captured; node entry = {"id":"c","kind":"node","deps":["src"],"local":true}
+
+## P8 restore of that checkpoint
+THROWS: not restorable: c: local-only, built or replaced without a recipe
