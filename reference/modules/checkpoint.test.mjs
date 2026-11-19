@@ -450,11 +450,36 @@ test("a restored history needs no rerun and keeps its list across an INVALIDATE,
   assert.deepEqual(r.get("h").value, [[[2]], [[3]], [[9]]]);
   assert.deepEqual(r.get("h").value, g.get("h").value);
   // A restored node receives no waves before its first activation, so it cannot see an INVALIDATE
-  // made then; keeping the list makes it agree with one that saw it.
+  // made then; keeping the list makes it agree with one that saw it when the value written after
+  // it is another one.
   const unseen = restore(cp, reg);
   unseen.invalidate("s"); unseen.set("s", 9);
   unseen.subscribe("k", "h");
   assert.deepEqual(unseen.get("h").value, g.get("h").value);
+});
+
+// Second QA (2026-11-19; the user: "我们要be honest"). A restored history is not always as the
+// original. It is told only what its input holds at its first activation (R-checkpoint), so two
+// things done before its first subscription are not seen as the original saw them.
+test("a restored history differs from the original after an unseen INVALIDATE with the same value written again, or alone", () => {
+  // The value the source had at the capture, written again: the original has a new entry; the
+  // restored node's input is unchanged, so it does not run and keeps the saved list.
+  const same = historyPair();
+  const r1 = restore(same.cp, same.reg);
+  for (const x of [same.g, r1]) { x.invalidate("s"); x.set("s", 3); }
+  r1.subscribe("k", "h");
+  assert.deepEqual(same.g.get("h").value, [[[2]], [[3]], [[3]]]);
+  assert.deepEqual(r1.get("h").value, [[[1]], [[2]], [[3]]]);
+  // The INVALIDATE alone: the original holds no value until the next DATA; the restored node
+  // still holds its saved list and sends it.
+  const alone = historyPair();
+  const r2 = restore(alone.cp, alone.reg);
+  for (const x of [alone.g, r2]) x.invalidate("s");
+  assert.deepEqual(during(r2, () => r2.subscribe("k", "h")), ["k <- h: [START, DATA([[[1]],[[2]],[[3]]])]"]);
+  assert.deepEqual([alone.g.get("h").has, r2.get("h").has], [false, true]);
+  // The next value brings them together again.
+  for (const x of [alone.g, r2]) x.set("s", 9);
+  assert.deepEqual(r2.get("h").value, alone.g.get("h").value);
 });
 
 test("a restored source starts a new timer in its setup and goes on from its saved count; its function does not run", () => {

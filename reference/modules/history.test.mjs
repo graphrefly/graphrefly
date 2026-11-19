@@ -86,6 +86,18 @@ test("history: arrays before an INVALIDATE in the same wave are not part of that
     ["k <- h: [PENDING, INVALIDATE]", 'k <- h: [PENDING, DATA([[["v1"]],[["b"]]])]']);
 });
 
+// R-history@1: "a wave left with no array is not an entry and sends no list" (second QA, 2026-11-19).
+test("history: a wave whose only value comes before an INVALIDATE is not an entry and sends no list", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  history(g, "h", "a", 5);
+  g.subscribe("k", "h");
+  assert.deepEqual(during(g, () => g.batch(() => { g.set("a", 7); g.invalidate("a"); })).filter((l) => l.startsWith("k <-")),
+    ["k <- h: [PENDING, INVALIDATE]"]);
+  assert.deepEqual(during(g, () => g.set("a", 8)).filter((l) => l.startsWith("k <-")),
+    ["k <- h: [PENDING, DATA([[[1]],[[8]]])]"]);
+});
+
 test("history: the source's end ends it; a new subscriber gets the list and the terminal (P5)", () => {
   const g = createGraph();
   g.state("s");
