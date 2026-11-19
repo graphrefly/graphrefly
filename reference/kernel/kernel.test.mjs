@@ -500,6 +500,20 @@ test("P9 sugar: latestAsync publishes only the newest request and aborts the res
   assert.equal(calls[2].signal.aborted, true, "closing the lifetime aborts the request in flight");
 });
 
+// Second QA of the D812 work (2026-11-19), an older gap: of several occurrences in one wave the
+// job is for the last.
+test("P9 sugar: latestAsync starts one job for the latest occurrence of a wave", async () => {
+  const g = createGraph();
+  g.state("a");
+  const calls = [];
+  g.node("q", ["a"], latestAsync((v) => { calls.push(v); return deferred().promise; }));
+  g.subscribe("s", "q");
+  g.batch(() => { g.set("a", 2); g.set("a", 3); });
+  await tick();
+  assert.deepEqual(calls, [3]);
+  g.unsubscribe("s", "q");
+});
+
 test("P9 sugar: a run without a new value does not lose latestAsync's abort at close", async () => {
   const g = createGraph();
   g.state("q", 1);
@@ -2144,6 +2158,9 @@ test("D812: any recipe that was given satisfies the requirement, whatever it is;
   [false, 0, "", {}, "name", []].forEach((recipe, i) => {
     g.node(`n${i}`, [], () => {}, { recipe });
     assert.deepEqual(g.definition(`n${i}`).recipe, recipe, "stored as given, never read");
+    g.replace(`n${i}`, [], () => {}, { recipe: { ref: "x" } });
+    g.replace(`n${i}`, [], () => {}, { recipe });
+    assert.deepEqual(g.definition(`n${i}`).recipe, recipe, "and by replace");
   });
   for (const recipe of [null, undefined]) {
     assert.throws(() => g.node("none", [], () => {}, { recipe }), refusedWith("none: this graph requires a recipe on every computed node"));

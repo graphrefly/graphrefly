@@ -817,6 +817,54 @@ test("D812: a restored waiting retry starts the delay of the failure it follows,
   again.unsubscribe("s", "r");
 });
 
+// Second QA (2026-11-19). The test above captures with two failures and two attempts, so it could not
+// tell the two counts apart. After a request from outside and one failure they differ: the delay
+// that starts again follows the one failure (1 s), not the second attempt (3 s).
+test("D812: the restored delay follows the failure count, not the attempt number", (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const g = createGraph();
+  g.state("a", 1);
+  restartable(g, "r", { deps: ["a"], fn: fwd(), recipe: { ref: "fwd" }, retry: retryPolicy({ maxAttempts: 4, initialMs: 1_000, factor: 3 }) });
+  g.subscribe("s", "r");
+  restartableOf(g, "r").restart();
+  g.set("a", "bad");
+  assert.deepEqual([g.privateState("r").failures, g.privateState("r").attempt, g.privateState("r").waiting], [1, 2, true]);
+  const cp = roundTrip(capture(g));
+  g.unsubscribe("s", "r");
+  const r = restore(cp, fwdRecipes);
+  r.set("a", 5);
+  r.subscribe("s", "r");
+  t.mock.timers.tick(999);
+  assert.deepEqual([r.get("r").value, r.get("r/inner").ended], [1, ["ERROR", "bad"]]);
+  t.mock.timers.tick(1);
+  assert.deepEqual([r.get("r").value, r.get("r/inner").ended], [5, null], "after the first delay, not the second");
+  r.unsubscribe("s", "r");
+});
+
+// R-restart: "a pending retry's timer is cleared". The graph behaves the same when the timer is
+// left to fire into a closed lifetime, so the timers themselves are counted here, for the original
+// and for the one a restored owner starts again.
+test("D812: a waiting retry's timer is cleared when the owner's lifetime closes, restored or not", (t) => {
+  const armed = new Set();
+  let ids = 0;
+  t.mock.method(globalThis, "setTimeout", () => { armed.add(++ids); return ids; });
+  t.mock.method(globalThis, "clearTimeout", (id) => { armed.delete(id); });
+  const g = createGraph();
+  g.state("a", 1);
+  restartable(g, "r", { deps: ["a"], fn: fwd(), recipe: { ref: "fwd" }, retry: retryPolicy({ maxAttempts: 3, initialMs: 60_000 }) });
+  g.subscribe("s", "r");
+  g.set("a", "bad");
+  assert.equal(armed.size, 1, "the retry waits on one timer");
+  const cp = roundTrip(capture(g));
+  g.unsubscribe("s", "r");
+  assert.equal(armed.size, 0, "cleared with the lifetime");
+  const r = restore(cp, fwdRecipes);
+  r.subscribe("s", "r");
+  assert.equal(armed.size, 1, "the restored owner's setup started the delay again");
+  r.unsubscribe("s", "r");
+  assert.equal(armed.size, 0);
+});
+
 import { higherOrderRecipes, mergeMap, relay, switchMap } from "./higher-order.mjs";
 
 // The projector follows the node a source value names.
@@ -961,6 +1009,11 @@ test("D812: a recipe given without a reference passes the requirement and is ref
     const g = createGraph({ requireRecipe: true });
     g.node("n", [], () => {}, { recipe });
     assert.throws(() => capture(g), { message: "not restorable: n: missing recipe" }, JSON.stringify(recipe));
+    // The same through replace, which keeps what it was given as node does (second QA, 2026-11-19).
+    const h = createGraph({ requireRecipe: true });
+    h.node("n", [], () => {}, { recipe: { ref: "x", config: null } });
+    h.replace("n", [], () => {}, { recipe });
+    assert.throws(() => capture(h), { message: "not restorable: n: missing recipe" }, `replace: ${JSON.stringify(recipe)}`);
   }
 });
 

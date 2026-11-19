@@ -270,3 +270,29 @@ test("upstream stays active across attempts: the owner holds the inner's depende
   assert.deepEqual(g.get("r").ended, ["COMPLETE"]);
   assert.deepEqual(log, ["open", "close"], "one lifetime of U for the three attempts, closed when the owner ended");
 });
+
+// Second QA of the D812 work (2026-11-19): two older gaps a mutation run found.
+test("a fresh inner is the inner's own definition: its setup runs again at each attempt", () => {
+  let setups = 0;
+  const g = createGraph();
+  g.state("a", 1);
+  const r = restartable(g, "r", { deps: ["a"], fn: (ctx) => ctx.down([["DATA", ctx.deps[0].value]]) });
+  const d = g.definition("r/inner");
+  g.replace("r/inner", ["a"], d.fn, { setup: () => { setups += 1; } });
+  g.subscribe("s", "r");
+  r.restart();
+  assert.equal(setups, 2);
+});
+
+test("a failure in the wave that ends every upstream is not retried: the owner ends at once and arms no timer", (t) => {
+  const timers = t.mock.method(globalThis, "setTimeout", () => 0);
+  const g = createGraph();
+  g.state("a", 1);
+  restartable(g, "r", {
+    deps: ["a"], fn: (ctx) => { for (const v of ctx.deps[0].waves.flat()) ctx.down([v === "bad" ? ["ERROR", "bad"] : ["DATA", v]]); },
+    retry: retryPolicy({ maxAttempts: 3, initialMs: 1_000 }),
+  });
+  g.subscribe("s", "r");
+  g.batch(() => { g.set("a", "bad"); g.complete("a"); });
+  assert.deepEqual([g.get("r").ended, timers.mock.callCount()], [["ERROR", "bad"], 0]);
+});
