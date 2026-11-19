@@ -566,6 +566,15 @@ export function loadWorkFederation(root, { includeExternal = false, decisionInde
     }
   }
 
+  // A historical ledger is a destination for relocated records, not a second place to author work.
+  const historicalPaths = new Set(manifest.filter((ledger) => ledger.historical_only).map((ledger) => ledger.path));
+  const relocatedTo = new Map(relocations.map((relocation) => [relocation.qualified_id, relocation.canonical_path]));
+  for (const record of records) {
+    const source = record.__source;
+    if (!source || !historicalPaths.has(source.path) || relocatedTo.get(record.qualified_id) === source.path) continue;
+    errors.push(`${source.path}:${source.line} historical ledger record ${record.qualified_id} has no relocation locator`);
+  }
+
   const inbound = new Set(dependencyEdges.map((edge) => edge.to));
   const cursorRefs = new Set(cursors.map((cursor) => cursor.work_ref));
   const orphans = strictCurrent

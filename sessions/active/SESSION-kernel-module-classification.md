@@ -1,6 +1,6 @@
 # 协议面的内核与模块分类
 
-DS-17，用户于 2026-11-05 开启。对应工作项：[graphrefly:B141](../../plan/backlog.jsonl)。
+DS-17，用户于 2026-11-05 开启。对应工作项：[graphrefly:B141](../../archive/plan/backlog-history.jsonl)。
 状态：**分类已定。** 用户 2026-11-05 至 11-09 逐项审阅，O1–O15 全部决定（O10 另作单独决定），每条规则的去向见用户
 2026-11-09 接受的 [B140 修订提案](PROPOSAL-B140-kernel-rule-revision.md)。B141 同日结项。非规范性文档：不激活、不修订、
 不退役任何规则，不改动任何 formal 模型或 conformance 场景，也不授权任何实现。

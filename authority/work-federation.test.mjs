@@ -304,6 +304,43 @@ test("relocation markers bind canonical path, owner and bytes", () => {
   }
 });
 
+test("a historical work ledger holds only relocated records", () => {
+  const root = fixture();
+  try {
+    mkdirSync(join(root, "archive/plan"), { recursive: true });
+    const moved = JSON.stringify({ id: "B1", title: "Finished work", state: "resolved" });
+    const digest = createHash("sha256").update(moved).digest("hex");
+    writeJsonl(join(root, "authority/work-ledgers.jsonl"), [
+      { origin: "graphrefly", owner: "graphrefly", work_class: "backlog-item", path: "plan/backlog.jsonl", adapter: "backlog-jsonl-v0", availability: "required" },
+      { origin: "graphrefly", owner: "graphrefly", work_class: "backlog-item", path: "archive/plan/backlog-history.jsonl", adapter: "backlog-jsonl-v0", availability: "required", historical_only: true },
+    ]);
+    writeJsonl(join(root, "plan/backlog.jsonl"), [{ id: "B2", title: "Open work", state: "open" }]);
+    writeFileSync(join(root, "archive/plan/backlog-history.jsonl"), `${moved}\n`);
+    writeJsonl(join(root, "authority/work-relocations.jsonl"), [{
+      qualified_id: "graphrefly:B1",
+      origin: "graphrefly",
+      owner: "graphrefly",
+      canonical_path: "archive/plan/backlog-history.jsonl",
+      relocated_from: "plan/backlog.jsonl",
+      relocated_from_owner: "graphrefly",
+      relocated_from_adapter: "backlog-jsonl-v0",
+      migration_ref: "graphrefly:D787",
+      sha256: digest,
+      former_sha256: digest,
+    }]);
+    assert.deepEqual(loadWorkFederation(root).errors, []);
+    writeFileSync(
+      join(root, "archive/plan/backlog-history.jsonl"),
+      `${moved}\n${JSON.stringify({ id: "B3", title: "Written straight into history", state: "open" })}\n`,
+    );
+    const errors = loadWorkFederation(root).errors;
+    assert.ok(errors.some((error) => error.includes("historical ledger record graphrefly:B3 has no relocation locator")));
+    assert.ok(!errors.some((error) => error.includes("graphrefly:B1")));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("execution approval refs resolve only to execution-approval decisions", () => {
   const root = fixture();
   try {

@@ -56,6 +56,9 @@ write authority. Missing sibling sources are shown as unavailable rather than co
 ```
 { id:"B1", title, state:"open"|"deferred"|"done", trigger?, lang:"all"|"per-package"|"ts"|..., ref? }
 ```
+Closed rows (resolved, done, superseded, complete) live unchanged in `archive/plan/backlog-history.jsonl`
+(graphrefly:D811); the federated work view still resolves them by id. The dashboard's backlog count is
+this file's rows only.
 
 ### `plan/antipatterns.jsonl` (lessons)
 ```

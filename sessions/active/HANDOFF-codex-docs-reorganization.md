@@ -1,6 +1,6 @@
 # Handoff to Codex: reorganize GraphReFly documentation to the photo-scenes standard
 
-Written by Claude on 2026-11-05 at the user's request. Work item: [graphrefly:B142](../../plan/backlog.jsonl).
+Written by Claude on 2026-11-05 at the user's request. Work item: [graphrefly:B142](../../archive/plan/backlog-history.jsonl).
 This is a task brief, not a rule or decision. Records you write are in English; you may talk to the
 user in Chinese.
 

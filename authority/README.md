@@ -73,7 +73,8 @@ read-only adapters; it contains no copied work body. `work-relocations.jsonl` pr
 qualified identity, canonical locator, owner and SHA-256 when a later approved batch moves a work
 record. A relocation marker also binds the former owner, former adapter and body digest plus its
 origin-qualified migration decision; supported moves are JSONL-to-JSONL so old-body duplication
-can be checked mechanically. `work-federation.mjs` derives the workspace work graph and validates the strict
+can be checked mechanically. A work ledger marked `historical_only` accepts only relocated records, as a
+historical decision ledger does; the root backlog's closed rows live in one (graphrefly:D811). `work-federation.mjs` derives the workspace work graph and validates the strict
 `graphrefly-work-v1` contract.
 
 Strict interoperable records use one origin-qualified identity and canonical owner, one of the

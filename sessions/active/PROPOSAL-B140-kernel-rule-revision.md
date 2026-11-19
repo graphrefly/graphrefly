@@ -1,7 +1,7 @@
 # B140 规则修订提案
 
 DS-17 下一步第 3 条，2026-11-09。对应工作项：[graphrefly:B140](../../plan/backlog.jsonl)（2026-11-09 起 planned）和
-[graphrefly:B141](../../plan/backlog.jsonl)。
+[graphrefly:B141](../../archive/plan/backlog-history.jsonl)。
 状态：**用户 2026-11-09 接受。** 第 7 节的四个问题用户同日全部回答，正文已按答案改写。 非规范性文档。`spec/rules.jsonl` 和 `spec/conformance.jsonl`
 冻结，本文不改它们，也不激活、修订或退役任何规则；这里只写"修订时打算怎么改"。
 
