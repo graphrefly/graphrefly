@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
+import { loadFederation } from "./federation.mjs";
 
 // Fourth QA (2026-11-19): the check and the dashboard build compare the two resolvers, and nothing
 // pinned either call: with both removed every test and gate stayed green. The real ledgers cannot
@@ -15,15 +16,24 @@ import { fileURLToPath } from "node:url";
 // Fifth QA (2026-11-20): the first version replaced the comparison itself with one that always
 // disagreed, so a gate that compared a resolver with itself, or compared only without
 // --workspace, still passed. Now the comparison is left alone and each resolver in turn loses a
-// decision, with and without --workspace. A copy has no sibling checkouts, so with --workspace a
-// gate may fail for that alone: what is asked of every run is the comparison's own line.
+// decision, with and without --workspace.
+//
+// Sixth QA (2026-11-20): both resolvers lost the first decision, so a gate that compared only the
+// first few passed; the decision lost is now one from the middle, and the line must name it. A
+// copy has no sibling checkouts, so with --workspace a gate fails there for that alone: its exit
+// status is asked only without it, and with it only the comparison's line. Nothing here pins that
+// the gates give the model the other ledgers' successors (externalSuperseders); the real
+// --workspace runs do.
 const repo = join(dirname(fileURLToPath(import.meta.url)), "..");
-const line = /^\s*(graphrefly:D\d+) is current in one resolver and not in the other$/gm;
+const line = /^\s*(\S+) is current in one resolver and not in the other$/gm;
+const rootCurrent = loadFederation(repo, { includeExternal: false }).currentProduct.current_qualified_ids.filter((id) => id.startsWith("graphrefly:"));
+const lost = rootCurrent[Math.floor(rootCurrent.length / 2)];
 
 const faults = {
-  "the model resolver": ["authority/model.mjs", "current: supersessionGraph.currentCandidates,", "current: supersessionGraph.currentCandidates.slice(1),"],
+  "the model resolver": ["authority/model.mjs", "current: supersessionGraph.currentCandidates,",
+    `current: supersessionGraph.currentCandidates.filter((id) => id !== ${JSON.stringify(lost.slice("graphrefly:".length))}),`],
   "the federation resolver": ["authority/federation.mjs", "current_qualified_ids: currentProductIds,",
-    `current_qualified_ids: currentProductIds.filter((id, i, all) => i !== all.findIndex((x) => x.startsWith("graphrefly:"))),`],
+    `current_qualified_ids: currentProductIds.filter((id) => id !== ${JSON.stringify(lost)}),`],
 };
 
 function copyOfTheGates(roots, fault) {
@@ -64,8 +74,8 @@ test("the check and the dashboard build report a decision that one resolver alon
       for (const gate of gates) {
         for (const mode of [[], ["--workspace"]]) {
           const got = disagreements(faulty, gate, mode);
-          assert.equal(got.lines.length, 1, `${gate[0]} ${mode.join(" ")} names the one decision ${which} lost`);
-          assert.equal(got.status, 1, `${gate[0]} ${mode.join(" ")} fails`);
+          assert.deepEqual(got.lines, [lost], `${gate[0]} ${mode.join(" ")} names the one decision ${which} lost`);
+          if (!mode.length) assert.equal(got.status, 1, `${gate[0]} fails`);
         }
       }
     }

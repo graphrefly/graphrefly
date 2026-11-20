@@ -108,10 +108,11 @@ current: a root-only run cannot know of a successor whose body lives in a siblin
 
 The check and the dashboard build compare the two resolvers on every run (`resolverDisagreements`,
 since the third QA of the D812 work, 2026-11-19): a dashboard record that one calls current and the
-other does not is an error, which `gates.test.mjs` pins by running both gates, with and without
-`--workspace`, over copies in which one resolver and then the other loses a current decision (until
-the fifth QA, 2026-11-20, over a copy whose comparison always disagreed, which pinned that a gate
-reports and not what it compares; the test takes about ten seconds). It compares current or not, and not which concerns a record still governs,
+other does not is an error, which `gates.test.mjs` pins by running both gates over copies in which
+one resolver and then the other loses a current decision from the middle of the list: each gate
+must name it, with and without `--workspace`, and fail without it (a copy has no sibling
+checkouts, so with `--workspace` it fails for that alone, and nothing there pins that the model is
+given the other ledgers' successors; the real `--workspace` runs do). About ten seconds. It compares current or not, and not which concerns a record still governs,
 so a partial supersession only one resolver knows of is not seen; and both resolvers share the
 helper that decides what a partial successor takes. Until then only a small fixture held them together, and a model that was
 not given the outside successors, or was given every outside reference as one, passed every gate.

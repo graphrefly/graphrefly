@@ -5,28 +5,8 @@ request. This is a brief, not a rule, a decision or a work item. Each runtime ow
 graphrefly-rs, graphrefly-py) admits its own slice in its own `plan/work.jsonl`, when the user
 decides, and writes its own work body there. Nothing here dispatches implementation.
 
-Revised 2026-11-19 after an independent QA of the root work, before this brief reached anyone: the
-rule rows, D812 and the scenarios were corrected in place, and items 1, 3 and 6 below changed with them.
-Revised again that day after a second QA: items 4, 5 and 6 and one table row said what the rules do not.
-And once more with the wording the user confirmed for that QA's open points: items 1, 3, 5 and 7.
-And a last time that day, on the user's audit of what the branch added or kept without need: capture's
-one order (item 1), latestAsync's one form (item 4), and, taken out, a sentence of R-node@3 on a
-build of several nodes and a revision 3 of R-bridge (item 3).
-And after a third QA, with wording the user confirmed: the bridge sentence is conditional (items 1
-and 3), a restored graph's creation order (item 1), what an unhandled refusal is where a request
-returns its failure (item 3), and where latestAsync stands (item 4).
-And after a fourth QA: item 3's sentence on an unhandled refusal is the earlier one again, since no
-runtime has requests that return their failures; item 1 states restore's order, which was the
-other way round here, and what is saved of an ended node; and the section on message payloads says
-what is open for graphrefly-rs.
-And on 2026-11-20, with the user's answer to that: the payload of a throw that cannot be one is the
-empty string in every runtime, where this brief said `{}`.
-And after a fifth QA that day: what this brief said of graphrefly-rs's ERROR, of graphrefly-py's
-updater and of graphrefly-ts's operator texts was not exact, and a message with more than its
-type carries is named as open.
-And with the user's answers to that QA: such a message is refused in every runtime; R-failure@4
-names no runtime; an updater's refused write; the order of a restored graph (item 1); what a
-restore reads of an ended node's record (item 1).
+Revised through 2026-11-20 after six independent QA rounds, before this brief reached anyone; the
+rules' rationales date each change.
 
 ## What changed at the root
 
@@ -49,29 +29,18 @@ review of DS-20. Read the rules themselves with `npm run rules:current -- module
    `local: true` and restore failed. One order: go through the nodes in creation order and refuse
    the first that cannot be saved, naming it. Within one node check its values, private state,
    received values, payloads and recipe configuration first, so a local-only node that also holds
-   what is not JSON is refused for that (D808 (5)), and then its recipe. A local-only node made
-   before a node that holds what is not JSON is therefore the one named. (For some hours of
-   2026-11-19 this said every JSON refusal comes first for the whole graph; the user dropped that
-   the same day, before anyone followed it.) A recipe that was given but has no reference (`{}`,
-   `false`, `{ ref: "" }`: a reference is a non-empty string) is refused in the same place with the
-   existing `missingRecipe` reason alone,
-   no reference after it; restore refuses a checkpoint that holds one and names the node (the reference gives the same reason there; no rule or scenario fixes it). A checkpoint that already holds a local-only node still fails at
-   restore. A graph that holds nodes a module built without recipes cannot be captured. The
-   reference's wire bridge group is one. Whether your bridge's nodes carry recipes is yours:
-   R-bridge@2 leaves checkpoints of bridge nodes not covered, so whether a bridged graph can be
-   captured is not a cross-runtime guarantee. Restore takes the nodes in checkpoint
-   order and builds before a node those of its declared dependencies that are not built yet, in
-   their declared order and each in the same way. So a dependency made after a node that was
-   replaced onto it comes before that node in the restored graph, and so does whatever that
-   dependency itself depends on; the other nodes keep their order: a, n, x, late, y with n
-   replaced onto late is restored as a, late, n, x, y, and as a, x, late, n, y where late is a
-   node over x. (Until the fourth QA this said the node moves after its dependency, and until the
-   fifth that the nodes between keep their place after both, which the second case shows false.) A capture names the first node in the
-   order of the graph it is asked of, and the two can name different nodes. An ended node has no
-   lifetime, so it is saved with its values and its terminal and nothing it received; the
-   reference had saved what its dependencies held at the capture. A restore reads those two and
-   nothing else of an ended node's record: received records, private state or lifetime
-   dependencies that the record holds are not checked and not restored.
+   what is not JSON is refused for that (D808 (5)), and then its recipe. A recipe that was given
+   but has no reference (`{}`, `false`, `{ ref: "" }`: a reference is a non-empty string) is
+   refused in the same place with the existing `missingRecipe` reason alone, no reference after
+   it; restore refuses a checkpoint that holds one and names the node. A checkpoint that already
+   holds a local-only node still fails at restore. A graph that holds nodes a module built without
+   recipes cannot be captured; the reference's wire bridge group is one, and R-bridge@2 leaves
+   checkpoints of bridge nodes not covered, so whether a bridged graph can be captured is yours.
+   Restore's order is R-checkpoint@2's: checkpoint order, a node's unbuilt declared dependencies
+   just before it. a, n, x, late, y with n replaced onto late is restored as a, late, n, x, y, and
+   as a, x, late, n, y where late is a node over x; a capture of the restored graph names the
+   first node in its own order. A state and an ended node have no lifetime: each is saved with
+   its values and terminal alone, and a restore reads nothing else its record holds.
 2. **Restore names the reference of a missing recipe.** The refusal is
    `not restorable: <id>: missing recipe <ref>`. This changes a text the shared probe compares exactly:
    `probeExpected.checkpointMissingRecipe` in
@@ -100,9 +69,10 @@ review of DS-20. Read the rules themselves with `npm run rules:current -- module
    pending input, and it keeps its AbortController beside the lifetime, so a graph with a job in
    flight can be captured (it was refused before, as not JSON). A restored node's function does
    not run on an unchanged input, so an operator given to the graph as a function alone cannot do
-   this: whatever shape your package gives latestAsync, its setup comes with it. (The reference
-   also had the function alone for a day; it recorded nothing and lost the job, which is not what
-   D812 (1) says of an ordinary latestAsync.) That sentence of D812 (1) is all there is: no rule
+   this: whatever shape your package gives latestAsync, its setup comes with it. Only a job that
+   is still the newest may publish: the reference asked a signal made with `AbortSignal.any`,
+   which stops reporting an abort once its source is collected, and now asks the job's own
+   controller. That sentence of D812 (1) is all there is: no rule
    statement or scenario names latestAsync, and its contract comes with the operator contracts
    graphrefly:D813 gives the root, which are not written yet.
 5. **History, where a runtime ships it.** The auto INVALIDATE policy: the kernel removes the node's
@@ -138,55 +108,39 @@ review of DS-20. Read the rules themselves with `npm run rules:current -- module
 | C-43, C-46 | the restored pending retry, and a restored live inner that fails at the first activation |
 | C-45 | history across an INVALIDATE, live and after a round trip, with the two cases where the restored node differs; a wave left with no array |
 | C-50 (new) | the recipe requirement, a handled refusal, and the requirement at a restore |
-| C-42 (D814) | a DATA or ERROR without the payload R-messages requires; a message with anything beyond its type and payload; an updater that gives one; a throw that cannot be a payload, which gives the empty string |
+| C-42 (D814) | a DATA or ERROR without the payload R-messages requires; a message with more than its type and payload; an updater that gives a DATA without a payload; a throw that cannot be a payload, which gives the empty string |
 
 Every runtime result for these is `todo`. The reference is in `reference/kernel` and
-`reference/modules` (`npm run test:reference`, 541 tests); the models are `module_checkpoint`,
+`reference/modules` (`npm run test:reference`, 542 tests); the models are `module_checkpoint`,
 `module_history` and `module_restart` in `formal/`, with their runs in `formal/README.md`.
 
 ## Beside D812: message payloads (graphrefly:D814)
 
-Made on 2026-11-19 from a finding of the third QA; not part of D812. R-failure is at revision 4.
+From findings of the third and later QAs; not part of D812. R-failure is at revision 4.
 
-- A DATA without a payload and an ERROR whose payload is absent or a boolean are refused where
-  they are given (R-messages also says exactly one payload; the reference now refuses a message
-  with more, and checks a construction seed's values and terminal the same way): `ctx.down` throws before anything is applied, and a host write of one is refused
-  to its caller. graphrefly-ts and graphrefly-py already refuse a DATA without a payload and an
-  ERROR whose payload is absent or a boolean, and graphrefly-rs's ERROR holds an error value, so
-  nothing changes there. The reference kernel had accepted them.
-- A message with anything beyond its type and, for a DATA or ERROR, its one payload
-  (`[COMPLETE, x]`, `[INVALIDATE, x]`, `[DATA, v, w]`, `[ERROR, e, f]`) is an invalid output array
-  too, in every runtime (R-failure@4 and D814 (4), the user on 2026-11-20). The reference and
-  graphrefly-py refuse it already. **graphrefly-ts changes here:** it accepts such a message.
-  graphrefly-rs's messages are an enum and cannot hold one.
-- A function's throw whose value cannot be an ERROR payload in that runtime gives the empty
-  string as the payload, in every runtime. (This brief said `{}` for a day. A graphrefly-rs ERROR
-  holds an error value, which a sink receives, and a dependent and a checkpoint see only its
-  message, a string; so a string is the one form all three hold there, and the user chose the
-  empty one on 2026-11-20. It is falsy in JavaScript and Python and a payload all the same:
-  R-messages excludes only SENTINEL and a boolean.)
+- **Refused where given.** A DATA without a payload, an ERROR whose payload is absent or a
+  boolean, and a message with more than its type and payload (`[COMPLETE, x]`, `[INVALIDATE, x]`,
+  `[DATA, v, w]`, `[ERROR, e, f]`) are invalid output arrays: `ctx.down` throws before anything
+  is applied. graphrefly-py does all of it. **graphrefly-ts changes here:** it accepts a message
+  with more than its type and payload. graphrefly-rs's messages are an enum and cannot hold one.
+- **A host write of one** writes nothing and fails: to its caller, or, given by an updater, as a
+  throwing updater's write does (R-request-order), so to the host reporter when the write runs
+  after its caller returned, and failing every write of a batch's commit.
+  **graphrefly-ts changes here:** in a batch whose updater's write is refused it delivers the
+  batch's earlier write (`d797-kernel.phase5-requests.test.ts` pins that); the reference and
+  graphrefly-py write nothing. An updater given no value that returns none writes nothing; in
+  graphrefly-py that is one that returns `SENTINEL`, since `None` is a value there, and a
+  graphrefly-rs updater returns `None` to write nothing.
+- **A throw that cannot be an ERROR payload** in that runtime gives the empty string as the
+  payload, in every runtime; it is falsy in JavaScript and Python and a payload all the same.
   **graphrefly-ts changes here:** a node function that throws nothing or a boolean gives an Error
   with the text "node function threw without a valid error payload" (`errorPayload` in
   `protocol/messages.ts`, called from `node-input-runtime.ts`).
-  **graphrefly-rs changes here:** a node function's panic is its throw, and a panic payload that
-  is not a string gives an error with the text "node fn panicked" (`panic_to_error` in `node.rs`);
-  it gives one whose message is empty. (R-failure@4 says "cannot be an ERROR payload in that
-  runtime" and names no runtime; D814 (3) names this case.)
-  Python raises only exceptions, so nothing changes there. What your operators and sources send
-  when they catch a failure themselves stays yours (graphrefly-ts passes `errorPayload` a text of
-  its own in most and its default text in some sources); the reference uses the empty string
-  there too.
-- R-failure@4 now also says that a host write of such a message writes nothing and fails: to its
-  caller, or, where an updater gave it, as a write whose updater throws does (R-request-order),
-  so to the host reporter when the write runs after its caller returned, and failing every write
-  of a batch's commit. An
-  updater that returns no value needs no new sentence: given no value it returned what it was
-  given and writes nothing (R-request-order), and given a value it asks for a DATA without a
-  payload and is refused. The reference and graphrefly-ts do that already, and a graphrefly-rs
-  updater returns `None` to write nothing. In graphrefly-py that is an updater that returns
-  `SENTINEL`; one without a return gives `None`, a value there, and writes it. (This brief said
-  graphrefly-py does the same as the others; the fifth QA ran it.)
-- C-42 covers both. Its results were `todo` in every runtime already.
+  **graphrefly-rs changes here:** a panic payload that is not a string gives an error with the
+  text "node fn panicked" (`panic_to_error` in `node.rs`); it gives one whose message is empty.
+  Python raises only exceptions. What your operators and sources send when they catch a failure
+  themselves stays yours.
+- C-42 covers all three. Its results were `todo` in every runtime already.
 
 ## What is not here
 
