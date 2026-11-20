@@ -12,6 +12,9 @@ And once more with the wording the user confirmed for that QA's open points: ite
 And a last time that day, on the user's audit of what the branch added or kept without need: capture's
 one order (item 1), latestAsync's one form (item 4), and, taken out, a sentence of R-node@3 on a
 build of several nodes and a revision 3 of R-bridge (item 3).
+And after a third QA, with wording the user confirmed: the bridge sentence is conditional (items 1
+and 3), a restored graph's creation order (item 1), what an unhandled refusal is where a request
+returns its failure (item 3), and where latestAsync stands (item 4).
 
 ## What changed at the root
 
@@ -41,8 +44,13 @@ review of DS-20. Read the rules themselves with `npm run rules:current -- module
    `false`, `{ ref: "" }`: a reference is a non-empty string) is refused in the same place with the
    existing `missingRecipe` reason alone,
    no reference after it; restore refuses a checkpoint that holds one and names the node (the reference gives the same reason there; no rule or scenario fixes it). A checkpoint that already holds a local-only node still fails at
-   restore. A graph that holds a wire bridge group cannot be captured, since the bridge's nodes
-   carry no recipes.
+   restore. A graph that holds nodes a module built without recipes cannot be captured. The
+   reference's wire bridge group is one. Whether your bridge's nodes carry recipes is yours:
+   R-bridge@2 leaves checkpoints of bridge nodes not covered, so whether a bridged graph can be
+   captured is not a cross-runtime guarantee. Restore builds each node after its declared
+   dependencies, so a node replaced onto a dependency made after it comes later in the restored
+   graph than in its original; a capture names the first node in the order of the graph it is
+   asked of, and the two can name different nodes.
 2. **Restore names the reference of a missing recipe.** The refusal is
    `not restorable: <id>: missing recipe <ref>`. This changes a text the shared probe compares exactly:
    `probeExpected.checkpointMissingRecipe` in
@@ -52,15 +60,15 @@ review of DS-20. Read the rules themselves with `npm run rules:current -- module
 3. **The recipe requirement.** A graph creation option, off by default (`requireRecipe` in the
    reference). With it, creating a computed node or replacing one without a recipe is refused when it
    is asked for; a refused replace leaves the current instance, its values and its subscribers.
-   Inside a running function the refusal is the failure of that request, given to the function:
-   left unhandled it is the function's throw, so its node ends with ERROR, and a function that
-   handles it goes on. The kernel checks only that a recipe was given, whatever it is (in the
+   Inside a running function the refusal is the failure of that request, given to the function.
+   A function that lets the failure end its run fails with it, so its node ends with ERROR: it
+   does not catch it where a request throws, or it returns it as its own failure where a request
+   returns one. A function that goes on has handled it. The kernel checks only that a recipe was given, whatever it is (in the
    reference, anything but null or undefined), and never reads it. A checkpoint does not hold the
    option: a host that wants it on the restored graph asks for it again at the restore (the
    reference's `restore(checkpoint, registry, { requireRecipe: true })`). A requiring graph cannot
-   hold nodes a module builds without recipes; the reference's wire bridge group is one (D812 (5):
-   a bridged graph cannot be captured; no rule names the bridge, and R-bridge@2 leaves checkpoints
-   of its nodes not covered). What a module's builder leaves when one of its nodes is
+   hold nodes a module builds without recipes; the reference's wire bridge group is one (D812 (5);
+   no rule names the bridge, and R-bridge@2 leaves checkpoints of its nodes not covered). What a module's builder leaves when one of its nodes is
    refused is yours: no rule statement or scenario compares it. In the reference each request
    stands on its own, so its restart and demand builders leave their control state behind. The text of the requirement's refusal and
    which refusal a request gets when several apply are yours, as for the kernel's other refusals.
@@ -74,7 +82,9 @@ review of DS-20. Read the rules themselves with `npm run rules:current -- module
    not run on an unchanged input, so an operator given to the graph as a function alone cannot do
    this: whatever shape your package gives latestAsync, its setup comes with it. (The reference
    also had the function alone for a day; it recorded nothing and lost the job, which is not what
-   D812 (1) says of an ordinary latestAsync.)
+   D812 (1) says of an ordinary latestAsync.) That sentence of D812 (1) is all there is: no rule
+   statement or scenario names latestAsync, and its contract comes with the operator contracts
+   graphrefly:D813 gives the root, which are not written yet.
 5. **History, where a runtime ships it.** The auto INVALIDATE policy: the kernel removes the node's
    value without running its function, and the list in private state stays. Arrays before an
    INVALIDATE in the same wave are not part of that wave's entry, and a wave left with no array is
@@ -110,7 +120,7 @@ review of DS-20. Read the rules themselves with `npm run rules:current -- module
 | C-50 (new) | the recipe requirement, a handled refusal, and the requirement at a restore |
 
 Every runtime result for these is `todo`. The reference is in `reference/kernel` and
-`reference/modules` (`npm run test:reference`, 524 tests); the models are `module_checkpoint`,
+`reference/modules` (`npm run test:reference`, 527 tests); the models are `module_checkpoint`,
 `module_history` and `module_restart` in `formal/`, with their runs in `formal/README.md`.
 
 ## What is not here
