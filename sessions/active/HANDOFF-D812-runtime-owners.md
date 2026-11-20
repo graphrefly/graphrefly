@@ -24,6 +24,9 @@ empty string in every runtime, where this brief said `{}`.
 And after a fifth QA that day: what this brief said of graphrefly-rs's ERROR, of graphrefly-py's
 updater and of graphrefly-ts's operator texts was not exact, and a message with more than its
 type carries is named as open.
+And with the user's answers to that QA: such a message is refused in every runtime; R-failure@4
+names no runtime; an updater's refused write; the order of a restored graph (item 1); what a
+restore reads of an ended node's record (item 1).
 
 ## What changed at the root
 
@@ -59,13 +62,16 @@ review of DS-20. Read the rules themselves with `npm run rules:current -- module
    captured is not a cross-runtime guarantee. Restore takes the nodes in checkpoint
    order and builds before a node those of its declared dependencies that are not built yet, in
    their declared order and each in the same way. So a dependency made after a node that was
-   replaced onto it comes before that node in the restored graph, and the nodes between them keep
-   their place after both: a, n, x, late, y with n replaced onto late is restored as a, late, n,
-   x, y. (Until the fourth QA this said the node moves after its dependency, which gives another
-   order and another node named once a third lies between.) A capture names the first node in the
+   replaced onto it comes before that node in the restored graph, and so does whatever that
+   dependency itself depends on; the other nodes keep their order: a, n, x, late, y with n
+   replaced onto late is restored as a, late, n, x, y, and as a, x, late, n, y where late is a
+   node over x. (Until the fourth QA this said the node moves after its dependency, and until the
+   fifth that the nodes between keep their place after both, which the second case shows false.) A capture names the first node in the
    order of the graph it is asked of, and the two can name different nodes. An ended node has no
    lifetime, so it is saved with its values and its terminal and nothing it received; the
-   reference had saved what its dependencies held at the capture.
+   reference had saved what its dependencies held at the capture. A restore reads those two and
+   nothing else of an ended node's record: received records, private state or lifetime
+   dependencies that the record holds are not checked and not restored.
 2. **Restore names the reference of a missing recipe.** The refusal is
    `not restorable: <id>: missing recipe <ref>`. This changes a text the shared probe compares exactly:
    `probeExpected.checkpointMissingRecipe` in
@@ -132,10 +138,10 @@ review of DS-20. Read the rules themselves with `npm run rules:current -- module
 | C-43, C-46 | the restored pending retry, and a restored live inner that fails at the first activation |
 | C-45 | history across an INVALIDATE, live and after a round trip, with the two cases where the restored node differs; a wave left with no array |
 | C-50 (new) | the recipe requirement, a handled refusal, and the requirement at a restore |
-| C-42 (D814) | a DATA or ERROR without the payload R-messages requires; a throw that cannot be a payload, which gives the empty string |
+| C-42 (D814) | a DATA or ERROR without the payload R-messages requires; a message with anything beyond its type and payload; an updater that gives one; a throw that cannot be a payload, which gives the empty string |
 
 Every runtime result for these is `todo`. The reference is in `reference/kernel` and
-`reference/modules` (`npm run test:reference`, 540 tests); the models are `module_checkpoint`,
+`reference/modules` (`npm run test:reference`, 541 tests); the models are `module_checkpoint`,
 `module_history` and `module_restart` in `formal/`, with their runs in `formal/README.md`.
 
 ## Beside D812: message payloads (graphrefly:D814)
@@ -147,10 +153,12 @@ Made on 2026-11-19 from a finding of the third QA; not part of D812. R-failure i
   with more, and checks a construction seed's values and terminal the same way): `ctx.down` throws before anything is applied, and a host write of one is refused
   to its caller. graphrefly-ts and graphrefly-py already refuse a DATA without a payload and an
   ERROR whose payload is absent or a boolean, and graphrefly-rs's ERROR holds an error value, so
-  nothing changes there. The reference kernel had accepted them. A message with more than its
-  type carries (`[COMPLETE, x]`, `[DATA, v, w]`) is another matter: the reference and
-  graphrefly-py refuse it, graphrefly-ts accepts it, and no rule lists it. Whether every runtime
-  refuses it is put to the user; do nothing for it until that is answered.
+  nothing changes there. The reference kernel had accepted them.
+- A message with anything beyond its type and, for a DATA or ERROR, its one payload
+  (`[COMPLETE, x]`, `[INVALIDATE, x]`, `[DATA, v, w]`, `[ERROR, e, f]`) is an invalid output array
+  too, in every runtime (R-failure@4 and D814 (4), the user on 2026-11-20). The reference and
+  graphrefly-py refuse it already. **graphrefly-ts changes here:** it accepts such a message.
+  graphrefly-rs's messages are an enum and cannot hold one.
 - A function's throw whose value cannot be an ERROR payload in that runtime gives the empty
   string as the payload, in every runtime. (This brief said `{}` for a day. A graphrefly-rs ERROR
   holds an error value, which a sink receives, and a dependent and a checkpoint see only its
@@ -162,14 +170,16 @@ Made on 2026-11-19 from a finding of the third QA; not part of D812. R-failure i
   `protocol/messages.ts`, called from `node-input-runtime.ts`).
   **graphrefly-rs changes here:** a node function's panic is its throw, and a panic payload that
   is not a string gives an error with the text "node fn panicked" (`panic_to_error` in `node.rs`);
-  it gives one whose message is empty. (R-failure@4 words this as a runtime whose ERROR payload
-  is a string, which is not exact of graphrefly-rs; that clause's wording is put to the user, and
-  what you change is the same either way.)
+  it gives one whose message is empty. (R-failure@4 says "cannot be an ERROR payload in that
+  runtime" and names no runtime; D814 (3) names this case.)
   Python raises only exceptions, so nothing changes there. What your operators and sources send
   when they catch a failure themselves stays yours (graphrefly-ts passes `errorPayload` a text of
   its own in most and its default text in some sources); the reference uses the empty string
   there too.
-- R-failure@4 now also says that a host write of such a message is refused to its caller. An
+- R-failure@4 now also says that a host write of such a message writes nothing and fails: to its
+  caller, or, where an updater gave it, as a write whose updater throws does (R-request-order),
+  so to the host reporter when the write runs after its caller returned, and failing every write
+  of a batch's commit. An
   updater that returns no value needs no new sentence: given no value it returned what it was
   given and writes nothing (R-request-order), and given a value it asks for a DATA without a
   payload and is refused. The reference and graphrefly-ts do that already, and a graphrefly-rs
