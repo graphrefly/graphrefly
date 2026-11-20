@@ -4,7 +4,7 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { loadFederation, qualifyDecisionRef, resolveDecisionRef } from "./federation.mjs";
+import { loadFederation, resolverDisagreements, qualifyDecisionRef, resolveDecisionRef } from "./federation.mjs";
 import { buildAuthorityViews } from "./model.mjs";
 
 function writeJsonl(path, records) {
@@ -296,9 +296,14 @@ test("a dashboard record superseded from another ledger is historical in both re
       { id: "D3", status: "locked", supersedes: [], concerns: ["d", "e"] },
       { id: "D4", status: "locked", supersedes: ["D2"], concerns: ["c"], change_kind: "partial-supersession" },
     ]);
+    // D12 only refers to D4, and D13 says D4 is its successor: neither supersedes a dashboard record
+    // (third QA, 2026-11-19: with every outside reference read as a successor, 14 current root
+    // decisions were historical in the model and no test failed).
     writeJsonl(join(root, "decisions/ts.jsonl"), [
       { id: "D10", status: "locked", supersedes: ["D1"] },
       { id: "D11", status: "locked", supersedes: ["D3"], concerns: ["d"], change_kind: "partial-supersession" },
+      { id: "D12", status: "locked", supersedes: [], upstream_refs: ["graphrefly:D4"] },
+      { id: "D13", status: "locked", supersedes: [], superseded_by: ["D4"] },
     ]);
     writeJsonl(join(root, "authority/relocations.jsonl"), []);
 
@@ -313,6 +318,10 @@ test("a dashboard record superseded from another ledger is historical in both re
     assert.deepEqual([...model.current].sort(), federated);
     assert.deepEqual(model.partiallySuperseded, [{ id: "D3", by: ["graphrefly:D11"], governs: ["e"] }]);
     assert.deepEqual([...views([]).current].sort(), ["D1", "D3", "D4"], "without the edges the model cannot see D1's successor");
+    // The check the gate and the dashboard build make on the real ledgers.
+    assert.deepEqual(resolverDisagreements(federation, model.current), []);
+    assert.deepEqual(resolverDisagreements(federation, views([]).current), ["graphrefly:D1"]);
+    assert.deepEqual(resolverDisagreements(federation, ["D3"]), ["graphrefly:D4"]);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

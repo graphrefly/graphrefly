@@ -123,11 +123,11 @@ function transitionTarget(record) {
 // nothing; partialSuccessorsTakingNothing lists such pairs so that this is seen.
 // A successor's concerns, as a list: a single string counts as one concern, as it always did
 // when read for what a successor takes (second QA, 2026-11-19: the listing read it as an array and threw).
-const concernsOf = (record) => [].concat(record?.concerns ?? []);
+const concernsOf = (record) => [].concat(record.concerns ?? []);
 
 // Whether the record itself names a successor. Read as federation.mjs reads the field for its
 // edges: null, or an empty list, names none.
-export const namesItsSuccessor = (record) => [].concat(record.superseded_by ?? []).length > 0;
+const namesItsSuccessor = (record) => [].concat(record.superseded_by ?? []).length > 0;
 
 export function partialSuccessorsTakingNothing(record, superseders) {
   const concerns = new Set(Array.isArray(record.concerns) ? record.concerns : []);

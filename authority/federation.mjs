@@ -316,3 +316,15 @@ export function loadFederation(root, { includeExternal = false } = {}) {
     ownerDecisionRecords,
   };
 }
+
+// The dashboard records that model.mjs and this resolver do not both call current, as qualified
+// ids. They must be none: the two derive the same thing by two routes, and until the third QA of
+// the D812 work (2026-11-19) only a four-record fixture held them together, so a model that was not
+// given the outside successors, or was given every outside reference as one, passed every gate.
+export function resolverDisagreements(federation, modelCurrentIds) {
+  const qualifiedOf = new Map(federation.decisionRecords.map((record) => [record.id, record.__authority.qualified_id]));
+  const dashboard = new Set(qualifiedOf.values());
+  const federated = new Set(federation.currentProduct.current_qualified_ids.filter((id) => dashboard.has(id)));
+  const modelled = new Set(modelCurrentIds.map((id) => qualifiedOf.get(id) ?? id));
+  return [...new Set([...federated, ...modelled])].filter((id) => federated.has(id) !== modelled.has(id)).sort();
+}

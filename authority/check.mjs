@@ -2,7 +2,7 @@
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { buildAuthorityViews, loadFormalArtifacts, loadJsonl } from "./model.mjs";
-import { loadFederation } from "./federation.mjs";
+import { loadFederation, resolverDisagreements } from "./federation.mjs";
 import { loadWorkFederation } from "./work-federation.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -50,6 +50,7 @@ console.log("work federation:", {
   orphans: work.orphans.length,
 });
 for (const error of federation.errors) views.errors.push(error);
+for (const id of resolverDisagreements(federation, views.currentProductConstitution.current)) views.errors.push(`${id} is current in one resolver and not in the other`);
 for (const error of work.errors) views.errors.push(error);
 views.gateOk = views.errors.length === 0;
 if (federation.warnings.length) console.warn(`federation warnings (${federation.warnings.length}):\n  ${federation.warnings.join("\n  ")}`);

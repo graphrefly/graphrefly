@@ -76,15 +76,22 @@ stays current for its other concerns and is listed as partially superseded. A pr
 no concern is historical. Two limits follow from working by whole concerns, and the resolver does not
 judge either. Inside one concern nothing is partial: when the successor lists the predecessor's only
 concern, the predecessor is historical even if the successor says some of its choices stand
-(graphrefly:D812 and D802), and those choices are read through the successor's `supersedes` edge. And a
+(graphrefly:D812 and D802), and those choices are read through the successor's `supersedes` edge.
+The same holds for one concern among several: D812 lists `protocol.checkpoint-recovery`, so D808 is
+shown as governing its four other concerns and not that one, though D812 says D808's choice there
+stands but for the place of one refusal. The view is by concern; what still binds is in the
+successor's text. And a
 partial successor that lists none of its predecessor's concerns takes nothing from it; the check
 prints such pairs as `partialSuccessorsTakingNothing`, for review, and whether the predecessor should
 have kept everything is its owner's call. A third limit is the reverse case: a predecessor that lists
 no concerns at all, as every record before admission metadata, has nothing to keep, so a partial
 successor retires it whole, and the printed list leaves these pairs out (53 at the root and 78 in the
-workspace on 2026-11-19, the legacy records D789, D796, D797 and D803 replaced). A `superseded_by`
+workspace on 2026-11-19; at the root, the legacy records D789, D796, D797 and D803 replaced, and in
+the workspace also those graphrefly-py's D2, D4, D5 and D8 replaced). A `superseded_by`
 field that names a successor, which only old records carry, counts as a whole supersession in both
-resolvers; null or an empty list names none.
+resolvers; null or an empty list names none. A value that is present and not a reference (an empty
+string, a number, free text) is an error the federation reports, and the two then differ on the
+record, which the comparison below also reports.
 
 `model.mjs` reads only the dashboard's records, so a successor in another ledger is outside it: a
 root record superseded only by a record relocated to its owner's ledger (D237 and D238, by
@@ -93,6 +100,11 @@ the second QA of the D812 work found it on 2026-11-19. The federation now gives 
 edges (`externalSuperseders`), and the check and the dashboard pass them on. With `--workspace` both
 resolvers call such a record historical. Without it the other ledgers are not read, so both call it
 current: a root-only run cannot know of a successor whose body lives in a sibling checkout.
+
+The check and the dashboard build compare the two resolvers on every run (`resolverDisagreements`,
+since the third QA of the D812 work, 2026-11-19): a dashboard record that one calls current and the
+other does not is an error. Until then only a small fixture held them together, and a model that was
+not given the outside successors, or was given every outside reference as one, passed every gate.
 
 Ledgers marked `historical_only` accept no unlocated record: every body must match a relocation
 locator. This makes the history files immutable destinations rather than alternate authoring

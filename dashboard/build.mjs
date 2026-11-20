@@ -9,7 +9,7 @@ import { readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync } from 
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { buildAuthorityViews, loadFormalArtifacts } from "../authority/model.mjs";
-import { loadFederation } from "../authority/federation.mjs";
+import { loadFederation, resolverDisagreements } from "../authority/federation.mjs";
 import { loadWorkFederation } from "../authority/work-federation.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -1039,6 +1039,8 @@ for (const error of authority.errors)
   if (!broken.includes(error)) broken.push(error);
 for (const error of federation.errors)
   if (!broken.includes(error)) broken.push(error);
+for (const id of resolverDisagreements(federation, authority.currentProductConstitution.current))
+  broken.push(`${id} is current in one resolver and not in the other`);
 for (const error of workFederation.errors)
   if (!broken.includes(error)) broken.push(error);
 
