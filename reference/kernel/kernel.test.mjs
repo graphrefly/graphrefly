@@ -2193,16 +2193,16 @@ test("D812: the requirement is off unless the graph was created with it", () => 
   assert.equal(g.definition("raw").recipe, null);
 });
 
-test("R-messages: DATA needs a payload and ERROR one that is not a boolean, from the host and from a function", () => {
+test("R-messages: DATA carries exactly one payload and ERROR one that is not a boolean, from the host and from a function", () => {
   const refused = (text) => (e) => e instanceof KernelError && e.message.endsWith(text);
   const g = createGraph();
   g.state("a", 1);
   for (const bad of [undefined, true, false]) {
-    assert.throws(() => g.error("a", bad), refused("ERROR needs a payload that is not a boolean"));
-    assert.throws(() => g.batch(() => g.error("a", bad)), refused("ERROR needs a payload that is not a boolean"), "in a batch body too");
+    assert.throws(() => g.error("a", bad), refused("ERROR carries exactly one payload, and not a boolean"));
+    assert.throws(() => g.batch(() => g.error("a", bad)), refused("ERROR carries exactly one payload, and not a boolean"), "in a batch body too");
   }
-  assert.throws(() => g.set("a", undefined), refused("DATA needs a payload"));
-  assert.throws(() => g.set("a", () => undefined), refused("DATA needs a payload"), "an updater's result too");
+  assert.throws(() => g.set("a", undefined), refused("DATA carries exactly one payload"));
+  assert.throws(() => g.set("a", () => undefined), refused("DATA carries exactly one payload"), "an updater's result too");
   assert.deepEqual(g.get("a"), { active: false, has: true, value: 1, values: [1], ended: null }, "nothing was written");
 
   // Inside a function ctx.down throws (R-failure), and uncaught that is the node's ERROR.
@@ -2210,7 +2210,7 @@ test("R-messages: DATA needs a payload and ERROR one that is not a boolean, from
   outputs.forEach((out, i) => {
     g.node(`n${i}`, ["a"], (ctx) => ctx.down(out));
     g.subscribe(`s${i}`, `n${i}`);
-    const text = out[0][0] === "DATA" ? "DATA needs a payload" : "ERROR needs a payload that is not a boolean";
+    const text = out[0][0] === "DATA" ? "DATA carries exactly one payload" : "ERROR carries exactly one payload, and not a boolean";
     assert.deepEqual(g.get(`n${i}`).ended, ["ERROR", text]);
   });
   g.node("caught", ["a"], (ctx) => { try { ctx.down([["ERROR", true]]); } catch { ctx.down([["DATA", "went on"]]); } });
@@ -2227,7 +2227,7 @@ test("R-messages: DATA needs a payload and ERROR one that is not a boolean, from
   }
 });
 
-test("R-messages: a function that throws nothing or a boolean ends its node with the payload {}", async () => {
+test("R-failure: a function that throws nothing or a boolean ends its node with the payload {}", async () => {
   const g = createGraph();
   g.state("a", 1);
   [undefined, true, false].forEach((thrown, i) => {
@@ -2238,6 +2238,10 @@ test("R-messages: a function that throws nothing or a boolean ends its node with
   g.node("zero", ["a"], () => { throw 0; });
   g.subscribe("sz", "zero");
   assert.deepEqual(g.get("zero").ended, ["ERROR", 0], "any other thrown value is the payload");
+  g.node("nil", ["a"], () => { throw null; });
+  g.subscribe("sn", "nil");
+  assert.deepEqual(g.get("nil").ended, ["ERROR", null], "null too");
+  assert.notEqual(g.get("n0").ended[1], g.get("n1").ended[1], "each such ERROR has an object of its own");
 
   // The same for a job that rejects with one (latestAsync sends the ERROR itself).
   const q = latestAsync(() => Promise.reject(false));
@@ -2245,4 +2249,74 @@ test("R-messages: a function that throws nothing or a boolean ends its node with
   g.subscribe("sq", "q");
   await new Promise((r) => setTimeout(r));
   assert.deepEqual(g.get("q").ended, ["ERROR", {}]);
+});
+
+// Fourth QA (2026-11-19). R-messages: DATA carries exactly one payload, ERROR one, the other types
+// none. A terminal with more was accepted and written by capture, and restore then refused it.
+test("R-messages: a message with more than its payload is refused; a boolean is a DATA payload", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  const cases = [
+    [["COMPLETE", "why"], "COMPLETE carries no payload"],
+    [["COMPLETE", undefined], "COMPLETE carries no payload"],
+    [["INVALIDATE", 1], "INVALIDATE carries no payload"],
+    [["ERROR", "a", "b"], "ERROR carries exactly one payload, and not a boolean"],
+    [["DATA", 1, 2], "DATA carries exactly one payload"],
+  ];
+  cases.forEach(([message, text], i) => {
+    g.node(`n${i}`, ["a"], (ctx) => ctx.down([message]));
+    g.subscribe(`s${i}`, `n${i}`);
+    assert.deepEqual(g.get(`n${i}`).ended, ["ERROR", text]);
+  });
+  for (const value of [true, false]) {
+    g.set("a", value);
+    assert.equal(g.get("a").value, value);
+    g.node(`b${value}`, ["a"], (ctx) => ctx.down([["DATA", value]]));
+    g.subscribe(`sb${value}`, `b${value}`);
+    assert.deepEqual([g.get(`b${value}`).value, g.get(`b${value}`).ended], [value, null]);
+  }
+});
+
+test("R-messages: a construction seed's values and terminal are checked as messages are", () => {
+  const g = createGraph();
+  const refused = (seed, text) => assert.throws(() => g.node("n", [], () => {}, { seed }), (e) => e instanceof KernelError && e.message === text);
+  refused({ values: [undefined] }, "DATA carries exactly one payload");
+  refused({ ended: ["ERROR", true] }, "ERROR carries exactly one payload, and not a boolean");
+  refused({ ended: ["ERROR"] }, "ERROR carries exactly one payload, and not a boolean");
+  refused({ ended: ["COMPLETE", "why"] }, "COMPLETE carries no payload");
+  g.node("n", [], () => {}, { seed: { values: [false, null], ended: ["ERROR", null] } });
+  assert.deepEqual(g.get("n"), { active: false, has: true, value: null, values: [false, null], ended: ["ERROR", null] });
+});
+
+test("R-failure: a write refused during a wave is refused to the function that made it, at once", () => {
+  const reports = [];
+  const g = createGraph({ report: (r) => reports.push(r) });
+  g.state("a", 1);
+  g.state("b", 1);
+  const caught = [];
+  g.node("n", ["a"], () => {
+    for (const write of [() => g.set("b", undefined), () => g.error("b", true), () => g.error("b")]) {
+      try { write(); caught.push(null); } catch (e) { caught.push(e.message); }
+    }
+  });
+  g.subscribe("s", "n");
+  assert.deepEqual(caught, ["DATA carries exactly one payload", "ERROR carries exactly one payload, and not a boolean", "ERROR carries exactly one payload, and not a boolean"]);
+  assert.deepEqual([g.get("b").value, g.get("b").ended, reports], [1, null, []]);
+});
+
+// Fourth QA: with the payload check, a job that resolved with nothing made ctx.down throw in the
+// promise's callback, an unhandled rejection that ended the process. It is the node's ERROR.
+test("latestAsync: a job that resolves with nothing ends the node with ERROR; false and null are values", async () => {
+  const g = createGraph();
+  g.state("a", 1);
+  const results = { nothing: undefined, no: false, nil: null };
+  for (const [id, result] of Object.entries(results)) {
+    const q = latestAsync(async () => result);
+    g.node(id, ["a"], q.fn, { setup: q.setup });
+    g.subscribe(`s-${id}`, id);
+  }
+  await new Promise((r) => setTimeout(r));
+  assert.deepEqual(g.get("nothing").ended, ["ERROR", "DATA carries exactly one payload"]);
+  assert.deepEqual([g.get("no").value, g.get("no").ended, g.privateState("no")], [false, null, { pending: [] }]);
+  assert.deepEqual([g.get("nil").value, g.get("nil").ended], [null, null]);
 });

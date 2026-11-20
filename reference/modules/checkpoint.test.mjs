@@ -1115,6 +1115,14 @@ test("D812: capture names the first node in creation order that cannot be saved;
     g.replace("n", ["late"], () => {}, { recipe: { ref: "b", config: null } });
     g.error("late", () => 1);
   }, "not restorable: n: its ERROR payload is not JSON");
+  // The same for a recipe without a reference: X received what is not JSON, and that is its reason.
+  refused((g) => {
+    g.node("X", [], () => {}, { recipe: {} });
+    g.subscribe("s", "X");
+    g.state("late", 1);
+    g.replace("X", ["late"], () => {}, { recipe: {} });
+    g.set("late", { f: () => 1 });
+  }, "not restorable: X: its received values are not JSON");
   // One node with both: what is not JSON is its reason.
   refused((g) => { g.node("A", [], (ctx) => ctx.down([["DATA", () => 1]])); g.subscribe("s", "A"); }, "not restorable: A: its retained values are not JSON");
   refused((g) => { g.node("X", [], () => {}, { recipe: { config: () => 1 } }); }, "not restorable: X: its recipe config is not JSON");

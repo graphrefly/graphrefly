@@ -40,15 +40,18 @@ const isTerminal = (m) => m[0] === "COMPLETE" || m[0] === "ERROR";
 // K2/K6: each of these releases a connection's dirty membership.
 const settles = (m) => isValue(m) || isTerminal(m) || m[0] === "INVALIDATE";
 const messageOf = (e) => (e instanceof Error ? e.message : e);
-// R-messages: DATA carries a payload, and ERROR one that is not a boolean (a dependency's
-// terminal is given as false, true or the ERROR payload, so a boolean payload could not be told
-// from none or from COMPLETE). Refused where the message is given: ctx.down and the host's writes
-// (R-failure@4, graphrefly:D814).
+// R-messages: DATA carries exactly one payload, ERROR one that is not a boolean, and the other
+// types none. (graphrefly-ts gives a dependency's terminal as true or the ERROR payload, so there
+// a boolean payload could not be told from COMPLETE; here the terminal is the message.) Refused
+// where a message is given: ctx.down, the host's writes and a construction seed (graphrefly:D814).
 function assertPayload(m) {
-  if (m[0] === "DATA" && m[1] === undefined) throw new KernelError("DATA needs a payload");
-  if (m[0] === "ERROR" && (m[1] === undefined || typeof m[1] === "boolean")) {
-    throw new KernelError("ERROR needs a payload that is not a boolean");
+  const one = m.length === 2 && m[1] !== undefined;
+  if (m[0] === "DATA") { if (!one) throw new KernelError("DATA carries exactly one payload"); return; }
+  if (m[0] === "ERROR") {
+    if (!one || typeof m[1] === "boolean") throw new KernelError("ERROR carries exactly one payload, and not a boolean");
+    return;
   }
+  if (m.length !== 1) throw new KernelError(`${m[0]} carries no payload`);
 }
 // What a failure gives as its ERROR payload: an Error's message, or the thrown value. A throw of
 // nothing or of a boolean is not a payload, so the payload is {} (R-failure@4, graphrefly:D814).
@@ -135,6 +138,8 @@ export function createGraph({ report: hostReport, requireRecipe = false } = {}) 
     // node its last array's values, terminal and private state without running its fn, and the
     // dependencies its first lifetime starts on when a ctx.rewire had changed them (2026-11-10, F6).
     const seed = opts?.seed; // seed.deps may name nodes made later; activation checks them
+    for (const v of seed?.values ?? []) assertPayload(["DATA", v]);
+    if (seed?.ended) assertPayload(seed.ended);
     const values = seed ? [...(seed.values ?? [])] : initial !== undefined ? [initial] : [];
     const n = {
       id, kind, deps, fn,

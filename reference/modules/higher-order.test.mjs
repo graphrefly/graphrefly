@@ -416,3 +416,18 @@ test("mergeMap: an inner that completes in the wave of a new source value hands 
   g.set("t", 1);
   assert.deepEqual(g.get("op").ended, ["COMPLETE"]);
 });
+
+// Fourth QA (2026-11-19): what a projector threw is the ERROR's payload unless it cannot be one
+// (R-messages), and then the payload is {}, as for a function's own throw (R-failure).
+test("switchMap and mergeMap: a projector that throws nothing or a boolean ends the owner with the payload {}", () => {
+  for (const build of [switchMap, mergeMap]) {
+    for (const thrown of [undefined, true, false]) {
+      const g = createGraph();
+      g.state("s");
+      build(g, "op", "s", () => { throw thrown; });
+      g.subscribe("k", "op");
+      g.set("s", 1);
+      assert.deepEqual(g.get("op").ended, ["ERROR", {}]);
+    }
+  }
+});

@@ -594,10 +594,26 @@ then refused. 524 tests.
 After that QA (2026-11-19, the user: "还是只能有负载，不能是boolean"): the kernel refuses a DATA
 without a payload and an ERROR whose payload is absent or a boolean, where the message is given
 (`ctx.down`, `set`, `error`); see the kernel README. `errorPayload`, from the kernel, replaces the
-two places here and in the sugar that built an ERROR payload from a caught value. A restored
+one place here (higher-order) and the one in the sugar that built an ERROR payload from a caught value. A restored
 graph's creation order may differ from its original's, so a capture of each can name a different
 node (R-checkpoint@2, reworded that day); one test. 527 tests. Later that day the payload check
 became R-failure@4's (graphrefly:D814), and a throw of nothing or a boolean gives `{}`.
+
+Fourth QA (2026-11-19), three reviewers, of the twelve commits since the third, review only. Found
+in what those commits did: a `latestAsync` job that resolved with nothing made `ctx.down` throw in
+the promise's callback, an unhandled rejection that ended the process, with the pending record
+already cleared; it is the node's ERROR now, and the record is cleared after the value went out.
+Found and older: a message with more than its payload (`[COMPLETE, x]`, `[ERROR, a, b]`) was
+accepted and written by capture, and restore refused it; a construction seed was not checked. Both
+are refused by the kernel now. Tests for those and for mutants that had survived: a boolean as a
+DATA payload, a projector that throws nothing or a boolean, `throw null`, an object of its own for
+each `{}`, a write refused during a wave, a recipe without a reference that received what is not
+JSON. Not fixed, put to the user: capture reads an ended node's received records from what its
+dependencies hold now, so it can name the wrong node or reason and save a value never delivered;
+the restored graph's creation order (the reference builds a dependency before the node that needs
+it and keeps checkpoint order otherwise, which the rule's sentence does not fix for three nodes);
+an updater that returns nothing, refused only when the state holds a value. Left as it was: sinks
+and `get` are handed the kernel's own message arrays. 532 tests.
 The dated exploration below records earlier schema/implementation shapes.
 
 

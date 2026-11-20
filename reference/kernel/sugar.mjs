@@ -71,7 +71,13 @@ const startJob = (f, ctx, value) => {
   Promise.resolve()
     .then(() => f(value, signal))
     .then(
-      (v) => { if (!signal.aborted) { ctx.state.set({ pending: [] }); ctx.down([["DATA", v]]); } },
+      (v) => {
+        if (signal.aborted) return;
+        // A job that resolves with nothing has no DATA to send: ctx.down refuses it (R-messages),
+        // and here, after the function returned, nothing else would make that the node's ERROR.
+        try { ctx.down([["DATA", v]]); } catch (e) { ctx.down([["ERROR", errorPayload(e)]]); return; }
+        ctx.state.set({ pending: [] });
+      },
       (e) => { if (!signal.aborted) ctx.down([["ERROR", errorPayload(e)]]); },
     );
 };
