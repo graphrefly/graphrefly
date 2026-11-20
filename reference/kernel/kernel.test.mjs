@@ -479,11 +479,12 @@ test("P9 sugar: latestAsync publishes only the newest request and aborts the res
   const g = createGraph();
   g.state("a", 1);
   const calls = [];
-  g.node("q", ["a"], latestAsync((v, signal) => {
+  const q = latestAsync((v, signal) => {
     const d = deferred();
     calls.push({ v, signal, ...d });
     return d.promise;
-  }));
+  });
+  g.node("q", ["a"], q.fn, { setup: q.setup });
   g.subscribe("s", "q");
   await tick();
   assert.deepEqual(during(g, () => g.set("a", 2)), ["s <- q: [PENDING, RESOLVED]"]);
@@ -506,7 +507,8 @@ test("P9 sugar: latestAsync starts one job for the latest occurrence of a wave",
   const g = createGraph();
   g.state("a");
   const calls = [];
-  g.node("q", ["a"], latestAsync((v) => { calls.push(v); return deferred().promise; }));
+  const q = latestAsync((v) => { calls.push(v); return deferred().promise; });
+  g.node("q", ["a"], q.fn, { setup: q.setup });
   g.subscribe("s", "q");
   g.batch(() => { g.set("a", 2); g.set("a", 3); });
   await tick();
@@ -520,7 +522,8 @@ test("P9 sugar: a run without a new value does not lose latestAsync's abort at c
   g.state("other", 0);
   const calls = [];
   // The function reads q only; a write to other runs it with no new value from q.
-  g.node("f", ["q", "other"], latestAsync((v, signal) => { calls.push({ v, signal }); return deferred().promise; }));
+  const f = latestAsync((v, signal) => { calls.push({ v, signal }); return deferred().promise; });
+  g.node("f", ["q", "other"], f.fn, { setup: f.setup });
   g.subscribe("s", "f");
   await tick();
   g.set("other", 1);

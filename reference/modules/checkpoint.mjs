@@ -98,20 +98,16 @@ export function capture(g) {
       };
     }
     validateSaved(id, saved);
+    // D812 (4), 2026-11-18: a node that cannot be rebuilt is refused here instead of being written
+    // as { local: true } and failing at restore. Capture names the first node in creation order
+    // that cannot be saved; within one node what is not JSON comes first (D808 (5)), so this check
+    // is the node's last. Local-only is no recipe given, the kernel's own test (R-node); a recipe
+    // that was given but has no reference is refused as restore refuses it.
+    if (def.recipe == null) throw notRestorable(id, "local-only, built or replaced without a recipe");
+    if (!hasReference(def.recipe)) throw notRestorable(id, "missing recipe");
     // Explicit null distinguishes a cold node from a truncated lifetime record.
     return { ...entry, saved };
   }) };
-  // D812 (4), 2026-11-18: a node that cannot be rebuilt is refused here instead of being written
-  // as { local: true } and failing at restore. The JSON refusals come first for the whole graph
-  // (corrected 2026-11-19, the user's choice: until then this was checked node by node, so a
-  // local-only node made before a node holding what is not JSON was named instead of it), so this
-  // is a second pass, in creation order. Local-only is no recipe given, the kernel's own test
-  // (R-node); a recipe that was given but has no reference is refused as restore refuses it.
-  for (const { id, kind, recipe } of checkpoint.nodes) {
-    if (kind === "state") continue;
-    if (recipe == null) throw notRestorable(id, "local-only, built or replaced without a recipe");
-    if (!hasReference(recipe)) throw notRestorable(id, "missing recipe");
-  }
   return JSON.parse(JSON.stringify(checkpoint));
 }
 

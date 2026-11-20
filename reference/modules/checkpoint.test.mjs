@@ -1040,20 +1040,28 @@ test("D808, D812: a local-only node that received what is not JSON is refused fo
   assert.throws(() => capture(g), { message: "not restorable: n: its received values are not JSON" });
 });
 
-// D812 (4), corrected 2026-11-19 (the user's choice): the JSON refusals come first for the whole
-// graph, so no capture that was refused before D812 changes its reason. Only when everything the
-// graph holds is JSON is a node without a usable recipe refused, the first in creation order.
-test("D812: every JSON refusal comes before a missing recipe, across nodes; then the first node without a usable recipe is named", () => {
+// D812 (4). Capture names the first node in creation order that cannot be saved, whatever its
+// reason; what is not JSON comes first within one node only (D808 (5)). For some hours of
+// 2026-11-19 every JSON refusal came before any missing recipe for the whole graph, to keep the
+// reason of captures refused before D812; the user dropped that on the audit of the branch.
+test("D812: capture names the first node in creation order that cannot be saved; within one node what is not JSON comes first", () => {
   const refused = (build, message) => { const g = createGraph(); build(g); assert.throws(() => capture(g), { message }); };
-  refused((g) => {
-    g.node("A", [], () => {}); // local-only, made first
-    g.node("B", [], (ctx) => ctx.down([["DATA", () => 1]]), { recipe: { ref: "b", config: null } });
-    g.subscribe("s", "B");
-  }, "not restorable: B: its retained values are not JSON");
-  refused((g) => { g.node("A", [], () => {}); g.state("z", () => 1); }, "not restorable: z: its retained values are not JSON");
-  refused((g) => { g.node("A", [], () => {}); g.node("B", [], () => {}, { recipe: { ref: "b", config: () => 1 } }); }, "not restorable: B: its recipe config is not JSON");
+  const holdsFn = (g, id) => { g.node(id, [], (ctx) => ctx.down([["DATA", () => 1]]), { recipe: { ref: "b", config: null } }); g.subscribe("s", id); };
+  const local = "local-only, built or replaced without a recipe";
+  // A local-only node and a node that holds what is not JSON, in both orders.
+  refused((g) => { g.node("A", [], () => {}); holdsFn(g, "B"); }, `not restorable: A: ${local}`);
+  refused((g) => { holdsFn(g, "B"); g.node("A", [], () => {}); }, "not restorable: B: its retained values are not JSON");
+  // The same against a state, and against a recipe configuration.
+  refused((g) => { g.node("A", [], () => {}); g.state("z", () => 1); }, `not restorable: A: ${local}`);
+  refused((g) => { g.state("z", () => 1); g.node("A", [], () => {}); }, "not restorable: z: its retained values are not JSON");
+  refused((g) => { g.node("A", [], () => {}); g.node("B", [], () => {}, { recipe: { ref: "b", config: () => 1 } }); }, `not restorable: A: ${local}`);
+  refused((g) => { g.node("B", [], () => {}, { recipe: { ref: "b", config: () => 1 } }); g.node("A", [], () => {}); }, "not restorable: B: its recipe config is not JSON");
+  // A recipe without a reference and a local-only node, in both orders.
   refused((g) => { g.node("X", [], () => {}, { recipe: {} }); g.node("A", [], () => {}); }, "not restorable: X: missing recipe");
-  refused((g) => { g.node("A", [], () => {}); g.node("X", [], () => {}, { recipe: {} }); }, "not restorable: A: local-only, built or replaced without a recipe");
+  refused((g) => { g.node("A", [], () => {}); g.node("X", [], () => {}, { recipe: {} }); }, `not restorable: A: ${local}`);
+  // One node with both: what is not JSON is its reason.
+  refused((g) => { g.node("A", [], (ctx) => ctx.down([["DATA", () => 1]])); g.subscribe("s", "A"); }, "not restorable: A: its retained values are not JSON");
+  refused((g) => { g.node("X", [], () => {}, { recipe: { config: () => 1 } }); }, "not restorable: X: its recipe config is not JSON");
 });
 
 // QA of D812 (2026-11-19). The kernel checks only that a recipe was given and never reads it
@@ -1319,14 +1327,14 @@ test("QA2: restore preserves valid repeated declared inputs without inventing re
 // ---- D812 (1), decided by the user 2026-11-18: pending work is state ----
 // Checkpoint neither resumes nor re-issues late output in flight at capture. A node that must not
 // lose its pending work records it in its private state, as JSON, and its setup opens it again.
-import { latestAsync, latestAsyncNode } from "../kernel/sugar.mjs";
+import { latestAsync } from "../kernel/sugar.mjs";
 
 const turn = () => new Promise((resolve) => setImmediate(resolve));
 
 // A graph with one latestAsync node q over a, built from a recipe; `jobs` records every job started.
 function reportGraph(jobs) {
   const job = (v, signal) => new Promise((resolve) => { jobs.push({ v, signal, resolve }); });
-  const reg = { report: () => latestAsyncNode(job) };
+  const reg = { report: () => latestAsync(job) };
   const g = createGraph();
   g.state("a", "q1");
   const built = reg.report();
@@ -1391,37 +1399,35 @@ test("D812: restored after its result was published, latestAsync starts no job",
   r.unsubscribe("s", "q");
 });
 
-// QA of D812 (2026-11-19). latestAsync(f) is the function alone, without the setup that reads the
-// record. It recorded the pending input all the same, so a node built with it came back from a
-// checkpoint saying a job was pending, with none started and nothing to start one. It now records
-// nothing, and its job in flight at a capture is lost, as the rule says of work a node did not record.
-test("D812: latestAsync alone records nothing; its job in flight at a capture is lost, and the next input starts one", async () => {
+// D812 (1) in the shape a host writes it: the recipe's factory returns latestAsync(f) as it is, the
+// function with its setup, and restore takes both from it. Until 2026-11-19 the reference also
+// had the function alone, which recorded nothing: capture passed and the restored node started no job.
+test("D812: a factory that returns latestAsync(f) gives the restored node its setup, which starts the pending job again", async () => {
   const jobs = [];
-  const job = (v) => new Promise((resolve) => { jobs.push({ v, resolve }); });
-  const reg = { alone: () => latestAsync(job) };
-  const g = createGraph();
+  const reg = { report: () => latestAsync((v) => new Promise((resolve) => { jobs.push({ v, resolve }); })) };
+  const built = reg.report();
+  assert.deepEqual(Object.keys(built).sort(), ["fn", "setup"]);
+  const g = createGraph({ requireRecipe: true });
   g.state("a", "q1");
-  g.node("q", ["a"], reg.alone(), { recipe: { ref: "alone", config: null } });
+  g.node("q", ["a"], built.fn, { setup: built.setup, recipe: { ref: "report", config: null } });
   g.subscribe("s", "q");
   await turn();
-  assert.deepEqual([jobs.map((j) => j.v), g.privateState("q")], [["q1"], undefined]);
   const cp = roundTrip(capture(g));
   g.unsubscribe("s", "q");
-  const r = restore(cp, reg);
+  const r = restore(cp, reg, { requireRecipe: true });
+  assert.equal(typeof r.definition("q").setup, "function");
   r.subscribe("s", "q");
   await turn();
-  assert.deepEqual([jobs.length, r.get("q").has, r.privateState("q")], [1, false, undefined], "no job, and no record that says there is one");
-  r.set("a", "q2");
+  assert.deepEqual(jobs.map((j) => j.v), ["q1", "q1"], "one job in the original, one fresh job in the restored graph");
+  jobs[1].resolve("r1");
   await turn();
-  jobs[1].resolve("r2");
-  await turn();
-  assert.deepEqual([jobs.map((j) => j.v), r.get("q").value], [["q1", "q2"], "r2"]);
+  assert.equal(r.get("q").value, "r1");
   r.unsubscribe("s", "q");
 });
 
 test("latestAsync: a job that fails ends the node with ERROR, its message as the payload; an obsolete job's failure is dropped", async () => {
   const jobs = [];
-  const built = latestAsyncNode((v) => new Promise((resolve, reject) => { jobs.push({ v, resolve, reject }); }));
+  const built = latestAsync((v) => new Promise((resolve, reject) => { jobs.push({ v, resolve, reject }); }));
   const g = createGraph();
   g.state("a", "q1");
   g.node("q", ["a"], built.fn, { setup: built.setup });

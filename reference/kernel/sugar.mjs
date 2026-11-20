@@ -1,5 +1,5 @@
 // Value sugar over the kernel reference. Not kernel behavior: these are ordinary node
-// functions, (ctx) => void, which is the point of DS-17 (first-run gating,
+// functions, (ctx) => void (latestAsync with a setup beside its function), which is the point of DS-17 (first-run gating,
 // per-occurrence policy and cancellation live here, not in the substrate). They exist
 // to show that each policy can live outside the kernel; they are not a chosen operator
 // set.
@@ -47,47 +47,43 @@ export const reduce = (f, seed) => (ctx) => {
 // registered a cleanup per request before 2026-11-10, and a run without a new value dropped
 // the abort). The kernel pairs nothing.
 //
+// It is a function with a setup, { fn, setup }, the one sugar here that is not a function alone:
+// g.node(id, deps, built.fn, { setup: built.setup }), or returned as it is from a recipe's factory.
 // Pending work is state (D812, decided by the user 2026-11-18): the input a job was started for is
 // recorded in private state as { pending: [value] }, which is JSON when the value is, and
-// { pending: [] } once its result is published. latestAsyncNode's setup starts a job again for a
-// pending input at every activation, so a node restored while its job was in flight starts a
-// fresh one for its unchanged input; f may treat the value as the identity to look a job up by.
-// Until D812 the private state held the AbortController and a capture was refused. The
-// controller now lives beside the lifetime, keyed by its signal, and is never saved.
+// { pending: [] } once its result is published. A restored node's function does not run on an
+// unchanged input, so only a setup can start the job again: it does for a pending input at every
+// activation, and f may treat the value as the identity to look a job up by. Until D812 the
+// private state held the AbortController and a capture was refused. The controller now lives
+// beside the lifetime, keyed by its signal, and is never saved. For a day there was also the
+// function alone, which recorded nothing and so did not do what D812 (1) says of an ordinary
+// latestAsync; the user chose the one form on 2026-11-19.
 const controllers = new WeakMap(); // lifetime signal -> the AbortController of its job in flight
 
-// `record` says whether the job's input is kept in private state for a setup to start again.
-const startJob = (f, ctx, value, record) => {
+const startJob = (f, ctx, value) => {
   controllers.get(ctx.signal)?.abort(); // a newer input makes the older request obsolete
   const ctrl = new AbortController();
   controllers.set(ctx.signal, ctrl);
-  if (record) ctx.state.set({ pending: [value] });
+  ctx.state.set({ pending: [value] });
   const signal = AbortSignal.any([ctx.signal, ctrl.signal]);
   Promise.resolve()
     .then(() => f(value, signal))
     .then(
-      (v) => { if (!signal.aborted) { if (record) ctx.state.set({ pending: [] }); ctx.down([["DATA", v]]); } },
+      (v) => { if (!signal.aborted) { ctx.state.set({ pending: [] }); ctx.down([["DATA", v]]); } },
       (e) => { if (!signal.aborted) ctx.down([["ERROR", e instanceof Error ? e.message : e]]); },
     );
 };
 
-const latestAsyncFn = (f, record) => (ctx) => {
-  const values = occurrences(ctx.deps[0]);
-  if (values.length) startJob(f, ctx, values[values.length - 1], record);
-};
-
-export const latestAsyncNode = (f) => ({
-  fn: latestAsyncFn(f, true),
+export const latestAsync = (f) => ({
+  fn: (ctx) => {
+    const values = occurrences(ctx.deps[0]);
+    if (values.length) startJob(f, ctx, values[values.length - 1]);
+  },
   setup: (ctx) => {
     const pending = ctx.state.get()?.pending;
-    if (pending?.length) startJob(f, ctx, pending[0], true);
+    if (pending?.length) startJob(f, ctx, pending[0]);
   },
 });
-
-// The function alone, for a node without that setup. It records nothing: a record no setup reads
-// would come back from a checkpoint saying a job is pending when none is (QA 2026-11-19). Its job
-// in flight at a capture is lost, as any late output a node did not record is (R-checkpoint).
-export const latestAsync = (f) => latestAsyncFn(f, false);
 
 // ---- Combining several dependencies (2026-11-08) ------------------------------------
 //
