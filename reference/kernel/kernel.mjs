@@ -78,7 +78,7 @@ export function createGraph({ report: hostReport, requireRecipe = false } = {}) 
   const trace = [];
   // K10, D812 (decided by the user 2026-11-18): a graph may be created to require a recipe on every
   // computed instance, so a missing one is found when the instance is made and not at the next
-  // capture. The kernel checks only that a recipe is present; it still never reads one.
+  // capture. The kernel checks only that a recipe was given, whatever it is; it still never reads one.
   const assertRecipe = (where, opts) => {
     if (requireRecipe && opts?.recipe == null) throw new KernelError(`${where}: this graph requires a recipe on every computed node`);
   };

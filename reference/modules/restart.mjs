@@ -143,7 +143,6 @@ function owner({ deps, rounds, retry }, { g, id }) {
     schedule(ctx, st, delay, end);
   };
   const setup = (ctx) => {
-    const restored = ctx.state.get() !== undefined; // a fresh activation has no private state
     // At each activation, restored ones included, a request already in the restart state is old
     // (moved here on 2026-11-10: a restored owner, whose private state came back, served one).
     const request = ctx.deps.find((d) => d.id === restartId);
@@ -156,7 +155,8 @@ function owner({ deps, rounds, retry }, { g, id }) {
     // ended, says a retry was waiting: the inner is activated before this setup runs, so one that
     // fails only now is ended here too, and its failure is the function's to count (QA 2026-11-19).
     const st = ctx.state.get();
-    if (restored && st.waiting) schedule(ctx, st, retryDelayMs(retry, st.failures), kernel.get(innerId).ended);
+    // A fresh activation has no record of one: its state starts with waiting false.
+    if (st.waiting) schedule(ctx, st, retryDelayMs(retry, st.failures), kernel.get(innerId).ended);
     // Unless the owner itself has ended for good, its next activation starts a fresh inner.
     return () => { if (!kernel.get(id).ended && kernel.get(innerId).ended) renew(); };
   };

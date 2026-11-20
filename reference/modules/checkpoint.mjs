@@ -11,7 +11,8 @@
 // saved (R-checkpoint). A node whose definition has no recipe is local-only, and capture refuses a
 // graph that holds one, naming it (D812, 2026-11-18; until then capture wrote it and restore failed):
 // a node built without one, or replaced without one (C6). So a graph that holds a wire bridge
-// group, whose nodes carry no recipes, cannot be captured (R-checkpoint, R-bridge). A node rewired for its lifetime (F7) is
+// group, whose nodes carry no recipes here, cannot be captured (R-checkpoint, of any nodes built
+// without recipes; D812 (5); no rule says it of the bridge). A node rewired for its lifetime (F7) is
 // restorable: its lifetime's dependencies are saved with the rest of its lifetime.
 //
 // capture(g) runs at a wave boundary only and saves, per node in creation order, what the kernel
@@ -34,8 +35,10 @@
 // reaches only the seeded instance's first run (ctx.seed), so a later instance, such as a restart's
 // renewal of an ended inner, runs as usual. Before the first subscription a restored node is
 // inactive and receives no waves, so only the values and ends then are compared: an INVALIDATE
-// followed by a write is seen as the write. A host that must not lose such an INVALIDATE
-// subscribes before writing upstream (R-checkpoint).
+// followed by a write of another value is seen as the write, one followed by a write of the value
+// the node had received is not seen, and an INVALIDATE alone is seen as a dependency that holds no
+// value. A host that must not lose such an INVALIDATE subscribes before writing upstream
+// (R-checkpoint).
 
 import { isDeepStrictEqual } from "node:util";
 import { assertLocalName, createGraph } from "../kernel/kernel.mjs";

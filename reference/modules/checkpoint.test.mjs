@@ -921,6 +921,36 @@ test("D812: a waiting retry's timer is cleared when the owner's lifetime closes,
   assert.equal(armed.size, 0);
 });
 
+// Third QA of the D812 work (2026-11-19). A request while a retry waits starts another attempt, and
+// the first retry's timer stays armed until it fires into nothing. If that timer cleared the record
+// of the retry that waits now, a capture after it saved an owner that says nothing waits, and the
+// restored owner never retried: every test passed with that change, and so did the model, which
+// has one timer.
+test("D812: a superseded retry's timer does not clear the record of the retry that waits now", (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const g = createGraph();
+  g.state("a", 1);
+  restartable(g, "r", { deps: ["a"], fn: fwd(), recipe: { ref: "fwd" }, retry: retryPolicy({ maxAttempts: 4, initialMs: 100 }) });
+  g.subscribe("s", "r");
+  g.set("a", "bad"); // failure 1: the first retry waits until 100
+  t.mock.timers.tick(60);
+  g.set("a", 2);
+  restartableOf(g, "r").restart(); // a request: another attempt at once, over a = 2
+  assert.deepEqual([g.get("r").value, g.privateState("r").waiting], [2, false]);
+  g.set("a", "bad"); // failure 2: the second retry waits until 160
+  assert.equal(g.privateState("r").waiting, true);
+  t.mock.timers.tick(40); // the first retry's timer fires at 100, superseded
+  assert.deepEqual([g.privateState("r").waiting, g.get("r/inner").ended], [true, ["ERROR", "bad"]], "the second retry still waits, and its record says so");
+  const cp = roundTrip(capture(g));
+  g.unsubscribe("s", "r");
+  const r = restore(cp, fwdRecipes);
+  r.set("a", 7);
+  r.subscribe("s", "r");
+  t.mock.timers.tick(100);
+  assert.deepEqual([r.get("r").value, r.get("r/inner").ended], [7, null], "the restored owner made its retry");
+  r.unsubscribe("s", "r");
+});
+
 import { higherOrderRecipes, mergeMap, relay, switchMap } from "./higher-order.mjs";
 
 // The projector follows the node a source value names.
@@ -1059,6 +1089,15 @@ test("D812: capture names the first node in creation order that cannot be saved;
   // A recipe without a reference and a local-only node, in both orders.
   refused((g) => { g.node("X", [], () => {}, { recipe: {} }); g.node("A", [], () => {}); }, "not restorable: X: missing recipe");
   refused((g) => { g.node("A", [], () => {}); g.node("X", [], () => {}, { recipe: {} }); }, `not restorable: A: ${local}`);
+  // What a node received counts as what it holds: n, made first, received an ERROR payload that is
+  // not JSON from a dependency made after it, and is the node named (third QA, 2026-11-19).
+  refused((g) => {
+    g.node("n", [], () => {}, { recipe: { ref: "b", config: null }, terminal: { complete: "manual", error: "manual" } });
+    g.subscribe("s", "n");
+    g.state("late", 1);
+    g.replace("n", ["late"], () => {}, { recipe: { ref: "b", config: null } });
+    g.error("late", () => 1);
+  }, "not restorable: n: its ERROR payload is not JSON");
   // One node with both: what is not JSON is its reason.
   refused((g) => { g.node("A", [], (ctx) => ctx.down([["DATA", () => 1]])); g.subscribe("s", "A"); }, "not restorable: A: its retained values are not JSON");
   refused((g) => { g.node("X", [], () => {}, { recipe: { config: () => 1 } }); }, "not restorable: X: its recipe config is not JSON");
@@ -1092,7 +1131,8 @@ test("D812: a checkpoint whose recipe has an empty reference is refused at resto
   assert.throws(() => restore(cp, { ...reg, "": reg.sum }), { message: "not restorable: n: missing recipe" });
 });
 
-// A module's build is a sequence of requests, and each stands on its own (R-node@3): on a requiring
+// A module's build is a sequence of requests, and each stands on its own (R-node@3's rationale; no
+// rule statement or scenario compares what a refused builder leaves): on a requiring
 // graph the builder called without a recipe is refused at its first computed node, and a state it
 // made before that stays, so the same build is then refused for a taken id. For some hours of
 // 2026-11-19 the kernel had a build request that took such nodes out again; the user took it out
@@ -1396,7 +1436,7 @@ test("D812: a factory that returns latestAsync(f) gives the restored node its se
   const built = reg.report();
   assert.deepEqual(Object.keys(built).sort(), ["fn", "setup"]);
   const g = createGraph({ requireRecipe: true });
-  g.state("a", "q1");
+  g.state("a", { id: "q1" }); // an object: the saved input comes back equal, not the same (third QA)
   g.node("q", ["a"], built.fn, { setup: built.setup, recipe: { ref: "report", config: null } });
   g.subscribe("s", "q");
   await turn();
@@ -1406,7 +1446,7 @@ test("D812: a factory that returns latestAsync(f) gives the restored node its se
   assert.equal(typeof r.definition("q").setup, "function");
   r.subscribe("s", "q");
   await turn();
-  assert.deepEqual(jobs.map((j) => j.v), ["q1", "q1"], "one job in the original, one fresh job in the restored graph");
+  assert.deepEqual(jobs.map((j) => j.v), [{ id: "q1" }, { id: "q1" }], "one job in the original, one fresh job in the restored graph");
   jobs[1].resolve("r1");
   await turn();
   assert.equal(r.get("q").value, "r1");
