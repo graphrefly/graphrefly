@@ -620,6 +620,23 @@ own message arrays. 535 tests.
 2026-11-20 (the user: "用空字符串"): a throw of nothing or a boolean gives the empty string, not `{}`,
 which graphrefly-rs cannot hold (D814 (3) corrected in place). One test here: that payload, which
 is falsy, is saved, restored and delivered as any other. 536 tests.
+
+Fifth QA (2026-11-20), three reviewers, review only, of the ten commits since the fourth. Fixed,
+those that needed no decision. From the fourth round's own fixes: `latestAsync` cleared its pending
+record after sending the value, so a sink that wrote upstream on that DATA started the next job
+and the old callback then cleared the new record, and a capture lost the job; the record is
+cleared first again. Restore met a TypeError on an ended node whose record held malformed received
+records; an ended node needs none, and given ones are checked as before. The bridge gate let
+through a message with more than its type carries, which the kernel had begun to refuse, so the
+frame ended its inbound edge; the gate refuses the frame whole. Older: the kernel tested an
+updater's throw for truth, so a throw of nothing, false, 0, "" or null failed no write and
+reached no one; the operation-tree host tested an ERROR payload for truth (no test reaches that
+line: its graph's functions do not throw). Tests: the round trip of the empty string now delivers
+through a dependent that takes the ERROR as input, where its recipe had never run; restore's
+declared order with two late dependencies; a seed's values each; an assertion that was empty.
+540 tests. Open with the user: whether a message with more than its type carries is refused in
+every runtime, whether an ended node's record with more than values and terminal is refused or
+read in part (its private state is still seeded), and whether the seed check asks for a terminal.
 The dated exploration below records earlier schema/implementation shapes.
 
 

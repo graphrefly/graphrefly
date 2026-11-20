@@ -161,7 +161,10 @@ function viewAfter(frame, known, view) {
       if (ended) throw new BadFrame(`edge ${edge}: an array after its terminal`);
       a.forEach((m, i) => {
         if (!Array.isArray(m) || !CROSSING.has(m[0])) throw new BadFrame(`edge ${edge}: ${m?.[0]} does not cross`);
-        if ((m[0] === "DATA" || m[0] === "ERROR") && !isBytes(m[1])) throw new BadFrame(`edge ${edge}: ${m[0]} without bytes`);
+        const carries = m[0] === "DATA" || m[0] === "ERROR";
+        if (carries && !isBytes(m[1])) throw new BadFrame(`edge ${edge}: ${m[0]} without bytes`);
+        // The kernel refuses a message with more than its type carries, so the gate does first.
+        if (m.length !== (carries ? 2 : 1)) throw new BadFrame(`edge ${edge}: ${m[0]} with more than it carries`);
         if (isTerminal(m) && i !== a.length - 1) throw new BadFrame(`edge ${edge}: a terminal not last`);
       });
       ended = isTerminal(a.at(-1));

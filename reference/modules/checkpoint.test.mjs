@@ -399,27 +399,45 @@ test("R-checkpoint: restore builds a dependency made after its node just before 
   assert.throws(() => capture(r), { message: "not restorable: late: its retained values are not JSON" });
 });
 
+// Fifth QA (2026-11-20). "In their declared order": with one late dependency the order of two
+// is not told apart.
+test("R-checkpoint: restore builds a node's unbuilt dependencies in their declared order", () => {
+  const reg = registry();
+  const g = createGraph();
+  g.state("a", 1);
+  node(g, reg, "n", ["a"], "sum");
+  g.state("first", 1);
+  g.state("second", 2);
+  g.replace("n", ["second", "first"], reg.sum(), { recipe: { ref: "sum", config: null } });
+  const r = restore(roundTrip(capture(g)), reg);
+  assert.deepEqual(r.describe().map((x) => x.id), ["a", "second", "first", "n"]);
+});
+
+// D814 (3), 2026-11-20: a throw that cannot be a payload gives the empty string, which is falsy.
+// It is a payload all the same: saved, restored and delivered as any other. d and live take the
+// ERROR as an input (a manual policy) and send on the terminal they were given.
+test("R-failure: the empty string of a throw that cannot be a payload is saved, restored and delivered", () => {
+  const reg = { ...registry(), thrower: () => () => { throw undefined; }, seen: () => (ctx) => ctx.down([["DATA", ctx.deps[0].terminal]]) };
+  const manual = { terminal: { complete: "auto", error: "manual" } };
+  const g = createGraph();
+  g.state("a", 1);
+  g.node("n", ["a"], reg.thrower(), { recipe: { ref: "thrower", config: null } });
+  g.node("d", ["n"], reg.seen(), { ...manual, recipe: { ref: "seen", config: null } });
+  g.subscribe("s", "d");
+  assert.deepEqual([g.get("n").ended, g.get("d").value], [["ERROR", ""], ["ERROR", ""]]);
+  const cp = roundTrip(capture(g));
+  assert.deepEqual(cp.nodes.find((x) => x.id === "n").saved, { values: [], ended: ["ERROR", ""] });
+  const r = restore(cp, reg);
+  assert.deepEqual([r.get("n").ended, r.get("d").value], [["ERROR", ""], ["ERROR", ""]]);
+  r.node("live", ["n"], reg.seen(), manual);
+  r.subscribe("k", "live");
+  assert.deepEqual(r.get("live").value, ["ERROR", ""], "the restored node delivers it to a dependent made afterwards");
+});
+
 // Fourth QA (2026-11-19). An ended node has no lifetime (R-terminals), so nothing it received is
 // saved or checked. It was saved with what its dependencies held at the capture: a node made
 // before its dependency was then named for a value it never received, and for an ERROR it never
 // had, and a value never delivered to it was written.
-// D814 (3), 2026-11-20: a throw that cannot be a payload gives the empty string, which is falsy.
-// It is a payload all the same: saved, restored and delivered as any other.
-test("R-failure: the empty string of a throw that cannot be a payload is saved, restored and delivered", () => {
-  const reg = { ...registry(), thrower: () => () => { throw undefined; }, pass: () => (ctx) => ctx.down(ctx.wave[0] ?? []) };
-  const g = createGraph();
-  g.state("a", 1);
-  g.node("n", ["a"], reg.thrower(), { recipe: { ref: "thrower", config: null } });
-  g.node("d", ["n"], reg.pass(), { recipe: { ref: "pass", config: null } });
-  assert.deepEqual(during(g, () => g.subscribe("s", "d")), ["s <- d: [START, ERROR(\"\")]"]);
-  const cp = roundTrip(capture(g));
-  assert.deepEqual(cp.nodes.find((x) => x.id === "n").saved, { values: [], ended: ["ERROR", ""] });
-  const r = restore(cp, reg);
-  assert.deepEqual(r.get("n").ended, ["ERROR", ""]);
-  assert.deepEqual(r.get("d").ended, ["ERROR", ""], "the dependent's own, from its auto ERROR policy");
-  assert.deepEqual(during(r, () => r.subscribe("k", "d")), ["k <- d: [START, ERROR(\"\")]"]);
-});
-
 test("R-checkpoint: an ended node is saved with its values and terminal alone", () => {
   const reg = { ...registry(), once: () => (ctx) => ctx.down([["DATA", 1], ["COMPLETE"]]) };
   const once = { recipe: { ref: "once", config: null } };
@@ -440,6 +458,12 @@ test("R-checkpoint: an ended node is saved with its values and terminal alone", 
   assert.deepEqual(during(r, () => r.subscribe("k", "n")), ["k <- n: [START, DATA(1), COMPLETE]"]);
   const byId = (c) => Object.fromEntries(c.nodes.map((x) => [x.id, x]));
   assert.deepEqual(byId(roundTrip(capture(r))), byId(cp), "a second capture saves the same, in the restored graph's order");
+  // Fifth QA (2026-11-20): an ended node needs no received records; given ones are checked.
+  for (const inputs of [[null], 5, []]) {
+    const bad = roundTrip(cp);
+    bad.nodes.find((x) => x.id === "n").saved.inputs = inputs;
+    assert.throws(() => restore(bad, reg), { message: "not restorable: n: missing received records" });
+  }
 
   g = built();
   g.set("late", { f: () => 1 });

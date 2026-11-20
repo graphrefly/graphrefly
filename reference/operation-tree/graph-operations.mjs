@@ -278,7 +278,7 @@ export function defineOperations(root, options = {}) {
     const aborts = [];
     const enters = [];
     for (const fx of out) {
-      if (fx.error) throw new Error(`graph arm: ${fx.error}`);
+      if ("error" in fx) throw new Error(`graph arm: ${fx.error}`);
       aborts.push(...fx.aborts);
       enters.push(...fx.enters);
       for (const r of fx.resolves) answer(r.reqId, r.outcome);

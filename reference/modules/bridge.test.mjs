@@ -227,6 +227,25 @@ test("C-1b: stale causes are dropped, a gap is released and reported, bad frames
   assert.equal(got.x.flat().some((m) => m[0] === "ERROR"), false, "no inbound node fails from an issue");
 });
 
+// Fifth QA (2026-11-20). The kernel refuses a message with more than its type carries, so the
+// gate does first: such a frame passed the gate and ended its inbound edge with the kernel's ERROR.
+test("C-1b: a frame with a message that carries more than its type allows is refused whole", () => {
+  const { s, ch, got, fFn } = oneHop();
+  ch.flush();
+  s.set("x", enc("x1"));
+  const sid = ch.queue[0].session;
+  ch.flush();
+  const frame = (cause, arrays) => ({ group: "g", session: sid, cause, edges: [{ edge: "x", arrays }] });
+  ch.hand(frame(3, [[["DATA", enc("a"), 2]]]));
+  ch.hand(frame(4, [[["COMPLETE", "why"]]]));
+  ch.hand(frame(5, [[["INVALIDATE", 1]]]));
+  ch.hand(frame(6, [[["ERROR", enc("e"), "x"]]]));
+  ch.hand(frame(7, [[["DATA", enc("x7")]]]));
+  assert.deepEqual(got.issues.map((i) => [i.kind, i.cause ?? i.from]), [["refused", 3], ["refused", 4], ["refused", 5], ["refused", 6]]);
+  assert.deepEqual(fFn.runs.at(-1), ["x7", "y0"], "the edge is open and takes the next frame");
+  assert.equal(got.x.flat().some((m) => m[0] === "ERROR" || m[0] === "COMPLETE"), false);
+});
+
 test("C-1b: a late subscriber to an inbound edge gets what the edge last brought", () => {
   const { s, r, ch, grp } = oneHop();
   ch.flush();

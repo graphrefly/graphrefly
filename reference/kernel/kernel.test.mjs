@@ -2280,6 +2280,7 @@ test("R-messages: a construction seed's values and terminal are checked as messa
   const g = createGraph();
   const refused = (seed, text) => assert.throws(() => g.node("n", [], () => {}, { seed }), (e) => e instanceof KernelError && e.message === text);
   refused({ values: [undefined] }, "DATA carries exactly one payload");
+  refused({ values: [undefined, 1] }, "DATA carries exactly one payload");
   refused({ ended: ["ERROR", true] }, "ERROR carries exactly one payload, and not a boolean");
   refused({ ended: ["ERROR"] }, "ERROR carries exactly one payload, and not a boolean");
   refused({ ended: ["COMPLETE", "why"] }, "COMPLETE carries no payload");
@@ -2322,17 +2323,55 @@ test("latestAsync: a job that resolves with nothing ends the node with ERROR; fa
 
 // Fourth QA (2026-11-19). R-request-order: a function that returns the value it was given writes
 // nothing, and that holds when it was given none. Given a value, returning none asks for a DATA
-// without a payload, which is refused (R-messages); graphrefly-ts and graphrefly-py do the same.
+// without a payload, which is refused (R-messages); graphrefly-ts does the same. (In graphrefly-py
+// that is an updater returning SENTINEL; None is a value there.)
 test("R-request-order: an updater given no value that returns none writes nothing; given a value, it is refused", () => {
   const g = createGraph();
   g.state("empty");
   g.state("full", 1);
   g.subscribe("se", "empty");
+  g.subscribe("sf", "full");
   assert.deepEqual(during(g, () => g.set("empty", () => undefined)), [], "it returned what it was given");
-  assert.deepEqual(during(g, () => g.batch(() => { g.set("full", 2); g.invalidate("full"); g.set("full", () => undefined); })).length, 0, "after an INVALIDATE in a batch too: no sink of full");
-  assert.deepEqual(g.get("full"), { active: false, has: false, value: undefined, values: [], ended: null });
+  assert.deepEqual(during(g, () => g.batch(() => { g.set("full", 2); g.invalidate("full"); g.set("full", () => undefined); })),
+    ["sf <- full: [PENDING, INVALIDATE]"], "after an INVALIDATE in a batch it was given none too, and wrote nothing");
+  assert.deepEqual(g.get("full"), { active: true, has: false, value: undefined, values: [], ended: null });
   g.set("full", 5);
   assert.throws(() => g.set("full", () => undefined), (e) => e instanceof KernelError && e.message === "DATA carries exactly one payload");
   assert.throws(() => g.batch(() => { g.set("empty", 9); g.set("full", () => undefined); }), KernelError, "and in a batch it fails every write of the commit");
   assert.deepEqual([g.get("full").value, g.get("empty").has], [5, false]);
+});
+
+// Fifth QA (2026-11-20). R-request-order: an updater that throws fails the write. The kernel
+// tested what was thrown for truth, so a throw of nothing, false, 0, "" or null reached no one.
+test("R-request-order: an updater's throw fails the write whatever was thrown", () => {
+  for (const thrown of [undefined, false, 0, "", null]) {
+    const g = createGraph();
+    g.state("a", 1);
+    const caught = [];
+    try { g.set("a", () => { throw thrown; }); } catch (e) { caught.push(e); }
+    try { g.batch(() => { g.set("a", 5); g.set("a", () => { throw thrown; }); }); } catch (e) { caught.push(e); }
+    assert.deepEqual(caught, [thrown, thrown], `a throw of ${String(thrown)} reaches the caller, alone and in a batch`);
+    assert.equal(g.get("a").value, 1, "and nothing of the batch was written");
+  }
+});
+
+// Fifth QA (2026-11-20). The DATA's wave can start the next job: a sink that writes upstream on
+// it. The record of that job must stand; for a day the old job's callback cleared it afterwards,
+// so a capture at that moment lost the job in flight (D812 (1)).
+test("latestAsync: a sink that writes upstream on a job's DATA leaves the next job's record", async () => {
+  const tick = () => new Promise((r) => setTimeout(r));
+  const g = createGraph();
+  g.state("a", 1);
+  const release = [];
+  const q = latestAsync((v) => new Promise((r) => release.push(() => r(`r${v}`))));
+  g.node("q", ["a"], q.fn, { setup: q.setup });
+  let wrote = false;
+  g.subscribe("s", "q", (msgs) => { if (!wrote && msgs.some((m) => m[0] === "DATA")) { wrote = true; g.set("a", 2); } });
+  await tick();
+  release[0]();
+  await tick();
+  assert.deepEqual([g.get("q").value, g.privateState("q"), release.length], ["r1", { pending: [2] }, 2]);
+  release[1]();
+  await tick();
+  assert.deepEqual([g.get("q").value, g.privateState("q")], ["r2", { pending: [] }]);
 });

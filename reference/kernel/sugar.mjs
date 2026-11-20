@@ -73,10 +73,12 @@ const startJob = (f, ctx, value) => {
     .then(
       (v) => {
         if (signal.aborted) return;
+        // The record is cleared before the value goes out: the DATA's wave can start the next
+        // job, whose record must stand (cleared afterwards for a day, 2026-11-19, which lost it).
+        ctx.state.set({ pending: [] });
         // A job that resolves with nothing has no DATA to send: ctx.down refuses it (R-messages),
         // and here, after the function returned, nothing else would make that the node's ERROR.
-        try { ctx.down([["DATA", v]]); } catch (e) { ctx.down([["ERROR", errorPayload(e)]]); return; }
-        ctx.state.set({ pending: [] });
+        try { ctx.down([["DATA", v]]); } catch (e) { ctx.down([["ERROR", errorPayload(e)]]); }
       },
       (e) => { if (!signal.aborted) ctx.down([["ERROR", errorPayload(e)]]); },
     );

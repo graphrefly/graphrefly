@@ -204,7 +204,8 @@ function prepareCheckpoint(checkpoint, registry) {
     if (!Array.isArray(saved.values)) fail("its retained values are not JSON");
     if (!terminal(saved.ended)) fail("invalid or missing terminal");
     if (Object.hasOwn(saved, "deps") && (!ids(saved.deps) || new Set(saved.deps).size !== saved.deps.length)) fail("invalid lifetime dependencies");
-    if (n.kind === "node" && !saved.ended) { // an ended node has no lifetime, so nothing received
+    // An ended node has no lifetime, so it needs no received records; given, they are checked.
+    if (n.kind === "node" && (!saved.ended || Object.hasOwn(saved, "inputs"))) {
       const deps = saved.deps ?? n.deps;
       if (!Array.isArray(saved.inputs) || saved.inputs.length !== deps.length || saved.inputs.some((input) =>
         !record(input) || typeof input.has !== "boolean" || !terminal(input.ended) ||

@@ -41,8 +41,8 @@ const isTerminal = (m) => m[0] === "COMPLETE" || m[0] === "ERROR";
 const settles = (m) => isValue(m) || isTerminal(m) || m[0] === "INVALIDATE";
 const messageOf = (e) => (e instanceof Error ? e.message : e);
 // R-messages: DATA carries exactly one payload, ERROR one that is not a boolean, and the other
-// types none. (graphrefly-ts gives a dependency's terminal as true or the ERROR payload, so there
-// a boolean payload could not be told from COMPLETE; here the terminal is the message.) Refused
+// types none. (graphrefly-ts keeps a dependency's terminal as true or the ERROR payload, so there
+// a boolean payload would be read as COMPLETE; here the terminal is the message.) Refused
 // where a message is given: ctx.down, the host's writes and a construction seed (graphrefly:D814).
 function assertPayload(m) {
   const one = m.length === 2 && m[1] !== undefined;
@@ -209,9 +209,10 @@ export function createGraph({ report: hostReport, requireRecipe = false } = {}) 
   function request(op) {
     if (batchRequests) { batchRequests.push(op); return; } // the batch's wave has not run yet
     if (busy) { queue.push(op); return; }
-    let failure = null;
+    let failed = false; // what was thrown may be falsy (an updater's throw of nothing)
+    let failure;
     busy = true;
-    try { op(); } catch (e) { failure = e; } finally { busy = false; }
+    try { op(); } catch (e) { failed = true; failure = e; } finally { busy = false; }
     while (queue.length) {
       const next = queue.shift();
       busy = true;
@@ -219,7 +220,7 @@ export function createGraph({ report: hostReport, requireRecipe = false } = {}) 
         report({ source: "queued request", error: messageOf(e) }); // its caller has returned
       } finally { busy = false; }
     }
-    if (failure) throw failure;
+    if (failed) throw failure;
   }
 
   // ---- Lifetimes (P6, K7) -------------------------------------------------
