@@ -9,7 +9,7 @@ its own work body there. Nothing here dispatches implementation. Records are in 
 ## What is current
 
 Since 2026-11-18 two rows below are superseded by graphrefly:D812: R-node is at revision 3 and
-R-checkpoint at revision 2, and item 5 of "Checkpoint after D802" (a replace without a recipe makes
+R-checkpoint at revision 2 (and since 2026-11-19 R-failure is at revision 4, graphrefly:D814), and item 5 of "Checkpoint after D802" (a replace without a recipe makes
 the node local-only) now ends in a refusal at capture. Read
 [HANDOFF-D812-runtime-owners.md](HANDOFF-D812-runtime-owners.md) with this brief; `npm run rules:current`
 prints what is current.
@@ -30,7 +30,7 @@ graphrefly:D799 and graphrefly:D801 (START is the kernel's alone). Read the rule
 | R-lifetime | 2 | activation, lifetime, setup and cleanup |
 | R-request-order | 3 | requests, batch, set, replace, ctx.rewire |
 | R-node | 2 (now 3, D812) | node, instance and lifetime scopes; definition |
-| R-failure | 3 | throws and invalid output |
+| R-failure | 3 (now 4, D814) | throws and invalid output |
 | R-graph-domain | 3 | one graph, one domain: graphs share no wave, queue or batch (D803) |
 | R-no-imperative | 2 | control is data on a declared edge |
 | R-node-thin | 2 | (no behavioral scenario: not observable) |

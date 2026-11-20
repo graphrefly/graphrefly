@@ -121,7 +121,7 @@ review of DS-20. Read the rules themselves with `npm run rules:current -- module
 | C-42 (D814) | a DATA or ERROR without the payload R-messages requires; a throw that cannot be a payload |
 
 Every runtime result for these is `todo`. The reference is in `reference/kernel` and
-`reference/modules` (`npm run test:reference`, 527 tests); the models are `module_checkpoint`,
+`reference/modules` (`npm run test:reference`, 532 tests); the models are `module_checkpoint`,
 `module_history` and `module_restart` in `formal/`, with their runs in `formal/README.md`.
 
 ## Beside D812: message payloads (graphrefly:D814)
@@ -129,14 +129,23 @@ Every runtime result for these is `todo`. The reference is in `reference/kernel`
 Made on 2026-11-19 from a finding of the third QA; not part of D812. R-failure is at revision 4.
 
 - A DATA without a payload and an ERROR whose payload is absent or a boolean are refused where
-  they are given: `ctx.down` throws before anything is applied, and a host write of one is refused
+  they are given (R-messages also says exactly one payload; the reference now refuses a message
+  with more, and checks a construction seed's values and terminal the same way): `ctx.down` throws before anything is applied, and a host write of one is refused
   to its caller. graphrefly-ts and graphrefly-py already do this, and graphrefly-rs's ERROR holds
   an error value, so nothing changes there. The reference kernel had accepted them.
 - A function's throw whose value cannot be an ERROR payload, nothing or a boolean, gives the
-  payload `{}`, an empty JSON object. Only JavaScript lets a function throw one. **graphrefly-ts
-  changes here:** it gives an Error with the text "node function threw without a valid error
-  payload" (`errorPayload` in `node-input-runtime.ts`). What your operators and sources send when
-  they catch a failure themselves stays yours; the reference uses `{}` there too.
+  payload `{}`, an empty JSON object. **graphrefly-ts changes here:** it gives an Error with the
+  text "node function threw without a valid error payload" (`errorPayload` in
+  `node-input-runtime.ts`). Python raises only exceptions, so nothing changes there.
+  **graphrefly-rs is open:** this brief first said only JavaScript lets a function throw one,
+  which is wrong. A Rust node function's panic is its throw, a payload that is not a string
+  becomes the text "node fn panicked" (`panic_to_error`), and its ERROR holds an error value, so
+  `{}` has no form there. What R-failure@4 asks of graphrefly-rs is put to the user; do nothing
+  for it until that is answered. What your operators and sources send when they catch a failure
+  themselves stays yours; the reference uses `{}` there too.
+- Two cases no rule statement covers yet, also put to the user: a host write of such a message
+  (D814 (2) and C-42 say it is refused; no rule does), and an updater that returns nothing
+  (graphrefly-rs writes nothing for `None`; the reference refuses it when the state holds a value).
 - C-42 covers both. Its results were `todo` in every runtime already.
 
 ## What is not here
