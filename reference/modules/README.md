@@ -12,8 +12,8 @@ Every module but the bridge builds its nodes on an ordinary graph, each with its
 definition (the kernel's node option `recipe`), so a graph with any of them can be captured and
 restored (F6, the user's choice, 2026-11-10; one build path since D799 the same day). The bridge's
 nodes here carry no recipes (R-bridge@2 leaves their checkpoint not covered), so a graph that
-holds this bridge group cannot be captured (R-checkpoint@2 and D812 (5), of any nodes a module
-built without recipes). Each module exports its recipes
+holds this bridge group cannot be captured (its nodes are local-only, R-checkpoint@2; D812 (5)
+says it of any nodes a module built without recipes). Each module exports its recipes
 (`pauseRecipes`, `demandRecipes`, `restartRecipes`, `higherOrderRecipes`, `historyRecipes`), which a
 restore's registry must include, and a handle over a restored graph (`pauseControl`, `pausableOf`,
 `pullableOf`, `restartableOf`). A function a module takes from its user is always given as a function;

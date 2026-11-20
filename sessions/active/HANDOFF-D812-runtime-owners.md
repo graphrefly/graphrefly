@@ -16,7 +16,7 @@ review of DS-20. Read the rules themselves with `npm run rules:current -- module
 
 | Rule | State | Change |
 |---|---|---|
-| R-checkpoint@2 | active (was @1) | capture refuses a local-only node, and a recipe without a reference, naming the first node in creation order that cannot be saved; pending work a node recorded in private state is reopened by its setup; restore names the reference of a missing recipe; a graph that holds nodes a module built without recipes cannot be captured |
+| R-checkpoint@2 | active (was @1) | capture refuses a local-only node, and a recipe without a reference, naming the first node in creation order that cannot be saved; pending work a node recorded in private state is reopened by its setup; restore names the reference of a missing recipe |
 | R-node@3 | active (was @2) | a graph may be created to require a recipe on every computed instance |
 | R-history@1 | draft, rewritten in place | the auto INVALIDATE policy: an INVALIDATE removes the value and keeps the list |
 | R-restart@1 | draft, rewritten in place | a restored pending retry waits its delay in full, for the same attempt |
@@ -139,7 +139,8 @@ From findings of the third and later QAs; not part of D812. R-failure is at revi
   **graphrefly-rs changes here:** a panic payload that is not a string gives an error with the
   text "node fn panicked" (`panic_to_error` in `node.rs`); it gives one whose message is empty.
   Python raises only exceptions. What your operators and sources send when they catch a failure
-  themselves stays yours.
+  themselves stays yours; in graphrefly-ts that is most throws a user can write, since `derived`,
+  `effect` and the operators catch them and pass a text of their own.
 - C-42 covers all three. Its results were `todo` in every runtime already.
 
 ## What is not here

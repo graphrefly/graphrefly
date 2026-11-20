@@ -39,9 +39,8 @@ Lifecycle is derived. A public rule is the sole activated revision with no forwa
 transition. Draft, retired, predecessor, dangling, cyclic, duplicate and ambiguous revisions
 do not enter the public projection. Any statement, rule-boundary or legal-trace change still
 requires `/spec-amend`. On main an activated revision's statement or a locked decision's text
-changes only through a new one; graphrefly:D815 says which rows are corrected in place (a draft, a
-scenario row, a transition added to a predecessor, a guide record, a row that exists only on an
-unmerged branch). No gate checks any of it: an edit of an active revision's statement or of a locked decision's
+changes only through a new one; everything else is corrected in place, as is a row that exists
+only on an unmerged branch (graphrefly:D815). No gate checks the two immutable things: an edit of an active revision's statement or of a locked decision's
 text passes every check (graphrefly:B146).
 
 The protocol's parts are derived from a rule's `area`, not stored: `module`, `graph` and `principle`
