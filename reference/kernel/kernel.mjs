@@ -140,8 +140,8 @@ export function createGraph({ report: hostReport, requireRecipe = false } = {}) 
     // dependencies its first lifetime starts on when a ctx.rewire had changed them (2026-11-10, F6).
     const seed = opts?.seed; // seed.deps may name nodes made later; activation checks them
     for (const v of seed?.values ?? []) assertPayload(["DATA", v]);
-    if (seed?.ended) {
-      if (!isTerminal(seed.ended)) throw new KernelError("a seed's terminal is COMPLETE or ERROR");
+    if (seed?.ended != null) {
+      if (!Array.isArray(seed.ended) || !isTerminal(seed.ended)) throw new KernelError("a seed's terminal is COMPLETE or ERROR");
       assertPayload(seed.ended);
     }
     const values = seed ? [...(seed.values ?? [])] : initial !== undefined ? [initial] : [];
@@ -212,18 +212,17 @@ export function createGraph({ report: hostReport, requireRecipe = false } = {}) 
   function request(op) {
     if (batchRequests) { batchRequests.push(op); return; } // the batch's wave has not run yet
     if (busy) { queue.push(op); return; }
-    let failed = false; // what was thrown may be falsy (an updater's throw of nothing)
-    let failure;
     busy = true;
-    try { op(); } catch (e) { failed = true; failure = e; } finally { busy = false; }
-    while (queue.length) {
-      const next = queue.shift();
-      busy = true;
-      try { next(); } catch (e) {
-        report({ source: "queued request", error: messageOf(e) }); // its caller has returned
-      } finally { busy = false; }
+    try { op(); } finally { // what op threw goes on to its caller once the queue has run
+      busy = false;
+      while (queue.length) {
+        const next = queue.shift();
+        busy = true;
+        try { next(); } catch (e) {
+          report({ source: "queued request", error: messageOf(e) }); // its caller has returned
+        } finally { busy = false; }
+      }
     }
-    if (failed) throw failure;
   }
 
   // ---- Lifetimes (P6, K7) -------------------------------------------------

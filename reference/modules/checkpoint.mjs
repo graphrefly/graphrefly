@@ -206,9 +206,9 @@ function prepareCheckpoint(checkpoint, registry) {
     if (!record(saved)) fail(n.kind === "node" ? "missing received records" : "missing saved state");
     if (!Array.isArray(saved.values)) fail("its retained values are not JSON");
     if (!terminal(saved.ended)) fail("invalid or missing terminal");
-    if (n.kind === "node" && saved.ended) {
-      // An ended node has no lifetime: its values and its terminal are all that is read of its
-      // record (R-checkpoint@2), whatever else the record holds.
+    if (n.kind === "state" || saved.ended) {
+      // A state has no lifetime, nor has an ended node: the values and the terminal are all that
+      // is read of its record (R-checkpoint@2), whatever else the record holds.
       const read = { values: saved.values, ended: saved.ended };
       validateSaved(n.id, read);
       nodes[nodes.length - 1] = { ...n, saved: read };

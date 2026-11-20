@@ -2,6 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createGraph, format, KernelError } from "./kernel.mjs";
 import { derived, filter, latestAsync, map, reduce } from "./sugar.mjs";
+import { setFlagsFromString } from "node:v8";
+import { runInNewContext } from "node:vm";
 
 // Returns the trace entries appended while `body` runs, formatted as strings.
 function during(g, body) {
@@ -2281,10 +2283,13 @@ test("R-messages: a construction seed's values and terminal are checked as messa
   const refused = (seed, text) => assert.throws(() => g.node("n", [], () => {}, { seed }), (e) => e instanceof KernelError && e.message === text);
   refused({ values: [undefined] }, "DATA carries exactly one payload");
   refused({ values: [undefined, 1] }, "DATA carries exactly one payload");
+  refused({ values: [1, undefined] }, "DATA carries exactly one payload");
   refused({ ended: ["ERROR", true] }, "ERROR carries exactly one payload, and not a boolean");
   refused({ ended: ["ERROR"] }, "ERROR carries exactly one payload, and not a boolean");
   refused({ ended: ["COMPLETE", "why"] }, "COMPLETE carries no payload");
-  for (const ended of [["DATA", 5], ["INVALIDATE"], ["START"], ["FOO"]]) refused({ ended }, "a seed's terminal is COMPLETE or ERROR");
+  for (const ended of [["DATA", 5], ["INVALIDATE"], ["START"], ["FOO"], 0, "", false, { 0: "COMPLETE", length: 1 }]) {
+    refused({ ended }, "a seed's terminal is COMPLETE or ERROR");
+  }
   g.node("n", [], () => {}, { seed: { values: [false, null], ended: ["ERROR", null] } });
   assert.deepEqual(g.get("n"), { active: false, has: true, value: null, values: [false, null], ended: ["ERROR", null] });
 });
@@ -2377,6 +2382,33 @@ test("R-request-order: an updater's throw fails the write whatever was thrown", 
     assert.deepEqual(caught, [thrown, thrown], `a throw of ${String(thrown)} reaches the caller, alone and in a batch`);
     assert.equal(g.get("a").value, 1, "and nothing of the batch was written");
   }
+});
+
+// Sixth QA (2026-11-20). A superseded job must not publish. latestAsync asked the signal that
+// AbortSignal.any made of the lifetime's and the job's; that signal holds its sources weakly, so
+// after a collection it read false for good, the old result went out and the new record was cleared.
+test("latestAsync: a superseded job that resolves late publishes nothing, also after a collection", async () => {
+  setFlagsFromString("--expose-gc");
+  const gc = runInNewContext("gc");
+  const tick = () => new Promise((r) => setTimeout(r));
+  const g = createGraph();
+  g.state("a", 1);
+  const release = [];
+  const q = latestAsync((v) => new Promise((r) => release.push(() => r(`r${v}`))));
+  g.node("q", ["a"], q.fn, { setup: q.setup });
+  g.subscribe("s", "q");
+  await tick();
+  g.set("a", 2);
+  await tick();
+  gc();
+  await tick();
+  gc();
+  release[0]();
+  await tick();
+  assert.deepEqual([g.get("q").has, g.privateState("q"), release.length], [false, { pending: [2] }, 2]);
+  release[1]();
+  await tick();
+  assert.deepEqual([g.get("q").value, g.privateState("q")], ["r2", { pending: [] }]);
 });
 
 // Fifth QA (2026-11-20). The DATA's wave can start the next job: a sink that writes upstream on

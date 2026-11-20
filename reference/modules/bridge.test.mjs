@@ -240,8 +240,9 @@ test("C-1b: a frame with a message that carries more than its type allows is ref
   ch.hand(frame(4, [[["COMPLETE", "why"]]]));
   ch.hand(frame(5, [[["INVALIDATE", 1]]]));
   ch.hand(frame(6, [[["ERROR", enc("e"), "x"]]]));
-  ch.hand(frame(7, [[["DATA", enc("x7")]]]));
-  assert.deepEqual(got.issues.map((i) => [i.kind, i.cause ?? i.from]), [["refused", 3], ["refused", 4], ["refused", 5], ["refused", 6]]);
+  ch.hand(frame(7, [[["DATA", 5]]])); // and one whose payload is not bytes
+  ch.hand(frame(8, [[["DATA", enc("x7")]]]));
+  assert.deepEqual(got.issues.map((i) => [i.kind, i.cause ?? i.from]), [["refused", 3], ["refused", 4], ["refused", 5], ["refused", 6], ["refused", 7]]);
   assert.deepEqual(fFn.runs.at(-1), ["x7", "y0"], "the edge is open and takes the next frame");
   assert.equal(got.x.flat().some((m) => m[0] === "ERROR" || m[0] === "COMPLETE"), false);
 });

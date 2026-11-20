@@ -68,11 +68,16 @@ const startJob = (f, ctx, value) => {
   controllers.set(ctx.signal, ctrl);
   ctx.state.set({ pending: [value] });
   const signal = AbortSignal.any([ctx.signal, ctrl.signal]);
+  // Asked of the two signals themselves, which this closure keeps: an AbortSignal.any holds its
+  // sources weakly (Node 24), so once a superseded controller was collected the combined signal
+  // read false for good, and the old job published its result and cleared the newer record
+  // (sixth QA, 2026-11-20).
+  const obsolete = () => ctx.signal.aborted || ctrl.signal.aborted;
   Promise.resolve()
     .then(() => f(value, signal))
     .then(
       (v) => {
-        if (signal.aborted) return;
+        if (obsolete()) return;
         // The record is cleared before the value goes out: the DATA's wave can start the next
         // job, whose record must stand (cleared afterwards for a day, 2026-11-19, which lost it).
         ctx.state.set({ pending: [] });
@@ -80,7 +85,7 @@ const startJob = (f, ctx, value) => {
         // and here, after the function returned, nothing else would make that the node's ERROR.
         try { ctx.down([["DATA", v]]); } catch (e) { ctx.down([["ERROR", errorPayload(e)]]); }
       },
-      (e) => { if (!signal.aborted) ctx.down([["ERROR", errorPayload(e)]]); },
+      (e) => { if (!obsolete()) ctx.down([["ERROR", errorPayload(e)]]); },
     );
 };
 

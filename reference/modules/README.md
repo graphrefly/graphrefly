@@ -646,6 +646,14 @@ made that morning is gone again; the kernel refuses a seed whose terminal is not
 ERROR. R-checkpoint@2's sentence on a restored graph's order is corrected, with the case that
 showed it false as a test. One test more, of an updater whose refused write runs after its caller
 returned. 541 tests.
+
+Sixth QA (2026-11-20), review only, and the user's answers. Older, found now: a superseded
+`latestAsync` job could publish and clear the newer record, because the signal `AbortSignal.any`
+makes stops reporting an abort once its source is collected; the job asks its own controller.
+A state's record is read as an ended node's, for its values and terminal alone (R-checkpoint@2),
+where malformed extras met a TypeError. What a checkpoint holds beside its nodes is not read; what
+a node entry holds that is not JSON is refused, since the entry is copied. `request` needs no
+flag for a falsy throw: try and finally. 542 tests.
 The dated exploration below records earlier schema/implementation shapes.
 
 

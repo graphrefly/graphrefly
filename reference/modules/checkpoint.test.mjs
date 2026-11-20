@@ -477,6 +477,22 @@ test("R-checkpoint: an ended node is saved with its values and terminal alone", 
     assert.deepEqual([again.get("n").ended, again.get("n").values, again.privateState("n")], [["COMPLETE"], [1], undefined]);
     assert.deepEqual(byId(roundTrip(capture(again))), byId(cp), "and a capture of it saves the record without them");
   }
+  // Sixth QA (2026-11-20): a state has no lifetime either, so its record is read the same way; a
+  // state's malformed received records met the same TypeError.
+  for (const more of [{ inputs: [null] }, { inputs: 5 }, { state: () => 1 }, { deps: 7 }]) {
+    const other = roundTrip(cp);
+    Object.assign(other.nodes.find((x) => x.id === "late").saved, more);
+    assert.deepEqual(byId(roundTrip(capture(restore(other, reg)))), byId(cp));
+  }
+  // What is read must still be JSON, in an ended node's record too; what no rule saves is not read
+  // beside the nodes, and is refused inside one, where it would be copied.
+  const payload = roundTrip(cp);
+  payload.nodes.find((x) => x.id === "n").saved = { values: [1], ended: ["ERROR", () => 1] };
+  assert.throws(() => restore(payload, reg), { message: "not restorable: n: its ERROR payload is not JSON" });
+  assert.deepEqual(byId(roundTrip(capture(restore({ ...roundTrip(cp), extra: () => 1 }, reg)))), byId(cp));
+  const inside = roundTrip(cp);
+  inside.nodes[0].extra = () => 1;
+  assert.throws(() => restore(inside, reg), { message: "not restorable: checkpoint: its contents are not JSON" });
 
   g = built();
   g.set("late", { f: () => 1 });
