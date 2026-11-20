@@ -40,6 +40,21 @@ const isTerminal = (m) => m[0] === "COMPLETE" || m[0] === "ERROR";
 // K2/K6: each of these releases a connection's dirty membership.
 const settles = (m) => isValue(m) || isTerminal(m) || m[0] === "INVALIDATE";
 const messageOf = (e) => (e instanceof Error ? e.message : e);
+// R-messages: DATA carries a payload, and ERROR one that is not a boolean (a dependency's
+// terminal is given as false, true or the ERROR payload, so a boolean payload could not be told
+// from none or from COMPLETE). Refused where the message is given: ctx.down and the host's writes.
+function assertPayload(m) {
+  if (m[0] === "DATA" && m[1] === undefined) throw new KernelError("DATA needs a payload");
+  if (m[0] === "ERROR" && (m[1] === undefined || typeof m[1] === "boolean")) {
+    throw new KernelError("ERROR needs a payload that is not a boolean");
+  }
+}
+// What a failure gives as its ERROR payload: an Error's message, or the thrown value. A throw of
+// nothing or of a boolean is not a payload, so it gets this text (as graphrefly-ts's errorPayload).
+export function errorPayload(e) {
+  const payload = messageOf(e);
+  return payload === undefined || typeof payload === "boolean" ? "error without a valid payload" : payload;
+}
 const freshInput = () => ({ has: false, value: undefined, ended: null, frames: [], invalidated: false });
 // K2 (decided by the user 2026-11-09): every array that carries DATA, RESOLVED, INVALIDATE
 // or a terminal marks the sender's cone pending and gets the kernel's prefix, whatever the
@@ -58,6 +73,7 @@ const hasMark = (frames) => frames.some((f) => f.some(marks));
 function prepare(msgs) {
   for (const m of msgs) {
     if (!(m[0] in TIER)) throw new KernelError(`unknown message type ${m[0]}`);
+    assertPayload(m);
   }
   const end = msgs.findIndex(isTerminal);
   if (end >= 0 && end < msgs.length - 1) throw new KernelError("a terminal must be the last message of its array");
@@ -408,7 +424,7 @@ export function createGraph({ report: hostReport, requireRecipe = false } = {}) 
       }
       n.fn(ctx);
     } catch (e) {
-      return [[["ERROR", messageOf(e)]]]; // P10: what it sent before the throw is dropped
+      return [[["ERROR", errorPayload(e)]]]; // P10: what it sent before the throw is dropped
     } finally {
       running = null;
       invoking = false;
@@ -730,6 +746,7 @@ export function createGraph({ report: hostReport, requireRecipe = false } = {}) 
       if (!(m[1] instanceof Deferred)) { cur = m[1]; out.push(m); continue; }
       const v = m[1].fn(cur);
       if (Object.is(v, cur)) continue;
+      assertPayload(["DATA", v]);
       cur = v;
       out.push(["DATA", v]);
     }
@@ -744,6 +761,7 @@ export function createGraph({ report: hostReport, requireRecipe = false } = {}) 
     // reentered, and it reaches the function again in a later wave. A feedback loop of
     // completed waves is the composition's to end, as D796's R-reentrancy@2 had it.
     if (n.ended) throw new KernelError(`${id} has ended`);
+    assertPayload(msg);
     if (staging) { stage(n, null, [msg]); return; }
     request(() => {
       // Checked again: a queued input may find its node ended by an earlier request.

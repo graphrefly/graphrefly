@@ -7,6 +7,8 @@
 // ctx.deps[i].waves is that dependency's value arrays this wave, each a list of DATA
 // payloads ([] for RESOLVED). Sugar that maps occurrences keeps the arrays as they came.
 
+import { errorPayload } from "./kernel.mjs";
+
 const occurrences = (d) => d.waves.flat();
 
 // derived: runs once every dependency has a value; recomputes from latest values when
@@ -70,7 +72,7 @@ const startJob = (f, ctx, value) => {
     .then(() => f(value, signal))
     .then(
       (v) => { if (!signal.aborted) { ctx.state.set({ pending: [] }); ctx.down([["DATA", v]]); } },
-      (e) => { if (!signal.aborted) ctx.down([["ERROR", e instanceof Error ? e.message : e]]); },
+      (e) => { if (!signal.aborted) ctx.down([["ERROR", errorPayload(e)]]); },
     );
 };
 

@@ -27,6 +27,7 @@
 // the live inners; further values wait, unprojected, until one completes (MergeMapOptions).
 
 import { isDeepStrictEqual } from "node:util";
+import { errorPayload } from "../kernel/kernel.mjs";
 
 export const relay = (ctx) => {
   for (const w of ctx.deps[0].waves) if (w.length) ctx.down(w.map((v) => ["DATA", v]));
@@ -72,7 +73,7 @@ function operator({ sourceId, mode, concurrent }, { g, id }, projectFn) {
     st.queue.push(...(mode === "switch" ? values.slice(-1) : values));
     while (st.queue.length && (mode === "switch" || st.inners.length < bound)) {
       let next;
-      try { next = projectFn(st.queue.shift()); } catch (e) { ctx.down([["ERROR", e instanceof Error ? e.message : e]]); return; }
+      try { next = projectFn(st.queue.shift()); } catch (e) { ctx.down([["ERROR", errorPayload(e)]]); return; }
       if (st.inners.some((x) => sameDef(x.def, next))) continue;
       let k = 0;
       if (mode === "merge") {

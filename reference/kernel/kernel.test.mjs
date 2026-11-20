@@ -2192,3 +2192,57 @@ test("D812: the requirement is off unless the graph was created with it", () => 
   g.replace("raw", ["a"], () => {});
   assert.equal(g.definition("raw").recipe, null);
 });
+
+test("R-messages: DATA needs a payload and ERROR one that is not a boolean, from the host and from a function", () => {
+  const refused = (text) => (e) => e instanceof KernelError && e.message.endsWith(text);
+  const g = createGraph();
+  g.state("a", 1);
+  for (const bad of [undefined, true, false]) {
+    assert.throws(() => g.error("a", bad), refused("ERROR needs a payload that is not a boolean"));
+    assert.throws(() => g.batch(() => g.error("a", bad)), refused("ERROR needs a payload that is not a boolean"), "in a batch body too");
+  }
+  assert.throws(() => g.set("a", undefined), refused("DATA needs a payload"));
+  assert.throws(() => g.set("a", () => undefined), refused("DATA needs a payload"), "an updater's result too");
+  assert.deepEqual(g.get("a"), { active: false, has: true, value: 1, values: [1], ended: null }, "nothing was written");
+
+  // Inside a function ctx.down throws (R-failure), and uncaught that is the node's ERROR.
+  const outputs = [[["ERROR"]], [["ERROR", true]], [["ERROR", false]], [["DATA"]], [["DATA", undefined]]];
+  outputs.forEach((out, i) => {
+    g.node(`n${i}`, ["a"], (ctx) => ctx.down(out));
+    g.subscribe(`s${i}`, `n${i}`);
+    const text = out[0][0] === "DATA" ? "DATA needs a payload" : "ERROR needs a payload that is not a boolean";
+    assert.deepEqual(g.get(`n${i}`).ended, ["ERROR", text]);
+  });
+  g.node("caught", ["a"], (ctx) => { try { ctx.down([["ERROR", true]]); } catch { ctx.down([["DATA", "went on"]]); } });
+  g.subscribe("sc", "caught");
+  assert.deepEqual([g.get("caught").value, g.get("caught").ended], ["went on", null]);
+
+  // null, 0 and "" are payloads.
+  g.set("a", null);
+  assert.equal(g.get("a").value, null);
+  for (const [i, ok] of [null, 0, ""].entries()) {
+    g.state(`e${i}`);
+    g.error(`e${i}`, ok);
+    assert.deepEqual(g.get(`e${i}`).ended, ["ERROR", ok]);
+  }
+});
+
+test("R-messages: a function that throws nothing or a boolean ends its node with a payload that says so", async () => {
+  const g = createGraph();
+  g.state("a", 1);
+  [undefined, true, false].forEach((thrown, i) => {
+    g.node(`n${i}`, ["a"], () => { throw thrown; });
+    g.subscribe(`s${i}`, `n${i}`);
+    assert.deepEqual(g.get(`n${i}`).ended, ["ERROR", "error without a valid payload"]);
+  });
+  g.node("zero", ["a"], () => { throw 0; });
+  g.subscribe("sz", "zero");
+  assert.deepEqual(g.get("zero").ended, ["ERROR", 0], "any other thrown value is the payload");
+
+  // The same for a job that rejects with one (latestAsync sends the ERROR itself).
+  const q = latestAsync(() => Promise.reject(false));
+  g.node("q", ["a"], q.fn, { setup: q.setup });
+  g.subscribe("sq", "q");
+  await new Promise((r) => setTimeout(r));
+  assert.deepEqual(g.get("q").ended, ["ERROR", "error without a valid payload"]);
+});

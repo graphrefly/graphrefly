@@ -361,6 +361,23 @@ test("a node replaced onto a dependency made after it is restored, and works", (
   assert.equal(r.get("n").value, 10);
 });
 
+// Third QA of D812 (2026-11-19): so a restored graph's creation order is not always its
+// original's, and a refused capture names the first node in the order of the graph it is asked of.
+test("D812: a restored graph's creation order may differ, and its capture names the first node in its own order", () => {
+  const reg = registry();
+  const g = createGraph();
+  node(g, reg, "n", [], "sum");
+  g.state("later", 4);
+  g.replace("n", ["later"], reg.plus({ k: 1 }), { recipe: { ref: "plus", config: { k: 1 } } });
+  const r = restore(roundTrip(capture(g)), reg);
+  const ids = (x) => x.describe().map((n) => n.id);
+  assert.deepEqual([ids(g), ids(r)], [["n", "later"], ["later", "n"]]);
+  // Both nodes now hold what is not JSON: later its value, n what it received from later.
+  for (const x of [g, r]) { x.subscribe("k", "n"); x.set("later", { f: () => 1 }); }
+  assert.throws(() => capture(g), { message: "not restorable: n: its received values are not JSON" });
+  assert.throws(() => capture(r), { message: "not restorable: later: its retained values are not JSON" });
+});
+
 test("a missing recipe fails the restore", () => {
   const cp = capture(original());
   const { scan, ...withoutScan } = registry();

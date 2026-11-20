@@ -11,8 +11,9 @@ npm run test:reference
 Every module but the bridge builds its nodes on an ordinary graph, each with its recipe in its
 definition (the kernel's node option `recipe`), so a graph with any of them can be captured and
 restored (F6, the user's choice, 2026-11-10; one build path since D799 the same day). The bridge's
-nodes carry no recipes (D812 (5); R-bridge@2 leaves their checkpoint not covered), so a graph that
-holds a bridge group cannot be captured (R-checkpoint@2, of any nodes built without recipes). Each module exports its recipes
+nodes here carry no recipes (R-bridge@2 leaves their checkpoint not covered), so a graph that
+holds this bridge group cannot be captured (R-checkpoint@2 and D812 (5), of any nodes a module
+built without recipes). Each module exports its recipes
 (`pauseRecipes`, `demandRecipes`, `restartRecipes`, `higherOrderRecipes`, `historyRecipes`), which a
 restore's registry must include, and a handle over a restored graph (`pauseControl`, `pausableOf`,
 `pullableOf`, `restartableOf`). A function a module takes from its user is always given as a function;
@@ -586,9 +587,16 @@ names the node that received it, and a latestAsync input that is an object. `res
 restart owner's setup, where the record alone says a retry waits. Not pinned, by choice: which
 refusal a request gets when several apply; a missing factory refused before another node's factory
 runs, which no rule asks; and a restored pending job whose input lost its value, where the sugar
-goes on and the operator contract agreed in DS-20 would revoke the job. Known and left: the kernel
-accepts a boolean or absent ERROR payload, against R-messages, so capture writes one that restore
-then refuses. 524 tests.
+goes on and the operator contract agreed in DS-20 would revoke the job. Known then: the kernel
+accepted a boolean or absent ERROR payload, against R-messages, so capture wrote one that restore
+then refused. 524 tests.
+
+After that QA (2026-11-19, the user: "还是只能有负载，不能是boolean"): the kernel refuses a DATA
+without a payload and an ERROR whose payload is absent or a boolean, where the message is given
+(`ctx.down`, `set`, `error`); see the kernel README. `errorPayload`, from the kernel, replaces the
+two places here and in the sugar that built an ERROR payload from a caught value. A restored
+graph's creation order may differ from its original's, so a capture of each can name a different
+node (R-checkpoint@2, reworded that day); one test. 527 tests.
 The dated exploration below records earlier schema/implementation shapes.
 
 
