@@ -2227,13 +2227,13 @@ test("R-messages: DATA needs a payload and ERROR one that is not a boolean, from
   }
 });
 
-test("R-messages: a function that throws nothing or a boolean ends its node with a payload that says so", async () => {
+test("R-messages: a function that throws nothing or a boolean ends its node with the payload {}", async () => {
   const g = createGraph();
   g.state("a", 1);
   [undefined, true, false].forEach((thrown, i) => {
     g.node(`n${i}`, ["a"], () => { throw thrown; });
     g.subscribe(`s${i}`, `n${i}`);
-    assert.deepEqual(g.get(`n${i}`).ended, ["ERROR", "error without a valid payload"]);
+    assert.deepEqual(g.get(`n${i}`).ended, ["ERROR", {}]);
   });
   g.node("zero", ["a"], () => { throw 0; });
   g.subscribe("sz", "zero");
@@ -2244,5 +2244,5 @@ test("R-messages: a function that throws nothing or a boolean ends its node with
   g.node("q", ["a"], q.fn, { setup: q.setup });
   g.subscribe("sq", "q");
   await new Promise((r) => setTimeout(r));
-  assert.deepEqual(g.get("q").ended, ["ERROR", "error without a valid payload"]);
+  assert.deepEqual(g.get("q").ended, ["ERROR", {}]);
 });

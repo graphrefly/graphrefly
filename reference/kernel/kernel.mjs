@@ -50,10 +50,10 @@ function assertPayload(m) {
   }
 }
 // What a failure gives as its ERROR payload: an Error's message, or the thrown value. A throw of
-// nothing or of a boolean is not a payload, so it gets this text (as graphrefly-ts's errorPayload).
+// nothing or of a boolean is not a payload, so the payload is {} (the user, 2026-11-19).
 export function errorPayload(e) {
   const payload = messageOf(e);
-  return payload === undefined || typeof payload === "boolean" ? "error without a valid payload" : payload;
+  return payload === undefined || typeof payload === "boolean" ? {} : payload;
 }
 const freshInput = () => ({ has: false, value: undefined, ended: null, frames: [], invalidated: false });
 // K2 (decided by the user 2026-11-09): every array that carries DATA, RESOLVED, INVALIDATE
