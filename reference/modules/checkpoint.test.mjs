@@ -381,7 +381,7 @@ test("D812: a restored graph's creation order may differ, and its capture names 
 // Fourth QA (2026-11-19): two nodes cannot tell which way the order differs. Restore takes the
 // nodes in checkpoint order and builds a node's unbuilt dependencies first, so the dependency
 // moves up to its node and the nodes between them keep their place after both.
-test("R-checkpoint: restore builds a dependency made after its node just before it; the nodes between stay after both", () => {
+test("R-checkpoint: restore builds a dependency made after its node, and what that depends on, before it; the others keep their order", () => {
   const reg = registry();
   const g = createGraph();
   g.state("a", 1);
@@ -393,6 +393,15 @@ test("R-checkpoint: restore builds a dependency made after its node just before 
   const r = restore(roundTrip(capture(g)), reg);
   const ids = (x) => x.describe().map((n) => n.id);
   assert.deepEqual([ids(g), ids(r)], [["a", "n", "x", "late", "y"], ["a", "late", "n", "x", "y"]]);
+  // Fifth QA (2026-11-20): where late is a node over x, x comes before n too.
+  const h = createGraph();
+  h.state("a", 1);
+  node(h, reg, "n", ["a"], "sum");
+  h.state("x", 1);
+  node(h, reg, "late", ["x"], "sum");
+  node(h, reg, "y", ["a"], "sum");
+  h.replace("n", ["late"], reg.plus({ k: 1 }), { recipe: { ref: "plus", config: { k: 1 } } });
+  assert.deepEqual(ids(restore(roundTrip(capture(h)), reg)), ["a", "x", "late", "n", "y"]);
   // x and late hold what is not JSON; n is not active, so it holds nothing.
   for (const graph of [g, r]) { graph.set("x", { f: () => 1 }); graph.set("late", { f: () => 1 }); }
   assert.throws(() => capture(g), { message: "not restorable: x: its retained values are not JSON" });
@@ -458,11 +467,15 @@ test("R-checkpoint: an ended node is saved with its values and terminal alone", 
   assert.deepEqual(during(r, () => r.subscribe("k", "n")), ["k <- n: [START, DATA(1), COMPLETE]"]);
   const byId = (c) => Object.fromEntries(c.nodes.map((x) => [x.id, x]));
   assert.deepEqual(byId(roundTrip(capture(r))), byId(cp), "a second capture saves the same, in the restored graph's order");
-  // Fifth QA (2026-11-20): an ended node needs no received records; given ones are checked.
-  for (const inputs of [[null], 5, []]) {
-    const bad = roundTrip(cp);
-    bad.nodes.find((x) => x.id === "n").saved.inputs = inputs;
-    assert.throws(() => restore(bad, reg), { message: "not restorable: n: missing received records" });
+  // Fifth QA (2026-11-20), the user's answer: a restore reads an ended node's values and terminal
+  // and nothing else of its record. Malformed received records met a TypeError, and a private
+  // state in the record was seeded into a node without a lifetime.
+  for (const more of [{ inputs: [null] }, { inputs: 5 }, { state: { k: 1 } }, { deps: 7 }, { deps: ["n"] }]) {
+    const other = roundTrip(cp);
+    Object.assign(other.nodes.find((x) => x.id === "n").saved, more);
+    const again = restore(other, reg);
+    assert.deepEqual([again.get("n").ended, again.get("n").values, again.privateState("n")], [["COMPLETE"], [1], undefined]);
+    assert.deepEqual(byId(roundTrip(capture(again))), byId(cp), "and a capture of it saves the record without them");
   }
 
   g = built();

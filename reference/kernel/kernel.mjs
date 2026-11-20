@@ -140,7 +140,10 @@ export function createGraph({ report: hostReport, requireRecipe = false } = {}) 
     // dependencies its first lifetime starts on when a ctx.rewire had changed them (2026-11-10, F6).
     const seed = opts?.seed; // seed.deps may name nodes made later; activation checks them
     for (const v of seed?.values ?? []) assertPayload(["DATA", v]);
-    if (seed?.ended) assertPayload(seed.ended);
+    if (seed?.ended) {
+      if (!isTerminal(seed.ended)) throw new KernelError("a seed's terminal is COMPLETE or ERROR");
+      assertPayload(seed.ended);
+    }
     const values = seed ? [...(seed.values ?? [])] : initial !== undefined ? [initial] : [];
     const n = {
       id, kind, deps, fn,

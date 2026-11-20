@@ -637,6 +637,15 @@ declared order with two late dependencies; a seed's values each; an assertion th
 540 tests. Open with the user: whether a message with more than its type carries is refused in
 every runtime, whether an ended node's record with more than values and terminal is refused or
 read in part (its private state is still seeded), and whether the seed check asks for a terminal.
+
+Answered the same day ("都按建议"): such a message is refused in every runtime (R-failure@4,
+D814 (4)), so the bridge gate's check stays; a restore reads an ended node's values and terminal
+and nothing else of its record (R-checkpoint@2), so received records, private state or lifetime
+dependencies it holds are neither checked nor seeded, and the check of given received records
+made that morning is gone again; the kernel refuses a seed whose terminal is not COMPLETE or
+ERROR. R-checkpoint@2's sentence on a restored graph's order is corrected, with the case that
+showed it false as a test. One test more, of an updater whose refused write runs after its caller
+returned. 541 tests.
 The dated exploration below records earlier schema/implementation shapes.
 
 

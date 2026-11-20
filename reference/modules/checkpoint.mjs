@@ -144,7 +144,8 @@ function restorable(real) {
 // The nodes in checkpoint order, a node's declared dependencies that are not built yet first, in
 // their declared order and each in the same way (R-checkpoint): a replace may have given a node a
 // dependency made after it (found by the second reviews, 2026-11-10). So that dependency comes
-// before the node in the restored graph, and the nodes between them keep their place after both.
+// before the node in the restored graph, with whatever it depends on itself, and the other nodes
+// keep their order.
 function buildOrder(nodes, dependencies = (n) => n.deps) {
   const byId = new Map(nodes.map((n) => [n.id, n]));
   const done = new Set(), order = [];
@@ -179,6 +180,7 @@ const terminal = (v) => v === null || (Array.isArray(v) && (
 function prepareCheckpoint(checkpoint, registry) {
   if (!record(checkpoint) || !Array.isArray(checkpoint.nodes)) throw new Error("restore: missing nodes");
   const seen = new Set();
+  const nodes = [];
   for (const n of checkpoint.nodes) {
     if (!record(n) || typeof n.id !== "string") throw new Error("restore: invalid node id");
     assertLocalName(n.id);
@@ -188,6 +190,7 @@ function prepareCheckpoint(checkpoint, registry) {
     if (!["state", "node"].includes(n.kind)) fail("invalid node kind");
     if (!ids(n.deps) || (n.kind === "state" && n.deps.length)) fail("invalid dependencies");
     if (n.local) fail("local-only, built or replaced without a recipe");
+    nodes.push(n);
 
     const saved = n.saved;
     if (n.kind === "node") {
@@ -203,9 +206,16 @@ function prepareCheckpoint(checkpoint, registry) {
     if (!record(saved)) fail(n.kind === "node" ? "missing received records" : "missing saved state");
     if (!Array.isArray(saved.values)) fail("its retained values are not JSON");
     if (!terminal(saved.ended)) fail("invalid or missing terminal");
+    if (n.kind === "node" && saved.ended) {
+      // An ended node has no lifetime: its values and its terminal are all that is read of its
+      // record (R-checkpoint@2), whatever else the record holds.
+      const read = { values: saved.values, ended: saved.ended };
+      validateSaved(n.id, read);
+      nodes[nodes.length - 1] = { ...n, saved: read };
+      continue;
+    }
     if (Object.hasOwn(saved, "deps") && (!ids(saved.deps) || new Set(saved.deps).size !== saved.deps.length)) fail("invalid lifetime dependencies");
-    // An ended node has no lifetime, so it needs no received records; given, they are checked.
-    if (n.kind === "node" && (!saved.ended || Object.hasOwn(saved, "inputs"))) {
+    if (n.kind === "node") {
       const deps = saved.deps ?? n.deps;
       if (!Array.isArray(saved.inputs) || saved.inputs.length !== deps.length || saved.inputs.some((input) =>
         !record(input) || typeof input.has !== "boolean" || !terminal(input.ended) ||
@@ -216,10 +226,10 @@ function prepareCheckpoint(checkpoint, registry) {
   }
   // Closing a lifetime restores declared dependencies. The union must be acyclic
   // (R-request-order), not just each topology considered independently.
-  const ordered = buildOrder(checkpoint.nodes);
-  buildOrder(checkpoint.nodes, (n) => [...new Set([...n.deps, ...(n.saved?.deps ?? [])])]);
+  const ordered = buildOrder(nodes);
+  buildOrder(nodes, (n) => [...new Set([...n.deps, ...(n.saved?.deps ?? [])])]);
   // Detach the entire admitted snapshot, including recipe configuration.
-  json(checkpoint, "checkpoint", "its contents are not JSON");
+  json(nodes, "checkpoint", "its contents are not JSON");
   return JSON.parse(JSON.stringify(ordered));
 }
 

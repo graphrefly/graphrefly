@@ -2284,6 +2284,7 @@ test("R-messages: a construction seed's values and terminal are checked as messa
   refused({ ended: ["ERROR", true] }, "ERROR carries exactly one payload, and not a boolean");
   refused({ ended: ["ERROR"] }, "ERROR carries exactly one payload, and not a boolean");
   refused({ ended: ["COMPLETE", "why"] }, "COMPLETE carries no payload");
+  for (const ended of [["DATA", 5], ["INVALIDATE"], ["START"], ["FOO"]]) refused({ ended }, "a seed's terminal is COMPLETE or ERROR");
   g.node("n", [], () => {}, { seed: { values: [false, null], ended: ["ERROR", null] } });
   assert.deepEqual(g.get("n"), { active: false, has: true, value: null, values: [false, null], ended: ["ERROR", null] });
 });
@@ -2339,6 +2340,29 @@ test("R-request-order: an updater given no value that returns none writes nothin
   assert.throws(() => g.set("full", () => undefined), (e) => e instanceof KernelError && e.message === "DATA carries exactly one payload");
   assert.throws(() => g.batch(() => { g.set("empty", 9); g.set("full", () => undefined); }), KernelError, "and in a batch it fails every write of the commit");
   assert.deepEqual([g.get("full").value, g.get("empty").has], [5, false]);
+});
+
+// Fifth QA (2026-11-20), R-failure@4: an updater's result is known only when its write runs. Made
+// during a wave, that is after its caller returned, so the refusal of a DATA without a payload
+// goes where a throwing updater's failure goes then: to the host reporter.
+test("R-failure: an updater that gives a DATA without a payload fails as one that throws, also when its write runs later", () => {
+  const reports = [];
+  const g = createGraph({ report: (r) => reports.push(r) });
+  g.state("a", 1);
+  g.state("b", 1);
+  const caught = [];
+  g.node("n", ["a"], () => {
+    for (const updater of [() => undefined, () => { throw "x"; }]) {
+      try { g.set("b", updater); caught.push(null); } catch (e) { caught.push(e); }
+    }
+  });
+  g.subscribe("s", "n");
+  assert.deepEqual(caught, [null, null], "neither is known when the function asks");
+  assert.deepEqual(reports, [
+    { source: "queued request", error: "DATA carries exactly one payload" },
+    { source: "queued request", error: "x" },
+  ]);
+  assert.equal(g.get("b").value, 1);
 });
 
 // Fifth QA (2026-11-20). R-request-order: an updater that throws fails the write. The kernel
