@@ -403,6 +403,23 @@ test("R-checkpoint: restore builds a dependency made after its node just before 
 // saved or checked. It was saved with what its dependencies held at the capture: a node made
 // before its dependency was then named for a value it never received, and for an ERROR it never
 // had, and a value never delivered to it was written.
+// D814 (3), 2026-11-20: a throw that cannot be a payload gives the empty string, which is falsy.
+// It is a payload all the same: saved, restored and delivered as any other.
+test("R-failure: the empty string of a throw that cannot be a payload is saved, restored and delivered", () => {
+  const reg = { ...registry(), thrower: () => () => { throw undefined; }, pass: () => (ctx) => ctx.down(ctx.wave[0] ?? []) };
+  const g = createGraph();
+  g.state("a", 1);
+  g.node("n", ["a"], reg.thrower(), { recipe: { ref: "thrower", config: null } });
+  g.node("d", ["n"], reg.pass(), { recipe: { ref: "pass", config: null } });
+  assert.deepEqual(during(g, () => g.subscribe("s", "d")), ["s <- d: [START, ERROR(\"\")]"]);
+  const cp = roundTrip(capture(g));
+  assert.deepEqual(cp.nodes.find((x) => x.id === "n").saved, { values: [], ended: ["ERROR", ""] });
+  const r = restore(cp, reg);
+  assert.deepEqual(r.get("n").ended, ["ERROR", ""]);
+  assert.deepEqual(r.get("d").ended, ["ERROR", ""], "the dependent's own, from its auto ERROR policy");
+  assert.deepEqual(during(r, () => r.subscribe("k", "d")), ["k <- d: [START, ERROR(\"\")]"]);
+});
+
 test("R-checkpoint: an ended node is saved with its values and terminal alone", () => {
   const reg = { ...registry(), once: () => (ctx) => ctx.down([["DATA", 1], ["COMPLETE"]]) };
   const once = { recipe: { ref: "once", config: null } };

@@ -2227,13 +2227,13 @@ test("R-messages: DATA carries exactly one payload and ERROR one that is not a b
   }
 });
 
-test("R-failure: a function that throws nothing or a boolean ends its node with the payload {}", async () => {
+test("R-failure: a function that throws nothing or a boolean ends its node with the empty string as payload", async () => {
   const g = createGraph();
   g.state("a", 1);
   [undefined, true, false].forEach((thrown, i) => {
     g.node(`n${i}`, ["a"], () => { throw thrown; });
     g.subscribe(`s${i}`, `n${i}`);
-    assert.deepEqual(g.get(`n${i}`).ended, ["ERROR", {}]);
+    assert.deepEqual(g.get(`n${i}`).ended, ["ERROR", ""]);
   });
   g.node("zero", ["a"], () => { throw 0; });
   g.subscribe("sz", "zero");
@@ -2241,14 +2241,13 @@ test("R-failure: a function that throws nothing or a boolean ends its node with 
   g.node("nil", ["a"], () => { throw null; });
   g.subscribe("sn", "nil");
   assert.deepEqual(g.get("nil").ended, ["ERROR", null], "null too");
-  assert.notEqual(g.get("n0").ended[1], g.get("n1").ended[1], "each such ERROR has an object of its own");
 
   // The same for a job that rejects with one (latestAsync sends the ERROR itself).
   const q = latestAsync(() => Promise.reject(false));
   g.node("q", ["a"], q.fn, { setup: q.setup });
   g.subscribe("sq", "q");
   await new Promise((r) => setTimeout(r));
-  assert.deepEqual(g.get("q").ended, ["ERROR", {}]);
+  assert.deepEqual(g.get("q").ended, ["ERROR", ""]);
 });
 
 // Fourth QA (2026-11-19). R-messages: DATA carries exactly one payload, ERROR one, the other types

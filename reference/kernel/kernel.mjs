@@ -54,10 +54,11 @@ function assertPayload(m) {
   if (m.length !== 1) throw new KernelError(`${m[0]} carries no payload`);
 }
 // What a failure gives as its ERROR payload: an Error's message, or the thrown value. A throw of
-// nothing or of a boolean is not a payload, so the payload is {} (R-failure@4, graphrefly:D814).
+// nothing or of a boolean is not a payload, so the payload is the empty string, the one form every
+// runtime holds (R-failure@4, graphrefly:D814).
 export function errorPayload(e) {
   const payload = messageOf(e);
-  return payload === undefined || typeof payload === "boolean" ? {} : payload;
+  return payload === undefined || typeof payload === "boolean" ? "" : payload;
 }
 const freshInput = () => ({ has: false, value: undefined, ended: null, frames: [], invalidated: false });
 // K2 (decided by the user 2026-11-09): every array that carries DATA, RESOLVED, INVALIDATE

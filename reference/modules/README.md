@@ -616,6 +616,10 @@ node that needs it, checkpoint order otherwise), with a five-node test that tell
 reading. An updater that returns nothing was not changed: it follows R-request-order and
 R-messages as it is, and a test pins it. Left as it was: sinks and `get` are handed the kernel's
 own message arrays. 535 tests.
+
+2026-11-20 (the user: "用空字符串"): a throw of nothing or a boolean gives the empty string, not `{}`,
+which graphrefly-rs cannot hold (D814 (3) corrected in place). One test here: that payload, which
+is falsy, is saved, restored and delivered as any other. 536 tests.
 The dated exploration below records earlier schema/implementation shapes.
 
 
