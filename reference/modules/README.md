@@ -596,7 +596,8 @@ without a payload and an ERROR whose payload is absent or a boolean, where the m
 (`ctx.down`, `set`, `error`); see the kernel README. `errorPayload`, from the kernel, replaces the
 two places here and in the sugar that built an ERROR payload from a caught value. A restored
 graph's creation order may differ from its original's, so a capture of each can name a different
-node (R-checkpoint@2, reworded that day); one test. 527 tests.
+node (R-checkpoint@2, reworded that day); one test. 527 tests. Later that day the payload check
+became R-failure@4's (graphrefly:D814), and a throw of nothing or a boolean gives `{}`.
 The dated exploration below records earlier schema/implementation shapes.
 
 

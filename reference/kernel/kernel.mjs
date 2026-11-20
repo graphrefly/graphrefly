@@ -42,7 +42,8 @@ const settles = (m) => isValue(m) || isTerminal(m) || m[0] === "INVALIDATE";
 const messageOf = (e) => (e instanceof Error ? e.message : e);
 // R-messages: DATA carries a payload, and ERROR one that is not a boolean (a dependency's
 // terminal is given as false, true or the ERROR payload, so a boolean payload could not be told
-// from none or from COMPLETE). Refused where the message is given: ctx.down and the host's writes.
+// from none or from COMPLETE). Refused where the message is given: ctx.down and the host's writes
+// (R-failure@4, graphrefly:D814).
 function assertPayload(m) {
   if (m[0] === "DATA" && m[1] === undefined) throw new KernelError("DATA needs a payload");
   if (m[0] === "ERROR" && (m[1] === undefined || typeof m[1] === "boolean")) {
@@ -50,7 +51,7 @@ function assertPayload(m) {
   }
 }
 // What a failure gives as its ERROR payload: an Error's message, or the thrown value. A throw of
-// nothing or of a boolean is not a payload, so the payload is {} (the user, 2026-11-19).
+// nothing or of a boolean is not a payload, so the payload is {} (R-failure@4, graphrefly:D814).
 export function errorPayload(e) {
   const payload = messageOf(e);
   return payload === undefined || typeof payload === "boolean" ? {} : payload;
