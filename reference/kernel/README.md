@@ -22,7 +22,7 @@ semantics and invocation-read guards are exercised by the current tests.
 | File | Contents |
 |---|---|
 | [kernel.mjs](kernel.mjs) | The kernel. Every delivery to a sink is appended to `graph.trace` |
-| [sugar.mjs](sugar.mjs), [sugar.test.mjs](sugar.test.mjs) | `derived` (also `combineLatest`), `map`, `filter`, `reduce`, `latestAsync`, `merge`, `withLatestFrom`, `zip` as ordinary node functions. They show that a policy can live outside the kernel; they are not a chosen operator set |
+| [sugar.mjs](sugar.mjs), [sugar.test.mjs](sugar.test.mjs) | `derived` (also `combineLatest`), `map`, `filter`, `reduce`, `latestAsync`, `merge`, `withLatestFrom`, `zip` as ordinary node functions (`latestAsync` is a function with a setup, `{ fn, setup }`, which starts its pending job again after a restore). They show that a policy can live outside the kernel; they are not a chosen operator set |
 | [kernel.test.mjs](kernel.test.mjs) | One trace test per implemented behavior |
 | [replay.test.mjs](replay.test.mjs), [REPLAY.md](REPLAY.md) | The kernel-applicable clauses of C-28 to C-39, and where every other clause belongs |
 

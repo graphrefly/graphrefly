@@ -525,7 +525,8 @@ restored node said a job was pending when none was. Tests added for both, for a 
 backoff's second delay, for a local-only node that received what is not JSON, and for a requiring
 graph captured and restored with the requirement given to `restore` as its third argument.
 
-With the user's corrections to R-checkpoint@2 and R-node@3 of the same day: capture is two passes.
+With the user's corrections to R-checkpoint@2 and R-node@3 of the same day (the two passes were
+taken back later that day, see the audit below): capture is two passes.
 The first checks every node for what is not JSON, as before; the second, in creation order, refuses
 a computed node with no recipe as local-only and one whose recipe has no reference as
 `missing recipe`. So the JSON refusals come first for the whole graph, and no capture that was
@@ -555,6 +556,15 @@ nodes, for a missing recipe, an unknown dependency or a taken id, leaves none of
 asked for again (R-node@3). A recipe's reference is a non-empty string: `{ ref: "" }` is refused
 at capture, and in a checkpoint at restore, with the bare `missing recipe` reason. Tests added for
 both, for a restored node after an INVALIDATE alone, and for a history wave with DATA and an ERROR.
+
+Audit with the user (2026-11-19), of what the branch changed against what was decided. Two things
+kept only for what came before were taken out. Capture is one pass again: it names the first node
+in creation order that cannot be saved, and what is not JSON comes first within one node only; the
+whole-graph order had kept the reason of captures refused before D812 and nothing else. And
+`latestAsync(f)` is one form, `{ fn, setup }`: the function alone, kept beside `latestAsyncNode`
+for the call shape `g.node(id, deps, latestAsync(f))`, recorded nothing, so a restored node started
+no job, against D812 (1). A recipe's factory returns it as it is. 524 tests; ten mutations of the
+two changes each caught.
 The dated exploration below records earlier schema/implementation shapes.
 
 

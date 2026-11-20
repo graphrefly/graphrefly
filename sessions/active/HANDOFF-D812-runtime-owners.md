@@ -30,12 +30,15 @@ review of DS-20. Read the rules themselves with `npm run rules:current -- module
 
 1. **Capture refuses a local-only node.** A computed node built or replaced without a recipe makes
    capture fail with the shared `localOnly` reason, naming the node. Until now capture wrote
-   `local: true` and restore failed. The JSON refusals come first for the whole graph: check every
-   node's values, private state, received values, payloads and recipe configuration, naming the first
-   node in creation order that holds what is not JSON, and only then look for a missing recipe,
-   again naming the first such node. So no capture that was refused before changes its reason. A
-   recipe that was given but has no reference (`{}`, `false`, `{ ref: "" }`: a reference is a
-   non-empty string) is refused in that second pass with the existing `missingRecipe` reason alone,
+   `local: true` and restore failed. One order: go through the nodes in creation order and refuse
+   the first that cannot be saved, naming it. Within one node check its values, private state,
+   received values, payloads and recipe configuration first, so a local-only node that also holds
+   what is not JSON is refused for that (D808 (5)), and then its recipe. A local-only node made
+   before a node that holds what is not JSON is therefore the one named. (For some hours of
+   2026-11-19 this said every JSON refusal comes first for the whole graph; the user dropped that
+   the same day, before anyone followed it.) A recipe that was given but has no reference (`{}`,
+   `false`, `{ ref: "" }`: a reference is a non-empty string) is refused in the same place with the
+   existing `missingRecipe` reason alone,
    no reference after it; restore gives the same for a checkpoint that holds one. A checkpoint that already holds a local-only node still fails at
    restore. A graph that holds a wire bridge group cannot be captured, since the bridge's nodes
    carry no recipes.
@@ -61,11 +64,14 @@ review of DS-20. Read the rules themselves with `npm run rules:current -- module
 4. **Pending work is state.** Checkpoint still neither resumes nor re-issues late output in flight.
    A node that must not lose its pending work records it in private state, as JSON, and its setup
    opens it again at the restored node's first activation, without its function running on an
-   unchanged input; a reopened timer runs its full duration. In the reference, `latestAsyncNode` (the
-   function together with its setup) records `{ pending: [value] }` and keeps its AbortController
-   beside the lifetime, so a graph with a job in flight can be captured (it was refused before, as
-   not JSON). `latestAsync(f)` alone, the function without that setup, records nothing: its job in
-   flight at a capture is lost, as the rule says of work a node did not record.
+   unchanged input; a reopened timer runs its full duration. In the reference, `latestAsync(f)` is
+   a function with its setup: it records `{ pending: [value] }`, its setup starts a job again for a
+   pending input, and it keeps its AbortController beside the lifetime, so a graph with a job in
+   flight can be captured (it was refused before, as not JSON). A restored node's function does
+   not run on an unchanged input, so an operator given to the graph as a function alone cannot do
+   this: whatever shape your package gives latestAsync, its setup comes with it. (The reference
+   also had the function alone for a day; it recorded nothing and lost the job, which is not what
+   D812 (1) says of an ordinary latestAsync.)
 5. **History, where a runtime ships it.** The auto INVALIDATE policy: the kernel removes the node's
    value without running its function, and the list in private state stays. Arrays before an
    INVALIDATE in the same wave are not part of that wave's entry, and a wave left with no array is
@@ -95,7 +101,7 @@ review of DS-20. Read the rules themselves with `npm run rules:current -- module
 
 | Scenario | Covers |
 |---|---|
-| C-38 | capture-time local-only refusal and its order after every JSON refusal; a recipe without a reference; pending work reopened by a setup; restore failures |
+| C-38 | capture-time local-only refusal; the first node in creation order that cannot be saved is named, with what is not JSON first within one node; a recipe without a reference; pending work reopened by a setup; restore failures |
 | C-43, C-46 | the restored pending retry, and a restored live inner that fails at the first activation |
 | C-45 | history across an INVALIDATE, live and after a round trip, with the two cases where the restored node differs; a wave left with no array |
 | C-50 (new) | the recipe requirement, a handled refusal, a bridge group, and the requirement at a restore |
