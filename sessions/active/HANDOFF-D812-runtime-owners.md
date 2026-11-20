@@ -19,6 +19,8 @@ And after a fourth QA: item 3's sentence on an unhandled refusal is the earlier 
 runtime has requests that return their failures; item 1 states restore's order, which was the
 other way round here, and what is saved of an ended node; and the section on message payloads says
 what is open for graphrefly-rs.
+And on 2026-11-20, with the user's answer to that: the payload of a throw that cannot be one is the
+empty string in every runtime, where this brief said `{}`.
 
 ## What changed at the root
 
@@ -127,10 +129,10 @@ review of DS-20. Read the rules themselves with `npm run rules:current -- module
 | C-43, C-46 | the restored pending retry, and a restored live inner that fails at the first activation |
 | C-45 | history across an INVALIDATE, live and after a round trip, with the two cases where the restored node differs; a wave left with no array |
 | C-50 (new) | the recipe requirement, a handled refusal, and the requirement at a restore |
-| C-42 (D814) | a DATA or ERROR without the payload R-messages requires; a throw that cannot be a payload |
+| C-42 (D814) | a DATA or ERROR without the payload R-messages requires; a throw that cannot be a payload, which gives the empty string |
 
 Every runtime result for these is `todo`. The reference is in `reference/kernel` and
-`reference/modules` (`npm run test:reference`, 535 tests); the models are `module_checkpoint`,
+`reference/modules` (`npm run test:reference`, 536 tests); the models are `module_checkpoint`,
 `module_history` and `module_restart` in `formal/`, with their runs in `formal/README.md`.
 
 ## Beside D812: message payloads (graphrefly:D814)
@@ -142,16 +144,19 @@ Made on 2026-11-19 from a finding of the third QA; not part of D812. R-failure i
   with more, and checks a construction seed's values and terminal the same way): `ctx.down` throws before anything is applied, and a host write of one is refused
   to its caller. graphrefly-ts and graphrefly-py already do this, and graphrefly-rs's ERROR holds
   an error value, so nothing changes there. The reference kernel had accepted them.
-- A function's throw whose value cannot be an ERROR payload, nothing or a boolean, gives the
-  payload `{}`, an empty JSON object. **graphrefly-ts changes here:** it gives an Error with the
-  text "node function threw without a valid error payload" (`errorPayload` in
-  `node-input-runtime.ts`). Python raises only exceptions, so nothing changes there.
-  **graphrefly-rs is open:** this brief first said only JavaScript lets a function throw one,
-  which is wrong. A Rust node function's panic is its throw, a payload that is not a string
-  becomes the text "node fn panicked" (`panic_to_error`), and its ERROR holds an error value, so
-  `{}` has no form there. What R-failure@4 asks of graphrefly-rs is put to the user; do nothing
-  for it until that is answered. What your operators and sources send when they catch a failure
-  themselves stays yours; the reference uses `{}` there too.
+- A function's throw whose value cannot be an ERROR payload in that runtime gives the empty
+  string as the payload, in every runtime. (This brief said `{}` for a day. graphrefly-rs cannot
+  hold an object: its ERROR is seen as a string. The user chose the empty string on 2026-11-20 as
+  the one form all three hold. It is falsy in JavaScript and Python and a payload all the same;
+  C-42 already had an ERROR sent with an empty string.)
+  **graphrefly-ts changes here:** a node function that throws nothing or a boolean gives an Error
+  with the text "node function threw without a valid error payload" (`errorPayload` in
+  `protocol/messages.ts`, called from `node-input-runtime.ts`).
+  **graphrefly-rs changes here:** a node function's panic is its throw, and a panic payload that
+  is not a string gives the text "node fn panicked" (`panic_to_error` in `node.rs`).
+  Python raises only exceptions, so nothing changes there. What your operators and sources send
+  when they catch a failure themselves stays yours (graphrefly-ts passes `errorPayload` a text of
+  its own in each); the reference uses the empty string there too.
 - R-failure@4 now also says that a host write of such a message is refused to its caller. An
   updater that returns no value needs no new sentence: given no value it returned what it was
   given and writes nothing (R-request-order), and given a value it asks for a DATA without a
