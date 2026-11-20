@@ -15,6 +15,10 @@ build of several nodes and a revision 3 of R-bridge (item 3).
 And after a third QA, with wording the user confirmed: the bridge sentence is conditional (items 1
 and 3), a restored graph's creation order (item 1), what an unhandled refusal is where a request
 returns its failure (item 3), and where latestAsync stands (item 4).
+And after a fourth QA: item 3's sentence on an unhandled refusal is the earlier one again, since no
+runtime has requests that return their failures; item 1 states restore's order, which was the
+other way round here, and what is saved of an ended node; and the section on message payloads says
+what is open for graphrefly-rs.
 
 ## What changed at the root
 
@@ -47,10 +51,16 @@ review of DS-20. Read the rules themselves with `npm run rules:current -- module
    restore. A graph that holds nodes a module built without recipes cannot be captured. The
    reference's wire bridge group is one. Whether your bridge's nodes carry recipes is yours:
    R-bridge@2 leaves checkpoints of bridge nodes not covered, so whether a bridged graph can be
-   captured is not a cross-runtime guarantee. Restore builds each node after its declared
-   dependencies, so a node replaced onto a dependency made after it comes later in the restored
-   graph than in its original; a capture names the first node in the order of the graph it is
-   asked of, and the two can name different nodes.
+   captured is not a cross-runtime guarantee. Restore takes the nodes in checkpoint
+   order and builds before a node those of its declared dependencies that are not built yet, in
+   their declared order and each in the same way. So a dependency made after a node that was
+   replaced onto it comes before that node in the restored graph, and the nodes between them keep
+   their place after both: a, n, x, late, y with n replaced onto late is restored as a, late, n,
+   x, y. (Until the fourth QA this said the node moves after its dependency, which gives another
+   order and another node named once a third lies between.) A capture names the first node in the
+   order of the graph it is asked of, and the two can name different nodes. An ended node has no
+   lifetime, so it is saved with its values and its terminal and nothing it received; the
+   reference had saved what its dependencies held at the capture.
 2. **Restore names the reference of a missing recipe.** The refusal is
    `not restorable: <id>: missing recipe <ref>`. This changes a text the shared probe compares exactly:
    `probeExpected.checkpointMissingRecipe` in
@@ -60,10 +70,9 @@ review of DS-20. Read the rules themselves with `npm run rules:current -- module
 3. **The recipe requirement.** A graph creation option, off by default (`requireRecipe` in the
    reference). With it, creating a computed node or replacing one without a recipe is refused when it
    is asked for; a refused replace leaves the current instance, its values and its subscribers.
-   Inside a running function the refusal is the failure of that request, given to the function.
-   A function that lets the failure end its run fails with it, so its node ends with ERROR: it
-   does not catch it where a request throws, or it returns it as its own failure where a request
-   returns one. A function that goes on has handled it. The kernel checks only that a recipe was given, whatever it is (in the
+   Inside a running function the refusal is the failure of that request, given to the function:
+   left unhandled it is the function's throw, so its node ends with ERROR, and a function that
+   handles it goes on (in graphrefly-rs the throw is a panic). The kernel checks only that a recipe was given, whatever it is (in the
    reference, anything but null or undefined), and never reads it. A checkpoint does not hold the
    option: a host that wants it on the restored graph asks for it again at the restore (the
    reference's `restore(checkpoint, registry, { requireRecipe: true })`). A requiring graph cannot
@@ -121,7 +130,7 @@ review of DS-20. Read the rules themselves with `npm run rules:current -- module
 | C-42 (D814) | a DATA or ERROR without the payload R-messages requires; a throw that cannot be a payload |
 
 Every runtime result for these is `todo`. The reference is in `reference/kernel` and
-`reference/modules` (`npm run test:reference`, 532 tests); the models are `module_checkpoint`,
+`reference/modules` (`npm run test:reference`, 535 tests); the models are `module_checkpoint`,
 `module_history` and `module_restart` in `formal/`, with their runs in `formal/README.md`.
 
 ## Beside D812: message payloads (graphrefly:D814)
@@ -143,9 +152,11 @@ Made on 2026-11-19 from a finding of the third QA; not part of D812. R-failure i
   `{}` has no form there. What R-failure@4 asks of graphrefly-rs is put to the user; do nothing
   for it until that is answered. What your operators and sources send when they catch a failure
   themselves stays yours; the reference uses `{}` there too.
-- Two cases no rule statement covers yet, also put to the user: a host write of such a message
-  (D814 (2) and C-42 say it is refused; no rule does), and an updater that returns nothing
-  (graphrefly-rs writes nothing for `None`; the reference refuses it when the state holds a value).
+- R-failure@4 now also says that a host write of such a message is refused to its caller. An
+  updater that returns no value needs no new sentence: given no value it returned what it was
+  given and writes nothing (R-request-order), and given a value it asks for a DATA without a
+  payload and is refused. The reference, graphrefly-ts and graphrefly-py do that already, and a
+  graphrefly-rs updater returns `None` to write nothing.
 - C-42 covers both. Its results were `todo` in every runtime already.
 
 ## What is not here

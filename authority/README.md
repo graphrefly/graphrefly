@@ -38,7 +38,11 @@ Rule rows use:
 Lifecycle is derived. A public rule is the sole activated revision with no forward
 transition. Draft, retired, predecessor, dangling, cyclic, duplicate and ambiguous revisions
 do not enter the public projection. Any statement, rule-boundary or legal-trace change still
-requires `/spec-amend`.
+requires `/spec-amend`. A revision or a decision that exists only on a branch not
+yet merged has been corrected in place there (graphrefly:D812 and its rules, 2026-11-19, each
+correction dated in the record's rationale); once on main a statement changes only through a new
+revision. No gate checks either: an edit of an active revision's statement or of a locked decision's
+text passes every check (graphrefly:B146).
 
 The protocol's parts are derived from a rule's `area`, not stored: `module`, `graph` and `principle`
 each name a part and every other area is the kernel. `npm run rules:current` (optionally one part,
