@@ -38,11 +38,10 @@ Rule rows use:
 Lifecycle is derived. A public rule is the sole activated revision with no forward
 transition. Draft, retired, predecessor, dangling, cyclic, duplicate and ambiguous revisions
 do not enter the public projection. Any statement, rule-boundary or legal-trace change still
-requires `/spec-amend`. On main an activated revision or a locked decision changes only through a
-new one; drafts, scenario rows and rows that exist only on an unmerged branch are corrected in
-place with a dated note (graphrefly:D812, graphrefly:D814 and their rules, 2026-11-19 and
-2026-11-20). The user confirmed the practice on 2026-11-20, and `guide/docs.jsonl` states it where
-it had called the rule ledger append-only. No gate checks any of it: an edit of an active revision's statement or of a locked decision's
+requires `/spec-amend`. On main an activated revision's statement or a locked decision's text
+changes only through a new one; graphrefly:D815 says which rows are corrected in place (a draft, a
+scenario row, a transition added to a predecessor, a guide record, a row that exists only on an
+unmerged branch). No gate checks any of it: an edit of an active revision's statement or of a locked decision's
 text passes every check (graphrefly:B146).
 
 The protocol's parts are derived from a rule's `area`, not stored: `module`, `graph` and `principle`
