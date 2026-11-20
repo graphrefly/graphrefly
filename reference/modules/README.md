@@ -11,8 +11,8 @@ npm run test:reference
 Every module but the bridge builds its nodes on an ordinary graph, each with its recipe in its
 definition (the kernel's node option `recipe`), so a graph with any of them can be captured and
 restored (F6, the user's choice, 2026-11-10; one build path since D799 the same day). The bridge's
-nodes carry no recipes (R-bridge@3), so a graph that holds a bridge group cannot be captured
-(R-checkpoint@2). Each module exports its recipes
+nodes carry no recipes (D812 (5); R-bridge@2 leaves their checkpoint not covered), so a graph that
+holds a bridge group cannot be captured (R-checkpoint@2, of any nodes built without recipes). Each module exports its recipes
 (`pauseRecipes`, `demandRecipes`, `restartRecipes`, `higherOrderRecipes`, `historyRecipes`), which a
 restore's registry must include, and a handle over a restored graph (`pauseControl`, `pausableOf`,
 `pullableOf`, `restartableOf`). A function a module takes from its user is always given as a function;
@@ -550,7 +550,8 @@ compares only what the input holds at the first activation). Known and not chang
 graph, `restartable` or `pullable` called without a recipe throws after its control state was
 created and leaves that state behind.
 
-With the wording the user confirmed for that QA's open points (2026-11-19): the restart, demand,
+With the wording the user confirmed for that QA's open points (2026-11-19; `g.build` was taken out
+again later that day, see the audit below): the restart, demand,
 pause and bridge builders create their nodes in one `g.build`, so a build refused for any of its
 nodes, for a missing recipe, an unknown dependency or a taken id, leaves none of them and can be
 asked for again (R-node@3). A recipe's reference is a non-empty string: `{ ref: "" }` is refused
@@ -565,6 +566,16 @@ whole-graph order had kept the reason of captures refused before D812 and nothin
 for the call shape `g.node(id, deps, latestAsync(f))`, recorded nothing, so a restored node started
 no job, against D812 (1). A recipe's factory returns it as it is. 524 tests; ten mutations of the
 two changes each caught.
+
+The same audit, two things added that day which the user had not decided on their own, both taken
+out. The kernel's `build(body)`, with R-node@3's sentence that a build of several nodes leaves none
+of them when one is refused: it was the kernel's only way to take a node out, made for a builder
+first called without a recipe. The restart, demand, pause and bridge builders are as they were
+before it, so on a requiring graph `restartable` or `pullable` called without a recipe throws after
+its control state was created and leaves that state behind; a test pins this. And R-bridge@3, one
+sentence that the bridge's nodes carry no recipes, written so that R-checkpoint@2 need not cite a
+module rule: R-bridge stays at revision 2, and R-checkpoint@2 speaks of any nodes a module built
+without recipes. 523 tests.
 The dated exploration below records earlier schema/implementation shapes.
 
 

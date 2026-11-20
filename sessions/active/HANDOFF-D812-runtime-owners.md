@@ -8,8 +8,10 @@ decides, and writes its own work body there. Nothing here dispatches implementat
 Revised 2026-11-19 after an independent QA of the root work, before this brief reached anyone: the
 rule rows, D812 and the scenarios were corrected in place, and items 1, 3 and 6 below changed with them.
 Revised again that day after a second QA: items 4, 5 and 6 and one table row said what the rules do not.
-And once more with the wording the user confirmed for that QA's open points: items 1, 3, 5 and 7 and
-the R-bridge row.
+And once more with the wording the user confirmed for that QA's open points: items 1, 3, 5 and 7.
+And a last time that day, on the user's audit of what the branch added or kept without need: capture's
+one order (item 1), latestAsync's one form (item 4), and, taken out, a sentence of R-node@3 on a
+build of several nodes and a revision 3 of R-bridge (item 3).
 
 ## What changed at the root
 
@@ -19,9 +21,8 @@ review of DS-20. Read the rules themselves with `npm run rules:current -- module
 
 | Rule | State | Change |
 |---|---|---|
-| R-checkpoint@2 | active (was @1) | capture refuses a local-only node, and a recipe without a reference, after every JSON refusal in the graph; pending work a node recorded in private state is reopened by its setup; restore names the reference of a missing recipe; a bridged graph cannot be captured |
-| R-node@3 | active (was @2) | a graph may be created to require a recipe on every computed instance; a request that builds several nodes leaves none of them when one is refused |
-| R-bridge@3 | active (was @2) | one sentence: a bridge group's nodes carry no recipes |
+| R-checkpoint@2 | active (was @1) | capture refuses a local-only node, and a recipe without a reference, naming the first node in creation order that cannot be saved; pending work a node recorded in private state is reopened by its setup; restore names the reference of a missing recipe; a graph that holds nodes a module built without recipes cannot be captured |
+| R-node@3 | active (was @2) | a graph may be created to require a recipe on every computed instance |
 | R-history@1 | draft, rewritten in place | the auto INVALIDATE policy: an INVALIDATE removes the value and keeps the list |
 | R-restart@1 | draft, rewritten in place | a restored pending retry waits its delay in full, for the same attempt |
 | R-request-order@3, R-failure@3 | unchanged | R-node@3 alone says that the refusal is made when the request is made and what a refused replace leaves; R-failure says what an unhandled failure in a function is, and R-request-order does not say when replace's refusals are made |
@@ -57,9 +58,11 @@ review of DS-20. Read the rules themselves with `npm run rules:current -- module
    reference, anything but null or undefined), and never reads it. A checkpoint does not hold the
    option: a host that wants it on the restored graph asks for it again at the restore (the
    reference's `restore(checkpoint, registry, { requireRecipe: true })`). A requiring graph cannot
-   hold a bridge group. A request that builds several nodes, as a module's, and is refused for one
-   of them leaves none of them, whatever refused it; the reference has `g.build(body)` for this and
-   its restart, demand, pause and bridge builders use it. The text of the requirement's refusal and
+   hold nodes a module builds without recipes; the reference's wire bridge group is one (D812 (5):
+   a bridged graph cannot be captured; no rule names the bridge, and R-bridge@2 leaves checkpoints
+   of its nodes not covered). A module's build is a sequence of requests and each stands on its
+   own: when one of its nodes is refused, the nodes made before it stay, as the reference's
+   restart and demand builders leave their control state. The text of the requirement's refusal and
    which refusal a request gets when several apply are yours, as for the kernel's other refusals.
 4. **Pending work is state.** Checkpoint still neither resumes nor re-issues late output in flight.
    A node that must not lose its pending work records it in private state, as JSON, and its setup
@@ -104,10 +107,10 @@ review of DS-20. Read the rules themselves with `npm run rules:current -- module
 | C-38 | capture-time local-only refusal; the first node in creation order that cannot be saved is named, with what is not JSON first within one node; a recipe without a reference; pending work reopened by a setup; restore failures |
 | C-43, C-46 | the restored pending retry, and a restored live inner that fails at the first activation |
 | C-45 | history across an INVALIDATE, live and after a round trip, with the two cases where the restored node differs; a wave left with no array |
-| C-50 (new) | the recipe requirement, a handled refusal, a bridge group, and the requirement at a restore |
+| C-50 (new) | the recipe requirement, a handled refusal, a module whose nodes carry no recipes, and the requirement at a restore |
 
 Every runtime result for these is `todo`. The reference is in `reference/kernel` and
-`reference/modules` (`npm run test:reference`, 524 tests); the models are `module_checkpoint`,
+`reference/modules` (`npm run test:reference`, 523 tests); the models are `module_checkpoint`,
 `module_history` and `module_restart` in `formal/`, with their runs in `formal/README.md`.
 
 ## What is not here
