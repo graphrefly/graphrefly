@@ -21,6 +21,9 @@ other way round here, and what is saved of an ended node; and the section on mes
 what is open for graphrefly-rs.
 And on 2026-11-20, with the user's answer to that: the payload of a throw that cannot be one is the
 empty string in every runtime, where this brief said `{}`.
+And after a fifth QA that day: what this brief said of graphrefly-rs's ERROR, of graphrefly-py's
+updater and of graphrefly-ts's operator texts was not exact, and a message with more than its
+type carries is named as open.
 
 ## What changed at the root
 
@@ -132,7 +135,7 @@ review of DS-20. Read the rules themselves with `npm run rules:current -- module
 | C-42 (D814) | a DATA or ERROR without the payload R-messages requires; a throw that cannot be a payload, which gives the empty string |
 
 Every runtime result for these is `todo`. The reference is in `reference/kernel` and
-`reference/modules` (`npm run test:reference`, 536 tests); the models are `module_checkpoint`,
+`reference/modules` (`npm run test:reference`, 540 tests); the models are `module_checkpoint`,
 `module_history` and `module_restart` in `formal/`, with their runs in `formal/README.md`.
 
 ## Beside D812: message payloads (graphrefly:D814)
@@ -142,26 +145,37 @@ Made on 2026-11-19 from a finding of the third QA; not part of D812. R-failure i
 - A DATA without a payload and an ERROR whose payload is absent or a boolean are refused where
   they are given (R-messages also says exactly one payload; the reference now refuses a message
   with more, and checks a construction seed's values and terminal the same way): `ctx.down` throws before anything is applied, and a host write of one is refused
-  to its caller. graphrefly-ts and graphrefly-py already do this, and graphrefly-rs's ERROR holds
-  an error value, so nothing changes there. The reference kernel had accepted them.
+  to its caller. graphrefly-ts and graphrefly-py already refuse a DATA without a payload and an
+  ERROR whose payload is absent or a boolean, and graphrefly-rs's ERROR holds an error value, so
+  nothing changes there. The reference kernel had accepted them. A message with more than its
+  type carries (`[COMPLETE, x]`, `[DATA, v, w]`) is another matter: the reference and
+  graphrefly-py refuse it, graphrefly-ts accepts it, and no rule lists it. Whether every runtime
+  refuses it is put to the user; do nothing for it until that is answered.
 - A function's throw whose value cannot be an ERROR payload in that runtime gives the empty
-  string as the payload, in every runtime. (This brief said `{}` for a day. graphrefly-rs cannot
-  hold an object: its ERROR is seen as a string. The user chose the empty string on 2026-11-20 as
-  the one form all three hold. It is falsy in JavaScript and Python and a payload all the same;
-  C-42 already had an ERROR sent with an empty string.)
+  string as the payload, in every runtime. (This brief said `{}` for a day. A graphrefly-rs ERROR
+  holds an error value, which a sink receives, and a dependent and a checkpoint see only its
+  message, a string; so a string is the one form all three hold there, and the user chose the
+  empty one on 2026-11-20. It is falsy in JavaScript and Python and a payload all the same:
+  R-messages excludes only SENTINEL and a boolean.)
   **graphrefly-ts changes here:** a node function that throws nothing or a boolean gives an Error
   with the text "node function threw without a valid error payload" (`errorPayload` in
   `protocol/messages.ts`, called from `node-input-runtime.ts`).
   **graphrefly-rs changes here:** a node function's panic is its throw, and a panic payload that
-  is not a string gives the text "node fn panicked" (`panic_to_error` in `node.rs`).
+  is not a string gives an error with the text "node fn panicked" (`panic_to_error` in `node.rs`);
+  it gives one whose message is empty. (R-failure@4 words this as a runtime whose ERROR payload
+  is a string, which is not exact of graphrefly-rs; that clause's wording is put to the user, and
+  what you change is the same either way.)
   Python raises only exceptions, so nothing changes there. What your operators and sources send
   when they catch a failure themselves stays yours (graphrefly-ts passes `errorPayload` a text of
-  its own in each); the reference uses the empty string there too.
+  its own in most and its default text in some sources); the reference uses the empty string
+  there too.
 - R-failure@4 now also says that a host write of such a message is refused to its caller. An
   updater that returns no value needs no new sentence: given no value it returned what it was
   given and writes nothing (R-request-order), and given a value it asks for a DATA without a
-  payload and is refused. The reference, graphrefly-ts and graphrefly-py do that already, and a
-  graphrefly-rs updater returns `None` to write nothing.
+  payload and is refused. The reference and graphrefly-ts do that already, and a graphrefly-rs
+  updater returns `None` to write nothing. In graphrefly-py that is an updater that returns
+  `SENTINEL`; one without a return gives `None`, a value there, and writes it. (This brief said
+  graphrefly-py does the same as the others; the fifth QA ran it.)
 - C-42 covers both. Its results were `todo` in every runtime already.
 
 ## What is not here
