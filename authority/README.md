@@ -87,10 +87,11 @@ have kept everything is its owner's call. A third limit is the reverse case: a p
 no concerns at all, as every record before admission metadata, has nothing to keep, so a partial
 successor retires it whole, and the printed list leaves these pairs out (53 at the root and 78 in the
 workspace on 2026-11-19; at the root, the legacy records D789, D796, D797 and D803 replaced, and in
-the workspace also those graphrefly-py's D2, D4, D5 and D8 replaced). A `superseded_by`
+the workspace also those replaced in the sibling ledgers, most of them by graphrefly-py's D2, D4, D5
+and D8). A `superseded_by`
 field that names a successor, which only old records carry, counts as a whole supersession in both
 resolvers; null or an empty list names none. A value that is present and not a reference (an empty
-string, a number, free text) is an error the federation reports, and the two then differ on the
+string, a number) is an error the federation reports, and the two then differ on the
 record, which the comparison below also reports.
 
 `model.mjs` reads only the dashboard's records, so a successor in another ledger is outside it: a
@@ -103,7 +104,10 @@ current: a root-only run cannot know of a successor whose body lives in a siblin
 
 The check and the dashboard build compare the two resolvers on every run (`resolverDisagreements`,
 since the third QA of the D812 work, 2026-11-19): a dashboard record that one calls current and the
-other does not is an error. Until then only a small fixture held them together, and a model that was
+other does not is an error, which `gates.test.mjs` pins by running both gates over a copy whose
+comparison disagrees. It compares current or not, and not which concerns a record still governs,
+so a partial supersession only one resolver knows of is not seen; and both resolvers share the
+helper that decides what a partial successor takes. Until then only a small fixture held them together, and a model that was
 not given the outside successors, or was given every outside reference as one, passed every gate.
 
 Ledgers marked `historical_only` accept no unlocated record: every body must match a relocation
