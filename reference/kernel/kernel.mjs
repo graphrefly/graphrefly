@@ -757,16 +757,6 @@ export function createGraph({ report: hostReport, requireRecipe = false } = {}) 
     trace,
     state(id, initial) { makeNode(id, "state", [], null, {}, initial); return id; },
     node(id, deps, fn, opts) { makeNode(id, "node", deps, fn, opts, undefined); return id; },
-    // R-node@3 (the user, 2026-11-19): a request that builds several nodes, as a module's, leaves
-    // none of them when one is refused. `body` only creates nodes; what it created is taken out
-    // again if it throws, so the same build can be asked for again.
-    build(body) {
-      const before = new Set(nodes.keys());
-      try { return body(); } catch (e) {
-        for (const id of [...nodes.keys()]) if (!before.has(id)) nodes.delete(id);
-        throw e;
-      }
-    },
     subscribe(sinkId, id, cb) {
       const n = nodeOf(id);
       // P5: an ended node can be subscribed; its START snapshot carries its terminal.

@@ -66,18 +66,14 @@ export function pauseControl(g, id) {
 
 // `control` lets several pausables share one lock state, so that a node pausing at each
 // of its inputs is released by one resume, in one wave (C-36).
-export function pausable(g, id, inputId, { control: given } = {}) {
+export function pausable(g, id, inputId, { control = controlPair(g, id) } = {}) {
   // Manual terminals: only the input's terminal ends the node (the lock state's is ignored),
   // and it passes with whatever came in its array, so an unpaused pausable forwards an array
   // like [DATA, COMPLETE] or [DATA, ERROR] unchanged instead of dropping its DATA. Manual
   // INVALIDATE: the input's INVALIDATE reaches the function, which drops what it held.
   const opts = { terminal: { complete: "manual", error: "manual" }, invalidate: "manual" };
-  // One build (R-node@3): a lock state made here does not stay when the node is refused.
-  return g.build(() => {
-    const control = given ?? controlPair(g, id);
-    g.node(id, [inputId, control.locksId], pausableFn, { ...opts, recipe: { ref: "pause.pausable", config: null } });
-    return { id, ...control };
-  });
+  g.node(id, [inputId, control.locksId], pausableFn, { ...opts, recipe: { ref: "pause.pausable", config: null } });
+  return { id, ...control };
 }
 
 // After a restore: the pausable's handle over the nodes that came back.

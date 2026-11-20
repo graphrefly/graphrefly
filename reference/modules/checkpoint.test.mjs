@@ -1092,11 +1092,12 @@ test("D812: a checkpoint whose recipe has an empty reference is refused at resto
   assert.throws(() => restore(cp, { ...reg, "": reg.sum }), { message: "not restorable: n: missing recipe" });
 });
 
-// R-node@3 (the user, 2026-11-19): a request that builds several nodes, as a module's, and is
-// refused for one of them leaves none of them, so the same build can be asked for again. Until
-// then restartable and pullable left their control state behind and the second call failed on a
-// duplicate id.
-test("D812: a module's build that is refused leaves none of its nodes, whatever refuses it", () => {
+// A module's build is a sequence of requests, and each stands on its own (R-node@3): on a requiring
+// graph the builder called without a recipe is refused at its first computed node, and a state it
+// made before that stays, so the same build is then refused for a taken id. For some hours of
+// 2026-11-19 the kernel had a build request that took such nodes out again; the user took it out
+// on the audit of the branch, as a kernel request made for one mistaken call.
+test("D812: a requiring graph refuses a module's builder called without a recipe; what it made before the refusal stays", () => {
   const ids = (g) => g.describe().map((n) => n.id);
   const noRecipe = (id) => ({ message: `${id}: this graph requires a recipe on every computed node` });
   const required = createGraph({ requireRecipe: true });
@@ -1104,28 +1105,15 @@ test("D812: a module's build that is refused leaves none of its nodes, whatever 
   assert.throws(() => restartable(required, "r", { deps: ["a"], fn: fwd() }), noRecipe("r/inner"));
   assert.throws(() => pullable(required, "d", "a", () => {}), noRecipe("d"));
   assert.throws(() => wireEdgeGroupIn(required, "in", { group: "ga", frames: "a", edges: ["x"] }), noRecipe("in"));
-  assert.deepEqual(ids(required), ["a"]);
-  restartable(required, "r", { deps: ["a"], fn: fwd(), recipe: { ref: "fwd" } });
-  pullable(required, "d", "a", () => {}, { recipe: { ref: "serve" } });
-  assert.deepEqual(ids(required), ["a", "r/restart", "r/inner", "r", "d/demand", "d"], "the same builds, given recipes");
-  // Refused for another reason, on an ordinary graph: a dependency that does not exist, and an
-  // id taken by the last node of the build.
-  const g = createGraph();
-  g.state("a", 1);
-  assert.throws(() => restartable(g, "r", { deps: ["nowhere"], fn: fwd() }), { message: /nowhere/ });
-  assert.throws(() => pullable(g, "d", "nowhere", () => {}), { message: /nowhere/ });
-  assert.throws(() => pausable(g, "p", "nowhere"), { message: /nowhere/ });
-  g.state("in/issues");
-  assert.throws(() => wireEdgeGroupIn(g, "in", { group: "ga", frames: "a", edges: ["x"] }), { message: "duplicate node in/issues" });
-  assert.deepEqual(ids(g), ["a", "in/issues"]);
-  // A pausable over a control pair made beforehand does not take that pair with it.
-  const control = pausableOf(g, "shared", { control: undefined });
-  g.state("shared/locks", []);
-  assert.throws(() => pausable(g, "q", "nowhere", { control }), { message: /nowhere/ });
-  assert.deepEqual(ids(g), ["a", "in/issues", "shared/locks"]);
+  assert.deepEqual(ids(required), ["a", "r/restart", "d/demand"]);
+  assert.throws(() => restartable(required, "r", { deps: ["a"], fn: fwd(), recipe: { ref: "fwd" } }), { message: "duplicate node r/restart" });
+  restartable(required, "r2", { deps: ["a"], fn: fwd(), recipe: { ref: "fwd" } });
+  pullable(required, "d2", "a", () => {}, { recipe: { ref: "serve" } });
+  assert.deepEqual(ids(required), ["a", "r/restart", "d/demand", "r2/restart", "r2/inner", "r2", "d2/demand", "d2"]);
 });
 
-// R-bridge@3: a bridge's nodes carry no recipes; R-checkpoint@2: such a graph cannot be captured.
+// D812 (5): the reference's bridge builds its nodes without recipes, and R-bridge@2 leaves their
+// checkpoint not covered; R-checkpoint@2: a graph that holds such nodes cannot be captured.
 test("D812: a graph that holds a bridge group cannot be captured, and a graph that requires recipes cannot hold one", () => {
   const localOnly = (id) => ({ message: `not restorable: ${id}: local-only, built or replaced without a recipe` });
   const sender = createGraph();

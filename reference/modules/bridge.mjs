@@ -89,13 +89,10 @@ export function wireEdgeGroupIn(g, id, { group, frames, edges }) {
   assertLocalName(id);
   for (const edge of edges) assertLocalName(edge);
   const manual = { terminal: { complete: "manual", error: "manual" } };
+  g.node(id, [frames], gateFn(group, edges), manual);
   const inbound = Object.fromEntries(edges.map((e) => [e, `${id}/edges/${e}`]));
-  // One build (R-node@3): refused for any node of the group, it leaves none of them.
-  g.build(() => {
-    g.node(id, [frames], gateFn(group, edges), manual);
-    for (const e of edges) g.node(inbound[e], [id], inboundFn(e), manual);
-    g.node(`${id}/issues`, [id], issuesFn, manual);
-  });
+  for (const e of edges) g.node(inbound[e], [id], inboundFn(e), manual);
+  g.node(`${id}/issues`, [id], issuesFn, manual);
   return { gate: id, inbound, issues: `${id}/issues` };
 }
 
