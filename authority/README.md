@@ -39,9 +39,9 @@ Lifecycle is derived. A public rule is the sole activated revision with no forwa
 transition. Draft, retired, predecessor, dangling, cyclic, duplicate and ambiguous revisions
 do not enter the public projection. Any statement, rule-boundary or legal-trace change still
 requires `/spec-amend`. A revision or a decision that exists only on a branch not
-yet merged has been corrected in place there (graphrefly:D812 and its rules, 2026-11-19, each
-correction dated in the record's rationale); once on main a statement changes only through a new
-revision. No gate checks either: an edit of an active revision's statement or of a locked decision's
+yet merged has been corrected in place there (graphrefly:D812, graphrefly:D814 and their rules,
+2026-11-19 and 2026-11-20, each correction dated in the record's rationale); once on main an
+activated revision's statement changes only through a new revision. No gate checks either: an edit of an active revision's statement or of a locked decision's
 text passes every check (graphrefly:B146).
 
 The protocol's parts are derived from a rule's `area`, not stored: `module`, `graph` and `principle`
@@ -108,8 +108,10 @@ current: a root-only run cannot know of a successor whose body lives in a siblin
 
 The check and the dashboard build compare the two resolvers on every run (`resolverDisagreements`,
 since the third QA of the D812 work, 2026-11-19): a dashboard record that one calls current and the
-other does not is an error, which `gates.test.mjs` pins by running both gates over a copy whose
-comparison disagrees. It compares current or not, and not which concerns a record still governs,
+other does not is an error, which `gates.test.mjs` pins by running both gates, with and without
+`--workspace`, over copies in which one resolver and then the other loses a current decision (until
+the fifth QA, 2026-11-20, over a copy whose comparison always disagreed, which pinned that a gate
+reports and not what it compares; the test takes about ten seconds). It compares current or not, and not which concerns a record still governs,
 so a partial supersession only one resolver knows of is not seen; and both resolvers share the
 helper that decides what a partial successor takes. Until then only a small fixture held them together, and a model that was
 not given the outside successors, or was given every outside reference as one, passed every gate.
