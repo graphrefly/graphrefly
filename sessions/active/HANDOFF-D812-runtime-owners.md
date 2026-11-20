@@ -40,7 +40,7 @@ review of DS-20. Read the rules themselves with `npm run rules:current -- module
    the same day, before anyone followed it.) A recipe that was given but has no reference (`{}`,
    `false`, `{ ref: "" }`: a reference is a non-empty string) is refused in the same place with the
    existing `missingRecipe` reason alone,
-   no reference after it; restore gives the same for a checkpoint that holds one. A checkpoint that already holds a local-only node still fails at
+   no reference after it; restore refuses a checkpoint that holds one and names the node (the reference gives the same reason there; no rule or scenario fixes it). A checkpoint that already holds a local-only node still fails at
    restore. A graph that holds a wire bridge group cannot be captured, since the bridge's nodes
    carry no recipes.
 2. **Restore names the reference of a missing recipe.** The refusal is
@@ -60,9 +60,9 @@ review of DS-20. Read the rules themselves with `npm run rules:current -- module
    reference's `restore(checkpoint, registry, { requireRecipe: true })`). A requiring graph cannot
    hold nodes a module builds without recipes; the reference's wire bridge group is one (D812 (5):
    a bridged graph cannot be captured; no rule names the bridge, and R-bridge@2 leaves checkpoints
-   of its nodes not covered). A module's build is a sequence of requests and each stands on its
-   own: when one of its nodes is refused, the nodes made before it stay, as the reference's
-   restart and demand builders leave their control state. The text of the requirement's refusal and
+   of its nodes not covered). What a module's builder leaves when one of its nodes is
+   refused is yours: no rule statement or scenario compares it. In the reference each request
+   stands on its own, so its restart and demand builders leave their control state behind. The text of the requirement's refusal and
    which refusal a request gets when several apply are yours, as for the kernel's other refusals.
 4. **Pending work is state.** Checkpoint still neither resumes nor re-issues late output in flight.
    A node that must not lose its pending work records it in private state, as JSON, and its setup
@@ -107,10 +107,10 @@ review of DS-20. Read the rules themselves with `npm run rules:current -- module
 | C-38 | capture-time local-only refusal; the first node in creation order that cannot be saved is named, with what is not JSON first within one node; a recipe without a reference; pending work reopened by a setup; restore failures |
 | C-43, C-46 | the restored pending retry, and a restored live inner that fails at the first activation |
 | C-45 | history across an INVALIDATE, live and after a round trip, with the two cases where the restored node differs; a wave left with no array |
-| C-50 (new) | the recipe requirement, a handled refusal, a module whose nodes carry no recipes, and the requirement at a restore |
+| C-50 (new) | the recipe requirement, a handled refusal, and the requirement at a restore |
 
 Every runtime result for these is `todo`. The reference is in `reference/kernel` and
-`reference/modules` (`npm run test:reference`, 523 tests); the models are `module_checkpoint`,
+`reference/modules` (`npm run test:reference`, 524 tests); the models are `module_checkpoint`,
 `module_history` and `module_restart` in `formal/`, with their runs in `formal/README.md`.
 
 ## What is not here

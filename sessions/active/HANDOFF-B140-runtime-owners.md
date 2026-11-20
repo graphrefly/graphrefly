@@ -8,6 +8,12 @@ its own work body there. Nothing here dispatches implementation. Records are in 
 
 ## What is current
 
+Since 2026-11-18 two rows below are superseded by graphrefly:D812: R-node is at revision 3 and
+R-checkpoint at revision 2, and item 5 of "Checkpoint after D802" (a replace without a recipe makes
+the node local-only) now ends in a refusal at capture. Read
+[HANDOFF-D812-runtime-owners.md](HANDOFF-D812-runtime-owners.md) with this brief; `npm run rules:current`
+prints what is current.
+
 The public protocol is the D797 kernel set, activated by
 [graphrefly:D798](../../decisions/decisions.jsonl) and revised the same day (2026-11-10) by
 graphrefly:D799 and graphrefly:D801 (START is the kernel's alone). Read the rules themselves in
@@ -23,13 +29,13 @@ graphrefly:D799 and graphrefly:D801 (START is the kernel's alone). Read the rule
 | R-invalidation | 1 | INVALIDATE and its auto and manual policy |
 | R-lifetime | 2 | activation, lifetime, setup and cleanup |
 | R-request-order | 3 | requests, batch, set, replace, ctx.rewire |
-| R-node | 2 | node, instance and lifetime scopes; definition |
+| R-node | 2 (now 3, D812) | node, instance and lifetime scopes; definition |
 | R-failure | 3 | throws and invalid output |
 | R-graph-domain | 3 | one graph, one domain: graphs share no wave, queue or batch (D803) |
 | R-no-imperative | 2 | control is data on a declared edge |
 | R-node-thin | 2 | (no behavioral scenario: not observable) |
 | R-sentinel | 1 | unchanged |
-| R-checkpoint | 1 | module: capture and restore (D802; see "Checkpoint after D802") |
+| R-checkpoint | 1 (now 2, D812) | module: capture and restore (D802; see "Checkpoint after D802") |
 | R-graph-surface | 2 | the graph layer: find, describe, observe, retain (D805; see "Review corrections after D806") |
 | R-primary-api-clean | 2 | value-level sugar sees values only (D805) |
 | R-bridge | 2 | module: the wire edge group, one frame per sender wave (D803, D804; see "Bridge after D803") |

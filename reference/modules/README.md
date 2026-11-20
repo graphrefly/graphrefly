@@ -520,7 +520,8 @@ setup runs, so an owner restored with a live inner whose input failed before its
 renewed the inner at once and counted the failure in its function as well: with two attempts it
 ended at once, where the original waits out the delay. The owner now records a waiting retry in its
 private state (`waiting`), and its setup reads only that record. `latestAsync(f)` alone, without the
-setup of `latestAsyncNode`, no longer records its pending input: nothing read the record, so a
+setup of `latestAsyncNode` (the two became one `latestAsync` later that day, see the audit below),
+no longer records its pending input: nothing read the record, so a
 restored node said a job was pending when none was. Tests added for both, for a failed job, for a
 backoff's second delay, for a local-only node that received what is not JSON, and for a requiring
 graph captured and restored with the requirement given to `restore` as its third argument.
@@ -576,6 +577,18 @@ its control state was created and leaves that state behind; a test pins this. An
 sentence that the bridge's nodes carry no recipes, written so that R-checkpoint@2 need not cite a
 module rule: R-bridge stays at revision 2, and R-checkpoint@2 speaks of any nodes a module built
 without recipes. 523 tests.
+
+Third QA (2026-11-19), three reviewers, of the fifteen commits since the second. No state was found
+in which the reference deviates from the rules. One regression no test caught, now pinned: a
+superseded retry's timer, still armed while a later retry waits, clearing the record of that retry,
+after which a restored owner never retried. Also pinned: a received ERROR payload that is not JSON
+names the node that received it, and a latestAsync input that is an object. `restored &&` left the
+restart owner's setup, where the record alone says a retry waits. Not pinned, by choice: which
+refusal a request gets when several apply; a missing factory refused before another node's factory
+runs, which no rule asks; and a restored pending job whose input lost its value, where the sugar
+goes on and the operator contract agreed in DS-20 would revoke the job. Known and left: the kernel
+accepts a boolean or absent ERROR payload, against R-messages, so capture writes one that restore
+then refuses. 524 tests.
 The dated exploration below records earlier schema/implementation shapes.
 
 
