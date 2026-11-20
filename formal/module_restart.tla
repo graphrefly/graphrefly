@@ -13,8 +13,8 @@ retry was waiting", the rule's owner keeps its own record across the restore,
 and a restored inner may send at its first activation, which the first D812
 model could not reach and where the module then renewed the inner at once and
 counted the failure as well. Revised after the third QA: a superseded retry's
-timer may still be armed while a later retry waits (stale), and fires into
-nothing.
+timer may still be armed while a later retry waits (stale), and fires through
+the guard the current timer fires through (Fire), which makes it inert.
 
 Topology: an upstream U, the inner I at the owner's fixed path over U, the
 restart state, and the owner O over [I, restart state] with manual terminals
@@ -85,7 +85,7 @@ OwnerRun(s, vals, end) ==
   IN IF ~again THEN [s EXCEPT !.st = st4, !.out = fwd \o Term(end), !.oend = end]
      \* a timer still armed here is an earlier attempt's, superseded by a request: it stays armed
      ELSE IF ea /\ s.delay THEN [s EXCEPT !.st = st4, !.out = fwd, !.timer = [tok |-> st4.attempt, end |-> end],
-                                          !.stale = @ \/ s.timer # NoTimer]
+                                          !.stale = IF s.timer # NoTimer THEN @ \cup {s.timer} ELSE @]
      ELSE [s EXCEPT !.st = st4, !.out = fwd, !.inner = "live", !.starts = @ + 1]
 
 \* ---- the rule: R-restart, from its text ----
@@ -109,7 +109,7 @@ SpecRun(p, s, vals, end) ==
 Init ==
   \E delay \in BOOLEAN :
     k = [delay |-> delay, up |-> FALSE, inner |-> "fresh", active |-> FALSE, oend |-> "",
-         req |-> 0, st |-> NoSt, timer |-> NoTimer, stale |-> FALSE, out |-> <<>>, starts |-> 0, seed |-> FALSE,
+         req |-> 0, st |-> NoSt, timer |-> NoTimer, stale |-> {}, out |-> <<>>, starts |-> 0, seed |-> FALSE,
          sp |-> [life |-> 0, att |-> 0, comps |-> 0, errs |-> 0, served |-> 0, pend |-> NoPend, saved |-> NoPend, ended |-> ""],
          sout |-> <<>>, sstarts |-> 0, steps |-> 0]
 
@@ -144,7 +144,7 @@ Subscribe ==
 Unsubscribe ==
   /\ k.active
   /\ k' = IF k.oend # "" THEN [Step(k) EXCEPT !.active = FALSE]
-          ELSE [Step(k) EXCEPT !.active = FALSE, !.st = NoSt, !.timer = NoTimer, !.stale = FALSE, !.inner = "fresh",
+          ELSE [Step(k) EXCEPT !.active = FALSE, !.st = NoSt, !.timer = NoTimer, !.stale = {}, !.inner = "fresh",
                                !.sp.pend = NoPend]
 
 \* A checkpoint round trip (R-checkpoint): capture at a wave boundary and restore. The
@@ -155,7 +155,7 @@ Unsubscribe ==
 \* and until then nothing runs.
 Restore ==
   /\ k.active /\ ~k.seed
-  /\ k' = [Step(k) EXCEPT !.active = FALSE, !.seed = TRUE, !.timer = NoTimer, !.stale = FALSE,
+  /\ k' = [Step(k) EXCEPT !.active = FALSE, !.seed = TRUE, !.timer = NoTimer, !.stale = {},
                            !.sp.saved = IF SpecPending(k.sp) THEN k.sp.pend ELSE NoPend, !.sp.pend = NoPend]
 
 \* What a restored inner does at its first activation. One that had ended stays ended. A
@@ -216,15 +216,21 @@ Request ==
 
 \* The pending retry's timer: dropped unless its attempt is still the current one; with U
 \* ended, no attempt is made and the owner ends with the inner's ERROR.
+\* The composition's side of a timer firing, as restart.mjs's replace has it: nothing when the
+\* attempt is no longer the one the timer was armed for, and else the record cleared and the retry
+\* made, or dropped with the inner's end when a fresh inner would end at once. The current timer
+\* and a superseded one both fire through this, so the guard is what makes the second inert.
+Fire(s0, t) ==
+  IF ~(s0.st # NoSt /\ t.tok = s0.st.attempt) THEN s0
+  ELSE IF s0.up THEN [s0 EXCEPT !.st.waiting = FALSE, !.out = <<t.end>>, !.oend = t.end]
+  ELSE [s0 EXCEPT !.st.waiting = FALSE, !.inner = "live", !.starts = 1]
+
 TimerFires ==
   /\ k.timer # NoTimer
   /\ LET s0 == [Step(k) EXCEPT !.timer = NoTimer]
-         cur == k.timer.tok = k.st.attempt
          p == k.sp.pend
          spCur == SpecPending(k.sp)
-         s1 == IF ~cur THEN s0
-               ELSE IF k.up THEN [s0 EXCEPT !.st.waiting = FALSE, !.out = <<k.timer.end>>, !.oend = k.timer.end]
-               ELSE [s0 EXCEPT !.st.waiting = FALSE, !.inner = "live", !.starts = 1]
+         s1 == Fire(s0, k.timer)
          s2 == [s1 EXCEPT !.sp.pend = NoPend]
      IN k' = IF ~spCur THEN s2
              ELSE IF k.up THEN [s2 EXCEPT !.sp.ended = p.end, !.sout = <<p.end>>]
@@ -232,11 +238,12 @@ TimerFires ==
 
 \* A superseded retry's timer, still armed while a later retry waits on its own (third QA,
 \* 2026-11-19: with one timer in the model, a superseded timer that cleared the record of the
-\* retry waiting now could not be reached, and the reference's tests let it through too). It
-\* fires into nothing on both sides.
+\* retry waiting now could not be reached, and the reference's tests let it through too). The
+\* superseded timers are kept with their attempt numbers and fire through the same guard as the
+\* current one (fourth QA: as a flag that fired into nothing, the step asserted that they are
+\* inert and no mutation of it was caught). The rule's side has nothing for them.
 StaleFires ==
-  /\ k.stale
-  /\ k' = [Step(k) EXCEPT !.stale = FALSE]
+  \E t \in k.stale : k' = Fire([Step(k) EXCEPT !.stale = @ \ {t}], t)
 
 Next == k.steps < MaxSteps /\ (Subscribe \/ Unsubscribe \/ InnerSends \/ UpEnds \/ Request \/ TimerFires \/ StaleFires
                                 \/ Restore \/ SubscribeRestored)
