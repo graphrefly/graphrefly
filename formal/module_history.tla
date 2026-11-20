@@ -11,7 +11,10 @@ INVALIDATE policy, so an INVALIDATE removes its value and keeps its list.
 Revised 2026-11-19 after the independent QA of that work: the rule's side reads
 the wave with its own operators. Revised again that day after the second QA:
 the rule's side also has its own bound, payloads, terminals and activation, and
-X's menu gains DATA with an ERROR and two INVALIDATEs in one wave.
+X's menu gains DATA with an ERROR and two INVALIDATEs in one wave. Revised
+again after the third QA: both sides had dropped an INVALIDATE that came before
+the source's ERROR in one wave, so H ended still holding its value, where the
+reference sends the INVALIDATE and then the ERROR; the menu had no such wave.
 
 Topology: a computed source X, kept active by a sink of its own, and the
 history node H over X with N = 2 and a sink that subscribes and unsubscribes.
@@ -59,7 +62,8 @@ Menu == { << <<"a">> >>, << <<"a">>, <<"b">> >>, << <<"a", "b">> >>, << <<"b">>,
           << <<"a">>, <<"INV">> >>, << <<"a">>, <<"INV">>, <<"b">> >>,
           << <<"a">>, <<"COM">> >>, << <<"a", "COM">> >>, << <<"ERR">> >>,
           << <<"a">>, <<"ERR">> >>, << <<"b", "ERR">> >>,
-          << <<"a">>, <<"INV">>, <<"b">>, <<"INV">> >>, << <<"INV">>, <<"b">>, <<"INV">>, <<"a">> >> }
+          << <<"a">>, <<"INV">>, <<"b">>, <<"INV">> >>, << <<"INV">>, <<"b">>, <<"INV">>, <<"a">> >>,
+          << <<"INV">>, <<"ERR">> >>, << <<"a">>, <<"INV">>, <<"ERR">> >> }
 
 VARIABLE k
 vars == <<k>>
@@ -97,7 +101,8 @@ ApplyX(x, fs, out) ==
 CompWave(h, fs) ==
   LET err  == HasTerm(fs, "ERR")                    \* auto ERROR: no run
       inv  == LastInvFrame(fs, Len(fs)) > 0
-      lead == ~err /\ inv /\ h.has
+      \* an INVALIDATE that reached H before the ERROR in the wave takes effect first (R-terminals)
+      lead == inv /\ h.has
       \* auto INVALIDATE (D812, 2026-11-18): the kernel removes H's value and forwards the
       \* INVALIDATE, dropping it if H holds no value; the function does not run for it, so
       \* the list in private state stays
@@ -139,7 +144,9 @@ SpecArrays(e, fs) ==
 SpecInvalidated(fs) == \E i \in DOMAIN fs : fs[i] = <<"INV">>
 SpecWave(sp, fs) ==
   LET err  == SpecSends(fs, "ERR")     \* the source's ERROR ends the node, which sends no list for that wave
-      lead == ~err /\ SpecInvalidated(fs) /\ sp.has   \* an INVALIDATE removes the node's value and keeps the list
+      \* an INVALIDATE removes the node's value and keeps the list, also in a wave that then
+      \* carries the source's ERROR: it reached the node first (R-terminals)
+      lead == SpecInvalidated(fs) /\ sp.has
       l0   == sp.list
       e    == IF err THEN <<>> ELSE SpecArrays(<<>>, fs)
       \* A wave without DATA is not an entry; one with DATA sends the new list once,

@@ -12,7 +12,9 @@ the independent QA of that work: the two sides no longer share the test for "a
 retry was waiting", the rule's owner keeps its own record across the restore,
 and a restored inner may send at its first activation, which the first D812
 model could not reach and where the module then renewed the inner at once and
-counted the failure as well.
+counted the failure as well. Revised after the third QA: a superseded retry's
+timer may still be armed while a later retry waits (stale), and fires into
+nothing.
 
 Topology: an upstream U, the inner I at the owner's fixed path over U, the
 restart state, and the owner O over [I, restart state] with manual terminals
@@ -81,7 +83,9 @@ OwnerRun(s, vals, end) ==
       \* a new attempt: the record says whether its replace waits for a timer
       st4 == IF again THEN [st3 EXCEPT !.attempt = @ + 1, !.waiting = ea /\ s.delay] ELSE st3
   IN IF ~again THEN [s EXCEPT !.st = st4, !.out = fwd \o Term(end), !.oend = end]
-     ELSE IF ea /\ s.delay THEN [s EXCEPT !.st = st4, !.out = fwd, !.timer = [tok |-> st4.attempt, end |-> end]]
+     \* a timer still armed here is an earlier attempt's, superseded by a request: it stays armed
+     ELSE IF ea /\ s.delay THEN [s EXCEPT !.st = st4, !.out = fwd, !.timer = [tok |-> st4.attempt, end |-> end],
+                                          !.stale = @ \/ s.timer # NoTimer]
      ELSE [s EXCEPT !.st = st4, !.out = fwd, !.inner = "live", !.starts = @ + 1]
 
 \* ---- the rule: R-restart, from its text ----
@@ -105,7 +109,7 @@ SpecRun(p, s, vals, end) ==
 Init ==
   \E delay \in BOOLEAN :
     k = [delay |-> delay, up |-> FALSE, inner |-> "fresh", active |-> FALSE, oend |-> "",
-         req |-> 0, st |-> NoSt, timer |-> NoTimer, out |-> <<>>, starts |-> 0, seed |-> FALSE,
+         req |-> 0, st |-> NoSt, timer |-> NoTimer, stale |-> FALSE, out |-> <<>>, starts |-> 0, seed |-> FALSE,
          sp |-> [life |-> 0, att |-> 0, comps |-> 0, errs |-> 0, served |-> 0, pend |-> NoPend, saved |-> NoPend, ended |-> ""],
          sout |-> <<>>, sstarts |-> 0, steps |-> 0]
 
@@ -140,7 +144,7 @@ Subscribe ==
 Unsubscribe ==
   /\ k.active
   /\ k' = IF k.oend # "" THEN [Step(k) EXCEPT !.active = FALSE]
-          ELSE [Step(k) EXCEPT !.active = FALSE, !.st = NoSt, !.timer = NoTimer, !.inner = "fresh",
+          ELSE [Step(k) EXCEPT !.active = FALSE, !.st = NoSt, !.timer = NoTimer, !.stale = FALSE, !.inner = "fresh",
                                !.sp.pend = NoPend]
 
 \* A checkpoint round trip (R-checkpoint): capture at a wave boundary and restore. The
@@ -151,7 +155,7 @@ Unsubscribe ==
 \* and until then nothing runs.
 Restore ==
   /\ k.active /\ ~k.seed
-  /\ k' = [Step(k) EXCEPT !.active = FALSE, !.seed = TRUE, !.timer = NoTimer,
+  /\ k' = [Step(k) EXCEPT !.active = FALSE, !.seed = TRUE, !.timer = NoTimer, !.stale = FALSE,
                            !.sp.saved = IF SpecPending(k.sp) THEN k.sp.pend ELSE NoPend, !.sp.pend = NoPend]
 
 \* What a restored inner does at its first activation. One that had ended stays ended. A
@@ -226,7 +230,15 @@ TimerFires ==
              ELSE IF k.up THEN [s2 EXCEPT !.sp.ended = p.end, !.sout = <<p.end>>]
              ELSE [s2 EXCEPT !.sp.att = @ + 1, !.sstarts = 1]
 
-Next == k.steps < MaxSteps /\ (Subscribe \/ Unsubscribe \/ InnerSends \/ UpEnds \/ Request \/ TimerFires
+\* A superseded retry's timer, still armed while a later retry waits on its own (third QA,
+\* 2026-11-19: with one timer in the model, a superseded timer that cleared the record of the
+\* retry waiting now could not be reached, and the reference's tests let it through too). It
+\* fires into nothing on both sides.
+StaleFires ==
+  /\ k.stale
+  /\ k' = [Step(k) EXCEPT !.stale = FALSE]
+
+Next == k.steps < MaxSteps /\ (Subscribe \/ Unsubscribe \/ InnerSends \/ UpEnds \/ Request \/ TimerFires \/ StaleFires
                                 \/ Restore \/ SubscribeRestored)
 
 Spec == Init /\ [][Next]_vars
