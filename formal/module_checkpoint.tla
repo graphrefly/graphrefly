@@ -247,8 +247,7 @@ Replace ==
                      inp |-> k.ds, rec |-> rec, records |-> k.o.records, pend |-> FALSE, job |-> FALSE, bad |-> bad]
            n1    == Run(fresh, SnapVals(k.ds))
            end   == AllEnded(k.ds)
-       IN k' = [Step(k) EXCEPT !.o = [n1 EXCEPT !.ended = end, !.res = @ /\ ~end, !.job = @ /\ ~end, !.pend = @ /\ ~end,
-                                               !.st = IF end THEN <<>> ELSE @],
+       IN k' = [Step(k) EXCEPT !.o = [n1 EXCEPT !.ended = end, !.res = @ /\ ~end, !.job = @ /\ ~end, !.pend = @ /\ ~end],
                   !.setup = setup, !.replaced = TRUE]
 
 \* Capture at a wave boundary: P's values, private state (with the pending job, if P records
