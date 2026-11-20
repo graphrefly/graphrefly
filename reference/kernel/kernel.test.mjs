@@ -2320,3 +2320,20 @@ test("latestAsync: a job that resolves with nothing ends the node with ERROR; fa
   assert.deepEqual([g.get("no").value, g.get("no").ended, g.privateState("no")], [false, null, { pending: [] }]);
   assert.deepEqual([g.get("nil").value, g.get("nil").ended], [null, null]);
 });
+
+// Fourth QA (2026-11-19). R-request-order: a function that returns the value it was given writes
+// nothing, and that holds when it was given none. Given a value, returning none asks for a DATA
+// without a payload, which is refused (R-messages); graphrefly-ts and graphrefly-py do the same.
+test("R-request-order: an updater given no value that returns none writes nothing; given a value, it is refused", () => {
+  const g = createGraph();
+  g.state("empty");
+  g.state("full", 1);
+  g.subscribe("se", "empty");
+  assert.deepEqual(during(g, () => g.set("empty", () => undefined)), [], "it returned what it was given");
+  assert.deepEqual(during(g, () => g.batch(() => { g.set("full", 2); g.invalidate("full"); g.set("full", () => undefined); })).length, 0, "after an INVALIDATE in a batch too: no sink of full");
+  assert.deepEqual(g.get("full"), { active: false, has: false, value: undefined, values: [], ended: null });
+  g.set("full", 5);
+  assert.throws(() => g.set("full", () => undefined), (e) => e instanceof KernelError && e.message === "DATA carries exactly one payload");
+  assert.throws(() => g.batch(() => { g.set("empty", 9); g.set("full", () => undefined); }), KernelError, "and in a batch it fails every write of the commit");
+  assert.deepEqual([g.get("full").value, g.get("empty").has], [5, false]);
+});

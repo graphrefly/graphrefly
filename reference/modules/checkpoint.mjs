@@ -91,7 +91,12 @@ export function capture(g) {
       saved = { values: x.values, ended: x.ended, ...x.seed };
       const state = g.privateState(id);
       if (state !== undefined) saved.state = state;
-    } else if (x.active || x.ended) {
+    } else if (x.ended) {
+      // An ended node has no lifetime (R-terminals), so no private state and nothing received: its
+      // values and its terminal are all it holds. (Until the fourth QA, 2026-11-19, it was saved
+      // with what its dependencies held at the capture, which it may never have received.)
+      saved = { values: x.values, ended: x.ended };
+    } else if (x.active) {
       const state = g.privateState(id);
       saved = {
         values: x.values, ended: x.ended, ...(state !== undefined && { state }),
@@ -136,8 +141,10 @@ function restorable(real) {
   };
 }
 
-// Each node after its declared dependencies, otherwise in checkpoint order: a replace may have
-// given a node a dependency made after it (found by the second reviews, 2026-11-10).
+// The nodes in checkpoint order, a node's declared dependencies that are not built yet first, in
+// their declared order and each in the same way (R-checkpoint): a replace may have given a node a
+// dependency made after it (found by the second reviews, 2026-11-10). So that dependency comes
+// before the node in the restored graph, and the nodes between them keep their place after both.
 function buildOrder(nodes, dependencies = (n) => n.deps) {
   const byId = new Map(nodes.map((n) => [n.id, n]));
   const done = new Set(), order = [];
@@ -197,7 +204,7 @@ function prepareCheckpoint(checkpoint, registry) {
     if (!Array.isArray(saved.values)) fail("its retained values are not JSON");
     if (!terminal(saved.ended)) fail("invalid or missing terminal");
     if (Object.hasOwn(saved, "deps") && (!ids(saved.deps) || new Set(saved.deps).size !== saved.deps.length)) fail("invalid lifetime dependencies");
-    if (n.kind === "node") {
+    if (n.kind === "node" && !saved.ended) { // an ended node has no lifetime, so nothing received
       const deps = saved.deps ?? n.deps;
       if (!Array.isArray(saved.inputs) || saved.inputs.length !== deps.length || saved.inputs.some((input) =>
         !record(input) || typeof input.has !== "boolean" || !terminal(input.ended) ||

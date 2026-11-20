@@ -378,6 +378,69 @@ test("D812: a restored graph's creation order may differ, and its capture names 
   assert.throws(() => capture(r), { message: "not restorable: later: its retained values are not JSON" });
 });
 
+// Fourth QA (2026-11-19): two nodes cannot tell which way the order differs. Restore takes the
+// nodes in checkpoint order and builds a node's unbuilt dependencies first, so the dependency
+// moves up to its node and the nodes between them keep their place after both.
+test("R-checkpoint: restore builds a dependency made after its node just before it; the nodes between stay after both", () => {
+  const reg = registry();
+  const g = createGraph();
+  g.state("a", 1);
+  node(g, reg, "n", ["a"], "sum");
+  g.state("x", 1);
+  g.state("late", 4);
+  node(g, reg, "y", ["a"], "sum");
+  g.replace("n", ["late"], reg.plus({ k: 1 }), { recipe: { ref: "plus", config: { k: 1 } } });
+  const r = restore(roundTrip(capture(g)), reg);
+  const ids = (x) => x.describe().map((n) => n.id);
+  assert.deepEqual([ids(g), ids(r)], [["a", "n", "x", "late", "y"], ["a", "late", "n", "x", "y"]]);
+  // x and late hold what is not JSON; n is not active, so it holds nothing.
+  for (const graph of [g, r]) { graph.set("x", { f: () => 1 }); graph.set("late", { f: () => 1 }); }
+  assert.throws(() => capture(g), { message: "not restorable: x: its retained values are not JSON" });
+  assert.throws(() => capture(r), { message: "not restorable: late: its retained values are not JSON" });
+});
+
+// Fourth QA (2026-11-19). An ended node has no lifetime (R-terminals), so nothing it received is
+// saved or checked. It was saved with what its dependencies held at the capture: a node made
+// before its dependency was then named for a value it never received, and for an ERROR it never
+// had, and a value never delivered to it was written.
+test("R-checkpoint: an ended node is saved with its values and terminal alone", () => {
+  const reg = { ...registry(), once: () => (ctx) => ctx.down([["DATA", 1], ["COMPLETE"]]) };
+  const once = { recipe: { ref: "once", config: null } };
+  const built = () => {
+    const g = createGraph();
+    g.node("n", [], () => {}, once);
+    g.state("late", 1);
+    g.replace("n", ["late"], reg.once(), once);
+    g.subscribe("s", "n");
+    return g;
+  };
+  let g = built();
+  assert.deepEqual(g.get("n").ended, ["COMPLETE"]);
+  g.set("late", 3);
+  const cp = roundTrip(capture(g));
+  assert.deepEqual(cp.nodes.find((x) => x.id === "n").saved, { values: [1], ended: ["COMPLETE"] }, "not the 3 it never received");
+  const r = restore(cp, reg);
+  assert.deepEqual(during(r, () => r.subscribe("k", "n")), ["k <- n: [START, DATA(1), COMPLETE]"]);
+  const byId = (c) => Object.fromEntries(c.nodes.map((x) => [x.id, x]));
+  assert.deepEqual(byId(roundTrip(capture(r))), byId(cp), "a second capture saves the same, in the restored graph's order");
+
+  g = built();
+  g.set("late", { f: () => 1 });
+  assert.throws(() => capture(g), { message: "not restorable: late: its retained values are not JSON" }, "late, for its own value");
+  g = built();
+  g.error("late", () => 1);
+  assert.throws(() => capture(g), { message: "not restorable: late: its ERROR payload is not JSON" }, "late, for its own ERROR");
+
+  // An ended node without a recipe, holding only JSON, is local-only.
+  g = createGraph();
+  g.node("n", [], () => {});
+  g.state("late", 1);
+  g.replace("n", ["late"], reg.once());
+  g.subscribe("s", "n");
+  g.set("late", { f: () => 1 });
+  assert.throws(() => capture(g), { message: "not restorable: n: local-only, built or replaced without a recipe" });
+});
+
 test("a missing recipe fails the restore", () => {
   const cp = capture(original());
   const { scan, ...withoutScan } = registry();

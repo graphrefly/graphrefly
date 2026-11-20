@@ -608,12 +608,14 @@ accepted and written by capture, and restore refused it; a construction seed was
 are refused by the kernel now. Tests for those and for mutants that had survived: a boolean as a
 DATA payload, a projector that throws nothing or a boolean, `throw null`, an object of its own for
 each `{}`, a write refused during a wave, a recipe without a reference that received what is not
-JSON. Not fixed, put to the user: capture reads an ended node's received records from what its
-dependencies hold now, so it can name the wrong node or reason and save a value never delivered;
-the restored graph's creation order (the reference builds a dependency before the node that needs
-it and keeps checkpoint order otherwise, which the rule's sentence does not fix for three nodes);
-an updater that returns nothing, refused only when the state holds a value. Left as it was: sinks
-and `get` are handed the kernel's own message arrays. 532 tests.
+JSON. Then, with the user ("都按建议"): an ended node is saved with its values and terminal alone, where
+capture had read its received records from what its dependencies hold now, naming the wrong node or
+reason and saving a value never delivered, and restore asks no received records of one;
+R-checkpoint@2 states restore's order, which is the reference's (a dependency built just before the
+node that needs it, checkpoint order otherwise), with a five-node test that tells it from the other
+reading. An updater that returns nothing was not changed: it follows R-request-order and
+R-messages as it is, and a test pins it. Left as it was: sinks and `get` are handed the kernel's
+own message arrays. 535 tests.
 The dated exploration below records earlier schema/implementation shapes.
 
 
