@@ -111,8 +111,9 @@ Live(n, step, ds2) ==
        ELSE [n |-> [n EXCEPT !.has = FALSE, !.val = <<>>, !.inp = ds2], out |-> <<"INV">>]
   ELSE IF step.kind = "com"
   \* auto COMPLETE: the function does not run on an end alone; P ends with its last input,
-  \* and its lifetime closes, which runs the setup's cleanup.
-  THEN IF AllEnded(ds2) THEN [n |-> [n EXCEPT !.ended = TRUE, !.res = FALSE, !.job = FALSE, !.pend = FALSE, !.inp = ds2], out |-> <<"COM">>]
+  \* and its lifetime closes, which runs the setup's cleanup and takes the private state with
+  \* it (R-lifetime; until the fifth QA, 2026-11-20, an ended P kept st here on both sides).
+  THEN IF AllEnded(ds2) THEN [n |-> [n EXCEPT !.ended = TRUE, !.res = FALSE, !.job = FALSE, !.pend = FALSE, !.st = <<>>, !.inp = ds2], out |-> <<"COM">>]
        ELSE [n |-> [n EXCEPT !.inp = ds2], out |-> <<>>]
   ELSE LET n1 == Run(n, step.new) IN [n |-> [n1 EXCEPT !.inp = ds2], out |-> << <<"D", n1.val>> >>]
 
@@ -142,7 +143,8 @@ RefWave(o, ds) ==
            \* read the flag until the QA of the D812 work).
            o2  == IF new # <<>> THEN o1 ELSE [o1 EXCEPT !.job = o1.job /\ o1.records, !.pend = o1.job /\ o1.records]
        IN [o2 EXCEPT !.ended = AllEnded(ds), !.res = @ /\ ~AllEnded(ds), !.inp = ds,
-                     !.job = @ /\ ~AllEnded(ds), !.pend = @ /\ ~AllEnded(ds)]
+                     !.job = @ /\ ~AllEnded(ds), !.pend = @ /\ ~AllEnded(ds),
+                     !.st = IF AllEnded(ds) THEN <<>> ELSE @]
 
 \* The restored P's first activation through the module. An ended P has no lifetime, so no
 \* setup; otherwise the kernel runs the setup, then the wrapper, which runs the recipe only
@@ -159,7 +161,8 @@ Activate(cp, ds) ==
       n0p  == IF ~cp.ended THEN [n0 EXCEPT !.job = cp.pend] ELSE n0
       n1   == IF run THEN Run(n0p, new) ELSE n0p
       end  == cp.ended \/ AllEnded(ds)
-  IN [n |-> [n1 EXCEPT !.ended = end, !.res = @ /\ ~end, !.job = @ /\ ~end, !.pend = @ /\ ~end], ran |-> run]
+  IN [n |-> [n1 EXCEPT !.ended = end, !.res = @ /\ ~end, !.job = @ /\ ~end, !.pend = @ /\ ~end,
+                       !.st = IF end THEN <<>> ELSE @], ran |-> run]
 
 Steps ==
   { [kind |-> "set", new |-> << <<d, v>> >>, d |-> d] : d \in {"A", "B"}, v \in Vals } \cup
@@ -187,8 +190,10 @@ NoCp == [st |-> <<>>, has |-> FALSE, val |-> <<>>, ended |-> FALSE, inp |-> D0, 
          records |-> FALSE, pend |-> FALSE, job |-> FALSE, written |-> FALSE]
 
 \* Creation order (D802). P depends on A and B. Either both were made before P, or P was
-\* replaced onto B, which was made after it; restore builds each node after its declared
-\* dependencies and otherwise in creation order (R-checkpoint).
+\* replaced onto B, which was made after it. BuildFrom takes the first node in creation order
+\* whose dependencies are built. With these three nodes that is the order R-checkpoint@2 gives,
+\* a node's unbuilt dependencies just before it; with a fourth node between P and B the two
+\* differ, and the reference tests pin the rule's order, which this model does not reach.
 NodeDeps(x) == IF x = "P" THEN {"A", "B"} ELSE {}
 Creation(order) == IF order = "deps-first" THEN <<"A", "B", "P">> ELSE <<"A", "P", "B">>
 RemoveAt(s, i) == SubSeq(s, 1, i - 1) \o SubSeq(s, i + 1, Len(s))
@@ -242,7 +247,8 @@ Replace ==
                      inp |-> k.ds, rec |-> rec, records |-> k.o.records, pend |-> FALSE, job |-> FALSE, bad |-> bad]
            n1    == Run(fresh, SnapVals(k.ds))
            end   == AllEnded(k.ds)
-       IN k' = [Step(k) EXCEPT !.o = [n1 EXCEPT !.ended = end, !.res = @ /\ ~end, !.job = @ /\ ~end, !.pend = @ /\ ~end],
+       IN k' = [Step(k) EXCEPT !.o = [n1 EXCEPT !.ended = end, !.res = @ /\ ~end, !.job = @ /\ ~end, !.pend = @ /\ ~end,
+                                               !.st = IF end THEN <<>> ELSE @],
                   !.setup = setup, !.replaced = TRUE]
 
 \* Capture at a wave boundary: P's values, private state (with the pending job, if P records
@@ -273,8 +279,10 @@ Capture ==
           ELSE [Step(k) EXCEPT
              !.swhy = SpecRefusal(k.o),
              !.phase = IF ~Builds(BuildOrder(k.order)) THEN "broken" ELSE "window",
+             \* An ended P is saved with its values and its terminal alone (R-checkpoint@2):
+             \* it holds no private state by then, and what it received is not saved.
              !.cp = [st |-> k.o.st, has |-> k.o.has, val |-> k.o.val, ended |-> k.o.ended,
-                     inp |-> k.o.inp, rec |-> k.o.rec, setup |-> k.setup,
+                     inp |-> IF k.o.ended THEN D0 ELSE k.o.inp, rec |-> k.o.rec, setup |-> k.setup,
                      records |-> k.o.records, pend |-> k.o.pend, job |-> k.o.job, written |-> TRUE]]
 
 \* A job in flight finishes: its late output goes out and nothing is pending any more. In the
