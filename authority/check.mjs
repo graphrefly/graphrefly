@@ -4,14 +4,16 @@ import { fileURLToPath } from "node:url";
 import { buildAuthorityViews, loadFormalArtifacts, loadJsonl } from "./model.mjs";
 import { loadFederation, resolverDisagreements } from "./federation.mjs";
 import { loadWorkFederation } from "./work-federation.mjs";
+import { buildOperatorViews, loadOperatorLedgers } from "./operators.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const workspace = process.argv.includes("--workspace");
 const federation = loadFederation(root, { includeExternal: workspace });
 const work = loadWorkFederation(root, { includeExternal: workspace, decisionIndex: federation.qualifiedIndex });
+const ruleRows = loadJsonl(join(root, "spec", "rules.jsonl"));
 const views = buildAuthorityViews({
   decisions: federation.decisionRecords,
-  rules: loadJsonl(join(root, "spec", "rules.jsonl")),
+  rules: ruleRows,
   conformance: loadJsonl(join(root, "spec", "conformance.jsonl")),
   formalArtifacts: loadFormalArtifacts(join(root, "formal")),
   federation: federation.ledgers,
@@ -49,6 +51,24 @@ console.log("work federation:", {
   supersessionCycles: work.supersessionCycles.length,
   orphans: work.orphans.length,
 });
+// The operator contracts of graphrefly:D813 are outside the protocol projection; the gate only holds their links.
+const operators = buildOperatorViews({
+  ...loadOperatorLedgers(root),
+  rules: ruleRows,
+  currentRuleIds: views.currentProtocol.rules.map((rule) => rule.id),
+  draftRuleIds: views.currentProtocol.draftRules.map((coordinate) => coordinate.split("@")[0]),
+  decisionIds: federation.decisionRecords.map((record) => record.id),
+  operatorDecisionIds: federation.decisionRecords.filter((record) => (record.concerns ?? []).some((concern) => String(concern).startsWith("operators."))).map((record) => record.id),
+});
+console.log("operator contracts:", {
+  ...operators.metrics,
+  // For review, never a gate failure; `node authority/current-operators.mjs --review` prints the detail.
+  draftExceptionsWithoutTrace: operators.review.draftExceptionsWithoutTrace.length,
+  openQuestions: operators.review.openQuestions.length,
+  draftsCitingDraftRules: operators.review.draftsCitingDraftRules,
+  unlinkedTraces: operators.review.unlinkedTraces,
+});
+for (const error of operators.errors) views.errors.push(error);
 for (const error of federation.errors) views.errors.push(error);
 for (const id of resolverDisagreements(federation, views.currentProductConstitution.current)) views.errors.push(`${id} is current in one resolver and not in the other`);
 for (const error of work.errors) views.errors.push(error);
