@@ -75,6 +75,9 @@ const MUTANTS = [
   ["tap puts its source's COMPLETE in its last DATA array", "O-common: after DATA it would have sent anyway the COMPLETE is an array of its own",
     [[NODE("tap", "f"), POLICY("tap", "f", `terminal: { complete: "manual" }`)],
       [`  for (const w of ctx.deps[0].waves) {\n    if (!w.length) continue;\n${TAP}\n  }`, `  const all = ctx.deps[0].waves.flat();\n  for (const v of all) f(v);\n  const out = all.map((v) => ["DATA", v]);\n  if (ctx.deps[0].terminal) out.push(ctx.deps[0].terminal);\n  if (out.length) ctx.down(out);`]]],
+  // found by the whole-branch review (2026-11-21); OT-109 holds it
+  ["filter drops a repeated value within an array", "O-filter use: sends the DATA for which p holds, in order",
+    KEPT, `    const kept = [...new Set(w.filter((v) => p(v)))];\n    if (kept.length) ctx.down(kept.map((v) => ["DATA", v]));`],
 ];
 
 mutantSuite({ module: "transform", operators: ["map", "filter", "tap"], mutants: MUTANTS, minTraces: 7 });

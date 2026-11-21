@@ -70,6 +70,11 @@ const MUTANTS = [
   ["pairwise flattens a value that is a list into its pair", "O-pairwise use: sends [previous, current]", PAIR, `      if (prev.length) pairs.push([].concat(prev[0], v));\n      prev = [v];`],
   ["pairwise ignores its source's ERROR", "O-common: an input's ERROR ends the operator", P_NODE, `return g.node(id, [sourceId], pairwiseFn, { terminal: { error: "manual" }, recipe: { ref: "operators.pairwise", config: null } });`],
   ["a restored pairwise forgets its previous value", "O-pairwise use: a restored one, whose previous value is saved", P_HEAD, `function pairwiseFn(ctx) {\n  let prev = ctx.seed !== undefined ? [] : ctx.state.get()?.prev ?? [];`],
+  // found by the whole-branch review (2026-11-21); OT-109 holds them
+  ["distinctUntilChanged does not ask its equality about identical values", "O-distinctUntilChanged use: two values are the same when equal(last sent, candidate) holds",
+    SAME, `      if (last.length && (last[0] === v || equal(last[0], v))) continue;`],
+  ["pairwise takes only the last value of the snapshot it activates on", "O-pairwise use: [previous, current] for every DATA from the second on",
+    `function pairwiseFn(ctx) {\n`, `function pairwiseFn(ctx) {\n  if (ctx.state.get() === undefined) { ctx.state.set({ prev: ctx.deps[0].waves.flat().slice(-1) }); return; }\n`],
 ];
 
 mutantSuite({ module: "compare", operators: ["distinctUntilChanged", "pairwise"], mutants: MUTANTS, minTraces: 6 });

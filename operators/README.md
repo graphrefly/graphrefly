@@ -59,8 +59,16 @@ owning work item records, and by listing them in `ACTIVE` in
 to what a draft may lack: it links a trace, every exception links its own, each of those traces is at
 `messages` detail, nothing is `open`, every rule it cites is current, and the `common` family is
 active with it. The reference run holds the rest: a trace of an active contract that is skipped
-there, or listed as a known difference, fails `npm run test:reference`. Nothing yet stops an active
-contract or its trace from being edited in place; that is graphrefly:B146's.
+there, or listed as a known difference, fails `npm run test:reference`.
+
+On main three things of an active contract are immutable (graphrefly:D816): its `use` and exception
+statements, which traces it and each exception link, and the steps and expectation of every trace an
+active contract links. Each changes only through a new revision that a root decision introduces, with
+the `transition` from the earlier one; a trace is not edited but succeeded by a new trace the new
+revision links. A rationale, a trace's name and basis, and a draft are corrected in place, as is any
+row that exists only on an unmerged branch. What the user decides while a family is written is part of
+D813's first content and is not numbered: the contract states it and its rationale records it. No gate
+holds the immutable things yet; that is graphrefly:B146's.
 
 ## A trace
 

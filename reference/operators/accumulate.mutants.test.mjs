@@ -81,6 +81,11 @@ const MUTANTS = [
       [REDUCE_SET, `  ctx.state.set({ acc });\n  memo = acc;\n  if (source.terminal`]]],
   ["reduce goes on after its reducer returns no value", "O-reduce use: a result of f that is not a value ends reduce with ERROR in the wave f returned it",
     FOLD, `  for (const v of source.waves.flat()) acc = f(acc, v);`],
+  // found by the whole-branch review (2026-11-21); OT-108 and OT-109 hold them
+  ["reduce activated on a source that has ended sends its seed", "O-common: at activation an operator runs on its inputs' snapshots; O-reduce use: sends the result when its source completes",
+    FOLD, `  for (const v of (ctx.state.get() === undefined && source.terminal ? [] : source.waves.flat())) acc = step(f, acc, v);`],
+  ["a restored scan or reduce whose source changed starts again from its seed", "O-common: a checkpoint saves an operator's progress",
+    `const start = (ctx, seed) => (ctx.state.get() ?? { acc: seed }).acc;`, `const start = (ctx, seed) => (ctx.seed !== undefined ? { acc: seed } : ctx.state.get() ?? { acc: seed }).acc;`, ["scan", "reduce"]],
 ];
 
 mutantSuite({ module: "accumulate", operators: ["scan", "reduce"], mutants: MUTANTS, minTraces: 9 });

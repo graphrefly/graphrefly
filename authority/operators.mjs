@@ -6,7 +6,8 @@
 //
 // The gate holds links and shape. That a trace is run and passes is held where the traces are run:
 // reference/operators/traces.test.mjs fails when a trace of an active contract is skipped or is a
-// known difference. That an active contract or its trace is not edited in place is graphrefly:B146's.
+// known difference. What is immutable on an active contract on main is graphrefly:D816's to say; no
+// gate holds it yet (graphrefly:B146).
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { loadJsonl } from "./model.mjs";

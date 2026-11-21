@@ -100,7 +100,7 @@ const MUTANTS = [
   ["buffer sends an empty tail with the COMPLETE", "O-buffer completion: with nothing collected the COMPLETE alone",
     `  if (items.length && ((!activation && occurrences(flush).length) || completed(source))) {`, `  if ((items.length && !activation && occurrences(flush).length) || completed(source)) {`],
   ["buffer sends its tail and the COMPLETE as two arrays", "O-buffer completion: a nonempty tail in the terminal's array",
-    `  if (out.length) ctx.down(out);\n}\n\n// bufferCount`, `  for (const m of out) ctx.down([m]);\n}\n\n// bufferCount`],
+    `  if (out.length === 2 && !activation && occurrences(flush).length) for (const message of out) ctx.down([message]);`, `  if (out.length === 2) for (const message of out) ctx.down([message]);`],
   ["buffer flushes before it collects the wave's source values", "O-buffer same-wave: the wave's source DATA is taken before the flush",
     `  let items = [...(ctx.state.get()?.items ?? []), ...occurrences(source)];\n  if (source.invalidated) ctx.down([["INVALIDATE"]]);\n  const error = firstError(source, flush);\n  if (error) { ctx.down([error]); return; }\n  const out = [];\n  if (items.length && ((!activation && occurrences(flush).length) || completed(source))) {\n    out.push(["DATA", items]);\n    items = [];\n  }`,
     `  let items = [...(ctx.state.get()?.items ?? [])];\n  if (source.invalidated) ctx.down([["INVALIDATE"]]);\n  const error = firstError(source, flush);\n  if (error) { ctx.down([error]); return; }\n  const out = [];\n  if (items.length && ((!activation && occurrences(flush).length) || completed(source))) {\n    out.push(["DATA", items]);\n    items = [];\n  }\n  items = [...items, ...occurrences(source)];`],
@@ -123,7 +123,7 @@ const MUTANTS = [
   ["buffer takes the flush input's value at activation for a flush", "O-buffer use: what the flush input delivers in the run of activation is not a flush",
     `  if (items.length && ((!activation && occurrences(flush).length) || completed(source))) {`, `  if (items.length && (occurrences(flush).length || completed(source))) {`],
   ["buffer keeps its payloads outside private state", "O-buffer recovery: the collected payloads are saved",
-    `  ctx.state.set({ items });\n  if (out.length) ctx.down(out);`, `  ctx.state.set({ items: [] });\n  if (out.length) ctx.down(out);`],
+    `  ctx.state.set({ items });\n  if (out.length === 2`, `  ctx.state.set({ items: [] });\n  if (out.length === 2`],
   // bufferCount
   ["bufferCount makes overlapping batches", "O-bufferCount use: batches do not overlap",
     `for (; items.length - at >= n; at += n)`, `for (; items.length - at >= n; at += 1)`],
@@ -153,6 +153,19 @@ const MUTANTS = [
     `  const error = firstError(source, clock);`, `  const error = completed(source) ? undefined : firstError(source, clock);`],
   ["buffer completes when its source's COMPLETE and its flush input's ERROR share a wave", "O-buffer completion: an ERROR of either input drops the tail, also in the wave of the source's COMPLETE",
     `  const error = firstError(source, flush);`, `  const error = completed(source) ? undefined : firstError(source, flush);`],
+  // found by the whole-branch review (2026-11-21); OT-107 and OT-108 hold them
+  ["sample ignores a tick that comes with its clock's COMPLETE", "O-sample use: sends the pending value at a clock DATA; completion: the clock's COMPLETE alone does not end sampling",
+    `  const tick = !activation && occurrences(clock).length > 0;`, `  const tick = !activation && occurrences(clock).length > 0 && !completed(clock);`],
+  ["buffer activated on a source that has completed sends no tail", "O-buffer completion: the source's normal COMPLETE sends a nonempty tail in the terminal's array",
+    `  if (items.length && ((!activation && occurrences(flush).length) || completed(source))) {`, `  if (items.length && !activation && (occurrences(flush).length || completed(source))) {`],
+  ["takeUntil ends with the notifier's ERROR when both inputs error in one wave", "O-common: the inputs of one wave are taken in declared order",
+    `ctx.down([errored(source) ? source.terminal : notifier.terminal]); return; }`, `ctx.down([errored(notifier) ? notifier.terminal : source.terminal]); return; }`],
+  ["sample and buffer end with the second input's ERROR when both error in one wave", "O-common: the inputs of one wave are taken in declared order",
+    `const firstError = (...deps) => deps.find(errored)?.terminal;`, `const firstError = (...deps) => deps.findLast(errored)?.terminal;`, ["sample", "buffer"]],
+  ["a restored buffer whose source was invalidated while saved discards what it collected", "O-buffer recovery: the saved state stands: the collected payloads are kept",
+    `  let items = [...(ctx.state.get()?.items ?? []), ...occurrences(source)];`, `  let items = [...(activation && !source.has ? [] : ctx.state.get()?.items ?? []), ...occurrences(source)];`],
+  ["buffer puts a batch sent for a flush in the array of the source's COMPLETE", "O-buffer same-wave: a flush in the wave of the source's COMPLETE sends what was collected as an array of its own, before the COMPLETE",
+    `  if (out.length === 2 && !activation && occurrences(flush).length) for (const message of out) ctx.down([message]);\n  else if (out.length) ctx.down(out);`, `  if (out.length) ctx.down(out);`],
 ];
 
 mutantSuite({ module: "notifier", operators: ["sample", "takeUntil", "buffer", "bufferCount"], mutants: MUTANTS, minTraces: 20 });

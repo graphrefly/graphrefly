@@ -71,3 +71,13 @@ test("a concat whose saved position is not the source it depends on ends with an
   r.set("a", 1);
   assert.deepEqual(r.trace.at(-1).msgs, [["PENDING"], ["ERROR", "concat: its saved position is not the source it depends on"]]);
 });
+
+test("a concat reads its own copy of its sources: changing the list in the stored recipe does not move it", () => {
+  const g = graph();
+  g.state("c", 3);
+  concat(g, "x", ["a", "b"]);
+  g.subscribe("k", "x");
+  g.definition("x").recipe.config.sources[1] = "c";
+  g.complete("a");
+  assert.deepEqual(g.describe().find((node) => node.id === "x").deps, ["b"]);
+});

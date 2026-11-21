@@ -66,8 +66,9 @@ function zipFn(ctx) {
   if (out.length) ctx.down(out);
 }
 
-const concatFn = ({ sources }) => {
-  order("concat", sources);
+const concatFn = (config) => {
+  order("concat", config.sources);
+  const sources = [...config.sources]; // its own copy: the recipe's list is the definition's to keep
   return (ctx) => {
     const [current] = ctx.deps;
     let index = ctx.state.get()?.index ?? 0;

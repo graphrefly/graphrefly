@@ -21,9 +21,13 @@
 // What a notifier delivers in the run of the operator's activation is not an action, whatever the
 // notifier held or sent then; its DATA in any later wave is (the user, 2026-11-20). The activation
 // run is the first run of a lifetime: the one that finds no private state, or, in a restored
-// node, the one that is handed the seed's note (ctx.seed, R-invocation). So a restored operator's
-// first activation is an activation like any other, also when the notifier changed while the
-// graph was saved: the kernel compares values there, and could not see a tick of an equal value.
+// node, the one that is handed the seed's note (ctx.seed, R-invocation). So what the notifier
+// holds at a restored operator's first activation is not an action either, also when it changed
+// while the graph was saved: the kernel compares values there, and could not see a tick of an
+// equal value. The saved private state stands, unlike at an activation after a deactivation.
+//
+// The two inputs are distinct nodes: one node given as both is refused when the operator is built
+// (O-common; the user, 2026-11-20). The kernel itself takes a repeated dependency.
 
 const occurrences = (d) => d.waves.flat();
 const completed = (d) => d.terminal?.[0] === "COMPLETE";
@@ -76,7 +80,9 @@ function takeUntilFn(ctx) {
 
 // buffer: private state is { items }, the payloads collected since the last batch. The wave's
 // source values are collected before its flush. A source INVALIDATE keeps them. The source's
-// COMPLETE sends a nonempty tail in the terminal's array.
+// COMPLETE sends a nonempty tail in the terminal's array; a batch sent for a flush in that wave is
+// an array of its own and the COMPLETE follows in another, as O-common says of DATA the operator
+// would have sent anyway.
 function bufferFn(ctx) {
   const [source, flush] = ctx.deps;
   const activation = activationRun(ctx);
@@ -91,7 +97,8 @@ function bufferFn(ctx) {
   }
   if (completed(source)) out.push(["COMPLETE"]);
   ctx.state.set({ items });
-  if (out.length) ctx.down(out);
+  if (out.length === 2 && !activation && occurrences(flush).length) for (const message of out) ctx.down([message]);
+  else if (out.length) ctx.down(out);
 }
 
 // bufferCount: one input, so the auto INVALIDATE policy already does what its contract says: the
@@ -112,15 +119,22 @@ const bufferCountFn = ({ n }) => {
   };
 };
 
+const distinct = (name, a, b) => {
+  if (a === b) throw new RangeError(`${name}: its inputs are distinct nodes`);
+};
+
 export function sample(g, id, sourceId, clockId) {
+  distinct(`sample ${id}`, sourceId, clockId);
   return g.node(id, [sourceId, clockId], sampleFn, { ...twoRoles, recipe: { ref: "operators.sample", config: null } });
 }
 
 export function takeUntil(g, id, sourceId, notifierId) {
+  distinct(`takeUntil ${id}`, sourceId, notifierId);
   return g.node(id, [sourceId, notifierId], takeUntilFn, { ...twoRoles, recipe: { ref: "operators.takeUntil", config: null } });
 }
 
 export function buffer(g, id, sourceId, flushId) {
+  distinct(`buffer ${id}`, sourceId, flushId);
   return g.node(id, [sourceId, flushId], bufferFn, { ...twoRoles, recipe: { ref: "operators.buffer", config: null } });
 }
 

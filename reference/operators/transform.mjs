@@ -3,7 +3,8 @@
 //
 // Each is one node with the default policies, so what their contracts leave to O-common is what
 // the kernel does: an INVALIDATE retracts the output, an ERROR ends the node without that wave's
-// DATA, and the node completes when its source has, the COMPLETE an array of its own (R-wave).
+// DATA, and the node completes when its source has, the COMPLETE an array of its own (which the
+// reference kernel does and no kernel rule states of a node that is not quiet: graphrefly:B148).
 // A throw from the callback is the node's ERROR, and the kernel then sends nothing else of that
 // run (R-failure).
 //
@@ -25,8 +26,9 @@ const filterFn = (p) => (ctx) => {
   }
 };
 
-// f is called once for each DATA tap sends on, in order, and what it returns is not read. DATA
-// tap does not send, as in the wave of its source's ERROR, is not given to f (the user, 2026-11-20).
+// f is called once for each DATA tap is given, in order, and what it returns is not read. Tap is
+// not given the DATA of the wave of its source's ERROR, so f is not called for it (the user,
+// 2026-11-20).
 const tapFn = (f) => (ctx) => {
   for (const w of ctx.deps[0].waves) {
     if (!w.length) continue;

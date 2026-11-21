@@ -109,7 +109,7 @@ const MUTANTS = [
   ["concat does not send what a source delivers with its COMPLETE once it has moved on", "O-concat use: one that has already completed is passed in turn, giving its ordinary snapshot",
     `    sendArrays(ctx, current);`, `    if (!completed(current) || index === 0) sendArrays(ctx, current);`],
   ["every concat shares one position", "O-common: progress is private state",
-    [[`const concatFn = ({ sources }) => {`, `let sharedIndex = 0;\nconst concatFn = ({ sources }) => {`], [C_INDEX, `    let index = ctx.state.get() ? sharedIndex : 0;`], [`    ctx.state.set({ index });`, `    ctx.state.set({ index });\n    sharedIndex = index;`]]],
+    [[`const concatFn = (config) => {`, `let sharedIndex = 0;\nconst concatFn = (config) => {`], [C_INDEX, `    let index = ctx.state.get() ? sharedIndex : 0;`], [`    ctx.state.set({ index });`, `    ctx.state.set({ index });\n    sharedIndex = index;`]]],
   ["concat keeps its output at the current source's INVALIDATE", "O-concat invalidation: the current source's INVALIDATE retracts the output", C_NODE, `{ terminal: { complete: "manual" }, invalidate: "manual", ...recipe("concat", { sources }) }`],
   ["concat ignores the current source's ERROR", "O-concat completion: the current source's ERROR ends concat", C_NODE, `{ terminal: { complete: "manual", error: "manual" }, ...recipe("concat", { sources }) }`],
   ["a restored concat knows only its first two sources", "R-checkpoint: a restored node is built from its recipe", `"operators.concat": (config) => concatFn(config ?? {}),`, `"operators.concat": (config) => concatFn({ sources: [config.sources[0], config.sources[1]] }),`],
@@ -130,6 +130,13 @@ const MUTANTS = [
   ["race retracts for the INVALIDATE of an input that lost, before it is released", "O-race invalidation: also while the others are still being released", R_INV, `  if (ctx.deps.some((d) => d.invalidated)) ctx.down([["INVALIDATE"]]);`],
   ["race keeps its selection across activations, outside private state", "O-common: an operator that deactivates without having ended forgets it",
     [[R_HEAD, `let memo = null;\nfunction raceFn(ctx) {\n  let winner = ctx.state.get()?.winner ?? memo;`], [`    ctx.state.set({ winner });`, `    ctx.state.set({ winner });\n    memo = winner;`]]],
+  // found by the whole-branch review (2026-11-21); OT-110, OT-111 and OT-103 hold them
+  ["race selects an input for an INVALIDATE that removed its DATA of the wave", "O-common: an operator is given of a wave what R-invalidation leaves; O-race use: the first input to deliver DATA or a terminal",
+    `    const first = ctx.deps.find((d) => occurrences(d).length || d.terminal);`, `    const first = ctx.deps.find((d) => occurrences(d).length || d.terminal || d.invalidated);`],
+  ["zip activated on inputs that have ended sends the ERROR one ended with", "O-zip same-wave: an ERROR that follows that DATA, in the same wave or in the snapshot zip activates on, is not sent",
+    [[`function zipFn(ctx) {\n`, `function zipFn(ctx) {\n  const fresh = ctx.state.get() === undefined;\n`], [`  if (error && !(ends && out.length)) { ctx.down([error]); return; }`, `  if (error && !(ends && out.length && !fresh)) { ctx.down([error]); return; }`]]],
+  ["withLatestFrom sends nothing for a value the primary holds at activation", "O-withLatestFrom use: a value the primary holds when withLatestFrom activates is an occurrence as any other",
+    [[`function withLatestFromFn(ctx) {\n`, `function withLatestFromFn(ctx) {\n  const fresh = ctx.state.get() === undefined;\n  ctx.state.set(true);\n`], [`  if (secondaries.every((d) => d.has)) {`, `  if (!fresh && secondaries.every((d) => d.has)) {`]]],
 ];
 
 mutantSuite({ module: "combine", operators: ["merge", "withLatestFrom", "zip", "concat", "race"], mutants: MUTANTS, minTraces: 18 });

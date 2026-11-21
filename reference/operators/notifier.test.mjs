@@ -37,3 +37,12 @@ test("a checkpoint whose bufferCount recipe holds a bad n is refused at restore;
     assert.throws(() => restore(JSON.parse(text), notifierRecipes), /not restorable: c: bufferCount: n must be a positive integer/, JSON.stringify(config));
   }
 });
+
+test("one node given as both inputs is refused when sample, takeUntil or buffer is built", () => {
+  for (const [name, build] of [["sample", sample], ["takeUntil", takeUntil], ["buffer", buffer]]) {
+    const g = createGraph();
+    g.state("s", 1);
+    assert.throws(() => build(g, "x", "s", "s"), /its inputs are distinct nodes/, name);
+    assert.deepEqual(g.describe().map((node) => node.id), ["s"], `${name}: no node is left behind`);
+  }
+});

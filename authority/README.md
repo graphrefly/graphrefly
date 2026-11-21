@@ -58,6 +58,17 @@ designed; the resolver labels them unverified and never uses them to select publ
 The authority gate rejects the former rule-level `status`, `since` and `covers_by` fields. They
 cannot be reintroduced as a compatibility path.
 
+## Operator contracts
+
+`operators.mjs` reads `operators/contracts.jsonl` and `operators/traces.jsonl`, the shared operator
+contracts and their canonical traces (graphrefly:D813). `model.mjs` does not read them: the set is
+kept apart from the protocol rules and outside the public protocol projection, a contract may cite a
+rule, and no rule cites a contract. [../operators/README.md](../operators/README.md) gives the record
+shapes and what the gate holds; `npm run operators:current` prints the contracts by family. On main
+an active contract's statements, its trace links and the steps and expectation of the traces it links
+change only through a new revision introduced by a root decision (graphrefly:D816); no gate checks
+that yet either (graphrefly:B146).
+
 Run `npm run authority:check` and `npm run test:authority`. In a workspace containing every
 sibling repository, also run `npm run authority:check:workspace`.
 

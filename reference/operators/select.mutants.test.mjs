@@ -106,6 +106,11 @@ const MUTANTS = [
       [`  ctx.state.set({ candidate });`, `  memo = candidate;\n  ctx.state.set({ candidate: [] });`], [`${L_END}\n};`, `${L_END}\n}; };`]]],
   ["a restored first without a predicate matches nothing", "R-checkpoint: a restored node is built from its recipe",
     `firstFn(predicateOf("first", config, at))`, `firstFn(config?.p === null ? () => false : predicateOf("first", config, at))`],
+  // found by the whole-branch review (2026-11-21); OT-108 holds them
+  ["a restored skip whose source changed starts counting again", "O-common: a checkpoint saves an operator's progress",
+    `    let seen = ctx.state.get()?.seen ?? 0;`, `    let seen = ctx.seed !== undefined ? 0 : ctx.state.get()?.seen ?? 0;`],
+  ["a restored last whose source changed forgets its candidate", "O-common: a checkpoint saves an operator's progress",
+    L_HEAD, `  let candidate = ctx.seed !== undefined ? [] : ctx.state.get()?.candidate ?? [];`],
 ];
 
 mutantSuite({ module: "select", operators: ["take", "skip", "takeWhile", "first", "last"], mutants: MUTANTS, minTraces: 9 });

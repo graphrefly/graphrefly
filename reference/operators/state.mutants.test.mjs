@@ -32,6 +32,12 @@ const MUTANTS = [
   ["derived gives f its first two dependencies", "O-derived use: the latest value of every dependency", SEND, `  ctx.down([["DATA", f(...ctx.deps.slice(0, 2).map((d) => d.value))]]);`],
   ["derived ignores its first dependency's ERROR", "O-common: an input's ERROR ends the operator",
     [[NODE, policy(`terminal: { error: "manual" }`)], [SEND, `  const failed = ctx.deps.slice(1).find((d) => d.terminal?.[0] === "ERROR");\n  if (failed) { ctx.down([failed.terminal]); return; }\n${SEND}`]]],
+  // found by the whole-branch review (2026-11-21); OT-110 holds them
+  ["derived does not compute in a wave in which a dependency ends", "O-derived use: a dependency that has ended keeps its value", HAS, `${HAS}  if (ctx.deps.some((d) => d.terminal)) return;\n`],
+  ["derived does not compute again at a later activation", "O-common: at its next activation an operator runs on its inputs' snapshots as at its first",
+    `const derivedFn = (f) => (ctx) => {\n${HAS}`, `let ran = new Set();\nconst derivedFn = (f) => (ctx) => {\n${HAS}  const fresh = ctx.state.get() === undefined;\n  ctx.state.set(true);\n  if (fresh && ran.has(f)) return;\n  ran.add(f);\n`],
+  ["derived stops computing once it has seen a dependency end", "O-derived use: a dependency that has ended keeps its value",
+    `const derivedFn = (f) => (ctx) => {\n`, `const derivedFn = (f) => (ctx) => {\n  const over = ctx.state.get()?.over ?? false;\n  ctx.state.set({ over: over || ctx.deps.some((d) => d.terminal) });\n  if (over) return;\n`],
 ];
 
 mutantSuite({ module: "state", operators: ["derived"], mutants: MUTANTS, minTraces: 7 });
