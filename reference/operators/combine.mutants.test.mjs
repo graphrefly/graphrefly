@@ -187,6 +187,11 @@ const MUTANTS = [
     [["  const queues = state.queues.map((queue, i) => [...queue, ...occurrences(ctx.deps[i])]);", "  const queues = state.queues.map((queue, i) => [...queue, ...(ctx.seed !== undefined && i === 0 ? [] : occurrences(ctx.deps[i]))]);"]]],
   ["concat sends only the last DATA of an array that comes with its current source's COMPLETE", "O-concat use: follows one source at a time (its arrays); O-common: at activation it runs on its inputs' snapshots",
     [["    sendArrays(ctx, current);", "    if (completed(current)) { for (const w of current.waves) if (w.length) ctx.down(w.slice(-1).map((v) => [\"DATA\", v])); } else sendArrays(ctx, current);"]]],
+  // 2026-11-22: found by a mutant of an interpreter written from the contracts (prototype/operator-records)
+  ["zip keeps which inputs have completed where a checkpoint does not save it", "O-zip use: it ends when an input that has completed has no queued item left; O-common: a checkpoint saves an operator's progress",
+    `  const done = state.done.map((was, i) => was || completed(ctx.deps[i]));`, `  const memory = (globalThis.__zipDone ??= new WeakMap());\n  const done = (memory.get(ctx.signal) ?? ctx.deps.map(() => false)).map((was, i) => was || completed(ctx.deps[i]));\n  memory.set(ctx.signal, done);`],
+  ["a restored zip given what changed while saved forgets which inputs had completed before", "O-zip use: it ends when an input that has completed has no queued item left; O-common: a checkpoint saves an operator's progress",
+    `  const done = state.done.map((was, i) => was || completed(ctx.deps[i]));`, `  const done = state.done.map((was, i) => (was && ctx.seed === undefined) || completed(ctx.deps[i]));`],
 ];
 
 mutantSuite({ module: "combine", operators: ["merge", "withLatestFrom", "zip", "concat", "race"], mutants: MUTANTS, minTraces: 18 });
