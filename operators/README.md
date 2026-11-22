@@ -30,7 +30,7 @@ draft: an active contract's traces pass on the reference kernel, which is not a 
 | [traces.jsonl](traces.jsonl) | The canonical traces; each exists once, here |
 | [../authority/operators.mjs](../authority/operators.mjs) | The derived view and the link checks, run by `npm run authority:check` |
 | [../reference/operators/traces.test.mjs](../reference/operators/traces.test.mjs) | Runs the traces on the reference kernel, for the operators the reference has |
-| [../reference/operators/](../reference/operators/) | Operators written from their contracts over the reference kernel, each with its recipe, so that their traces are run and not only read: [notifier.mjs](../reference/operators/notifier.mjs), [transform.mjs](../reference/operators/transform.mjs), [accumulate.mjs](../reference/operators/accumulate.mjs), [compare.mjs](../reference/operators/compare.mjs), [select.mjs](../reference/operators/select.mjs), [combine.mjs](../reference/operators/combine.mjs) and [state.mjs](../reference/operators/state.mjs). Each has a `*.mutants.test.mjs` beside it: edits of the module, each naming the contract sentence it breaks, and each of which a trace must notice. [classes.mutants.test.mjs](../reference/operators/classes.mutants.test.mjs) asks the same of every active operator for the situations all of them meet: a restore after an input changed, activation on an input that has completed or ended with ERROR, and two terminals in one wave |
+| [../reference/operators/](../reference/operators/) | Operators written from their contracts over the reference kernel, each with its recipe, so that their traces are run and not only read: [notifier.mjs](../reference/operators/notifier.mjs), [transform.mjs](../reference/operators/transform.mjs), [accumulate.mjs](../reference/operators/accumulate.mjs), [compare.mjs](../reference/operators/compare.mjs), [select.mjs](../reference/operators/select.mjs), [combine.mjs](../reference/operators/combine.mjs) and [state.mjs](../reference/operators/state.mjs). Each has a `*.mutants.test.mjs` beside it: edits of the module, each naming the contract sentence it breaks, and each of which a trace must notice. [classes.mutants.test.mjs](../reference/operators/classes.mutants.test.mjs) asks the same by class, for the situations operators meet whatever they do: a restore after an input changed or ended, activation on an input that has completed, ended with ERROR or holds several values, and, for the operators with several inputs that have no rule of their own for it, two terminals in one wave or before activation. A class that passes shows the situation is traced for each operator, not that every sentence is held in it |
 
 ## A contract
 
@@ -105,7 +105,9 @@ requests, one wave each: `["subscribe", sink, node]`, `["unsubscribe", sink, nod
 `["complete", state]`, `["error", state, payload]`, `["batch", [requests]]`, `["restore"]`, which
 captures the graph, restores it with no subscribers and continues on the restored one, and
 `["advance", ms]` on a clock the test owns. The reference runner has no clock yet, so it skips a
-trace with an `advance` step. `expect[i]` is what the sinks received during `steps[i]`. A trace
+trace with an `advance` step. `expect[i]` is what the sinks received during `steps[i]`, compared node by node: what the sinks
+of one node received is in order, and the order in which sinks of different nodes received within
+the step is not part of the expectation, since no contract and no kernel rule gives it. A trace
 subscribes at least one sink and expects something somewhere, so that it can fail. An expectation
 writes `["ERROR"]`, without a payload, for an ERROR that a throw produced: how a thrown value becomes
 a payload is each runtime's (R-failure), so only the ERROR is expected. A trace also says that nothing

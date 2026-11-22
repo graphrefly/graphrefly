@@ -154,12 +154,30 @@ function occurrences(entries) {
 
 // An expectation writes ["ERROR"] without a payload for an ERROR that a throw produced: how a
 // thrown value becomes a payload is each runtime's (R-failure), so only the ERROR is expected.
-export function matches(got, expect) {
-  const loose = (steps, pattern) => steps.map((step, i) => step.map((entry, j) => [entry[0], entry[1], entry[2].map((m, k) => {
-    const wanted = pattern[i]?.[j]?.[2]?.[k];
+//
+// A step is compared node by node. What the sinks of one node received is compared in order; the
+// order in which sinks of different nodes received within the step is not part of an expectation,
+// since no contract and no kernel rule gives it (graphrefly:B148).
+const byNode = (step) => {
+  const nodes = new Map();
+  for (const entry of step) nodes.set(entry[1], [...(nodes.get(entry[1]) ?? []), entry]);
+  return nodes;
+};
+const sameEntries = (got, expect) => {
+  const loose = got.map((entry, j) => [entry[0], entry[1], entry[2].map((m, k) => {
+    const wanted = expect[j]?.[2]?.[k];
     return m[0] === "ERROR" && Array.isArray(wanted) && wanted.length === 1 && wanted[0] === "ERROR" ? ["ERROR"] : m;
-  })]));
-  return isDeepStrictEqual(loose(got, expect), expect);
+  })]);
+  return isDeepStrictEqual(loose, expect);
+};
+// The nodes of a step whose sinks received something other than expected.
+const differingNodes = (got, expect) => {
+  const have = byNode(got);
+  const want = byNode(expect);
+  return [...new Set([...have.keys(), ...want.keys()])].filter((node) => !sameEntries(have.get(node) ?? [], want.get(node) ?? []));
+};
+export function matches(got, expect) {
+  return got.length === expect.length && got.every((step, i) => differingNodes(step, expect[i]).length === 0);
 }
 
 // What the sinks received during each step, at the trace's detail, and the graph it ended on. A
@@ -209,22 +227,12 @@ export async function passes(trace, edited) {
   return (await differing(trace, edited)).size === 0;
 }
 
-// The nodes whose sinks received something other than the trace expects: in a step that does not
-// match, every node with an entry the other side lacks; and every node that sent late. Empty when
-// the trace passes.
+// The nodes whose sinks received something other than the trace expects in some step, and every
+// node that sent late. Empty when the trace passes.
 export async function differing(trace, edited) {
   const { got, late } = runTraceOn(trace, edited);
   const nodes = new Set();
-  got.forEach((step, i) => {
-    if (matches([step], [trace.expect[i]])) return;
-    const want = trace.expect[i].map((entry) => JSON.stringify(entry));
-    const have = step.map((entry) => JSON.stringify(entry));
-    const before = nodes.size;
-    for (const entry of step) if (!want.includes(JSON.stringify(entry))) nodes.add(entry[1]);
-    for (const entry of trace.expect[i]) if (!have.includes(JSON.stringify(entry))) nodes.add(entry[1]);
-    // The same entries in another number or order: every node of the step is in doubt.
-    if (nodes.size === before) for (const entry of [...step, ...trace.expect[i]]) nodes.add(entry[1]);
-  });
+  got.forEach((step, i) => { for (const node of differingNodes(step, trace.expect[i] ?? [])) nodes.add(node); });
   await new Promise((resolve) => setTimeout(resolve, 0));
   for (const entry of late()) nodes.add(entry[1]);
   return nodes;

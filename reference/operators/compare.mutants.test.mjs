@@ -75,6 +75,9 @@ const MUTANTS = [
     SAME, `      if (last.length && (last[0] === v || equal(last[0], v))) continue;`],
   ["pairwise takes only the last value of the snapshot it activates on", "O-pairwise use: [previous, current] for every DATA from the second on",
     `function pairwiseFn(ctx) {\n`, `function pairwiseFn(ctx) {\n  if (ctx.state.get() === undefined) { ctx.state.set({ prev: ctx.deps[0].waves.flat().slice(-1) }); return; }\n`],
+  // the verification re-run of 2026-11-21: an input that ended while saved, other changes while saved, inputs that hold several values, terminals in other roles, callbacks in the wave of an ERROR
+  ["distinctUntilChanged lets a repeated value pass within the array of its first run, in a wave or in the snapshot it activates on", "O-distinctUntilChanged use: sends a DATA only when it differs from the last DATA it sent; O-common: activation runs on snapshots",
+    [["      if (last.length && equal(last[0], v)) continue;", "      if (last.length && ctx.state.get() !== undefined && equal(last[0], v)) continue;"]]],
 ];
 
 mutantSuite({ module: "compare", operators: ["distinctUntilChanged", "pairwise"], mutants: MUTANTS, minTraces: 6 });

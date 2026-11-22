@@ -50,6 +50,17 @@ test("an expectation's ERROR without a payload accepts any payload, and nothing 
   assert.ok(!matches([[["k", "m", [["PENDING"], ["DATA", 1], ["ERROR", "x"]]]]], [[["k", "m", [["PENDING"], ["ERROR"]]]]]));
 });
 
+test("a step is compared node by node: the order of one node's entries counts, the order between nodes does not", () => {
+  const a = ["k", "m", [["PENDING"], ["DATA", 1]]], a2 = ["k", "m", [["PENDING"], ["DATA", 2]]], b = ["j", "n", [["PENDING"], ["DATA", 9]]];
+  assert.ok(matches([[a, b, a2]], [[b, a, a2]]));
+  assert.ok(matches([[a, a2, b]], [[a, b, a2]]));
+  assert.ok(!matches([[a2, a, b]], [[a, a2, b]]), "one node's entries in another order");
+  assert.ok(!matches([[a, b]], [[a, a2, b]]), "an entry missing");
+  assert.ok(!matches([[a, b]], [[a]]), "a node that was not expected");
+  assert.ok(!matches([[a], [b]], [[a, b], []]), "an entry in another step");
+  assert.ok(!matches([[a]], [[a], []]), "a step missing");
+});
+
 test("the runner refuses what it does not know instead of running something else", () => {
   const base = { detail: "messages", nodes: [{ id: "s", state: [] }, { id: "m", op: "map", deps: ["s"], args: { f: "double" } }], steps: [["subscribe", "k", "m"]], expect: [[]] };
   assert.throws(() => runTrace({ ...base, nodes: [base.nodes[0], { ...base.nodes[1], args: { f: "doubel" } }], steps: [["subscribe", "k", "m"], ["set", "s", 1]] }), /no callback named doubel/);

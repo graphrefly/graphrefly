@@ -78,6 +78,23 @@ const MUTANTS = [
   // found by the whole-branch review (2026-11-21); OT-109 holds it
   ["filter drops a repeated value within an array", "O-filter use: sends the DATA for which p holds, in order",
     KEPT, `    const kept = [...new Set(w.filter((v) => p(v)))];\n    if (kept.length) ctx.down(kept.map((v) => ["DATA", v]));`],
+  // the verification re-run of 2026-11-21: an input that ended while saved, other changes while saved, inputs that hold several values, terminals in other roles, callbacks in the wave of an ERROR
+  ["map sends only the last value of an array that comes with its source's terminal, in a wave or in the snapshot it activates on", "O-map use: sends f(v) for every DATA v; O-common: at activation it runs on its inputs' snapshots",
+    [["ctx.down(w.map((v) => [\"DATA\", f(v)]));", "ctx.down((ctx.deps[0].terminal ? w.slice(-1) : w).map((v) => [\"DATA\", f(v)]));"]]],
+  ["a restored tap whose source changed to two values while saved calls f for the last only", "O-tap use: calls f(v) once for every DATA it is given; R-checkpoint: a changed dependency is given as changed",
+    [["    for (const v of w) f(v);", "    for (const v of (ctx.seed !== undefined ? w.slice(-1) : w)) f(v);"]]],
+  ["a restored map whose source changed to two values while saved computes for the first only", "O-map use: sends f(v) for every DATA v; R-checkpoint: a changed dependency is given as changed",
+    [["ctx.down(w.map((v) => [\"DATA\", f(v)]));", "ctx.down((ctx.seed !== undefined ? w.slice(0, 1) : w).map((v) => [\"DATA\", f(v)]));"]]],
+  ["a restored filter whose source changed to two values while saved reads the last only", "O-filter use: sends the DATA for which p holds; R-checkpoint: a changed dependency is given as changed",
+    [["    const kept = w.filter((v) => p(v));", "    const kept = (ctx.seed !== undefined ? w.slice(-1) : w).filter((v) => p(v));"]]],
+  ["tap calls f only for the last value of an array that comes with its source's terminal", "O-tap use: calls f(v) once for every DATA it is given; O-common: at activation it runs on its inputs' snapshots",
+    [["    for (const v of w) f(v);", "    for (const v of (ctx.deps[0].terminal ? w.slice(-1) : w)) f(v);"]]],
+  ["filter sends only the first kept value of an array that comes with its source's terminal", "O-filter use: sends the DATA for which p holds, each in the array it came in; O-common: activation runs on snapshots",
+    [["    if (kept.length) ctx.down(kept.map((v) => [\"DATA\", v]));\n  }\n};\n\n// f is called once", "    if (kept.length) ctx.down((ctx.deps[0].terminal ? kept.slice(0, 1) : kept).map((v) => [\"DATA\", v]));\n  }\n};\n\n// f is called once"]]],
+  ["filter calls its predicate for the DATA that comes with its source's ERROR", "O-common: an input's ERROR ends the operator: it does not process that wave's DATA (nor, at activation, what the input holds)",
+    [["withRecipe(\"operators.filter\", \"p\", recipe));", "{ terminal: { error: \"manual\" }, ...withRecipe(\"operators.filter\", \"p\", recipe) });"], ["const filterFn = (p) => (ctx) => {\n  for (const w of ctx.deps[0].waves) {\n    const kept = w.filter((v) => p(v));\n    if (kept.length) ctx.down(", "const filterFn = (p) => (ctx) => {\n  const failed = ctx.deps[0].terminal?.[0] === \"ERROR\";\n  if (failed) { for (const w of ctx.deps[0].waves) w.filter((v) => p(v)); ctx.down([ctx.deps[0].terminal]); return; }\n  for (const w of ctx.deps[0].waves) {\n    const kept = w.filter((v) => p(v));\n    if (kept.length) ctx.down("]]],
+  ["map calls f for the DATA that comes with its source's ERROR, and sends none of it", "O-common: an input's ERROR ends the operator: it does not process that wave's DATA (nor, at activation, what the input holds)",
+    [["withRecipe(\"operators.map\", \"f\", recipe));", "{ terminal: { error: \"manual\" }, ...withRecipe(\"operators.map\", \"f\", recipe) });"], ["  for (const w of ctx.deps[0].waves) if (w.length) ctx.down(w.map((v) => [\"DATA\", f(v)]));", "  const failed = ctx.deps[0].terminal?.[0] === \"ERROR\";\n  for (const w of ctx.deps[0].waves) if (w.length) { const out = w.map((v) => [\"DATA\", f(v)]); if (!failed) ctx.down(out); }\n  if (failed) ctx.down([ctx.deps[0].terminal]);"]]],
 ];
 
 mutantSuite({ module: "transform", operators: ["map", "filter", "tap"], mutants: MUTANTS, minTraces: 7 });

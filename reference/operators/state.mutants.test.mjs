@@ -41,6 +41,13 @@ const MUTANTS = [
   // the review of 2026-11-21: a restored operator whose input changed while saved, activation on an input that has ended, two terminals in one wave
   ["derived activated on a dependency that has already ended does not compute", "O-derived use: a dependency that has ended keeps its value; O-common: at activation an operator runs on its inputs' snapshots",
     [["const derivedFn = (f) => (ctx) => {\n", "const derivedFn = (f) => (ctx) => {\n  const fresh = ctx.state.get() === undefined;\n  ctx.state.set(true);\n  if (fresh && ctx.deps.some((d) => d.terminal)) return;\n"]]],
+  // the verification re-run of 2026-11-21: an input that ended while saved, other changes while saved, inputs that hold several values, terminals in other roles, callbacks in the wave of an ERROR
+  ["a restored derived computes only for a change of its first dependency while saved", "O-derived use: one result per run in which a dependency delivered DATA; R-checkpoint: a changed dependency is given as changed",
+    [["  if (!ctx.deps.some((d) => d.waves.some((w) => w.length))) return;", "  if (!(ctx.seed !== undefined ? ctx.deps.slice(0, 1) : ctx.deps).some((d) => d.waves.some((w) => w.length))) return;"]]],
+  ["a restored derived computes although one dependency was invalidated while saved", "O-derived use: it computes only while every dependency has a value",
+    [["  if (!ctx.deps.every((d) => d.has)) return;", "  if (!ctx.deps.every((d) => d.has) && ctx.seed === undefined) return;"]]],
+  ["a restored derived computes again when a dependency only completed while saved", "O-derived use: one result per run in which a dependency delivered DATA; a dependency that has ended keeps its value",
+    [["  if (!ctx.deps.some((d) => d.waves.some((w) => w.length))) return;", "  if (!ctx.deps.some((d) => d.waves.some((w) => w.length)) && !(ctx.seed !== undefined && ctx.deps.some((d) => d.terminal))) return;"]]],
 ];
 
 mutantSuite({ module: "state", operators: ["derived"], mutants: MUTANTS, minTraces: 7 });

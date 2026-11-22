@@ -3,21 +3,35 @@
 // Three reviews in a row found the same situations untraced for one operator after another, each
 // fixed for the operators a review happened to name; this file asks for them by class.
 //
-//   restored      a restored operator ignores what changed while the graph was saved (O-common: a
-//                 checkpoint saves progress; R-checkpoint: a changed dependency is given as changed)
-//   completed     an operator activated on an input that has completed does not run on what its
-//                 inputs hold (O-common: at activation it runs on its inputs' snapshots)
-//   errored       an operator activated on an input that has ended with ERROR stays open (O-common:
-//                 an input's ERROR ends the operator; O-sample, O-takeUntil, O-buffer use)
-//   complete+error  an operator with several inputs completes when one input's COMPLETE and
-//                 another's ERROR share a run (O-common: also when another input completes in that wave)
-//   two errors    it sends the later-declared input's ERROR when two inputs end with ERROR in one
-//                 run (O-common: where a contract says nothing, inputs are taken in declared order)
+//   restored             a restored operator ignores what changed while the graph was saved
+//   restored, completed  it ignores a change that came with an input's COMPLETE while saved
+//   restored, errored    it stays as it was when an input ended with ERROR while saved
+//                        (O-common: a checkpoint saves progress; R-checkpoint: a changed dependency
+//                        is given as changed, an end as an end)
+//   completed            an operator activated on an input that has completed does not run on what
+//                        its inputs hold (O-common: at activation it runs on its inputs' snapshots)
+//   errored              activated on an input that has ended with ERROR, it does not end with that
+//                        ERROR (O-common: an input's ERROR ends the operator; O-sample, O-takeUntil,
+//                        O-buffer use)
+//   several values       activated on an input that holds several values, it reads only the last
+//   complete, then error an operator with several inputs completes when an earlier-declared input's
+//   error, then complete COMPLETE and a later one's ERROR share a run, or the other way round
+//                        (O-common: also when another input completes in that wave)
+//   two errors           it sends the later-declared input's ERROR when two inputs end with ERROR
+//   two errors at activation   in one run, or had both ended with one before it activated (O-common:
+//                        where a contract says nothing, inputs are taken in declared order)
+//
+// A cell that passes shows that the situation is traced for that operator, with one way of getting
+// it wrong. It does not show that every sentence that applies in the situation is held: the
+// hand-written mutants are for that, and a review of 2026-11-21 still found 61 of 89 new ones
+// unnoticed after the first five classes were in place.
 //
 // Each mutant is the operator's function with a few lines put before its body. A canonical trace
-// must then give something else at a sink of a node of that operator. The last two classes do
-// not apply to race, which selects by declared order whatever the terminal, nor to concat, which
-// depends on one source at a time; their own sentences have their own mutants.
+// must then give something else at a sink of a node of that operator. The classes on two terminals
+// apply to the operators with several inputs: not to race, which selects by declared order whatever
+// the terminal, nor to concat, which depends on one source at a time; their own sentences have
+// their own mutants. `several values` leaves out sample and derived, which read an input's latest
+// value and so do the same with or without the earlier ones.
 //
 // An operator built with the default ERROR policy is never run for an input's ERROR, so its
 // mutants give it the manual policy and send the first ERROR in declared order themselves, as
@@ -44,30 +58,42 @@ const OPERATORS = [
   { module: "select", ops: ["take", "takeWhile", "first"], head: "const ending = (visit) => (ctx) => {\n" },
   { module: "select", ops: ["skip"], head: `  count("skip", n);\n  return (ctx) => {\n`, auto: manual(`skipFn({ n }), { recipe: {`, `skipFn({ n }), { terminal: { error: "manual" }, recipe: {`) },
   { module: "select", ops: ["last"], head: "const lastFn = (p) => (ctx) => {\n", auto: manual(`lastFn(p ?? any), { terminal: { complete: "manual" }, ...carried });`, `lastFn(p ?? any), { terminal: { complete: "manual", error: "manual" }, ...carried });`) },
-  { module: "notifier", ops: ["sample"], head: "function sampleFn(ctx) {\n", inputs: 2 },
+  { module: "notifier", ops: ["sample"], head: "function sampleFn(ctx) {\n", inputs: 2, latest: true },
   { module: "notifier", ops: ["takeUntil"], head: "function takeUntilFn(ctx) {\n", inputs: 2 },
   { module: "notifier", ops: ["buffer"], head: "function bufferFn(ctx) {\n", inputs: 2 },
-  { module: "notifier", ops: ["bufferCount"], head: "  return (ctx) => {\n    const [source] = ctx.deps;\n", auto: manual(`bufferCountFn({ n }), { terminal: { complete: "manual" }, recipe:`, `bufferCountFn({ n }), { terminal: { complete: "manual", error: "manual" }, recipe:`) },
+  { module: "notifier", ops: ["bufferCount"], head: `  if (!positiveInteger(n)) throw new RangeError("bufferCount: n must be a positive integer");\n  return (ctx) => {\n`, auto: manual(`bufferCountFn({ n }), { terminal: { complete: "manual" }, recipe:`, `bufferCountFn({ n }), { terminal: { complete: "manual", error: "manual" }, recipe:`) },
   { module: "combine", ops: ["merge"], head: "function mergeFn(ctx) {\n", inputs: 2, auto: manual(`mergeFn, recipe("merge"));`, `mergeFn, { terminal: { error: "manual" }, ...recipe("merge") });`) },
   { module: "combine", ops: ["withLatestFrom"], head: "function withLatestFromFn(ctx) {\n", inputs: 2, auto: manual(`{ terminal: { complete: "manual" }, ...recipe("withLatestFrom") }`, `{ terminal: { complete: "manual", error: "manual" }, ...recipe("withLatestFrom") }`) },
   { module: "combine", ops: ["zip"], head: "function zipFn(ctx) {\n", inputs: 2 },
-  { module: "combine", ops: ["concat"], head: "  return (ctx) => {\n    const [current] = ctx.deps;\n", auto: manual(`{ terminal: { complete: "manual" }, ...recipe("concat", { sources }) }`, `{ terminal: { complete: "manual", error: "manual" }, ...recipe("concat", { sources }) }`) },
+  { module: "combine", ops: ["concat"], head: "  const sources = [...config.sources]; // its own copy: the recipe's list is the definition's to keep\n  return (ctx) => {\n", auto: manual(`{ terminal: { complete: "manual" }, ...recipe("concat", { sources }) }`, `{ terminal: { complete: "manual", error: "manual" }, ...recipe("concat", { sources }) }`) },
   { module: "combine", ops: ["race"], head: "function raceFn(ctx) {\n" },
-  { module: "state", ops: ["derived"], head: "const derivedFn = (f) => (ctx) => {\n", inputs: 2, auto: manual(`recipe !== undefined ? { recipe: { ref: "operators.derived", config: { f: recipe } } } : {});`, `{ terminal: { error: "manual" }, ...(recipe !== undefined ? { recipe: { ref: "operators.derived", config: { f: recipe } } } : {}) });`) },
+  { module: "state", ops: ["derived"], head: "const derivedFn = (f) => (ctx) => {\n", inputs: 2, latest: true, auto: manual(`recipe !== undefined ? { recipe: { ref: "operators.derived", config: { f: recipe } } } : {});`, `{ terminal: { error: "manual" }, ...(recipe !== undefined ? { recipe: { ref: "operators.derived", config: { f: recipe } } } : {}) });`) },
 ];
 
-// The lines put before a function's body. A lifetime has one signal, so the first run of a
+// The lines put before a function's body: a head ends where the body starts, before the function
+// reads ctx.deps, so that a class which gives the run other inputs is not a mutant of nothing. A
+// lifetime has one signal, so the first run of a
 // lifetime is the one that finds its signal unseen.
 const FIRST = "  const firstRun = !(globalThis.__operatorLifetimes ??= new WeakSet()).has(ctx.signal);\n  globalThis.__operatorLifetimes.add(ctx.signal);\n";
 const ERRORS = `  const failed = ctx.deps.filter((d) => d.terminal?.[0] === "ERROR");\n`;
 const AS_DEFAULT = "  if (failed.length) { ctx.down([failed[0].terminal]); return; }\n";
+const COMPLETED = `(d) => d.terminal?.[0] === "COMPLETE"`;
+const ERRORED = `(d) => d.terminal?.[0] === "ERROR"`;
+// the run sees only the last value of each input
+const LAST_ONLY = "ctx = Object.create(ctx, { deps: { value: ctx.deps.map((d) => ({ id: d.id, waves: d.waves.map((w) => w.slice(-1)), terminal: d.terminal, invalidated: d.invalidated, has: d.has, value: d.value })) } });";
 const CLASSES = {
   restored: { says: "ignores what changed while the graph was saved", lines: "  if (ctx.seed !== undefined) return;\n" },
-  completed: { says: "activated on an input that has completed does not run on what its inputs hold", lines: `${FIRST}  if (firstRun && ctx.deps.some((d) => d.terminal?.[0] === "COMPLETE")) return;\n` },
-  errored: { says: "activated on an input that has ended with ERROR stays open", lines: `${FIRST}${ERRORS}  if (firstRun && failed.length) return;\n`, policy: true },
-  "complete+error": { says: "completes when one input's COMPLETE and another's ERROR share a run", lines: `${ERRORS}  if (failed.length && ctx.deps.some((d) => d.terminal?.[0] === "COMPLETE")) { ctx.down([["COMPLETE"]]); return; }\n`, policy: true, several: true },
+  "restored, completed": { says: "ignores a change that came with an input's COMPLETE while the graph was saved", lines: `  if (ctx.seed !== undefined && ctx.deps.some(${COMPLETED})) return;\n` },
+  "restored, errored": { says: "stays as it was when an input ended with ERROR while the graph was saved", lines: `${ERRORS}  if (ctx.seed !== undefined && failed.length) return;\n`, policy: true },
+  completed: { says: "activated on an input that has completed does not run on what its inputs hold", lines: `${FIRST}  if (firstRun && ctx.deps.some(${COMPLETED})) return;\n` },
+  errored: { says: "activated on an input that has ended with ERROR does not end with that ERROR", lines: `${FIRST}${ERRORS}  if (firstRun && failed.length) return;\n`, policy: true },
+  "several values": { says: "activated on an input that holds several values reads only the last", lines: `${FIRST}  if (firstRun) ${LAST_ONLY}\n`, occurrences: true },
+  "complete, then error": { says: "completes when an earlier-declared input's COMPLETE and a later one's ERROR share a run", lines: `${ERRORS}  if (ctx.deps.some((d, i) => d.terminal?.[0] === "COMPLETE" && ctx.deps.slice(i + 1).some(${ERRORED}))) { ctx.down([["COMPLETE"]]); return; }\n`, policy: true, several: true },
+  "error, then complete": { says: "completes when an earlier-declared input's ERROR and a later one's COMPLETE share a run", lines: `${ERRORS}  if (ctx.deps.some((d, i) => d.terminal?.[0] === "ERROR" && ctx.deps.slice(i + 1).some(${COMPLETED}))) { ctx.down([["COMPLETE"]]); return; }\n`, policy: true, several: true },
   "two errors": { says: "sends the later-declared input's ERROR when two inputs end with ERROR in one run", lines: `${ERRORS}  if (failed.length > 1) { ctx.down([failed[failed.length - 1].terminal]); return; }\n`, policy: true, several: true },
+  "two errors at activation": { says: "activated on two inputs that have ended with ERROR sends the later-declared one's", lines: `${FIRST}${ERRORS}  if (firstRun && failed.length > 1) { ctx.down([failed[failed.length - 1].terminal]); return; }\n`, policy: true, several: true },
 };
+const applies = (kind, entry) => !(kind.several && !entry.inputs) && !(kind.occurrences && entry.latest);
 
 const dir = mkdtempSync(join(tmpdir(), "classes-mutants-"));
 test.after(() => rmSync(dir, { recursive: true, force: true }));
@@ -98,9 +124,15 @@ async function noticed(module, mutant, ops) {
   return found;
 }
 
-test("the table holds every operator with an active contract", () => {
+test("the table holds every operator with an active contract, and no cell goes missing unseen", () => {
   const active = contracts.filter((row) => !row.transition && row.activated_by?.length && row.operator).map((row) => row.operator).sort();
   assert.deepEqual(OPERATORS.flatMap((entry) => entry.ops).sort(), active);
+  // An entry that lost its `inputs` or gained a `latest` would drop cells without a failure, so
+  // which operators the narrower classes apply to, and how many cells there are, is written here.
+  assert.deepEqual(OPERATORS.filter((entry) => entry.inputs).flatMap((entry) => entry.ops), ["sample", "takeUntil", "buffer", "merge", "withLatestFrom", "zip", "derived"]);
+  assert.deepEqual(OPERATORS.filter((entry) => entry.latest).flatMap((entry) => entry.ops), ["sample", "derived"]);
+  const cells = Object.values(CLASSES).flatMap((kind) => OPERATORS.filter((entry) => applies(kind, entry)));
+  assert.equal(cells.length, 5 * 20 + 18 + 4 * 7);
 });
 
 for (const entry of OPERATORS.filter((item) => item.auto)) {
@@ -112,7 +144,7 @@ for (const entry of OPERATORS.filter((item) => item.auto)) {
 
 for (const [name, kind] of Object.entries(CLASSES)) {
   for (const entry of OPERATORS) {
-    if (kind.several && !entry.inputs) continue;
+    if (!applies(kind, entry)) continue;
     test(`${name}: ${entry.ops.join(", ")} ${kind.says}`, async () => {
       const body = `${entry.head}${kind.lines}${kind.policy && entry.auto ? AS_DEFAULT : ""}`;
       const mutant = await load(entry.module, [...(kind.policy && entry.auto ? [entry.auto] : []), [entry.head, body]]);
