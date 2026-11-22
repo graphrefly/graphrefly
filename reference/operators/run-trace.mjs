@@ -66,6 +66,7 @@ const checkNode = (node) => {
   for (const key of Object.keys(node)) if (!["id", "state", "op", "deps", "args"].includes(key)) throw new Error(`the runner does not know the key ${key} of node ${node.id}`);
   if (node.state && node.args) throw new Error(`state ${node.id} takes no args`);
   if (node.state && node.deps) throw new Error(`state ${node.id} takes no deps`);
+  if (node.deps !== undefined && (!Array.isArray(node.deps) || node.deps.some((id) => typeof id !== "string"))) throw new Error(`the deps of node ${node.id} are a list of node ids`);
   const takes = DEPS[node.op];
   const given = (node.deps ?? []).length;
   if (takes !== undefined && (Array.isArray(takes) ? given < takes[0] : given !== takes)) throw new Error(`${node.op} ${node.id} takes ${Array.isArray(takes) ? `at least ${takes[0]}` : takes} dependencies, and the trace gives ${given}`);
@@ -171,7 +172,7 @@ function occurrences(entries) {
 // different nodes, for which no contract and no kernel rule gives an order (graphrefly:B148), or of
 // one node, whose arrays R-wave gives to one subscriber and then the next without saying which.
 // That one subscriber is served before the next is R-wave's to hold, not a trace's.
-const key = (entry) => `${entry[0]}\u0000${entry[1]}`;
+const key = (entry) => JSON.stringify([entry[0], entry[1]]); // no two pairs of names share one
 const byReceiver = (step) => {
   const groups = new Map();
   for (const entry of step) groups.set(key(entry), [...(groups.get(key(entry)) ?? []), entry]);
@@ -189,7 +190,7 @@ const differingNodes = (got, expect) => {
   const have = byReceiver(got);
   const want = byReceiver(expect);
   const differ = [...new Set([...have.keys(), ...want.keys()])].filter((at) => !sameEntries(have.get(at) ?? [], want.get(at) ?? []));
-  return [...new Set(differ.map((at) => at.split("\u0000")[1]))];
+  return [...new Set(differ.map((at) => JSON.parse(at)[1]))];
 };
 export function matches(got, expect) {
   return got.length === expect.length && got.every((step, i) => differingNodes(step, expect[i]).length === 0);

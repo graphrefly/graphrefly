@@ -62,6 +62,8 @@ test("a step is compared receiver by receiver: what one sink received from one n
   assert.ok(!matches([[a, late]], [[a]]), "a sink that was not expected");
   assert.ok(!matches([[a], [b]], [[a, b], []]), "an entry in another step");
   assert.ok(!matches([[a]], [[a], []]), "a step missing");
+  const odd = ["a", "b\u0000c", [["PENDING"], ["DATA", 1]]], odder = ["a\u0000b", "c", [["PENDING"], ["DATA", 2]]];
+  assert.ok(matches([[odd, odder]], [[odder, odd]]), "names that would run together are still two receivers");
 });
 
 test("the runner refuses what it does not know instead of running something else", () => {
@@ -77,6 +79,7 @@ test("the runner refuses what it does not know instead of running something else
   assert.throws(() => runTrace({ ...base, nodes: [base.nodes[0], { ...base.nodes[1], deps: ["s", "s"] }] }), /map m takes 1 dependencies, and the trace gives 2/);
   assert.throws(() => runTrace({ ...base, nodes: [base.nodes[0], { id: "x", op: "sample", deps: ["s"] }] }), /sample x takes 2 dependencies, and the trace gives 1/);
   assert.throws(() => runTrace({ ...base, nodes: [base.nodes[0], { id: "x", op: "merge", deps: [] }] }), /merge x takes at least 1 dependencies/);
+  assert.throws(() => runTrace({ ...base, nodes: [base.nodes[0], { ...base.nodes[1], deps: "s" }] }), /the deps of node m are a list of node ids/);
 });
 
 test("every trace of an active contract is run here and passes: none is skipped or a known difference", () => {

@@ -103,8 +103,9 @@ that is graphrefly:B146's.
 
 `nodes` are built in order on one graph. `state: []` is a state without a value, and `state: [v]` one
 that holds v. `steps` are host
-requests, each of which starts one wave (a callback that writes a state, as `into` does, starts
-further ones within the step): `["subscribe", sink, node]`, `["unsubscribe", sink, node]`, `["set", state, value]`, `["invalidate", state]`,
+requests. A write, a terminal or a batch starts one wave, and a callback that writes a state, as
+`into` does, starts further ones within the step; a subscription delivers a snapshot, and a restore
+delivers nothing: `["subscribe", sink, node]`, `["unsubscribe", sink, node]`, `["set", state, value]`, `["invalidate", state]`,
 `["complete", state]`, `["error", state, payload]`, `["batch", [requests]]`, `["restore"]`, which
 captures the graph, restores it with no subscribers and continues on the restored one, and
 `["advance", ms]` on a clock the test owns. The reference runner has no clock yet, so it skips a
@@ -171,5 +172,6 @@ settle. history is a module rule (R-history), not an operator contract.
 A contract speaks of an operator over inputs that stay the instances it was activated on. What an
 operator keeps of an input that the host replaces by a new instance of the same id (R-request-order)
 is not stated yet: the kernel keeps nothing of the old instance, its terminal included, and a
-function is not told of the replacement, so a zip still counts the old instance's COMPLETE where a
-merge, whose completion the kernel decides, does not (graphrefly:B148).
+function is not told of the replacement, so the reference's zip still counts the old instance's
+COMPLETE where its merge, whose completion the kernel decides, does not; neither is what a contract
+asks (graphrefly:B148).
