@@ -149,9 +149,9 @@ const MUTANTS = [
   ["bufferCount waits for nothing and never completes", "O-bufferCount completion: the source's normal COMPLETE",
     `    if (completed(source)) ctx.down(tail.length`, `    if (false) ctx.down(tail.length`],
   // found by the third review
-  ["sample completes when its source's COMPLETE and its clock's ERROR share a wave", "O-sample completion: an ERROR of either input in the wave of the source's COMPLETE ends sample with that ERROR",
+  ["sample completes when its source's COMPLETE and its clock's ERROR share a wave", "O-common: an input's ERROR ends the operator with that ERROR, also when another input completes in that wave",
     `  const error = firstError(source, clock);`, `  const error = completed(source) ? undefined : firstError(source, clock);`],
-  ["buffer completes when its source's COMPLETE and its flush input's ERROR share a wave", "O-buffer completion: an ERROR of either input drops the tail, also in the wave of the source's COMPLETE",
+  ["buffer completes when its source's COMPLETE and its flush input's ERROR share a wave", "O-buffer completion: an ERROR of either input drops the tail; O-common: also when another input completes in that wave",
     `  const error = firstError(source, flush);`, `  const error = completed(source) ? undefined : firstError(source, flush);`],
   // found by the whole-branch review (2026-11-21); OT-107 and OT-108 hold them
   ["sample ignores a tick that comes with its clock's COMPLETE", "O-sample use: sends the pending value at a clock DATA; completion: the clock's COMPLETE alone does not end sampling",
@@ -166,6 +166,31 @@ const MUTANTS = [
     `  let items = [...(ctx.state.get()?.items ?? []), ...occurrences(source)];`, `  let items = [...(activation && !source.has ? [] : ctx.state.get()?.items ?? []), ...occurrences(source)];`],
   ["buffer puts a batch sent for a flush in the array of the source's COMPLETE", "O-buffer same-wave: a flush in the wave of the source's COMPLETE sends what was collected as an array of its own, before the COMPLETE",
     `  if (out.length === 2 && !activation && occurrences(flush).length) for (const message of out) ctx.down([message]);\n  else if (out.length) ctx.down(out);`, `  if (out.length) ctx.down(out);`],
+  // the review of 2026-11-21: a restored operator whose input changed while saved, activation on an input that has ended, two terminals in one wave
+  ["a restored buffer whose source changed value while saved keeps only the new value", "O-buffer recovery: the saved state stands: the collected payloads are kept",
+    [["  let items = [...(ctx.state.get()?.items ?? []), ...occurrences(source)];", "  let items = [...(ctx.seed !== undefined && occurrences(source).length ? [] : ctx.state.get()?.items ?? []), ...occurrences(source)];"]]],
+  ["buffer activated on a flush input that has ended with ERROR stays open", "O-buffer use: a flush input that had ended with ERROR when buffer activates ends it with that ERROR",
+    [["  const error = firstError(source, flush);", "  const error = activation ? firstError(source) : firstError(source, flush);"]]],
+  ["sample activated on a source that has completed does not complete", "O-sample completion: the source's COMPLETE ends sample; O-common: at activation an operator runs on its inputs' snapshots",
+    [["  if (completed(source)) ctx.down([[\"COMPLETE\"]]); // a pending value no tick took is not sent", "  if (completed(source) && !activation) ctx.down([[\"COMPLETE\"]]);"]]],
+  ["sample activated on a clock that has ended with ERROR stays open", "O-sample use: a clock that had ended with ERROR when sample activates ends it with that ERROR",
+    [["  const error = firstError(source, clock);", "  const error = activation ? firstError(source) : firstError(source, clock);"]]],
+  ["takeUntil activated on a notifier that has ended with ERROR stays open", "O-takeUntil use: a notifier that had ended with ERROR when takeUntil activates ends it with that ERROR",
+    [["  if (errored(source) || errored(notifier)) {", "  if (errored(source) || (!activation && errored(notifier))) {"]]],
+  ["a restored takeUntil whose source changed while saved does not send the new value", "O-takeUntil use: sends the source's arrays; R-checkpoint: a restored node is given a changed dependency as changed",
+    [["  for (const w of source.waves) if (w.length) ctx.down(w.map((v) => [\"DATA\", v]));\n  if (completed(source)) ctx.down([[\"COMPLETE\"]]);\n}\n\n// buffer", "  for (const w of (ctx.seed !== undefined ? [] : source.waves)) if (w.length) ctx.down(w.map((v) => [\"DATA\", v]));\n  if (completed(source)) ctx.down([[\"COMPLETE\"]]);\n}\n\n// buffer"]]],
+  ["takeUntil activated on a source that has completed does not complete", "O-takeUntil completion: the source's COMPLETE ends the branch; O-common: at activation an operator runs on its inputs' snapshots",
+    [["  for (const w of source.waves) if (w.length) ctx.down(w.map((v) => [\"DATA\", v]));\n  if (completed(source)) ctx.down([[\"COMPLETE\"]]);\n}\n\n// buffer", "  for (const w of source.waves) if (w.length) ctx.down(w.map((v) => [\"DATA\", v]));\n  if (completed(source) && !activation) ctx.down([[\"COMPLETE\"]]);\n}\n\n// buffer"]]],
+  ["a restored bufferCount whose source changed while saved forgets what it collected", "O-common: a checkpoint saves an operator's progress",
+    [["    const items = [...(ctx.state.get()?.items ?? []), ...occurrences(source)];\n    let at = 0;", "    const items = [...(ctx.seed !== undefined ? [] : ctx.state.get()?.items ?? []), ...occurrences(source)];\n    let at = 0;"]]],
+  ["bufferCount activated on a source that has completed sends no tail and does not complete", "O-bufferCount completion: the source's normal COMPLETE sends a nonempty tail in the terminal's array; O-common: at activation an operator runs on its inputs' snapshots",
+    [["    const [source] = ctx.deps;\n    const items = [", "    const [source] = ctx.deps;\n    const fresh = ctx.state.get() === undefined;\n    const items = ["], ["    if (completed(source)) ctx.down(tail.length", "    if (completed(source) && !fresh) ctx.down(tail.length"]]],
+  ["sample activated on a source that has ended with ERROR stays open", "O-common: an input's ERROR ends the operator, and at activation an operator runs on its inputs' snapshots",
+    [["  const error = firstError(source, clock);\n  if (error) { ctx.down([error]); return; }", "  const error = firstError(source, clock);\n  if (error && !activation) { ctx.down([error]); return; }"]]],
+  ["takeUntil activated on a source that has ended with ERROR sends what the source holds and stays open", "O-common: an input's ERROR ends the operator, and it does not process that wave's DATA",
+    [["  if (errored(source) || errored(notifier)) {", "  if (!activation && (errored(source) || errored(notifier))) {"]]],
+  ["takeUntil completes when its source's COMPLETE and its notifier's ERROR share a wave", "O-common: an input's ERROR ends the operator with that ERROR, also when another input completes in that wave",
+    [["  if (errored(source) || errored(notifier)) {", "  if (errored(source) || (errored(notifier) && !completed(source))) {"]]],
 ];
 
 mutantSuite({ module: "notifier", operators: ["sample", "takeUntil", "buffer", "bufferCount"], mutants: MUTANTS, minTraces: 20 });

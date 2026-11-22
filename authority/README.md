@@ -40,7 +40,8 @@ transition. Draft, retired, predecessor, dangling, cyclic, duplicate and ambiguo
 do not enter the public projection. Any statement, rule-boundary or legal-trace change still
 requires `/spec-amend`. On main an activated revision's statement or a locked decision's text
 changes only through a new one; everything else is corrected in place, as is a row that exists
-only on an unmerged branch (graphrefly:D815). No gate checks the two immutable things: an edit of an active revision's statement or of a locked decision's
+only on an unmerged branch (graphrefly:D815). The operator contracts have their own list, below
+(graphrefly:D816). No gate checks the two immutable things: an edit of an active revision's statement or of a locked decision's
 text passes every check (graphrefly:B146).
 
 The protocol's parts are derived from a rule's `area`, not stored: `module`, `graph` and `principle`
@@ -65,9 +66,13 @@ contracts and their canonical traces (graphrefly:D813). `model.mjs` does not rea
 kept apart from the protocol rules and outside the public protocol projection, a contract may cite a
 rule, and no rule cites a contract. [../operators/README.md](../operators/README.md) gives the record
 shapes and what the gate holds; `npm run operators:current` prints the contracts by family. On main
-an active contract's statements, its trace links and the steps and expectation of the traces it links
-change only through a new revision introduced by a root decision (graphrefly:D816); no gate checks
-that yet either (graphrefly:B146).
+an active contract's use, its exceptions and its trace links, with the nodes, steps and expectation
+of the traces it links, change only through a new revision introduced by a root decision, and a
+linked trace is succeeded by a new one, not edited; a new trace and a link to it are added in place,
+and a rationale, a trace's name and basis and a draft are corrected in place (graphrefly:D816, which
+also says how the behaviors decided while a family is written are recorded and that a contract may
+state what graphrefly:D797 (9) left to each language). No gate checks that yet either, and none
+knows a succeeded trace (graphrefly:B146).
 
 Run `npm run authority:check` and `npm run test:authority`. In a workspace containing every
 sibling repository, also run `npm run authority:check:workspace`.

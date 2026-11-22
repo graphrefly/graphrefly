@@ -15,7 +15,7 @@ const MUTANTS = [
     SEND, `  ctx.down(ctx.deps.flatMap((d, i) => d.waves.flat().map((v) => ["DATA", f(...ctx.deps.map((x, j) => (j === i ? v : x.value)))])));`],
   ["derived gives f the values in reverse", "O-derived use: computes f from the latest value of every dependency", SEND, `  ctx.down([["DATA", f(...ctx.deps.map((d) => d.value).reverse())]]);`],
   ["derived sends the values and not f's result", "O-derived use: computes f … and sends the result", SEND, `  ctx.down([["DATA", ctx.deps[0].value]]);`],
-  ["derived keeps its output at a dependency's INVALIDATE", "O-derived invalidation: retracts the output", NODE, policy(`invalidate: "manual"`)],
+  ["derived keeps its output at a dependency's INVALIDATE", "O-common: an input's effective INVALIDATE retracts the operator's retained output", NODE, policy(`invalidate: "manual"`)],
   ["derived never completes", "O-common: it completes once every input has ended", NODE, policy(`terminal: { complete: "manual" }`)],
   ["derived ignores a dependency's ERROR", "O-common: an input's ERROR ends the operator", NODE, policy(`terminal: { error: "manual" }`)],
   ["derived swallows a throw from f", "O-common: a throw from a callback is the operator's ERROR",
@@ -38,6 +38,9 @@ const MUTANTS = [
     `const derivedFn = (f) => (ctx) => {\n${HAS}`, `let ran = new Set();\nconst derivedFn = (f) => (ctx) => {\n${HAS}  const fresh = ctx.state.get() === undefined;\n  ctx.state.set(true);\n  if (fresh && ran.has(f)) return;\n  ran.add(f);\n`],
   ["derived stops computing once it has seen a dependency end", "O-derived use: a dependency that has ended keeps its value",
     `const derivedFn = (f) => (ctx) => {\n`, `const derivedFn = (f) => (ctx) => {\n  const over = ctx.state.get()?.over ?? false;\n  ctx.state.set({ over: over || ctx.deps.some((d) => d.terminal) });\n  if (over) return;\n`],
+  // the review of 2026-11-21: a restored operator whose input changed while saved, activation on an input that has ended, two terminals in one wave
+  ["derived activated on a dependency that has already ended does not compute", "O-derived use: a dependency that has ended keeps its value; O-common: at activation an operator runs on its inputs' snapshots",
+    [["const derivedFn = (f) => (ctx) => {\n", "const derivedFn = (f) => (ctx) => {\n  const fresh = ctx.state.get() === undefined;\n  ctx.state.set(true);\n  if (fresh && ctx.deps.some((d) => d.terminal)) return;\n"]]],
 ];
 
 mutantSuite({ module: "state", operators: ["derived"], mutants: MUTANTS, minTraces: 7 });

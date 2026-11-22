@@ -81,3 +81,13 @@ test("a concat reads its own copy of its sources: changing the list in the store
   g.complete("a");
   assert.deepEqual(g.describe().find((node) => node.id === "x").deps, ["b"]);
 });
+
+test("merge, zip, race and derived keep their own copy of the inputs they were given: changing the caller's list afterwards does not get one in twice", () => {
+  for (const build of [(g, ids) => merge(g, "x", ids), (g, ids) => zip(g, "x", ids), (g, ids) => race(g, "x", ids), (g, ids) => derived(g, "x", ids, pair, { recipe })]) {
+    const g = graph();
+    const ids = ["a", "b"];
+    build(g, ids);
+    ids[1] = "a";
+    assert.deepEqual(g.definition("x").deps, ["a", "b"]);
+  }
+});

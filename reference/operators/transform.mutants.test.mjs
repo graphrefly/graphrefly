@@ -67,7 +67,7 @@ const MUTANTS = [
   ["filter puts its source's COMPLETE in its last DATA array", "O-common: after DATA it would have sent anyway the COMPLETE is an array of its own",
     [[NODE("filter", "p"), POLICY("filter", "p", `terminal: { complete: "manual" }`)],
       [`  for (const w of ctx.deps[0].waves) {\n${KEPT}\n  }`, `  const all = ctx.deps[0].waves.flat().filter((v) => p(v)).map((v) => ["DATA", v]);\n  if (ctx.deps[0].terminal) all.push(ctx.deps[0].terminal);\n  if (all.length) ctx.down(all);`]]],
-  ["tap calls f for the DATA of its source's ERROR wave", "O-tap use: DATA that tap does not send is not given to f",
+  ["tap calls f for the DATA of its source's ERROR wave", "O-tap use: in the wave of its source's ERROR it is given no DATA, so f is not called",
     [[NODE("tap", "f"), POLICY("tap", "f", `terminal: { error: "manual" }`)],
       [`  for (const w of ctx.deps[0].waves) {\n    if (!w.length) continue;`, `  if (ctx.deps[0].terminal?.[0] === "ERROR") { for (const v of ctx.deps[0].waves.flat()) f(v); ctx.down([ctx.deps[0].terminal]); return; }\n  for (const w of ctx.deps[0].waves) {\n    if (!w.length) continue;`]]],
   ["tap sends only the values for which f returns something truthy", "O-tap use: what f returns is not read",

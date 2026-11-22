@@ -10,11 +10,14 @@
 //   withLatestFrom  manual COMPLETE: the primary's ends it, a secondary's does not. No private
 //                   state: a secondary's latest value is what the kernel holds of it, which an
 //                   INVALIDATE of that secondary removes (R-invalidation).
-//   zip             manual COMPLETE: it ends when an input that has ended has nothing queued. The
-//                   queues are private state, which an INVALIDATE keeps. A run's tuples go in one
-//                   array, the COMPLETE with them (graphrefly:D797 (9)). Manual ERROR: a DATA that
-//                   completes zip's last tuple ends it, and an ERROR of that wave then reaches a
-//                   zip that has ended (the user, 2026-11-20, as for take and takeUntil).
+//   zip             manual COMPLETE: it ends when an input that has completed has nothing queued.
+//                   The queues are private state, which an INVALIDATE keeps. A run's tuples go in
+//                   one array, the COMPLETE with them (graphrefly:D797 (9)). Manual ERROR: a tuple
+//                   that leaves a completed input with nothing queued ends zip, and an ERROR of
+//                   that run, in a wave or in the snapshot zip activates on, then reaches a zip
+//                   that has ended (the user, 2026-11-20, as for take and takeUntil). An input
+//                   that ended with ERROR does not end zip in that way: its ERROR does, without
+//                   that run's tuples (the user, 2026-11-21).
 //   concat          depends on one source at a time and moves to the next, by ctx.rewire, when
 //                   that one completes (manual COMPLETE). Which source it is at is private state.
 //   race            depends on every input until one delivers DATA or a terminal, then on that one
@@ -26,7 +29,9 @@
 //
 // The inputs of each are distinct nodes: one given twice is refused when the operator is built
 // (the user, 2026-11-20). The kernel takes a repeated dependency at creation and refuses it at a
-// rewire, which made a race end with that refusal and a concat wait on itself for good.
+// rewire, which made a race end with that refusal and a concat wait on itself for good. Each
+// operator gives the kernel its own copy of the list it was given, so a caller that changes its
+// list afterwards does not change the node's inputs past that refusal.
 //
 // A rewire is a request, made after the wave (R-request-order); what the new dependency holds
 // arrives as a wave of its own (R-wave). The lifetime's dependencies are saved by a checkpoint and
@@ -114,7 +119,7 @@ const recipe = (ref, config = null) => ({ recipe: { ref: `operators.${ref}`, con
 
 export function merge(g, id, inputIds) {
   order(`merge ${id}`, inputIds);
-  return g.node(id, inputIds, mergeFn, recipe("merge"));
+  return g.node(id, [...inputIds], mergeFn, recipe("merge"));
 }
 
 export function withLatestFrom(g, id, primaryId, secondaryIds) {
@@ -125,7 +130,7 @@ export function withLatestFrom(g, id, primaryId, secondaryIds) {
 
 export function zip(g, id, inputIds) {
   order(`zip ${id}`, inputIds);
-  return g.node(id, inputIds, zipFn, { terminal: { complete: "manual", error: "manual" }, ...recipe("zip") });
+  return g.node(id, [...inputIds], zipFn, { terminal: { complete: "manual", error: "manual" }, ...recipe("zip") });
 }
 
 export function concat(g, id, sourceIds) {
@@ -137,7 +142,7 @@ export function concat(g, id, sourceIds) {
 
 export function race(g, id, inputIds) {
   order(`race ${id}`, inputIds);
-  return g.node(id, inputIds, raceFn, { terminal: { complete: "manual", error: "manual" }, invalidate: "manual", ...recipe("race") });
+  return g.node(id, [...inputIds], raceFn, { terminal: { complete: "manual", error: "manual" }, invalidate: "manual", ...recipe("race") });
 }
 
 export const combineRecipes = Object.freeze({

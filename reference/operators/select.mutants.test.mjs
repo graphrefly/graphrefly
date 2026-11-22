@@ -28,7 +28,7 @@ const MUTANTS = [
   ["an operator that ends itself goes on reading the array it ended in", "O-take use: what its source sends after the nth is not sent; O-takeWhile, O-first use: p is not called again",
     STOP, `      ended = visit(ctx, v, out) || ended;`, ["take", "takeWhile", "first"]],
   ["an ERROR that follows the ending DATA in the wave ends the operator", "O-take, O-takeWhile, O-first same-wave: an ERROR that follows that DATA in the same wave is not sent", ERR, `  if (source.terminal?.[0] === "ERROR") { ctx.down([source.terminal]); return; }`, ["take", "takeWhile", "first"]],
-  ["a source ERROR is sent after that wave's DATA", "O-take completion: its ERROR without it", `${ERR}\n${SEND}`, `${SEND}\n  if (!ended && source.terminal?.[0] === "ERROR") ctx.down([source.terminal]);`, ["take", "takeWhile"]],
+  ["a source ERROR is sent after that wave's DATA", "O-common: an input's ERROR ends the operator without that wave's DATA, unless its contract says it ends itself first", `${ERR}\n${SEND}`, `${SEND}\n  if (!ended && source.terminal?.[0] === "ERROR") ctx.down([source.terminal]);`, ["take", "takeWhile"]],
   ["a source ERROR is ignored", "O-common: an input's ERROR ends the operator", `${ERR}\n`, ``, ["take", "takeWhile", "first"]],
   ["progress is touched at a source INVALIDATE: a count is added or a predicate is called", "O-take invalidation: only DATA is counted; O-takeWhile, O-first invalidation: calls no predicate",
     [[STOPS, `const stops = { terminal: { error: "manual" }, invalidate: "manual" };`], [HEAD, `${HEAD}\n  if (source.invalidated) { visit(ctx, 0, []); ctx.down([["INVALIDATE"]]); }`]], undefined, ["take", "takeWhile", "first"]],
@@ -111,6 +111,17 @@ const MUTANTS = [
     `    let seen = ctx.state.get()?.seen ?? 0;`, `    let seen = ctx.seed !== undefined ? 0 : ctx.state.get()?.seen ?? 0;`],
   ["a restored last whose source changed forgets its candidate", "O-common: a checkpoint saves an operator's progress",
     L_HEAD, `  let candidate = ctx.seed !== undefined ? [] : ctx.state.get()?.candidate ?? [];`],
+  // the review of 2026-11-21: a restored operator whose input changed while saved, activation on an input that has ended, two terminals in one wave
+  ["a restored take whose source changed while saved starts counting again", "O-common: a checkpoint saves an operator's progress",
+    [["    const seen = (ctx.state.get()?.seen ?? 0) + 1;", "    const seen = (ctx.seed !== undefined ? 0 : ctx.state.get()?.seen ?? 0) + 1;"]]],
+  ["a restored takeWhile whose source changed while saved does not read the new value", "O-takeWhile use: completes at the first DATA for which p does not hold; R-checkpoint: a restored node is given a changed dependency as changed",
+    [["const takeWhileFn = (p) => ending((ctx, v, out) => {\n  if (!p(v)) return true;", "const takeWhileFn = (p) => ending((ctx, v, out) => {\n  if (ctx.seed !== undefined) return false;\n  if (!p(v)) return true;"]]],
+  ["a restored first whose source changed while saved does not read the new value", "O-first use: sends the first for which p holds; R-checkpoint: a restored node is given a changed dependency as changed",
+    [["const firstFn = (p) => ending((ctx, v, out) => {\n  if (!p(v)) return false;", "const firstFn = (p) => ending((ctx, v, out) => {\n  if (ctx.seed !== undefined || !p(v)) return false;"]]],
+  ["a restored last ignores a source value that changed while saved", "O-last use: p is called for every DATA last is given; R-checkpoint: a restored node is given a changed dependency as changed",
+    [["  for (const v of source.waves.flat()) if (p(v)) candidate = [v];", "  for (const v of (ctx.seed !== undefined ? [] : source.waves.flat())) if (p(v)) candidate = [v];"]]],
+  ["last activated on a source that has completed sends nothing", "O-last use: sends the last DATA with COMPLETE in one array when its source completes normally; O-common: at activation an operator runs on its inputs' snapshots",
+    [["  let candidate = ctx.state.get()?.candidate ?? [];", "  const fresh = ctx.state.get() === undefined;\n  let candidate = ctx.state.get()?.candidate ?? [];"], ["  if (source.terminal?.[0] === \"COMPLETE\") ctx.down([...candidate.map(", "  if (!fresh && source.terminal?.[0] === \"COMPLETE\") ctx.down([...candidate.map("]]],
 ];
 
 mutantSuite({ module: "select", operators: ["take", "skip", "takeWhile", "first", "last"], mutants: MUTANTS, minTraces: 9 });

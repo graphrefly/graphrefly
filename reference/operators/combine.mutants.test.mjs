@@ -4,7 +4,7 @@ import { mutantSuite } from "./mutants.mjs";
 
 const SEND = `const sendArrays = (ctx, d) => { for (const w of d.waves) if (w.length) ctx.down(w.map((v) => ["DATA", v])); };`;
 const MERGE = `  for (const d of ctx.deps) sendArrays(ctx, d);`;
-const M_NODE = `return g.node(id, inputIds, mergeFn, recipe("merge"));`;
+const M_NODE = `return g.node(id, [...inputIds], mergeFn, recipe("merge"));`;
 const W_NODE = `{ terminal: { complete: "manual" }, ...recipe("withLatestFrom") }`;
 const Z_NODE = `{ terminal: { complete: "manual", error: "manual" }, ...recipe("zip") }`;
 const C_NODE = `{ terminal: { complete: "manual" }, ...recipe("concat", { sources }) }`;
@@ -41,15 +41,15 @@ const MUTANTS = [
   ["merge reads only its first two inputs", "O-merge use: sends every input's arrays", MERGE, `  for (const d of ctx.deps.slice(0, 2)) sendArrays(ctx, d);`],
   ["merge sends a wave's arrays as one", "O-merge use: sends every input's arrays as they came", MERGE, `  { const all = ctx.deps.flatMap(occurrences); if (all.length) ctx.down(all.map((v) => ["DATA", v])); }`],
   ["merge completes when its first input does", "O-merge use: it completes when every input has completed",
-    [[M_NODE, `return g.node(id, inputIds, mergeFn, { terminal: { complete: "manual" }, ...recipe("merge") });`], [MERGE, `${MERGE}\n  if (ctx.deps.some(completed)) ctx.down([["COMPLETE"]]);`]]],
+    [[M_NODE, `return g.node(id, [...inputIds], mergeFn, { terminal: { complete: "manual" }, ...recipe("merge") });`], [MERGE, `${MERGE}\n  if (ctx.deps.some(completed)) ctx.down([["COMPLETE"]]);`]]],
   ["merge completes when its last declared input does", "O-merge use: it completes when every input has completed",
-    [[M_NODE, `return g.node(id, inputIds, mergeFn, { terminal: { complete: "manual" }, ...recipe("merge") });`], [MERGE, `${MERGE}\n  if (completed(ctx.deps[ctx.deps.length - 1])) ctx.down([["COMPLETE"]]);`]]],
-  ["merge keeps its output at an input's INVALIDATE", "O-merge invalidation: any input's effective INVALIDATE retracts the output", M_NODE, `return g.node(id, inputIds, mergeFn, { invalidate: "manual", ...recipe("merge") });`],
+    [[M_NODE, `return g.node(id, [...inputIds], mergeFn, { terminal: { complete: "manual" }, ...recipe("merge") });`], [MERGE, `${MERGE}\n  if (completed(ctx.deps[ctx.deps.length - 1])) ctx.down([["COMPLETE"]]);`]]],
+  ["merge keeps its output at an input's INVALIDATE", "O-merge invalidation: any input's effective INVALIDATE retracts the output", M_NODE, `return g.node(id, [...inputIds], mergeFn, { invalidate: "manual", ...recipe("merge") });`],
   ["merge sends an input's INVALIDATE after the wave's DATA", "O-common: the retraction goes out first and the DATA after it",
-    [[M_NODE, `return g.node(id, inputIds, mergeFn, { invalidate: "manual", ...recipe("merge") });`], [MERGE, `${MERGE}\n  if (ctx.deps.some((d) => d.invalidated)) ctx.down([["INVALIDATE"]]);`]]],
-  ["merge ignores an input's ERROR", "O-merge use: any input's ERROR ends it", M_NODE, `return g.node(id, inputIds, mergeFn, { terminal: { error: "manual" }, ...recipe("merge") });`],
+    [[M_NODE, `return g.node(id, [...inputIds], mergeFn, { invalidate: "manual", ...recipe("merge") });`], [MERGE, `${MERGE}\n  if (ctx.deps.some((d) => d.invalidated)) ctx.down([["INVALIDATE"]]);`]]],
+  ["merge ignores an input's ERROR", "O-merge use: any input's ERROR ends it", M_NODE, `return g.node(id, [...inputIds], mergeFn, { terminal: { error: "manual" }, ...recipe("merge") });`],
   ["merge ignores its first input's ERROR", "O-merge use: any input's ERROR ends it",
-    [[M_NODE, `return g.node(id, inputIds, mergeFn, { terminal: { error: "manual" }, ...recipe("merge") });`], [MERGE, `${MERGE}\n  const failed = ctx.deps.slice(1).find(errored);\n  if (failed) ctx.down([failed.terminal]);`]]],
+    [[M_NODE, `return g.node(id, [...inputIds], mergeFn, { terminal: { error: "manual" }, ...recipe("merge") });`], [MERGE, `${MERGE}\n  const failed = ctx.deps.slice(1).find(errored);\n  if (failed) ctx.down([failed.terminal]);`]]],
   // withLatestFrom
   ["withLatestFrom puts the secondaries first", "O-withLatestFrom use: the list of that value followed by the latest value of each secondary", PAIRS, PAIRS.replace(`[v, ...secondaries.map((d) => d.value)]`, `[...secondaries.map((d) => d.value), v]`)],
   ["withLatestFrom flattens a secondary's value that is a list", "O-withLatestFrom use: the list of that value followed by the latest value of each secondary", PAIRS, PAIRS.replace(`[v, ...secondaries.map((d) => d.value)]`, `[v].concat(...secondaries.map((d) => d.value))`)],
@@ -84,7 +84,7 @@ const MUTANTS = [
     QUEUE, `  const queues = state.queues.map((queue, i) => [...queue, ...(completed(ctx.deps[i]) ? [] : occurrences(ctx.deps[i]))]);`],
   ["zip sends each tuple, and its COMPLETE, as an array of its own", "O-zip use: sends, in one array, every tuple that can be formed in a run … its COMPLETE goes in the array of that run's tuples", Z_SEND, `  for (const message of out) ctx.down([message]);\n}`],
   ["zip ends as soon as an input has ended", "O-zip use: it ends when an input that has ended has no queued item left", ENDS, `  const ends = done.some(Boolean);`],
-  ["zip ends only when its first input has ended", "O-zip completion: it ends when either input has ended with nothing queued", ENDS, `  const ends = done[0] && !queues[0].length;`],
+  ["zip ends only when its first input has ended", "O-zip completion: it ends when any input has completed with nothing queued", ENDS, `  const ends = done[0] && !queues[0].length;`],
   ["zip ends only when every queue is empty", "O-zip completion: also while another still has items", ENDS, `  const ends = done.some(Boolean) && queues.every((queue) => !queue.length);`],
   ["zip never ends", "O-zip use: it ends when an input that has ended has no queued item left", `  if (ends) out.push(["COMPLETE"]);\n`, ``],
   ["zip drops what it queued at the end of the run", "O-zip use: it has no capacity and drops nothing", Z_SET, `  ctx.state.set({ queues: queues.map(() => []), done });`],
@@ -120,11 +120,11 @@ const MUTANTS = [
   ["race does not release the inputs that lost", "O-race use: then releases the others", `    if (ctx.deps.length > 1) ctx.rewire([winner]);\n`, ``],
   ["a terminal does not select its input", "O-race use: the first input to deliver DATA or a terminal", FIRST, `    const first = ctx.deps.find((d) => occurrences(d).length);`],
   ["a loser's ERROR in the selecting wave ends race", "O-race same-wave: what the others deliver in that wave, an ERROR included, is not sent", FIRST, `    const first = ctx.deps.find(errored) ?? ctx.deps.find((d) => occurrences(d).length || d.terminal);`],
-  ["a loser's COMPLETE in the selecting wave ends race", "O-race completion: an input that lost does not end race", R_FOLLOW, `  sendArrays(ctx, selected);\n  if (ctx.deps.some(completed)) ctx.down([["COMPLETE"]]);`],
-  ["race sends the selected input's DATA before its ERROR of the same wave", "O-race completion: its ERROR without it", `${R_ERR}\n  sendArrays(ctx, selected);`, `  sendArrays(ctx, selected);\n  if (errored(selected)) { ctx.down([selected.terminal]); return; }`],
-  ["race ignores the selected input's ERROR", "O-race completion: the selected input's ERROR ends race", `${R_ERR}\n`, ``],
+  ["a loser's COMPLETE in the selecting wave ends race", "O-race completion: an input that lost does not end race, whatever it ends with", R_FOLLOW, `  sendArrays(ctx, selected);\n  if (ctx.deps.some(completed)) ctx.down([["COMPLETE"]]);`],
+  ["race sends the selected input's DATA before its ERROR of the same wave", "O-race use: follows the one selected, and its terminal; O-common: an input's ERROR ends the operator without that wave's DATA", `${R_ERR}\n  sendArrays(ctx, selected);`, `  sendArrays(ctx, selected);\n  if (errored(selected)) { ctx.down([selected.terminal]); return; }`],
+  ["race ignores the selected input's ERROR", "O-race use: follows the one selected, and its terminal", `${R_ERR}\n`, ``],
   ["race does not end with the input it follows", "O-race use: follows the one selected: its arrays, and its terminal", R_FOLLOW, `  sendArrays(ctx, selected);`],
-  ["race puts the selected input's COMPLETE in its last DATA array", "O-race completion: the selected input's COMPLETE ends race as an array of its own",
+  ["race puts the selected input's COMPLETE in its last DATA array", "O-race use: follows the one selected, and its terminal; O-common: after DATA it would have sent anyway the COMPLETE is an array of its own",
     R_FOLLOW, `  const sent = selected.waves.filter((w) => w.length).map((w) => w.map((v) => ["DATA", v]));\n  if (completed(selected)) { if (sent.length) sent[sent.length - 1].push(["COMPLETE"]); else sent.push([["COMPLETE"]]); }\n  for (const array of sent) ctx.down(array);`],
   ["race keeps its output at the selected input's INVALIDATE", "O-race invalidation: only the selected input's INVALIDATE retracts the output", `${R_INV}\n`, ``],
   ["race retracts for the INVALIDATE of an input that lost, before it is released", "O-race invalidation: also while the others are still being released", R_INV, `  if (ctx.deps.some((d) => d.invalidated)) ctx.down([["INVALIDATE"]]);`],
@@ -137,6 +137,23 @@ const MUTANTS = [
     [[`function zipFn(ctx) {\n`, `function zipFn(ctx) {\n  const fresh = ctx.state.get() === undefined;\n`], [`  if (error && !(ends && out.length)) { ctx.down([error]); return; }`, `  if (error && !(ends && out.length && !fresh)) { ctx.down([error]); return; }`]]],
   ["withLatestFrom sends nothing for a value the primary holds at activation", "O-withLatestFrom use: a value the primary holds when withLatestFrom activates is an occurrence as any other",
     [[`function withLatestFromFn(ctx) {\n`, `function withLatestFromFn(ctx) {\n  const fresh = ctx.state.get() === undefined;\n  ctx.state.set(true);\n`], [`  if (secondaries.every((d) => d.has)) {`, `  if (!fresh && secondaries.every((d) => d.has)) {`]]],
+  // the review of 2026-11-21: a restored operator whose input changed while saved, activation on an input that has ended, two terminals in one wave
+  ["zip completes when one input's COMPLETE and another's ERROR share a wave that forms no tuple", "O-common: an input's ERROR ends the operator, also when another input completes in that wave; O-zip completion: its ERROR ends zip unless a tuple of that run ended zip first",
+    [["  if (error && !(ends && out.length)) { ctx.down([error]); return; }", "  if (error && !ends) { ctx.down([error]); return; }"]]],
+  ["zip ends with the later-declared input's ERROR when two inputs error in one wave", "O-common: where a contract says nothing, the inputs of one wave are taken in declared order",
+    [["  const error = ctx.deps.find(errored)?.terminal;", "  const error = ctx.deps.findLast(errored)?.terminal;"]]],
+  ["a restored zip whose input changed while saved forgets what it queued", "O-common: a checkpoint saves an operator's progress",
+    [["  const state = ctx.state.get() ?? {", "  const state = (ctx.seed !== undefined ? undefined : ctx.state.get()) ?? {"]]],
+  ["a restored withLatestFrom whose primary changed while saved sends nothing for the new value", "O-withLatestFrom use: sends, for each DATA of the primary; R-checkpoint: a restored node is given a changed dependency as changed",
+    [["  if (secondaries.every((d) => d.has)) {", "  if (ctx.seed === undefined && secondaries.every((d) => d.has)) {"]]],
+  ["a restored withLatestFrom whose secondary changed while saved sends its primary's unchanged value again", "O-withLatestFrom use: a secondary's occurrence alone sends nothing, and at a restored one's first activation a primary value it had already received is not an occurrence again",
+    [["    for (const w of primary.waves) if (w.length) ctx.down(", "    for (const w of (ctx.seed !== undefined && !primary.waves.length && primary.has ? [[primary.value]] : primary.waves)) if (w.length) ctx.down("]]],
+  ["a restored concat whose current source changed while saved forgets its position", "O-common: a checkpoint saves an operator's progress",
+    [["    let index = ctx.state.get()?.index ?? 0;", "    let index = ctx.seed !== undefined ? 0 : ctx.state.get()?.index ?? 0;"]]],
+  ["a restored concat whose current source completed while saved does not move on", "O-concat use: subscribes to the next only when the current one completes; R-checkpoint: a restored node is given a changed dependency as changed",
+    [["    if (completed(current)) {\n      index += 1;", "    if (completed(current) && ctx.seed === undefined) {\n      index += 1;"]]],
+  ["withLatestFrom activated on a primary that has completed does not complete", "O-withLatestFrom completion: the primary's COMPLETE ends the branch; O-common: at activation an operator runs on its inputs' snapshots",
+    [["function withLatestFromFn(ctx) {\n", "function withLatestFromFn(ctx) {\n  const fresh = ctx.state.get() === undefined;\n  ctx.state.set(true);\n"], ["  if (completed(primary)) ctx.down([[\"COMPLETE\"]]);", "  if (completed(primary) && !fresh) ctx.down([[\"COMPLETE\"]]);"]]],
 ];
 
 mutantSuite({ module: "combine", operators: ["merge", "withLatestFrom", "zip", "concat", "race"], mutants: MUTANTS, minTraces: 18 });

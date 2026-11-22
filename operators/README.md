@@ -30,7 +30,7 @@ draft: an active contract's traces pass on the reference kernel, which is not a 
 | [traces.jsonl](traces.jsonl) | The canonical traces; each exists once, here |
 | [../authority/operators.mjs](../authority/operators.mjs) | The derived view and the link checks, run by `npm run authority:check` |
 | [../reference/operators/traces.test.mjs](../reference/operators/traces.test.mjs) | Runs the traces on the reference kernel, for the operators the reference has |
-| [../reference/operators/](../reference/operators/) | Operators written from their contracts over the reference kernel, each with its recipe, so that their traces are run and not only read: [notifier.mjs](../reference/operators/notifier.mjs), [transform.mjs](../reference/operators/transform.mjs), [accumulate.mjs](../reference/operators/accumulate.mjs), [compare.mjs](../reference/operators/compare.mjs), [select.mjs](../reference/operators/select.mjs), [combine.mjs](../reference/operators/combine.mjs) and [state.mjs](../reference/operators/state.mjs). Each has a `*.mutants.test.mjs` beside it: edits of the module, each naming the contract sentence it breaks, and each of which a trace must notice |
+| [../reference/operators/](../reference/operators/) | Operators written from their contracts over the reference kernel, each with its recipe, so that their traces are run and not only read: [notifier.mjs](../reference/operators/notifier.mjs), [transform.mjs](../reference/operators/transform.mjs), [accumulate.mjs](../reference/operators/accumulate.mjs), [compare.mjs](../reference/operators/compare.mjs), [select.mjs](../reference/operators/select.mjs), [combine.mjs](../reference/operators/combine.mjs) and [state.mjs](../reference/operators/state.mjs). Each has a `*.mutants.test.mjs` beside it: edits of the module, each naming the contract sentence it breaks, and each of which a trace must notice. [classes.mutants.test.mjs](../reference/operators/classes.mutants.test.mjs) asks the same of every active operator for the situations all of them meet: a restore after an input changed, activation on an input that has completed or ended with ERROR, and two terminals in one wave |
 
 ## A contract
 
@@ -61,21 +61,42 @@ to what a draft may lack: it links a trace, every exception links its own, each 
 active with it. The reference run holds the rest: a trace of an active contract that is skipped
 there, or listed as a known difference, fails `npm run test:reference`.
 
-On main three things of an active contract are immutable (graphrefly:D816): its `use` and exception
-statements, which traces it and each exception link, and the steps and expectation of every trace an
-active contract links. Each changes only through a new revision that a root decision introduces, with
-the `transition` from the earlier one; a trace is not edited but succeeded by a new trace the new
-revision links. A rationale, a trace's name and basis, and a draft are corrected in place, as is any
-row that exists only on an unmerged branch. What the user decides while a family is written is part of
-D813's first content and is not numbered: the contract states it and its rationale records it. No gate
-holds the immutable things yet; that is graphrefly:B146's.
+On main an active contract is held by graphrefly:D816. Immutable are its `use`; its exceptions, each
+with its topic and statement; the links it and its exceptions have to traces, none of which is
+removed or moved to another exception; and the `nodes`, `steps` and `expect` of every trace an active
+contract links. Each changes only through a new revision that a root decision introduces, with the
+`transition` from the earlier one. A linked trace is not edited: a new trace succeeds it, and it
+stays in the ledger with a `succeeded_by` that names the new one, linked only by revisions that have
+a transition and no longer run. The decision names every active contract that links it: one whose
+statements change gets its new revision, and one whose statements do not keeps its revision and has
+its link moved to the successor in place.
+
+A new trace, and a link to it from an active contract or one of its exceptions, are added in place,
+as a scenario is added for a rule, when the contract's statements already give what the trace shows;
+its `basis` says when it was added and what it holds that no trace held. A rationale, a trace's name
+and basis, and a draft are corrected in place, as is any row that exists only on an unmerged branch;
+the owning work item's note records each such correction of an active contract or a linked trace
+with its date.
+
+What the user decides while a family is written is part of D813's first content and is not numbered,
+for as long as the contract that states it is not yet active on main: the contract states it, its
+rationale records that the user decided it and when, and the owning work item's note records the
+user's words. A sentence that no such decision, DS-20 or a cited rule gives is listed as `open` and
+keeps its contract a draft. Once a contract is active on main, a decision that changes its statements
+is a revision, also when it is made while another family is written. A contract may state for every
+language what graphrefly:D797 (9) left to each language as sugar, as `O-derived` does, without
+superseding it.
+
+No gate holds any of this yet, and neither the gate nor the reference run knows a succeeded trace;
+that is graphrefly:B146's.
 
 ## A trace
 
 ```text
 { id: "OT-<n>", name, basis, detail: "messages"|"occurrences",
   nodes: [{ id, state: [value?] } | { id, op, deps, args? }],
-  steps: [request], expect: [[[sink, node, messages]]] }
+  steps: [request], expect: [[[sink, node, messages]]],
+  succeeded_by?: "OT-<n>" }
 ```
 
 `nodes` are built in order on one graph. `state: []` is a state without a value, and `state: [v]` one
@@ -90,6 +111,12 @@ writes `["ERROR"]`, without a payload, for an ERROR that a throw produced: how a
 a payload is each runtime's (R-failure), so only the ERROR is expected. A trace also says that nothing
 arrives after its last step. The reference run checks that within one turn of the event loop, which
 catches a promise or an immediate timer and not a timer of a few milliseconds.
+
+A trace builds a well-formed graph, so it cannot show what is refused when an operator is built: an
+input given twice, a missing seed, an n that is not a count, a concat source that does not exist. A
+contract's sentences of that kind are outside the canonical traces, and a runtime's results against
+the traces say nothing of them. Each package holds them with its own tests, as the reference does in
+the `*.test.mjs` files beside its modules.
 
 `detail` says what an expectation fixes. `messages` is every array a sink received, as it received it,
 with the kernel's START, PENDING and RESOLVED. `occurrences` is, for each sink and node, the DATA,

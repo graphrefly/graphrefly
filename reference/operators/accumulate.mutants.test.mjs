@@ -86,6 +86,9 @@ const MUTANTS = [
     FOLD, `  for (const v of (ctx.state.get() === undefined && source.terminal ? [] : source.waves.flat())) acc = step(f, acc, v);`],
   ["a restored scan or reduce whose source changed starts again from its seed", "O-common: a checkpoint saves an operator's progress",
     `const start = (ctx, seed) => (ctx.state.get() ?? { acc: seed }).acc;`, `const start = (ctx, seed) => (ctx.seed !== undefined ? { acc: seed } : ctx.state.get() ?? { acc: seed }).acc;`, ["scan", "reduce"]],
+  // the review of 2026-11-21: a restored operator whose input changed while saved, activation on an input that has ended, two terminals in one wave
+  ["a restored reduce whose source only completed while saved sends its seed", "O-common: a checkpoint saves an operator's progress; O-reduce use: sends the result when its source completes normally",
+    [["  if (source.terminal?.[0] === \"COMPLETE\") ctx.down([[\"DATA\", acc], [\"COMPLETE\"]]);", "  if (source.terminal?.[0] === \"COMPLETE\") ctx.down([[\"DATA\", ctx.seed !== undefined && !source.waves.flat().length ? seed : acc], [\"COMPLETE\"]]);"]]],
 ];
 
 mutantSuite({ module: "accumulate", operators: ["scan", "reduce"], mutants: MUTANTS, minTraces: 9 });

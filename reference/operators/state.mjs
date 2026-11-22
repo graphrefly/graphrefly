@@ -36,7 +36,7 @@ export function derived(g, id, depIds, f, { recipe } = {}) {
   if (!Array.isArray(depIds) || !depIds.length) throw new RangeError(`derived ${id}: at least one dependency`);
   if (new Set(depIds).size !== depIds.length) throw new RangeError(`derived ${id}: its dependencies are distinct nodes`);
   if (typeof f !== "function") throw new TypeError(`derived ${id}: f is a function`);
-  return g.node(id, depIds, derivedFn(f), recipe !== undefined ? { recipe: { ref: "operators.derived", config: { f: recipe } } } : {});
+  return g.node(id, [...depIds], derivedFn(f), recipe !== undefined ? { recipe: { ref: "operators.derived", config: { f: recipe } } } : {});
 }
 
 export const stateRecipes = Object.freeze({
