@@ -50,13 +50,16 @@ test("an expectation's ERROR without a payload accepts any payload, and nothing 
   assert.ok(!matches([[["k", "m", [["PENDING"], ["DATA", 1], ["ERROR", "x"]]]]], [[["k", "m", [["PENDING"], ["ERROR"]]]]]));
 });
 
-test("a step is compared node by node: the order of one node's entries counts, the order between nodes does not", () => {
+test("a step is compared receiver by receiver: what one sink received from one node is in order, and which sink received first does not count", () => {
   const a = ["k", "m", [["PENDING"], ["DATA", 1]]], a2 = ["k", "m", [["PENDING"], ["DATA", 2]]], b = ["j", "n", [["PENDING"], ["DATA", 9]]];
-  assert.ok(matches([[a, b, a2]], [[b, a, a2]]));
-  assert.ok(matches([[a, a2, b]], [[a, b, a2]]));
-  assert.ok(!matches([[a2, a, b]], [[a, a2, b]]), "one node's entries in another order");
-  assert.ok(!matches([[a, b]], [[a, a2, b]]), "an entry missing");
+  const late = ["late", "m", [["PENDING"], ["DATA", 1]]], late2 = ["late", "m", [["PENDING"], ["DATA", 2]]];
+  assert.ok(matches([[a, b, a2]], [[b, a, a2]]), "sinks of different nodes");
+  assert.ok(matches([[late, late2, a, a2]], [[a, a2, late, late2]]), "two sinks of one node");
+  assert.ok(!matches([[a2, a, b]], [[a, a2, b]]), "what one sink received, in another order");
+  assert.ok(!matches([[a, a2, late2, late]], [[a, a2, late, late2]]), "what the second sink of a node received, in another order");
+  assert.ok(!matches([[a, late]], [[a, a2, late]]), "an entry missing");
   assert.ok(!matches([[a, b]], [[a]]), "a node that was not expected");
+  assert.ok(!matches([[a, late]], [[a]]), "a sink that was not expected");
   assert.ok(!matches([[a], [b]], [[a, b], []]), "an entry in another step");
   assert.ok(!matches([[a]], [[a], []]), "a step missing");
 });
@@ -71,6 +74,9 @@ test("the runner refuses what it does not know instead of running something else
   assert.throws(() => runTrace({ ...base, nodes: [base.nodes[0], { ...base.nodes[1], args: { f: "double", n: 2 } }] }), /does not know the option n of map m/);
   assert.throws(() => runTrace({ ...base, nodes: [base.nodes[0], { ...base.nodes[1], arg: { f: "double" } }] }), /does not know the key arg of node m/);
   assert.throws(() => runTrace({ ...base, nodes: [{ id: "s", state: [], args: { n: 1 } }, base.nodes[1]] }), /state s takes no args/);
+  assert.throws(() => runTrace({ ...base, nodes: [base.nodes[0], { ...base.nodes[1], deps: ["s", "s"] }] }), /map m takes 1 dependencies, and the trace gives 2/);
+  assert.throws(() => runTrace({ ...base, nodes: [base.nodes[0], { id: "x", op: "sample", deps: ["s"] }] }), /sample x takes 2 dependencies, and the trace gives 1/);
+  assert.throws(() => runTrace({ ...base, nodes: [base.nodes[0], { id: "x", op: "merge", deps: [] }] }), /merge x takes at least 1 dependencies/);
 });
 
 test("every trace of an active contract is run here and passes: none is skipped or a known difference", () => {

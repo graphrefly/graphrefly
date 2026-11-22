@@ -55,9 +55,20 @@ const ARGS = {
   first: ["p", ...CALLBACK], last: ["p", ...CALLBACK], distinctUntilChanged: ["equal", ...CALLBACK], scan: ["f", "seed", ...CALLBACK], reduce: ["f", "seed", ...CALLBACK],
   take: ["n"], skip: ["n"], bufferCount: ["n"], once: ["value"], switchMap: ["project"], mergeMap: ["project"],
 };
+// How many dependencies each kind of node takes: exactly so many, or [at least]. A node written
+// with more would be built on its first ones only, and the trace would run another graph than it
+// shows.
+const DEPS = {
+  map: 1, filter: 1, tap: 1, scan: 1, reduce: 1, distinctUntilChanged: 1, pairwise: 1, take: 1, skip: 1, takeWhile: 1, first: 1, last: 1, bufferCount: 1,
+  switchMap: 1, mergeMap: 1, arrays: 1, sample: 2, takeUntil: 2, buffer: 2, withLatestFrom: [2], merge: [1], zip: [1], concat: [1], race: [1], derived: [1], empty: 0, once: 0,
+};
 const checkNode = (node) => {
   for (const key of Object.keys(node)) if (!["id", "state", "op", "deps", "args"].includes(key)) throw new Error(`the runner does not know the key ${key} of node ${node.id}`);
   if (node.state && node.args) throw new Error(`state ${node.id} takes no args`);
+  if (node.state && node.deps) throw new Error(`state ${node.id} takes no deps`);
+  const takes = DEPS[node.op];
+  const given = (node.deps ?? []).length;
+  if (takes !== undefined && (Array.isArray(takes) ? given < takes[0] : given !== takes)) throw new Error(`${node.op} ${node.id} takes ${Array.isArray(takes) ? `at least ${takes[0]}` : takes} dependencies, and the trace gives ${given}`);
   const allowed = ARGS[node.op] ?? [];
   for (const key of Object.keys(node.args ?? {})) if (!allowed.includes(key)) throw new Error(`the runner does not know the option ${key} of ${node.op} ${node.id}`);
 };
@@ -155,13 +166,16 @@ function occurrences(entries) {
 // An expectation writes ["ERROR"] without a payload for an ERROR that a throw produced: how a
 // thrown value becomes a payload is each runtime's (R-failure), so only the ERROR is expected.
 //
-// A step is compared node by node. What the sinks of one node received is compared in order; the
-// order in which sinks of different nodes received within the step is not part of an expectation,
-// since no contract and no kernel rule gives it (graphrefly:B148).
-const byNode = (step) => {
-  const nodes = new Map();
-  for (const entry of step) nodes.set(entry[1], [...(nodes.get(entry[1]) ?? []), entry]);
-  return nodes;
+// A step is compared receiver by receiver: what one sink received from one node is compared in
+// order. Which sink received first is not part of an expectation, whether the sinks are of
+// different nodes, for which no contract and no kernel rule gives an order (graphrefly:B148), or of
+// one node, whose arrays R-wave gives to one subscriber and then the next without saying which.
+// That one subscriber is served before the next is R-wave's to hold, not a trace's.
+const key = (entry) => `${entry[0]}\u0000${entry[1]}`;
+const byReceiver = (step) => {
+  const groups = new Map();
+  for (const entry of step) groups.set(key(entry), [...(groups.get(key(entry)) ?? []), entry]);
+  return groups;
 };
 const sameEntries = (got, expect) => {
   const loose = got.map((entry, j) => [entry[0], entry[1], entry[2].map((m, k) => {
@@ -172,9 +186,10 @@ const sameEntries = (got, expect) => {
 };
 // The nodes of a step whose sinks received something other than expected.
 const differingNodes = (got, expect) => {
-  const have = byNode(got);
-  const want = byNode(expect);
-  return [...new Set([...have.keys(), ...want.keys()])].filter((node) => !sameEntries(have.get(node) ?? [], want.get(node) ?? []));
+  const have = byReceiver(got);
+  const want = byReceiver(expect);
+  const differ = [...new Set([...have.keys(), ...want.keys()])].filter((at) => !sameEntries(have.get(at) ?? [], want.get(at) ?? []));
+  return [...new Set(differ.map((at) => at.split("\u0000")[1]))];
 };
 export function matches(got, expect) {
   return got.length === expect.length && got.every((step, i) => differingNodes(step, expect[i]).length === 0);

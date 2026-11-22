@@ -71,9 +71,11 @@ a transition and no longer run. The decision names every active contract that li
 statements change gets its new revision, and one whose statements do not keeps its revision and has
 its link moved to the successor in place.
 
-A new trace, and a link to it from an active contract or one of its exceptions, are added in place,
-as a scenario is added for a rule, when the contract's statements already give what the trace shows;
-its `basis` says when it was added and what it holds that no trace held. A rationale, a trace's name
+A new trace, and a new link from an active contract or one of its exceptions to a new trace or to
+one already in the ledger, are added in place, as a scenario is added for a rule, when the contract's
+statements already give what the trace shows; a new trace's `basis` says when it was added and what
+it holds that no trace held, and the owning work item's note records a link added to a trace already
+there. A rationale, a trace's name
 and basis, and a draft are corrected in place, as is any row that exists only on an unmerged branch;
 the owning work item's note records each such correction of an active contract or a linked trace
 with its date.
@@ -101,13 +103,15 @@ that is graphrefly:B146's.
 
 `nodes` are built in order on one graph. `state: []` is a state without a value, and `state: [v]` one
 that holds v. `steps` are host
-requests, one wave each: `["subscribe", sink, node]`, `["unsubscribe", sink, node]`, `["set", state, value]`, `["invalidate", state]`,
+requests, each of which starts one wave (a callback that writes a state, as `into` does, starts
+further ones within the step): `["subscribe", sink, node]`, `["unsubscribe", sink, node]`, `["set", state, value]`, `["invalidate", state]`,
 `["complete", state]`, `["error", state, payload]`, `["batch", [requests]]`, `["restore"]`, which
 captures the graph, restores it with no subscribers and continues on the restored one, and
 `["advance", ms]` on a clock the test owns. The reference runner has no clock yet, so it skips a
-trace with an `advance` step. `expect[i]` is what the sinks received during `steps[i]`, compared node by node: what the sinks
-of one node received is in order, and the order in which sinks of different nodes received within
-the step is not part of the expectation, since no contract and no kernel rule gives it. A trace
+trace with an `advance` step. `expect[i]` is what the sinks received during `steps[i]`, compared receiver by receiver: what one
+sink received from one node is in order, and which sink received first within the step is not part of
+the expectation, since no contract gives it and R-wave says only that a node's arrays go to one
+subscriber and then the next. A trace
 subscribes at least one sink and expects something somewhere, so that it can fail. An expectation
 writes `["ERROR"]`, without a payload, for an ERROR that a throw produced: how a thrown value becomes
 a payload is each runtime's (R-failure), so only the ERROR is expected. A trace also says that nothing
@@ -163,3 +167,9 @@ evidence that a trace agrees with the kernel rules; it is not a runtime result.
 
 DS-20 dropped onFirstData, find, elementAt, combine, generic audit, rescue (catchError replaces it) and
 settle. history is a module rule (R-history), not an operator contract.
+
+A contract speaks of an operator over inputs that stay the instances it was activated on. What an
+operator keeps of an input that the host replaces by a new instance of the same id (R-request-order)
+is not stated yet: the kernel keeps nothing of the old instance, its terminal included, and a
+function is not told of the replacement, so a zip still counts the old instance's COMPLETE where a
+merge, whose completion the kernel decides, does not (graphrefly:B148).

@@ -68,7 +68,8 @@ rule, and no rule cites a contract. [../operators/README.md](../operators/README
 shapes and what the gate holds; `npm run operators:current` prints the contracts by family. On main
 an active contract's use, its exceptions and its trace links, with the nodes, steps and expectation
 of the traces it links, change only through a new revision introduced by a root decision, and a
-linked trace is succeeded by a new one, not edited; a new trace and a link to it are added in place,
+linked trace is succeeded by a new one, not edited; a new link, to a new trace or to one already in
+the ledger, is added in place,
 and a rationale, a trace's name and basis and a draft are corrected in place (graphrefly:D816, which
 also says how the behaviors decided while a family is written are recorded and that a contract may
 state what graphrefly:D797 (9) left to each language). No gate checks that yet either, and none

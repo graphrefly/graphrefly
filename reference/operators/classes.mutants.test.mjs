@@ -36,7 +36,8 @@
 // An operator built with the default ERROR policy is never run for an input's ERROR, so its
 // mutants give it the manual policy and send the first ERROR in declared order themselves, as
 // the default does (reference/kernel/kernel.mjs, K5). `control` is that change alone: no trace
-// may notice it, or a mutant built on it would be noticed for the policy and not for its class.
+// may notice it at any node, nor may the runner fail on one, or a mutant built on it would be
+// noticed for the policy and not for its class.
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -138,7 +139,14 @@ test("the table holds every operator with an active contract, and no cell goes m
 for (const entry of OPERATORS.filter((item) => item.auto)) {
   test(`control: ${entry.ops.join(", ")} with the manual ERROR policy and the default's ERROR sent by hand gives what every trace expects`, async () => {
     const mutant = await load(entry.module, [entry.auto, [entry.head, `${entry.head}${ERRORS}${AS_DEFAULT}`]]);
-    assert.deepEqual([...(await noticed(entry.module, mutant, entry.ops)).keys()], []);
+    // The whole trace, at every node, and a trace the runner cannot finish counts against it:
+    // `noticed` looks for a witness and so passes over both.
+    const differs = [];
+    for (const trace of await usable) {
+      if (!trace.nodes.some((n) => entry.ops.includes(n.op))) continue;
+      if ((await differing(trace, { [entry.module]: mutant })).size) differs.push(trace.id);
+    }
+    assert.deepEqual(differs, []);
   });
 }
 

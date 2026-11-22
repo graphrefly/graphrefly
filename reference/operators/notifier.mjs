@@ -26,7 +26,7 @@
 // while the graph was saved: the kernel compares values there, and could not see a tick of an
 // equal value. The saved private state stands, unlike at an activation after a deactivation.
 // What is not an action then is the notifier's DATA: a notifier that had ended with ERROR when
-// the operator activates ends it with that ERROR, a terminal being no action (the user,
+// the operator activates ends it, as an input's ERROR does, a terminal being no action (the user,
 // 2026-11-21).
 //
 // The two inputs are distinct nodes: one node given as both is refused when the operator is built
