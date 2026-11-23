@@ -1798,3 +1798,33 @@ test("a recipe changed after it was given or read is captured as it was given, a
   assert.deepEqual(during(r, () => r.set("a", 4)), ["k <- p: [PENDING, DATA(5)]"]);
   assert.deepEqual(during(g, () => g.set("a", 4)), ["k <- p: [PENDING, DATA(5)]"], "as the live one");
 });
+
+// graphrefly:D825: R-checkpoint's comparison by held value stands. A restored node receives no
+// waves until its first activation, so an equal value its dependency sent again meanwhile is not
+// an occurrence for it; a host that must not lose one subscribes before writing upstream.
+test("a restored node does not see an equal value its dependency sent again before its first activation, and subscribed first it gives what the live graph gives", () => {
+  // u is a running total of a; t is a running total of what u sends, so it counts u's occurrences.
+  const build = () => {
+    const reg = registry();
+    const g = createGraph();
+    g.state("a", 1);
+    node(g, reg, "u", ["a"], "scan");
+    node(g, reg, "t", ["u"], "scan");
+    g.subscribe("k", "t");
+    return g;
+  };
+  const live = build();
+  assert.deepEqual(during(live, () => live.set("a", 0)), ["k <- t: [PENDING, DATA(2)]"], "u sends 1 again, an occurrence for t");
+  assert.deepEqual(during(live, () => live.set("a", 5)), ["k <- t: [PENDING, DATA(8)]"]);
+
+  const cp = roundTrip(capture(build()));
+  const written = restore(cp, registry());
+  written.set("a", 0);
+  assert.deepEqual(during(written, () => written.subscribe("k", "t")), ["k <- t: [START, DATA(1)]"], "u holds what t had received, so t does not run");
+  assert.deepEqual(during(written, () => written.set("a", 5)), ["k <- t: [PENDING, DATA(7)]"]);
+
+  const subscribed = restore(cp, registry());
+  subscribed.subscribe("k", "t");
+  assert.deepEqual(during(subscribed, () => subscribed.set("a", 0)), ["k <- t: [PENDING, DATA(2)]"]);
+  assert.deepEqual(during(subscribed, () => subscribed.set("a", 5)), ["k <- t: [PENDING, DATA(8)]"], "as the live graph");
+});
