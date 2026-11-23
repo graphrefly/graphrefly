@@ -43,8 +43,9 @@ requests queued together (kernel_lifetime.tla) and everything a cycle would do t
 day, for graphrefly:D826 (R-request-order@7), the model gained nodes that do not exist yet and their
 creation; three more mutations each trip both invariants: a creation that is not checked, one that
 is not checked against the new node's own seed, and a seed's name of a node not made yet that does
-not count. A seed that names a node which is never made cannot start, and what its activation does
-then is out of scope.
+not count. A seed that names a node which is never made cannot start (graphrefly:D827, R-subscription@5);
+that the refused request changes nothing is one step's atomicity, which the model has by
+construction.
 
 Written 2026-11-23 for graphrefly:D821 (R-request-order@5, graphrefly:B148's sixth point). Mutations
 checked on `kernel_repeated_dependency.cfg`, each tripping an invariant: connections matched by id

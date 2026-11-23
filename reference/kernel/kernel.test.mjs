@@ -1524,6 +1524,46 @@ test("definition: what a recipe holds that is not plain data is kept as it is, a
   assert.notEqual(copy, loop);
 });
 
+// R-subscription@5 (graphrefly:D827): a request that would activate a node while a dependency its
+// seed names does not exist is refused and changes nothing. Until then the node, and every node
+// being activated on the way, was left marked active and half connected.
+test("seed: a request that would activate a node whose seed names a node that does not exist is refused and changes nothing", () => {
+  const sum = (ctx) => ctx.down([["DATA", ctx.deps.reduce((a, d) => a + (d.value ?? 0), 0)]]);
+  const held = (g, ids) => ids.map((id) => `${id}:${g.describe().find((n) => n.id === id).deps}:${g.get(id).active ? "active" : "inactive"}`);
+  const refused = /x cannot start: its seed names gone, which does not exist/;
+  {
+    const g = createGraph();
+    g.state("a", 1);
+    g.node("x", ["a"], sum, { seed: { values: [1], deps: ["gone"] } });
+    assert.throws(() => g.subscribe("k", "x"), refused);
+    assert.deepEqual(held(g, ["x", "a"]), ["x:a:inactive", "a::inactive"]);
+    assert.throws(() => g.subscribe("k", "x"), refused, "again, as the first time");
+    g.node("gone", ["a"], sum);
+    assert.deepEqual(during(g, () => g.subscribe("k", "x")), ["k <- x: [START, DATA(1)]"], "taken once the named node exists");
+    assert.deepEqual(during(g, () => g.set("a", 5)), ["k <- x: [PENDING, DATA(5)]"]);
+  }
+  {
+    const g = createGraph();
+    g.state("a", 1); g.state("b", 2);
+    g.node("x", ["a"], sum, { seed: { values: [1], deps: ["gone"] } });
+    g.node("y", ["b", "x"], sum);
+    assert.throws(() => g.subscribe("k", "y"), refused, "through a dependent");
+    assert.deepEqual(held(g, ["y", "x", "a", "b"]), ["y:b,x:inactive", "x:a:inactive", "a::inactive", "b::inactive"]);
+  }
+  {
+    const g = createGraph();
+    g.state("a", 1);
+    g.node("x", ["a"], sum, { seed: { values: [1], deps: ["gone"] } });
+    const z = withCtx(sum);
+    g.node("z", ["a"], z);
+    g.subscribe("k", "z");
+    assert.throws(() => z.ctx.rewire(["a", "x"]), refused, "a rewire onto it");
+    assert.throws(() => g.replace("z", ["a", "x"], z), refused, "a replace onto it");
+    assert.deepEqual(held(g, ["z", "x", "a"]), ["z:a:active", "x:a:inactive", "a::active"]);
+    assert.deepEqual(during(g, () => g.set("a", 5)), ["k <- z: [PENDING, DATA(5)]"]);
+  }
+});
+
 // R-request-order@7 (graphrefly:D826): a node's creation is checked too, since a seed may have named
 // the node before it existed. Until then the creation was taken and the next subscription
 // overflowed the stack.

@@ -214,6 +214,11 @@ Mutations checked on 2026-11-08, each failing at least one test:
   the same way (R-request-order@7, graphrefly:D826): a seed may name a node made later, so a
   creation over a dependency that reaches such a seed, or with a seed of its own that does, would
   close a cycle, which the next subscription followed until the stack overflowed.
+- A request that would activate a node while a dependency its seed names does not exist is refused
+  before anything changes (R-subscription@5, graphrefly:D827, 2026-11-23): a subscription, and a
+  replace or a rewire of an active node onto such a node or one that would start through it. Until
+  then the missing node was found while acquiring, which left the node and every node being
+  activated on the way marked active and half connected, for good.
 - A quiet node clears its pending mark before forwarding an auto INVALIDATE (F 2.10), so the
   INVALIDATE marks its cone pending and a diamond below settles once.
 

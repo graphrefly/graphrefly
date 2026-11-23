@@ -319,6 +319,19 @@ export function createGraph({ report: hostReport, requireRecipe = false } = {}) 
     }
   }
 
+  // R-subscription@5 (graphrefly:D827): what a request would activate must be able to start. An
+  // inactive node starts on its seed's list where it has one, and a seed may name a node that was
+  // never made; found only while acquiring, that left the node, and every node being activated on
+  // the way, marked active and half connected. Checked before anything changes.
+  function assertStartable(n, seen = new Set()) {
+    if (n.active || n.kind === "state" || n.ended || seen.has(n.id)) return;
+    seen.add(n.id);
+    for (const d of n.seedDeps ?? n.deps) {
+      if (!nodes.has(d)) throw new KernelError(`${n.id} cannot start: its seed names ${d}, which does not exist`);
+      assertStartable(nodeOf(d), seen);
+    }
+  }
+
   function activate(n) {
     n.active = true;
     // P5: an ended node is connected and gives its snapshot, but never runs again.
@@ -459,6 +472,7 @@ export function createGraph({ report: hostReport, requireRecipe = false } = {}) 
         request(() => {
           if (!lifetime.open || n.lifetime !== lifetime) return;
           assertAcyclic("rewire", n, deps);
+          for (const d of deps) assertStartable(nodeOf(d));
           rewireNode(n, deps);
         });
       },
@@ -834,7 +848,7 @@ export function createGraph({ report: hostReport, requireRecipe = false } = {}) 
       // P5: an ended node can be subscribed; its START snapshot carries its terminal.
       request(() => {
         if (n.subs.some((s) => s.kind === "sink" && s.id === sinkId)) return; // idempotent
-        if (!n.active) activate(n);
+        if (!n.active) { assertStartable(n); activate(n); }
         const sub = { kind: "sink", id: sinkId, cb };
         n.subs.push(sub);
         deliverToSink(sub, id, [["START"], ...snapshotOf(n)]);
@@ -858,7 +872,11 @@ export function createGraph({ report: hostReport, requireRecipe = false } = {}) 
       deps = [...deps];
       if (opts) opts = { ...opts, recipe: copyData(opts.recipe ?? null) };
       assertAcyclic("replace", n, deps);
-      request(() => { assertAcyclic("replace", n, deps); replaceNode(n, deps, fn, opts); });
+      request(() => {
+        assertAcyclic("replace", n, deps);
+        if (n.active) for (const d of deps) assertStartable(nodeOf(d)); // an active node acquires them
+        replaceNode(n, deps, fn, opts);
+      });
     },
     set(id, value) { hostInput(id, ["DATA", typeof value === "function" ? new Deferred(value) : value]); },
     invalidate(id) { hostInput(id, ["INVALIDATE"]); },
