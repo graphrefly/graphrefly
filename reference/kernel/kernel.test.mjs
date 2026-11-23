@@ -1230,6 +1230,69 @@ test("rewire: an added dependency that has ended arrives as its snapshot (P5); a
   assert.deepEqual(g.describe().find((d) => d.id === "x").deps, ["b"]);
 });
 
+// R-request-order: one wave's rewires run in the order their nodes were created. A node that, at
+// the first value of its one dependency, asks to add `extra` to its dependencies; the added
+// snapshot is its next input, so the order of the sinks' arrays is the order the rewires ran in.
+const moving = (extra) => (ctx) => {
+  if (ctx.deps.length === 1 && ctx.deps[0].waves.length) ctx.rewire([ctx.deps[0].id, extra]);
+  ctx.down([["DATA", ctx.deps.map((d) => `${d.id}=${d.value}`).join(",")]]);
+};
+// x is created before y; each moves at its own trigger, t or u. kz hears z.
+function twoMoving() {
+  const g = createGraph();
+  g.state("t"); g.state("u"); g.state("z"); g.state("ex", "X"); g.state("ey", "Y");
+  g.node("x", ["t"], moving("ex")); g.node("y", ["u"], moving("ey"));
+  g.subscribe("kz", "z");
+  return g;
+}
+const afterRewire = (g, body) => during(g, body).filter((line) => /e[xy]=|kz/.test(line));
+const X = 'kx <- x: [PENDING, DATA("t=1,ex=X")]';
+const Y = 'ky <- y: [PENDING, DATA("u=1,ey=Y")]';
+
+test("rewire: one wave's rewires run in the order their nodes were created, whichever sink subscribed first and whichever write came first", () => {
+  for (const sinks of [["x", "y"], ["y", "x"]]) {
+    for (const writes of [["t", "u"], ["u", "t"]]) {
+      const g = twoMoving();
+      for (const id of sinks) g.subscribe(`k${id}`, id);
+      assert.deepEqual(afterRewire(g, () => g.batch(() => { for (const id of writes) g.set(id, 1); })), [X, Y], `sinks ${sinks}, writes ${writes}`);
+    }
+    // One trigger for both: the functions run in the order their sinks subscribed.
+    const g = createGraph();
+    g.state("t"); g.state("ex", "X"); g.state("ey", "Y");
+    g.node("x", ["t"], moving("ex")); g.node("y", ["t"], moving("ey"));
+    for (const id of sinks) g.subscribe(`k${id}`, id);
+    assert.deepEqual(during(g, () => g.set("t", 1)).filter((line) => /e[xy]=/.test(line)),
+      ['kx <- x: [PENDING, DATA("t=1,ex=X")]', 'ky <- y: [PENDING, DATA("t=1,ey=Y")]'], `sinks ${sinks}`);
+  }
+});
+
+test("rewire: among a wave's other requests the rewires keep the places rewires were asked at", () => {
+  const g = twoMoving();
+  g.subscribe("kx", "x");
+  // y runs first here and its sink asks for a write before x asks for its rewire: rewire, set, rewire.
+  g.subscribe("ky", "y", (msgs) => { if (msgs.some((m) => m[0] === "DATA" && m[1] === "u=1")) g.set("z", 1); });
+  assert.deepEqual(afterRewire(g, () => g.batch(() => { g.set("u", 1); g.set("t", 1); })), [X, "kz <- z: [PENDING, DATA(1)]", Y]);
+});
+
+test("rewire: rewires asked for in different waves keep the order of their waves", () => {
+  const g = twoMoving();
+  // A sink of u writes t during u's wave, before y asks: the queue is set t, y's rewire, and x asks
+  // for its rewire in t's wave, behind y's.
+  g.subscribe("ku", "u", (msgs) => { if (msgs.some((m) => m[0] === "DATA")) g.set("t", 1); });
+  g.subscribe("kx", "x"); g.subscribe("ky", "y");
+  assert.deepEqual(afterRewire(g, () => g.set("u", 1)), [Y, X]);
+});
+
+test("rewire: rewires asked for in a batch body run in the body's order", () => {
+  const g = createGraph();
+  g.state("t", 1); g.state("ex", "X"); g.state("ey", "Y");
+  const x = withCtx(sumById); const y = withCtx(sumById);
+  g.node("x", ["t"], x); g.node("y", ["t"], y);
+  g.subscribe("kx", "x"); g.subscribe("ky", "y");
+  assert.deepEqual(during(g, () => g.batch(() => { y.ctx.rewire(["t", "ey"]); x.ctx.rewire(["t", "ex"]); })),
+    ['ky <- y: [PENDING, DATA("t=1,ey=Y")]', 'kx <- x: [PENDING, DATA("t=1,ex=X")]']);
+});
+
 // F7: a state node has no ctx, so it cannot be asked to rewire. An ended node's lifetime is
 // closed, so its rewire is dropped as ctx.down after close is, instead of refused.
 test("rewire: refused for itself, a cycle and duplicates; a rewire of an ended node is dropped", () => {

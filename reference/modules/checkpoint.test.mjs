@@ -1497,6 +1497,24 @@ test("QA2: restore refuses cycles mixing declared and lifetime dependencies befo
   assert.equal(calls, 0);
 });
 
+test("a restored graph runs one wave's rewires in creation order, whichever sink the host subscribes first", () => {
+  const moving = ({ extra }) => (ctx) => {
+    if (ctx.deps.length === 1 && ctx.deps[0].waves.length) ctx.rewire([ctx.deps[0].id, extra]);
+    ctx.down([["DATA", ctx.deps.map((d) => `${d.id}=${d.value}`).join(",")]]);
+  };
+  const g = createGraph();
+  g.state("t"); g.state("ex", "X"); g.state("ey", "Y");
+  node(g, { moving }, "x", ["t"], "moving", { extra: "ex" });
+  node(g, { moving }, "y", ["t"], "moving", { extra: "ey" });
+  const cp = roundTrip(capture(g));
+  for (const sinks of [["x", "y"], ["y", "x"]]) {
+    const r = restore(cp, { moving });
+    for (const id of sinks) r.subscribe(`k${id}`, id);
+    assert.deepEqual(during(r, () => r.set("t", 1)).filter((line) => /e[xy]=/.test(line)),
+      ['kx <- x: [PENDING, DATA("t=1,ex=X")]', 'ky <- y: [PENDING, DATA("t=1,ey=Y")]'], `sinks ${sinks}`);
+  }
+});
+
 test("QA2: restore preserves valid repeated declared inputs without inventing rewire restrictions", () => {
   const g = createGraph();
   g.state("a", 2);

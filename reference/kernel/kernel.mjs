@@ -114,6 +114,7 @@ export function createGraph({ report: hostReport, requireRecipe = false } = {}) 
   let batchRequests = null; // requests made in that body, run after its commit (O3, K8)
   let busy = false;     // K8: the kernel is running a request (wave, activation, release)
   const queue = [];     // K8: requests that arrived while busy, run in arrival order
+  let serial = 0;       // counts requests as they start: a queued request carries the one it was asked in
   let running = null;   // the node whose function is executing; runs never nest (K8)
 
   const nodeOf = (id) => {
@@ -183,6 +184,7 @@ export function createGraph({ report: hostReport, requireRecipe = false } = {}) 
       pendingDeps: new Set(),
       // Per dependency: the latest value and terminal received, and this wave's arrays.
       inputs: deps.map(freshInput),
+      created: nodes.size, // its place in creation order (R-request-order)
     };
     nodes.set(id, n);
     return n;
@@ -211,18 +213,32 @@ export function createGraph({ report: hostReport, requireRecipe = false } = {}) 
 
   function request(op) {
     if (batchRequests) { batchRequests.push(op); return; } // the batch's wave has not run yet
-    if (busy) { queue.push(op); return; }
+    if (busy) { op.askedIn = serial; queue.push(op); return; }
     busy = true;
+    serial += 1;
     try { op(); } finally { // what op threw goes on to its caller once the queue has run
       busy = false;
       while (queue.length) {
+        rewiresInCreationOrder();
         const next = queue.shift();
         busy = true;
+        serial += 1;
         try { next(); } catch (e) {
           report({ source: "queued request", error: messageOf(e) }); // its caller has returned
         } finally { busy = false; }
       }
     }
+  }
+
+  // R-request-order: the rewires nodes asked for during the request that just ended run in the
+  // order their nodes were created, at the places in the queue that rewires were asked at. The
+  // order they were asked in follows the order functions ran, which follows the order sinks
+  // subscribed and a batch's writes were made, and a restored graph keeps neither. A rewire asked
+  // for in a batch body is the body's request and keeps the body's order.
+  function rewiresInCreationOrder() {
+    const slots = queue.flatMap((op, i) => (op.rewireOf && op.askedIn === serial ? [i] : []));
+    const sorted = slots.map((i) => queue[i]).sort((x, y) => x.rewireOf.created - y.rewireOf.created);
+    slots.forEach((i, k) => { queue[i] = sorted[k]; });
   }
 
   // ---- Lifetimes (P6, K7) -------------------------------------------------
@@ -415,11 +431,13 @@ export function createGraph({ report: hostReport, requireRecipe = false } = {}) 
         if (!lifetime.open) return; // as ctx.down after close, before any check
         assertDistinct("rewire", n, deps);
         assertAcyclic("rewire", n, deps);
-        request(() => {
+        const op = () => {
           if (!lifetime.open || n.lifetime !== lifetime) return;
           assertAcyclic("rewire", n, deps);
           rewireNode(n, [...deps]);
-        });
+        };
+        op.rewireOf = n;
+        request(op);
       },
     };
     if (n.seedNote !== undefined) { ctx.seed = n.seedNote; n.seedNote = undefined; }
