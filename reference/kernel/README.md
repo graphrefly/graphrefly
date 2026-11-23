@@ -200,6 +200,12 @@ Mutations checked on 2026-11-08, each failing at least one test:
 - The cycle check of `replace` and `ctx.rewire` runs again when the queued request runs (F 2.9): two
   replaces in one batch, or two rewires asked for in one wave, could each pass when asked for and
   close a cycle together. Refused when it runs, the request goes to the host reporter.
+- The kernel keeps a node's dependency list and recipe as they were given (R-node@4,
+  graphrefly:D823, 2026-11-23): its own list at a creation, a replace and a rewire, taken when the
+  request is asked for, and a copy of a recipe's plain data in and out of `definition(id)`. Until
+  then it held the host's own objects: a recipe changed afterwards changed what a capture wrote and
+  not what the live node did, and a list changed afterwards changed what the node was described over.
+  Private state and payloads still pass by reference.
 - The cycle check also follows the dependencies a seed holds for a first lifetime
   (R-request-order@6, graphrefly:D822, 2026-11-23). Until then it read current and declared ones
   only, and before a restored node's first activation its lifetime's list is neither: a restored

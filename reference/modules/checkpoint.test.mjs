@@ -1777,3 +1777,24 @@ test("a restored graph refuses a replace and a rewire that close a cycle through
   r3.replace("y", ["x"], reg.sum(), R);
   assert.deepEqual(r3.definition("y").deps, ["x"]);
 });
+
+// R-node@4 (graphrefly:D823): a recipe is kept as it was given, so what a capture writes is what
+// the live node was built with. Until then a host that changed the object it gave, or the one a
+// read returned, got a checkpoint whose restored node did something else than the live one.
+test("a recipe changed after it was given or read is captured as it was given, and the restored node does what the live one does", () => {
+  const reg = registry();
+  const g = createGraph();
+  g.state("a", 1);
+  const config = { k: 1 };
+  node(g, reg, "p", ["a"], "plus", config);
+  g.subscribe("k", "p");
+  config.k = 50;
+  g.definition("p").recipe.config.k = 70;
+  assert.deepEqual(during(g, () => g.set("a", 2)), ["k <- p: [PENDING, DATA(3)]"]);
+  const cp = roundTrip(capture(g));
+  assert.deepEqual(cp.nodes.find((n) => n.id === "p").recipe, { ref: "plus", config: { k: 1 } });
+  const r = restore(cp, registry());
+  r.subscribe("k", "p");
+  assert.deepEqual(during(r, () => r.set("a", 4)), ["k <- p: [PENDING, DATA(5)]"]);
+  assert.deepEqual(during(g, () => g.set("a", 4)), ["k <- p: [PENDING, DATA(5)]"], "as the live one");
+});

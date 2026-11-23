@@ -60,6 +60,20 @@ export function errorPayload(e) {
   const payload = messageOf(e);
   return payload === undefined || typeof payload === "boolean" ? "" : payload;
 }
+// R-node@4 (graphrefly:D823): the kernel keeps a recipe as it was given, in a copy of its own, and
+// hands out a copy. Plain objects and arrays are copied; whatever else a recipe holds is kept as it
+// is (it is not JSON, so no capture takes it). The kernel still never interprets a recipe.
+const copyData = (value, seen = new Map()) => {
+  if (value === null || typeof value !== "object") return value;
+  if (seen.has(value)) return seen.get(value);
+  if (Array.isArray(value)) { const out = []; seen.set(value, out); for (const item of value) out.push(copyData(item, seen)); return out; }
+  const proto = Object.getPrototypeOf(value);
+  if (proto !== Object.prototype && proto !== null) return value;
+  const out = {}; seen.set(value, out);
+  for (const [key, item] of Object.entries(value)) out[key] = copyData(item, seen);
+  return out;
+};
+
 // replaced: the dependency got a new instance while this node stayed active, and the function has
 // not run since (R-invocation).
 const freshInput = () => ({ has: false, value: undefined, ended: null, frames: [], invalidated: false, replaced: false });
@@ -170,7 +184,7 @@ export function createGraph({ report: hostReport, requireRecipe = false } = {}) 
       setup: opts?.setup ?? null,
       // K10: an opaque description of how the instance was built, such as a checkpoint recipe
       // { ref, config }. The kernel stores it with the definition and never reads it (2026-11-10).
-      recipe: opts?.recipe ?? null,
+      recipe: copyData(opts?.recipe ?? null),
       // H4: an opaque note in the seed, handed to the seeded instance's first run as ctx.seed and
       // to no other run (2026-11-10, so a restore's first-activation check follows the instance).
       seedNote: seed?.note,
@@ -432,11 +446,12 @@ export function createGraph({ report: hostReport, requireRecipe = false } = {}) 
       },
       rewire(deps) {
         if (!lifetime.open) return; // as ctx.down after close, before any check
+        deps = [...deps]; // R-node@4: the list as it is now, not as it is when the request runs
         assertAcyclic("rewire", n, deps);
         request(() => {
           if (!lifetime.open || n.lifetime !== lifetime) return;
           assertAcyclic("rewire", n, deps);
-          rewireNode(n, [...deps]);
+          rewireNode(n, deps);
         });
       },
     };
@@ -682,7 +697,7 @@ export function createGraph({ report: hostReport, requireRecipe = false } = {}) 
     exchange(n, deps);
     if (old?.cleanup) runCleanup(n, old.cleanup);
     Object.assign(n, {
-      fn, setup: opts?.setup ?? null, recipe: opts?.recipe ?? null, seedNote: undefined,
+      fn, setup: opts?.setup ?? null, recipe: opts?.recipe ?? null, seedNote: undefined, // copied when the replace was asked for
       declaredDeps: deps, seedDeps: null, lifetime: null, values: [], has: false, cache: undefined, ended: null, privateState: undefined, pending: false,
     });
     n.pendingDeps.clear();
@@ -805,7 +820,7 @@ export function createGraph({ report: hostReport, requireRecipe = false } = {}) 
   return {
     trace,
     state(id, initial) { makeNode(id, "state", [], null, {}, initial); return id; },
-    node(id, deps, fn, opts) { makeNode(id, "node", deps, fn, opts, undefined); return id; },
+    node(id, deps, fn, opts) { makeNode(id, "node", [...deps], fn, opts, undefined); return id; }, // its own list (R-node@4)
     subscribe(sinkId, id, cb) {
       const n = nodeOf(id);
       // P5: an ended node can be subscribed; its START snapshot carries its terminal.
@@ -831,6 +846,9 @@ export function createGraph({ report: hostReport, requireRecipe = false } = {}) 
       const n = nodeOf(id);
       if (n.kind !== "node") throw new KernelError(`${id} is not a computed node`);
       assertRecipe(`replace: ${id}`, opts); // when it is asked for, like the refusals below
+      // R-node@4: the list and the recipe as they are now, not as they are when the request runs.
+      deps = [...deps];
+      if (opts) opts = { ...opts, recipe: copyData(opts.recipe ?? null) };
       assertAcyclic("replace", n, deps);
       request(() => { assertAcyclic("replace", n, deps); replaceNode(n, deps, fn, opts); });
     },
@@ -899,7 +917,7 @@ export function createGraph({ report: hostReport, requireRecipe = false } = {}) 
     definition(id) {
       const n = nodeOf(id);
       return {
-        deps: [...n.declaredDeps], fn: n.fn, setup: n.setup, recipe: n.recipe,
+        deps: [...n.declaredDeps], fn: n.fn, setup: n.setup, recipe: copyData(n.recipe), // copies (R-node@4)
         opts: { terminal: { ...n.terminal }, invalidate: n.invalidate, quiet: n.quiet }, // the node's policies
       };
     },

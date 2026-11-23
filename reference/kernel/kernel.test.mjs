@@ -1381,6 +1381,66 @@ test("replace: a rewire that keeps the replaced dependency keeps what the functi
 
 // F7: a state node has no ctx, so it cannot be asked to rewire. An ended node's lifetime is
 // closed, so its rewire is dropped as ctx.down after close is, instead of refused.
+// R-node@4 (graphrefly:D823): the kernel keeps the dependency list and the recipe as they were given.
+const valuesJoined = (ctx) => ctx.down([["DATA", ctx.deps.map((d) => d.value).join()]]);
+
+test("definition: a change to the list or the recipe the host gave, or to a definition it read, changes nothing the node holds", () => {
+  const g = createGraph();
+  g.state("a", 1); g.state("b", 2);
+  const deps = ["a"];
+  const config = { k: 1, nested: { list: [1, 2] } };
+  const given = { ref: "r", config: { k: 1, nested: { list: [1, 2] } } };
+  g.node("p", deps, valuesJoined, { recipe: { ref: "r", config } });
+  g.subscribe("k", "p");
+  deps.push("b"); config.k = 50; config.nested.list.push(3);
+  assert.deepEqual(g.definition("p").deps, ["a"]);
+  assert.deepEqual(g.describe().find((n) => n.id === "p").deps, ["a"]);
+  assert.deepEqual(g.definition("p").recipe, given);
+  const read = g.definition("p");
+  read.deps.push("b"); read.recipe.config.k = 7; read.recipe.config.nested.list.length = 0; read.recipe.ref = "other";
+  assert.deepEqual(g.definition("p").deps, ["a"]);
+  assert.deepEqual(g.definition("p").recipe, given);
+  assert.deepEqual(during(g, () => g.set("b", 3)), [], "b was never a dependency");
+  assert.deepEqual(during(g, () => g.set("a", 4)), ['k <- p: [PENDING, DATA("4")]']);
+});
+
+test("definition: a replace and a rewire take their list and recipe as they are when asked for", () => {
+  const g = createGraph();
+  g.state("a", 1); g.state("b", 2); g.state("c", 3);
+  const x = withCtx(valuesJoined);
+  g.node("x", ["a"], x);
+  g.subscribe("k", "x");
+  // Asked for in a batch body, they run after the commit; the host changes its objects in between.
+  const list = ["b"];
+  const recipe = { ref: "r", config: { k: 1 } };
+  g.batch(() => { g.replace("x", list, x, { recipe }); list.push("c"); recipe.config.k = 9; });
+  assert.deepEqual(g.definition("x").deps, ["b"]);
+  assert.deepEqual(g.definition("x").recipe, { ref: "r", config: { k: 1 } });
+  const wired = ["b", "c"];
+  g.batch(() => { x.ctx.rewire(wired); wired.pop(); });
+  assert.deepEqual(g.describe().find((n) => n.id === "x").deps, ["b", "c"]);
+  wired.push("a");
+  assert.deepEqual(g.describe().find((n) => n.id === "x").deps, ["b", "c"]);
+  assert.deepEqual(during(g, () => g.set("c", 30)), ['k <- x: [PENDING, DATA("2,30")]']);
+});
+
+test("definition: what a recipe holds that is not plain data is kept as it is, and a recipe that holds itself is copied once", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  const when = new Date(0);
+  const f = () => 1;
+  g.node("p", ["a"], () => {}, { recipe: { ref: "r", config: { when, f } } });
+  const read = g.definition("p").recipe.config;
+  assert.equal(read.when, when);
+  assert.equal(read.f, f);
+  const loop = { ref: "r" };
+  loop.self = loop;
+  g.node("q", ["a"], () => {}, { recipe: loop });
+  const copy = g.definition("q").recipe;
+  assert.equal(copy.self, copy);
+  assert.notEqual(copy, loop);
+});
+
 // R-request-order@6 (graphrefly:D822): the cycle check also reads the dependencies a seed holds for
 // a first lifetime, which a restored node starts on at its first activation.
 test("cycle check: a replace and a rewire are refused for a node that a seeded node will depend on at its first activation", () => {
