@@ -164,6 +164,12 @@ first kind is linked from the ordinary use or from a same-wave exception.
 `basis` names where the selection states the trace. A pass on the reference kernel is candidate
 evidence that a trace agrees with the kernel rules; it is not a runtime result.
 
+## A review round
+
+A review round of the operator contracts is done when fewer than 5% of at least 80 valid mutants,
+written without sight of the traces, pass every canonical trace. A round by a writer who reads the
+traces collects traces; its rate is not a condition.
+
 ## Not in the set
 
 DS-20 dropped onFirstData, find, elementAt, combine, generic audit, rescue (catchError replaces it) and
