@@ -23,6 +23,12 @@ currently active rules and are retired or rescoped at activation, not edited now
 | `kernel_repeated_dependency.tla` (`kernel_repeated_dependency.cfg`) | One mechanism of R-request-order, and nothing else of it: the exchange of one node's dependency list, a sequence over two states of up to three places, as a rewire and a replace share it. The connections held to each dependency queue up in the order of their places; a place of the new list takes the head of its dependency's queue or a new connection that brings the dependency's value; what is left is released. Both sides are kept, the node's connection at each place and each dependency's connections, with the record of what the node last received on each. Invariants: OnePerPlace, BothSidesAgree, RecordsCurrent, KthKeepsKth. Up to three exchanges: 11,545 states generated, 2,244 distinct | reference tests are candidate evidence |
 | `kernel_seed_cycle.tla` (`kernel_seed_cycle.cfg`) | One clause of R-request-order, and nothing else of it: the cycle check of a replace and a rewire over the three lists a node can hold, its declared dependencies, those of its current lifetime and those a seed gives its first lifetime. Three computed nodes, none of which exists at first; a creation, with or without a seed whose list may name any node, made or not; a rewire, a replace, an activation that starts on the seed's list, a deactivation that goes back to the declared one, and a capture and restore that leaves a rewired node's list in a seed. Invariants: Acyclic, RunsAcyclic. 74,255 states generated, 4,942 distinct (2,312 before the creation was added) | reference tests are candidate evidence |
 
+`module_pause.tla` and `module_restart.tla`, 2026-11-23, for graphrefly:D828, which activates
+R-pause@1 and R-restart@1 as written. Neither model changed. Run again that day on their base
+configurations: `module_pause.cfg` 35,026 states generated, 1,542 distinct; `module_restart.cfg`
+22,006 generated, 9,574 distinct; no error. The mutations recorded below for each (16 and 11) were
+not run again, the models being unchanged.
+
 `kernel_wave.tla`, 2026-11-23, for graphrefly:D824 (R-failure@5, R-terminals@2, R-invalidation@2;
 graphrefly:B148's first to fifth points). The model already did what the rules now say: an INVALIDATE
 of any input in the wave goes before an auto ERROR and before the function's output, the kernel's

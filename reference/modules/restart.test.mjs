@@ -296,3 +296,20 @@ test("a failure in the wave that ends every upstream is not retried: the owner e
   g.batch(() => { g.set("a", "bad"); g.complete("a"); });
   assert.deepEqual([g.get("r").ended, timers.mock.callCount()], [["ERROR", "bad"], 0]);
 });
+
+// R-restart: a new attempt is a new instance of the inner's own definition, and the owner holds
+// the inner's dependencies. Until 2026-11-23 the owner replaced the inner onto the list its caller
+// had given, so a caller that added to its list afterwards got an inner over a node the owner did
+// not hold.
+test("a new attempt keeps the inner's own dependencies when the caller changes its list afterwards", () => {
+  const g = createGraph();
+  g.state("a", 1); g.state("b", 100);
+  const deps = ["a"];
+  const r = restartable(g, "r", { deps, fn: (ctx) => ctx.down([["DATA", ctx.deps.map((d) => d.value).join()]]), rounds: 3 });
+  g.subscribe("k", "r");
+  deps.push("b");
+  r.restart();
+  assert.deepEqual(g.definition("r/inner").deps, ["a"]);
+  assert.deepEqual(g.definition("r").deps, ["a", "r/inner", "r/restart"]);
+  assert.equal(g.get("b").active, false);
+});

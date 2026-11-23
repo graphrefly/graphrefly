@@ -55,6 +55,7 @@ import { retryDelayMs, retryPolicy } from "./resilience.mjs";
 // restartableOf(g, id) gives the handle.
 export function restartable(g, id, { deps, fn, recipe, rounds = 1, retry = retryPolicy() }) {
   assertLocalName(id);
+  deps = [...deps]; // its own list: a caller that changes its list afterwards changes nothing here
   const innerId = `${id}/inner`;
   const restartId = `${id}/restart`;
   g.state(restartId); // no value until the first request, so activation sees none
@@ -86,10 +87,12 @@ function owner({ deps, rounds, retry }, { g, id }) {
     const e = ends();
     return (e.length > 0 && e.every(Boolean)) || e.some((t) => t?.[0] === "ERROR");
   };
-  // A new instance of the inner's own definition.
+  // A new instance of the inner's own definition (R-restart), its dependencies included. Until
+  // 2026-11-23 the replace took the list the caller had given, which the caller could still change:
+  // the next attempt's inner then depended on nodes the owner did not hold.
   const renew = () => {
     const d = kernel.definition(innerId);
-    kernel.replace(innerId, deps, d.fn, { setup: d.setup, recipe: d.recipe });
+    kernel.replace(innerId, d.deps, d.fn, { setup: d.setup, recipe: d.recipe });
   };
   // Starts the attempt st.attempt after `delay`: at once without one, else when a timer ends,
   // unless the owner's lifetime has closed or another attempt has started by then. `end` is the

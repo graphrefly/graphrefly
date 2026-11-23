@@ -44,7 +44,7 @@ checks and required gates; an index is context, not correctness evidence.
 ## Phase 1 — scenario integrity
 
 1. Load `conformance.jsonl` + `rules.jsonl`. Verify every `covers` rule-id resolves (else HALT — fix the scenario or add the rule via `/spec-amend`).
-2. List the **DR-5 required hard scenarios** and their status: `C-1` cross-graph diamond, `C-2` async-result-at-paused-node, `C-3` INVALIDATE×ctx.state×onInvalidate, `C-4` mixed sync/async diamond, `C-5` PAUSE-lockset multi-source. These are the load-bearing ones — behavioral parity is a blank cheque until they're green on each shipped runtime.
+2. List the **DR-5 required hard scenarios** and their status: `C-1` cross-graph diamond, `C-3` INVALIDATE×ctx.state×onInvalidate, `C-4` mixed sync/async diamond. `C-2` and `C-5`, of the pause rules that R-pause replaced, left the ledger with graphrefly:D828; `C-30` and `C-31` state pause. These are the load-bearing ones — behavioral parity is a blank cheque until they're green on each shipped runtime.
 
 ## Phase 2 — run / verify per runtime
 
