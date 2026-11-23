@@ -282,8 +282,9 @@ Each has a test in `kernel.test.mjs`; undoing each fix fails its test.
   first subscription (K3): it gets every dependency's START snapshot, kept ones
   included; its first run only sets the retained value; each sink gets a `[START, …]` snapshot and each
   dependent receives the snapshot as its input, in one wave, so a diamond below settles once. An
-  inactive node only changes its definition. Refused for a state node, for a dependency on itself,
-  for duplicate dependencies (the exchange matches them by id). An ended dependency was refused too
+  inactive node only changes its definition. Refused for a state node and for a dependency on itself.
+  Duplicate dependencies were refused until 2026-11-23, while the exchange matched them by id alone;
+  it now matches by id and place (R-request-order@5, graphrefly:D821). An ended dependency was refused too
   (found missing in the C-8 replay, added, then dropped with the P5 relaxation): the new instance now
   starts on its snapshot. REPLAY.md lists where it differs from R-rewire (C-8).
   A dependent that stays active gets a new input for it and is told once, in its next run
@@ -304,7 +305,9 @@ Each has a test in `kernel.test.mjs`; undoing each fix fails its test.
   node's input in one ordinary settlement: the function runs and its output is delivered, its cone
   marked pending first if it sends a value (P3); if it sends nothing, nothing goes below. An added
   dependency with no value sends nothing, so the function waits for it. A rewire alone runs nothing,
-  so the current list is a no-op. Refused for itself or a cycle and for duplicate dependencies; an
+  so the current list is a no-op. Refused for itself or a cycle. A dependency may be given more than
+  once: each place is a connection of its own, and the k-th place it has in the new list keeps the
+  k-th connection held to it (R-request-order@5, graphrefly:D821; refused until 2026-11-23). An
   ended node's rewire is dropped (`replace` gives it a new instance). An added dependency that has ended arrives as its
   snapshot, with its terminal (P5 relaxed; TS and C-8 refuse it). Removing the
   last dependency still open does not complete a `complete: "auto"` node, although every remaining
@@ -361,7 +364,7 @@ at least one test: removed dependencies released before added ones are acquired;
 connection keeping its old position; a kept input record dropped; a pending mark before the
 settlement (a silent node would send `[DIRTY, RESOLVED]`); no settlement for the added snapshots; an
 inactive node taking the active path; an ended node accepted; an added ended dependency accepted; a
-kept ended dependency refused; duplicates accepted; the fn not replaced; no cycle check; no `id` on
+kept ended dependency refused; duplicates accepted (a mutation until graphrefly:D821 took them); the fn not replaced; no cycle check; no `id` on
 `ctx.deps`. A first version marked the cone pending before the settlement; that mutant survived
 every test, since `deliver` already marks the cone when the node sends a value, so the mark was
 removed.

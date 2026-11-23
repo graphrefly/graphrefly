@@ -1381,7 +1381,7 @@ test("replace: a rewire that keeps the replaced dependency keeps what the functi
 
 // F7: a state node has no ctx, so it cannot be asked to rewire. An ended node's lifetime is
 // closed, so its rewire is dropped as ctx.down after close is, instead of refused.
-test("rewire: refused for itself, a cycle and duplicates; a rewire of an ended node is dropped", () => {
+test("rewire: refused for itself and a cycle; a rewire of an ended node is dropped", () => {
   const g = createGraph();
   g.state("a", 1); g.state("b", 2);
   const x = withCtx(sumById);
@@ -1390,7 +1390,6 @@ test("rewire: refused for itself, a cycle and duplicates; a rewire of an ended n
   g.subscribe("s", "x");
   assert.throws(() => x.ctx.rewire(["x"]), /depend on itself/);
   assert.throws(() => x.ctx.rewire(["y"]), /depend on itself through y/);
-  assert.throws(() => x.ctx.rewire(["a", "a"]), /distinct/);
   const e = withCtx((ctx) => ctx.down([["COMPLETE"]]));
   g.node("e", ["a"], e);
   g.subscribe("t", "e");
@@ -1539,7 +1538,125 @@ test("replace: a dependency in both lists keeps its connection and its place amo
   g.replace("x", ["a"], (ctx) => ctx.down([["DATA", ctx.deps[0].value * 10]]));
   assert.deepEqual(during(g, () => g.set("a", 2)), ["sx <- x: [PENDING, DATA(20)]", "sy <- y: [PENDING, DATA(2)]"],
     "x still comes before y in a's subscriber order");
-  assert.throws(() => g.replace("x", ["a", "a"], () => {}), /distinct/);
+});
+
+// R-request-order@5 (graphrefly:D821): a dependency given more than once is taken at a rewire
+// and at a replace as it is when a node is created. Each place is a connection of its own.
+// What each dependency gave this run: id, arrays, latest value, terminal.
+const seen = (ctx) => ctx.down([["DATA", ctx.deps.map((d) => `${d.id}:${JSON.stringify(d.waves)}/${d.has ? d.value : "-"}${d.terminal ? `/${d.terminal[0]}` : ""}`).join(" ")]]);
+
+test("repeated dependency: rewire [a] -> [a, a] adds one connection, and its snapshot alone is the input", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  const x = withCtx(counted(seen));
+  g.node("x", ["a"], x);
+  g.subscribe("s", "x");
+  assert.deepEqual(during(g, () => x.ctx.rewire(["a", "a"])), ['s <- x: [PENDING, DATA("a:[]/1 a:[[1]]/1")]']);
+  assert.deepEqual(g.describe().find((n) => n.id === "x").deps, ["a", "a"]);
+  assert.deepEqual(during(g, () => g.set("a", 2)), ['s <- x: [PENDING, DATA("a:[[2]]/2 a:[[2]]/2")]'], "one run, the array at both places");
+});
+
+test("repeated dependency: rewire [a, a] -> [a] keeps the earlier connection, without a wave", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  const x = withCtx(seen);
+  g.node("x", ["a"], x);
+  g.node("y", ["a"], seen);
+  g.subscribe("sx", "x"); g.subscribe("sy", "y");
+  x.ctx.rewire(["a", "a"]);
+  // x now runs at the place of its later connection among a's subscribers, after y
+  assert.deepEqual(during(g, () => g.set("a", 3)), ['sy <- y: [PENDING, DATA("a:[[3]]/3")]', 'sx <- x: [PENDING, DATA("a:[[3]]/3 a:[[3]]/3")]']);
+  assert.deepEqual(during(g, () => x.ctx.rewire(["a"])), [], "a removed connection sends nothing");
+  assert.equal(g.get("a").active, true);
+  assert.deepEqual(during(g, () => g.set("a", 4)), ['sx <- x: [PENDING, DATA("a:[[4]]/4")]', 'sy <- y: [PENDING, DATA("a:[[4]]/4")]'],
+    "the earlier connection stayed: x is before y again");
+});
+
+test("repeated dependency: rewire [a, a] -> [a, b, a] keeps both connections in order and adds b", () => {
+  const g = createGraph();
+  g.state("a", 1); g.state("b", 10);
+  const x = withCtx(seen);
+  g.node("x", ["a", "a"], x);
+  g.subscribe("s", "x");
+  assert.deepEqual(during(g, () => x.ctx.rewire(["a", "b", "a"])), ['s <- x: [PENDING, DATA("a:[]/1 b:[[10]]/10 a:[]/1")]']);
+  assert.deepEqual(during(g, () => g.set("a", 2)), ['s <- x: [PENDING, DATA("a:[[2]]/2 b:[]/10 a:[[2]]/2")]']);
+  assert.deepEqual(during(g, () => g.set("b", 20)), ['s <- x: [PENDING, DATA("a:[]/2 b:[[20]]/20 a:[]/2")]']);
+});
+
+test("repeated dependency: rewire [a, b] -> [b, a, a] -> [b] releases every connection to a", () => {
+  const g = createGraph();
+  g.state("a", 1); g.state("b", 10);
+  const x = withCtx(seen);
+  g.node("x", ["a", "b"], x);
+  g.subscribe("s", "x");
+  assert.deepEqual(during(g, () => x.ctx.rewire(["b", "a", "a"])), ['s <- x: [PENDING, DATA("b:[]/10 a:[]/1 a:[[1]]/1")]']);
+  assert.deepEqual(during(g, () => x.ctx.rewire(["b"])), []);
+  assert.equal(g.get("a").active, false);
+  assert.deepEqual(during(g, () => g.set("a", 3)), []);
+  assert.deepEqual(during(g, () => g.set("b", 11)), ['s <- x: [PENDING, DATA("b:[[11]]/11")]']);
+});
+
+test("repeated dependency: a replace to a repeated list and back, active, inactive and ended", () => {
+  const g = createGraph();
+  g.state("a", 1); g.state("b", 10);
+  g.node("x", ["a", "b"], seen);
+  g.subscribe("s", "x");
+  assert.deepEqual(during(g, () => g.replace("x", ["a", "a"], seen)), ['s <- x: [START, DATA("a:[[1]]/1 a:[[1]]/1")]']);
+  assert.equal(g.get("b").active, false);
+  assert.deepEqual(during(g, () => g.set("a", 2)), ['s <- x: [PENDING, DATA("a:[[2]]/2 a:[[2]]/2")]']);
+  assert.deepEqual(during(g, () => g.replace("x", ["a", "b"], seen)), ['s <- x: [START, DATA("a:[[2]]/2 b:[[10]]/10")]']);
+  assert.deepEqual(g.definition("x").deps, ["a", "b"]);
+  g.node("cold", ["a"], seen);
+  assert.deepEqual(during(g, () => g.replace("cold", ["a", "a"], seen)), []);
+  assert.deepEqual(during(g, () => g.subscribe("sc", "cold")), ['sc <- cold: [START, DATA("a:[[2]]/2 a:[[2]]/2")]']);
+  g.node("e", ["a", "a"], (ctx) => ctx.down([["DATA", 1], ["COMPLETE"]]));
+  g.subscribe("se", "e");
+  assert.deepEqual(during(g, () => g.replace("e", ["a", "a"], seen)), ['se <- e: [START, DATA("a:[[2]]/2 a:[[2]]/2")]']);
+  g.unsubscribe("s", "x"); g.unsubscribe("sc", "cold"); g.unsubscribe("se", "e");
+  assert.equal(g.get("a").active, false, "every connection was released");
+});
+
+test("repeated dependency: one array settles each connection once, and the node runs once", () => {
+  const g = createGraph();
+  g.state("a", 1);
+  const x = counted(derived((p, q) => p + q));
+  const y = counted(derived((p, q, r) => p + q + r));
+  g.node("x", ["a", "a"], x);
+  g.node("y", ["x", "a", "x"], y);
+  g.subscribe("s", "y");
+  assert.deepEqual([x.calls, y.calls], [1, 1]);
+  assert.deepEqual(during(g, () => g.set("a", 2)), ["s <- y: [PENDING, DATA(10)]"]);
+  assert.deepEqual([x.calls, y.calls], [2, 2]);
+  assert.deepEqual(during(g, () => g.batch(() => { g.set("a", 3); g.set("a", 4); })), ["s <- y: [PENDING, DATA(20)]"]);
+  assert.deepEqual([x.calls, y.calls], [3, 3]);
+  assert.deepEqual(during(g, () => g.invalidate("a")), ["s <- y: [PENDING, INVALIDATE]"]);
+});
+
+test("repeated dependency: its terminal counts at every place under the auto policies", () => {
+  const g = createGraph();
+  g.state("a", 1); g.state("b", 1);
+  g.node("x", ["a", "b", "a"], seen);
+  g.subscribe("s", "x");
+  assert.deepEqual(during(g, () => g.complete("a")), ["s <- x: [PENDING, RESOLVED]"], "b is open, so x is");
+  assert.deepEqual(during(g, () => g.complete("b")), ['s <- x: [PENDING, DATA("a:[]/1 b:[]/1/COMPLETE a:[]/1")]', "s <- x: [PENDING, COMPLETE]"]);
+  const h = createGraph();
+  h.state("a", 1);
+  h.node("x", ["a", "a"], seen);
+  h.subscribe("s", "x");
+  assert.deepEqual(during(h, () => h.error("a", "bad")), ['s <- x: [PENDING, ERROR("bad")]'], "one ERROR, not one for each place");
+});
+
+test("repeated dependency: a replaced dependency is told at every place it has (R-invocation)", () => {
+  const g = createGraph();
+  g.state("s", 1); g.state("b", 0);
+  g.node("n", ["s"], passOn);
+  const told = [];
+  g.node("x", ["n", "b", "n"], (ctx) => { told.push(ctx.deps.map((d) => Number(d.replaced)).join("")); });
+  g.subscribe("k", "x");
+  g.replace("n", ["s"], passOn); // the new instance holds a value, so x runs at once
+  g.set("b", 1);
+  assert.deepEqual(told, ["000", "101", "000"]);
+  assert.deepEqual(g.replacedInputs("x"), [false, false, false]);
 });
 
 test("replace: the new instance gets a START snapshot from a dependency it keeps, as at a first subscription (K3)", () => {

@@ -30,8 +30,9 @@
 //                   INVALIDATE must not retract what the selected input supplied.
 //
 // The inputs of each are distinct nodes: one given twice is refused when the operator is built
-// (the user, 2026-11-20). The kernel takes a repeated dependency at creation and refuses it at a
-// rewire, which made a race end with that refusal and a concat wait on itself for good. Each
+// (the user, 2026-11-20). The kernel took a repeated dependency at creation and refused it at a
+// rewire, which made a race end with that refusal and a concat wait on itself for good; since
+// graphrefly:D821 it takes one at a rewire too, and the operators' refusal stands as decided. Each
 // operator gives the kernel its own copy of the list it was given, so a caller that changes its
 // list afterwards does not change the node's inputs past that refusal.
 //

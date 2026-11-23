@@ -294,13 +294,6 @@ export function createGraph({ report: hostReport, requireRecipe = false } = {}) 
     }
   }
 
-  // exchange matches dependencies by id, so both lists must be free of repeats.
-  function assertDistinct(op, n, deps) {
-    if (new Set(deps).size !== deps.length || new Set(n.deps).size !== n.deps.length) {
-      throw new KernelError(`${op}: ${n.id} needs distinct dependencies`);
-    }
-  }
-
   function activate(n) {
     n.active = true;
     // P5: an ended node is connected and gives its snapshot, but never runs again.
@@ -436,7 +429,6 @@ export function createGraph({ report: hostReport, requireRecipe = false } = {}) 
       },
       rewire(deps) {
         if (!lifetime.open) return; // as ctx.down after close, before any check
-        assertDistinct("rewire", n, deps);
         assertAcyclic("rewire", n, deps);
         request(() => {
           if (!lifetime.open || n.lifetime !== lifetime) return;
@@ -732,7 +724,9 @@ export function createGraph({ report: hostReport, requireRecipe = false } = {}) 
 
   // Gives n the dependency list deps; shared by replace and rewire. An inactive node only
   // changes its list. For an active one, a dependency in both lists keeps its connection and
-  // input record at its new position; an added one is acquired as at activation, before any
+  // input record at its new position; one given more than once is matched in order, the k-th
+  // place it has in the new list keeping the k-th connection held to it (R-request-order@5,
+  // graphrefly:D821); an added one is acquired as at activation, before any
   // release, so a shared upstream stays active; then a removed one is released, without a
   // wave (between waves nothing of it is pending, K8). Returns the added positions.
   function exchange(n, deps) {
@@ -741,21 +735,22 @@ export function createGraph({ report: hostReport, requireRecipe = false } = {}) 
       n.inputs = deps.map(freshInput);
       return [];
     }
-    const held = new Map(n.deps.map((depId, i) => [depId, {
-      input: n.inputs[i],
-      sub: nodeOf(depId).subs.find((s) => s.kind === "node" && s.id === n.id && s.dep === i),
-    }]));
+    const held = new Map();
+    n.deps.forEach((depId, i) => {
+      const sub = nodeOf(depId).subs.find((s) => s.kind === "node" && s.id === n.id && s.dep === i);
+      if (!held.has(depId)) held.set(depId, []);
+      held.get(depId).push({ input: n.inputs[i], sub });
+    });
     const added = [];
     n.inputs = deps.map((depId, i) => {
-      const kept = held.get(depId);
+      const kept = held.get(depId)?.shift();
       if (!kept) { added.push(i); return freshInput(); }
-      held.delete(depId);
       kept.sub.dep = i;
       return kept.input;
     });
     n.deps = deps;
     for (const i of added) acquire(n, i);
-    for (const [depId, { sub }] of held) release(nodeOf(depId), sub);
+    for (const [depId, left] of held) for (const { sub } of left) release(nodeOf(depId), sub);
     return added;
   }
 
@@ -833,7 +828,6 @@ export function createGraph({ report: hostReport, requireRecipe = false } = {}) 
       const n = nodeOf(id);
       if (n.kind !== "node") throw new KernelError(`${id} is not a computed node`);
       assertRecipe(`replace: ${id}`, opts); // when it is asked for, like the refusals below
-      assertDistinct("replace", n, deps);
       assertAcyclic("replace", n, deps);
       request(() => { assertAcyclic("replace", n, deps); replaceNode(n, deps, fn, opts); });
     },

@@ -1449,10 +1449,6 @@ test("QA2: restore admits the whole checkpoint before any factory side effect", 
     ["missing node kind", (cp) => { delete cp.nodes[2].kind; }],
     ["missing deps", (cp) => { delete cp.nodes[2].deps; }],
     ["received count differs from declared deps", (cp) => { cp.nodes[2].deps.push("s"); }],
-    ["duplicate lifetime deps", (cp) => {
-      cp.nodes[2].saved.deps = ["s", "s"];
-      cp.nodes[2].saved.inputs.push(structuredClone(cp.nodes[2].saved.inputs[0]));
-    }],
     ["unknown dependency", (cp) => { cp.nodes[2].deps[0] = "absent"; }],
     ["unknown lifetime dependency", (cp) => { cp.nodes[2].saved.deps = ["absent"]; }],
     ["declared cycle", (cp) => { cp.nodes[2].deps = ["last"]; }],
@@ -1577,6 +1573,50 @@ test("QA2: restore preserves valid repeated declared inputs without inventing re
   r.set("a", 3);
   assert.equal(r.get("n").value, 6);
   assert.deepEqual(r.definition("n").deps, ["a", "a"]);
+});
+
+// R-request-order@5 (graphrefly:D821): a lifetime's list, and a declared one, may repeat a dependency.
+test("repeated dependency: a lifetime's repeated list, made by a rewire, is saved and comes back", () => {
+  const g = createGraph();
+  g.state("a", 1); g.state("b", 10);
+  const reg = registry();
+  let ctxOf;
+  const sum = reg.sum();
+  g.node("n", ["a", "b"], (ctx) => { ctxOf = ctx; sum(ctx); }, { recipe: { ref: "sum", config: null } });
+  g.subscribe("keep", "n");
+  ctxOf.rewire(["a", "a"]);
+  assert.equal(g.get("n").value, 2);
+  const cp = roundTrip(capture(g));
+  assert.deepEqual(cp.nodes[2].saved.deps, ["a", "a"]);
+  const r = restore(cp, registry());
+  assert.deepEqual(during(r, () => r.subscribe("keep", "n")), ["keep <- n: [START, DATA(2)]"]);
+  assert.deepEqual(r.describe().find((n) => n.id === "n").deps, ["a", "a"]);
+  assert.deepEqual(during(r, () => r.set("a", 3)), ["keep <- n: [PENDING, DATA(6)]"]);
+  assert.deepEqual(r.definition("n").deps, ["a", "b"], "the declared list is the instance's");
+});
+
+test("repeated dependency: a restored node that declares one node twice can be replaced back to two (B148's ninth point)", () => {
+  for (const activateFirst of [true, false]) {
+    const g = createGraph();
+    g.state("a", 1); g.state("b", 10);
+    node(g, registry(), "n", ["a", "b"], "sum");
+    g.subscribe("keep", "n");
+    const cp = roundTrip(capture(g));
+    cp.nodes[2].deps = ["a", "a"];
+    cp.nodes[2].saved.inputs[1] = structuredClone(cp.nodes[2].saved.inputs[0]);
+    const reg = registry();
+    const r = restore(cp, reg);
+    if (activateFirst) {
+      r.subscribe("keep", "n");
+      assert.deepEqual(during(r, () => r.set("a", 2)), ["keep <- n: [PENDING, DATA(4)]"]);
+      assert.deepEqual(during(r, () => r.replace("n", ["a", "b"], reg.sum(), { recipe: { ref: "sum", config: null } })), ["keep <- n: [START, DATA(12)]"]);
+    } else {
+      assert.deepEqual(during(r, () => r.replace("n", ["a", "b"], reg.sum(), { recipe: { ref: "sum", config: null } })), []);
+      assert.deepEqual(during(r, () => r.subscribe("keep", "n")), ["keep <- n: [START, DATA(11)]"]);
+    }
+    assert.deepEqual(during(r, () => r.set("b", 20)), [`keep <- n: [PENDING, DATA(${activateFirst ? 22 : 21})]`]);
+    assert.deepEqual(capture(r).nodes[2].deps, ["a", "b"]);
+  }
 });
 
 // ---- D812 (1), decided by the user 2026-11-18: pending work is state ----

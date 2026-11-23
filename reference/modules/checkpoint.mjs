@@ -220,7 +220,7 @@ function prepareCheckpoint(checkpoint, registry) {
       nodes[nodes.length - 1] = { ...n, saved: read };
       continue;
     }
-    if (Object.hasOwn(saved, "deps") && (!ids(saved.deps) || new Set(saved.deps).size !== saved.deps.length)) fail("invalid lifetime dependencies");
+    if (Object.hasOwn(saved, "deps") && !ids(saved.deps)) fail("invalid lifetime dependencies");
     if (n.kind === "node") {
       const deps = saved.deps ?? n.deps;
       if (!Array.isArray(saved.inputs) || saved.inputs.length !== deps.length || saved.inputs.some((input) =>
