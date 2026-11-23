@@ -146,15 +146,23 @@ export function createGraph({ report: hostReport, requireRecipe = false } = {}) 
   // later end leave a cycle.
   // Also through the dependencies a seed holds for a first lifetime, which a restored node starts
   // on at its first activation (R-request-order@6, graphrefly:D822): until then they are neither
-  // current nor declared. A seed may name a node not made yet, which the check passes over.
-  const edgesOf = (n) => [...new Set([...n.deps, ...n.declaredDeps, ...(n.seedDeps ?? []).filter((d) => nodes.has(d))])];
-  const dependsOn = (n, targetId) => edgesOf(n).some((d) => d === targetId || dependsOn(nodeOf(d), targetId));
+  // current nor declared. A seed may name a node not made yet: the name counts, so that the node
+  // is checked when it is made (R-request-order@7, graphrefly:D826), and there is nothing to follow
+  // from it until then.
+  const edgesOf = (n) => [...new Set([...n.deps, ...n.declaredDeps, ...(n.seedDeps ?? [])])];
+  const dependsOn = (n, targetId) => edgesOf(n).some((d) => d === targetId || (nodes.has(d) && dependsOn(nodeOf(d), targetId)));
 
   function makeNode(id, kind, deps, fn, opts, initial) {
     assertLocalName(id);
     if (nodes.has(id)) throw new KernelError(`duplicate node ${id}`);
     if (kind === "node") assertRecipe(id, opts);
     for (const d of deps) nodeOf(d); // P1: dependencies are declared and must exist
+    // R-request-order@7 (graphrefly:D826): nothing depends on a node that does not exist yet,
+    // except through a seed that named it. Its dependencies, and those its own seed gives its first
+    // lifetime, may not depend on it.
+    for (const d of [...deps, ...(opts?.seed?.deps ?? [])]) {
+      if (d === id || (nodes.has(d) && dependsOn(nodeOf(d), id))) throw new KernelError(`node: ${id} would depend on itself through ${d}`);
+    }
     // H4, optional (2026-11-08, for restore): { values?, ended?, state?, deps? } gives a computed
     // node its last array's values, terminal and private state without running its fn, and the
     // dependencies its first lifetime starts on when a ctx.rewire had changed them (2026-11-10, F6).

@@ -210,7 +210,10 @@ Mutations checked on 2026-11-08, each failing at least one test:
   (R-request-order@6, graphrefly:D822, 2026-11-23). Until then it read current and declared ones
   only, and before a restored node's first activation its lifetime's list is neither: a restored
   graph accepted a replace the live one refuses, leaving two nodes over each other that no write
-  reached, and a rewire of the same kind overflowed the stack.
+  reached, and a rewire of the same kind overflowed the stack. A node's creation is checked in
+  the same way (R-request-order@7, graphrefly:D826): a seed may name a node made later, so a
+  creation over a dependency that reaches such a seed, or with a seed of its own that does, would
+  close a cycle, which the next subscription followed until the stack overflowed.
 - A quiet node clears its pending mark before forwarding an auto INVALIDATE (F 2.10), so the
   INVALIDATE marks its cone pending and a diamond below settles once.
 

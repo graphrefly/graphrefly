@@ -1524,6 +1524,45 @@ test("definition: what a recipe holds that is not plain data is kept as it is, a
   assert.notEqual(copy, loop);
 });
 
+// R-request-order@7 (graphrefly:D826): a node's creation is checked too, since a seed may have named
+// the node before it existed. Until then the creation was taken and the next subscription
+// overflowed the stack.
+test("cycle check: creating a node is refused when a dependency already depends on it through a seed that named it", () => {
+  const sum = (ctx) => ctx.down([["DATA", ctx.deps.reduce((a, d) => a + (d.value ?? 0), 0)]]);
+  const seeded = () => {
+    const g = createGraph();
+    g.state("a", 1);
+    g.node("x", ["a"], sum, { seed: { values: [1], deps: ["later"] } });
+    return g;
+  };
+  {
+    const g = seeded();
+    assert.throws(() => g.node("later", ["x"], sum), /node: later would depend on itself through x/);
+    assert.equal(g.describe().some((n) => n.id === "later"), false, "the node is not made");
+  }
+  {
+    const g = seeded();
+    g.node("m", ["x"], sum);
+    assert.throws(() => g.node("later", ["m"], sum), /node: later would depend on itself through m/, "through a node between");
+  }
+  {
+    const g = seeded();
+    assert.throws(() => g.node("later", ["a"], sum, { seed: { deps: ["x"] } }), /node: later would depend on itself through x/, "by its own seed");
+  }
+  {
+    const g = createGraph();
+    g.state("a", 1);
+    assert.throws(() => g.node("x", ["a"], sum, { seed: { deps: ["x"] } }), /node: x would depend on itself through x/, "a seed that names its own node");
+  }
+  {
+    const g = seeded();
+    g.node("later", ["a"], sum);
+    g.subscribe("k", "x");
+    assert.deepEqual(g.describe().find((n) => n.id === "x").deps, ["later"]);
+    assert.deepEqual(during(g, () => g.set("a", 5)), ["k <- x: [PENDING, DATA(5)]"], "no cycle: x starts on later, which is over a");
+  }
+});
+
 // R-request-order@6 (graphrefly:D822): the cycle check also reads the dependencies a seed holds for
 // a first lifetime, which a restored node starts on at its first activation.
 test("cycle check: a replace and a rewire are refused for a node that a seeded node will depend on at its first activation", () => {
