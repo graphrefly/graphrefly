@@ -467,7 +467,7 @@ export function createGraph({ report: hostReport, requireRecipe = false } = {}) 
       }
       n.fn(ctx);
     } catch (e) {
-      return [[["ERROR", errorPayload(e)]]]; // P10: what it sent before the throw is dropped
+      return [[["ERROR", errorPayload(e)]]]; // P10, R-failure@5: what it sent before the throw is dropped
     } finally {
       running = null;
       invoking = false;

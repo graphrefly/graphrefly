@@ -116,8 +116,9 @@ sink received from one node is in order, and which sink received first within th
 the expectation, since no contract gives it and R-wave says only that a node's arrays go to one
 subscriber and then the next. A trace
 subscribes at least one sink and expects something somewhere, so that it can fail. An expectation
-writes `["ERROR"]`, without a payload, for an ERROR that a throw produced: how a thrown value becomes
-a payload is each runtime's (R-failure), so only the ERROR is expected. A trace also says that nothing
+writes `["ERROR"]`, without a payload, for an ERROR that a throw produced, and then matches any
+payload. The traces were written while how a thrown value became a payload was each runtime's;
+since graphrefly:D824 R-failure gives it, and an expectation may name the payload. A trace also says that nothing
 arrives after its last step. The reference run checks that within one turn of the event loop, which
 catches a promise or an immediate timer and not a timer of a few milliseconds.
 

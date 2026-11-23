@@ -23,6 +23,18 @@ currently active rules and are retired or rescoped at activation, not edited now
 | `kernel_repeated_dependency.tla` (`kernel_repeated_dependency.cfg`) | One mechanism of R-request-order, and nothing else of it: the exchange of one node's dependency list, a sequence over two states of up to three places, as a rewire and a replace share it. The connections held to each dependency queue up in the order of their places; a place of the new list takes the head of its dependency's queue or a new connection that brings the dependency's value; what is left is released. Both sides are kept, the node's connection at each place and each dependency's connections, with the record of what the node last received on each. Invariants: OnePerPlace, BothSidesAgree, RecordsCurrent, KthKeepsKth. Up to three exchanges: 11,545 states generated, 2,244 distinct | reference tests are candidate evidence |
 | `kernel_seed_cycle.tla` (`kernel_seed_cycle.cfg`) | One clause of R-request-order, and nothing else of it: the cycle check of a replace and a rewire over the three lists a node can hold, its declared dependencies, those of its current lifetime and those a seed gives its first lifetime. Three computed nodes; a rewire, a replace, an activation that starts on the seed's list, a deactivation that goes back to the declared one, and a capture and restore that leaves a rewired node's list in a seed. Invariants: Acyclic, RunsAcyclic. 35,205 states generated, 2,312 distinct | reference tests are candidate evidence |
 
+`kernel_wave.tla`, 2026-11-23, for graphrefly:D824 (R-failure@5, R-terminals@2, R-invalidation@2;
+graphrefly:B148's first to fifth points). The model already did what the rules now say: an INVALIDATE
+of any input in the wave goes before an auto ERROR and before the function's output, the kernel's
+COMPLETE is a frame of its own, and a run that failed gives its ERROR alone. Two invariants are
+added, AutoCompleteAlone and InvalidateBeforeOutput, the second through a flag set where D sent DATA
+in a settlement and holds none after it. `kernel_wave.cfg`: 4,013,410 states generated, 2,580,844
+distinct, depth 17, in 2 min 41 s, as before the two invariants. Mutations, each checked against its
+invariant alone: the kernel's COMPLETE joining the function's last array (AutoCompleteAlone); an auto
+INVALIDATE going out after the function's output (InvalidateBeforeOutput); an auto ERROR that does
+not apply the wave's INVALIDATE first (InvalidatedNotKept). The three-wave run was not repeated.
+Payloads are abstract, so the payload of a throw's ERROR has no model.
+
 Written 2026-11-23 for graphrefly:D822 (R-request-order@6, graphrefly:B148's seventh point). Mutations
 checked on `kernel_seed_cycle.cfg`, each tripping Acyclic, and RunsAcyclic when that is checked alone:
 a check that does not read a seed's dependencies, one that does not read declared ones, one that does

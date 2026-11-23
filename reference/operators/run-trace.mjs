@@ -164,8 +164,9 @@ function occurrences(entries) {
   return [...groups.values()];
 }
 
-// An expectation writes ["ERROR"] without a payload for an ERROR that a throw produced: how a
-// thrown value becomes a payload is each runtime's (R-failure), so only the ERROR is expected.
+// An expectation writes ["ERROR"] without a payload for an ERROR that a throw produced, and then
+// matches any payload: the traces were written while how a thrown value became a payload was each
+// runtime's. Since graphrefly:D824 R-failure gives it, and an expectation may name the payload.
 //
 // A step is compared receiver by receiver: what one sink received from one node is compared in
 // order. Which sink received first is not part of an expectation, whether the sinks are of

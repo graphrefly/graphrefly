@@ -243,6 +243,7 @@ Init == \E p \in Policies, q \in BOOLEAN :
                                   \* manual INVALIDATE, reached open D
         kernelInvD |-> FALSE,     \* the kernel invalidated D under the manual INVALIDATE policy
         keptInv  |-> FALSE,       \* D kept a value its input invalidated (see Check)
+        lostNew  |-> FALSE,       \* D's INVALIDATE went out after what its function sent (see Check)
         missed   |-> FALSE,
         lastSkipped |-> FALSE ]   \* a node completed under auto COMPLETE without the run
                                   \* that sees the last terminal (see Finish)
@@ -288,9 +289,13 @@ Finish(s, m, lead, runs, raw) ==
 \* an auto ERROR, still holds a value it did not send afterwards: the kernel kept a value
 \* that its input invalidated (found by formal/module_demand.tla, 2026-11-09).
 NewData(ns) == \E i \in (Len(k.hist["D"]) + 1)..Len(ns.hist["D"]) : DataVals(ns.hist["D"][i]) # <<>>
+\* And the other way round (R-invalidation@2, graphrefly:D824): under the auto INVALIDATE policy
+\* the retraction goes out before what the function sends in that settlement, so D holds the
+\* DATA it sent then; an INVALIDATE applied after it would have removed that.
 Check(m, invd, ae, ns) ==
-  IF m = "D" /\ invd /\ (PolS(k, m).invalidate = "auto" \/ ae) /\ ns.has["D"] /\ ~NewData(ns)
-  THEN [ns EXCEPT !.keptInv = TRUE] ELSE ns
+  LET kept == m = "D" /\ invd /\ (PolS(k, m).invalidate = "auto" \/ ae) /\ ns.has["D"] /\ ~NewData(ns)
+      lost == m = "D" /\ invd /\ ~ae /\ PolS(k, m).invalidate = "auto" /\ NewData(ns) /\ ~ns.has["D"]
+  IN [ns EXCEPT !.keptInv = @ \/ kept, !.lostNew = @ \/ lost]
 
 \* Q forwards the DATA arrays and emits one final DATA on its last terminal (D808).
 \* This makes the quiet DATA + automatic COMPLETE combination reachable.
@@ -330,8 +335,9 @@ Settle(m) ==
          trimmed == [d \in Deps[m] |-> AfterLastInv(k.inbox[m][d])]
          invd    == \E d \in Deps[m] : trimmed[d] # k.inbox[m][d]
      IN IF depErr /\ PolS(k, m).error = "auto"
-        \* auto ERROR: end with it, without running the function; an INVALIDATE before it in
-        \* the wave still takes effect first, whatever the INVALIDATE policy
+        \* auto ERROR: end with it, without running the function; an INVALIDATE that reached
+        \* the node in that wave, on any input and in any order, still takes effect first,
+        \* whatever the INVALIDATE policy (R-terminals@2, graphrefly:D824)
         THEN k' = Check(m, invd, TRUE,
                     Emit([k0 EXCEPT !.inbox[m] = [d \in Deps[m] |-> <<>>],
                                     !.dEnd = IF m = "D" THEN "kernel" ELSE @], m,
@@ -438,4 +444,11 @@ ManualInvalidateKept == ~k.kernelInvD
 InvalidatedNotKept == ~k.keptInv
 
 AutoCompleteAfterRun == ~k.lastSkipped
+
+\* R-terminals@2 (graphrefly:D824): the COMPLETE the kernel adds is an array of its own.
+AutoCompleteAlone ==
+  (k.dEnd = "kernel" /\ k.ended["D"] = "COM") => Sent("D")[Len(Sent("D"))] = <<"PEN", "COM">>
+
+\* R-invalidation@2 (graphrefly:D824): an auto INVALIDATE goes out before the function's output.
+InvalidateBeforeOutput == ~k.lostNew
 =============================================================================

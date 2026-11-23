@@ -1381,6 +1381,89 @@ test("replace: a rewire that keeps the replaced dependency keeps what the functi
 
 // F7: a state node has no ctx, so it cannot be asked to rewire. An ended node's lifetime is
 // closed, so its rewire is dropped as ctx.down after close is, instead of refused.
+// graphrefly:D824 (R-failure@5, R-terminals@2, R-invalidation@2): five points at which the rules now
+// say what the kernel does. Nothing in the kernel changed for them.
+const forward = (ctx) => { for (const d of ctx.deps) for (const w of d.waves) if (w.length) ctx.down(w.map((v) => ["DATA", v])); };
+
+test("D824 (1): a throw drops everything its function sent in that run, an INVALIDATE under the manual policy included", () => {
+  for (const opts of [{}, { invalidate: "manual" }]) {
+    const g = createGraph();
+    g.state("a", 1);
+    g.node("n", ["a"], (ctx) => { const v = ctx.deps[0].value; ctx.down([["DATA", v]]); if (v === 2) { ctx.down([["DATA", "second"]]); throw new Error("boom"); } }, opts);
+    g.subscribe("k", "n");
+    assert.deepEqual(during(g, () => g.set("a", 2)), ['k <- n: [PENDING, ERROR("boom")]']);
+    assert.deepEqual(during(g, () => g.subscribe("late", "n")), ['late <- n: [START, DATA(1), ERROR("boom")]'], "the value of the run before stays");
+  }
+  const g = createGraph();
+  g.state("a", 1);
+  g.node("n", ["a"], (ctx) => { if (ctx.deps[0].invalidated) { ctx.down([["INVALIDATE"]]); throw new Error("boom"); } ctx.down([["DATA", ctx.deps[0].value]]); }, { invalidate: "manual" });
+  g.subscribe("k", "n");
+  assert.deepEqual(during(g, () => g.invalidate("a")), ['k <- n: [PENDING, ERROR("boom")]']);
+  assert.deepEqual(during(g, () => g.subscribe("late", "n")), ['late <- n: [START, DATA(1), ERROR("boom")]'], "the retraction went with the throw");
+});
+
+test("D824 (2): the kernel's COMPLETE is an array of its own after the arrays of that run, and none is added to output that already ended", () => {
+  const over = (fn) => { const g = createGraph(); g.state("a", 1); g.node("n", ["a"], fn); g.subscribe("k", "n"); return g; };
+  const g = over(forward);
+  assert.deepEqual(during(g, () => g.batch(() => { g.set("a", 2); g.complete("a"); })), ["k <- n: [PENDING, DATA(2)]", "k <- n: [PENDING, COMPLETE]"]);
+  const h = over(forward);
+  assert.deepEqual(during(h, () => h.complete("a")), ["k <- n: [PENDING, COMPLETE]"]);
+  const m = over((ctx) => { forward(ctx); if (ctx.deps[0].terminal) ctx.down([["DATA", "last"], ["COMPLETE"]]); });
+  assert.deepEqual(during(m, () => m.complete("a")), ['k <- n: [PENDING, DATA("last"), COMPLETE]']);
+});
+
+test("D824 (3): a throw's ERROR payload is the error's message, or the thrown value itself when it is not an error", () => {
+  const ended = (thrown) => {
+    const g = createGraph();
+    g.state("a", 1);
+    g.node("n", ["a"], (ctx) => { if (ctx.deps[0].value === 2) throw thrown; });
+    g.subscribe("k", "n");
+    g.set("a", 2);
+    return g.get("n").ended;
+  };
+  assert.deepEqual(ended(new Error("boom")), ["ERROR", "boom"]);
+  assert.deepEqual(ended(new TypeError("bad", { cause: "why" })), ["ERROR", "bad"]);
+  assert.deepEqual(ended("text"), ["ERROR", "text"]);
+  assert.deepEqual(ended(7), ["ERROR", 7]);
+  assert.deepEqual(ended({ code: 1 }), ["ERROR", { code: 1 }]);
+  assert.deepEqual(ended(null), ["ERROR", null]);
+  assert.deepEqual(ended(undefined), ["ERROR", ""], "cannot be a payload");
+  assert.deepEqual(ended(true), ["ERROR", ""], "cannot be a payload");
+});
+
+test("D824 (4): an INVALIDATE that reached a node in the wave of a dependency's ERROR takes effect first, on whichever input and in whatever order", () => {
+  for (const invalidate of ["auto", "manual"]) for (const errorFirst of [true, false]) {
+    const g = createGraph();
+    g.state("a", 1); g.state("b", 2);
+    g.node("n", ["a", "b"], forward, { invalidate });
+    g.subscribe("k", "n");
+    assert.deepEqual(during(g, () => g.batch(() => { if (errorFirst) g.error("a", "bad"); g.invalidate("b"); if (!errorFirst) g.error("a", "bad"); })),
+      ["k <- n: [PENDING, INVALIDATE]", 'k <- n: [PENDING, ERROR("bad")]'], `${invalidate} policy, the ERROR ${errorFirst ? "first" : "last"}`);
+  }
+  const g = createGraph();
+  g.state("a"); g.state("b", 2);
+  g.node("n", ["a", "b"], () => {});
+  g.subscribe("k", "n");
+  assert.deepEqual(during(g, () => g.batch(() => { g.error("a", "bad"); g.invalidate("b"); })), ['k <- n: [PENDING, ERROR("bad")]'], "holding no value, the ERROR alone");
+});
+
+test("D824 (5): under the auto INVALIDATE policy an input's INVALIDATE goes out before what the function sends for another input's DATA of the same wave", () => {
+  const held = (ctx) => ctx.down([["DATA", ctx.deps.map((d) => `${d.has ? d.value : "-"}${d.invalidated ? "!" : ""}`).join()]]);
+  for (const setFirst of [true, false]) {
+    const g = createGraph();
+    g.state("a", 1); g.state("b", 2);
+    g.node("n", ["a", "b"], held);
+    g.subscribe("k", "n");
+    assert.deepEqual(during(g, () => g.batch(() => { if (setFirst) g.set("a", 9); g.invalidate("b"); if (!setFirst) g.set("a", 9); })),
+      ["k <- n: [PENDING, INVALIDATE]", 'k <- n: [PENDING, DATA("9,-")]'], `the write ${setFirst ? "first" : "last"}`);
+  }
+  const g = createGraph();
+  g.state("a", 1); g.state("b", 2);
+  g.node("n", ["a", "b"], held, { invalidate: "manual" });
+  g.subscribe("k", "n");
+  assert.deepEqual(during(g, () => g.batch(() => { g.set("a", 9); g.invalidate("b"); })), ['k <- n: [PENDING, DATA("9,-!")]'], "manual: the function's input, and the kernel sends none");
+});
+
 // R-node@4 (graphrefly:D823): the kernel keeps the dependency list and the recipe as they were given.
 const valuesJoined = (ctx) => ctx.down([["DATA", ctx.deps.map((d) => d.value).join()]]);
 
