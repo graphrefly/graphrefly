@@ -60,7 +60,9 @@ export function errorPayload(e) {
   const payload = messageOf(e);
   return payload === undefined || typeof payload === "boolean" ? "" : payload;
 }
-const freshInput = () => ({ has: false, value: undefined, ended: null, frames: [], invalidated: false });
+// replaced: the dependency got a new instance while this node stayed active, and the function has
+// not run since (R-invocation).
+const freshInput = () => ({ has: false, value: undefined, ended: null, frames: [], invalidated: false, replaced: false });
 // K2 (decided by the user 2026-11-09): every array that carries DATA, RESOLVED, INVALIDATE
 // or a terminal marks the sender's cone pending and gets the kernel's prefix, whatever the
 // receivers' policies, so a fan-in waits for all of a wave's input and a manual node runs
@@ -395,12 +397,14 @@ export function createGraph({ report: hostReport, requireRecipe = false } = {}) 
           .map((f) => f.filter((m) => m[0] === "DATA").map((m) => m[1])),
         terminal: input.frames.flat().find(isTerminal) ?? null,
         invalidated: n.invalidate === "manual" && input.invalidated,
+        replaced: input.replaced === true,
         has: input.has,
         value: input.value,
       };
       return Object.defineProperties({}, Object.fromEntries(Object.entries(snapshot).map(([key, value]) =>
         [key, { enumerable: true, get() { assertInvocation(); return value; } }])));
     });
+    for (const input of n.inputs) input.replaced = false; // this run is told, and no later one
     const ctx = {
       get deps() { assertInvocation(); return deps; },
       state: {
@@ -697,7 +701,7 @@ export function createGraph({ report: hostReport, requireRecipe = false } = {}) 
     const nodeSubs = [];
     for (const sub of [...n.subs]) {
       if (sub.kind === "sink") deliverToSink(sub, n.id, [["START"], ...snap]);
-      else { nodeOf(sub.id).inputs[sub.dep] = freshInput(); nodeSubs.push(sub); }
+      else { nodeOf(sub.id).inputs[sub.dep] = { ...freshInput(), replaced: true }; nodeSubs.push(sub); }
     }
     if (snap.length) {
       // One wave from n: its cone is marked pending first (P3), then each dependent
@@ -905,6 +909,9 @@ export function createGraph({ report: hostReport, requireRecipe = false } = {}) 
     // The private state of the node's current lifetime, as of now (undefined without one).
     // Read for a checkpoint (R-snapshot); the kernel keeps no copy and never reads it.
     privateState(id) { return nodeOf(id).privateState; },
+    // Per current dependency, whether it was replaced and the node's function has not run since.
+    // Read for a checkpoint, so that a restored node is still told (R-checkpoint).
+    replacedInputs(id) { return nodeOf(id).inputs.map((input) => input.replaced === true); },
     // P1: the topology as data, in creation order: each node's id, kind, current
     // dependencies (its lifetime's, which a ctx.rewire may have changed; definition(id) gives
     // the declared ones) and whether it is quiet (H6). Read-only; a structural subset of TS

@@ -1515,6 +1515,57 @@ test("a restored graph runs one wave's rewires in creation order, whichever sink
   }
 });
 
+// R-checkpoint: a dependency replaced while its dependent stayed active, of which the dependent's
+// function has not been told, is saved as such, and the restored function is told at its first
+// activation. counting keeps in private state which inputs completed, as a zip does.
+function replacedBeforeCapture() {
+  const counting = () => (ctx) => {
+    const done = (ctx.state.get() ?? ctx.deps.map(() => false)).map((was, i) => (was && !ctx.deps[i].replaced) || ctx.deps[i].terminal?.[0] === "COMPLETE");
+    ctx.state.set(done);
+    ctx.down([["DATA", `done=${done.map(Number).join("")} replaced=${ctx.deps.map((d) => Number(d.replaced)).join("")}`]]);
+    if (done.every(Boolean)) ctx.down([["COMPLETE"]]);
+  };
+  const pass = () => (ctx) => { for (const wave of ctx.deps[0].waves) ctx.down(wave.map((v) => ["DATA", v])); };
+  const reg = { counting, pass };
+  const g = createGraph();
+  g.state("sa", 1); g.state("empty"); g.state("b", 0);
+  node(g, reg, "a", ["sa"], "pass");
+  node(g, reg, "z", ["a", "b"], "counting", null, { terminal: { complete: "manual" } });
+  g.subscribe("k", "z");
+  g.complete("sa");                                                    // z has counted a's COMPLETE
+  g.replace("a", ["empty"], pass(), { recipe: { ref: "pass", config: null } }); // a new instance that holds nothing: z does not run
+  return { g, reg };
+}
+
+test("a dependency replaced before a capture, of which the function was not told, is saved as replaced and the restored function is told", () => {
+  const { g, reg } = replacedBeforeCapture();
+  const cp = roundTrip(capture(g));
+  assert.deepEqual(cp.nodes.find((n) => n.id === "z").saved.inputs, [{ has: false, ended: null, replaced: true }, { has: true, values: [0], ended: null }]);
+  const r = restore(cp, reg);
+  assert.deepEqual(during(r, () => r.subscribe("k", "z")), ['k <- z: [START, DATA("done=00 replaced=10")]'], "told at its first activation, with nothing new from a");
+  assert.deepEqual(during(r, () => r.set("b", 10)), ['k <- z: [PENDING, DATA("done=00 replaced=00")]'], "told once");
+  assert.deepEqual(during(r, () => r.complete("b")), ['k <- z: [PENDING, DATA("done=01 replaced=00")]'], "open: a's new instance has not completed");
+  assert.equal(roundTrip(capture(r)).nodes.find((n) => n.id === "z").saved.inputs.some((input) => "replaced" in input), false, "once told, nothing is saved of it");
+});
+
+test("a restored node captured again before its first activation is still saved as not told", () => {
+  const { g, reg } = replacedBeforeCapture();
+  const again = restore(roundTrip(capture(restore(roundTrip(capture(g)), reg))), reg);
+  assert.deepEqual(during(again, () => again.subscribe("k", "z")), ['k <- z: [START, DATA("done=00 replaced=10")]']);
+});
+
+test("a function told before the capture is not told again after the restore, and a checkpoint that says replaced with anything but true is refused", () => {
+  const { g, reg } = replacedBeforeCapture();
+  g.set("b", 10); // z runs and is told
+  const cp = roundTrip(capture(g));
+  assert.equal(cp.nodes.find((n) => n.id === "z").saved.inputs.some((input) => "replaced" in input), false);
+  const r = restore(cp, reg);
+  assert.deepEqual(during(r, () => r.subscribe("k", "z")), ['k <- z: [START, DATA("done=00 replaced=10")]'], "nothing changed: the value it had sent, and the function does not run");
+  assert.deepEqual(during(r, () => r.set("b", 11)), ['k <- z: [PENDING, DATA("done=00 replaced=00")]'], "not told again");
+  cp.nodes.find((n) => n.id === "z").saved.inputs[0].replaced = false;
+  assert.throws(() => restore(cp, reg), /not restorable: z: missing received records/);
+});
+
 test("QA2: restore preserves valid repeated declared inputs without inventing rewire restrictions", () => {
   const g = createGraph();
   g.state("a", 2);

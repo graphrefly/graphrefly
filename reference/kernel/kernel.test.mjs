@@ -1323,6 +1323,62 @@ test("request order: rewires asked for in a batch body, outside any function's r
     ['ky <- y: [PENDING, DATA("t=1,ey=Y")]', 'kx <- x: [PENDING, DATA("t=1,ex=X")]']);
 });
 
+// R-invocation: a function is told, in its next run and in no later one, that a dependency got a new
+// instance while its node stayed active. z counts its inputs' COMPLETEs in private state, as a zip
+// does, and drops its count of an input it is told was replaced.
+const passOn = (ctx) => { for (const wave of ctx.deps[0].waves) ctx.down(wave.map((v) => ["DATA", v])); };
+const countingEnds = (ctx) => {
+  const done = (ctx.state.get() ?? ctx.deps.map(() => false)).map((was, i) => (was && !ctx.deps[i].replaced) || ctx.deps[i].terminal?.[0] === "COMPLETE");
+  ctx.state.set(done);
+  ctx.down([["DATA", `done=${done.map(Number).join("")} replaced=${ctx.deps.map((d) => Number(d.replaced)).join("")}`]]);
+  if (done.every(Boolean)) ctx.down([["COMPLETE"]]);
+};
+function countingGraph() {
+  const g = createGraph();
+  g.state("sa", 1); g.state("full", 2); g.state("empty"); g.state("b", 0);
+  g.node("a", ["sa"], passOn); g.node("z", ["a", "b"], countingEnds, { terminal: { complete: "manual" } });
+  g.subscribe("k", "z");
+  return g;
+}
+
+test("replace: a dependent's function is told once that a dependency was replaced, at once when the new instance holds a value and at its next run when it holds none", () => {
+  for (const [from, atReplace] of [["full", ['k <- z: [PENDING, DATA("done=00 replaced=10")]']], ["empty", []]]) {
+    const g = countingGraph();
+    assert.deepEqual(during(g, () => g.complete("sa")), ['k <- z: [PENDING, DATA("done=10 replaced=00")]']);
+    assert.deepEqual(during(g, () => g.replace("a", [from], passOn)), atReplace, from);
+    assert.deepEqual(g.replacedInputs("z"), [from === "empty", false], "read for a checkpoint");
+    assert.deepEqual(during(g, () => g.set("b", 10)), [`k <- z: [PENDING, DATA("done=00 replaced=${from === "full" ? "00" : "10"}")]`], from);
+    assert.deepEqual(g.replacedInputs("z"), [false, false]);
+    assert.deepEqual(during(g, () => g.set("b", 11)), ['k <- z: [PENDING, DATA("done=00 replaced=00")]'], "told once");
+    assert.deepEqual(during(g, () => g.complete("b")), ['k <- z: [PENDING, DATA("done=01 replaced=00")]'], "z stays open: its new input has not completed");
+  }
+});
+
+test("replace: the new input holds nothing of the old instance, and a dependency replaced twice before the next run is told once", () => {
+  const g = countingGraph();
+  g.complete("sa");
+  g.replace("a", ["empty"], passOn); g.replace("a", ["empty"], passOn);
+  let seen;
+  g.node("y", ["a", "b"], (ctx) => { seen = ctx.deps.map((d) => [d.has, d.terminal, d.replaced]); }); // a new dependent is not told
+  g.subscribe("ky", "y");
+  assert.deepEqual(seen, [[false, null, false], [true, null, false]]);
+  assert.deepEqual(during(g, () => g.set("b", 10)).filter((line) => line.startsWith("k <-")), ['k <- z: [PENDING, DATA("done=00 replaced=10")]']);
+});
+
+test("replace: a rewire that keeps the replaced dependency keeps what the function has not been told", () => {
+  const g = createGraph();
+  g.state("sa", 1); g.state("empty"); g.state("b", 0); g.state("c", 5);
+  const seen = [];
+  const z = withCtx((ctx) => { seen.push(ctx.deps.map((d) => `${d.id}:${Number(d.replaced)}`).join(" ")); });
+  g.node("a", ["sa"], passOn); g.node("z", ["a", "b"], z);
+  g.subscribe("k", "z");
+  g.replace("a", ["empty"], passOn);
+  z.ctx.rewire(["c", "a"]); // c's snapshot runs z
+  assert.equal(seen.at(-1), "c:0 a:1");
+  g.set("c", 6);
+  assert.equal(seen.at(-1), "c:0 a:0");
+});
+
 // F7: a state node has no ctx, so it cannot be asked to rewire. An ended node's lifetime is
 // closed, so its rewire is dropped as ctx.down after close is, instead of refused.
 test("rewire: refused for itself, a cycle and duplicates; a rewire of an ended node is dropped", () => {

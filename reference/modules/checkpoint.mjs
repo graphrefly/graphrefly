@@ -70,11 +70,16 @@ const snapshotOf = (d) => (d.waves.length ? d.waves[d.waves.length - 1] : []);
 const sameValue = (d, saved) => d.has === saved.has && (!d.has || isDeepStrictEqual(snapshotOf(d), saved.values));
 const sameEnd = (d, saved) => isDeepStrictEqual(d.terminal, saved.ended);
 
-// What a node received from each dependency: at a wave boundary, the dependency's value.
-const receivedFrom = (g, deps) => deps.map((d) => {
-  const x = g.get(d);
-  return { has: x.has, ...(x.has && { values: x.values }), ended: x.ended };
-});
+// What a node received from each dependency: at a wave boundary, the dependency's value. A
+// dependency that was replaced while the node stayed active, and that the node's function has not
+// been told of yet, is saved as such, so that the restored node is told (R-checkpoint).
+const receivedFrom = (g, id, deps) => {
+  const replaced = g.replacedInputs(id);
+  return deps.map((d, i) => {
+    const x = g.get(d);
+    return { has: x.has, ...(x.has && { values: x.values }), ended: x.ended, ...(replaced[i] && { replaced: true }) };
+  });
+};
 
 export function capture(g) {
   if (!g.idle()) throw new Error("capture: a wave or batch is running; capture at a wave boundary (O5)");
@@ -100,7 +105,7 @@ export function capture(g) {
       const state = g.privateState(id);
       saved = {
         values: x.values, ended: x.ended, ...(state !== undefined && { state }),
-        inputs: receivedFrom(g, current),
+        inputs: receivedFrom(g, id, current),
         // A ctx.rewire's dependencies belong to the lifetime (F7) and come back with it.
         ...(!isDeepStrictEqual(current, def.deps) && { deps: current }),
       };
@@ -128,13 +133,14 @@ function restorable(real) {
     if (!note) { real(ctx); return; }
     // Per dependency, what it brings: a changed value comes with its snapshot arrays; an end
     // alone comes without them, since those values were already received; an unchanged
-    // dependency brings nothing.
+    // dependency brings nothing. A dependency saved as replaced is a new input the function has
+    // not been told of: it counts as changed, so the function runs and is told.
     let changed = false;
     const deps = ctx.deps.map((d, i) => {
       const was = note.inputs[i];
-      const value = !sameValue(d, was), end = !sameEnd(d, was);
-      if (value || end) changed = true;
-      return value ? d : { ...d, waves: [], terminal: end ? d.terminal : null };
+      const value = !sameValue(d, was), end = !sameEnd(d, was), replaced = was.replaced === true;
+      if (value || end || replaced) changed = true;
+      return { ...(value ? d : { ...d, waves: [], terminal: end ? d.terminal : null }), replaced };
     });
     // The seed holds the value and private state.
     if (changed) real(withDependencies(ctx, deps));
@@ -220,7 +226,8 @@ function prepareCheckpoint(checkpoint, registry) {
       if (!Array.isArray(saved.inputs) || saved.inputs.length !== deps.length || saved.inputs.some((input) =>
         !record(input) || typeof input.has !== "boolean" || !terminal(input.ended) ||
         (input.has ? !Array.isArray(input.values) || !input.values.length :
-          Object.hasOwn(input, "values") && (!Array.isArray(input.values) || input.values.length)))) fail("missing received records");
+          Object.hasOwn(input, "values") && (!Array.isArray(input.values) || input.values.length)) ||
+        (Object.hasOwn(input, "replaced") && input.replaced !== true))) fail("missing received records");
     }
     validateSaved(n.id, saved);
   }
