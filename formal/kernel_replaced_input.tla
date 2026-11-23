@@ -3,9 +3,10 @@
 GraphReFly kernel and checkpoint — a function is told once that a dependency
 was replaced, also across a capture and a restore.
 
-A focused model for graphrefly:B148's eleventh point, written 2026-11-22. It
-checks one mechanism of R-invocation and R-checkpoint and nothing else of
-either: the kernel marks a dependent's input when its dependency gets a new
+A focused model for graphrefly:B148's eleventh point, written 2026-11-22;
+graphrefly:D819 settled the point on 2026-11-23 (R-subscription@4,
+R-invocation@4, R-checkpoint@3). It checks one mechanism of those rules and
+nothing else of them: the kernel marks a dependent's input when its dependency gets a new
 instance while the dependent stays active; the dependent's function reads the
 mark in its next run, which clears it; a capture saves a mark not yet read,
 and the restored node's first activation runs the function for it.

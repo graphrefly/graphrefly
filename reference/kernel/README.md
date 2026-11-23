@@ -112,6 +112,7 @@ a later invocation cannot revive them. Plain data read during the invocation rem
 | `down(msgs)` | During the run: one array of this invocation's output; each call is its own array (R-wave-boundary). After the run returned: a new wave from this node (P9). After the lifetime closed: dropped. START/PENDING/RESOLVED are kernel-only |
 | `signal` | Aborted when the lifetime closes; async work that must stop with the lifetime follows it |
 | `deps[i].invalidated` | Under the manual INVALIDATE policy only: an INVALIDATE arrived on this input in this invocation |
+| `deps[i].replaced` | The dependency got a new instance since this function's last run, while the node stayed active (R-invocation@4, graphrefly:D819). True in one run; `replacedInputs(id)` reads it for a checkpoint without clearing it |
 
 The function registers no cleanup. `onInvalidate(f)` was removed on 2026-11-09, replaced by the
 manual INVALIDATE policy; `onDeactivation(f)` on 2026-11-10, replaced by the node's setup (K7).
@@ -285,6 +286,9 @@ Each has a test in `kernel.test.mjs`; undoing each fix fails its test.
   for duplicate dependencies (the exchange matches them by id). An ended dependency was refused too
   (found missing in the C-8 replay, added, then dropped with the P5 relaxation): the new instance now
   starts on its snapshot. REPLAY.md lists where it differs from R-rewire (C-8).
+  A dependent that stays active gets a new input for it and is told once, in its next run
+  (`deps[i].replaced`, R-subscription@4, graphrefly:D819, 2026-11-23): until then a function that
+  counted the old instance's COMPLETE in private state could not know the instance had changed.
   Only the kernel can do this, because it rebinds the dependents' input records; the DS-17 rewire row
   had named only H4 (a seed), which restart does not need, so it is not implemented.
 - Rewire (added 2026-11-08, surgical, C-8; on ctx since 2026-11-10, F7): `ctx.rewire(deps)` changes

@@ -741,7 +741,9 @@ const r = restore(cp, registry);       // a new graph, nothing subscribed
 - `capture()` saves what the kernel holds per node:
   - a state's last array's values (K3) and terminal;
   - a computed node's last array's values, terminal and private state, and what it received from each dependency,
-    when it had a lifetime. An inactive computed node holds nothing (K7) and comes back fresh.
+    when it had a lifetime, with a mark on a dependency that was replaced and of which the function
+    has not been told; the restored node's first activation runs the function for it and tells it
+    (R-checkpoint@3, graphrefly:D819, 2026-11-23). An inactive computed node holds nothing (K7) and comes back fresh.
 
   Capture is refused unless the kernel is idle (`g.idle()`: no wave and no batch body). Values must be
   JSON.
