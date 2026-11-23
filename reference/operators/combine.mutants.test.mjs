@@ -192,6 +192,17 @@ const MUTANTS = [
     `  const done = state.done.map((was, i) => was || completed(ctx.deps[i]));`, `  const memory = (globalThis.__zipDone ??= new WeakMap());\n  const done = (memory.get(ctx.signal) ?? ctx.deps.map(() => false)).map((was, i) => was || completed(ctx.deps[i]));\n  memory.set(ctx.signal, done);`],
   ["a restored zip given what changed while saved forgets which inputs had completed before", "O-zip use: it ends when an input that has completed has no queued item left; O-common: a checkpoint saves an operator's progress",
     `  const done = state.done.map((was, i) => was || completed(ctx.deps[i]));`, `  const done = state.done.map((was, i) => (was && ctx.seed === undefined) || completed(ctx.deps[i]));`],
+  // 2026-11-22: found by the round of mutants written without sight of the traces; OT-130, OT-133, OT-136 and OT-137 hold them
+  ["race takes a wave without DATA for an arrival", "O-race use: race selects the first input to deliver DATA or a terminal",
+    [["    const first = ctx.deps.find((d) => occurrences(d).length || d.terminal);", "    const first = ctx.deps.find((d) => d.waves.length || d.terminal);"]]],
+  ["zip does not end while another input that has completed still has an item queued", "O-zip completion: it ends when any input has completed with nothing queued, also while another still has items",
+    [["  const ends = done.some((ended, i) => ended && !queues[i].length); // no tuple can form after that", "  const ends = done.some(Boolean) && done.every((ended, i) => !ended || !queues[i].length);"]]],
+  ["merge sends the arrays one input sent in a wave as one", "O-merge use: merge sends every input's arrays as they came",
+    [["  for (const d of ctx.deps) sendArrays(ctx, d);", "  for (const d of ctx.deps) { const all = d.waves.flat(); if (all.length) ctx.down(all.map((v) => [\"DATA\", v])); }"]]],
+  ["race sends the arrays the selected input sent in the wave that selects it as one", "O-race use: it follows the one selected: its arrays",
+    [["  sendArrays(ctx, selected);", "  if (ctx.deps.length > 1) { const all = selected.waves.flat(); if (all.length) ctx.down(all.map((v) => [\"DATA\", v])); } else sendArrays(ctx, selected);"]]],
+  ["race sends the arrays the selected input sent in a later wave as one", "O-race use: it follows the one selected: its arrays",
+    [["  sendArrays(ctx, selected);", "  if (ctx.deps.length === 1) { const all = selected.waves.flat(); if (all.length) ctx.down(all.map((v) => [\"DATA\", v])); } else sendArrays(ctx, selected);"]]],
 ];
 
 mutantSuite({ module: "combine", operators: ["merge", "withLatestFrom", "zip", "concat", "race"], mutants: MUTANTS, minTraces: 18 });

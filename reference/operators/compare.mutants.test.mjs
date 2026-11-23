@@ -78,6 +78,11 @@ const MUTANTS = [
   // the verification re-run of 2026-11-21: an input that ended while saved, other changes while saved, inputs that hold several values, terminals in other roles, callbacks in the wave of an ERROR
   ["distinctUntilChanged lets a repeated value pass within the array of its first run, in a wave or in the snapshot it activates on", "O-distinctUntilChanged use: sends a DATA only when it differs from the last DATA it sent; O-common: activation runs on snapshots",
     [["      if (last.length && equal(last[0], v)) continue;", "      if (last.length && ctx.state.get() !== undefined && equal(last[0], v)) continue;"]]],
+  // 2026-11-22: found by the round of mutants written without sight of the traces; OT-132 holds them
+  ["pairwise takes a previous value of null for none", "O-pairwise use: [previous, current] for every DATA from the second on",
+    [["      if (prev.length) pairs.push([prev[0], v]);", "      if (prev.length && prev[0] != null) pairs.push([prev[0], v]);"]]],
+  ["pairwise does not pair a value of null with the one before it", "O-pairwise use: [previous, current] for every DATA from the second on",
+    [["      if (prev.length) pairs.push([prev[0], v]);", "      if (prev.length && v !== null) pairs.push([prev[0], v]);"]]],
 ];
 
 mutantSuite({ module: "compare", operators: ["distinctUntilChanged", "pairwise"], mutants: MUTANTS, minTraces: 6 });

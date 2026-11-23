@@ -234,6 +234,13 @@ const MUTANTS = [
     [["  if (error) { ctx.down([error]); return; }\n  const out = [];", "  if (error && !(errored(source) && completed(flush))) { ctx.down([error]); return; }\n  const out = [];"]]],
   ["buffer sends an empty batch for a second flush in the wave", "O-buffer use: an empty batch is not sent",
     [["    out.push([\"DATA\", items]);\n    items = [];\n  }", "    out.push([\"DATA\", items]);\n    items = [];\n    if (!activation && occurrences(flush).length > 1 && !completed(source)) out.push([\"DATA\", []]);\n  }"]]],
+  // 2026-11-22: found by the round of mutants written without sight of the traces; OT-131, OT-134 and OT-135 hold them
+  ["takeUntil sends its source's DATA and COMPLETE when the notifier's ERROR comes in that wave", "O-common: an input's ERROR ends the operator with that ERROR, also when another input completes in that wave: it does not process that wave's DATA",
+    [["  if (errored(source) || errored(notifier)) { ctx.down([errored(source) ? source.terminal : notifier.terminal]); return; }\n  for (const w of source.waves)", "  if (errored(source) || (errored(notifier) && !(completed(source) && occurrences(source).length))) { ctx.down([errored(source) ? source.terminal : notifier.terminal]); return; }\n  for (const w of source.waves)"]]],
+  ["a takeUntil whose source holds no value retracts its output", "O-takeUntil recovery: the output it had sent is kept, also when the source holds no value then",
+    [["  ctx.state.set({ started: true });\n  if (source.invalidated) ctx.down([[\"INVALIDATE\"]]);", "  ctx.state.set({ started: true });\n  if (source.invalidated || !source.has) ctx.down([[\"INVALIDATE\"]]);"]]],
+  ["buffer drops its tail when the flush input completes in the wave of the source's COMPLETE", "O-buffer completion: the source's normal COMPLETE sends a nonempty tail in the terminal's array; the flush input's COMPLETE alone does not end collection",
+    [["  if (items.length && ((!activation && occurrences(flush).length) || completed(source))) {", "  if (items.length && ((!activation && occurrences(flush).length) || (completed(source) && !completed(flush)))) {"]]],
 ];
 
 mutantSuite({ module: "notifier", operators: ["sample", "takeUntil", "buffer", "bufferCount"], mutants: MUTANTS, minTraces: 20 });
