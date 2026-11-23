@@ -162,7 +162,7 @@ const MUTANTS = [
   ["race does not select a third input", "O-race use: selects the first input to deliver DATA or a terminal",
     [["    const first = ctx.deps.find((d) => occurrences(d).length || d.terminal);", "    const first = ctx.deps.slice(0, 2).find((d) => occurrences(d).length || d.terminal);"]]],
   ["a restored zip does not end for an input that completed, with nothing queued, while saved", "O-zip completion: it ends when any input has completed with nothing queued; R-checkpoint: an end is given as changed",
-    [["  const done = state.done.map((was, i) => was || completed(ctx.deps[i]));", "  const done = state.done.map((was, i) => was || (ctx.seed === undefined && completed(ctx.deps[i])));"]]],
+    [["  const done = state.done.map((was, i) => (was && !ctx.deps[i].replaced) || completed(ctx.deps[i]));", "  const done = state.done.map((was, i) => (was && !ctx.deps[i].replaced) || (ctx.seed === undefined && completed(ctx.deps[i])));"]]],
   ["a restored zip stays open when an input ended with ERROR while saved", "O-zip completion: an input's ERROR ends zip; R-checkpoint",
     [["  const error = ctx.deps.find(errored)?.terminal;", "  const error = ctx.seed !== undefined ? undefined : ctx.deps.find(errored)?.terminal;"]]],
   ["a restored race does not complete when the input it selected completed while saved", "O-race use: follows the one selected: its arrays, and its terminal; R-checkpoint",
@@ -189,9 +189,16 @@ const MUTANTS = [
     [["    sendArrays(ctx, current);", "    if (completed(current)) { for (const w of current.waves) if (w.length) ctx.down(w.slice(-1).map((v) => [\"DATA\", v])); } else sendArrays(ctx, current);"]]],
   // 2026-11-22: found by a mutant of an interpreter written from the contracts (prototype/operator-records)
   ["zip keeps which inputs have completed where a checkpoint does not save it", "O-zip use: it ends when an input that has completed has no queued item left; O-common: a checkpoint saves an operator's progress",
-    `  const done = state.done.map((was, i) => was || completed(ctx.deps[i]));`, `  const memory = (globalThis.__zipDone ??= new WeakMap());\n  const done = (memory.get(ctx.signal) ?? ctx.deps.map(() => false)).map((was, i) => was || completed(ctx.deps[i]));\n  memory.set(ctx.signal, done);`],
+    `  const done = state.done.map((was, i) => (was && !ctx.deps[i].replaced) || completed(ctx.deps[i]));`, `  const memory = (globalThis.__zipDone ??= new WeakMap());\n  const done = (memory.get(ctx.signal) ?? ctx.deps.map(() => false)).map((was, i) => (was && !ctx.deps[i].replaced) || completed(ctx.deps[i]));\n  memory.set(ctx.signal, done);`],
   ["a restored zip given what changed while saved forgets which inputs had completed before", "O-zip use: it ends when an input that has completed has no queued item left; O-common: a checkpoint saves an operator's progress",
-    `  const done = state.done.map((was, i) => was || completed(ctx.deps[i]));`, `  const done = state.done.map((was, i) => (was && ctx.seed === undefined) || completed(ctx.deps[i]));`],
+    `  const done = state.done.map((was, i) => (was && !ctx.deps[i].replaced) || completed(ctx.deps[i]));`, `  const done = state.done.map((was, i) => (was && !ctx.deps[i].replaced && ctx.seed === undefined) || completed(ctx.deps[i]));`],
+  // 2026-11-23: O-zip@2 (graphrefly:D820); OT-138, OT-139 and OT-140 hold them
+  ["zip goes on counting an input as completed after it was replaced by a new instance", "O-zip completion: an input replaced by a new instance is no longer counted as completed",
+    `  const done = state.done.map((was, i) => (was && !ctx.deps[i].replaced) || completed(ctx.deps[i]));`, `  const done = state.done.map((was, i) => was || completed(ctx.deps[i]));`],
+  ["a restored zip goes on counting an input that was replaced before the capture", "O-zip completion: an input replaced by a new instance is no longer counted as completed; R-checkpoint: a replacement not yet told is saved",
+    `  const done = state.done.map((was, i) => (was && !ctx.deps[i].replaced) || completed(ctx.deps[i]));`, `  const done = state.done.map((was, i) => (was && !(ctx.deps[i].replaced && ctx.seed === undefined)) || completed(ctx.deps[i]));`],
+  ["zip drops what it queued from an input that was replaced", "O-zip completion: what zip queued from the old instance stays",
+    [["  const queues = state.queues.map((queue, i) => [...queue, ...occurrences(ctx.deps[i])]);", "  const queues = state.queues.map((queue, i) => [...(ctx.deps[i].replaced ? [] : queue), ...occurrences(ctx.deps[i])]);"]]],
   // 2026-11-22: found by the round of mutants written without sight of the traces; OT-130, OT-133, OT-136 and OT-137 hold them
   ["race takes a wave without DATA for an arrival", "O-race use: race selects the first input to deliver DATA or a terminal",
     [["    const first = ctx.deps.find((d) => occurrences(d).length || d.terminal);", "    const first = ctx.deps.find((d) => d.waves.length || d.terminal);"]]],

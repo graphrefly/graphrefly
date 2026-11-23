@@ -11,7 +11,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 // The contracts in force. Activating a family adds its coordinates here, and nowhere else in this file.
 const ACTIVE = ["O-common@1", "O-sample@1", "O-takeUntil@1", "O-buffer@1", "O-bufferCount@1", "O-map@1", "O-filter@1", "O-tap@1", "O-scan@1", "O-reduce@1",
   "O-distinctUntilChanged@1", "O-pairwise@1", "O-take@1", "O-skip@1", "O-takeWhile@1", "O-first@1", "O-last@1",
-  "O-merge@1", "O-withLatestFrom@1", "O-zip@1", "O-concat@1", "O-race@1", "O-derived@1"];
+  "O-merge@1", "O-withLatestFrom@1", "O-zip@2", "O-concat@1", "O-race@1", "O-derived@1"];
 
 const S = ["START"];
 const trace = (over = {}) => ({
@@ -153,4 +153,13 @@ test("a draft may lack traces, hold open questions and cite a draft rule; an act
   const complete = views([common(on), contract(on)]);
   assert.deepEqual(complete.errors, []);
   assert.deepEqual(complete.active.map((row) => row.coordinate), ["O-common@1", "O-map@1"]);
+});
+
+test("a replace step names an operator node and nodes of the trace, and what it makes a node depend on counts as its input", () => {
+  const replaced = (step, last) => trace({ nodes: [{ id: "s", state: [] }, { id: "t", state: [] }, { id: "m", op: "map", deps: ["s"] }], steps: [["subscribe", "k", "m"], step, last], expect: [[["k", "m", [S]]], [], []] });
+  const completion = contract({ exceptions: [{ topic: "completion", statement: "s", traces: ["OT-1"] }] });
+  assert.deepEqual(views([completion], [replaced(["replace", "m", ["t"]], ["complete", "t"])]).errors, []);
+  fails(views([completion], [replaced(["set", "s", 1], ["complete", "t"])]), /no complete or error step on an input of its map/);
+  fails(views([completion], [replaced(["replace", "s", ["t"]], ["complete", "s"])]), /a replace step names s, which is not an operator node of the trace/);
+  fails(views([completion], [replaced(["replace", "m", ["x"]], ["complete", "s"])]), /the replace of m names a dependency the trace does not have/);
 });

@@ -73,6 +73,12 @@ export function buildOperatorViews({ contracts, traces, rules = [], currentRuleI
       errors.push(`${at}: an expectation is a list of [sink, node, messages]`);
     }
     if (list(trace.steps).some((step) => list(step)[0] === "batch" && flatSteps(step[1]).some((inner) => inner[0] === "restore"))) errors.push(`${at}: a restore is a step of its own, not part of a batch`);
+    // A replace gives an operator node of the trace a new instance over nodes of the trace.
+    for (const [kind, id, deps] of flatSteps(trace.steps)) {
+      if (kind !== "replace") continue;
+      if (!list(trace.nodes).some((node) => node.id === id && text(node.op))) errors.push(`${at}: a replace step names ${id}, which is not an operator node of the trace`);
+      if (!Array.isArray(deps) || deps.some((dep) => !ids.includes(dep))) errors.push(`${at}: the replace of ${id} names a dependency the trace does not have`);
+    }
     // A trace that subscribes nothing, or expects nothing anywhere, would pass on any implementation.
     if (!flatSteps(trace.steps).some((step) => step[0] === "subscribe") || !received.length) errors.push(`${at}: subscribes no sink or expects nothing`);
   }
@@ -101,6 +107,8 @@ export function buildOperatorViews({ contracts, traces, rules = [], currentRuleI
     for (let grew = true; grew;) {
       grew = false;
       for (const step of flatSteps(trace.steps)) {
+        // What a replace makes a reached node depend on is reached too.
+        if (step[0] === "replace" && seenIds.has(step[1])) for (const dep of list(step[2])) if (!seenIds.has(dep)) { walk(dep); grew = true; }
         if (step[0] !== "set" || !seenIds.has(step[1])) continue;
         for (const other of named(step[2], all)) if (!seenIds.has(other)) { walk(other); grew = true; }
       }

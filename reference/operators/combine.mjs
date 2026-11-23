@@ -17,7 +17,9 @@
 //                   that run, in a wave or in the snapshot zip activates on, then reaches a zip
 //                   that has ended (the user, 2026-11-20, as for take and takeUntil). An input
 //                   that ended with ERROR does not end zip in that way: its ERROR does, without
-//                   that run's tuples (the user, 2026-11-21).
+//                   that run's tuples (the user, 2026-11-21). An input replaced by a new instance
+//                   is no longer counted as completed, and what was queued from the old one stays
+//                   (O-zip@2, graphrefly:D820): the kernel tells the function (R-invocation).
 //   concat          depends on one source at a time and moves to the next, by ctx.rewire, when
 //                   that one completes (manual COMPLETE). Which source it is at is private state.
 //   race            depends on every input until one delivers DATA or a terminal, then on that one
@@ -59,7 +61,7 @@ function withLatestFromFn(ctx) {
 function zipFn(ctx) {
   const state = ctx.state.get() ?? { queues: ctx.deps.map(() => []), done: ctx.deps.map(() => false) };
   const queues = state.queues.map((queue, i) => [...queue, ...occurrences(ctx.deps[i])]);
-  const done = state.done.map((was, i) => was || completed(ctx.deps[i]));
+  const done = state.done.map((was, i) => (was && !ctx.deps[i].replaced) || completed(ctx.deps[i]));
   const out = [];
   while (queues.every((queue) => queue.length)) out.push(["DATA", queues.map((queue) => queue.shift())]);
   const ends = done.some((ended, i) => ended && !queues[i].length); // no tuple can form after that

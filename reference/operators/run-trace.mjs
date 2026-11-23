@@ -138,7 +138,7 @@ const emptyFn = (ctx) => ctx.down([["COMPLETE"]]);
 const onceFn = ({ value }) => (ctx) => ctx.down([["DATA", value]]); // sends as it is activated
 const helperRecipes = { "trace.arrays": () => arraysFn, "trace.empty": () => emptyFn, "trace.once": onceFn, "trace.callback": (config, at) => callback(config, at.g) };
 
-const STEPS = new Set(["subscribe", "unsubscribe", "set", "invalidate", "complete", "error", "batch", "restore"]);
+const STEPS = new Set(["subscribe", "unsubscribe", "set", "invalidate", "complete", "error", "batch", "restore", "replace"]);
 const flat = (steps) => steps.flatMap((step) => (step[0] === "batch" ? [step, ...flat(step[1])] : [step]));
 
 // Why a trace cannot be run here, or null. A trace that cannot be run is skipped by name; it is
@@ -199,7 +199,10 @@ export function matches(got, expect) {
 // What the sinks received during each step, at the trace's detail, and the graph it ended on. A
 // restore step captures the graph and goes on with the restored one, which has no subscribers;
 // only nodes built with a recipe can be captured, so a trace with a kernel-sugar node cannot take
-// the step. `late()` is what any sink received after the last step returned.
+// the step. A replace step gives an operator node of the trace a new instance of the same operator
+// and args over the dependencies it names: the node's builder runs on a graph whose node() is the
+// kernel's replace, which keeps the node's policies. `late()` is what any sink received after the
+// last step returned.
 export function runTraceOn(trace, edited = {}) {
   const mods = { ...MODULES, ...edited };
   const build = builders(mods);
@@ -217,6 +220,14 @@ export function runTraceOn(trace, edited = {}) {
     else if (kind === "complete") g.complete(a);
     else if (kind === "error") g.error(a, b);
     else if (kind === "batch") g.batch(() => a.forEach((inner) => request(inner)));
+    else if (kind === "replace") {
+      const n = trace.nodes.find((node) => node.id === a);
+      if (!n || n.state) throw new Error(`the trace replaces ${a}, which is not one of its operator nodes`);
+      const live = g;
+      const replacing = Object.create(live, { node: { value: (id, deps, fn, options = {}) => live.replace(id, deps, fn, { setup: options.setup, recipe: options.recipe }) } });
+      checkNode({ ...n, deps: b });
+      build[n.op](replacing, { ...n, deps: b });
+    }
     else throw new Error(`the reference runner has no ${kind} step`);
   };
   for (const n of trace.nodes) {

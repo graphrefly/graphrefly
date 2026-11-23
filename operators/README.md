@@ -107,7 +107,9 @@ requests. A write, a terminal or a batch starts one wave, and a callback that wr
 `into` does, starts further ones within the step; a subscription delivers a snapshot, and a restore
 delivers nothing: `["subscribe", sink, node]`, `["unsubscribe", sink, node]`, `["set", state, value]`, `["invalidate", state]`,
 `["complete", state]`, `["error", state, payload]`, `["batch", [requests]]`, `["restore"]`, which
-captures the graph, restores it with no subscribers and continues on the restored one, and
+captures the graph, restores it with no subscribers and continues on the restored one,
+`["replace", node, deps]`, which gives an operator node of the trace a new instance of the same
+operator and args over those dependencies (R-request-order), and
 `["advance", ms]` on a clock the test owns. The reference runner has no clock yet, so it skips a
 trace with an `advance` step. `expect[i]` is what the sinks received during `steps[i]`, compared receiver by receiver: what one
 sink received from one node is in order, and which sink received first within the step is not part of
@@ -158,7 +160,8 @@ completion exception, of a state the operator depends on (for an operator with a
 node named by a value written to its input); and for a recovery exception a `restore` with such a
 sink subscribed before it and again after it. The check reads a node's inputs from the trace as
 written, so it does not see an INVALIDATE or a terminal that only an `arrays` helper sends, and it
-still counts a source a concat has not reached or an input a race has released; a trace of the
+still counts a source a concat has not reached or an input a race has released; what a `replace`
+step makes a node depend on counts as its input from the start of the trace. A trace of the
 first kind is linked from the ordinary use or from a same-wave exception.
 
 `basis` names where the selection states the trace. A pass on the reference kernel is candidate
@@ -175,9 +178,9 @@ traces collects traces; its rate is not a condition.
 DS-20 dropped onFirstData, find, elementAt, combine, generic audit, rescue (catchError replaces it) and
 settle. history is a module rule (R-history), not an operator contract.
 
-A contract speaks of an operator over inputs that stay the instances it was activated on. What an
-operator keeps of an input that the host replaces by a new instance of the same id (R-request-order)
-is not stated yet: the kernel keeps nothing of the old instance, its terminal included, and a
-function is not told of the replacement, so the reference's zip still counts the old instance's
-COMPLETE where its merge, whose completion the kernel decides, does not; neither is what a contract
-asks (graphrefly:B148).
+A contract speaks of an operator over inputs that stay the instances it was activated on, unless it
+says otherwise. When the host replaces an input by a new instance of the same id (R-request-order),
+the kernel keeps nothing of the old instance, its terminal included, and tells the function in its
+next run (graphrefly:D819). zip is the one operator of the set that records an input's COMPLETE, and
+O-zip says what it does then (graphrefly:D820). No other operator records an input's terminal; what
+the others keep of a replaced input is not stated.
