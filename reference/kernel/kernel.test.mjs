@@ -1381,6 +1381,50 @@ test("replace: a rewire that keeps the replaced dependency keeps what the functi
 
 // F7: a state node has no ctx, so it cannot be asked to rewire. An ended node's lifetime is
 // closed, so its rewire is dropped as ctx.down after close is, instead of refused.
+// R-request-order@6 (graphrefly:D822): the cycle check also reads the dependencies a seed holds for
+// a first lifetime, which a restored node starts on at its first activation.
+test("cycle check: a replace and a rewire are refused for a node that a seeded node will depend on at its first activation", () => {
+  const sum = (ctx) => ctx.down([["DATA", ctx.deps.reduce((a, d) => a + (d.value ?? 0), 0)]]);
+  const build = () => {
+    const g = createGraph();
+    g.state("a", 1);
+    const z = withCtx(sum);
+    g.node("y", ["a"], sum); g.node("z", ["a"], z);
+    g.node("x", ["a"], sum, { seed: { values: [2], deps: ["y", "z"] } }); // as a restore brings back a node that had rewired itself
+    return { g, z };
+  };
+  {
+    const { g } = build();
+    assert.throws(() => g.replace("y", ["x"], sum), /replace: y would depend on itself through x/);
+    assert.deepEqual(g.definition("y").deps, ["a"]);
+    g.subscribe("k", "x"); // x is on [y, z] now
+    assert.throws(() => g.replace("y", ["x"], sum), /replace: y would depend on itself through x/);
+    assert.deepEqual(during(g, () => g.set("a", 3)), ["k <- x: [PENDING, DATA(6)]"], "a reaches x through y and z");
+  }
+  {
+    const { g, z } = build();
+    g.subscribe("kz", "z");
+    assert.throws(() => z.ctx.rewire(["x"]), /rewire: z would depend on itself through x/);
+    assert.deepEqual(during(g, () => g.set("a", 2)), ["kz <- z: [PENDING, DATA(2)]"]);
+  }
+  {
+    const { g } = build();
+    g.replace("x", ["a"], sum); // a new instance holds no seed
+    g.replace("y", ["x"], sum);
+    assert.deepEqual(g.definition("y").deps, ["x"]);
+  }
+});
+
+test("cycle check: a seed may name a node not made yet, and the check passes over it", () => {
+  const sum = (ctx) => ctx.down([["DATA", ctx.deps.reduce((a, d) => a + (d.value ?? 0), 0)]]);
+  const g = createGraph();
+  g.state("a", 1);
+  g.node("x", ["a"], sum, { seed: { deps: ["later"] } });
+  g.node("y", ["a"], sum);
+  g.replace("y", ["x"], sum);
+  assert.deepEqual(g.definition("y").deps, ["x"]);
+});
+
 test("rewire: refused for itself and a cycle; a rewire of an ended node is dropped", () => {
   const g = createGraph();
   g.state("a", 1); g.state("b", 2);

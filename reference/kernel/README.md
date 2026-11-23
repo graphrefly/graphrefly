@@ -200,6 +200,11 @@ Mutations checked on 2026-11-08, each failing at least one test:
 - The cycle check of `replace` and `ctx.rewire` runs again when the queued request runs (F 2.9): two
   replaces in one batch, or two rewires asked for in one wave, could each pass when asked for and
   close a cycle together. Refused when it runs, the request goes to the host reporter.
+- The cycle check also follows the dependencies a seed holds for a first lifetime
+  (R-request-order@6, graphrefly:D822, 2026-11-23). Until then it read current and declared ones
+  only, and before a restored node's first activation its lifetime's list is neither: a restored
+  graph accepted a replace the live one refuses, leaving two nodes over each other that no write
+  reached, and a rewire of the same kind overflowed the stack.
 - A quiet node clears its pending mark before forwarding an auto INVALIDATE (F 2.10), so the
   INVALIDATE marks its cone pending and a diamond below settles once.
 

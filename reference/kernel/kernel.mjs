@@ -130,7 +130,10 @@ export function createGraph({ report: hostReport, requireRecipe = false } = {}) 
   // when its lifetime closes (F7), so a path on either could form a cycle later. Found by the
   // migration of the rewire tests (2026-11-10): checking current ones only let a rewire and a
   // later end leave a cycle.
-  const edgesOf = (n) => [...new Set([...n.deps, ...n.declaredDeps])];
+  // Also through the dependencies a seed holds for a first lifetime, which a restored node starts
+  // on at its first activation (R-request-order@6, graphrefly:D822): until then they are neither
+  // current nor declared. A seed may name a node not made yet, which the check passes over.
+  const edgesOf = (n) => [...new Set([...n.deps, ...n.declaredDeps, ...(n.seedDeps ?? []).filter((d) => nodes.has(d))])];
   const dependsOn = (n, targetId) => edgesOf(n).some((d) => d === targetId || dependsOn(nodeOf(d), targetId));
 
   function makeNode(id, kind, deps, fn, opts, initial) {

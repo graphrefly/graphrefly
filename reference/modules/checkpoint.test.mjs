@@ -1738,3 +1738,42 @@ test("latestAsync: a job that fails ends the node with ERROR, its message as the
   assert.deepEqual(g.get("q").ended, ["ERROR", "no report"]);
   g.unsubscribe("s", "q");
 });
+
+// R-request-order@6 (graphrefly:D822): before a restored node's first activation the cycle check
+// reads the dependencies its seed holds, so a restored graph refuses what the live one refuses.
+// Until then the replace was accepted and left x and y depending on each other, and the rewire
+// overflowed the stack.
+test("a restored graph refuses a replace and a rewire that close a cycle through a node's saved lifetime dependencies", () => {
+  const R = { recipe: { ref: "sum", config: null } };
+  const reg = registry();
+  const g = createGraph();
+  g.state("a", 1);
+  let ctxOf;
+  const sum = reg.sum();
+  g.node("x", ["a"], (ctx) => { ctxOf = ctx; sum(ctx); }, R);
+  node(g, reg, "y", ["a"], "sum");
+  g.subscribe("k", "x"); g.subscribe("ky", "y");
+  ctxOf.rewire(["y"]);
+  assert.throws(() => g.replace("y", ["x"], reg.sum(), R), /replace: y would depend on itself through x/, "the live graph");
+  const cp = roundTrip(capture(g));
+  assert.deepEqual(cp.nodes.find((n) => n.id === "x").saved.deps, ["y"]);
+
+  const r = restore(cp, registry());
+  assert.deepEqual(r.describe().find((n) => n.id === "x").deps, ["a"], "x is described over its declared list until its first activation");
+  assert.throws(() => r.replace("y", ["x"], reg.sum(), R), /replace: y would depend on itself through x/);
+  assert.deepEqual(during(r, () => r.subscribe("k", "x")), ["k <- x: [START, DATA(1)]"]);
+  assert.deepEqual(during(r, () => r.set("a", 5)), ["k <- x: [PENDING, DATA(5)]"], "a reaches x through y");
+  restore(roundTrip(capture(r)), registry()); // what it captures restores
+
+  const ctxs = {};
+  const base = registry();
+  const r2 = restore(cp, { ...base, sum: (config, at) => { const fn = base.sum(); return (ctx) => { ctxs[at.id] = ctx; fn(ctx); }; } });
+  r2.subscribe("ky", "y"); r2.set("a", 2); // y runs, so its ctx is at hand
+  assert.throws(() => ctxs.y.rewire(["x"]), /rewire: y would depend on itself through x/);
+  assert.deepEqual(during(r2, () => r2.set("a", 3)), ["ky <- y: [PENDING, DATA(3)]"]);
+
+  const r3 = restore(cp, registry());
+  r3.replace("x", ["a"], reg.sum(), R); // a new instance of x holds no seed
+  r3.replace("y", ["x"], reg.sum(), R);
+  assert.deepEqual(r3.definition("y").deps, ["x"]);
+});
