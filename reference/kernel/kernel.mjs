@@ -213,13 +213,13 @@ export function createGraph({ report: hostReport, requireRecipe = false } = {}) 
 
   function request(op) {
     if (batchRequests) { batchRequests.push(op); return; } // the batch's wave has not run yet
-    if (busy) { op.askedIn = serial; queue.push(op); return; }
+    if (busy) { op.askedIn = serial; op.by = running; queue.push(op); return; }
     busy = true;
     serial += 1;
     try { op(); } finally { // what op threw goes on to its caller once the queue has run
       busy = false;
       while (queue.length) {
-        rewiresInCreationOrder();
+        functionsInCreationOrder();
         const next = queue.shift();
         busy = true;
         serial += 1;
@@ -230,14 +230,17 @@ export function createGraph({ report: hostReport, requireRecipe = false } = {}) 
     }
   }
 
-  // R-request-order: the rewires nodes asked for during the request that just ended run in the
-  // order their nodes were created, at the places in the queue that rewires were asked at. The
-  // order they were asked in follows the order functions ran, which follows the order sinks
-  // subscribed and a batch's writes were made, and a restored graph keeps neither. A rewire asked
-  // for in a batch body is the body's request and keeps the body's order.
-  function rewiresInCreationOrder() {
-    const slots = queue.flatMap((op, i) => (op.rewireOf && op.askedIn === serial ? [i] : []));
-    const sorted = slots.map((i) => queue[i]).sort((x, y) => x.rewireOf.created - y.rewireOf.created);
+  // R-request-order: the requests node functions made during the request that just ended run in
+  // the order their nodes were created, each node's own in the order it made them, at the places
+  // in the queue that such requests were made at. The order they were made in follows the order
+  // functions ran, which follows the order sinks subscribed and a batch's writes were made, and a
+  // restored graph keeps neither. All of a function's requests move together: a node that asks
+  // for a replace and then for its own rewire, as a mergeMap does, gets them in that order. A
+  // request made in a batch body is the body's and keeps the body's order; the commit of a batch a
+  // function opened is that function's request.
+  function functionsInCreationOrder() {
+    const slots = queue.flatMap((op, i) => (op.by && op.askedIn === serial ? [i] : []));
+    const sorted = slots.map((i) => queue[i]).sort((x, y) => x.by.created - y.by.created);
     slots.forEach((i, k) => { queue[i] = sorted[k]; });
   }
 
@@ -431,13 +434,11 @@ export function createGraph({ report: hostReport, requireRecipe = false } = {}) 
         if (!lifetime.open) return; // as ctx.down after close, before any check
         assertDistinct("rewire", n, deps);
         assertAcyclic("rewire", n, deps);
-        const op = () => {
+        request(() => {
           if (!lifetime.open || n.lifetime !== lifetime) return;
           assertAcyclic("rewire", n, deps);
           rewireNode(n, [...deps]);
-        };
-        op.rewireOf = n;
-        request(op);
+        });
       },
     };
     if (n.seedNote !== undefined) { ctx.seed = n.seedNote; n.seedNote = undefined; }

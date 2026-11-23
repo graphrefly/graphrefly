@@ -22,11 +22,12 @@ use the default auto terminal policies.
 
 Every request is one step that runs to its end; the requests a sink callback,
 a node function or a cleanup makes while it runs (phase "busy") wait in the
-queue and run after it, in the order they were made, except that the rewires
-asked for during one request run in the order their nodes were created, at the
-places in the queue that rewires were asked at (R-request-order revision 4;
-RequestOrder). So that two nodes can ask, M may ask for a rewire to the
-dependencies it has, which changes nothing when it runs. A write to S from a node
+queue and run after it, in the order they were made, except that the requests
+node functions make during one request run in the order their nodes were
+created, each node's own in the order it made them, at the places in the queue
+that such requests were made at (R-request-order revision 4; RequestOrder). A
+queued request carries the node whose function made it, M or N here, or none
+for a sink callback or a cleanup; any request may be a function's. A write to S from a node
 function is one of them, also when S is that node's own upstream: it reaches
 the node in a later wave and never reenters it (R-invocation, decided by the
 user 2026-11-09; RunOncePerRequest, RequestOrder, AfterMaker). A node's function, each
@@ -88,9 +89,11 @@ Invariants, each mutation-checked (see formal/README.md):
   RewireKeeps            rewire keeps the instance: its lifetime, private
                          state, values and sinks (R-request-order)
   RequestOrder           requests run in the order they were made, except that
-                         one request's rewires run in creation order at the
-                         places rewires were asked at; a batch body's rewires
-                         keep the body's order (R-request-order)
+                         the requests node functions made during one request
+                         run in the creation order of their nodes, each node's
+                         own in the order made, at the places such requests
+                         were made at; a batch body's requests keep the body's
+                         order (R-request-order)
   AfterMaker             a request made while another runs starts only after
                          that one has finished
   IdleDrained            nothing is queued at a wave boundary
@@ -129,8 +132,6 @@ TopoReq == {Rq("sub", x, {}) : x \in Sinks} \cup {Rq("unsub", x, {}) : x \in Sin
 Req == TopoReq \cup {Rq("set", "S", {}), Rq("complete", "S", {})}
 \* A rewire through N's ctx of its latest lifetime, open or already closed.
 RwReq(s) == {[Rq("rewire", "N", D) EXCEPT !.w = <<"N", s.life["N"]>>] : D \in DepChoices}
-            \* M asks for the dependencies it has: a second node whose rewire can be ordered.
-            \cup {[Rq("rewire", "M", s.deps["M"]) EXCEPT !.w = <<"M", s.life["M"]>>]}
 \* A replace onto the node itself or onto a node that depends on it, through current or declared
 \* dependencies, is refused when it is asked for (R-request-order): it is never made.
 RECURSIVE Reach(_, _)
@@ -313,20 +314,23 @@ Exec(s, r, c) ==
     [] r.t = "unsub"    -> Unsub(s, r.n)
     [] r.t = "set"      -> SourceWave(s, c, 1, FALSE)
     [] r.t = "complete" -> SourceWave(s, c, 0, TRUE)
-    [] r.t = "rewire"   -> IF r.n = "N" THEN Rewire(s, r.d, c, r.w[2]) ELSE s
+    [] r.t = "rewire"   -> Rewire(s, r.d, c, r.w[2])
     [] r.t = "replace"  -> Replace(s, r.n, r.d, r.c, c)
     [] r.t = "late"     -> LateOut(s, r.w, c)
     [] r.t = "commit"   -> SourceWave(s, c, r.s, r.c)
 
 \* ---- requests ----
 Zero == [n \in Nodes |-> 0]
-Entry(s, r, tag) == [id |-> s.nid + 1, r |-> r, maker |-> s.cur, tag |-> tag]
+Entry(s, r, tag, by) == [id |-> s.nid + 1, r |-> r, maker |-> s.cur, tag |-> tag, by |-> by]
+\* Who may have made a queued request: a node's function, or "" for a sink callback or a cleanup.
+Askers == {"", "M", "N"}
 
-\* A rewire asked for while a request ran, not in a batch body (tag 0): Rank is creation order.
-WaveRw(e) == e.r.t = "rewire" /\ e.tag = 0 /\ e.maker # 0
+\* A request a node's function made while a request ran, not in a batch body (tag 0): Rank is
+\* creation order.
+WaveRw(e) == e.by # "" /\ e.tag = 0 /\ e.maker # 0
 SameWave(e, f) == WaveRw(e) /\ WaveRw(f) /\ e.maker = f.maker
-Earlier(q, i, j) == Rank[q[i].r.n] < Rank[q[j].r.n] \/ (Rank[q[i].r.n] = Rank[q[j].r.n] /\ i < j)
-\* The queue with the rewires asked for during request m in creation order, at their places.
+Earlier(q, i, j) == Rank[q[i].by] < Rank[q[j].by] \/ (Rank[q[i].by] = Rank[q[j].by] /\ i < j)
+\* The queue with the requests functions made during request m in creation order, at their places.
 InCreationOrder(q, m) ==
   LET S == {i \in DOMAIN q : WaveRw(q[i]) /\ q[i].maker = m}
       Pick(j) == CHOOSE i \in S : Cardinality({h \in S : Earlier(q, h, i)}) = j - 1
@@ -334,16 +338,16 @@ InCreationOrder(q, m) ==
 
 \* Ids are given in the order requests are made (a batch's requests right after its commit),
 \* and lastDone counts the requests started. Checked as e starts with rest still queued: a
-\* request that is not a wave's rewire starts at its own place; a wave's rewire starts before
-\* every rewire of its wave whose node was created later, or asked later by the same node, and
-\* before every rewire of another wave asked after it; and the place it takes was a rewire's of
-\* its wave.
+\* request no function made starts at its own place; a function's request starts before every
+\* function's request of its wave whose node was created later, or made later by the same node,
+\* and before every function's request of another wave made after it; and the place it takes was
+\* a function's request's of its wave.
 OrderOK(s, e, rest) ==
   LET p == s.lastDone + 1
   IN /\ ~WaveRw(e) => e.id = p
      /\ WaveRw(e) => \A i \in DOMAIN rest :
           LET q == rest[i]
-          IN /\ SameWave(e, q) => (Rank[q.r.n] > Rank[e.r.n] \/ (q.r.n = e.r.n /\ q.id > e.id))
+          IN /\ SameWave(e, q) => (Rank[q.by] > Rank[e.by] \/ (q.by = e.by /\ q.id > e.id))
              /\ (WaveRw(q) /\ q.maker # e.maker) => q.id > e.id
              /\ q.id = p => SameWave(e, q)
 
@@ -368,19 +372,19 @@ Issued(s, e) == [s EXCEPT !.nid = @ + 1]
 HostRequest ==
   /\ k.phase = "idle" /\ k.nid < MaxReq
   /\ \E r \in ReqNow(k), c \in ChoiceFns :
-       LET e == Entry(k, r, 0) IN k' = Start(Issued(k, e), e, c)
+       LET e == Entry(k, r, 0, "") IN k' = Start(Issued(k, e), e, c)
 
 \* A sink callback, node function or cleanup makes a request while one runs: it waits.
 CallbackRequest ==
   /\ k.phase = "busy" /\ k.nid < MaxReq
-  /\ \E r \in ReqNow(k) :
-       LET e == Entry(k, r, 0) IN k' = [Issued(k, e) EXCEPT !.queue = Append(@, e)]
+  /\ \E r \in ReqNow(k), by \in Askers :
+       LET e == Entry(k, r, 0, by) IN k' = [Issued(k, e) EXCEPT !.queue = Append(@, e)]
 
 \* Late work calls its old ctx.down: a request like any other.
 LateFire ==
   /\ k.phase \in {"idle", "busy"} /\ k.nid < MaxReq
   /\ \E w \in k.late :
-       LET e  == Entry(k, LateReq(w), 0)
+       LET e  == Entry(k, LateReq(w), 0, "")
            s1 == [Issued(k, e) EXCEPT !.late = @ \ {w}]
        IN IF k.phase = "idle"
           THEN \E c \in ChoiceFns : k' = Start(s1, e, c)
@@ -431,9 +435,9 @@ BodyThrow ==
 BodyReturn ==
   /\ k.phase = "body"
   /\ LET b  == k.batch
-         ce == Entry(k, CommitReq(b.sets, b.term), b.id)
+         ce == Entry(k, CommitReq(b.sets, b.term), b.id, "")
          n  == Len(b.reqs)
-         es == [i \in 1..n |-> [id |-> k.nid + 1 + i, r |-> b.reqs[i], maker |-> ce.id, tag |-> b.id]]
+         es == [i \in 1..n |-> [id |-> k.nid + 1 + i, r |-> b.reqs[i], maker |-> ce.id, tag |-> b.id, by |-> ""]]
          s1 == [k EXCEPT !.nid = @ + 1 + n, !.batch = NoBatch]
      IN IF b.from = "idle"
         THEN \E c \in ChoiceFns : k' = Start([s1 EXCEPT !.queue = es], ce, c)

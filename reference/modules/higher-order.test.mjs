@@ -431,3 +431,22 @@ test("switchMap and mergeMap: a projector that throws nothing or a boolean ends 
     }
   }
 });
+
+// R-request-order: a mergeMap asks in one run for a replace of its inner and then for its own
+// rewire. Ordering one wave's rewires alone, by creation, moved A's rewire ahead of A's replace when
+// B ran first: A acquired the ended instance, sent its value again and lost the new inner
+// (graphrefly:B148's eighth point, 2026-11-22). A function's requests move together.
+test("mergeMap: two over one source each take an ended inner slot again, whichever sink subscribed first", () => {
+  for (const sinks of [["A", "B"], ["B", "A"]]) {
+    const g = createGraph();
+    g.state("s"); g.state("x", "x1"); g.state("y", "y1");
+    const project = (v) => ({ deps: [v], fn: relay });
+    mergeMap(g, "A", "s", project); mergeMap(g, "B", "s", project);
+    for (const id of sinks) g.subscribe(`k${id}`, id);
+    const got = (body) => { const at = g.trace.length; body(); return g.trace.slice(at).filter((e) => e.to === "kA").map(format).filter((line) => line.includes("DATA")); };
+    assert.deepEqual(got(() => g.set("s", "x")), ['kA <- A: [PENDING, DATA("x1")]'], `sinks ${sinks}`);
+    g.complete("x");
+    assert.deepEqual(got(() => g.set("s", "y")), ['kA <- A: [PENDING, DATA("y1")]'], `sinks ${sinks}`);
+    assert.deepEqual(got(() => g.set("y", "y2")), ['kA <- A: [PENDING, DATA("y2")]'], `sinks ${sinks}`);
+  }
+});

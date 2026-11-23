@@ -84,16 +84,22 @@ the next (RewireOfThisLifetime). Not modeled: `set(id, fn)` with a function (202
 runs, so its order is the request order this model checks (FIFO, AfterMaker); that it reads the
 writes before it, in a batch too, and writes nothing for an unchanged value is pinned by kernel tests.
 
-Revised 2026-11-22 for R-request-order revision 4 (graphrefly:B148's eighth point): the rewires asked
-for during one request run in the order their nodes were created, at the places in the queue that
-rewires were asked at. M may now ask for a rewire to the dependencies it has, which changes nothing
-when it runs, so that two nodes' rewires can meet in one queue; FIFO became RequestOrder, checked
-as each request starts against what is still queued. With three requests: 986,988 states generated,
-230,710 distinct (218,102 before); with four: 35,295,879 generated, 7,960,756 distinct, in 3 min 45 s.
-Seven mutations, each tripping RequestOrder: no reordering, the rule before this revision; later-created
-nodes first; a node's own rewires in reverse; a batch body's rewires reordered too; a wave's rewires
-moved ahead of its other requests; the LIFO queue; and, with four requests, the rewires of different
-requests ordered together.
+Revised 2026-11-22 for R-request-order revision 4 (graphrefly:B148's eighth point): the requests node
+functions make during one request run in the order their nodes were created, each node's own in
+the order it made them, at the places in the queue that such requests were made at. A queued
+request carries the node whose function made it (M, N, or none for a sink callback or a cleanup),
+and any request may be a function's; FIFO became RequestOrder, checked as each request starts
+against what is still queued. Not modeled: the commit of a batch a function opened, which the
+reference kernel orders as that function's request and a kernel test pins; here a commit is no
+function's. With three requests: 3,248,466 states generated, 722,428 distinct (218,102 before the
+revision). With four: 256,428,291 generated, 55,911,570 distinct, depth 13, in 20 min 38 s with
+eight workers; TLC's estimate that a fingerprint collision hid a state is 0.019 from the actual
+fingerprints (6.1E-4 calculated).
+Mutations, each tripping RequestOrder: no reordering, the rule before this revision; later-created
+nodes first; a node's own requests in reverse; the functions' requests moved ahead of the wave's
+other requests; the LIFO queue; and rewires alone reordered, which the user settled first and which
+moved a mergeMap's rewire ahead of its own replace (reference/modules/higher-order.test.mjs).
+With four requests, one more: the functions' requests of different requests ordered together.
 
 Writing this model found three things the reference kernel did that the D797 draft text did not
 say. The user settled all three on 2026-11-09 as the kernel does them, and R-lifetime, R-terminals,

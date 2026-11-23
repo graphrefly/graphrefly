@@ -242,7 +242,9 @@ Each has a test in `kernel.test.mjs`; undoing each fix fails its test.
   last release; plain state keeps its value.
 - K8: a request that arrives while the kernel is busy waits and runs afterwards in arrival order: a
   late `ctx.down`, and `set`, `batch`, `subscribe`, `unsubscribe` reached through a captured graph
-  reference. A function writing its own upstream makes an ordinary request too: it runs after the
+  reference. The requests node functions made during one request run in the order
+  their nodes were created, each node's own in the order it made them, at the places such requests
+  were made at (R-request-order@4, graphrefly:D818). A function writing its own upstream makes an ordinary request too: it runs after the
   wave and reaches the function in a later wave, so the function is never reentered and a feedback
   loop of completed waves is the composition's to end (decided by the user 2026-11-09; until then
   the write was rejected and the throw became the function's ERROR). A
