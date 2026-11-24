@@ -1,4 +1,7 @@
 import { assertLocalName } from "../kernel/kernel.mjs";
+import { gatePolicies, isPaused, pausableFn } from "../operators/gate.mjs";
+
+export { isPaused };
 
 // Pause as a module over the reference kernel (DS-17 O8). Non-normative.
 //
@@ -67,12 +70,16 @@ export function pauseControl(g, id) {
 // `control` lets several pausables share one lock state, so that a node pausing at each
 // of its inputs is released by one resume, in one wave (C-36).
 export function pausable(g, id, inputId, { control = controlPair(g, id) } = {}) {
-  // Manual terminals: only the input's terminal ends the node (the lock state's is ignored),
-  // and it passes with whatever came in its array, so an unpaused pausable forwards an array
-  // like [DATA, COMPLETE] or [DATA, ERROR] unchanged instead of dropping its DATA. Manual
+  // Manual terminals: the input's terminal ends the node and passes with whatever came in its
+  // array, so an unpaused pausable forwards an array like [DATA, COMPLETE] or [DATA, ERROR]
+  // unchanged instead of dropping its DATA. The lock state's COMPLETE is passed over; its ERROR
+  // ends the node (O-pause, O-common; until 2026-11-23 it was passed over too). Manual
   // INVALIDATE: the input's INVALIDATE reaches the function, which drops what it held.
-  const opts = { terminal: { complete: "manual", error: "manual" }, invalidate: "manual" };
-  g.node(id, [inputId, control.locksId], pausableFn, { ...opts, recipe: { ref: "pause.pausable", config: null } });
+  // The function and its policies are the pause operator's (reference/operators/gate.mjs), where
+  // the canonical traces of O-pause run them. The input and the lock state are distinct nodes
+  // (O-common).
+  if (inputId === control.locksId) throw new RangeError(`pausable ${id}: its inputs are distinct nodes`);
+  g.node(id, [inputId, control.locksId], pausableFn, { ...gatePolicies, recipe: { ref: "pause.pausable", config: null } });
   return { id, ...control };
 }
 
@@ -81,26 +88,3 @@ export const pausableOf = (g, id, { control = pauseControl(g, id) } = {}) => ({ 
 
 export const pauseRecipes = Object.freeze({ "pause.pausable": () => pausableFn });
 
-export const isPaused = (control) => control.has && control.value.length > 0;
-
-// Private state: the arrays held since the last INVALIDATE, each as it arrived. While paused,
-// nothing but a terminal goes out; unpaused (or on the resume), the held arrays and the new
-// ones go out one per array, the input's terminal in the last of them.
-function pausableFn(ctx) {
-  const [input, control] = ctx.deps;
-  let held = ctx.state.get() ?? [];
-  if (input.invalidated) {
-    held = [];
-    ctx.down([["INVALIDATE"]]);
-  }
-  held = [...held, ...input.waves.filter((w) => w.length)];
-  const end = input.terminal;
-  if (isPaused(control)) {
-    ctx.state.set(end ? [] : held);
-    if (end) ctx.down([end]);
-    return;
-  }
-  ctx.state.set([]);
-  held.forEach((w, i) => ctx.down([...w.map((v) => ["DATA", v]), ...(end && i === held.length - 1 ? [end] : [])]));
-  if (end && !held.length) ctx.down([end]);
-}

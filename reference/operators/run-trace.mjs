@@ -18,9 +18,10 @@ import * as compare from "./compare.mjs";
 import * as select from "./select.mjs";
 import * as combine from "./combine.mjs";
 import * as state from "./state.mjs";
+import * as gate from "./gate.mjs";
 
 // The operator modules a trace is run on; a mutant test passes an edited copy of one.
-const MODULES = { notifier, transform, accumulate, compare, select, combine, state };
+const MODULES = { notifier, transform, accumulate, compare, select, combine, state, gate };
 
 const read = (name) => readFileSync(fileURLToPath(new URL(`../../operators/${name}`, import.meta.url)), "utf8")
   .split("\n").filter(Boolean).map((line) => JSON.parse(line));
@@ -60,7 +61,7 @@ const ARGS = {
 // shows.
 const DEPS = {
   map: 1, filter: 1, tap: 1, scan: 1, reduce: 1, distinctUntilChanged: 1, pairwise: 1, take: 1, skip: 1, takeWhile: 1, first: 1, last: 1, bufferCount: 1,
-  switchMap: 1, mergeMap: 1, arrays: 1, sample: 2, takeUntil: 2, buffer: 2, withLatestFrom: [2], merge: [1], zip: [1], concat: [1], race: [1], derived: [1], empty: 0, once: 0,
+  switchMap: 1, mergeMap: 1, arrays: 1, sample: 2, takeUntil: 2, buffer: 2, valve: 2, pause: 2, withLatestFrom: [2], merge: [1], zip: [1], concat: [1], race: [1], derived: [1], empty: 0, once: 0,
 };
 const checkNode = (node) => {
   for (const key of Object.keys(node)) if (!["id", "state", "op", "deps", "args"].includes(key)) throw new Error(`the runner does not know the key ${key} of node ${node.id}`);
@@ -98,6 +99,8 @@ const builders = (mods) => ({
   zip: (g, n) => mods.combine.zip(g, n.id, n.deps),
   concat: (g, n) => mods.combine.concat(g, n.id, n.deps),
   race: (g, n) => mods.combine.race(g, n.id, n.deps),
+  valve: (g, n) => mods.gate.valve(g, n.id, n.deps[0], n.deps[1]),
+  pause: (g, n) => mods.gate.pause(g, n.id, n.deps[0], n.deps[1]),
   switchMap: (g, n) => switchMap(g, n.id, n.deps[0], project(n.args)),
   mergeMap: (g, n) => mergeMap(g, n.id, n.deps[0], project(n.args)),
   map: (g, n) => mods.transform.map(g, n.id, n.deps[0], callback(n.args, g), { recipe: callbackRecipe(n.args) }),
@@ -207,7 +210,7 @@ export function matches(got, expect) {
 export function runTraceOn(trace, edited = {}) {
   const mods = { ...MODULES, ...edited };
   const build = builders(mods);
-  const registry = { ...mods.notifier.notifierRecipes, ...mods.transform.transformRecipes, ...mods.accumulate.accumulateRecipes, ...mods.compare.compareRecipes, ...mods.select.selectRecipes, ...mods.combine.combineRecipes, ...mods.state.stateRecipes, ...higherOrderRecipes, ...helperRecipes };
+  const registry = { ...mods.notifier.notifierRecipes, ...mods.transform.transformRecipes, ...mods.accumulate.accumulateRecipes, ...mods.compare.compareRecipes, ...mods.select.selectRecipes, ...mods.combine.combineRecipes, ...mods.state.stateRecipes, ...mods.gate.gateRecipes, ...higherOrderRecipes, ...helperRecipes };
   let g = createGraph();
   const sinks = new Set();
   const request = (step) => {

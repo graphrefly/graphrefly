@@ -69,6 +69,8 @@ const OPERATORS = [
   { module: "combine", ops: ["concat"], head: "  const sources = [...config.sources]; // its own copy: the recipe's list is the definition's to keep\n  return (ctx) => {\n", auto: manual(`{ terminal: { complete: "manual" }, ...recipe("concat", { sources }) }`, `{ terminal: { complete: "manual", error: "manual" }, ...recipe("concat", { sources }) }`) },
   { module: "combine", ops: ["race"], head: "function raceFn(ctx) {\n" },
   { module: "state", ops: ["derived"], head: "const derivedFn = (f) => (ctx) => {\n", inputs: 2, latest: true, auto: manual(`recipe !== undefined ? { recipe: { ref: "operators.derived", config: { f: recipe } } } : {});`, `{ terminal: { error: "manual" }, ...(recipe !== undefined ? { recipe: { ref: "operators.derived", config: { f: recipe } } } : {}) });`) },
+  { module: "gate", ops: ["valve"], head: "function valveFn(ctx) {\n", inputs: 2 },
+  { module: "gate", ops: ["pause"], head: "export function pausableFn(ctx) {\n", inputs: 2 },
 ];
 
 // The lines put before a function's body: a head ends where the body starts, before the function
@@ -130,10 +132,10 @@ test("the table holds every operator with an active contract, and no cell goes m
   assert.deepEqual(OPERATORS.flatMap((entry) => entry.ops).sort(), active);
   // An entry that lost its `inputs` or gained a `latest` would drop cells without a failure, so
   // which operators the narrower classes apply to, and how many cells there are, is written here.
-  assert.deepEqual(OPERATORS.filter((entry) => entry.inputs).flatMap((entry) => entry.ops), ["sample", "takeUntil", "buffer", "merge", "withLatestFrom", "zip", "derived"]);
+  assert.deepEqual(OPERATORS.filter((entry) => entry.inputs).flatMap((entry) => entry.ops), ["sample", "takeUntil", "buffer", "merge", "withLatestFrom", "zip", "derived", "valve", "pause"]);
   assert.deepEqual(OPERATORS.filter((entry) => entry.latest).flatMap((entry) => entry.ops), ["sample", "derived"]);
   const cells = Object.values(CLASSES).flatMap((kind) => OPERATORS.filter((entry) => applies(kind, entry)));
-  assert.equal(cells.length, 5 * 20 + 18 + 4 * 7);
+  assert.equal(cells.length, 5 * 22 + 20 + 4 * 9);
 });
 
 for (const entry of OPERATORS.filter((item) => item.auto)) {
