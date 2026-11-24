@@ -15,8 +15,9 @@ npm run operators:current -- --review            # missing traces, open question
 In force since 2026-11-20: the `common` reading and the families `notifier` (sample, takeUntil, buffer,
 bufferCount), `transform` (map, filter, tap), `accumulate` (scan, reduce), `compare`
 (distinctUntilChanged, pairwise), `select` (take, skip, takeWhile, first, last), `combine` (merge,
-withLatestFrom, zip, concat, race) and `state` (derived); since 2026-11-23 the families `gate` (valve,
-pause) and `higher-order` (switchMap, mergeMap, concatMap, exhaustMap). Every other contract is a draft until its
+withLatestFrom, zip, concat, race) and `state` (derived); since 2026-11-23 the family `gate` (valve,
+pause); since 2026-11-24 the families `higher-order` (switchMap, mergeMap, concatMap, exhaustMap) and `time`
+(debounce, throttle, auditTime, delay, bufferTime, timeout). Every other contract is a draft until its
 family is activated. A draft is the maintainer's selection in
 [DS-20](../sessions/active/SESSION-operator-walkthrough.md), as revised by Q1 to Q3 of its
 [independent review](../sessions/active/PROPOSAL-DS20-operator-review-reconciliation.md), written in
@@ -30,8 +31,8 @@ draft: an active contract's traces pass on the reference kernel, which is not a 
 | [contracts.jsonl](contracts.jsonl) | One row per contract revision |
 | [traces.jsonl](traces.jsonl) | The canonical traces; each exists once, here |
 | [../authority/operators.mjs](../authority/operators.mjs) | The derived view and the link checks, run by `npm run authority:check` |
-| [../reference/operators/traces.test.mjs](../reference/operators/traces.test.mjs) | Runs the traces on the reference kernel, for the operators the reference has |
-| [../reference/operators/](../reference/operators/) | Operators written from their contracts over the reference kernel, each with its recipe, so that their traces are run and not only read: [notifier.mjs](../reference/operators/notifier.mjs), [transform.mjs](../reference/operators/transform.mjs), [accumulate.mjs](../reference/operators/accumulate.mjs), [compare.mjs](../reference/operators/compare.mjs), [select.mjs](../reference/operators/select.mjs), [combine.mjs](../reference/operators/combine.mjs), [state.mjs](../reference/operators/state.mjs), [gate.mjs](../reference/operators/gate.mjs) and [higher-order.mjs](../reference/operators/higher-order.mjs). Each has a `*.mutants.test.mjs` beside it: edits of the module, each naming the contract sentence it breaks, and each of which a trace must notice. [classes.mutants.test.mjs](../reference/operators/classes.mutants.test.mjs) asks the same by class, for the situations operators meet whatever they do: a restore after an input changed or ended, activation on an input that has completed, ended with ERROR or holds several values, and, for the operators with several inputs that have no rule of their own for it, two terminals in one wave or before activation. A class that passes shows the situation is traced for each operator, not that every sentence is held in it |
+| [../reference/operators/traces.test.mjs](../reference/operators/traces.test.mjs) | Runs the traces on the reference kernel, for the operators the reference has; the clock of an `advance` step is [clock.mjs](../reference/operators/clock.mjs) |
+| [../reference/operators/](../reference/operators/) | Operators written from their contracts over the reference kernel, each with its recipe, so that their traces are run and not only read: [notifier.mjs](../reference/operators/notifier.mjs), [transform.mjs](../reference/operators/transform.mjs), [accumulate.mjs](../reference/operators/accumulate.mjs), [compare.mjs](../reference/operators/compare.mjs), [select.mjs](../reference/operators/select.mjs), [combine.mjs](../reference/operators/combine.mjs), [state.mjs](../reference/operators/state.mjs), [gate.mjs](../reference/operators/gate.mjs), [higher-order.mjs](../reference/operators/higher-order.mjs) and [time.mjs](../reference/operators/time.mjs). Each has a `*.mutants.test.mjs` beside it: edits of the module, each naming the contract sentence it breaks, and each of which a trace must notice. [classes.mutants.test.mjs](../reference/operators/classes.mutants.test.mjs) asks the same by class, for the situations operators meet whatever they do: a restore after an input changed or ended, activation on an input that has completed, ended with ERROR or holds several values, and, for the operators with several inputs that have no rule of their own for it, two terminals in one wave or before activation. A class that passes shows the situation is traced for each operator, not that every sentence is held in it |
 
 ## A contract
 
@@ -111,8 +112,13 @@ delivers nothing: `["subscribe", sink, node]`, `["unsubscribe", sink, node]`, `[
 captures the graph, restores it with no subscribers and continues on the restored one,
 `["replace", node, deps]`, which gives an operator node of the trace a new instance of the same
 operator and args over those dependencies (R-request-order), and
-`["advance", ms]` on a clock the test owns. The reference runner has no clock yet, so it skips a
-trace with an `advance` step. `expect[i]` is what the sinks received during `steps[i]`, compared receiver by receiver: what one
+`["advance", ms]`. `["advance", ms]` moves a clock the test owns forward by ms, a positive integer. No other step takes
+time. A timer fires when the clock reaches its due time, each firing a wave of its own (O-common),
+and a timer started by a firing is due from that firing's time, so one advance over several periods
+fires each. Which of two timers due at the same instant fires first is not part of an expectation:
+the reference runs a trace both ways. A restore leaves the captured graph's timers behind: none of
+them fires afterwards (R-checkpoint). A trace says nothing of timers still running after its last
+step. `expect[i]` is what the sinks received during `steps[i]`, compared receiver by receiver: what one
 sink received from one node is in order, and which sink received first within the step is not part of
 the expectation, since no contract gives it and R-wave says only that a node's arrays go to one
 subscriber and then the next. A trace

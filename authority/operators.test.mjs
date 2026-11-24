@@ -11,7 +11,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 // The contracts in force. Activating a family adds its coordinates here, and nowhere else in this file.
 const ACTIVE = ["O-common@1", "O-sample@1", "O-takeUntil@1", "O-buffer@1", "O-bufferCount@1", "O-map@1", "O-filter@1", "O-tap@1", "O-scan@1", "O-reduce@1",
   "O-distinctUntilChanged@1", "O-pairwise@1", "O-take@1", "O-skip@1", "O-takeWhile@1", "O-first@1", "O-last@1",
-  "O-merge@1", "O-withLatestFrom@1", "O-zip@2", "O-concat@1", "O-race@1", "O-derived@1", "O-valve@1", "O-pause@1", "O-switchMap@1", "O-mergeMap@1", "O-concatMap@1", "O-exhaustMap@1"];
+  "O-merge@1", "O-withLatestFrom@1", "O-zip@2", "O-concat@1", "O-race@1", "O-derived@1", "O-valve@1", "O-pause@1", "O-switchMap@1", "O-mergeMap@1", "O-concatMap@1", "O-exhaustMap@1", "O-debounce@1", "O-throttle@1", "O-auditTime@1", "O-delay@1", "O-bufferTime@1", "O-timeout@1"];
 
 const S = ["START"];
 const trace = (over = {}) => ({

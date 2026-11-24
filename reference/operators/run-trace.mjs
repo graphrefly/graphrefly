@@ -10,6 +10,7 @@ import { fileURLToPath } from "node:url";
 import { isDeepStrictEqual } from "node:util";
 import { createGraph } from "../kernel/kernel.mjs";
 import { capture, restore } from "../modules/checkpoint.mjs";
+import { createClock } from "./clock.mjs";
 import * as notifier from "./notifier.mjs";
 import * as transform from "./transform.mjs";
 import * as accumulate from "./accumulate.mjs";
@@ -19,9 +20,10 @@ import * as combine from "./combine.mjs";
 import * as state from "./state.mjs";
 import * as gate from "./gate.mjs";
 import * as higherOrder from "./higher-order.mjs";
+import * as time from "./time.mjs";
 
 // The operator modules a trace is run on; a mutant test passes an edited copy of one.
-const MODULES = { notifier, transform, accumulate, compare, select, combine, state, gate, "higher-order": higherOrder };
+const MODULES = { notifier, transform, accumulate, compare, select, combine, state, gate, "higher-order": higherOrder, time };
 
 const read = (name) => readFileSync(fileURLToPath(new URL(`../../operators/${name}`, import.meta.url)), "utf8")
   .split("\n").filter(Boolean).map((line) => JSON.parse(line));
@@ -55,13 +57,14 @@ const ARGS = {
   map: ["f", ...CALLBACK], tap: ["f", ...CALLBACK], derived: ["f", ...CALLBACK], filter: ["p", ...CALLBACK], takeWhile: ["p", ...CALLBACK],
   first: ["p", ...CALLBACK], last: ["p", ...CALLBACK], distinctUntilChanged: ["equal", ...CALLBACK], scan: ["f", "seed", ...CALLBACK], reduce: ["f", "seed", ...CALLBACK],
   take: ["n"], skip: ["n"], bufferCount: ["n"], once: ["value"], switchMap: ["project", "throwsOn", "into"], mergeMap: ["project", "capacity", "throwsOn", "into"], concatMap: ["project", "throwsOn", "into"], exhaustMap: ["project", "throwsOn", "into"],
+  debounce: ["ms"], throttle: ["ms"], auditTime: ["ms"], delay: ["ms"], bufferTime: ["ms"], timeout: ["ms"],
 };
 // How many dependencies each kind of node takes: exactly so many, or [at least]. A node written
 // with more would be built on its first ones only, and the trace would run another graph than it
 // shows.
 const DEPS = {
   map: 1, filter: 1, tap: 1, scan: 1, reduce: 1, distinctUntilChanged: 1, pairwise: 1, take: 1, skip: 1, takeWhile: 1, first: 1, last: 1, bufferCount: 1,
-  switchMap: 1, mergeMap: 1, concatMap: 1, exhaustMap: 1, arrays: 1, sample: 2, takeUntil: 2, buffer: 2, valve: 2, pause: 2, withLatestFrom: [2], merge: [1], zip: [1], concat: [1], race: [1], derived: [1], empty: 0, once: 0,
+  switchMap: 1, mergeMap: 1, concatMap: 1, exhaustMap: 1, debounce: 1, throttle: 1, auditTime: 1, delay: 1, bufferTime: 1, timeout: 1, arrays: 1, sample: 2, takeUntil: 2, buffer: 2, valve: 2, pause: 2, withLatestFrom: [2], merge: [1], zip: [1], concat: [1], race: [1], derived: [1], empty: 0, once: 0,
 };
 const checkNode = (node) => {
   for (const key of Object.keys(node)) if (!["id", "state", "op", "deps", "args"].includes(key)) throw new Error(`the runner does not know the key ${key} of node ${node.id}`);
@@ -106,7 +109,10 @@ const higher = (mods, name, g, n) => {
   const config = followConfig(n.args);
   return mods["higher-order"][name](g, n.id, n.deps[0], followFn(mods["higher-order"].relay, config, g), { recipe: { ref: "trace.follow", config }, ...("capacity" in n.args && { capacity: n.args.capacity }) });
 };
-const builders = (mods) => ({
+const TIMED = ["debounce", "throttle", "auditTime", "delay", "bufferTime", "timeout"];
+// `timers` are the run's clock's, which the time operators are given.
+const builders = (mods, timers) => ({
+  ...Object.fromEntries(TIMED.map((name) => [name, (g, n) => mods.time[name](g, n.id, n.deps[0], n.args.ms, { timers })])),
   derived: (g, n) => mods.state.derived(g, n.id, n.deps, callback(n.args, g), { recipe: callbackRecipe(n.args) }),
   merge: (g, n) => mods.combine.merge(g, n.id, n.deps),
   withLatestFrom: (g, n) => mods.combine.withLatestFrom(g, n.id, n.deps[0], n.deps.slice(1)),
@@ -157,7 +163,7 @@ const emptyFn = (ctx) => ctx.down([["COMPLETE"]]);
 const onceFn = ({ value }) => (ctx) => ctx.down([["DATA", value]]); // sends as it is activated
 const helperRecipes = (mods) => ({ "trace.arrays": () => arraysFn, "trace.empty": () => emptyFn, "trace.once": onceFn, "trace.callback": (config, at) => callback(config, at.g), "trace.follow": (config, at) => followFn(mods["higher-order"].relay, config, at.g) });
 
-const STEPS = new Set(["subscribe", "unsubscribe", "set", "invalidate", "complete", "error", "batch", "restore", "replace"]);
+const STEPS = new Set(["subscribe", "unsubscribe", "set", "invalidate", "complete", "error", "batch", "restore", "replace", "advance"]);
 const flat = (steps) => steps.flatMap((step) => (step[0] === "batch" ? [step, ...flat(step[1])] : [step]));
 
 // Why a trace cannot be run here, or null. A trace that cannot be run is skipped by name; it is
@@ -221,12 +227,16 @@ export function matches(got, expect) {
 // only nodes built with a recipe can be captured, so a trace with a kernel-sugar node cannot take
 // the step. A replace step gives an operator node of the trace a new instance of the same operator
 // and args over the dependencies it names: the node's builder runs on a graph whose node() is the
-// kernel's replace, which keeps the node's policies. `late()` is what any sink received after the
+// kernel's replace, which keeps the node's policies. An advance step moves the run's own clock
+// (clock.mjs), whose timers the time operators are given; no other step takes time, and a restore
+// leaves the captured graph's timers behind. `reverse` fires timers due at the same instant
+// in the other order, which no expectation rests on. `late()` is what any sink received after the
 // last step returned.
-export function runTraceOn(trace, edited = {}) {
+export function runTraceOn(trace, edited = {}, { reverse = false } = {}) {
   const mods = { ...MODULES, ...edited };
-  const build = builders(mods);
-  const registry = { ...mods.notifier.notifierRecipes, ...mods.transform.transformRecipes, ...mods.accumulate.accumulateRecipes, ...mods.compare.compareRecipes, ...mods.select.selectRecipes, ...mods.combine.combineRecipes, ...mods.state.stateRecipes, ...mods.gate.gateRecipes, ...mods["higher-order"].higherOrderRecipes, ...helperRecipes(mods) };
+  const clock = createClock({ reverse });
+  const build = builders(mods, clock.timers);
+  const registry = { ...mods.time.timeRecipes(clock.timers), ...mods.notifier.notifierRecipes, ...mods.transform.transformRecipes, ...mods.accumulate.accumulateRecipes, ...mods.compare.compareRecipes, ...mods.select.selectRecipes, ...mods.combine.combineRecipes, ...mods.state.stateRecipes, ...mods.gate.gateRecipes, ...mods["higher-order"].higherOrderRecipes, ...helperRecipes(mods) };
   let g = createGraph();
   const sinks = new Set();
   const request = (step) => {
@@ -248,6 +258,7 @@ export function runTraceOn(trace, edited = {}) {
       checkNode({ ...n, deps: b });
       build[n.op](replacing, { ...n, deps: b });
     }
+    else if (kind === "advance" || kind === "restore") throw new Error(`a batch holds no ${kind} step`);
     else throw new Error(`the reference runner has no ${kind} step`);
   };
   for (const n of trace.nodes) {
@@ -255,9 +266,9 @@ export function runTraceOn(trace, edited = {}) {
     if (n.state) { if (n.state.length) g.state(n.id, n.state[0]); else g.state(n.id); } else build[n.op](g, n);
   }
   const got = trace.steps.map((step) => {
-    if (step[0] === "restore") { g = restore(JSON.parse(JSON.stringify(capture(g))), registry); sinks.clear(); return []; }
+    if (step[0] === "restore") { g = restore(JSON.parse(JSON.stringify(capture(g))), registry); sinks.clear(); clock.drop(); return []; }
     const start = g.trace.length;
-    request(step);
+    if (step[0] === "advance") clock.advance(step[1]); else request(step);
     const entries = g.trace.slice(start).map((entry) => [entry.to, entry.from, entry.msgs]);
     return trace.detail === "occurrences" ? occurrences(entries) : entries;
   });
@@ -269,7 +280,8 @@ export const runTrace = (trace, edited) => runTraceOn(trace, edited).got;
 
 // A trace passes when every step matches and nothing more arrives within one turn of the event
 // loop after the last step, which catches a promise or an immediate timer the run started; a
-// timer of a few milliseconds is past this check, and wants a clock the runner owns.
+// host timer of a few milliseconds, started beside the timers an operator is given, is past this
+// check.
 export async function passes(trace, edited) {
   return (await differing(trace, edited)).size === 0;
 }

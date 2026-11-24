@@ -31,8 +31,9 @@
 // apply to the operators with several inputs: not to race, which selects by declared order whatever
 // the terminal, nor to concat, which depends on one source at a time; their own sentences have
 // their own mutants; nor to the higher-order operators, whose inners are attached after the
-// activation. `several values` leaves out sample, derived and switchMap, which read an input's
-// latest value and so do the same with or without the earlier ones.
+// activation. `several values` leaves out sample, derived, switchMap, debounce and
+// auditTime, which read an input's latest value and so do the same with or without the earlier
+// ones.
 //
 // An operator built with the default ERROR policy is never run for an input's ERROR, so its
 // mutants give it the manual policy and send the first ERROR in declared order themselves, as
@@ -74,6 +75,12 @@ const OPERATORS = [
   { module: "gate", ops: ["pause"], head: "export function pausableFn(ctx) {\n", inputs: 2 },
   { module: "higher-order", ops: ["switchMap"], head: "  return (ctx) => {\n", latest: true },
   { module: "higher-order", ops: ["mergeMap", "concatMap", "exhaustMap"], head: "  return (ctx) => {\n" },
+  { module: "time", ops: ["debounce"], head: "      ctx.down(data(candidate));\n    });\n  };\n  const fn = (ctx) => {\n", latest: true },
+  { module: "time", ops: ["throttle"], head: `  checked("throttle", ms);\n  const fn = (ctx) => {\n` },
+  { module: "time", ops: ["auditTime"], head: "    ctx.down(data(candidate));\n  });\n  const fn = (ctx) => {\n", latest: true },
+  { module: "time", ops: ["delay"], head: `    if (item.complete) ctx.down([["COMPLETE"]]);\n  });\n  const fn = (ctx) => {\n` },
+  { module: "time", ops: ["bufferTime"], head: `  checked("bufferTime", ms);\n  const fn = (ctx) => {\n` },
+  { module: "time", ops: ["timeout"], head: `    start(ctx, timers, ms, () => ctx.down([["ERROR", "timeout"]]));\n  };\n  const fn = (ctx) => {\n` },
 ];
 
 // The lines put before a function's body: a head ends where the body starts, before the function
@@ -136,9 +143,9 @@ test("the table holds every operator with an active contract, and no cell goes m
   // An entry that lost its `inputs` or gained a `latest` would drop cells without a failure, so
   // which operators the narrower classes apply to, and how many cells there are, is written here.
   assert.deepEqual(OPERATORS.filter((entry) => entry.inputs).flatMap((entry) => entry.ops), ["sample", "takeUntil", "buffer", "merge", "withLatestFrom", "zip", "derived", "valve", "pause"]);
-  assert.deepEqual(OPERATORS.filter((entry) => entry.latest).flatMap((entry) => entry.ops), ["sample", "derived", "switchMap"]);
+  assert.deepEqual(OPERATORS.filter((entry) => entry.latest).flatMap((entry) => entry.ops), ["sample", "derived", "switchMap", "debounce", "auditTime"]);
   const cells = Object.values(CLASSES).flatMap((kind) => OPERATORS.filter((entry) => applies(kind, entry)));
-  assert.equal(cells.length, 5 * 24 + 21 + 4 * 9);
+  assert.equal(cells.length, 5 * 30 + 25 + 4 * 9);
 });
 
 for (const entry of OPERATORS.filter((item) => item.auto)) {

@@ -7,6 +7,11 @@
 // reference is known to fail, each with why; the test asserts they still fail, so the entry goes
 // when the reference follows the contract. Neither is allowed to a trace of an active contract:
 // the last test fails when one is skipped or listed as a difference.
+//
+// A trace with an advance step is run a second time with the timers that are due at the same
+// instant fired in the other order, and must give the same, receiver by receiver: that order is
+// not part of an expectation (operators/README.md), and neither is which of two nodes' sinks
+// received first.
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -33,6 +38,9 @@ for (const trace of traces) {
       if (!matches(got, trace.expect)) assert.deepEqual(got, trace.expect); // shows the difference
       await new Promise((resolve) => setTimeout(resolve, 0));
       assert.deepEqual(late(), [], "nothing arrives after the last step");
+      if (!trace.steps.some((step) => step[0] === "advance")) return;
+      const other = runTraceOn(trace, {}, { reverse: true }).got;
+      if (!matches(other, got)) assert.deepEqual(other, got, "the same when timers due at the same instant fire in the other order");
     });
   }
 }
@@ -79,6 +87,14 @@ test("the runner refuses what it does not know instead of running something else
   assert.throws(() => runTrace({ ...base, nodes: [base.nodes[0], { id: "x", op: "sample", deps: ["s"] }] }), /sample x takes 2 dependencies, and the trace gives 1/);
   assert.throws(() => runTrace({ ...base, nodes: [base.nodes[0], { id: "x", op: "merge", deps: [] }] }), /merge x takes at least 1 dependencies/);
   assert.throws(() => runTrace({ ...base, nodes: [base.nodes[0], { ...base.nodes[1], deps: "s" }] }), /the deps of node m are a list of node ids/);
+});
+
+test("an advance step takes a positive integer and stands outside a batch, as a restore does; with no timer running it delivers nothing", () => {
+  const base = { detail: "messages", nodes: [{ id: "s", state: [1] }, { id: "m", op: "map", deps: ["s"], args: { f: "double" } }], steps: [["subscribe", "k", "m"]], expect: [[]] };
+  assert.deepEqual(runTrace({ ...base, steps: [["subscribe", "k", "m"], ["advance", 1000], ["set", "s", 2]] }).map((step) => step.length), [1, 0, 1]);
+  for (const ms of [0, -5, 1.5, "100", null]) assert.throws(() => runTrace({ ...base, steps: [["subscribe", "k", "m"], ["advance", ms]] }), /advances by a positive integer/, String(ms));
+  assert.throws(() => runTrace({ ...base, steps: [["subscribe", "k", "m"], ["batch", [["set", "s", 2], ["advance", 100]]]] }), /a batch holds no advance step/);
+  assert.throws(() => runTrace({ ...base, steps: [["subscribe", "k", "m"], ["batch", [["restore"]]]] }), /a batch holds no restore step/);
 });
 
 test("every trace of an active contract is run here and passes: none is skipped or a known difference", () => {
