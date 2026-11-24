@@ -14,6 +14,11 @@ the node local-only) now ends in a refusal at capture. Read
 [HANDOFF-D812-runtime-owners.md](HANDOFF-D812-runtime-owners.md) with this brief; `npm run rules:current`
 prints what is current.
 
+Since 2026-11-23 most rows below are superseded by graphrefly:D818 to D828: R-request-order is at
+revision 7, R-subscription at 5, R-invocation at 4, R-checkpoint at 3, R-node at 4, R-failure at 5,
+R-terminals and R-invalidation at 2, and R-pause and R-restart are in force. Read
+[HANDOFF-B148-runtime-owners.md](HANDOFF-B148-runtime-owners.md) for what a runtime does differently.
+
 The public protocol is the D797 kernel set, activated by
 [graphrefly:D798](../../decisions/decisions.jsonl) and revised the same day (2026-11-10) by
 graphrefly:D799 and graphrefly:D801 (START is the kernel's alone). Read the rules themselves in
