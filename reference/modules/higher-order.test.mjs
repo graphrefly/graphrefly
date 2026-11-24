@@ -160,7 +160,10 @@ test("switchMap: several source values in one wave switch to the last one only",
   assert.deepEqual(values(g, "out"), ["B"]);
 });
 
-test("switchMap: a throwing projector keeps the inner values it forwarded in the same wave, then ERROR (TS D81)", () => {
+// Until 2026-11-23 this module, after TS's D81, sent the inner values of the wave before the ERROR.
+// R-failure drops what a run sent before its function threw, and O-common ends an operator with an
+// input's ERROR without that wave's DATA (the user, 2026-11-23, "都按建议办").
+test("switchMap: a throwing projector ends it with ERROR, and nothing of that wave is sent (R-failure; TS D81 sends the inner values first)", () => {
   const g = createGraph();
   g.state("s", 1);
   // The inner follows s itself, so a write to s reaches the inner and the source in one wave.
@@ -169,7 +172,7 @@ test("switchMap: a throwing projector keeps the inner values it forwarded in the
   g.set("s", 2);
   const tail = g.trace.filter((e) => e.to === "out").map(format).at(-1);
   assert.equal(tail, 'out <- op: [PENDING, ERROR("project boom")]');
-  assert.deepEqual(values(g, "out"), [1, 2], "the inner's 2 was forwarded before the ERROR");
+  assert.deepEqual(values(g, "out"), [1], "the inner's 2 is not sent");
 });
 
 // ---- mergeMap ----------------------------------------------------------------
@@ -274,7 +277,7 @@ test("mergeMap: source ERROR, inner ERROR and a throwing projector each end it w
   }
 });
 
-test("mergeMap: inner DATA in the same array as its ERROR is forwarded before the ERROR (TS)", () => {
+test("mergeMap: inner DATA in the wave of its ERROR is not sent (O-common; TS sends it first)", () => {
   const g = createGraph();
   g.state("s");
   const { made, def } = subjects();
@@ -282,7 +285,7 @@ test("mergeMap: inner DATA in the same array as its ERROR is forwarded before th
   g.subscribe("out", "op");
   g.set("s", 1);
   made[0].ctx.down([["DATA", 10], ["ERROR", "inner boom"]]);
-  assert.deepEqual(values(g, "out"), [10]);
+  assert.deepEqual(values(g, "out"), []);
   assert.deepEqual(g.get("op").ended, ["ERROR", "inner boom"]);
 });
 
@@ -392,13 +395,13 @@ test("mergeMap: a fresh activation starts with no inner", () => {
   assert.equal(g.get("b").active, false);
 });
 
-test("mergeMap: a throwing projector keeps the inner values forwarded in the same wave, then ERROR (TS D81)", () => {
+test("mergeMap: a throwing projector ends it with ERROR, and nothing of that wave is sent (R-failure; TS D81 sends the inner values first)", () => {
   const g = createGraph();
   g.state("s", 1);
   mergeMap(g, "op", "s", (v) => { if (v === 2) throw new Error("project boom"); return follow("s"); });
   g.subscribe("out", "op");
   g.set("s", 2);
-  assert.deepEqual(values(g, "out"), [1, 2]);
+  assert.deepEqual(values(g, "out"), [1]);
   assert.deepEqual(g.get("op").ended, ["ERROR", "project boom"]);
 });
 

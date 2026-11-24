@@ -9,7 +9,6 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { isDeepStrictEqual } from "node:util";
 import { createGraph } from "../kernel/kernel.mjs";
-import { higherOrderRecipes, mergeMap, relay, switchMap } from "../modules/higher-order.mjs";
 import { capture, restore } from "../modules/checkpoint.mjs";
 import * as notifier from "./notifier.mjs";
 import * as transform from "./transform.mjs";
@@ -19,9 +18,10 @@ import * as select from "./select.mjs";
 import * as combine from "./combine.mjs";
 import * as state from "./state.mjs";
 import * as gate from "./gate.mjs";
+import * as higherOrder from "./higher-order.mjs";
 
 // The operator modules a trace is run on; a mutant test passes an edited copy of one.
-const MODULES = { notifier, transform, accumulate, compare, select, combine, state, gate };
+const MODULES = { notifier, transform, accumulate, compare, select, combine, state, gate, "higher-order": higherOrder };
 
 const read = (name) => readFileSync(fileURLToPath(new URL(`../../operators/${name}`, import.meta.url)), "utf8")
   .split("\n").filter(Boolean).map((line) => JSON.parse(line));
@@ -54,14 +54,14 @@ const CALLBACK = ["into", "invalidates", "returns", "throwsOn", "nothingOn"];
 const ARGS = {
   map: ["f", ...CALLBACK], tap: ["f", ...CALLBACK], derived: ["f", ...CALLBACK], filter: ["p", ...CALLBACK], takeWhile: ["p", ...CALLBACK],
   first: ["p", ...CALLBACK], last: ["p", ...CALLBACK], distinctUntilChanged: ["equal", ...CALLBACK], scan: ["f", "seed", ...CALLBACK], reduce: ["f", "seed", ...CALLBACK],
-  take: ["n"], skip: ["n"], bufferCount: ["n"], once: ["value"], switchMap: ["project"], mergeMap: ["project"],
+  take: ["n"], skip: ["n"], bufferCount: ["n"], once: ["value"], switchMap: ["project", "throwsOn", "into"], mergeMap: ["project", "capacity", "throwsOn", "into"], concatMap: ["project", "throwsOn", "into"], exhaustMap: ["project", "throwsOn", "into"],
 };
 // How many dependencies each kind of node takes: exactly so many, or [at least]. A node written
 // with more would be built on its first ones only, and the trace would run another graph than it
 // shows.
 const DEPS = {
   map: 1, filter: 1, tap: 1, scan: 1, reduce: 1, distinctUntilChanged: 1, pairwise: 1, take: 1, skip: 1, takeWhile: 1, first: 1, last: 1, bufferCount: 1,
-  switchMap: 1, mergeMap: 1, arrays: 1, sample: 2, takeUntil: 2, buffer: 2, valve: 2, pause: 2, withLatestFrom: [2], merge: [1], zip: [1], concat: [1], race: [1], derived: [1], empty: 0, once: 0,
+  switchMap: 1, mergeMap: 1, concatMap: 1, exhaustMap: 1, arrays: 1, sample: 2, takeUntil: 2, buffer: 2, valve: 2, pause: 2, withLatestFrom: [2], merge: [1], zip: [1], concat: [1], race: [1], derived: [1], empty: 0, once: 0,
 };
 const checkNode = (node) => {
   for (const key of Object.keys(node)) if (!["id", "state", "op", "deps", "args"].includes(key)) throw new Error(`the runner does not know the key ${key} of node ${node.id}`);
@@ -88,9 +88,23 @@ function callback(args, g) {
   };
 }
 const callbackRecipe = (args) => ({ ref: "trace.callback", config: Object.fromEntries(Object.entries(args).filter(([key]) => key !== "seed")) });
-const project = (args) => {
+// A higher-order project is `follow`: the inner follows the node its argument names. As a callback
+// does, with throwsOn it throws when it is given that value, before the call is recorded, and with
+// into it writes each value it is given to that state. It comes with a recipe, as its inner does,
+// so a graph that holds the operator can be captured.
+const followConfig = (args) => {
   if (args?.project !== "follow") throw new Error(`the runner has no projector named ${args?.project}`);
-  return (v) => ({ deps: [v], fn: relay });
+  const config = Object.fromEntries(["throwsOn", "into"].filter((key) => key in args).map((key) => [key, args[key]]));
+  return Object.keys(config).length ? config : null;
+};
+const followFn = (relay, config, g) => (v) => {
+  if (config && "throwsOn" in config && isDeepStrictEqual(v, config.throwsOn)) throw new Error("boom");
+  if (config && "into" in config) g.set(config.into, v);
+  return { deps: [v], fn: relay, recipe: { ref: "higher.relay" } };
+};
+const higher = (mods, name, g, n) => {
+  const config = followConfig(n.args);
+  return mods["higher-order"][name](g, n.id, n.deps[0], followFn(mods["higher-order"].relay, config, g), { recipe: { ref: "trace.follow", config }, ...("capacity" in n.args && { capacity: n.args.capacity }) });
 };
 const builders = (mods) => ({
   derived: (g, n) => mods.state.derived(g, n.id, n.deps, callback(n.args, g), { recipe: callbackRecipe(n.args) }),
@@ -101,8 +115,10 @@ const builders = (mods) => ({
   race: (g, n) => mods.combine.race(g, n.id, n.deps),
   valve: (g, n) => mods.gate.valve(g, n.id, n.deps[0], n.deps[1]),
   pause: (g, n) => mods.gate.pause(g, n.id, n.deps[0], n.deps[1]),
-  switchMap: (g, n) => switchMap(g, n.id, n.deps[0], project(n.args)),
-  mergeMap: (g, n) => mergeMap(g, n.id, n.deps[0], project(n.args)),
+  switchMap: (g, n) => higher(mods, "switchMap", g, n),
+  mergeMap: (g, n) => higher(mods, "mergeMap", g, n),
+  concatMap: (g, n) => higher(mods, "concatMap", g, n),
+  exhaustMap: (g, n) => higher(mods, "exhaustMap", g, n),
   map: (g, n) => mods.transform.map(g, n.id, n.deps[0], callback(n.args, g), { recipe: callbackRecipe(n.args) }),
   filter: (g, n) => mods.transform.filter(g, n.id, n.deps[0], callback(n.args, g), { recipe: callbackRecipe(n.args) }),
   tap: (g, n) => mods.transform.tap(g, n.id, n.deps[0], callback(n.args, g), { recipe: callbackRecipe(n.args) }),
@@ -139,7 +155,7 @@ const arraysFn = (ctx) => {
 };
 const emptyFn = (ctx) => ctx.down([["COMPLETE"]]);
 const onceFn = ({ value }) => (ctx) => ctx.down([["DATA", value]]); // sends as it is activated
-const helperRecipes = { "trace.arrays": () => arraysFn, "trace.empty": () => emptyFn, "trace.once": onceFn, "trace.callback": (config, at) => callback(config, at.g) };
+const helperRecipes = (mods) => ({ "trace.arrays": () => arraysFn, "trace.empty": () => emptyFn, "trace.once": onceFn, "trace.callback": (config, at) => callback(config, at.g), "trace.follow": (config, at) => followFn(mods["higher-order"].relay, config, at.g) });
 
 const STEPS = new Set(["subscribe", "unsubscribe", "set", "invalidate", "complete", "error", "batch", "restore", "replace"]);
 const flat = (steps) => steps.flatMap((step) => (step[0] === "batch" ? [step, ...flat(step[1])] : [step]));
@@ -210,7 +226,7 @@ export function matches(got, expect) {
 export function runTraceOn(trace, edited = {}) {
   const mods = { ...MODULES, ...edited };
   const build = builders(mods);
-  const registry = { ...mods.notifier.notifierRecipes, ...mods.transform.transformRecipes, ...mods.accumulate.accumulateRecipes, ...mods.compare.compareRecipes, ...mods.select.selectRecipes, ...mods.combine.combineRecipes, ...mods.state.stateRecipes, ...mods.gate.gateRecipes, ...higherOrderRecipes, ...helperRecipes };
+  const registry = { ...mods.notifier.notifierRecipes, ...mods.transform.transformRecipes, ...mods.accumulate.accumulateRecipes, ...mods.compare.compareRecipes, ...mods.select.selectRecipes, ...mods.combine.combineRecipes, ...mods.state.stateRecipes, ...mods.gate.gateRecipes, ...mods["higher-order"].higherOrderRecipes, ...helperRecipes(mods) };
   let g = createGraph();
   const sinks = new Set();
   const request = (step) => {

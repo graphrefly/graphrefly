@@ -439,10 +439,20 @@ One operator for both, as TS's `mapOperator` (D47/D81). How it got here, all on 
 sourceId ──► id ◄── id/inner, id/inner1, ... ◄── (each projected inner's dependencies)
 ```
 
+Since 2026-11-23 the function is [../operators/higher-order.mjs](../operators/higher-order.mjs), written
+from the operator contracts (graphrefly:D813), which also holds `concatMap` and `exhaustMap`; this
+module gives the same operators, its `mergeMap` taking the capacity as `concurrent`. Three things
+changed with it, each as the contracts or O-common say and as the user decided that day: an ERROR of
+the source or of a held inner ends the operator without that wave's DATA, and a throwing projector
+without what the run had sent (R-failure), where TS's D81 sends the inner values first; a switch sends
+nothing of the inner it supersedes in the switching wave (the review's Q2, 2026-11-18); and a source
+INVALIDATE releases a switch's selection. Three tests here were rewritten for the first. What follows
+describes the module as it was built.
+
 `switchMap(g, id, sourceId, project)` and `mergeMap(g, id, sourceId, project, { concurrent })` return
 `{ id }`. `id` depends on the source and on every live inner and forwards their values. It completes
 once the source has completed and no inner is live, and ends with ERROR on a source or inner ERROR or a
-throwing projector, after the inner values it forwarded in that wave. Each change of the inner set is
+throwing projector, after the inner values it forwarded in that wave (until 2026-11-23: see below). Each change of the inner set is
 one `ctx.rewire`, asked for during the wave and run after it (K8), as TS's `rewireNext` is drained at
 the boundary; an added inner's value arrives as an ordinary input wave. The function finds its
 dependencies by `ctx.deps[i].id`. When `id` deactivates, it goes back to no inner: the rewire belongs

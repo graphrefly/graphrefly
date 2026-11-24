@@ -15,8 +15,8 @@ npm run operators:current -- --review            # missing traces, open question
 In force since 2026-11-20: the `common` reading and the families `notifier` (sample, takeUntil, buffer,
 bufferCount), `transform` (map, filter, tap), `accumulate` (scan, reduce), `compare`
 (distinctUntilChanged, pairwise), `select` (take, skip, takeWhile, first, last), `combine` (merge,
-withLatestFrom, zip, concat, race) and `state` (derived); since 2026-11-23 the family `gate` (valve,
-pause). Every other contract is a draft until its
+withLatestFrom, zip, concat, race) and `state` (derived); since 2026-11-23 the families `gate` (valve,
+pause) and `higher-order` (switchMap, mergeMap, concatMap, exhaustMap). Every other contract is a draft until its
 family is activated. A draft is the maintainer's selection in
 [DS-20](../sessions/active/SESSION-operator-walkthrough.md), as revised by Q1 to Q3 of its
 [independent review](../sessions/active/PROPOSAL-DS20-operator-review-reconciliation.md), written in
@@ -31,7 +31,7 @@ draft: an active contract's traces pass on the reference kernel, which is not a 
 | [traces.jsonl](traces.jsonl) | The canonical traces; each exists once, here |
 | [../authority/operators.mjs](../authority/operators.mjs) | The derived view and the link checks, run by `npm run authority:check` |
 | [../reference/operators/traces.test.mjs](../reference/operators/traces.test.mjs) | Runs the traces on the reference kernel, for the operators the reference has |
-| [../reference/operators/](../reference/operators/) | Operators written from their contracts over the reference kernel, each with its recipe, so that their traces are run and not only read: [notifier.mjs](../reference/operators/notifier.mjs), [transform.mjs](../reference/operators/transform.mjs), [accumulate.mjs](../reference/operators/accumulate.mjs), [compare.mjs](../reference/operators/compare.mjs), [select.mjs](../reference/operators/select.mjs), [combine.mjs](../reference/operators/combine.mjs), [state.mjs](../reference/operators/state.mjs) and [gate.mjs](../reference/operators/gate.mjs), whose two contracts are drafts until the family is activated. Each has a `*.mutants.test.mjs` beside it: edits of the module, each naming the contract sentence it breaks, and each of which a trace must notice. [classes.mutants.test.mjs](../reference/operators/classes.mutants.test.mjs) asks the same by class, for the situations operators meet whatever they do: a restore after an input changed or ended, activation on an input that has completed, ended with ERROR or holds several values, and, for the operators with several inputs that have no rule of their own for it, two terminals in one wave or before activation. A class that passes shows the situation is traced for each operator, not that every sentence is held in it |
+| [../reference/operators/](../reference/operators/) | Operators written from their contracts over the reference kernel, each with its recipe, so that their traces are run and not only read: [notifier.mjs](../reference/operators/notifier.mjs), [transform.mjs](../reference/operators/transform.mjs), [accumulate.mjs](../reference/operators/accumulate.mjs), [compare.mjs](../reference/operators/compare.mjs), [select.mjs](../reference/operators/select.mjs), [combine.mjs](../reference/operators/combine.mjs), [state.mjs](../reference/operators/state.mjs), [gate.mjs](../reference/operators/gate.mjs) and [higher-order.mjs](../reference/operators/higher-order.mjs). Each has a `*.mutants.test.mjs` beside it: edits of the module, each naming the contract sentence it breaks, and each of which a trace must notice. [classes.mutants.test.mjs](../reference/operators/classes.mutants.test.mjs) asks the same by class, for the situations operators meet whatever they do: a restore after an input changed or ended, activation on an input that has completed, ended with ERROR or holds several values, and, for the operators with several inputs that have no rule of their own for it, two terminals in one wave or before activation. A class that passes shows the situation is traced for each operator, not that every sentence is held in it |
 
 ## A contract
 
@@ -146,7 +146,8 @@ equality the incoming value, for a derived its last dependency's) to that state,
 the state shows the calls; `invalidates` asks the graph to invalidate that state at each call, a
 request that waits for the wave to end; `returns` replaces what the callback returns; `throwsOn`
 makes it throw, before the call is recorded, and `nothingOn` makes it return no value, when it is
-given that value. A higher-order `project` is `follow`, which returns the node its argument names.
+given that value. A higher-order `project` is `follow`, which returns the node its argument names; it takes `throwsOn`
+and `into` as a callback does, and `capacity` is a mergeMap's.
 The runner knows which options each operator takes and refuses any other key of a node or of its
 args.
 

@@ -30,8 +30,9 @@
 // must then give something else at a sink of a node of that operator. The classes on two terminals
 // apply to the operators with several inputs: not to race, which selects by declared order whatever
 // the terminal, nor to concat, which depends on one source at a time; their own sentences have
-// their own mutants. `several values` leaves out sample and derived, which read an input's latest
-// value and so do the same with or without the earlier ones.
+// their own mutants; nor to the higher-order operators, whose inners are attached after the
+// activation. `several values` leaves out sample, derived and switchMap, which read an input's
+// latest value and so do the same with or without the earlier ones.
 //
 // An operator built with the default ERROR policy is never run for an input's ERROR, so its
 // mutants give it the manual policy and send the first ERROR in declared order themselves, as
@@ -71,6 +72,8 @@ const OPERATORS = [
   { module: "state", ops: ["derived"], head: "const derivedFn = (f) => (ctx) => {\n", inputs: 2, latest: true, auto: manual(`recipe !== undefined ? { recipe: { ref: "operators.derived", config: { f: recipe } } } : {});`, `{ terminal: { error: "manual" }, ...(recipe !== undefined ? { recipe: { ref: "operators.derived", config: { f: recipe } } } : {}) });`) },
   { module: "gate", ops: ["valve"], head: "function valveFn(ctx) {\n", inputs: 2 },
   { module: "gate", ops: ["pause"], head: "export function pausableFn(ctx) {\n", inputs: 2 },
+  { module: "higher-order", ops: ["switchMap"], head: "  return (ctx) => {\n", latest: true },
+  { module: "higher-order", ops: ["mergeMap", "concatMap", "exhaustMap"], head: "  return (ctx) => {\n" },
 ];
 
 // The lines put before a function's body: a head ends where the body starts, before the function
@@ -133,9 +136,9 @@ test("the table holds every operator with an active contract, and no cell goes m
   // An entry that lost its `inputs` or gained a `latest` would drop cells without a failure, so
   // which operators the narrower classes apply to, and how many cells there are, is written here.
   assert.deepEqual(OPERATORS.filter((entry) => entry.inputs).flatMap((entry) => entry.ops), ["sample", "takeUntil", "buffer", "merge", "withLatestFrom", "zip", "derived", "valve", "pause"]);
-  assert.deepEqual(OPERATORS.filter((entry) => entry.latest).flatMap((entry) => entry.ops), ["sample", "derived"]);
+  assert.deepEqual(OPERATORS.filter((entry) => entry.latest).flatMap((entry) => entry.ops), ["sample", "derived", "switchMap"]);
   const cells = Object.values(CLASSES).flatMap((kind) => OPERATORS.filter((entry) => applies(kind, entry)));
-  assert.equal(cells.length, 5 * 22 + 20 + 4 * 9);
+  assert.equal(cells.length, 5 * 24 + 21 + 4 * 9);
 });
 
 for (const entry of OPERATORS.filter((item) => item.auto)) {

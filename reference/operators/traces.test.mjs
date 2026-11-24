@@ -13,7 +13,6 @@ import assert from "node:assert/strict";
 import { contracts, matches, passes, runTrace, runTraceOn, traces, unrunnable } from "./run-trace.mjs";
 
 const KNOWN_DIFFERENCES = {
-  "OT-20": "reference/modules/higher-order.mjs sends the superseded inner's DATA before it switches; O-switchMap@1 (Q2, 2026-11-18) applies the new selection first",
 };
 
 const notRun = new Map(); // trace id -> why it is not a plain pass
