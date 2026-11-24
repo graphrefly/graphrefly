@@ -21,9 +21,10 @@ import * as state from "./state.mjs";
 import * as gate from "./gate.mjs";
 import * as higherOrder from "./higher-order.mjs";
 import * as time from "./time.mjs";
+import * as recover from "./recover.mjs";
 
 // The operator modules a trace is run on; a mutant test passes an edited copy of one.
-const MODULES = { notifier, transform, accumulate, compare, select, combine, state, gate, "higher-order": higherOrder, time };
+const MODULES = { notifier, transform, accumulate, compare, select, combine, state, gate, "higher-order": higherOrder, time, recover };
 
 const read = (name) => readFileSync(fileURLToPath(new URL(`../../operators/${name}`, import.meta.url)), "utf8")
   .split("\n").filter(Boolean).map((line) => JSON.parse(line));
@@ -58,13 +59,14 @@ const ARGS = {
   first: ["p", ...CALLBACK], last: ["p", ...CALLBACK], distinctUntilChanged: ["equal", ...CALLBACK], scan: ["f", "seed", ...CALLBACK], reduce: ["f", "seed", ...CALLBACK],
   take: ["n"], skip: ["n"], bufferCount: ["n"], once: ["value"], switchMap: ["project", "throwsOn", "into"], mergeMap: ["project", "capacity", "throwsOn", "into"], concatMap: ["project", "throwsOn", "into"], exhaustMap: ["project", "throwsOn", "into"],
   debounce: ["ms"], throttle: ["ms"], auditTime: ["ms"], delay: ["ms"], bufferTime: ["ms"], timeout: ["ms"],
+  catchError: ["handler", "to", "into", "throwsOn"], retry: ["of", "maxAttempts", "initialMs", "factor", "maxMs"], repeat: ["of", "rounds", "retry"],
 };
 // How many dependencies each kind of node takes: exactly so many, or [at least]. A node written
 // with more would be built on its first ones only, and the trace would run another graph than it
 // shows.
 const DEPS = {
   map: 1, filter: 1, tap: 1, scan: 1, reduce: 1, distinctUntilChanged: 1, pairwise: 1, take: 1, skip: 1, takeWhile: 1, first: 1, last: 1, bufferCount: 1,
-  switchMap: 1, mergeMap: 1, concatMap: 1, exhaustMap: 1, debounce: 1, throttle: 1, auditTime: 1, delay: 1, bufferTime: 1, timeout: 1, arrays: 1, sample: 2, takeUntil: 2, buffer: 2, valve: 2, pause: 2, withLatestFrom: [2], merge: [1], zip: [1], concat: [1], race: [1], derived: [1], empty: 0, once: 0,
+  switchMap: 1, mergeMap: 1, concatMap: 1, exhaustMap: 1, debounce: 1, throttle: 1, auditTime: 1, delay: 1, bufferTime: 1, timeout: 1, catchError: 1, retry: [1], repeat: [1], arrays: 1, sample: 2, takeUntil: 2, buffer: 2, valve: 2, pause: 2, withLatestFrom: [2], merge: [1], zip: [1], concat: [1], race: [1], derived: [1], empty: 0, once: 0,
 };
 const checkNode = (node) => {
   for (const key of Object.keys(node)) if (!["id", "state", "op", "deps", "args"].includes(key)) throw new Error(`the runner does not know the key ${key} of node ${node.id}`);
@@ -111,7 +113,39 @@ const higher = (mods, name, g, n) => {
 };
 const TIMED = ["debounce", "throttle", "auditTime", "delay", "bufferTime", "timeout"];
 // `timers` are the run's clock's, which the time operators are given.
-const builders = (mods, timers) => ({
+// A catchError's handler is `follow`: it returns the node its `to` names, whatever the error. It
+// takes `into`, which writes the error it is called with to that state, and `throwsOn`, which
+// makes it throw when it is called with that error, after the call is recorded, so that a trace
+// shows how often a handler that throws was called.
+const handlerConfig = (n) => {
+  if (n.args?.handler !== "follow") throw new Error(`the runner has no handler named ${n.args?.handler}`);
+  if (typeof n.args.to !== "string") throw new Error(`the handler of catchError ${n.id} follows the node its \`to\` names`);
+  return Object.fromEntries(["to", "into", "throwsOn"].filter((key) => key in n.args).map((key) => [key, n.args[key]]));
+};
+const handlerFn = (relay, config, g) => (error) => {
+  if ("into" in config) g.set(config.into, error);
+  if ("throwsOn" in config && isDeepStrictEqual(error, config.throwsOn)) throw new Error("boom");
+  return { deps: [config.to], fn: relay, recipe: { ref: "recover.relay" } };
+};
+// The inner of a retry or a repeat is one operator of the set over the node's dependencies, named
+// under `of`: { op, args? }. Its builder runs on a graph whose node() only takes the definition.
+const INNER_REFUSED = new Set(["retry", "repeat", "catchError", "switchMap", "mergeMap", "concatMap", "exhaustMap", "arrays", "empty", "once"]);
+const innerOf = (all, g, n) => {
+  const of = n.args?.of;
+  if (!of || typeof of.op !== "string" || !all[of.op] || INNER_REFUSED.has(of.op)) throw new Error(`${n.op} ${n.id} names its inner under of: { op, args }, an operator of one node`);
+  for (const key of Object.keys(of)) if (!["op", "args"].includes(key)) throw new Error(`the runner does not know the key ${key} of the inner of ${n.id}`);
+  const spec = { id: `${n.id}/inner`, op: of.op, deps: n.deps, ...(of.args !== undefined && { args: of.args }) };
+  checkNode(spec);
+  const made = [];
+  all[of.op](Object.create(g, { node: { value: (id, deps, fn, options = {}) => { made.push({ deps, fn, options }); } } }), spec);
+  if (made.length !== 1) throw new Error(`the inner of ${n.op} ${n.id} is one node, and ${of.op} builds ${made.length}`);
+  return made[0];
+};
+const policyArgs = (args) => Object.fromEntries(["maxAttempts", "initialMs", "factor", "maxMs"].filter((key) => key in args).map((key) => [key, args[key]]));
+const builders = (mods, timers) => { const all = {
+  catchError: (g, n) => { const config = handlerConfig(n); return mods.recover.catchError(g, n.id, n.deps[0], handlerFn(mods.recover.relay, config, g), { recipe: { ref: "trace.handler", config } }); },
+  retry: (g, n) => mods.recover.retry(g, n.id, innerOf(all, g, n), policyArgs(n.args), { timers }),
+  repeat: (g, n) => mods.recover.repeat(g, n.id, innerOf(all, g, n), n.args.rounds, { retry: n.args.retry, timers }),
   ...Object.fromEntries(TIMED.map((name) => [name, (g, n) => mods.time[name](g, n.id, n.deps[0], n.args.ms, { timers })])),
   derived: (g, n) => mods.state.derived(g, n.id, n.deps, callback(n.args, g), { recipe: callbackRecipe(n.args) }),
   merge: (g, n) => mods.combine.merge(g, n.id, n.deps),
@@ -146,7 +180,7 @@ const builders = (mods, timers) => ({
   arrays: (g, n) => g.node(n.id, n.deps, arraysFn, { recipe: { ref: "trace.arrays", config: null } }),
   empty: (g, n) => g.node(n.id, [], emptyFn, { recipe: { ref: "trace.empty", config: null } }),
   once: (g, n) => g.node(n.id, [], onceFn(n.args), { recipe: { ref: "trace.once", config: n.args } }),
-});
+}; return all; };
 // arrays: each element of its source's value is one array it sends, in one run: a list is that
 // list as DATA, "INVALIDATE" and "COMPLETE" are those messages, and { error } is an ERROR.
 const arraysFn = (ctx) => {
@@ -161,7 +195,7 @@ const arraysFn = (ctx) => {
 };
 const emptyFn = (ctx) => ctx.down([["COMPLETE"]]);
 const onceFn = ({ value }) => (ctx) => ctx.down([["DATA", value]]); // sends as it is activated
-const helperRecipes = (mods) => ({ "trace.arrays": () => arraysFn, "trace.empty": () => emptyFn, "trace.once": onceFn, "trace.callback": (config, at) => callback(config, at.g), "trace.follow": (config, at) => followFn(mods["higher-order"].relay, config, at.g) });
+const helperRecipes = (mods) => ({ "trace.arrays": () => arraysFn, "trace.empty": () => emptyFn, "trace.once": onceFn, "trace.callback": (config, at) => callback(config, at.g), "trace.handler": (config, at) => handlerFn(mods.recover.relay, config, at.g), "trace.follow": (config, at) => followFn(mods["higher-order"].relay, config, at.g) });
 
 const STEPS = new Set(["subscribe", "unsubscribe", "set", "invalidate", "complete", "error", "batch", "restore", "replace", "advance"]);
 const flat = (steps) => steps.flatMap((step) => (step[0] === "batch" ? [step, ...flat(step[1])] : [step]));
@@ -236,7 +270,7 @@ export function runTraceOn(trace, edited = {}, { reverse = false } = {}) {
   const mods = { ...MODULES, ...edited };
   const clock = createClock({ reverse });
   const build = builders(mods, clock.timers);
-  const registry = { ...mods.time.timeRecipes(clock.timers), ...mods.notifier.notifierRecipes, ...mods.transform.transformRecipes, ...mods.accumulate.accumulateRecipes, ...mods.compare.compareRecipes, ...mods.select.selectRecipes, ...mods.combine.combineRecipes, ...mods.state.stateRecipes, ...mods.gate.gateRecipes, ...mods["higher-order"].higherOrderRecipes, ...helperRecipes(mods) };
+  const registry = { ...mods.time.timeRecipes(clock.timers), ...mods.recover.recoverRecipes(clock.timers), ...mods.notifier.notifierRecipes, ...mods.transform.transformRecipes, ...mods.accumulate.accumulateRecipes, ...mods.compare.compareRecipes, ...mods.select.selectRecipes, ...mods.combine.combineRecipes, ...mods.state.stateRecipes, ...mods.gate.gateRecipes, ...mods["higher-order"].higherOrderRecipes, ...helperRecipes(mods) };
   let g = createGraph();
   const sinks = new Set();
   const request = (step) => {

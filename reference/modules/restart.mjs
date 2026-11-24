@@ -1,6 +1,8 @@
 import { assertLocalName } from "../kernel/kernel.mjs";
 
 // Restart as a module over the reference kernel (DS-17 O7). Non-normative.
+// The owner itself is in reference/operators/recover.mjs since 2026-11-24, where retry and repeat
+// are built on it; this module adds the handle of an outside restart request.
 //
 // One owner node `id` faces downstream for good. What may end and be restarted lives
 // inside it as an owned inner node at a fixed path, `${id}/inner`. A restart replaces that
@@ -46,7 +48,8 @@ import { assertLocalName } from "../kernel/kernel.mjs";
 // again round after round: under the inner's auto policies, when every dependency has ended or
 // one has ended with ERROR.
 
-import { retryDelayMs, retryPolicy } from "./resilience.mjs";
+import { owned, recoverRecipes } from "../operators/recover.mjs";
+import { retryPolicy } from "./resilience.mjs";
 
 // `fn` is the inner's function. With `recipe`, a recipe { ref, config } that builds it, the inner
 // and the owner carry their recipes and a checkpoint can restore them (F6, 2026-11-10);
@@ -55,20 +58,7 @@ import { retryDelayMs, retryPolicy } from "./resilience.mjs";
 // restartableOf(g, id) gives the handle.
 export function restartable(g, id, { deps, fn, recipe, rounds = 1, retry = retryPolicy() }) {
   assertLocalName(id);
-  deps = [...deps]; // its own list: a caller that changes its list afterwards changes nothing here
-  const innerId = `${id}/inner`;
-  const restartId = `${id}/restart`;
-  g.state(restartId); // no value until the first request, so activation sees none
-  g.node(innerId, deps, fn, recipe ? { recipe } : {});
-  // The owner holds the inner's dependencies too, ahead of the inner, so an inner that ends does
-  // not release the last hold on them: upstream stays active across attempts (C5a, 2026-11-10).
-  // The owner reads only the inner and the restart state.
-  const config = { deps, rounds, retry };
-  const built = owner(config, { g, id });
-  g.node(id, [...deps, innerId, restartId], built.fn, {
-    terminal: { complete: "manual", error: "manual" }, setup: built.setup,
-    ...(recipe && { recipe: { ref: "restart.owner", config } }),
-  });
+  owned(g, id, { deps, fn, options: recipe ? { recipe } : {} }, { rounds, retry });
   return restartableOf(g, id);
 }
 
@@ -78,92 +68,6 @@ export function restartableOf(g, id) {
   return { id, innerId: `${id}/inner`, restart() { g.set(restartId, (n) => (n ?? 0) + 1); } };
 }
 
-function owner({ deps, rounds, retry }, { g, id }) {
-  const kernel = g;
-  const innerId = `${id}/inner`;
-  const restartId = `${id}/restart`;
-  const ends = () => deps.map((d) => kernel.get(d).ended);
-  const wouldEndAtOnce = () => {
-    const e = ends();
-    return (e.length > 0 && e.every(Boolean)) || e.some((t) => t?.[0] === "ERROR");
-  };
-  // A new instance of the inner's own definition (R-restart), its dependencies included. Until
-  // 2026-11-23 the replace took the list the caller had given, which the caller could still change:
-  // the next attempt's inner then depended on nodes the owner did not hold.
-  const renew = () => {
-    const d = kernel.definition(innerId);
-    kernel.replace(innerId, d.deps, d.fn, { setup: d.setup, recipe: d.recipe });
-  };
-  // Starts the attempt st.attempt after `delay`: at once without one, else when a timer ends,
-  // unless the owner's lifetime has closed or another attempt has started by then. `end` is the
-  // terminal the owner ends with when no attempt can be made. While the timer runs, st.waiting
-  // records the retry, so a checkpoint saves it (R-checkpoint: pending work is state).
-  const schedule = (ctx, st, delay, end) => {
-    const { signal } = ctx;
-    const { attempt } = st;
-    const replace = () => {
-      if (signal.aborted || st.attempt !== attempt) return;
-      st.waiting = false;
-      // An upstream may have ended while a retry waited; the ended inner no longer hears it, so
-      // the check is made again here. Then no attempt is made and the owner ends with the inner.
-      if (wouldEndAtOnce()) { if (end) ctx.down([end]); return; }
-      renew();
-    };
-    if (delay > 0) {
-      st.waiting = true;
-      // The timer goes with the lifetime: a pending retry is dropped at close, and its timer
-      // cleared then rather than left to fire into nothing (2026-11-10).
-      const timer = setTimeout(replace, delay);
-      signal.addEventListener("abort", () => clearTimeout(timer), { once: true });
-    } else replace();
-  };
-  const fn = (ctx) => {
-    const inner = ctx.deps.find((d) => d.id === innerId);
-    const request = ctx.deps.find((d) => d.id === restartId);
-    // `seen` is the last request served; `attempt` counts the replaces this lifetime asked for.
-    // No request yet counts as 0, the number the first one follows, so the state stays JSON.
-    const requested = request.value ?? 0;
-    const st = ctx.state.get();
-    for (const w of inner.waves) if (w.length) ctx.down(w.map((v) => ["DATA", v]));
-
-    const end = inner.terminal;
-    let delay = 0;
-    // No attempt when a fresh inner would end at once on its dependencies' snapshots (P5): under
-    // its auto policies, when every dependency has ended or one has ended with ERROR. Then the
-    // owner ends with the inner. One ended dependency among open ones does not stop a retry
-    // (fixed 2026-11-09 after a review found a completed config blocking every retry).
-    const restartable = !wouldEndAtOnce();
-    let again = restartable && requested !== st.seen;
-    st.seen = requested;
-    if (restartable && !again && end?.[0] === "COMPLETE" && st.round < rounds) { st.round += 1; st.failures = 0; again = true; }
-    if (restartable && !again && end?.[0] === "ERROR") {
-      const wait = retryDelayMs(retry, st.failures + 1);
-      if (wait !== undefined) { st.failures += 1; delay = wait; again = true; }
-    }
-    if (!again) { if (end) ctx.down([end]); return; }
-
-    st.attempt += 1;
-    schedule(ctx, st, delay, end);
-  };
-  const setup = (ctx) => {
-    // At each activation, restored ones included, a request already in the restart state is old
-    // (moved here on 2026-11-10: a restored owner, whose private state came back, served one).
-    const request = ctx.deps.find((d) => d.id === restartId);
-    ctx.state.set({ ...(ctx.state.get() ?? { round: 1, failures: 0, attempt: 0, waiting: false }), seen: request.value ?? 0 });
-    // A restored owner that recorded a waiting retry (D812 (2), decided by the user 2026-11-18): the
-    // pending retry is state, so its delay starts again in full, for the same attempt and without
-    // counting another failure; both numbers came back with the private state. When it ends, the
-    // retry is made or dropped as any delayed retry is. Until D812 the inner was renewed here at once
-    // (F6), which kept the failure count and skipped the backoff. The record, not the inner's being
-    // ended, says a retry was waiting: the inner is activated before this setup runs, so one that
-    // fails only now is ended here too, and its failure is the function's to count (QA 2026-11-19).
-    const st = ctx.state.get();
-    // A fresh activation has no record of one: its state starts with waiting false.
-    if (st.waiting) schedule(ctx, st, retryDelayMs(retry, st.failures), kernel.get(innerId).ended);
-    // Unless the owner itself has ended for good, its next activation starts a fresh inner.
-    return () => { if (!kernel.get(id).ended && kernel.get(innerId).ended) renew(); };
-  };
-  return { fn, setup };
-}
-
-export const restartRecipes = Object.freeze({ "restart.owner": owner });
+// The owner runs its retry delays on the host's timers here; an operator that is given timers of
+// its own (reference/operators/recover.mjs) brings a registry bound to them.
+export const restartRecipes = Object.freeze({ "restart.owner": recoverRecipes()["restart.owner"] });

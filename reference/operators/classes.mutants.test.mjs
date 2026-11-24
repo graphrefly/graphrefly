@@ -81,6 +81,8 @@ const OPERATORS = [
   { module: "time", ops: ["delay"], head: `    if (item.complete) ctx.down([["COMPLETE"]]);\n  });\n  const fn = (ctx) => {\n` },
   { module: "time", ops: ["bufferTime"], head: `  checked("bufferTime", ms);\n  const fn = (ctx) => {\n` },
   { module: "time", ops: ["timeout"], head: `    start(ctx, timers, ms, () => ctx.down([["ERROR", "timeout"]]));\n  };\n  const fn = (ctx) => {\n` },
+  { module: "recover", ops: ["catchError"], head: "  return (ctx) => {\n" },
+  { module: "recover", ops: ["retry", "repeat"], head: "  const fn = (ctx) => {\n" },
 ];
 
 // The lines put before a function's body: a head ends where the body starts, before the function
@@ -145,7 +147,7 @@ test("the table holds every operator with an active contract, and no cell goes m
   assert.deepEqual(OPERATORS.filter((entry) => entry.inputs).flatMap((entry) => entry.ops), ["sample", "takeUntil", "buffer", "merge", "withLatestFrom", "zip", "derived", "valve", "pause"]);
   assert.deepEqual(OPERATORS.filter((entry) => entry.latest).flatMap((entry) => entry.ops), ["sample", "derived", "switchMap", "debounce", "auditTime"]);
   const cells = Object.values(CLASSES).flatMap((kind) => OPERATORS.filter((entry) => applies(kind, entry)));
-  assert.equal(cells.length, 5 * 30 + 25 + 4 * 9);
+  assert.equal(cells.length, 5 * 32 + 27 + 4 * 9);
 });
 
 for (const entry of OPERATORS.filter((item) => item.auto)) {
