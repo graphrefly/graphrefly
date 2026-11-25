@@ -122,6 +122,22 @@ test("a trace linked from an exception must hold a step of that topic", () => {
   assert.deepEqual(linked("same-wave", ["set", "s", 1]).errors, [], "same-wave needs no particular step");
 });
 
+test("a succeeded trace keeps its row: only a revision that has a transition links it, and it is not reported as unlinked", () => {
+  const old = trace({ succeeded_by: "OT-2" });
+  const next = trace({ id: "OT-2" });
+  const linking = (id) => [{ topic: "invalidation", statement: "s", traces: [id] }];
+  fails(views([contract()], [old, next]), /contract O-map@1: trace OT-1 was succeeded by OT-2; only a revision that has a transition links it/);
+  const moved = views([contract({ exceptions: linking("OT-2") })], [old, next]);
+  assert.deepEqual(moved.errors, []);
+  assert.deepEqual(moved.review.unlinkedTraces, [], "the succeeded trace is linked by nothing and is not reported");
+  // The revision that linked it has its transition; its successor links the new trace.
+  const history = views([contract({ transition: { kind: "revise", by: "D900", to: { id: "O-map", revision: 2 } } }), contract({ revision: 2, exceptions: linking("OT-2") })], [old, next]);
+  assert.deepEqual(history.errors, []);
+  assert.deepEqual(views([contract()], [trace(), next]).review.unlinkedTraces, ["OT-2"], "a trace that was not succeeded is reported");
+  fails(views([contract({ exceptions: linking("OT-2") })], [trace({ succeeded_by: "OT-9" }), next]), /trace OT-1: succeeded_by names OT-9, which is not another trace of the ledger/);
+  fails(views([contract({ exceptions: linking("OT-2") })], [trace({ succeeded_by: "OT-1" }), next]), /trace OT-1: succeeded_by names OT-1, which is not another trace of the ledger/);
+});
+
 test("a revised contract leaves one open revision, and its transition must name a revision that exists", () => {
   const result = views([contract({ transition: { kind: "revise", by: "D900", to: { id: "O-map", revision: 2 } } }), contract({ revision: 2 })]);
   assert.deepEqual(result.errors, []);

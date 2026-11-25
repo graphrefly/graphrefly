@@ -29,7 +29,9 @@ const MODULES = { notifier, transform, accumulate, compare, select, combine, sta
 
 const read = (name) => readFileSync(fileURLToPath(new URL(`../../operators/${name}`, import.meta.url)), "utf8")
   .split("\n").filter(Boolean).map((line) => JSON.parse(line));
-export const traces = read("traces.jsonl");
+// A trace that was succeeded keeps its row and is no longer run (graphrefly:D816 (1)).
+export const notSucceeded = (rows) => rows.filter((trace) => trace.succeeded_by === undefined);
+export const traces = notSucceeded(read("traces.jsonl"));
 export const contracts = read("contracts.jsonl");
 
 // The callbacks a trace names (operators/README.md), built from a node's args:

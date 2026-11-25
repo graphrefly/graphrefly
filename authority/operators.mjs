@@ -6,8 +6,9 @@
 //
 // The gate holds links and shape. That a trace is run and passes is held where the traces are run:
 // reference/operators/traces.test.mjs fails when a trace of an active contract is skipped or is a
-// known difference. What is immutable on an active contract on main is graphrefly:D816's to say; no
-// gate holds it yet (graphrefly:B146).
+// known difference. What is immutable on an active contract on main is graphrefly:D816's to say, and
+// immutable.mjs holds it against main. A trace that was succeeded keeps its row with `succeeded_by`:
+// only a revision that has a transition links it, it is not reported as unlinked, and it is not run.
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { loadJsonl } from "./model.mjs";
@@ -56,6 +57,7 @@ export function buildOperatorViews({ contracts, traces, rules = [], currentRuleI
     if (traceById.has(trace.id)) errors.push(`${at}: duplicate id`);
     traceById.set(trace.id, trace);
     if (!text(trace.name) || !text(trace.basis)) errors.push(`${at}: name and basis are required`);
+    if (trace.succeeded_by !== undefined && (trace.succeeded_by === trace.id || !traces.some((other) => other.id === trace.succeeded_by))) errors.push(`${at}: succeeded_by names ${trace.succeeded_by}, which is not another trace of the ledger`);
     if (!TRACE_DETAILS.includes(trace.detail)) errors.push(`${at}: detail is one of ${TRACE_DETAILS.join(", ")}`);
     const ids = list(trace.nodes).map((node) => node.id);
     if (!ids.length || new Set(ids).size !== ids.length) errors.push(`${at}: nodes need distinct ids`);
@@ -135,6 +137,7 @@ export function buildOperatorViews({ contracts, traces, rules = [], currentRuleI
     const link = (id, topic) => {
       const trace = traceById.get(id);
       if (!trace) { errors.push(`${at}: trace ${id} does not exist`); return; }
+      if (trace.succeeded_by !== undefined && !row.transition) errors.push(`${at}: trace ${id} was succeeded by ${trace.succeeded_by}; only a revision that has a transition links it`);
       const own = row.operator ? nodesOf(trace, row.operator) : [];
       const steps = flatSteps(trace.steps);
       if (row.operator && !own.length) errors.push(`${at}: trace ${id} has no ${row.operator} node`);
@@ -232,7 +235,7 @@ export function buildOperatorViews({ contracts, traces, rules = [], currentRuleI
       draftsWithoutAnyTrace: drafts.filter((row) => row.operator && !linksOf(row).length).map(coordinate),
       openQuestions: open.flatMap((row) => list(row.open).map((question) => ({ contract: coordinate(row), question }))),
       draftsCitingDraftRules: drafts.flatMap((row) => list(row.cites).filter((id) => !current.has(id)).map((id) => `${coordinate(row)} cites ${id}`)),
-      unlinkedTraces: traces.map((trace) => trace.id).filter((id) => !linked.has(id)),
+      unlinkedTraces: traces.filter((trace) => trace.succeeded_by === undefined && !linked.has(trace.id)).map((trace) => trace.id),
     },
     metrics: { families: families.length, active: active.length, drafts: drafts.length, traces: traces.length },
   };

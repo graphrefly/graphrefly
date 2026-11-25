@@ -15,7 +15,7 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
-import { contracts, matches, passes, runTrace, runTraceAny, runTraceOn, traces, unrunnable } from "./run-trace.mjs";
+import { contracts, matches, notSucceeded, passes, runTrace, runTraceAny, runTraceOn, traces, unrunnable } from "./run-trace.mjs";
 
 const KNOWN_DIFFERENCES = {
 };
@@ -44,6 +44,11 @@ for (const trace of traces) {
     });
   }
 }
+
+test("a trace that was succeeded is not run", () => {
+  assert.deepEqual(notSucceeded([{ id: "OT-1", succeeded_by: "OT-2" }, { id: "OT-2" }]), [{ id: "OT-2" }]);
+  assert.ok(traces.every((trace) => trace.succeeded_by === undefined));
+});
 
 test("every known difference names a trace that exists", () => {
   for (const id of Object.keys(KNOWN_DIFFERENCES)) assert.ok(traces.some((trace) => trace.id === id), id);

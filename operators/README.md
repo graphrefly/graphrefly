@@ -71,7 +71,8 @@ contract links. Each changes only through a new revision that a root decision in
 stays in the ledger with a `succeeded_by` that names the new one, linked only by revisions that have
 a transition and no longer run. The decision names every active contract that links it: one whose
 statements change gets its new revision, and one whose statements do not keeps its revision and has
-its link moved to the successor in place.
+its link moved to the successor in place. `npm run authority:check` holds this against main as git
+has it (`authority/immutable.mjs`), and reports when it compared nothing.
 
 A new trace, and a new link from an active contract or one of its exceptions to a new trace or to
 one already in the ledger, are added in place, as a scenario is added for a rule, when the contract's
