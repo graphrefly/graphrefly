@@ -192,6 +192,71 @@ first kind is linked from the ordinary use or from a same-wave exception.
 `basis` names where the selection states the trace. A pass on the reference kernel is candidate
 evidence that a trace agrees with the kernel rules; it is not a runtime result.
 
+### Running the traces in a package
+
+A package's runner can be written from this section (graphrefly:B150). The reference's,
+`reference/operators/run-trace.mjs`, is one such runner and no part of the format. A node's `op` is
+the contract's operator; the package maps it to its own spelling and shape (graphrefly:D813). A sink
+is a name: one name may subscribe several nodes, and an expectation's entry names both.
+
+What each node takes. `deps` are in this order, and `args` holds these and no other key:
+
+| `op` | `deps` | `args` |
+|---|---|---|
+| map, tap | the source | `f` |
+| filter, takeWhile | the source | `p` |
+| first, last | the source | `p`, or no args |
+| distinctUntilChanged | the source | `equal`, or no args |
+| scan, reduce | the source | `f`, `seed` |
+| pairwise | the source | none |
+| take, skip, bufferCount | the source | `n` |
+| sample, takeUntil, buffer | the source, the notifier | none |
+| valve | the source, the control | none |
+| pause | the source, the lock state | none |
+| withLatestFrom | the source, then the others, one at least | none |
+| merge, zip, concat, race | the inputs in declared order, one at least | none |
+| derived | the inputs in declared order, one at least | `f` |
+| switchMap, concatMap, exhaustMap | the outer | `project` |
+| mergeMap | the outer | `project`, `capacity` or none |
+| debounce, throttle, auditTime, delay, bufferTime, timeout | the source | `ms` |
+| latestAsync | the source | `f` |
+| catchError | the source | `handler`, `to` |
+| retry | the inner's dependencies, one at least | `of`, and of `maxAttempts`, `initialMs`, `factor`, `maxMs` those given |
+| repeat | the inner's dependencies, one at least | `of`, `rounds`, `retry` or none |
+| arrays | the source | none |
+| empty, once | none | once: `value` |
+
+Beside `f`, `p`, `equal`, `project` and `handler` a node takes the options given above for that
+callback. A callback made to throw throws an error of the runner's own.
+
+What a runner gives the operators of a trace:
+
+- A clock it owns. The time operators, and a retry's or a repeat's delay, get their timers from it
+  and read no other time; only an `advance` step moves it.
+- Jobs it owns. A latestAsync's `f` starts a job that only a `resolve` or a `reject` step settles.
+  The jobs are kept in the order they were started, each under its node.
+- A registry for a `restore` step. The graph is captured, restored into a new one and run on from
+  there, so every callback and helper of a trace can be built again from its name and its options.
+
+A runner refuses a trace it cannot take as written, and a refused trace is no pass: a key of a node
+other than `id`, `state`, `op`, `deps` and `args`; an option its operator does not take; a number of
+dependencies its operator does not take; a callback name it does not know; an `unsubscribe` of a
+sink the trace did not subscribe; a batch that holds an `advance`, a `restore`, a `resolve` or a
+`reject`; a `replace` of a node that is not an operator node of the trace; and a `resolve` or a
+`reject` for a job that was not started or is already settled.
+
+A trace passes when every step's expectation is met, receiver by receiver, a payload-less `ERROR`
+matching any payload, and nothing arrives after the last step, as far as the package's language can
+see. Which of two timers due at the same instant fires first is the package's. A trace that was
+succeeded is not run.
+
+A package's report holds one result for each trace of the ledger that was not succeeded: pass, fail,
+or not run with one of three reasons. The reasons are that the package does not ship an operator of
+the trace, that its language cannot carry a value of the trace, and that its runtime cannot take a
+step of the trace. Anything else is a fail. A report names the root commit whose traces were read
+and the package's own revision. It is the package's and is kept there: the root keeps none and
+claims no runtime result. Its file and its place are the package's to choose.
+
 ## A review round
 
 A review round of the operator contracts is done when fewer than 5% of at least 80 valid mutants,
