@@ -17,7 +17,7 @@ bufferCount), `transform` (map, filter, tap), `accumulate` (scan, reduce), `comp
 (distinctUntilChanged, pairwise), `select` (take, skip, takeWhile, first, last), `combine` (merge,
 withLatestFrom, zip, concat, race) and `state` (derived); since 2026-11-23 the family `gate` (valve,
 pause); since 2026-11-24 the families `higher-order` (switchMap, mergeMap, concatMap, exhaustMap), `time`
-(debounce, throttle, auditTime, delay, bufferTime, timeout) and `recover` (catchError, retry, repeat). Every other contract is a draft until its
+(debounce, throttle, auditTime, delay, bufferTime, timeout), `recover` (catchError, retry, repeat) and `async` (latestAsync). Every other contract is a draft until its
 family is activated. A draft is the maintainer's selection in
 [DS-20](../sessions/active/SESSION-operator-walkthrough.md), as revised by Q1 to Q3 of its
 [independent review](../sessions/active/PROPOSAL-DS20-operator-review-reconciliation.md), written in
@@ -32,7 +32,7 @@ draft: an active contract's traces pass on the reference kernel, which is not a 
 | [traces.jsonl](traces.jsonl) | The canonical traces; each exists once, here |
 | [../authority/operators.mjs](../authority/operators.mjs) | The derived view and the link checks, run by `npm run authority:check` |
 | [../reference/operators/traces.test.mjs](../reference/operators/traces.test.mjs) | Runs the traces on the reference kernel, for the operators the reference has; the clock of an `advance` step is [clock.mjs](../reference/operators/clock.mjs) |
-| [../reference/operators/](../reference/operators/) | Operators written from their contracts over the reference kernel, each with its recipe, so that their traces are run and not only read: [notifier.mjs](../reference/operators/notifier.mjs), [transform.mjs](../reference/operators/transform.mjs), [accumulate.mjs](../reference/operators/accumulate.mjs), [compare.mjs](../reference/operators/compare.mjs), [select.mjs](../reference/operators/select.mjs), [combine.mjs](../reference/operators/combine.mjs), [state.mjs](../reference/operators/state.mjs), [gate.mjs](../reference/operators/gate.mjs), [higher-order.mjs](../reference/operators/higher-order.mjs), [time.mjs](../reference/operators/time.mjs) and [recover.mjs](../reference/operators/recover.mjs). Each has a `*.mutants.test.mjs` beside it: edits of the module, each naming the contract sentence it breaks, and each of which a trace must notice. [classes.mutants.test.mjs](../reference/operators/classes.mutants.test.mjs) asks the same by class, for the situations operators meet whatever they do: a restore after an input changed or ended, activation on an input that has completed, ended with ERROR or holds several values, and, for the operators with several inputs that have no rule of their own for it, two terminals in one wave or before activation. A class that passes shows the situation is traced for each operator, not that every sentence is held in it |
+| [../reference/operators/](../reference/operators/) | Operators written from their contracts over the reference kernel, each with its recipe, so that their traces are run and not only read: [notifier.mjs](../reference/operators/notifier.mjs), [transform.mjs](../reference/operators/transform.mjs), [accumulate.mjs](../reference/operators/accumulate.mjs), [compare.mjs](../reference/operators/compare.mjs), [select.mjs](../reference/operators/select.mjs), [combine.mjs](../reference/operators/combine.mjs), [state.mjs](../reference/operators/state.mjs), [gate.mjs](../reference/operators/gate.mjs), [higher-order.mjs](../reference/operators/higher-order.mjs), [time.mjs](../reference/operators/time.mjs), [recover.mjs](../reference/operators/recover.mjs) and [async.mjs](../reference/operators/async.mjs). Each has a `*.mutants.test.mjs` beside it: edits of the module, each naming the contract sentence it breaks, and each of which a trace must notice. [classes.mutants.test.mjs](../reference/operators/classes.mutants.test.mjs) asks the same by class, for the situations operators meet whatever they do: a restore after an input changed or ended, activation on an input that has completed, ended with ERROR or holds several values, and, for the operators with several inputs that have no rule of their own for it, two terminals in one wave or before activation. A class that passes shows the situation is traced for each operator, not that every sentence is held in it |
 
 ## A contract
 
@@ -118,7 +118,11 @@ and a timer started by a firing is due from that firing's time, so one advance o
 fires each. Which of two timers due at the same instant fires first is not part of an expectation:
 the reference runs a trace both ways. A restore leaves the captured graph's timers behind: none of
 them fires afterwards (R-checkpoint). A trace says nothing of timers still running after its last
-step. `expect[i]` is what the sinks received during `steps[i]`, compared receiver by receiver: what one
+step. `["resolve", node, input, value]` and `["reject", node, input, error]` settle a job the test owns: the oldest unsettled
+job that the latestAsync `node` started for `input`. Its result reaches the graph within the step, as a
+wave of its own. A job that was aborted can still be settled, as one that ignores cancellation is. A
+restore leaves the captured graph's jobs behind: they can still be settled, and nothing arrives for
+them. `expect[i]` is what the sinks received during `steps[i]`, compared receiver by receiver: what one
 sink received from one node is in order, and which sink received first within the step is not part of
 the expectation, since no contract gives it and R-wave says only that a node's arrays go to one
 subscriber and then the next. A trace
@@ -159,7 +163,10 @@ node its `to` names, whatever the error; `into` writes the error it is called wi
 `of`, { op, args }, one operator of the set that is a single node, over the dependencies the retry or
 repeat is given; the inner is the node `<id>/inner`, which a sink may subscribe. A retry takes the
 policy's `maxAttempts`, `initialMs`, `factor` and `maxMs`, and a repeat its `rounds` and a policy under
-`retry`.
+`retry`. A latestAsync's `f` is `job`, which returns a promise the test settles: `into` writes each input
+a job is started for to that state, `aborts` each input whose job's signal was aborted, and `throwsOn`
+makes f throw in place of starting a job. As the inner of a retry or a repeat its jobs are those of
+`<id>/inner`.
 The runner knows which options each operator takes and refuses any other key of a node or of its
 args.
 

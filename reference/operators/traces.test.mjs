@@ -15,7 +15,7 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
-import { contracts, matches, passes, runTrace, runTraceOn, traces, unrunnable } from "./run-trace.mjs";
+import { contracts, matches, passes, runTrace, runTraceAny, runTraceOn, traces, unrunnable } from "./run-trace.mjs";
 
 const KNOWN_DIFFERENCES = {
 };
@@ -34,12 +34,12 @@ for (const trace of traces) {
     });
   } else {
     test(name, async () => {
-      const { got, late } = runTraceOn(trace);
+      const { got, late } = await runTraceAny(trace);
       if (!matches(got, trace.expect)) assert.deepEqual(got, trace.expect); // shows the difference
       await new Promise((resolve) => setTimeout(resolve, 0));
       assert.deepEqual(late(), [], "nothing arrives after the last step");
       if (!trace.steps.some((step) => step[0] === "advance")) return;
-      const other = runTraceOn(trace, {}, { reverse: true }).got;
+      const other = (await runTraceAny(trace, {}, { reverse: true })).got;
       if (!matches(other, got)) assert.deepEqual(other, got, "the same when timers due at the same instant fire in the other order");
     });
   }

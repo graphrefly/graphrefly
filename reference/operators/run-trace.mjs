@@ -22,9 +22,10 @@ import * as gate from "./gate.mjs";
 import * as higherOrder from "./higher-order.mjs";
 import * as time from "./time.mjs";
 import * as recover from "./recover.mjs";
+import * as asyncOps from "./async.mjs";
 
 // The operator modules a trace is run on; a mutant test passes an edited copy of one.
-const MODULES = { notifier, transform, accumulate, compare, select, combine, state, gate, "higher-order": higherOrder, time, recover };
+const MODULES = { notifier, transform, accumulate, compare, select, combine, state, gate, "higher-order": higherOrder, time, recover, async: asyncOps };
 
 const read = (name) => readFileSync(fileURLToPath(new URL(`../../operators/${name}`, import.meta.url)), "utf8")
   .split("\n").filter(Boolean).map((line) => JSON.parse(line));
@@ -59,6 +60,7 @@ const ARGS = {
   first: ["p", ...CALLBACK], last: ["p", ...CALLBACK], distinctUntilChanged: ["equal", ...CALLBACK], scan: ["f", "seed", ...CALLBACK], reduce: ["f", "seed", ...CALLBACK],
   take: ["n"], skip: ["n"], bufferCount: ["n"], once: ["value"], switchMap: ["project", "throwsOn", "into"], mergeMap: ["project", "capacity", "throwsOn", "into"], concatMap: ["project", "throwsOn", "into"], exhaustMap: ["project", "throwsOn", "into"],
   debounce: ["ms"], throttle: ["ms"], auditTime: ["ms"], delay: ["ms"], bufferTime: ["ms"], timeout: ["ms"],
+  latestAsync: ["f", "into", "aborts", "throwsOn"],
   catchError: ["handler", "to", "into", "throwsOn"], retry: ["of", "maxAttempts", "initialMs", "factor", "maxMs"], repeat: ["of", "rounds", "retry"],
 };
 // How many dependencies each kind of node takes: exactly so many, or [at least]. A node written
@@ -66,7 +68,7 @@ const ARGS = {
 // shows.
 const DEPS = {
   map: 1, filter: 1, tap: 1, scan: 1, reduce: 1, distinctUntilChanged: 1, pairwise: 1, take: 1, skip: 1, takeWhile: 1, first: 1, last: 1, bufferCount: 1,
-  switchMap: 1, mergeMap: 1, concatMap: 1, exhaustMap: 1, debounce: 1, throttle: 1, auditTime: 1, delay: 1, bufferTime: 1, timeout: 1, catchError: 1, retry: [1], repeat: [1], arrays: 1, sample: 2, takeUntil: 2, buffer: 2, valve: 2, pause: 2, withLatestFrom: [2], merge: [1], zip: [1], concat: [1], race: [1], derived: [1], empty: 0, once: 0,
+  switchMap: 1, mergeMap: 1, concatMap: 1, exhaustMap: 1, debounce: 1, throttle: 1, auditTime: 1, delay: 1, bufferTime: 1, timeout: 1, latestAsync: 1, catchError: 1, retry: [1], repeat: [1], arrays: 1, sample: 2, takeUntil: 2, buffer: 2, valve: 2, pause: 2, withLatestFrom: [2], merge: [1], zip: [1], concat: [1], race: [1], derived: [1], empty: 0, once: 0,
 };
 const checkNode = (node) => {
   for (const key of Object.keys(node)) if (!["id", "state", "op", "deps", "args"].includes(key)) throw new Error(`the runner does not know the key ${key} of node ${node.id}`);
@@ -141,8 +143,27 @@ const innerOf = (all, g, n) => {
   if (made.length !== 1) throw new Error(`the inner of ${n.op} ${n.id} is one node, and ${of.op} builds ${made.length}`);
   return made[0];
 };
+// A latestAsync's f is `job`: it returns a promise the test settles, with a resolve or a reject
+// step. `into` writes each input a job is started for to that state, `aborts` each input whose
+// job's signal was aborted, and `throwsOn` makes f throw in place of starting a job. The jobs of
+// a run are kept in the order they were started, each under its node.
+const jobConfig = (n) => {
+  if (n.args?.f !== "job") throw new Error(`the runner has no job callback named ${n.args?.f}`);
+  return { node: n.id, ...Object.fromEntries(["into", "aborts", "throwsOn"].filter((key) => key in n.args).map((key) => [key, n.args[key]])) };
+};
+const jobFn = (config, g, jobs) => (value, signal) => {
+  if ("throwsOn" in config && isDeepStrictEqual(value, config.throwsOn)) throw new Error("boom");
+  if ("into" in config) g.set(config.into, value);
+  if ("aborts" in config) signal.addEventListener("abort", () => g.set(config.aborts, value), { once: true });
+  let resolve, reject;
+  const promise = new Promise((a, b) => { resolve = a; reject = b; });
+  promise.catch(() => {}); // a job nobody waits for any more may still be rejected
+  jobs.push({ node: config.node, input: value, resolve, reject, settled: false });
+  return promise;
+};
 const policyArgs = (args) => Object.fromEntries(["maxAttempts", "initialMs", "factor", "maxMs"].filter((key) => key in args).map((key) => [key, args[key]]));
-const builders = (mods, timers) => { const all = {
+const builders = (mods, timers, jobs) => { const all = {
+  latestAsync: (g, n) => { const config = jobConfig(n); return mods.async.latestAsync(g, n.id, n.deps[0], jobFn(config, g, jobs), { recipe: { ref: "trace.job", config } }); },
   catchError: (g, n) => { const config = handlerConfig(n); return mods.recover.catchError(g, n.id, n.deps[0], handlerFn(mods.recover.relay, config, g), { recipe: { ref: "trace.handler", config } }); },
   retry: (g, n) => mods.recover.retry(g, n.id, innerOf(all, g, n), policyArgs(n.args), { timers }),
   repeat: (g, n) => mods.recover.repeat(g, n.id, innerOf(all, g, n), n.args.rounds, { retry: n.args.retry, timers }),
@@ -195,9 +216,9 @@ const arraysFn = (ctx) => {
 };
 const emptyFn = (ctx) => ctx.down([["COMPLETE"]]);
 const onceFn = ({ value }) => (ctx) => ctx.down([["DATA", value]]); // sends as it is activated
-const helperRecipes = (mods) => ({ "trace.arrays": () => arraysFn, "trace.empty": () => emptyFn, "trace.once": onceFn, "trace.callback": (config, at) => callback(config, at.g), "trace.handler": (config, at) => handlerFn(mods.recover.relay, config, at.g), "trace.follow": (config, at) => followFn(mods["higher-order"].relay, config, at.g) });
+const helperRecipes = (mods, jobs) => ({ "trace.job": (config, at) => jobFn(config, at.g, jobs), "trace.arrays": () => arraysFn, "trace.empty": () => emptyFn, "trace.once": onceFn, "trace.callback": (config, at) => callback(config, at.g), "trace.handler": (config, at) => handlerFn(mods.recover.relay, config, at.g), "trace.follow": (config, at) => followFn(mods["higher-order"].relay, config, at.g) });
 
-const STEPS = new Set(["subscribe", "unsubscribe", "set", "invalidate", "complete", "error", "batch", "restore", "replace", "advance"]);
+const STEPS = new Set(["subscribe", "unsubscribe", "set", "invalidate", "complete", "error", "batch", "restore", "replace", "advance", "resolve", "reject"]);
 const flat = (steps) => steps.flatMap((step) => (step[0] === "batch" ? [step, ...flat(step[1])] : [step]));
 
 // Why a trace cannot be run here, or null. A trace that cannot be run is skipped by name; it is
@@ -266,11 +287,12 @@ export function matches(got, expect) {
 // leaves the captured graph's timers behind. `reverse` fires timers due at the same instant
 // in the other order, which no expectation rests on. `late()` is what any sink received after the
 // last step returned.
-export function runTraceOn(trace, edited = {}, { reverse = false } = {}) {
+function session(trace, edited = {}, { reverse = false } = {}) {
   const mods = { ...MODULES, ...edited };
   const clock = createClock({ reverse });
-  const build = builders(mods, clock.timers);
-  const registry = { ...mods.time.timeRecipes(clock.timers), ...mods.recover.recoverRecipes(clock.timers), ...mods.notifier.notifierRecipes, ...mods.transform.transformRecipes, ...mods.accumulate.accumulateRecipes, ...mods.compare.compareRecipes, ...mods.select.selectRecipes, ...mods.combine.combineRecipes, ...mods.state.stateRecipes, ...mods.gate.gateRecipes, ...mods["higher-order"].higherOrderRecipes, ...helperRecipes(mods) };
+  const jobs = [];
+  const build = builders(mods, clock.timers, jobs);
+  const registry = { ...mods.time.timeRecipes(clock.timers), ...mods.recover.recoverRecipes(clock.timers), ...mods.notifier.notifierRecipes, ...mods.transform.transformRecipes, ...mods.accumulate.accumulateRecipes, ...mods.compare.compareRecipes, ...mods.select.selectRecipes, ...mods.combine.combineRecipes, ...mods.state.stateRecipes, ...mods.gate.gateRecipes, ...mods["higher-order"].higherOrderRecipes, ...mods.async.asyncRecipes, ...helperRecipes(mods, jobs) };
   let g = createGraph();
   const sinks = new Set();
   const request = (step) => {
@@ -292,24 +314,70 @@ export function runTraceOn(trace, edited = {}, { reverse = false } = {}) {
       checkNode({ ...n, deps: b });
       build[n.op](replacing, { ...n, deps: b });
     }
-    else if (kind === "advance" || kind === "restore") throw new Error(`a batch holds no ${kind} step`);
+    else if (["advance", "restore", "resolve", "reject"].includes(kind)) throw new Error(`a batch holds no ${kind} step`);
     else throw new Error(`the reference runner has no ${kind} step`);
   };
   for (const n of trace.nodes) {
     checkNode(n);
     if (n.state) { if (n.state.length) g.state(n.id, n.state[0]); else g.state(n.id); } else build[n.op](g, n);
   }
-  const got = trace.steps.map((step) => {
-    if (step[0] === "restore") { g = restore(JSON.parse(JSON.stringify(capture(g))), registry); sinks.clear(); clock.drop(); return []; }
-    const start = g.trace.length;
-    if (step[0] === "advance") clock.advance(step[1]); else request(step);
-    const entries = g.trace.slice(start).map((entry) => [entry.to, entry.from, entry.msgs]);
-    return trace.detail === "occurrences" ? occurrences(entries) : entries;
-  });
-  const end = g.trace.length;
-  const last = g;
-  return { got, late: () => last.trace.slice(end).map((entry) => [entry.to, entry.from, entry.msgs]) };
+  // Settles the oldest unsettled job that `node` started for `input`. A trace that names a job
+  // which was never started is refused; on an edited module, whose operator may not have started
+  // the job, the step settles nothing, so that the trace goes on and shows what differs.
+  const settle = (kind, node, input, value) => {
+    const job = jobs.find((j) => j.node === node && !j.settled && isDeepStrictEqual(j.input, input));
+    if (!job && Object.keys(edited).length) return;
+    if (!job) throw new Error(`the trace settles a job of ${node} for ${JSON.stringify(input)}, and none is unsettled`);
+    job.settled = true;
+    job[kind](value);
+  };
+  // Makes one step, and gives a reader of what the sinks received since it began.
+  const take = (step) => {
+    if (step[0] === "restore") { g = restore(JSON.parse(JSON.stringify(capture(g))), registry); sinks.clear(); clock.drop(); return () => []; }
+    const on = g;
+    const start = on.trace.length;
+    if (step[0] === "advance") clock.advance(step[1]);
+    else if (step[0] === "resolve" || step[0] === "reject") settle(step[0], step[1], step[2], step[3]);
+    else request(step);
+    return () => {
+      const entries = on.trace.slice(start).map((entry) => [entry.to, entry.from, entry.msgs]);
+      return trace.detail === "occurrences" ? occurrences(entries) : entries;
+    };
+  };
+  const late = () => {
+    const last = g;
+    const end = last.trace.length;
+    return () => last.trace.slice(end).map((entry) => [entry.to, entry.from, entry.msgs]);
+  };
+  return { take, late };
 }
+
+// Whether a trace holds a job: a latestAsync, also as the inner of a retry or a repeat, or a step
+// that settles one. A job's result reaches the graph later, so such a trace is run step by step
+// with a wait after each (runTraceLater); every other trace is run at once (runTraceOn).
+export const settles = (trace) => trace.nodes.some((n) => n.op === "latestAsync" || n.args?.of?.op === "latestAsync")
+  || flat(trace.steps).some((step) => step[0] === "resolve" || step[0] === "reject");
+const turn = () => new Promise((resolve) => setImmediate(resolve));
+
+export function runTraceOn(trace, edited = {}, options = {}) {
+  if (settles(trace)) throw new Error(`trace ${trace.id ?? ""} holds a job, and is run with runTraceLater`);
+  const run = session(trace, edited, options);
+  const got = trace.steps.map((step) => run.take(step)());
+  return { got, late: run.late() };
+}
+export async function runTraceLater(trace, edited = {}, options = {}) {
+  const run = session(trace, edited, options);
+  const got = [];
+  for (const step of trace.steps) {
+    const read = run.take(step);
+    await turn();
+    got.push(read());
+  }
+  return { got, late: run.late() };
+}
+// Either, as the trace needs.
+export const runTraceAny = async (trace, edited, options) => (settles(trace) ? runTraceLater(trace, edited, options) : runTraceOn(trace, edited, options));
+
 export const runTrace = (trace, edited) => runTraceOn(trace, edited).got;
 
 // A trace passes when every step matches and nothing more arrives within one turn of the event
@@ -323,7 +391,7 @@ export async function passes(trace, edited) {
 // The nodes whose sinks received something other than the trace expects in some step, and every
 // node that sent late. Empty when the trace passes.
 export async function differing(trace, edited) {
-  const { got, late } = runTraceOn(trace, edited);
+  const { got, late } = await runTraceAny(trace, edited);
   const nodes = new Set();
   got.forEach((step, i) => { for (const node of differingNodes(step, trace.expect[i] ?? [])) nodes.add(node); });
   await new Promise((resolve) => setTimeout(resolve, 0));

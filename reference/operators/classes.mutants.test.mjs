@@ -31,9 +31,9 @@
 // apply to the operators with several inputs: not to race, which selects by declared order whatever
 // the terminal, nor to concat, which depends on one source at a time; their own sentences have
 // their own mutants; nor to the higher-order operators, whose inners are attached after the
-// activation. `several values` leaves out sample, derived, switchMap, debounce and
-// auditTime, which read an input's latest value and so do the same with or without the earlier
-// ones.
+// activation. `several values` leaves out sample, derived, switchMap, debounce,
+// auditTime and latestAsync, which read an input's latest value and so do the same with or without
+// the earlier ones.
 //
 // An operator built with the default ERROR policy is never run for an input's ERROR, so its
 // mutants give it the manual policy and send the first ERROR in declared order themselves, as
@@ -83,6 +83,7 @@ const OPERATORS = [
   { module: "time", ops: ["timeout"], head: `    start(ctx, timers, ms, () => ctx.down([["ERROR", "timeout"]]));\n  };\n  const fn = (ctx) => {\n` },
   { module: "recover", ops: ["catchError"], head: "  return (ctx) => {\n" },
   { module: "recover", ops: ["retry", "repeat"], head: "  const fn = (ctx) => {\n" },
+  { module: "async", ops: ["latestAsync"], head: "  const fn = (ctx) => {\n", latest: true },
 ];
 
 // The lines put before a function's body: a head ends where the body starts, before the function
@@ -145,9 +146,9 @@ test("the table holds every operator with an active contract, and no cell goes m
   // An entry that lost its `inputs` or gained a `latest` would drop cells without a failure, so
   // which operators the narrower classes apply to, and how many cells there are, is written here.
   assert.deepEqual(OPERATORS.filter((entry) => entry.inputs).flatMap((entry) => entry.ops), ["sample", "takeUntil", "buffer", "merge", "withLatestFrom", "zip", "derived", "valve", "pause"]);
-  assert.deepEqual(OPERATORS.filter((entry) => entry.latest).flatMap((entry) => entry.ops), ["sample", "derived", "switchMap", "debounce", "auditTime"]);
+  assert.deepEqual(OPERATORS.filter((entry) => entry.latest).flatMap((entry) => entry.ops), ["sample", "derived", "switchMap", "debounce", "auditTime", "latestAsync"]);
   const cells = Object.values(CLASSES).flatMap((kind) => OPERATORS.filter((entry) => applies(kind, entry)));
-  assert.equal(cells.length, 5 * 32 + 27 + 4 * 9);
+  assert.equal(cells.length, 5 * 33 + 27 + 4 * 9);
 });
 
 for (const entry of OPERATORS.filter((item) => item.auto)) {
