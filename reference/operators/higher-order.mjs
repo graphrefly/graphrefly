@@ -30,8 +30,8 @@
 // that wave's DATA and without calling project (O-common). A switch is the one exception to the
 // last: in the wave of its selected inner's ERROR it calls project for the last outer value, since
 // only the result says whether that inner is superseded, and a superseded inner's ERROR is not
-// sent. A throw from project, or a result the kernel refuses to build, is a throw of the function
-// (R-failure).
+// sent. A throw from project, a result that is not a definition, or one the kernel refuses to build,
+// is a throw of the function (R-failure).
 //
 // Policies: manual COMPLETE, since an inner's COMPLETE frees a slot and the outer's alone ends
 // nothing; manual ERROR, since a superseded inner's ERROR is not the operator's; manual
@@ -43,6 +43,14 @@ export const relay = (ctx) => {
   for (const w of ctx.deps[0].waves) if (w.length) ctx.down(w.map((v) => ["DATA", v]));
 };
 
+// A callback that must give a Node gives its definition { deps, fn, recipe? }. Any other result is
+// the operator's ERROR, as a throw of the callback is (O-common).
+const definitionOf = (result) => {
+  if (result === null || typeof result !== "object" || !Array.isArray(result.deps) || typeof result.fn !== "function") {
+    throw new TypeError("the callback's result is not a node");
+  }
+  return result;
+};
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 // Two definitions are the same when their deps are and their recipes are, or, without recipes,
 // their functions are.
@@ -82,7 +90,7 @@ export function operator({ sourceId, mode, capacity }, { g, id }, projectFn) {
       // while the graph was saved, which releases the selection too. The output stays (R-checkpoint).
       if (source.invalidated || (ctx.seed !== undefined && !source.has)) { changed = inners.length > 0; inners = []; }
       if (values.length) {
-        const next = projectFn(values[values.length - 1]);
+        const next = definitionOf(projectFn(values[values.length - 1]));
         if (!inners.some((x) => sameDef(x.def, next))) selected = next;
       }
       if (selected) inners = [];
@@ -107,7 +115,7 @@ export function operator({ sourceId, mode, capacity }, { g, id }, projectFn) {
       queue = [...queue, ...values];
     }
     while (queue.length && inners.length < bound) {
-      const next = projectFn(queue[0]);
+      const next = definitionOf(projectFn(queue[0]));
       queue = queue.slice(1);
       if (inners.some((x) => sameDef(x.def, next))) continue;
       // The first slot not held. One whose inner ended in this wave is free; replacing it sends

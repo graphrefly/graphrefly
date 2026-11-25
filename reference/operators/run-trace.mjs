@@ -58,10 +58,10 @@ const CALLBACK = ["into", "invalidates", "returns", "throwsOn", "nothingOn"];
 const ARGS = {
   map: ["f", ...CALLBACK], tap: ["f", ...CALLBACK], derived: ["f", ...CALLBACK], filter: ["p", ...CALLBACK], takeWhile: ["p", ...CALLBACK],
   first: ["p", ...CALLBACK], last: ["p", ...CALLBACK], distinctUntilChanged: ["equal", ...CALLBACK], scan: ["f", "seed", ...CALLBACK], reduce: ["f", "seed", ...CALLBACK],
-  take: ["n"], skip: ["n"], bufferCount: ["n"], once: ["value"], switchMap: ["project", "throwsOn", "into"], mergeMap: ["project", "capacity", "throwsOn", "into"], concatMap: ["project", "throwsOn", "into"], exhaustMap: ["project", "throwsOn", "into"],
+  take: ["n"], skip: ["n"], bufferCount: ["n"], once: ["value"], switchMap: ["project", "throwsOn", "into", "returnsOn"], mergeMap: ["project", "capacity", "throwsOn", "into", "returnsOn"], concatMap: ["project", "throwsOn", "into", "returnsOn"], exhaustMap: ["project", "throwsOn", "into", "returnsOn"],
   debounce: ["ms"], throttle: ["ms"], auditTime: ["ms"], delay: ["ms"], bufferTime: ["ms"], timeout: ["ms"],
   latestAsync: ["f", "into", "aborts", "throwsOn"],
-  catchError: ["handler", "to", "into", "throwsOn"], retry: ["of", "maxAttempts", "initialMs", "factor", "maxMs"], repeat: ["of", "rounds", "retry"],
+  catchError: ["handler", "to", "into", "throwsOn", "returnsOn"], retry: ["of", "maxAttempts", "initialMs", "factor", "maxMs"], repeat: ["of", "rounds", "retry"],
 };
 // How many dependencies each kind of node takes: exactly so many, or [at least]. A node written
 // with more would be built on its first ones only, and the trace would run another graph than it
@@ -97,16 +97,19 @@ function callback(args, g) {
 const callbackRecipe = (args) => ({ ref: "trace.callback", config: Object.fromEntries(Object.entries(args).filter(([key]) => key !== "seed")) });
 // A higher-order project is `follow`: the inner follows the node its argument names. As a callback
 // does, with throwsOn it throws when it is given that value, before the call is recorded, and with
-// into it writes each value it is given to that state. It comes with a recipe, as its inner does,
+// into it writes each value it is given to that state. With returnsOn: [value, result] it returns
+// that result as it is, which is no node, when it is given that value, after the call is recorded.
+// It comes with a recipe, as its inner does,
 // so a graph that holds the operator can be captured.
 const followConfig = (args) => {
   if (args?.project !== "follow") throw new Error(`the runner has no projector named ${args?.project}`);
-  const config = Object.fromEntries(["throwsOn", "into"].filter((key) => key in args).map((key) => [key, args[key]]));
+  const config = Object.fromEntries(["throwsOn", "into", "returnsOn"].filter((key) => key in args).map((key) => [key, args[key]]));
   return Object.keys(config).length ? config : null;
 };
 const followFn = (relay, config, g) => (v) => {
   if (config && "throwsOn" in config && isDeepStrictEqual(v, config.throwsOn)) throw new Error("boom");
   if (config && "into" in config) g.set(config.into, v);
+  if (config && "returnsOn" in config && isDeepStrictEqual(v, config.returnsOn[0])) return config.returnsOn[1];
   return { deps: [v], fn: relay, recipe: { ref: "higher.relay" } };
 };
 const higher = (mods, name, g, n) => {
@@ -118,15 +121,17 @@ const TIMED = ["debounce", "throttle", "auditTime", "delay", "bufferTime", "time
 // A catchError's handler is `follow`: it returns the node its `to` names, whatever the error. It
 // takes `into`, which writes the error it is called with to that state, and `throwsOn`, which
 // makes it throw when it is called with that error, after the call is recorded, so that a trace
-// shows how often a handler that throws was called.
+// shows how often a handler that throws was called. With returnsOn: [error, result] it returns that
+// result as it is, which is no node, when it is called with that error.
 const handlerConfig = (n) => {
   if (n.args?.handler !== "follow") throw new Error(`the runner has no handler named ${n.args?.handler}`);
   if (typeof n.args.to !== "string") throw new Error(`the handler of catchError ${n.id} follows the node its \`to\` names`);
-  return Object.fromEntries(["to", "into", "throwsOn"].filter((key) => key in n.args).map((key) => [key, n.args[key]]));
+  return Object.fromEntries(["to", "into", "throwsOn", "returnsOn"].filter((key) => key in n.args).map((key) => [key, n.args[key]]));
 };
 const handlerFn = (relay, config, g) => (error) => {
   if ("into" in config) g.set(config.into, error);
   if ("throwsOn" in config && isDeepStrictEqual(error, config.throwsOn)) throw new Error("boom");
+  if ("returnsOn" in config && isDeepStrictEqual(error, config.returnsOn[0])) return config.returnsOn[1];
   return { deps: [config.to], fn: relay, recipe: { ref: "recover.relay" } };
 };
 // The inner of a retry or a repeat is one operator of the set over the node's dependencies, named

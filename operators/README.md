@@ -157,9 +157,11 @@ the state shows the calls; `invalidates` asks the graph to invalidate that state
 request that waits for the wave to end; `returns` replaces what the callback returns; `throwsOn`
 makes it throw, before the call is recorded, and `nothingOn` makes it return no value, when it is
 given that value. A higher-order `project` is `follow`, which returns the node its argument names; it takes `throwsOn`
-and `into` as a callback does, and `capacity` is a mergeMap's. A catchError's `handler` is `follow` too: it returns the
+and `into` as a callback does, and `capacity` is a mergeMap's. With `returnsOn`, [value, result], it returns that
+result as it is, which is no node, when it is given that value, after the call is recorded. A catchError's `handler` is `follow` too: it returns the
 node its `to` names, whatever the error; `into` writes the error it is called with to that state, and
-`throwsOn` makes it throw when it is called with that error, after that call is recorded. A retry or a repeat names its inner under
+`throwsOn` makes it throw when it is called with that error, after that call is recorded; `returnsOn`, [error, result],
+makes it return that result as it is, which is no node, when it is called with that error. A retry or a repeat names its inner under
 `of`, { op, args }, one operator of the set that is a single node, over the dependencies the retry or
 repeat is given; the inner is the node `<id>/inner`, which a sink may subscribe. A retry takes the
 policy's `maxAttempts`, `initialMs`, `factor` and `maxMs`, and a repeat its `rounds` and a policy under

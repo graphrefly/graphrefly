@@ -41,6 +41,14 @@ export const relay = (ctx) => {
   for (const values of ctx.deps[0].waves) if (values.length) ctx.down(data(values));
 };
 
+// A callback that must give a Node gives its definition { deps, fn, recipe? }. Any other result is
+// the operator's ERROR, as a throw of the callback is (O-common).
+const definitionOf = (result) => {
+  if (result === null || typeof result !== "object" || !Array.isArray(result.deps) || typeof result.fn !== "function") {
+    throw new TypeError("the callback's result is not a node");
+  }
+  return result;
+};
 // catchError. Private state is { switched }.
 function catchErrorOf({ sourceId }, { g, id }, handler) {
   const innerId = `${id}/inner`;
@@ -65,7 +73,7 @@ function catchErrorOf({ sourceId }, { g, id }, handler) {
     for (const values of followed.waves) if (values.length) ctx.down(data(values));
     if (completed(followed)) { ctx.down([["COMPLETE"]]); return; }
     if (!errored(followed)) return;
-    place(handler(followed.terminal[1]));
+    place(definitionOf(handler(followed.terminal[1])));
     ctx.state.set({ switched: true });
     ctx.rewire([innerId]);
   };

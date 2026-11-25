@@ -12,7 +12,7 @@ const VALUES = `    const values = source.waves.flat();`;
 const INV = `    if (ctx.deps.some((d) => d.invalidated)) ctx.down([["INVALIDATE"]]);`;
 const SRC_ERR = `    if (errored(source)) { ctx.down([source.terminal]); return; }`;
 const SW_INV = `      if (source.invalidated || (ctx.seed !== undefined && !source.has)) { changed = inners.length > 0; inners = []; }`;
-const SW_LAST = `        const next = projectFn(values[values.length - 1]);`;
+const SW_LAST = `        const next = definitionOf(projectFn(values[values.length - 1]));`;
 const SW_SAME = `        if (!inners.some((x) => sameDef(x.def, next))) selected = next;`;
 const SW_SUPER = `      if (selected) inners = [];`;
 const HELD_ERR = `    if (error) { ctx.down([error]); return; }`;
@@ -21,7 +21,7 @@ const ENDED = `    if (ended.size) { inners = inners.filter((x) => !ended.has(x.
 const EXH = `      if (!inners.length && values.length) queue = [values[0]];`;
 const QUEUE = `      queue = [...queue, ...values];`;
 const ADMIT = `    while (queue.length && inners.length < bound) {`;
-const NEXT = `      const next = projectFn(queue[0]);\n      queue = queue.slice(1);`;
+const NEXT = `      const next = definitionOf(projectFn(queue[0]));\n      queue = queue.slice(1);`;
 const DUP = `      if (inners.some((x) => sameDef(x.def, next))) continue;`;
 const SLOT = `      while (taken.has(inner(k))) k += 1;`;
 const DONE = `    const sourceDone = st.sourceDone || source.terminal !== null;`;
@@ -58,7 +58,7 @@ const MUTANTS = [
   ["the operator forgets the inners it holds from one run to the next", "use: sends the DATA of the inners it holds", STATE, `    ctx.state.set({ inners: [], queue, sourceDone });`, ALL],
   ["the operator forgets the outer values that wait from one run to the next", "O-mergeMap, O-concatMap use: outer values wait in order", STATE, `    ctx.state.set({ inners, queue: [], sourceDone });`, QUEUED],
   // switchMap
-  ["switchMap projects the first outer value of a wave", "O-switchMap same-wave: only the last outer value of a wave is projected", SW_LAST, `        const next = projectFn(values[0]);`],
+  ["switchMap projects the first outer value of a wave", "O-switchMap same-wave: only the last outer value of a wave is projected", SW_LAST, `        const next = definitionOf(projectFn(values[0]));`],
   ["switchMap calls project for every outer value of a wave", "O-switchMap same-wave: only the last outer value of a wave is projected", SW_LAST, `        for (const v of values.slice(0, -1)) projectFn(v);\n${SW_LAST}`],
   ["switchMap applies the new selection after what the superseded inner delivers in that wave", "O-switchMap same-wave: the new selection is applied first: DATA and ERROR that the superseded inner delivers in the switching wave are not sent", SW_SUPER, `      void 0;`],
   ["the superseded inner's ERROR in the switching wave ends switchMap", "O-switchMap same-wave: DATA and ERROR that the superseded inner delivers in the switching wave are not sent", SW_SUPER, `      if (selected) { const old = inners.map((x) => ctx.deps.find((d) => d.id === x.node)).find((d) => d && errored(d)); if (old) { ctx.down([old.terminal]); return; } inners = []; }`],
@@ -74,7 +74,7 @@ const MUTANTS = [
   // mergeMap, concatMap: capacity and the queue
   ["mergeMap and concatMap hold any number of inners", "O-mergeMap use: outer values beyond the capacity wait; O-concatMap use: holds one inner at a time", BOUND, `  const bound = mode === "merge" ? Infinity : 1;`, QUEUED],
   ["mergeMap and concatMap hold one inner more than they may", "O-mergeMap use: outer values beyond the capacity wait; O-concatMap use: holds one inner at a time", ADMIT, `    while (queue.length && inners.length <= bound) {`, QUEUED],
-  ["the outer values that wait are admitted last first", "O-mergeMap, O-concatMap use: outer values wait in order", NEXT, `      const next = projectFn(queue[queue.length - 1]);\n      queue = queue.slice(0, -1);`, QUEUED],
+  ["the outer values that wait are admitted last first", "O-mergeMap, O-concatMap use: outer values wait in order", NEXT, `      const next = definitionOf(projectFn(queue[queue.length - 1]));\n      queue = queue.slice(0, -1);`, QUEUED],
   ["an outer value is projected when it arrives, not when it is admitted", "O-mergeMap, O-concatMap use: outer values wait unprojected, and are projected only when admitted", QUEUE, `      for (const v of values) projectFn(v);\n${QUEUE}`, QUEUED],
   ["slots are freed after the admission, not before", "O-mergeMap, O-concatMap same-wave: first frees the slots of inners that ended, then admits",
     [[ENDED, `    void 0;`], [DONE, `    if (ended.size) { inners = inners.filter((x) => !ended.has(x.node)); changed = true; }\n${DONE}`]], undefined, QUEUED],
@@ -146,6 +146,11 @@ const MUTANTS = [
   ["mergeMap drops the DATA of a running inner in a wave in which another inner ends and a waiting value takes the freed slot", "O-mergeMap same-wave: In a run it first sends the DATA of the inners it already holds and frees the slots of inners that ended, then admits outer values in order", "for (const d of held) for (const w of d.waves) if (w.length) ctx.down(w.map((v) => [\"DATA\", v]));", "for (const d of held) for (const w of d.waves) if (w.length && !(mode === \"merge\" && queue.length && !d.terminal && held.some((e) => e.terminal))) ctx.down(w.map((v) => [\"DATA\", v]));"],
   ["an outer INVALIDATE does not retract switchMap's output when the selected inner has delivered nothing yet and the output is still the value of the inner it superseded", "O-switchMap invalidation: An outer INVALIDATE retracts the output, releases the selected inner and ignores what that selection delivers afterwards", "if (ctx.deps.some((d) => d.invalidated)) ctx.down([[\"INVALIDATE\"]]);", "if (ctx.deps.some((d) => d.invalidated && !(mode === \"switch\" && d.id === sourceId && st.inners.length > 0 && !ctx.deps.some((e) => e.id !== sourceId && e.has)))) ctx.down([[\"INVALIDATE\"]]);"],
   ["an outer INVALIDATE does not retract concatMap's, mergeMap's or exhaustMap's output when no held inner has delivered yet and the output is still the value an ended inner left", "O-concatMap invalidation: An outer INVALIDATE retracts the output; the held inner keeps running and waiting outer values stay in order", "if (ctx.deps.some((d) => d.invalidated)) ctx.down([[\"INVALIDATE\"]]);", "if (ctx.deps.some((d) => d.invalidated && !(mode !== \"switch\" && d.id === sourceId && st.inners.length > 0 && !ctx.deps.some((e) => e.id !== sourceId && e.has)))) ctx.down([[\"INVALIDATE\"]]);"],
+
+  // a result that is not a node (2026-11-24)
+  ["switchMap takes a project result that is not a node for no selection, or builds it", "O-common: a callback's result that must be a Node and is not one is the operator's ERROR", SW_LAST, `        const next = projectFn(values[values.length - 1]);`],
+  ["mergeMap, concatMap and exhaustMap build a project result that is not a node", "O-common: a callback's result that must be a Node and is not one is the operator's ERROR", NEXT, `      const next = projectFn(queue[0]);\n      queue = queue.slice(1);`, ["mergeMap", "concatMap", "exhaustMap"]],
+  ["a definition without its function passes for a node", "O-common: a callback's result that must be a Node and is not one is the operator's ERROR", `typeof result.fn !== "function"`, `false`, ALL],
 ];
 
-mutantSuite({ module: "higher-order", operators: ALL, mutants: MUTANTS, minTraces: 238 });
+mutantSuite({ module: "higher-order", operators: ALL, mutants: MUTANTS, minTraces: 242 });
