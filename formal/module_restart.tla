@@ -23,7 +23,8 @@ retry policy of MaxAttempts attempts per round; Delay (chosen at Init) says
 whether a retry waits for a timer or is made at the end of the wave. A step is
 one of: the sink subscribing or unsubscribing; the inner sending a value,
 COMPLETE, ERROR, or a value and COMPLETE in one array; U ending (the inner, over
-U alone, ends with it); a restart request (a write to the restart state); a
+U alone, ends with it); a restart request (a write to the restart state); an
+INVALIDATE of the restart state (graphrefly:D830, 2026-11-25); a
 pending retry's timer firing; and a capture and restore of the active graph,
 which keeps the private state and the inner as they are, holds no timer and
 has no subscriber, followed by the restored owner's first activation, at which
@@ -214,6 +215,16 @@ Request ==
   /\ LET s0 == [Step(k) EXCEPT !.req = @ + 1]
      IN k' = IF Live(s0) THEN Both(s0, FALSE, "") ELSE s0
 
+\* An INVALIDATE of the restart state (R-restart@2, graphrefly:D830): the state then holds no
+\* request, and the numbers start again from 0. It is no request on either side, and a request
+\* made after it is served. The owner's function runs on it with nothing from the inner, and
+\* first sets its last request served to 0, as the reference's owner does; the rule's owner
+\* counts from 0 again.
+InvalidateRequest ==
+  /\ k.req > 0
+  /\ LET s0 == [Step(k) EXCEPT !.req = 0, !.sp.served = 0]
+     IN k' = IF Live(s0) /\ s0.st # NoSt THEN Both([s0 EXCEPT !.st.seen = 0], FALSE, "") ELSE s0
+
 \* The pending retry's timer: dropped unless its attempt is still the current one; with U
 \* ended, no attempt is made and the owner ends with the inner's ERROR.
 \* The composition's side of a timer firing, as restart.mjs's replace has it: nothing when the
@@ -245,7 +256,8 @@ TimerFires ==
 StaleFires ==
   \E t \in k.stale : k' = Fire([Step(k) EXCEPT !.stale = @ \ {t}], t)
 
-Next == k.steps < MaxSteps /\ (Subscribe \/ Unsubscribe \/ InnerSends \/ UpEnds \/ Request \/ TimerFires \/ StaleFires
+Next == k.steps < MaxSteps /\ (Subscribe \/ Unsubscribe \/ InnerSends \/ UpEnds \/ Request \/ InvalidateRequest
+                                \/ TimerFires \/ StaleFires
                                 \/ Restore \/ SubscribeRestored)
 
 Spec == Init /\ [][Next]_vars

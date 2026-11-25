@@ -105,7 +105,11 @@ Menu(n) ==
                     << <<"D1", "RES">> >>,
                     << <<"COM", "D1">> >>,
                     << <<"COM">>, <<"D1">> >>,
-                    << <<"STA", "D1">> >> }
+                    << <<"STA", "D1">> >>,
+                    \* R-wave@4 (graphrefly:D830): an empty array, alone and beside another. It is no
+                    \* output: PendingPrefix holds that no array sent is empty.
+                    << <<>> >>,
+                    << <<>>, <<"D1">> >> }
     [] n = "C" -> { <<>>, << <<"D2">> >>, << <<"ERR">> >> }
     [] n = "D" -> { <<>>, << <<"D1">> >>, << <<"D1", "D2">> >>, << <<"INV">> >>,
                     << <<"D2", "COM">> >>, << <<"ERR">> >> }

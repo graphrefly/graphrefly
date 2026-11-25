@@ -2963,3 +2963,20 @@ test("latestAsync: a sink that writes upstream on a job's DATA leaves the next j
   await tick();
   assert.deepEqual([g.get("q").value, g.privateState("q")], ["r2", { pending: [] }]);
 });
+
+// graphrefly:D830 (1) (R-wave@4): an empty array passed to ctx.down is no output.
+test("D830 (1): an empty array is no output: nothing is sent for it, in a run or after it, and it starts no wave", () => {
+  const over = (fn) => { const g = createGraph(); g.state("a", 1); g.node("n", ["a"], fn); g.subscribe("k", "n"); return g; };
+  // Alone in a run: the node sent nothing, so the kernel settles it with RESOLVED.
+  const alone = over((ctx) => { if (ctx.deps[0].value === 2) ctx.down([]); else ctx.down([["DATA", ctx.deps[0].value]]); });
+  assert.deepEqual(during(alone, () => alone.set("a", 2)), ["k <- n: [PENDING, RESOLVED]"]);
+  assert.deepEqual(during(alone, () => alone.subscribe("late", "n")), ["late <- n: [START, DATA(1)]"], "what it held stays");
+  // Beside other arrays: they go out as they are, and none stands for the empty one.
+  const beside = over((ctx) => { ctx.down([["DATA", "x"]]); ctx.down([]); ctx.down([["DATA", ctx.deps[0].value]]); ctx.down([]); });
+  assert.deepEqual(during(beside, () => beside.set("a", 2)), ['k <- n: [PENDING, DATA("x")]', "k <- n: [PENDING, DATA(2)]"]);
+  // After the function returned: no wave starts, so not even a PENDING reaches the sink.
+  let late;
+  const after = over((ctx) => { late = ctx; ctx.down([["DATA", ctx.deps[0].value]]); });
+  assert.deepEqual(during(after, () => late.down([])), []);
+  assert.deepEqual(during(after, () => late.down([["DATA", "late"]])), ['k <- n: [PENDING, DATA("late")]'], "a call that sends something does start one");
+});

@@ -368,3 +368,28 @@ test("two pauses made in one wave both hold, and a default lock never repeats", 
   p.resume(locks[0]);
   assert.deepEqual(g.get(p.locksId).value, [locks[1]], "still paused by the other");
 });
+
+// graphrefly:D830 (4) (R-pause@2).
+test("in a wave that also changes the locks, the locks after the wave decide for the terminal", () => {
+  for (const [end, shown] of [[(g) => g.complete("a"), "COMPLETE"], [(g) => g.error("a", "boom"), "ERROR(\"boom\")"]]) {
+    // The last lock is released in the terminal's wave: what was held goes out, then the terminal.
+    for (const order of ["release first", "terminal first"]) {
+      const g = createGraph();
+      g.state("a", 0);
+      const p = pausable(g, "p", "a");
+      g.subscribe("s", "p");
+      const lock = p.pause();
+      g.set("a", 5);
+      g.set("a", 6);
+      const got = during(g, () => g.batch(() => { if (order === "release first") { p.resume(lock); end(g); } else { end(g); p.resume(lock); } })).filter((line) => line.startsWith("s <- p"));
+      assert.deepEqual(got, ["s <- p: [PENDING, DATA(5)]", `s <- p: [PENDING, DATA(6), ${shown}]`], order);
+    }
+    // A lock is taken in the terminal's wave: the terminal goes alone, and the wave's value is not sent.
+    const h = createGraph();
+    h.state("a", 0);
+    const q = pausable(h, "p", "a");
+    h.subscribe("s", "p");
+    const got = during(h, () => h.batch(() => { h.set("a", 5); end(h); q.pause(); })).filter((line) => line.startsWith("s <- p"));
+    assert.deepEqual(got, [`s <- p: [PENDING, ${shown}]`]);
+  }
+});

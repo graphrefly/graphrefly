@@ -313,3 +313,51 @@ test("a new attempt keeps the inner's own dependencies when the caller changes i
   assert.deepEqual(g.definition("r").deps, ["a", "r/inner", "r/restart"]);
   assert.equal(g.get("b").active, false);
 });
+
+// graphrefly:D830 (3) (R-restart@2).
+test("an INVALIDATE of the restart state is no request and retracts nothing; a request made after it is served", () => {
+  const g = createGraph();
+  let starts = 0;
+  const r = restartable(g, "r", { deps: [], fn: (ctx) => {
+    if (!ctx.state.get()) { ctx.state.set(true); starts += 1; }
+    ctx.down([["DATA", starts]]);
+  } });
+  g.subscribe("s", "r");
+  r.restart();
+  assert.equal(starts, 2, "a request restarted the live inner");
+  const before = g.trace.length;
+  g.invalidate("r/restart");
+  assert.equal(starts, 2, "no attempt");
+  assert.deepEqual(g.trace.slice(before).filter((e) => e.to === "s").map(format), ["s <- r: [PENDING, RESOLVED]"], "the output is not retracted");
+  assert.equal(g.get("r").value, 2, "the owner keeps its value");
+  r.restart();
+  assert.equal(starts, 3, "the request after it is served");
+  r.restart();
+  assert.equal(starts, 4, "and the one after that");
+  // Invalidated while the owner is inactive: the next activation starts its fresh inner and no more.
+  g.unsubscribe("s", "r");
+  g.invalidate("r/restart");
+  g.subscribe("s", "r");
+  assert.equal(starts, 5);
+  r.restart();
+  assert.equal(starts, 6);
+});
+
+// graphrefly:D830 (2) (R-restart@2): the terminal is the inner's, also when the upstream ended with
+// an ERROR of its own, and the owner waits for the delay.
+test("an owner whose upstream ends with ERROR while a retry waits ends with its inner's ERROR, when the delay has passed", async () => {
+  const g = createGraph();
+  g.state("a", 1);
+  let attempts = 0;
+  restartable(g, "r", {
+    deps: ["a"],
+    fn: (ctx) => { attempts += 1; if (attempts === 1) throw new Error("boom"); ctx.down([["DATA", ctx.deps[0].value]]); },
+    retry: retryPolicy({ maxAttempts: 3, initialMs: 20 }),
+  });
+  g.subscribe("s", "r"); // attempt 1 fails; its retry is due at about 20 ms
+  g.error("a", "upstream");
+  assert.equal(g.get("r").ended, null, "the owner does not end in the wave of its upstream's ERROR");
+  await until(() => g.get("r").ended);
+  assert.equal(attempts, 1, "no attempt is made");
+  assert.deepEqual(g.get("r").ended, ["ERROR", "boom"], "the inner's ERROR, not the upstream's");
+});
