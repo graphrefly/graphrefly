@@ -231,8 +231,10 @@ callback. A callback made to throw throws an error of the runner's own.
 
 What a runner gives the operators of a trace:
 
-- A clock it owns. The time operators, and a retry's or a repeat's delay, get their timers from it
-  and read no other time; only an `advance` step moves it.
+- A clock it owns. For the time operators, and for a retry's or a repeat's delay, no time passes
+  but by an `advance` step: no timer fires otherwise, and none reads another time. How the operators
+  come by their timers is the package's: timers they are given, or the host's own put under the
+  runner's clock, as a test framework's fake timers do.
 - Jobs it owns. A latestAsync's `f` starts a job that only a `resolve` or a `reject` step settles.
   The jobs are kept in the order they were started, each under its node.
 - A registry for a `restore` step. The graph is captured, restored into a new one and run on from
@@ -253,9 +255,14 @@ succeeded is not run.
 A package's report holds one result for each trace of the ledger that was not succeeded: pass, fail,
 or not run with one of three reasons. The reasons are that the package does not ship an operator of
 the trace, that its language cannot carry a value of the trace, and that its runtime cannot take a
-step of the trace. Anything else is a fail. A report names the root commit whose traces were read
-and the package's own revision. It is the package's and is kept there: the root keeps none and
-claims no runtime result. Its file and its place are the package's to choose.
+step of the trace. Anything else is a fail. Whether a package ships an operator is said once for
+the operator and not for each trace: the report lists the contracts' operators the package ships.
+A trace all of whose operators it ships is run, the other two reasons apart, and one that gives an
+operator what the package's does not take is a fail. An operator of the package that has a
+contract's name and is not listed is named in the report as not the contract's. A report names the
+root commit whose traces were read and the package's own revision. It is the package's and is kept
+there: the root keeps none and claims no runtime result. Its file and its place are the package's
+to choose.
 
 ## A review round
 

@@ -123,9 +123,10 @@ two invariants added for D824. No text of the shared probe fixture
 
 ## What is not here
 
-- The sixteen draft operator contracts (higher-order, time, recover, gate, async) are not in force.
-  The gate and recover families no longer wait for a rule; none has been activated.
+- The operator contracts, how a package runs their traces and reports its results, and
+  graphrefly:D829 and D830 are in [HANDOFF-D813-runtime-owners.md](HANDOFF-D813-runtime-owners.md).
+  (Corrected 2026-11-25: this list had said that sixteen contracts were drafts and that
+  graphrefly:B150 was proposed; every contract is in force since 2026-11-24 and B150 is complete.)
 - R-demand, R-history and R-revision are still drafts.
-- How a package runs the canonical traces and reports its results is graphrefly:B150, proposed.
 - Private state a host reads and changes, and a payload its owner changes after sending it, are
   not covered by D823.
