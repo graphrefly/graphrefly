@@ -175,8 +175,9 @@ args.
 
 Three node kinds only shape a trace's input and are not operators of the set. `arrays` sends each
 element of its source's value as one array in one wave: a list is that list as DATA, `"INVALIDATE"`
-and `"COMPLETE"` are those messages, and `{ "error": payload }` is an ERROR. `empty` completes on
-activation without DATA, and `once` sends its `value` as it is activated.
+and `"COMPLETE"` are those messages, and `{ "error": payload }` is an ERROR. It does so for the
+value its source holds when it is activated as for each later one. `empty` completes on activation
+without DATA, and `once` sends its `value` at each activation.
 
 A link is checked against the trace, step by step and one node of the operator at a time. A sink must
 subscribe a node of the contract's operator or a node after it. An exception's trace must hold a
@@ -239,6 +240,7 @@ What a runner gives the operators of a trace:
   The jobs are kept in the order they were started, each under its node.
 - A registry for a `restore` step. The graph is captured, restored into a new one and run on from
   there, so every callback and helper of a trace can be built again from its name and its options.
+  What a runner does with the captured graph is its own: nothing it sends afterwards is compared.
 
 A runner refuses a trace it cannot take as written, and a refused trace is no pass: a key of a node
 other than `id`, `state`, `op`, `deps` and `args`; an option its operator does not take; a number of
@@ -255,7 +257,9 @@ succeeded is not run.
 A package's report holds one result for each trace of the ledger that was not succeeded: pass, fail,
 or not run with one of three reasons. The reasons are that the package does not ship an operator of
 the trace, that its language cannot carry a value of the trace, and that its runtime cannot take a
-step of the trace. Anything else is a fail. Whether a package ships an operator is said once for
+step of the trace. Anything else is a fail. No request of a trace is refused on the reference: a
+package that refuses one to its caller has not taken that step, and the trace is a fail, not a
+trace not run. Whether a package ships an operator is said once for
 the operator and not for each trace: the report lists the contracts' operators the package ships.
 A trace all of whose operators it ships is run, the other two reasons apart, and one that gives an
 operator what the package's does not take is a fail. An operator of the package that has a
