@@ -7,7 +7,8 @@
 // The gate holds links and shape. That a trace is run and passes is held where the traces are run:
 // reference/operators/traces.test.mjs fails when a trace of an active contract is skipped or is a
 // known difference. What is immutable on an active contract on main is graphrefly:D816's to say, and
-// immutable.mjs holds it against main. A trace that was succeeded keeps its row with `succeeded_by`:
+// immutable.mjs holds it against main. A trace that was succeeded keeps its row with `succeeded_by`
+// and, under `succeeded_under`, the decision of the succession:
 // only a revision that has a transition links it, it is not reported as unlinked, and it is not run.
 import { existsSync } from "node:fs";
 import { join } from "node:path";
@@ -58,6 +59,11 @@ export function buildOperatorViews({ contracts, traces, rules = [], currentRuleI
     traceById.set(trace.id, trace);
     if (!text(trace.name) || !text(trace.basis)) errors.push(`${at}: name and basis are required`);
     if (trace.succeeded_by !== undefined && (trace.succeeded_by === trace.id || !traces.some((other) => other.id === trace.succeeded_by))) errors.push(`${at}: succeeded_by names ${trace.succeeded_by}, which is not another trace of the ledger`);
+    // A succession names its decision, as a transition does; immutable.mjs asks that it is a locked
+    // row the same change adds.
+    if (trace.succeeded_by !== undefined && trace.succeeded_under === undefined) errors.push(`${at}: a succeeded trace names the decision of its succession under succeeded_under`);
+    else if (trace.succeeded_by !== undefined) decision(at, trace.succeeded_under, "succession decision");
+    else if (trace.succeeded_under !== undefined) errors.push(`${at}: succeeded_under without succeeded_by`);
     if (!TRACE_DETAILS.includes(trace.detail)) errors.push(`${at}: detail is one of ${TRACE_DETAILS.join(", ")}`);
     const ids = list(trace.nodes).map((node) => node.id);
     if (!ids.length || new Set(ids).size !== ids.length) errors.push(`${at}: nodes need distinct ids`);

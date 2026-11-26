@@ -41,8 +41,13 @@ do not enter the public projection. Any statement, rule-boundary or legal-trace 
 requires `/spec-amend`. On main an activated revision's statement or a locked decision's text
 changes only through a new one; everything else is corrected in place, as is a row that exists
 only on an unmerged branch (graphrefly:D815). The operator contracts have their own list, below
-(graphrefly:D816). No gate checks the two immutable things: an edit of an active revision's statement or of a locked decision's
-text passes every check (graphrefly:B146).
+(graphrefly:D816). `npm run authority:check` holds both against what main held where the checkout
+left it (`immutable.mjs`, graphrefly:B146), and a row main holds is not released in place: an
+activated revision keeps an `activated_by`; a locked decision stays locked and gains no
+`superseded_by`; no decision main holds changes its `supersedes`, so that a decision supersedes
+when it is made; and the `transition` an activated revision gains names a new decision, a locked
+row that the same change adds, and one it has stays (graphrefly:B152). The header of
+`immutable.mjs` says what the check is for and where it ends.
 
 The protocol's parts are derived from a rule's `area`, not stored: `module`, `graph` and `principle`
 each name a part and every other area is the kernel. `npm run rules:current` (optionally one part,
@@ -72,8 +77,10 @@ linked trace is succeeded by a new one, not edited; a new link, to a new trace o
 the ledger, is added in place,
 and a rationale, a trace's name and basis and a draft are corrected in place (graphrefly:D816, which
 also says how the behaviors decided while a family is written are recorded and that a contract may
-state what graphrefly:D797 (9) left to each language). No gate checks that yet either, and none
-knows a succeeded trace (graphrefly:B146).
+state what graphrefly:D797 (9) left to each language). The same check holds this, and asks that
+what releases a held contract or trace names a new decision, a locked row that the same change adds:
+the `transition` an active contract gains, and the succession of a trace it links (graphrefly:B146,
+graphrefly:B152).
 
 Run `npm run authority:check` and `npm run test:authority`. In a workspace containing every
 sibling repository, also run `npm run authority:check:workspace`.

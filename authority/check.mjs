@@ -10,9 +10,10 @@ import { checkImmutable } from "./immutable.mjs";
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const workspace = process.argv.includes("--workspace");
 // --baseline <dir>: hold what is immutable against that directory, not against main as git has it.
-const baselineAt = process.argv.indexOf("--baseline");
-const baselineDir = baselineAt >= 0 ? process.argv[baselineAt + 1] : undefined;
-if (baselineAt >= 0 && !baselineDir) throw new Error("--baseline needs a directory");
+// The directory follows as the next argument or after an equals sign.
+const baselineAt = process.argv.findIndex((arg) => arg === "--baseline" || arg.startsWith("--baseline="));
+const baselineDir = baselineAt < 0 ? undefined : process.argv[baselineAt].startsWith("--baseline=") ? process.argv[baselineAt].slice("--baseline=".length) : process.argv[baselineAt + 1];
+if (baselineAt >= 0 && (!baselineDir || baselineDir.startsWith("--"))) throw new Error("--baseline needs a directory");
 const federation = loadFederation(root, { includeExternal: workspace });
 const work = loadWorkFederation(root, { includeExternal: workspace, decisionIndex: federation.qualifiedIndex });
 const ruleRows = loadJsonl(join(root, "spec", "rules.jsonl"));

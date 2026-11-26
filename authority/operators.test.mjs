@@ -123,7 +123,7 @@ test("a trace linked from an exception must hold a step of that topic", () => {
 });
 
 test("a succeeded trace keeps its row: only a revision that has a transition links it, and it is not reported as unlinked", () => {
-  const old = trace({ succeeded_by: "OT-2" });
+  const old = trace({ succeeded_by: "OT-2", succeeded_under: "D900" });
   const next = trace({ id: "OT-2" });
   const linking = (id) => [{ topic: "invalidation", statement: "s", traces: [id] }];
   fails(views([contract()], [old, next]), /contract O-map@1: trace OT-1 was succeeded by OT-2; only a revision that has a transition links it/);
@@ -136,6 +136,13 @@ test("a succeeded trace keeps its row: only a revision that has a transition lin
   assert.deepEqual(views([contract()], [trace(), next]).review.unlinkedTraces, ["OT-2"], "a trace that was not succeeded is reported");
   fails(views([contract({ exceptions: linking("OT-2") })], [trace({ succeeded_by: "OT-9" }), next]), /trace OT-1: succeeded_by names OT-9, which is not another trace of the ledger/);
   fails(views([contract({ exceptions: linking("OT-2") })], [trace({ succeeded_by: "OT-1" }), next]), /trace OT-1: succeeded_by names OT-1, which is not another trace of the ledger/);
+  // A succession names its decision, as a transition does (graphrefly:B152): one on operator contracts.
+  const succeededUnder = (under) => views([contract({ exceptions: linking("OT-2") })], [trace({ succeeded_by: "OT-2", ...(under !== null && { succeeded_under: under }) }), next]);
+  assert.deepEqual(succeededUnder("D900").errors, []);
+  fails(succeededUnder(null), /trace OT-1: a succeeded trace names the decision of its succession under succeeded_under/);
+  fails(succeededUnder("D5"), /trace OT-1: succession decision D5 does not resolve/);
+  fails(succeededUnder("D1"), /trace OT-1: succession decision D1 is not a decision on operator contracts/);
+  fails(views([contract()], [trace({ succeeded_under: "D900" })]), /trace OT-1: succeeded_under without succeeded_by/);
 });
 
 test("a revised contract leaves one open revision, and its transition must name a revision that exists", () => {

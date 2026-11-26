@@ -68,11 +68,16 @@ with its topic and statement; the links it and its exceptions have to traces, no
 removed or moved to another exception; and the `nodes`, `steps` and `expect` of every trace an active
 contract links. Each changes only through a new revision that a root decision introduces, with the
 `transition` from the earlier one. A linked trace is not edited: a new trace succeeds it, and it
-stays in the ledger with a `succeeded_by` that names the new one, linked only by revisions that have
-a transition and no longer run. The decision names every active contract that links it: one whose
+stays in the ledger with a `succeeded_by` that names the new one and a `succeeded_under` that names
+the decision, linked only by revisions that have a transition and no longer run. The decision names every active contract that links it: one whose
 statements change gets its new revision, and one whose statements do not keeps its revision and has
-its link moved to the successor in place. `npm run authority:check` holds this against main as git
-has it (`authority/immutable.mjs`), and reports when it compared nothing.
+its link moved to the successor in place. `npm run authority:check` holds this against what main
+held where the checkout left it (`authority/immutable.mjs`), and reports when it compared nothing.
+What releases a held row names a new decision, a locked row that the same change adds to the root's
+ledger: the `transition` an active contract gains, and the `succeeded_under` of a trace an active
+contract links, whose successor is a new trace. A transition an activated contract has, and a
+succeeded trace, stay as they are (graphrefly:B152). So a decision and the rows it changes land
+together.
 
 A new trace, and a new link from an active contract or one of its exceptions to a new trace or to
 one already in the ledger, are added in place, as a scenario is added for a rule, when the contract's
@@ -92,16 +97,13 @@ is a revision, also when it is made while another family is written. A contract 
 language what graphrefly:D797 (9) left to each language as sugar, as `O-derived` does, without
 superseding it.
 
-No gate holds any of this yet, and neither the gate nor the reference run knows a succeeded trace;
-that is graphrefly:B146's.
-
 ## A trace
 
 ```text
 { id: "OT-<n>", name, basis, detail: "messages"|"occurrences",
   nodes: [{ id, state: [value?] } | { id, op, deps, args? }],
   steps: [request], expect: [[[sink, node, messages]]],
-  succeeded_by?: "OT-<n>" }
+  succeeded_by?: "OT-<n>", succeeded_under?: "D<n>" }
 ```
 
 `nodes` are built in order on one graph. `state: []` is a state without a value, and `state: [v]` one
