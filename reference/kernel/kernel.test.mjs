@@ -2980,3 +2980,32 @@ test("D830 (1): an empty array is no output: nothing is sent for it, in a run or
   assert.deepEqual(during(after, () => late.down([])), []);
   assert.deepEqual(during(after, () => late.down([["DATA", "late"]])), ['k <- n: [PENDING, DATA("late")]'], "a call that sends something does start one");
 });
+
+// Found by graphrefly-ts while it ported this kernel (its finding F9, 2026-11-25): no rule, test or
+// scenario said what a quiet node's activation run sends, and its earlier kernel sent it as a wave
+// of its own. The user, 2026-11-25, took the reading the rules give together: a subscription starts
+// no wave (R-wave), activation runs the function once on the snapshots (R-lifetime), and a
+// subscriber's first array is START and the snapshot (R-subscription). R-wave's sentence on a quiet
+// node's output as a new wave is of its input waves.
+test("H6: a quiet node's activation run is no wave: what it sends then is its snapshot, a terminal included", () => {
+  const quiet = (fn, options = {}) => { const g = createGraph(); g.state("a", 1); g.node("q", ["a"], fn, { quiet: true, ...options }); return g; };
+  const tenfold = (ctx) => { ctx.down([["DATA", ctx.deps[0].value * 10]]); };
+  const g = quiet(tenfold);
+  assert.deepEqual(during(g, () => g.subscribe("s", "q")), ["s <- q: [START, DATA(10)]"], "in the first array, and no wave after it");
+  assert.deepEqual(during(g, () => g.set("a", 2)), ["s <- q: [PENDING, DATA(20)]"], "an input wave's output is a later wave");
+  assert.deepEqual(during(g, () => g.subscribe("t", "q")), ["t <- q: [START, DATA(20)]"]);
+  // Several arrays at activation: the snapshot is the last that carried DATA, as for any node.
+  const two = quiet((ctx) => { ctx.down([["DATA", 1]]); ctx.down([["DATA", 2]]); });
+  assert.deepEqual(during(two, () => two.subscribe("s", "q")), ["s <- q: [START, DATA(2)]"]);
+  // An ERROR it ends with at activation, sent or thrown, is in that first array.
+  const sent = quiet((ctx) => { ctx.down([["ERROR", "E"]]); }, { terminal: { error: "manual" } });
+  assert.deepEqual(during(sent, () => sent.subscribe("s", "q")), ['s <- q: [START, ERROR("E")]']);
+  const thrown = quiet(() => { throw new Error("boom"); });
+  assert.deepEqual(during(thrown, () => thrown.subscribe("s", "q")), ['s <- q: [START, ERROR("boom")]']);
+  // A dependent activated first reads it as a snapshot on its own first run, and runs once.
+  const below = quiet(tenfold);
+  const seen = [];
+  below.node("d", ["q"], (ctx) => { seen.push(ctx.deps[0].waves); ctx.down([["DATA", ctx.deps[0].value]]); });
+  assert.deepEqual(during(below, () => below.subscribe("s", "d")), ["s <- d: [START, DATA(10)]"]);
+  assert.deepEqual(seen, [[[10]]]);
+});
