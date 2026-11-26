@@ -1,4 +1,4 @@
-// Bounded history (R-replay-buffer) as a module over the reference kernel. Non-normative.
+// Bounded history (R-history, which replaced R-replay-buffer) as a module over the reference kernel. Non-normative.
 //
 // Built 2026-11-08. The user decided that the kernel's START snapshot carries the source's last
 // array (K3), and that history across arrays is a module rather than a kernel option: in TS,

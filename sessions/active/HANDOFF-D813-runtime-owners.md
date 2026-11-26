@@ -1,4 +1,4 @@
-# Handoff to the runtime owners: the operator contracts, their traces, and four rule points (D813, D816, D829, D830)
+# Handoff to the runtime owners: the operator contracts, their traces, and the rule changes since (D813, D816, D829, D830, D831)
 
 Written by Claude on 2026-11-25 for [graphrefly:B147](../../plan/backlog.jsonl), graphrefly:B150 and
 graphrefly:B151, at the user's request. This is a brief, not a rule, a decision or a work item. Each
@@ -52,6 +52,11 @@ the old one keeps its row with `succeeded_by` and is no longer run. None is succ
 **Three rule revisions (graphrefly:D830):** R-wave@4, R-restart@2 and R-pause@2, each its earlier
 revision with one or two sentences added. Read them with `npm run rules:current`.
 
+**Two module rules in force (graphrefly:D831):** R-demand@1 and R-history@1, as their drafts stood
+but for one sentence of R-demand on an INVALIDATE of the demand state. The five drafts that came
+before them, R-pull@1 and @2, R-replay-buffer@1 and @2 and R-node-revision@1, are replaced by them
+and by R-revision@1, which stays a draft.
+
 ## What a package owns
 
 Its API spelling, which operators it ships, its implementation, its own tests and its own results
@@ -87,6 +92,11 @@ against the traces (graphrefly:D813). The root keeps no runtime result and claim
      the wave decide: with none held, it sends what it held and then the terminal.
 5. **Link the package's operator documentation to the contracts.** graphrefly:D813 asks it for its
    completion, and it is each owner's to admit.
+6. **An INVALIDATE of a control state starts its request numbers again (graphrefly:D831,
+   R-restart@2).** A pull made after an INVALIDATE of the demand state is served, and so is a restart
+   request made after one of the restart state, also when both are in one wave. The reference did
+   not serve them in every case until 2026-11-25 (`reference/modules/demand.mjs`, and `owner` in
+   `reference/operators/recover.mjs`).
 
 ## What to check against
 
@@ -95,15 +105,15 @@ against the traces (graphrefly:D813). The root keeps no runtime result and claim
 | the 708 traces, by contract in `npm run operators:current` | every exception of every contract |
 | OT-705 to OT-709 | a callback result that is not a node |
 | C-60 | the four points of D830; OT-184, OT-589, OT-622 and OT-651 are candidate traces for it |
+| C-32, C-45, C-46 | demand and history, now on current rules; C-27 has left the ledger, and results held against it are history |
 
 Every runtime result for these is `todo`. The reference is in `reference/kernel`,
-`reference/modules` and `reference/operators` (`npm run test:reference`, 2538 tests). The models for
+`reference/modules` and `reference/operators` (`npm run test:reference`, 2540 tests). The models for
 D830 are `kernel_wave`, `module_restart` and `module_pause`, with their runs in `formal/README.md`.
 
 ## What is not here
 
-- R-demand, R-history and R-revision are still drafts. So are five older ones, R-replay-buffer@1 and
-  @2, R-pull@1 and @2 and R-node-revision@1, which no transition has retired yet. None is in force.
+- R-revision is still a draft, held until a real consumer exists.
 - Some sentences of the contracts are known to be loose where no behavior is in question;
   graphrefly:B151's note lists them, and each waits for its contract's next revision.
 - Which of two timers due at the same instant fires first is the package's.

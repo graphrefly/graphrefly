@@ -5,7 +5,7 @@ GraphReFly D797 pause module — the one-node pausable meets R-pause.
 A candidate model for the D797 draft module rule R-pause, written 2026-11-09 for
 graphrefly:B140. It checks that the composition in reference/modules/pause.mjs,
 one kernel node and a lock state, behaves as R-pause says a pausable does.
-Status: draft, like the rule it checks. Until 2026-11-09 the pausable took two
+Status: R-pause is active since D828 (2026-11-23). Until 2026-11-09 the pausable took two
 nodes, a log before a release node, because a function could not see an
 INVALIDATE; that version was retired the same day, when INVALIDATE got a manual
 policy (R-invalidation) and the pausable became one node.

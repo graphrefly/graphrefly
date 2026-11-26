@@ -2,7 +2,7 @@ import { assertLocalName } from "../kernel/kernel.mjs";
 
 import { withDependencies } from "./context.mjs";
 
-// Demand (PULL) as a module over the reference kernel (DS-17 O2, R-pull). Non-normative.
+// Demand (PULL) as a module over the reference kernel (DS-17 O2, R-demand). Non-normative.
 //
 // A pullable holder `id` sits after an input and stays quiet until it is pulled: input
 // that arrives is held, and nothing reaches the holder's subscribers, not even PENDING.
@@ -21,7 +21,7 @@ import { withDependencies } from "./context.mjs";
 // out as a later wave, like all of a quiet node's output. Until then a second node, a log
 // that published its queue as a value to learn of every INVALIDATE, sat before the holder.
 //
-// Rules from R-pull@2 and how they hold here:
+// Sentences of R-demand, which replaced R-pull@2, and how they hold here:
 //   - A pull while the holder is inactive does nothing: it neither activates the holder
 //     nor is kept for later. (The demand state keeps its value, so on activation the log
 //     records the request already there as seen and serves only later ones.)
@@ -49,8 +49,12 @@ const holder = (serve) => (ctx) => {
     return;
   }
   queue = [...queue, ...input.waves.filter((w) => w.length)];
-  const request = demand.waves.flat().filter((r) => r.seq > st.seen).at(-1);
-  if (!request) { ctx.state.set({ queue, seen: st.seen }); return; }
+  // An INVALIDATE of the demand state is no pull: the state holds none then, and the request
+  // numbers start again from it, so a pull made after it is served (R-demand; until 2026-11-25
+  // the pulls after it were taken for old ones until their numbers passed the last one served).
+  const seen = demand.invalidated === true ? 0 : st.seen;
+  const request = demand.waves.flat().filter((r) => r.seq > seen).at(-1);
+  if (!request) { ctx.state.set({ queue, seen }); return; }
   ctx.state.set({ queue: [], seen: request.seq });
   const view = withDependencies(ctx, [{ id: input.id, waves: queue, terminal: null, has: input.has, value: input.value, invalidated: false }]);
   view.pull = { params: request.params };

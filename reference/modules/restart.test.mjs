@@ -361,3 +361,21 @@ test("an owner whose upstream ends with ERROR while a retry waits ends with its 
   assert.equal(attempts, 1, "no attempt is made");
   assert.deepEqual(g.get("r").ended, ["ERROR", "boom"], "the inner's ERROR, not the upstream's");
 });
+
+test("an INVALIDATE of the restart state and then a request in one wave: the request is served", () => {
+  for (const served of [1, 2]) {
+    const g = createGraph();
+    let starts = 0;
+    const r = restartable(g, "r", { deps: [], fn: (ctx) => {
+      if (!ctx.state.get()) { ctx.state.set(true); starts += 1; }
+      ctx.down([["DATA", starts]]);
+    } });
+    g.subscribe("s", "r");
+    for (let i = 0; i < served; i += 1) r.restart();
+    assert.equal(starts, served + 1);
+    g.batch(() => { g.invalidate("r/restart"); r.restart(); });
+    assert.equal(starts, served + 2, `after ${served} served, the request made after the INVALIDATE starts an attempt`);
+    r.restart();
+    assert.equal(starts, served + 3, "and the one after that");
+  }
+});

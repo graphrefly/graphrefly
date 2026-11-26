@@ -205,3 +205,26 @@ test("the request number lives in the demand state, so a pull after a restored r
   assert.deepEqual(during(g, () => h.pull("p1")), ['s <- h: [PENDING, DATA("p1:0")]']);
   assert.deepEqual(g.get(h.demandId).value, { seq: 6, params: "p1" });
 });
+
+test("an INVALIDATE of the demand state is no pull and discards nothing; a pull made after it is served", () => {
+  const g = createGraph();
+  g.state("a", 0);
+  const seen = [];
+  const h = pageHolder(g, seen);
+  g.subscribe("s", "h");
+  h.pull("p1");
+  g.set("a", 1);
+  assert.deepEqual(during(g, () => g.invalidate(h.demandId)), [], "nothing is sent");
+  assert.equal(seen.length, 1, "no service");
+  assert.deepEqual(during(g, () => h.pull("p2")), ['s <- h: [PENDING, DATA("p2:1")]'], "the pull after it is served, with what was held");
+  assert.deepEqual(during(g, () => h.pull("p3")), ['s <- h: [PENDING, DATA("p3:")]'], "and the one after that");
+  // The INVALIDATE and then a pull in one wave: the pull is made after it.
+  g.set("a", 2);
+  assert.deepEqual(during(g, () => g.batch(() => { g.invalidate(h.demandId); h.pull("p4"); })), ['s <- h: [PENDING, DATA("p4:2")]']);
+  // Invalidated while the holder is inactive: the next activation serves nothing, and the pull after it is served.
+  g.unsubscribe("s", "h");
+  g.invalidate(h.demandId);
+  g.subscribe("s", "h");
+  assert.equal(seen.length, 4, "the activation serves nothing");
+  assert.deepEqual(during(g, () => h.pull("p5")), ['s <- h: [PENDING, DATA("p5:2")]']);
+});

@@ -4,8 +4,8 @@ GraphReFly D797 restart module — the restartable owner meets R-restart.
 
 A candidate model for the D797 draft module rule R-restart, written 2026-11-09
 for graphrefly:B140, the fifth module model. It checks that the owner built by
-reference/modules/restart.mjs behaves as R-restart says. Status: draft, like
-the rule it checks. Revised 2026-11-18 for graphrefly:D812: a checkpoint
+reference/modules/restart.mjs behaves as R-restart says. Status: R-restart is
+active since D828 (2026-11-23). Revised 2026-11-18 for graphrefly:D812: a checkpoint
 round trip is a step, and a restored owner that was waiting for a retry starts
 that retry's delay again instead of renewing its inner. Revised 2026-11-19 after
 the independent QA of that work: the two sides no longer share the test for "a
@@ -225,6 +225,14 @@ InvalidateRequest ==
   /\ LET s0 == [Step(k) EXCEPT !.req = 0, !.sp.served = 0]
      IN k' = IF Live(s0) /\ s0.st # NoSt THEN Both([s0 EXCEPT !.st.seen = 0], FALSE, "") ELSE s0
 
+\* The same INVALIDATE and then a request, in one wave: the state holds the request numbered 1,
+\* made after the INVALIDATE, so it is served. The owner's function runs once, on both (added
+\* 2026-11-25; until then the reference's owner did not serve it when 1 was the last one served).
+InvalidateThenRequest ==
+  /\ k.req > 0
+  /\ LET s0 == [Step(k) EXCEPT !.req = 1, !.sp.served = 0]
+     IN k' = IF Live(s0) /\ s0.st # NoSt THEN Both([s0 EXCEPT !.st.seen = 0], FALSE, "") ELSE s0
+
 \* The pending retry's timer: dropped unless its attempt is still the current one; with U
 \* ended, no attempt is made and the owner ends with the inner's ERROR.
 \* The composition's side of a timer firing, as restart.mjs's replace has it: nothing when the
@@ -256,7 +264,7 @@ TimerFires ==
 StaleFires ==
   \E t \in k.stale : k' = Fire([Step(k) EXCEPT !.stale = @ \ {t}], t)
 
-Next == k.steps < MaxSteps /\ (Subscribe \/ Unsubscribe \/ InnerSends \/ UpEnds \/ Request \/ InvalidateRequest
+Next == k.steps < MaxSteps /\ (Subscribe \/ Unsubscribe \/ InnerSends \/ UpEnds \/ Request \/ InvalidateRequest \/ InvalidateThenRequest
                                 \/ TimerFires \/ StaleFires
                                 \/ Restore \/ SubscribeRestored)
 

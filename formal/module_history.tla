@@ -5,8 +5,8 @@ GraphReFly D797 history module — the history node meets R-history.
 A candidate model for the D797 draft module rule R-history, written 2026-11-09
 (revised the same day for the array shape)
 for graphrefly:B140, the third module model. It checks that the node built by
-reference/modules/history.mjs behaves as R-history says. Status: draft, like
-the rule it checks. Revised 2026-11-18 for graphrefly:D812: H has the auto
+reference/modules/history.mjs behaves as R-history says. Status: R-history is
+active since D831 (2026-11-25). Revised 2026-11-18 for graphrefly:D812: H has the auto
 INVALIDATE policy, so an INVALIDATE removes its value and keeps its list.
 Revised 2026-11-19 after the independent QA of that work: the rule's side reads
 the wave with its own operators. Revised again that day after the second QA:

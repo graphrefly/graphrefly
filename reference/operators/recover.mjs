@@ -157,8 +157,10 @@ export function owner({ deps, rounds, retry }, { g, id }, timers = hostTimers) {
     const requested = request.value ?? 0;
     const st = ctx.state.get();
     // An INVALIDATE of the restart state is no request: the state holds none then, and the
-    // request numbers start again from it.
-    if (request.invalidated === true && !request.has) st.seen = 0;
+    // request numbers start again from it, also when a request follows it in the same wave
+    // (R-restart; until 2026-11-25 such a request was not served when its number was the last
+    // one served).
+    if (request.invalidated === true) st.seen = 0;
     // The inner's INVALIDATE retracts the output, and it alone while the inner runs: what the
     // inner does with an INVALIDATE of a dependency is its own (O-retry, O-repeat; the user,
     // 2026-11-24). Once the inner has ended, as while a retry waits, a dependency's does. The
